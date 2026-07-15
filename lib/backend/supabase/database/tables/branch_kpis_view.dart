@@ -10,7 +10,7 @@ class BranchKpisViewTable extends SupabaseTable<BranchKpisViewRow> {
 }
 
 class BranchKpisViewRow extends SupabaseDataRow {
-  BranchKpisViewRow(Map<String, dynamic> data) : super(data);
+  BranchKpisViewRow(super.data);
 
   @override
   SupabaseTable get table => BranchKpisViewTable();

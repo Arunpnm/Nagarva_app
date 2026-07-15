@@ -9,7 +9,7 @@ class AdvancesViewTable extends SupabaseTable<AdvancesViewRow> {
 }
 
 class AdvancesViewRow extends SupabaseDataRow {
-  AdvancesViewRow(Map<String, dynamic> data) : super(data);
+  AdvancesViewRow(super.data);
 
   @override
   SupabaseTable get table => AdvancesViewTable();

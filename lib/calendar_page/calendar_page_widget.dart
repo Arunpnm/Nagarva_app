@@ -3,11 +3,9 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'calendar_page_model.dart';
 export 'calendar_page_model.dart';
 
@@ -82,7 +80,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -93,7 +91,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -107,7 +105,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -161,7 +159,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                       ),
                       child: Padding(
                         padding:
-                            EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 8.0),
+                            const EdgeInsetsDirectional.fromSTEB(0.0, 8.0, 0.0, 8.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -389,7 +387,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                       ),
                       child: Padding(
                         padding:
-                            EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
+                            const EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -399,7 +397,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(),
                                 ),
@@ -409,7 +407,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(),
                                 ),
@@ -419,7 +417,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(),
                                 ),
@@ -429,7 +427,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -438,7 +436,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'd5soc1xo' /* 1 */,
@@ -480,7 +478,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -489,7 +487,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'xvs3c9m9' /* 2 */,
@@ -531,7 +529,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -540,7 +538,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'eu291tg5' /* 3 */,
@@ -582,7 +580,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -591,7 +589,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '6de6fuq5' /* 4 */,
@@ -641,7 +639,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                       ),
                       child: Padding(
                         padding:
-                            EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
+                            const EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -651,7 +649,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -660,7 +658,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'dip25jo9' /* 5 */,
@@ -702,7 +700,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -711,7 +709,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'jk5cnd0o' /* 6 */,
@@ -753,7 +751,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -762,7 +760,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'n9chdvxr' /* 7 */,
@@ -804,7 +802,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -813,7 +811,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'v4su74pr' /* 8 */,
@@ -855,7 +853,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -864,7 +862,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'qfw9stoa' /* 9 */,
@@ -906,7 +904,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -915,7 +913,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '8adog11w' /* 10 */,
@@ -957,7 +955,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -966,7 +964,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'rqtgj1a4' /* 11 */,
@@ -1016,7 +1014,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                       ),
                       child: Padding(
                         padding:
-                            EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
+                            const EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1026,7 +1024,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1035,7 +1033,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '4627uqyp' /* 12 */,
@@ -1077,7 +1075,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1086,7 +1084,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '3exnlyxw' /* 13 */,
@@ -1128,7 +1126,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1137,7 +1135,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '6ma666pl' /* 14 */,
@@ -1179,7 +1177,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1188,7 +1186,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'bdx1tf40' /* 15 */,
@@ -1230,7 +1228,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1239,7 +1237,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'mjh6obss' /* 16 */,
@@ -1281,7 +1279,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1290,7 +1288,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'g13k1g1c' /* 17 */,
@@ -1332,7 +1330,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1341,7 +1339,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '4tvvt2j6' /* 18 */,
@@ -1391,7 +1389,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                       ),
                       child: Padding(
                         padding:
-                            EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
+                            const EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1401,7 +1399,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1410,7 +1408,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'wxy10se2' /* 19 */,
@@ -1452,7 +1450,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1461,7 +1459,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'qml8c9pd' /* 20 */,
@@ -1503,7 +1501,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1512,7 +1510,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'xp838e8o' /* 21 */,
@@ -1554,7 +1552,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1563,7 +1561,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '0jeo5bvr' /* 22 */,
@@ -1605,7 +1603,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1614,7 +1612,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'jd6m713h' /* 23 */,
@@ -1656,7 +1654,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1665,7 +1663,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '98rfvkct' /* 24 */,
@@ -1707,7 +1705,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1716,7 +1714,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'cw9pf2qz' /* 25 */,
@@ -1766,7 +1764,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                       ),
                       child: Padding(
                         padding:
-                            EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
+                            const EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 4.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1776,7 +1774,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1785,7 +1783,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '90kifa2l' /* 26 */,
@@ -1827,7 +1825,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1836,7 +1834,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           '9tc4e4wg' /* 27 */,
@@ -1878,7 +1876,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1887,7 +1885,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'bk0dkmxd' /* 28 */,
@@ -1929,7 +1927,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1938,7 +1936,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'tz0yeqd3' /* 29 */,
@@ -1980,7 +1978,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -1989,7 +1987,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'yhlninn7' /* 30 */,
@@ -2031,7 +2029,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -2040,7 +2038,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                       borderRadius: BorderRadius.circular(20.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(6.0),
+                                      padding: const EdgeInsets.all(6.0),
                                       child: Text(
                                         FFLocalizations.of(context).getText(
                                           'd5k73l70' /* 31 */,
@@ -2082,7 +2080,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               flex: 1,
                               child: Container(
                                 child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
+                                  padding: const EdgeInsetsDirectional.fromSTEB(
                                       0.0, 8.0, 0.0, 8.0),
                                   child: Container(),
                                 ),
@@ -2122,7 +2120,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -2227,9 +2225,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 3.0)),
+                              ].divide(const SizedBox(height: 3.0)),
                             ),
-                          ].divide(SizedBox(width: 12.0)),
+                          ].divide(const SizedBox(width: 12.0)),
                         ),
                       ),
                     ),
@@ -2240,7 +2238,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -2345,9 +2343,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 3.0)),
+                              ].divide(const SizedBox(height: 3.0)),
                             ),
-                          ].divide(SizedBox(width: 12.0)),
+                          ].divide(const SizedBox(width: 12.0)),
                         ),
                       ),
                     ),
@@ -2358,7 +2356,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -2463,9 +2461,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 3.0)),
+                              ].divide(const SizedBox(height: 3.0)),
                             ),
-                          ].divide(SizedBox(width: 12.0)),
+                          ].divide(const SizedBox(width: 12.0)),
                         ),
                       ),
                     ),
@@ -2476,7 +2474,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -2582,9 +2580,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 3.0)),
+                              ].divide(const SizedBox(height: 3.0)),
                             ),
-                          ].divide(SizedBox(width: 12.0)),
+                          ].divide(const SizedBox(width: 12.0)),
                         ),
                       ),
                     ),
@@ -2629,7 +2627,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               scrollDirection: Axis.vertical,
                               itemCount: remindersViewListItem.length,
                               separatorBuilder: (_, __) =>
-                                  SizedBox(height: 8.0),
+                                  const SizedBox(height: 8.0),
                               itemBuilder:
                                   (context, remindersViewListItemIndex) {
                                 final remindersViewListItemItem =
@@ -2643,7 +2641,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.all(14.0),
+                                    padding: const EdgeInsets.all(14.0),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.max,
                                       mainAxisAlignment:
@@ -2798,7 +2796,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   6.0,
                                                                   2.0,
@@ -2841,7 +2839,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                       ),
                                                     ),
                                                   ),
-                                                ].divide(SizedBox(width: 8.0)),
+                                                ].divide(const SizedBox(width: 8.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -2929,12 +2927,12 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
-                                            ].divide(SizedBox(height: 3.0)),
+                                            ].divide(const SizedBox(height: 3.0)),
                                           ),
                                         ),
-                                      ].divide(SizedBox(width: 12.0)),
+                                      ].divide(const SizedBox(width: 12.0)),
                                     ),
                                   ),
                                 );
@@ -2942,11 +2940,11 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                             );
                           },
                         ),
-                      ].divide(SizedBox(height: 10.0)),
+                      ].divide(const SizedBox(height: 10.0)),
                     ),
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
                         onPressed: () {
                           print('AddReminderBtn pressed ...');
@@ -2954,15 +2952,15 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         text: FFLocalizations.of(context).getText(
                           'l4goql9f' /* Add Reminder */,
                         ),
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.add_alarm,
                           size: 20.0,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
                           iconColor:
                               FlutterFlowTheme.of(context).primaryBackground,
@@ -2975,7 +2973,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

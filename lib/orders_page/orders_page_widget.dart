@@ -2,13 +2,10 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'orders_page_model.dart';
 export 'orders_page_model.dart';
 
@@ -119,7 +116,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
           onPressed: () async {
             context.pushNamed(NewOrderPageWidget.routeName);
           },
-          backgroundColor: Color(0xFFFFA000),
+          backgroundColor: const Color(0xFFFFA000),
         ),
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
@@ -140,7 +137,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -151,7 +148,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -173,7 +170,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               borderRadius: BorderRadius.circular(20.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Text(
                                 FFLocalizations.of(context).getText(
@@ -215,7 +212,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               borderRadius: BorderRadius.circular(20.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Text(
                                 FFLocalizations.of(context).getText(
@@ -257,7 +254,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               borderRadius: BorderRadius.circular(20.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Text(
                                 FFLocalizations.of(context).getText(
@@ -299,7 +296,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               borderRadius: BorderRadius.circular(20.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Text(
                                 FFLocalizations.of(context).getText(
@@ -331,7 +328,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             ),
                           ),
                         ),
-                      ].divide(SizedBox(width: 8.0)),
+                      ].divide(const SizedBox(width: 8.0)),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
@@ -372,7 +369,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               scrollDirection: Axis.vertical,
                               itemCount: ordersListItem.length,
                               separatorBuilder: (_, __) =>
-                                  SizedBox(height: 12.0),
+                                  const SizedBox(height: 12.0),
                               itemBuilder: (context, ordersListItemIndex) {
                                 final ordersListItemItem =
                                     ordersListItem[ordersListItemIndex];
@@ -476,7 +473,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                       borderRadius: BorderRadius.circular(12.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(16.0),
+                                      padding: const EdgeInsets.all(16.0),
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         mainAxisAlignment:
@@ -536,7 +533,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                           12.0),
                                                 ),
                                                 child: Padding(
-                                                  padding: EdgeInsetsDirectional
+                                                  padding: const EdgeInsetsDirectional
                                                       .fromSTEB(
                                                           10.0, 4.0, 10.0, 4.0),
                                                   child: Text(
@@ -669,7 +666,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                               .fontStyle,
                                                     ),
                                               ),
-                                            ].divide(SizedBox(width: 4.0)),
+                                            ].divide(const SizedBox(width: 4.0)),
                                           ),
                                           Row(
                                             mainAxisSize: MainAxisSize.max,
@@ -752,7 +749,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               ),
                                             ],
                                           ),
-                                        ].divide(SizedBox(height: 8.0)),
+                                        ].divide(const SizedBox(height: 8.0)),
                                       ),
                                     ),
                                   ),
@@ -761,17 +758,17 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             );
                           },
                         ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
+                        SizedBox(
                           width: double.infinity,
                           child: Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
                                 0.0, 4.0, 0.0, 4.0),
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
@@ -805,7 +802,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -868,7 +865,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -939,7 +936,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1002,7 +999,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1073,7 +1070,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1136,7 +1133,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1207,7 +1204,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1270,7 +1267,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1341,7 +1338,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1404,7 +1401,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1475,7 +1472,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1538,7 +1535,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -1584,7 +1581,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                         ),
                                     ],
                                   ),
-                                ].divide(SizedBox(width: 8.0)),
+                                ].divide(const SizedBox(width: 8.0)),
                               ),
                             ),
                           ),
@@ -1606,7 +1603,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: ordersListItem.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, ordersListItemIndex) {
                                       final ordersListItemItem =
@@ -1620,7 +1617,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -1685,7 +1682,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -1822,7 +1819,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -1906,7 +1903,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -1914,7 +1911,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Pending')
                           Column(
@@ -1933,7 +1930,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: pendingOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, pendingOrderIndex) {
                                       final pendingOrderItem =
                                           pendingOrder[pendingOrderIndex];
@@ -1946,7 +1943,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -2011,7 +2008,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -2147,7 +2144,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -2231,7 +2228,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -2239,7 +2236,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Confirmed')
                           Column(
@@ -2258,7 +2255,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: confirmedOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, confirmedOrderIndex) {
                                       final confirmedOrderItem =
@@ -2272,7 +2269,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -2337,7 +2334,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -2474,7 +2471,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -2558,7 +2555,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -2566,7 +2563,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Transit')
                           Column(
@@ -2585,7 +2582,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: transitOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, transitOrderIndex) {
                                       final transitOrderItem =
                                           transitOrder[transitOrderIndex];
@@ -2598,7 +2595,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -2663,7 +2660,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -2799,7 +2796,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -2883,7 +2880,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -2891,7 +2888,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Done')
                           Column(
@@ -2909,7 +2906,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: doneOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, doneOrderIndex) {
                                       final doneOrderItem =
                                           doneOrder[doneOrderIndex];
@@ -2922,7 +2919,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -2987,7 +2984,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -3122,7 +3119,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -3206,7 +3203,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -3214,7 +3211,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Cancelled')
                           Column(
@@ -3233,7 +3230,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: cancelledOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, cancelledOrderIndex) {
                                       final cancelledOrderItem =
@@ -3247,7 +3244,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -3312,7 +3309,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -3449,7 +3446,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -3533,7 +3530,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -3541,19 +3538,19 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
+                        SizedBox(
                           width: double.infinity,
                           child: Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
                                 0.0, 4.0, 0.0, 4.0),
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
@@ -3587,7 +3584,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -3650,7 +3647,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -3721,7 +3718,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -3784,7 +3781,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -3855,7 +3852,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -3918,7 +3915,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -3989,7 +3986,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -4052,7 +4049,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -4123,7 +4120,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -4186,7 +4183,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -4257,7 +4254,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -4320,7 +4317,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -4366,7 +4363,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                         ),
                                     ],
                                   ),
-                                ].divide(SizedBox(width: 8.0)),
+                                ].divide(const SizedBox(width: 8.0)),
                               ),
                             ),
                           ),
@@ -4388,7 +4385,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: ordersListItem.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, ordersListItemIndex) {
                                       final ordersListItemItem =
@@ -4402,7 +4399,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -4467,7 +4464,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -4604,7 +4601,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -4688,7 +4685,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -4696,7 +4693,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Pending')
                           Column(
@@ -4715,7 +4712,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: pendingOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, pendingOrderIndex) {
                                       final pendingOrderItem =
                                           pendingOrder[pendingOrderIndex];
@@ -4728,7 +4725,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -4793,7 +4790,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -4929,7 +4926,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -5013,7 +5010,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -5021,7 +5018,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Confirmed')
                           Column(
@@ -5040,7 +5037,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: confirmedOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, confirmedOrderIndex) {
                                       final confirmedOrderItem =
@@ -5054,7 +5051,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -5119,7 +5116,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -5256,7 +5253,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -5340,7 +5337,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -5348,7 +5345,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Transit')
                           Column(
@@ -5367,7 +5364,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: transitOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, transitOrderIndex) {
                                       final transitOrderItem =
                                           transitOrder[transitOrderIndex];
@@ -5380,7 +5377,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -5445,7 +5442,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -5581,7 +5578,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -5665,7 +5662,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -5673,7 +5670,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Done')
                           Column(
@@ -5691,7 +5688,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: doneOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, doneOrderIndex) {
                                       final doneOrderItem =
                                           doneOrder[doneOrderIndex];
@@ -5704,7 +5701,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -5769,7 +5766,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -5904,7 +5901,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -5988,7 +5985,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -5996,7 +5993,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Cancelled')
                           Column(
@@ -6015,7 +6012,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: cancelledOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, cancelledOrderIndex) {
                                       final cancelledOrderItem =
@@ -6029,7 +6026,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -6094,7 +6091,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -6231,7 +6228,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -6315,7 +6312,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -6323,19 +6320,19 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
+                        SizedBox(
                           width: double.infinity,
                           child: Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
                                 0.0, 4.0, 0.0, 4.0),
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
@@ -6369,7 +6366,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -6432,7 +6429,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -6503,7 +6500,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -6566,7 +6563,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -6637,7 +6634,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -6700,7 +6697,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -6771,7 +6768,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -6834,7 +6831,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -6905,7 +6902,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -6968,7 +6965,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -7039,7 +7036,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -7102,7 +7099,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -7148,7 +7145,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                         ),
                                     ],
                                   ),
-                                ].divide(SizedBox(width: 8.0)),
+                                ].divide(const SizedBox(width: 8.0)),
                               ),
                             ),
                           ),
@@ -7170,7 +7167,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: ordersListItem.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, ordersListItemIndex) {
                                       final ordersListItemItem =
@@ -7184,7 +7181,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -7249,7 +7246,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -7386,7 +7383,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -7470,7 +7467,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -7478,7 +7475,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Pending')
                           Column(
@@ -7497,7 +7494,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: pendingOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, pendingOrderIndex) {
                                       final pendingOrderItem =
                                           pendingOrder[pendingOrderIndex];
@@ -7510,7 +7507,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -7575,7 +7572,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -7711,7 +7708,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -7795,7 +7792,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -7803,7 +7800,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Confirmed')
                           Column(
@@ -7822,7 +7819,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: confirmedOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, confirmedOrderIndex) {
                                       final confirmedOrderItem =
@@ -7836,7 +7833,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -7901,7 +7898,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -8038,7 +8035,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -8122,7 +8119,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -8130,7 +8127,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Transit')
                           Column(
@@ -8149,7 +8146,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: transitOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, transitOrderIndex) {
                                       final transitOrderItem =
                                           transitOrder[transitOrderIndex];
@@ -8162,7 +8159,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -8227,7 +8224,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -8363,7 +8360,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -8447,7 +8444,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -8455,7 +8452,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Done')
                           Column(
@@ -8473,7 +8470,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: doneOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, doneOrderIndex) {
                                       final doneOrderItem =
                                           doneOrder[doneOrderIndex];
@@ -8486,7 +8483,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -8551,7 +8548,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -8686,7 +8683,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -8770,7 +8767,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -8778,7 +8775,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Cancelled')
                           Column(
@@ -8797,7 +8794,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: cancelledOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, cancelledOrderIndex) {
                                       final cancelledOrderItem =
@@ -8811,7 +8808,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -8876,7 +8873,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -9013,7 +9010,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -9097,7 +9094,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -9105,19 +9102,19 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
+                        SizedBox(
                           width: double.infinity,
                           child: Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
                                 0.0, 4.0, 0.0, 4.0),
                             child: SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
@@ -9151,7 +9148,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9214,7 +9211,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9285,7 +9282,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9348,7 +9345,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9419,7 +9416,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9482,7 +9479,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9553,7 +9550,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9616,7 +9613,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9687,7 +9684,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9750,7 +9747,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9821,7 +9818,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9884,7 +9881,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   BorderRadius.circular(20.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       14.0, 9.0, 14.0, 9.0),
                                               child: Text(
@@ -9930,7 +9927,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                         ),
                                     ],
                                   ),
-                                ].divide(SizedBox(width: 8.0)),
+                                ].divide(const SizedBox(width: 8.0)),
                               ),
                             ),
                           ),
@@ -9952,7 +9949,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: ordersListItem.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, ordersListItemIndex) {
                                       final ordersListItemItem =
@@ -9966,7 +9963,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -10031,7 +10028,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -10168,7 +10165,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -10252,7 +10249,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -10260,7 +10257,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Pending')
                           Column(
@@ -10279,7 +10276,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: pendingOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, pendingOrderIndex) {
                                       final pendingOrderItem =
                                           pendingOrder[pendingOrderIndex];
@@ -10292,7 +10289,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -10357,7 +10354,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -10493,7 +10490,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -10577,7 +10574,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -10585,7 +10582,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Confirmed')
                           Column(
@@ -10604,7 +10601,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: confirmedOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, confirmedOrderIndex) {
                                       final confirmedOrderItem =
@@ -10618,7 +10615,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -10683,7 +10680,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -10820,7 +10817,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -10904,7 +10901,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -10912,7 +10909,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Transit')
                           Column(
@@ -10931,7 +10928,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: transitOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, transitOrderIndex) {
                                       final transitOrderItem =
                                           transitOrder[transitOrderIndex];
@@ -10944,7 +10941,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -11009,7 +11006,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -11145,7 +11142,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -11229,7 +11226,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -11237,7 +11234,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Done')
                           Column(
@@ -11255,7 +11252,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: doneOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder: (context, doneOrderIndex) {
                                       final doneOrderItem =
                                           doneOrder[doneOrderIndex];
@@ -11268,7 +11265,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -11333,7 +11330,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -11468,7 +11465,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -11552,7 +11549,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -11560,7 +11557,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
                         if (_model.selectedTab == 'Cancelled')
                           Column(
@@ -11579,7 +11576,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     scrollDirection: Axis.vertical,
                                     itemCount: cancelledOrder.length,
                                     separatorBuilder: (_, __) =>
-                                        SizedBox(height: 12.0),
+                                        const SizedBox(height: 12.0),
                                     itemBuilder:
                                         (context, cancelledOrderIndex) {
                                       final cancelledOrderItem =
@@ -11593,7 +11590,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                               BorderRadius.circular(12.0),
                                         ),
                                         child: Padding(
-                                          padding: EdgeInsets.all(16.0),
+                                          padding: const EdgeInsets.all(16.0),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -11658,7 +11655,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                                     child: Padding(
                                                       padding:
-                                                          EdgeInsetsDirectional
+                                                          const EdgeInsetsDirectional
                                                               .fromSTEB(
                                                                   10.0,
                                                                   4.0,
@@ -11795,7 +11792,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -11879,7 +11876,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                 ],
                                               ),
-                                            ].divide(SizedBox(height: 8.0)),
+                                            ].divide(const SizedBox(height: 8.0)),
                                           ),
                                         ),
                                       );
@@ -11887,9 +11884,9 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   );
                                 },
                               ),
-                            ].divide(SizedBox(height: 12.0)),
+                            ].divide(const SizedBox(height: 12.0)),
                           ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
                     Container(
                       width: double.infinity,
@@ -11898,7 +11895,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -11944,7 +11941,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -12073,7 +12070,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 8.0)),
+                          ].divide(const SizedBox(height: 8.0)),
                         ),
                       ),
                     ),
@@ -12084,7 +12081,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -12130,7 +12127,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -12259,7 +12256,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 8.0)),
+                          ].divide(const SizedBox(height: 8.0)),
                         ),
                       ),
                     ),
@@ -12270,7 +12267,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -12316,7 +12313,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -12445,7 +12442,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 8.0)),
+                          ].divide(const SizedBox(height: 8.0)),
                         ),
                       ),
                     ),
@@ -12456,7 +12453,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -12502,7 +12499,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -12631,11 +12628,11 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 8.0)),
+                          ].divide(const SizedBox(height: 8.0)),
                         ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

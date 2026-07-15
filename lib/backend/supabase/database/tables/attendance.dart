@@ -9,7 +9,7 @@ class AttendanceTable extends SupabaseTable<AttendanceRow> {
 }
 
 class AttendanceRow extends SupabaseDataRow {
-  AttendanceRow(Map<String, dynamic> data) : super(data);
+  AttendanceRow(super.data);
 
   @override
   SupabaseTable get table => AttendanceTable();

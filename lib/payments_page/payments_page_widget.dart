@@ -2,12 +2,9 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'payments_page_model.dart';
 export 'payments_page_model.dart';
 
@@ -87,7 +84,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -98,7 +95,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -120,7 +117,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                               borderRadius: BorderRadius.circular(12.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.all(16.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.start,
@@ -186,7 +183,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 4.0)),
+                                ].divide(const SizedBox(height: 4.0)),
                               ),
                             ),
                           ),
@@ -201,7 +198,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                               borderRadius: BorderRadius.circular(12.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.all(16.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.start,
@@ -267,12 +264,12 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 4.0)),
+                                ].divide(const SizedBox(height: 4.0)),
                               ),
                             ),
                           ),
                         ),
-                      ].divide(SizedBox(width: 12.0)),
+                      ].divide(const SizedBox(width: 12.0)),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
@@ -313,7 +310,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                               scrollDirection: Axis.vertical,
                               itemCount: pendingListItem.length,
                               separatorBuilder: (_, __) =>
-                                  SizedBox(height: 12.0),
+                                  const SizedBox(height: 12.0),
                               itemBuilder: (context, pendingListItemIndex) {
                                 final pendingListItemItem =
                                     pendingListItem[pendingListItemIndex];
@@ -325,7 +322,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.all(16.0),
+                                    padding: const EdgeInsets.all(16.0),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.max,
                                       mainAxisAlignment:
@@ -384,7 +381,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                     BorderRadius.circular(8.0),
                                               ),
                                               child: Padding(
-                                                padding: EdgeInsetsDirectional
+                                                padding: const EdgeInsetsDirectional
                                                     .fromSTEB(
                                                         8.0, 2.0, 8.0, 2.0),
                                                 child: Text(
@@ -424,7 +421,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                 ),
                                               ),
                                             ),
-                                          ].divide(SizedBox(height: 4.0)),
+                                          ].divide(const SizedBox(height: 4.0)),
                                         ),
                                         Text(
                                           pendingListItemItem.amount!
@@ -466,7 +463,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                             );
                           },
                         ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
                     Text(
                       FFLocalizations.of(context).getText(
@@ -498,7 +495,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -593,7 +590,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 4.0)),
+                              ].divide(const SizedBox(height: 4.0)),
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
@@ -632,7 +629,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -727,7 +724,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 4.0)),
+                              ].divide(const SizedBox(height: 4.0)),
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
@@ -766,7 +763,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -861,7 +858,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 4.0)),
+                              ].divide(const SizedBox(height: 4.0)),
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
@@ -900,7 +897,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -995,7 +992,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 4.0)),
+                              ].divide(const SizedBox(height: 4.0)),
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
@@ -1027,7 +1024,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                         ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

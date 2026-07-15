@@ -2,13 +2,9 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'accounts_page_model.dart';
 export 'accounts_page_model.dart';
 
@@ -212,22 +208,22 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
     final result = await showDialog<double>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Opening Balance'),
+        title: const Text('Opening Balance'),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           autofocus: true,
-          decoration: InputDecoration(prefixText: '₹ '),
+          decoration: const InputDecoration(prefixText: '₹ '),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () =>
                 Navigator.pop(context, double.tryParse(controller.text) ?? 0),
-            child: Text('Save'),
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -263,7 +259,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
       context: context,
       isScrollControlled: true,
       backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
@@ -273,7 +269,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
           expand: false,
           builder: (context, scrollController) {
             return Padding(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: ListView(
                 controller: scrollController,
                 children: [
@@ -281,7 +277,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                     _dayFormat.format(row.date),
                     style: FlutterFlowTheme.of(context).titleLarge,
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Net ${row.profitLoss >= 0 ? 'profit' : 'loss'}: ${_currency.format(row.profitLoss.abs())}',
                     style: FlutterFlowTheme.of(context).bodyMedium.override(
@@ -291,13 +287,13 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                               : FlutterFlowTheme.of(context).error,
                         ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text('Orders (${row.dayOrders.length})',
                       style: FlutterFlowTheme.of(context).titleSmall),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   ...row.dayOrders.map((o) => Container(
-                        margin: EdgeInsets.only(bottom: 8),
-                        padding: EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: FlutterFlowTheme.of(context).primaryBackground,
                           borderRadius: BorderRadius.circular(10),
@@ -311,7 +307,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                                     .override(
                                         font: GoogleFonts.inter(
                                             fontWeight: FontWeight.w600))),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
                               'Value ${_currency.format(o.amount ?? 0)} · Collected ${_currency.format(o.advancePaid ?? 0)} · Pending ${_currency.format(((o.amount ?? 0) - (o.advancePaid ?? 0)).clamp(0, double.infinity))}',
                               style: FlutterFlowTheme.of(context)
@@ -324,7 +320,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                           ],
                         ),
                       )),
-                  Divider(height: 24),
+                  const Divider(height: 24),
                   _detailLine(context, 'Revenue', row.revenue, false),
                   _detailLine(context, 'Staff salary', row.salary, true),
                   _detailLine(
@@ -337,7 +333,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                     _detailLine(
                         context, 'Over-collected (unexplained)',
                         row.overCollected, false),
-                  Divider(height: 24),
+                  const Divider(height: 24),
                   _detailLine(context, 'Net profit/loss', row.profitLoss,
                       false,
                       bold: true),
@@ -357,7 +353,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
       bool isExpense,
       {bool bold = false}) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -421,11 +417,11 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
         body: SafeArea(
           top: true,
           child: _model.isLoading
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : _model.loadError != null
                   ? Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(24),
                         child: Text(
                           'Could not load accounts data:\n${_model.loadError}',
                           textAlign: TextAlign.center,
@@ -436,7 +432,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                   : RefreshIndicator(
                       onRefresh: _loadData,
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: ListView(
                           children: [
                             Container(
@@ -447,7 +443,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
                               child: Padding(
-                                padding: EdgeInsets.all(16.0),
+                                padding: const EdgeInsets.all(16.0),
                                 child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -471,7 +467,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                                 ),
                               ),
                             ),
-                            SizedBox(height: 12),
+                            const SizedBox(height: 12),
                             Row(
                               children: [
                                 Expanded(
@@ -480,14 +476,14 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                                         'Revenue',
                                         _model.periodRevenue,
                                         FlutterFlowTheme.of(context).primary)),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Expanded(
                                     child: _summaryChip(
                                         context,
                                         'Expenses',
                                         _model.periodExpenses,
                                         FlutterFlowTheme.of(context).error)),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Expanded(
                                     child: _summaryChip(
                                         context,
@@ -500,15 +496,15 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                                                 .error)),
                               ],
                             ),
-                            SizedBox(height: 20),
+                            const SizedBox(height: 20),
                             Text(
                               'Daily Register',
                               style: FlutterFlowTheme.of(context).titleMedium,
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             if (_model.dailyRows.isEmpty)
                               Padding(
-                                padding: EdgeInsets.symmetric(vertical: 24),
+                                padding: const EdgeInsets.symmetric(vertical: 24),
                                 child: Text(
                                   'No orders yet — the register fills in once orders have a move date.',
                                   style: FlutterFlowTheme.of(context)
@@ -523,7 +519,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                               ...(_model.dailyRows.map((row) => GestureDetector(
                                     onTap: () => _showDayDetail(row),
                                     child: Container(
-                                      margin: EdgeInsets.only(bottom: 10),
+                                      margin: const EdgeInsets.only(bottom: 10),
                                       width: double.infinity,
                                       decoration: BoxDecoration(
                                         color: FlutterFlowTheme.of(context)
@@ -532,7 +528,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                                             BorderRadius.circular(10.0),
                                       ),
                                       child: Padding(
-                                        padding: EdgeInsets.all(14.0),
+                                        padding: const EdgeInsets.all(14.0),
                                         child: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceBetween,
@@ -623,7 +619,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
   Widget _summaryChip(
       BuildContext context, String label, double value, Color color) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(10),
@@ -634,7 +630,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
               style: FlutterFlowTheme.of(context).bodySmall.override(
                   font: GoogleFonts.inter(),
                   color: FlutterFlowTheme.of(context).secondaryText)),
-          SizedBox(height: 2),
+          const SizedBox(height: 2),
           Text(
             _currency.format(value.abs()),
             style: FlutterFlowTheme.of(context)

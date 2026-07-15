@@ -10,7 +10,7 @@ class StaffAdvancesTable extends SupabaseTable<StaffAdvancesRow> {
 }
 
 class StaffAdvancesRow extends SupabaseDataRow {
-  StaffAdvancesRow(Map<String, dynamic> data) : super(data);
+  StaffAdvancesRow(super.data);
 
   @override
   SupabaseTable get table => StaffAdvancesTable();

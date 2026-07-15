@@ -5,11 +5,9 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'record_payment_page_model.dart';
 export 'record_payment_page_model.dart';
 
@@ -93,7 +91,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -104,7 +102,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -173,7 +171,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                               scrollDirection: Axis.vertical,
                               itemCount: pendingPayOrder.length,
                               separatorBuilder: (_, __) =>
-                                  SizedBox(height: 10.0),
+                                  const SizedBox(height: 10.0),
                               itemBuilder: (context, pendingPayOrderIndex) {
                                 final pendingPayOrderItem =
                                     pendingPayOrder[pendingPayOrderIndex];
@@ -185,7 +183,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.all(14.0),
+                                    padding: const EdgeInsets.all(14.0),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.max,
                                       mainAxisAlignment:
@@ -319,7 +317,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                                                 .fontStyle,
                                                       ),
                                                 ),
-                                              ].divide(SizedBox(width: 4.0)),
+                                              ].divide(const SizedBox(width: 4.0)),
                                             ),
                                             Text(
                                               pendingPayOrderItem.amount!
@@ -357,11 +355,11 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                                                 .fontStyle,
                                                       ),
                                             ),
-                                          ].divide(SizedBox(height: 4.0)),
+                                          ].divide(const SizedBox(height: 4.0)),
                                         ),
                                         Padding(
                                           padding:
-                                              EdgeInsetsDirectional.fromSTEB(
+                                              const EdgeInsetsDirectional.fromSTEB(
                                                   14.0, 8.0, 14.0, 8.0),
                                           child: FFButtonWidget(
                                             onPressed: () async {
@@ -386,9 +384,9 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                               '0ccwrohv' /* Select */,
                                             ),
                                             options: FFButtonOptions(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              iconPadding: EdgeInsetsDirectional
+                                              iconPadding: const EdgeInsetsDirectional
                                                   .fromSTEB(0.0, 0.0, 0.0, 0.0),
                                               color:
                                                   FlutterFlowTheme.of(context)
@@ -420,7 +418,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                               borderRadius: BorderRadius.circular(12.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.all(16.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.start,
@@ -677,49 +675,49 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                           FFLocalizations.of(context).getText(
                                         'wbj15dhe' /* 0.00 */,
                                       ),
-                                      enabledBorder: OutlineInputBorder(
+                                      enabledBorder: const OutlineInputBorder(
                                         borderSide: BorderSide(
                                           color: Color(0x00000000),
                                           width: 1.0,
                                         ),
-                                        borderRadius: const BorderRadius.only(
+                                        borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(4.0),
                                           topRight: Radius.circular(4.0),
                                         ),
                                       ),
-                                      focusedBorder: OutlineInputBorder(
+                                      focusedBorder: const OutlineInputBorder(
                                         borderSide: BorderSide(
                                           color: Color(0x00000000),
                                           width: 1.0,
                                         ),
-                                        borderRadius: const BorderRadius.only(
+                                        borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(4.0),
                                           topRight: Radius.circular(4.0),
                                         ),
                                       ),
-                                      errorBorder: OutlineInputBorder(
+                                      errorBorder: const OutlineInputBorder(
                                         borderSide: BorderSide(
                                           color: Color(0x00000000),
                                           width: 1.0,
                                         ),
-                                        borderRadius: const BorderRadius.only(
+                                        borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(4.0),
                                           topRight: Radius.circular(4.0),
                                         ),
                                       ),
-                                      focusedErrorBorder: OutlineInputBorder(
+                                      focusedErrorBorder: const OutlineInputBorder(
                                         borderSide: BorderSide(
                                           color: Color(0x00000000),
                                           width: 1.0,
                                         ),
-                                        borderRadius: const BorderRadius.only(
+                                        borderRadius: BorderRadius.only(
                                           topLeft: Radius.circular(4.0),
                                           topRight: Radius.circular(4.0),
                                         ),
                                       ),
                                       filled: true,
                                     ),
-                                    style: TextStyle(),
+                                    style: const TextStyle(),
                                     maxLines: null,
                                     keyboardType: TextInputType.number,
                                     validator: _model
@@ -785,7 +783,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                         FlutterFlowTheme.of(context).alternate,
                                     borderWidth: 1.0,
                                     borderRadius: 8.0,
-                                    margin: EdgeInsetsDirectional.fromSTEB(
+                                    margin: const EdgeInsetsDirectional.fromSTEB(
                                         12.0, 0.0, 12.0, 0.0),
                                     hidesUnderline: true,
                                     isOverButton: false,
@@ -795,10 +793,10 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'x9654k0w' /* Payment Status */,
                                     ),
-                                    labelTextStyle: TextStyle(),
+                                    labelTextStyle: const TextStyle(),
                                   ),
                                   Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         0.0, 14.0, 0.0, 14.0),
                                     child: FFButtonWidget(
                                       onPressed: () async {
@@ -820,7 +818,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                             orderId.isEmpty) {
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
-                                            SnackBar(
+                                            const SnackBar(
                                               content: Text(
                                                   'Select an order before saving a payment.'),
                                             ),
@@ -847,16 +845,16 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                       text: FFLocalizations.of(context).getText(
                                         'kzp3jna5' /* Save Payment */,
                                       ),
-                                      icon: Icon(
+                                      icon: const Icon(
                                         Icons.check_circle,
                                         size: 20.0,
                                       ),
                                       options: FFButtonOptions(
                                         width: double.infinity,
-                                        padding: EdgeInsetsDirectional.fromSTEB(
+                                        padding: const EdgeInsetsDirectional.fromSTEB(
                                             0.0, 0.0, 0.0, 0.0),
                                         iconPadding:
-                                            EdgeInsetsDirectional.fromSTEB(
+                                            const EdgeInsetsDirectional.fromSTEB(
                                                 0.0, 0.0, 0.0, 0.0),
                                         iconColor: FlutterFlowTheme.of(context)
                                             .primaryBackground,
@@ -871,14 +869,14 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                       ),
                                     ),
                                   ),
-                                ].divide(SizedBox(height: 14.0)),
+                                ].divide(const SizedBox(height: 14.0)),
                               ),
                             ),
                           ),
-                      ].divide(SizedBox(height: 10.0)),
+                      ].divide(const SizedBox(height: 10.0)),
                     ),
                     Container(),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

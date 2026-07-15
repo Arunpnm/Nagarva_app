@@ -3,11 +3,9 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'operations_page_model.dart';
 export 'operations_page_model.dart';
 
@@ -128,7 +126,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -139,7 +137,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -153,8 +151,8 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                       ),
                       ..._model.pendingApprovals.map((order) => Container(
                             width: double.infinity,
-                            margin: EdgeInsets.only(top: 10),
-                            padding: EdgeInsets.all(14),
+                            margin: const EdgeInsets.only(top: 10),
+                            padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color:
                                   FlutterFlowTheme.of(context).secondaryBackground,
@@ -177,7 +175,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                             font: GoogleFonts.inter(),
                                             color: FlutterFlowTheme.of(context)
                                                 .secondaryText)),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Row(
                                   children: [
                                     Expanded(
@@ -196,7 +194,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                         ),
                                       ),
                                     ),
-                                    SizedBox(width: 8),
+                                    const SizedBox(width: 8),
                                     Expanded(
                                       child: FFButtonWidget(
                                         onPressed: () => _reopenEntry(order),
@@ -221,7 +219,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                               ],
                             ),
                           )),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                     ],
                     Container(
                       width: double.infinity,
@@ -230,7 +228,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -298,7 +296,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -344,7 +342,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -444,9 +442,9 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(width: 6.0)),
+                              ].divide(const SizedBox(width: 6.0)),
                             ),
-                          ].divide(SizedBox(height: 6.0)),
+                          ].divide(const SizedBox(height: 6.0)),
                         ),
                       ),
                     ),
@@ -457,7 +455,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -503,7 +501,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -603,9 +601,9 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(width: 6.0)),
+                              ].divide(const SizedBox(width: 6.0)),
                             ),
-                          ].divide(SizedBox(height: 6.0)),
+                          ].divide(const SizedBox(height: 6.0)),
                         ),
                       ),
                     ),
@@ -616,7 +614,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -662,7 +660,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -762,9 +760,9 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(width: 6.0)),
+                              ].divide(const SizedBox(width: 6.0)),
                             ),
-                          ].divide(SizedBox(height: 6.0)),
+                          ].divide(const SizedBox(height: 6.0)),
                         ),
                       ),
                     ),
@@ -798,7 +796,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -844,7 +842,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -944,9 +942,9 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(width: 6.0)),
+                              ].divide(const SizedBox(width: 6.0)),
                             ),
-                          ].divide(SizedBox(height: 6.0)),
+                          ].divide(const SizedBox(height: 6.0)),
                         ),
                       ),
                     ),
@@ -991,7 +989,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                               scrollDirection: Axis.vertical,
                               itemCount: tripsViewListItem.length,
                               separatorBuilder: (_, __) =>
-                                  SizedBox(height: 10.0),
+                                  const SizedBox(height: 10.0),
                               itemBuilder: (context, tripsViewListItemIndex) {
                                 final tripsViewListItemItem =
                                     tripsViewListItem[tripsViewListItemIndex];
@@ -1003,7 +1001,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.all(16.0),
+                                    padding: const EdgeInsets.all(16.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
@@ -1261,7 +1259,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                                                 .fontStyle,
                                                       ),
                                             ),
-                                          ].divide(SizedBox(width: 6.0)),
+                                          ].divide(const SizedBox(width: 6.0)),
                                         ),
                                         Row(
                                           mainAxisSize: MainAxisSize.max,
@@ -1321,7 +1319,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                                                 .fontStyle,
                                                       ),
                                                 ),
-                                              ].divide(SizedBox(width: 4.0)),
+                                              ].divide(const SizedBox(width: 4.0)),
                                             ),
                                             Row(
                                               mainAxisSize: MainAxisSize.max,
@@ -1374,7 +1372,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                                                 .fontStyle,
                                                       ),
                                                 ),
-                                              ].divide(SizedBox(width: 4.0)),
+                                              ].divide(const SizedBox(width: 4.0)),
                                             ),
                                             Row(
                                               mainAxisSize: MainAxisSize.max,
@@ -1427,11 +1425,11 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                                                 .fontStyle,
                                                       ),
                                                 ),
-                                              ].divide(SizedBox(width: 4.0)),
+                                              ].divide(const SizedBox(width: 4.0)),
                                             ),
-                                          ].divide(SizedBox(width: 16.0)),
+                                          ].divide(const SizedBox(width: 16.0)),
                                         ),
-                                      ].divide(SizedBox(height: 6.0)),
+                                      ].divide(const SizedBox(height: 6.0)),
                                     ),
                                   ),
                                 );
@@ -1440,7 +1438,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                           },
                         ),
                         Padding(
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 14.0, 0.0, 14.0),
                           child: FFButtonWidget(
                             onPressed: () {
@@ -1449,15 +1447,15 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                             text: FFLocalizations.of(context).getText(
                               '4lj1w9ul' /* Log New Trip */,
                             ),
-                            icon: Icon(
+                            icon: const Icon(
                               Icons.add_road,
                               size: 20.0,
                             ),
                             options: FFButtonOptions(
                               width: double.infinity,
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 0.0, 0.0, 0.0),
-                              iconPadding: EdgeInsetsDirectional.fromSTEB(
+                              iconPadding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 0.0, 0.0, 0.0),
                               iconColor: FlutterFlowTheme.of(context)
                                   .primaryBackground,
@@ -1470,9 +1468,9 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                             ),
                           ),
                         ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

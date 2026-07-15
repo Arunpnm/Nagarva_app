@@ -9,7 +9,6 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'flutter_flow/nav/nav.dart';
 import 'app_session.dart';
 import 'index.dart';
 
@@ -33,12 +32,14 @@ void main() async {
   runApp(
     ChangeNotifierProvider.value(
       value: AppSession.instance,
-      child: MyApp(),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   // This widget is the root of your application.
   @override
   State<MyApp> createState() => _MyAppState();
@@ -100,7 +101,7 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       title: 'ArunPKRS',
       scrollBehavior: MyAppScrollBehavior(),
-      localizationsDelegates: [
+      localizationsDelegates: const [
         FFLocalizationsDelegate(),
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -137,12 +138,12 @@ class _MyAppState extends State<MyApp> {
 }
 
 class NavBarPage extends StatefulWidget {
-  NavBarPage({
-    Key? key,
+  const NavBarPage({
+    super.key,
     this.initialPage,
     this.page,
     this.disableResizeToAvoidBottomInset = false,
-  }) : super(key: key);
+  });
 
   final String? initialPage;
   final Widget? page;
@@ -167,15 +168,15 @@ class _NavBarPageState extends State<NavBarPage> {
   @override
   Widget build(BuildContext context) {
     final tabs = {
-      'HomePage': HomePageWidget(),
-      'OrdersPage': OrdersPageWidget(),
-      'LeadsPage': LeadsPageWidget(),
-      'OperationsPage': OperationsPageWidget(),
-      'PaymentsPage': PaymentsPageWidget(),
-      'ExpensePage': ExpensePageWidget(),
-      'SalaryPage': SalaryPageWidget(),
-      'FleetPage': FleetPageWidget(),
-      'SettingsPage': SettingsPageWidget(),
+      'HomePage': const HomePageWidget(),
+      'OrdersPage': const OrdersPageWidget(),
+      'LeadsPage': const LeadsPageWidget(),
+      'OperationsPage': const OperationsPageWidget(),
+      'PaymentsPage': const PaymentsPageWidget(),
+      'ExpensePage': const ExpensePageWidget(),
+      'SalaryPage': const SalaryPageWidget(),
+      'FleetPage': const FleetPageWidget(),
+      'SettingsPage': const SettingsPageWidget(),
     };
     final currentIndex = tabs.keys.toList().indexOf(_currentPageName);
 
@@ -194,7 +195,7 @@ class _NavBarPageState extends State<NavBarPage> {
         showSelectedLabels: false,
         showUnselectedLabels: false,
         type: BottomNavigationBarType.fixed,
-        items: <BottomNavigationBarItem>[
+        items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(
               Icons.dashboard,

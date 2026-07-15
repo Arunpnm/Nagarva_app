@@ -1,11 +1,8 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'quick_entry_page_model.dart';
 export 'quick_entry_page_model.dart';
 
@@ -69,7 +66,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -80,7 +77,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsetsDirectional.fromSTEB(20.0, 24.0, 20.0, 24.0),
+              padding: const EdgeInsetsDirectional.fromSTEB(20.0, 24.0, 20.0, 24.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -130,7 +127,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                               borderRadius: BorderRadius.circular(14.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   12.0, 20.0, 12.0, 20.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -173,7 +170,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 8.0)),
+                                ].divide(const SizedBox(height: 8.0)),
                               ),
                             ),
                           ),
@@ -197,7 +194,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                               borderRadius: BorderRadius.circular(14.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   12.0, 20.0, 12.0, 20.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -240,13 +237,13 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 8.0)),
+                                ].divide(const SizedBox(height: 8.0)),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ].divide(SizedBox(width: 12.0)),
+                    ].divide(const SizedBox(width: 12.0)),
                   ),
                   Row(
                     mainAxisSize: MainAxisSize.max,
@@ -272,7 +269,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                               borderRadius: BorderRadius.circular(14.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   12.0, 20.0, 12.0, 20.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -315,7 +312,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 8.0)),
+                                ].divide(const SizedBox(height: 8.0)),
                               ),
                             ),
                           ),
@@ -339,7 +336,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                               borderRadius: BorderRadius.circular(14.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   12.0, 20.0, 12.0, 20.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -382,15 +379,15 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 8.0)),
+                                ].divide(const SizedBox(height: 8.0)),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ].divide(SizedBox(width: 12.0)),
+                    ].divide(const SizedBox(width: 12.0)),
                   ),
-                ].divide(SizedBox(height: 20.0)),
+                ].divide(const SizedBox(height: 20.0)),
               ),
             ),
           ),

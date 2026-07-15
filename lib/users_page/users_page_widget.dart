@@ -3,11 +3,9 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'users_page_model.dart';
 export 'users_page_model.dart';
 
@@ -77,7 +75,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
             borderRadius: BorderRadius.circular(20.0),
           ),
           child: Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(0.0, 10.0, 0.0, 10.0),
+            padding: const EdgeInsetsDirectional.fromSTEB(0.0, 10.0, 0.0, 10.0),
             child: Text(
               label,
               textAlign: TextAlign.center,
@@ -104,7 +102,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
         borderRadius: BorderRadius.circular(12.0),
       ),
       child: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Row(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -121,7 +119,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                     borderRadius: BorderRadius.circular(22.0),
                   ),
                   child: Padding(
-                    padding: EdgeInsets.all(10.0),
+                    padding: const EdgeInsets.all(10.0),
                     child: Icon(
                       Icons.person,
                       color: FlutterFlowTheme.of(context).primary,
@@ -158,9 +156,9 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                             letterSpacing: 0.0,
                           ),
                     ),
-                  ].divide(SizedBox(height: 3.0)),
+                  ].divide(const SizedBox(height: 3.0)),
                 ),
-              ].divide(SizedBox(width: 12.0)),
+              ].divide(const SizedBox(width: 12.0)),
             ),
             Container(
               decoration: BoxDecoration(
@@ -168,7 +166,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                 borderRadius: BorderRadius.circular(8.0),
               ),
               child: Padding(
-                padding: EdgeInsetsDirectional.fromSTEB(8.0, 3.0, 8.0, 3.0),
+                padding: const EdgeInsetsDirectional.fromSTEB(8.0, 3.0, 8.0, 3.0),
                 child: Text(
                   active ? 'Active' : 'Inactive',
                   style: FlutterFlowTheme.of(context).labelSmall.override(
@@ -218,7 +216,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -229,7 +227,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -238,7 +236,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                   children: [
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
                       child: FFButtonWidget(
                         onPressed: () {
                           // Adding staff still needs a real form (Phase 2
@@ -246,7 +244,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                           // salary/PF fields that need proper input, not a
                           // one-line prompt. Flagging instead of faking it.
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
+                            const SnackBar(
                               content: Text(
                                 'Add User form not built yet — add staff '
                                 'rows directly in Supabase for now.',
@@ -258,15 +256,15 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                         text: FFLocalizations.of(context).getText(
                           'fkpmslnc' /* Add New User */,
                         ),
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.person_add,
                           size: 20.0,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
                           iconColor:
                               FlutterFlowTheme.of(context).primaryBackground,
@@ -288,7 +286,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                         _roleChip(context, 'Admin', 'admin'),
                         _roleChip(context, 'Driver', 'driver'),
                         _roleChip(context, 'Staff', 'staff'),
-                      ].divide(SizedBox(width: 8.0)),
+                      ].divide(const SizedBox(width: 8.0)),
                     ),
                     Text(
                       'Active Users (${activeStaff.length})',
@@ -332,7 +330,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                       )
                     else
                       ...inactiveStaff.map((s) => _staffCard(context, s)),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

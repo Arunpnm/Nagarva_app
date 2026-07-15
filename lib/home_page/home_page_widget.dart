@@ -3,13 +3,11 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'home_page_model.dart';
 export 'home_page_model.dart';
 
@@ -104,7 +102,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
           onPressed: () async {
             context.pushNamed(QuickEntryPageWidget.routeName);
           },
-          backgroundColor: Color(0xFFFFA000),
+          backgroundColor: const Color(0xFFFFA000),
         ),
         drawer: Drawer(
           child: Column(
@@ -124,14 +122,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.dashboard,
                     ),
                     title: Text(
                       FFLocalizations.of(context).getText(
                         '6jm5gmle' /* Dashboard */,
                       ),
-                      style: TextStyle(),
+                      style: const TextStyle(),
                     ),
                     dense: false,
                   ),
@@ -153,14 +151,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.assignment,
                     ),
                     title: Text(
                       FFLocalizations.of(context).getText(
                         '7zw0hsiv' /* Orders */,
                       ),
-                      style: TextStyle(),
+                      style: const TextStyle(),
                     ),
                     dense: false,
                   ),
@@ -182,14 +180,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.people,
                     ),
                     title: Text(
                       FFLocalizations.of(context).getText(
                         '00uuhim0' /* Leads */,
                       ),
-                      style: TextStyle(),
+                      style: const TextStyle(),
                     ),
                     dense: false,
                   ),
@@ -211,14 +209,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.local_shipping,
                     ),
                     title: Text(
                       FFLocalizations.of(context).getText(
                         'ma1gh78n' /* Operations */,
                       ),
-                      style: TextStyle(),
+                      style: const TextStyle(),
                     ),
                     dense: false,
                   ),
@@ -240,14 +238,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.payments,
                     ),
                     title: Text(
                       FFLocalizations.of(context).getText(
                         'hvlovaib' /* Payments */,
                       ),
-                      style: TextStyle(),
+                      style: const TextStyle(),
                     ),
                     dense: false,
                   ),
@@ -269,14 +267,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.receipt_long,
                     ),
                     title: Text(
                       FFLocalizations.of(context).getText(
                         'vykd2ud6' /* Expenses */,
                       ),
-                      style: TextStyle(),
+                      style: const TextStyle(),
                     ),
                     dense: false,
                   ),
@@ -298,14 +296,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.badge,
                     ),
                     title: Text(
                       FFLocalizations.of(context).getText(
                         'c0k3ad1n' /* Salary */,
                       ),
-                      style: TextStyle(),
+                      style: const TextStyle(),
                     ),
                     dense: false,
                   ),
@@ -327,14 +325,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.settings,
                     ),
                     title: Text(
                       FFLocalizations.of(context).getText(
                         '4hnz864d' /* Settings */,
                       ),
-                      style: TextStyle(),
+                      style: const TextStyle(),
                     ),
                     dense: false,
                   ),
@@ -354,14 +352,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 child: Material(
                   color: Colors.transparent,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.logout,
                     ),
                     title: Text(
                       FFLocalizations.of(context).getText(
                         'qnj2ddkf' /* Logout */,
                       ),
-                      style: TextStyle(),
+                      style: const TextStyle(),
                     ),
                     dense: false,
                   ),
@@ -389,7 +387,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -400,7 +398,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(20.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -414,7 +412,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                       children: [
                         Container(
                           child: Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
                                 16.0, 0.0, 16.0, 0.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -473,13 +471,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 4.0)),
+                              ].divide(const SizedBox(height: 4.0)),
                             ),
                           ),
                         ),
                         Container(
                           child: Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
                                 16.0, 0.0, 16.0, 0.0),
                             child: Builder(
                               builder: (context) {
@@ -580,7 +578,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .circular(12.0),
                                                       ),
                                                       child: Padding(
-                                                        padding: EdgeInsets.all(
+                                                        padding: const EdgeInsets.all(
                                                             12.0),
                                                         child: Column(
                                                           mainAxisSize:
@@ -666,7 +664,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                         .fontStyle,
                                                                   ),
                                                             ),
-                                                          ].divide(SizedBox(
+                                                          ].divide(const SizedBox(
                                                               height: 6.0)),
                                                         ),
                                                       ),
@@ -697,7 +695,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .circular(12.0),
                                                       ),
                                                       child: Padding(
-                                                        padding: EdgeInsets.all(
+                                                        padding: const EdgeInsets.all(
                                                             12.0),
                                                         child: Column(
                                                           mainAxisSize:
@@ -783,7 +781,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                         .fontStyle,
                                                                   ),
                                                             ),
-                                                          ].divide(SizedBox(
+                                                          ].divide(const SizedBox(
                                                               height: 6.0)),
                                                         ),
                                                       ),
@@ -814,7 +812,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .circular(12.0),
                                                       ),
                                                       child: Padding(
-                                                        padding: EdgeInsets.all(
+                                                        padding: const EdgeInsets.all(
                                                             12.0),
                                                         child: Column(
                                                           mainAxisSize:
@@ -900,7 +898,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                         .fontStyle,
                                                                   ),
                                                             ),
-                                                          ].divide(SizedBox(
+                                                          ].divide(const SizedBox(
                                                               height: 6.0)),
                                                         ),
                                                       ),
@@ -931,7 +929,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .circular(12.0),
                                                       ),
                                                       child: Padding(
-                                                        padding: EdgeInsets.all(
+                                                        padding: const EdgeInsets.all(
                                                             12.0),
                                                         child: Column(
                                                           mainAxisSize:
@@ -1017,7 +1015,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                         .fontStyle,
                                                                   ),
                                                             ),
-                                                          ].divide(SizedBox(
+                                                          ].divide(const SizedBox(
                                                               height: 6.0)),
                                                         ),
                                                       ),
@@ -1048,7 +1046,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .circular(12.0),
                                                       ),
                                                       child: Padding(
-                                                        padding: EdgeInsets.all(
+                                                        padding: const EdgeInsets.all(
                                                             12.0),
                                                         child: Column(
                                                           mainAxisSize:
@@ -1134,16 +1132,16 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                         .fontStyle,
                                                                   ),
                                                             ),
-                                                          ].divide(SizedBox(
+                                                          ].divide(const SizedBox(
                                                               height: 6.0)),
                                                         ),
                                                       ),
                                                     ),
                                                   ),
-                                                ].divide(SizedBox(width: 10.0)),
+                                                ].divide(const SizedBox(width: 10.0)),
                                               ),
                                             ),
-                                          ].divide(SizedBox(height: 8.0)),
+                                          ].divide(const SizedBox(height: 8.0)),
                                         ),
                                         Column(
                                           mainAxisSize: MainAxisSize.min,
@@ -1185,7 +1183,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .circular(12.0),
                                                       ),
                                                       child: Padding(
-                                                        padding: EdgeInsets.all(
+                                                        padding: const EdgeInsets.all(
                                                             14.0),
                                                         child: Column(
                                                           mainAxisSize:
@@ -1286,7 +1284,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                         .fontStyle,
                                                                   ),
                                                             ),
-                                                          ].divide(SizedBox(
+                                                          ].divide(const SizedBox(
                                                               height: 8.0)),
                                                         ),
                                                       ),
@@ -1319,7 +1317,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .circular(12.0),
                                                       ),
                                                       child: Padding(
-                                                        padding: EdgeInsets.all(
+                                                        padding: const EdgeInsets.all(
                                                             14.0),
                                                         child: Column(
                                                           mainAxisSize:
@@ -1421,14 +1419,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                         .fontStyle,
                                                                   ),
                                                             ),
-                                                          ].divide(SizedBox(
+                                                          ].divide(const SizedBox(
                                                               height: 8.0)),
                                                         ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                              ].divide(SizedBox(width: 10.0)),
+                                              ].divide(const SizedBox(width: 10.0)),
                                             ),
                                             Row(
                                               mainAxisSize: MainAxisSize.max,
@@ -1463,7 +1461,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .circular(12.0),
                                                       ),
                                                       child: Padding(
-                                                        padding: EdgeInsets.all(
+                                                        padding: const EdgeInsets.all(
                                                             14.0),
                                                         child: Column(
                                                           mainAxisSize:
@@ -1565,7 +1563,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                         .fontStyle,
                                                                   ),
                                                             ),
-                                                          ].divide(SizedBox(
+                                                          ].divide(const SizedBox(
                                                               height: 8.0)),
                                                         ),
                                                       ),
@@ -1598,7 +1596,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .circular(12.0),
                                                       ),
                                                       child: Padding(
-                                                        padding: EdgeInsets.all(
+                                                        padding: const EdgeInsets.all(
                                                             14.0),
                                                         child: Column(
                                                           mainAxisSize:
@@ -1700,18 +1698,18 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                         .fontStyle,
                                                                   ),
                                                             ),
-                                                          ].divide(SizedBox(
+                                                          ].divide(const SizedBox(
                                                               height: 8.0)),
                                                         ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                              ].divide(SizedBox(width: 10.0)),
+                                              ].divide(const SizedBox(width: 10.0)),
                                             ),
-                                          ].divide(SizedBox(height: 10.0)),
+                                          ].divide(const SizedBox(height: 10.0)),
                                         ),
-                                      ].divide(SizedBox(height: 16.0)),
+                                      ].divide(const SizedBox(height: 16.0)),
                                     );
                                   },
                                 );
@@ -1720,7 +1718,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           ),
                         ),
                         Padding(
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               16.0, 0.0, 16.0, 0.0),
                           child: Container(
                             child: Container(
@@ -1730,7 +1728,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
                               child: Padding(
-                                padding: EdgeInsets.all(16.0),
+                                padding: const EdgeInsets.all(16.0),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.start,
@@ -1786,16 +1784,16 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                               .getText(
                                             'obpyg706' /* Edit */,
                                           ),
-                                          icon: Icon(
+                                          icon: const Icon(
                                             Icons.edit,
                                             size: 20.0,
                                           ),
                                           options: FFButtonOptions(
                                             padding:
-                                                EdgeInsetsDirectional.fromSTEB(
+                                                const EdgeInsetsDirectional.fromSTEB(
                                                     0.0, 0.0, 0.0, 0.0),
                                             iconPadding:
-                                                EdgeInsetsDirectional.fromSTEB(
+                                                const EdgeInsetsDirectional.fromSTEB(
                                                     0.0, 0.0, 0.0, 0.0),
                                             iconColor:
                                                 FlutterFlowTheme.of(context)
@@ -1906,7 +1904,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 .fontStyle,
                                                       ),
                                             ),
-                                          ].divide(SizedBox(height: 2.0)),
+                                          ].divide(const SizedBox(height: 2.0)),
                                         ),
                                       ],
                                     ),
@@ -1934,13 +1932,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                     '00jbmaqj' /* e.g. 200000 */,
                                                   ),
                                                   enabledBorder:
-                                                      OutlineInputBorder(
+                                                      const OutlineInputBorder(
                                                     borderSide: BorderSide(
                                                       color: Color(0x00000000),
                                                       width: 1.0,
                                                     ),
                                                     borderRadius:
-                                                        const BorderRadius.only(
+                                                        BorderRadius.only(
                                                       topLeft:
                                                           Radius.circular(4.0),
                                                       topRight:
@@ -1948,13 +1946,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                     ),
                                                   ),
                                                   focusedBorder:
-                                                      OutlineInputBorder(
+                                                      const OutlineInputBorder(
                                                     borderSide: BorderSide(
                                                       color: Color(0x00000000),
                                                       width: 1.0,
                                                     ),
                                                     borderRadius:
-                                                        const BorderRadius.only(
+                                                        BorderRadius.only(
                                                       topLeft:
                                                           Radius.circular(4.0),
                                                       topRight:
@@ -1962,13 +1960,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                     ),
                                                   ),
                                                   errorBorder:
-                                                      OutlineInputBorder(
+                                                      const OutlineInputBorder(
                                                     borderSide: BorderSide(
                                                       color: Color(0x00000000),
                                                       width: 1.0,
                                                     ),
                                                     borderRadius:
-                                                        const BorderRadius.only(
+                                                        BorderRadius.only(
                                                       topLeft:
                                                           Radius.circular(4.0),
                                                       topRight:
@@ -1976,13 +1974,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                     ),
                                                   ),
                                                   focusedErrorBorder:
-                                                      OutlineInputBorder(
+                                                      const OutlineInputBorder(
                                                     borderSide: BorderSide(
                                                       color: Color(0x00000000),
                                                       width: 1.0,
                                                     ),
                                                     borderRadius:
-                                                        const BorderRadius.only(
+                                                        BorderRadius.only(
                                                       topLeft:
                                                           Radius.circular(4.0),
                                                       topRight:
@@ -1991,7 +1989,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                   ),
                                                   filled: true,
                                                 ),
-                                                style: TextStyle(),
+                                                style: const TextStyle(),
                                                 maxLines: null,
                                                 validator: _model
                                                     .targetInputFieldTextControllerValidator
@@ -2013,27 +2011,27 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                 'n6etw2aj' /* Save */,
                                               ),
                                               options: FFButtonOptions(
-                                                padding: EdgeInsetsDirectional
+                                                padding: const EdgeInsetsDirectional
                                                     .fromSTEB(
                                                         0.0, 0.0, 0.0, 0.0),
                                                 iconPadding:
-                                                    EdgeInsetsDirectional
+                                                    const EdgeInsetsDirectional
                                                         .fromSTEB(
                                                             0.0, 0.0, 0.0, 0.0),
                                                 color:
                                                     FlutterFlowTheme.of(context)
                                                         .primary,
-                                                textStyle: TextStyle(
+                                                textStyle: const TextStyle(
                                                   color: Colors.white,
                                                 ),
                                                 borderRadius:
                                                     BorderRadius.circular(8.0),
                                               ),
                                             ),
-                                          ].divide(SizedBox(width: 8.0)),
+                                          ].divide(const SizedBox(width: 8.0)),
                                         ),
                                       ),
-                                  ].divide(SizedBox(height: 12.0)),
+                                  ].divide(const SizedBox(height: 12.0)),
                                 ),
                               ),
                             ),
@@ -2041,7 +2039,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                         ),
                         Container(
                           child: Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
                                 16.0, 0.0, 16.0, 0.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -2093,10 +2091,10 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                         'nabcn7ke' /* Calendar -> */,
                                       ),
                                       options: FFButtonOptions(
-                                        padding: EdgeInsetsDirectional.fromSTEB(
+                                        padding: const EdgeInsetsDirectional.fromSTEB(
                                             0.0, 0.0, 0.0, 0.0),
                                         iconPadding:
-                                            EdgeInsetsDirectional.fromSTEB(
+                                            const EdgeInsetsDirectional.fromSTEB(
                                                 0.0, 0.0, 0.0, 0.0),
                                         color: Colors.transparent,
                                         textStyle: TextStyle(
@@ -2126,7 +2124,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                       scrollDirection: Axis.vertical,
                                       itemCount: upcomingOrder.length,
                                       separatorBuilder: (_, __) =>
-                                          SizedBox(height: 8.0),
+                                          const SizedBox(height: 8.0),
                                       itemBuilder:
                                           (context, upcomingOrderIndex) {
                                         final upcomingOrderItem =
@@ -2139,7 +2137,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                 BorderRadius.circular(10.0),
                                           ),
                                           child: Padding(
-                                            padding: EdgeInsets.all(12.0),
+                                            padding: const EdgeInsets.all(12.0),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.max,
                                               mainAxisAlignment:
@@ -2235,7 +2233,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 ),
                                                       ),
                                                     ].divide(
-                                                        SizedBox(height: 2.0)),
+                                                        const SizedBox(height: 2.0)),
                                                   ),
                                                 ),
                                                 Column(
@@ -2294,7 +2292,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                       ),
                                                       child: Padding(
                                                         padding:
-                                                            EdgeInsetsDirectional
+                                                            const EdgeInsetsDirectional
                                                                 .fromSTEB(
                                                                     8.0,
                                                                     2.0,
@@ -2337,7 +2335,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                       ),
                                                     ),
                                                   ].divide(
-                                                      SizedBox(height: 4.0)),
+                                                      const SizedBox(height: 4.0)),
                                                 ),
                                               ],
                                             ),
@@ -2347,13 +2345,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                     );
                                   },
                                 ),
-                              ].divide(SizedBox(height: 10.0)),
+                              ].divide(const SizedBox(height: 10.0)),
                             ),
                           ),
                         ),
                         Container(
                           child: Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
                                 16.0, 0.0, 16.0, 0.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -2405,10 +2403,10 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                         '6rjhf88o' /* View All -> */,
                                       ),
                                       options: FFButtonOptions(
-                                        padding: EdgeInsetsDirectional.fromSTEB(
+                                        padding: const EdgeInsetsDirectional.fromSTEB(
                                             0.0, 0.0, 0.0, 0.0),
                                         iconPadding:
-                                            EdgeInsetsDirectional.fromSTEB(
+                                            const EdgeInsetsDirectional.fromSTEB(
                                                 0.0, 0.0, 0.0, 0.0),
                                         color: Colors.transparent,
                                         textStyle: TextStyle(
@@ -2437,7 +2435,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                       scrollDirection: Axis.vertical,
                                       itemCount: hotLead.length,
                                       separatorBuilder: (_, __) =>
-                                          SizedBox(height: 8.0),
+                                          const SizedBox(height: 8.0),
                                       itemBuilder: (context, hotLeadIndex) {
                                         final hotLeadItem =
                                             hotLead[hotLeadIndex];
@@ -2449,7 +2447,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                 BorderRadius.circular(10.0),
                                           ),
                                           child: Padding(
-                                            padding: EdgeInsets.all(12.0),
+                                            padding: const EdgeInsets.all(12.0),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.max,
                                               mainAxisAlignment:
@@ -2540,7 +2538,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                                 ),
                                                       ),
                                                     ].divide(
-                                                        SizedBox(height: 2.0)),
+                                                        const SizedBox(height: 2.0)),
                                                   ),
                                                 ),
                                                 Container(
@@ -2554,7 +2552,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                   ),
                                                   child: Padding(
                                                     padding:
-                                                        EdgeInsetsDirectional
+                                                        const EdgeInsetsDirectional
                                                             .fromSTEB(8.0, 2.0,
                                                                 8.0, 2.0),
                                                     child: Text(
@@ -2601,13 +2599,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                     );
                                   },
                                 ),
-                              ].divide(SizedBox(height: 10.0)),
+                              ].divide(const SizedBox(height: 10.0)),
                             ),
                           ),
                         ),
                         Container(
                           child: Padding(
-                            padding: EdgeInsetsDirectional.fromSTEB(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
                                 16.0, 0.0, 16.0, 0.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -2654,7 +2652,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                       scrollDirection: Axis.vertical,
                                       itemCount: branchStat.length,
                                       separatorBuilder: (_, __) =>
-                                          SizedBox(height: 8.0),
+                                          const SizedBox(height: 8.0),
                                       itemBuilder: (context, branchStatIndex) {
                                         final branchStatItem =
                                             branchStat[branchStatIndex];
@@ -2666,7 +2664,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                 BorderRadius.circular(10.0),
                                           ),
                                           child: Padding(
-                                            padding: EdgeInsets.all(12.0),
+                                            padding: const EdgeInsets.all(12.0),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.max,
                                               mainAxisAlignment:
@@ -2753,7 +2751,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                               ),
                                                     ),
                                                   ].divide(
-                                                      SizedBox(height: 4.0)),
+                                                      const SizedBox(height: 4.0)),
                                                 ),
                                                 Column(
                                                   mainAxisSize:
@@ -2837,7 +2835,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                               ),
                                                     ),
                                                   ].divide(
-                                                      SizedBox(height: 4.0)),
+                                                      const SizedBox(height: 4.0)),
                                                 ),
                                               ],
                                             ),
@@ -2847,16 +2845,16 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                     );
                                   },
                                 ),
-                              ].divide(SizedBox(height: 10.0)),
+                              ].divide(const SizedBox(height: 10.0)),
                             ),
                           ),
                         ),
                         Container(
                           height: 100.0,
                         ),
-                      ].divide(SizedBox(height: 20.0)),
+                      ].divide(const SizedBox(height: 20.0)),
                     ),
-                  ].divide(SizedBox(height: 24.0)),
+                  ].divide(const SizedBox(height: 24.0)),
                 ),
               ),
             ),

@@ -9,7 +9,7 @@ class StaffTable extends SupabaseTable<StaffRow> {
 }
 
 class StaffRow extends SupabaseDataRow {
-  StaffRow(Map<String, dynamic> data) : super(data);
+  StaffRow(super.data);
 
   @override
   SupabaseTable get table => StaffTable();
@@ -38,8 +38,8 @@ class StaffRow extends SupabaseDataRow {
   String? get pin => getField<String>('pin');
   set pin(String? value) => setField<String>('pin', value);
 
-  dynamic? get permissions => getField<dynamic>('permissions');
-  set permissions(dynamic? value) => setField<dynamic>('permissions', value);
+  dynamic get permissions => getField<dynamic>('permissions');
+  set permissions(dynamic value) => setField<dynamic>('permissions', value);
 
   bool? get active => getField<bool>('active');
   set active(bool? value) => setField<bool>('active', value);

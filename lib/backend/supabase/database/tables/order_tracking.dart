@@ -10,7 +10,7 @@ class OrderTrackingTable extends SupabaseTable<OrderTrackingRow> {
 }
 
 class OrderTrackingRow extends SupabaseDataRow {
-  OrderTrackingRow(Map<String, dynamic> data) : super(data);
+  OrderTrackingRow(super.data);
 
   @override
   SupabaseTable get table => OrderTrackingTable();

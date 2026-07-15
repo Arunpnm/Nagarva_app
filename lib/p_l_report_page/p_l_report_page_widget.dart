@@ -2,13 +2,9 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'p_l_report_page_model.dart';
 export 'p_l_report_page_model.dart';
 
@@ -209,11 +205,11 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
         body: SafeArea(
           top: true,
           child: _model.isLoading
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : _model.loadError != null
                   ? Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(24),
                         child: Text('Could not load report:\n${_model.loadError}',
                             textAlign: TextAlign.center),
                       ),
@@ -221,17 +217,17 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                   : RefreshIndicator(
                       onRefresh: _loadData,
                       child: ListView(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         children: [
                           _periodSelector(context),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Row(
                             children: [
                               Expanded(
                                   child: _statCard(context, Icons.trending_up,
                                       'Revenue', _model.revenue,
                                       FlutterFlowTheme.of(context).primary)),
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
                               Expanded(
                                   child: _statCard(
                                       context,
@@ -244,7 +240,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                                       FlutterFlowTheme.of(context).error)),
                             ],
                           ),
-                          SizedBox(height: 12),
+                          const SizedBox(height: 12),
                           Row(
                             children: [
                               Expanded(
@@ -258,23 +254,23 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                                               .primary
                                           : FlutterFlowTheme.of(context)
                                               .error)),
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
                               Expanded(
                                   child: _marginCard(context)),
                             ],
                           ),
-                          SizedBox(height: 20),
+                          const SizedBox(height: 20),
                           Text('Branch P&L',
                               style: FlutterFlowTheme.of(context).titleMedium),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           ..._buildBranchRows(context),
-                          SizedBox(height: 20),
+                          const SizedBox(height: 20),
                           Text('Lead Source Conversion',
                               style: FlutterFlowTheme.of(context).titleMedium),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           if (_model.leadSources.isEmpty)
                             Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Text('No leads in this period.',
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -286,10 +282,10 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                           else
                             ..._model.leadSources
                                 .map((s) => _leadSourceRow(context, s)),
-                          SizedBox(height: 20),
+                          const SizedBox(height: 20),
                           Text('GST Summary (5%, approx.)',
                               style: FlutterFlowTheme.of(context).titleMedium),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           _gstSummary(context),
                         ],
                       ),
@@ -335,12 +331,12 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
         borderRadius: BorderRadius.circular(12.0),
       ),
       child: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(icon, color: color, size: 22.0),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(_currency.format(value.abs()),
                 style: FlutterFlowTheme.of(context).headlineSmall.override(
                     font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
@@ -363,13 +359,13 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
         borderRadius: BorderRadius.circular(12.0),
       ),
       child: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(Icons.percent, color: FlutterFlowTheme.of(context).primary,
                 size: 22.0),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text('${_model.margin.toStringAsFixed(1)}%',
                 style: FlutterFlowTheme.of(context).headlineSmall.override(
                     font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
@@ -394,8 +390,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
     return _model.branchPL.map((b) {
       final double fraction = (b.revenue / maxRevenue).clamp(0.0, 1.0).toDouble();
       return Container(
-        margin: EdgeInsets.only(bottom: 10),
-        padding: EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: FlutterFlowTheme.of(context).secondaryBackground,
           borderRadius: BorderRadius.circular(10),
@@ -421,7 +417,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
@@ -432,7 +428,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                     FlutterFlowTheme.of(context).primary),
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text('Rev ${_currency.format(b.revenue)}',
                 style: FlutterFlowTheme.of(context).bodySmall.override(
                     font: GoogleFonts.inter(),
@@ -445,8 +441,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
 
   Widget _leadSourceRow(BuildContext context, LeadSourceStat s) {
     return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(10),
@@ -469,7 +465,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
   Widget _gstSummary(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(12),
@@ -479,7 +475,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
           _gstRow(context, 'Taxable Value', _model.gstTaxable),
           _gstRow(context, 'CGST (2.5%)', _model.gstHalf),
           _gstRow(context, 'SGST (2.5%)', _model.gstHalf),
-          Divider(),
+          const Divider(),
           _gstRow(context, 'Total GST', _model.gstTotal, bold: true),
         ],
       ),
@@ -489,7 +485,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
   Widget _gstRow(BuildContext context, String label, double value,
       {bool bold = false}) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

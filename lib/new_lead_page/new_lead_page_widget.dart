@@ -5,13 +5,10 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
-import 'dart:ui';
 import '/index.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'new_lead_page_model.dart';
 export 'new_lead_page_model.dart';
 
@@ -150,7 +147,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -161,7 +158,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -182,7 +179,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                             borderRadius: BorderRadius.circular(16.0),
                           ),
                           child: Padding(
-                            padding: EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(20.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.start,
@@ -230,49 +227,49 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       '51of1xk6' /* Full name */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ldCustomerFieldTextControllerValidator
@@ -291,49 +288,49 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       '9hfe6x4j' /* +91 XXXXX XXXXX */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   keyboardType: TextInputType.number,
                                   validator: _model
@@ -353,55 +350,55 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'giua4r66' /* email@example.com */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ldEmailFieldTextControllerValidator
                                       .asValidator(context),
                                 ),
-                              ].divide(SizedBox(height: 14.0)),
+                              ].divide(const SizedBox(height: 14.0)),
                             ),
                           ),
                         ),
@@ -413,7 +410,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                             borderRadius: BorderRadius.circular(16.0),
                           ),
                           child: Padding(
-                            padding: EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(20.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.start,
@@ -461,49 +458,49 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       '4him4871' /* Origin city */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ldFromCityFieldTextControllerValidator
@@ -523,49 +520,49 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'kzelw06s' /* Destination city */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ldToCityFieldTextControllerValidator
@@ -579,7 +576,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                     borderRadius: BorderRadius.circular(8.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         14.0, 12.0, 14.0, 12.0),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.max,
@@ -714,15 +711,15 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                       ),
                                                 ),
                                               ),
-                                          ].divide(SizedBox(height: 2.0)),
+                                          ].divide(const SizedBox(height: 2.0)),
                                         ),
                                         Padding(
                                           padding:
-                                              EdgeInsetsDirectional.fromSTEB(
+                                              const EdgeInsetsDirectional.fromSTEB(
                                                   12.0, 6.0, 12.0, 6.0),
                                           child: FFButtonWidget(
                                             onPressed: () async {
-                                              final _datePickedDate =
+                                              final datePickedDate =
                                                   await showDatePicker(
                                                 context: context,
                                                 initialDate:
@@ -734,32 +731,32 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                     context,
                                                     child!,
                                                     headerBackgroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     headerForegroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     headerTextStyle:
-                                                        TextStyle(),
+                                                        const TextStyle(),
                                                     pickerBackgroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     pickerForegroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     selectedDateTimeBackgroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     selectedDateTimeForegroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     actionButtonForegroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     iconSize: 24,
                                                   );
                                                 },
                                               );
 
-                                              if (_datePickedDate != null) {
+                                              if (datePickedDate != null) {
                                                 safeSetState(() {
                                                   _model.datePicked = DateTime(
-                                                    _datePickedDate.year,
-                                                    _datePickedDate.month,
-                                                    _datePickedDate.day,
+                                                    datePickedDate.year,
+                                                    datePickedDate.month,
+                                                    datePickedDate.day,
                                                   );
                                                 });
                                               } else if (_model.datePicked !=
@@ -779,14 +776,14 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                 .getText(
                                               'ot7t0qf9' /* Pick Date */,
                                             ),
-                                            icon: Icon(
+                                            icon: const Icon(
                                               Icons.calendar_today,
                                               size: 20.0,
                                             ),
                                             options: FFButtonOptions(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              iconPadding: EdgeInsetsDirectional
+                                              iconPadding: const EdgeInsetsDirectional
                                                   .fromSTEB(0.0, 0.0, 0.0, 0.0),
                                               iconColor:
                                                   FlutterFlowTheme.of(context)
@@ -883,7 +880,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       FlutterFlowTheme.of(context).alternate,
                                   borderWidth: 1.0,
                                   borderRadius: 8.0,
-                                  margin: EdgeInsetsDirectional.fromSTEB(
+                                  margin: const EdgeInsetsDirectional.fromSTEB(
                                       12.0, 0.0, 12.0, 0.0),
                                   hidesUnderline: true,
                                   isOverButton: false,
@@ -893,9 +890,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       FFLocalizations.of(context).getText(
                                     '1w25o4fm' /* Service * */,
                                   ),
-                                  labelTextStyle: TextStyle(),
+                                  labelTextStyle: const TextStyle(),
                                 ),
-                              ].divide(SizedBox(height: 14.0)),
+                              ].divide(const SizedBox(height: 14.0)),
                             ),
                           ),
                         ),
@@ -907,7 +904,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                             borderRadius: BorderRadius.circular(16.0),
                           ),
                           child: Padding(
-                            padding: EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(20.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.start,
@@ -1012,7 +1009,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       FlutterFlowTheme.of(context).alternate,
                                   borderWidth: 1.0,
                                   borderRadius: 8.0,
-                                  margin: EdgeInsetsDirectional.fromSTEB(
+                                  margin: const EdgeInsetsDirectional.fromSTEB(
                                       12.0, 0.0, 12.0, 0.0),
                                   hidesUnderline: true,
                                   isOverButton: false,
@@ -1022,7 +1019,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       FFLocalizations.of(context).getText(
                                     '2px3tiys' /* Status * */,
                                   ),
-                                  labelTextStyle: TextStyle(),
+                                  labelTextStyle: const TextStyle(),
                                 ),
                                 FlutterFlowDropDown<String>(
                                   controller:
@@ -1104,7 +1101,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       FlutterFlowTheme.of(context).alternate,
                                   borderWidth: 1.0,
                                   borderRadius: 8.0,
-                                  margin: EdgeInsetsDirectional.fromSTEB(
+                                  margin: const EdgeInsetsDirectional.fromSTEB(
                                       12.0, 0.0, 12.0, 0.0),
                                   hidesUnderline: true,
                                   isOverButton: false,
@@ -1114,7 +1111,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       FFLocalizations.of(context).getText(
                                     'vd433kb2' /* Source * */,
                                   ),
-                                  labelTextStyle: TextStyle(),
+                                  labelTextStyle: const TextStyle(),
                                 ),
                                 FlutterFlowDropDown<String>(
                                   controller:
@@ -1178,7 +1175,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       FlutterFlowTheme.of(context).alternate,
                                   borderWidth: 1.0,
                                   borderRadius: 8.0,
-                                  margin: EdgeInsetsDirectional.fromSTEB(
+                                  margin: const EdgeInsetsDirectional.fromSTEB(
                                       12.0, 0.0, 12.0, 0.0),
                                   hidesUnderline: true,
                                   isOverButton: false,
@@ -1188,7 +1185,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       FFLocalizations.of(context).getText(
                                     'yqkoiakj' /* Branch * */,
                                   ),
-                                  labelTextStyle: TextStyle(),
+                                  labelTextStyle: const TextStyle(),
                                 ),
                                 TextFormField(
                                   controller: _model.ldNotesFieldTextController,
@@ -1203,60 +1200,60 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'lpp8v2mq' /* Any relevant notes */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: 3,
                                   validator: _model
                                       .ldNotesFieldTextControllerValidator
                                       .asValidator(context),
                                 ),
-                              ].divide(SizedBox(height: 14.0)),
+                              ].divide(const SizedBox(height: 14.0)),
                             ),
                           ),
                         ),
                         Padding(
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 16.0, 0.0, 16.0),
                           child: FFButtonWidget(
                             onPressed: () async {
@@ -1310,9 +1307,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       isEditing
                                           ? 'Lead updated successfully!'
                                           : 'Lead saved successfully!',
-                                      style: TextStyle(),
+                                      style: const TextStyle(),
                                     ),
-                                    duration: Duration(milliseconds: 4000),
+                                    duration: const Duration(milliseconds: 4000),
                                   ),
                                 );
                                 if (isEditing) {
@@ -1327,7 +1324,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                 }
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
+                                  const SnackBar(
                                     content: Text(
                                       'Failed to save lead. Please try again.',
                                       style: TextStyle(),
@@ -1344,15 +1341,15 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                 : FFLocalizations.of(context).getText(
                                     'sxeutefv' /* Save Lead */,
                                   ),
-                            icon: Icon(
+                            icon: const Icon(
                               Icons.save,
                               size: 20.0,
                             ),
                             options: FFButtonOptions(
                               width: double.infinity,
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 0.0, 0.0, 0.0),
-                              iconPadding: EdgeInsetsDirectional.fromSTEB(
+                              iconPadding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 0.0, 0.0, 0.0),
                               iconColor: FlutterFlowTheme.of(context)
                                   .primaryBackground,
@@ -1365,9 +1362,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                             ),
                           ),
                         ),
-                      ].divide(SizedBox(height: 16.0)),
+                      ].divide(const SizedBox(height: 16.0)),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

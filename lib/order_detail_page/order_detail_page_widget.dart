@@ -4,13 +4,10 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'order_detail_page_model.dart';
 export 'order_detail_page_model.dart';
 
@@ -225,7 +222,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
     final lines = [
       'TAX INVOICE',
       '',
-      '${AppSession.instance.currentOrgName ?? 'Nagarva'}',
+      (AppSession.instance.currentOrgName ?? 'Nagarva'),
       'Invoice No: $invoiceNo',
       'Date: ${DateFormat('dd MMM yyyy').format(DateTime.now())}',
       '',
@@ -264,15 +261,15 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
               await Clipboard.setData(ClipboardData(text: invoiceText));
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Invoice copied to clipboard')),
+                  const SnackBar(content: Text('Invoice copied to clipboard')),
                 );
               }
             },
-            child: Text('Copy'),
+            child: const Text('Copy'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -323,7 +320,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -334,7 +331,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -348,14 +345,14 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              widget!.orderCustomer!,
+                              widget.orderCustomer!,
                               style: FlutterFlowTheme.of(context)
                                   .titleMedium
                                   .override(
@@ -385,10 +382,10 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                 borderRadius: BorderRadius.circular(16.0),
                               ),
                               child: Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
                                     12.0, 6.0, 12.0, 6.0),
                                 child: Text(
-                                  widget!.orderStatus!,
+                                  widget.orderStatus!,
                                   style: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -426,7 +423,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -491,7 +488,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderPhone!,
+                                  widget.orderPhone!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -552,7 +549,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderService!,
+                                  widget.orderService!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -613,7 +610,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderBranch!,
+                                  widget.orderBranch!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -674,7 +671,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderType!,
+                                  widget.orderType!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -701,7 +698,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 10.0)),
+                          ].divide(const SizedBox(height: 10.0)),
                         ),
                       ),
                     ),
@@ -712,7 +709,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -777,7 +774,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderFromCity!,
+                                  widget.orderFromCity!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -838,7 +835,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderToCity!,
+                                  widget.orderToCity!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -899,7 +896,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderFromAddress!,
+                                  widget.orderFromAddress!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -960,7 +957,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderToAddress!,
+                                  widget.orderToAddress!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1021,7 +1018,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderFromFloor!,
+                                  widget.orderFromFloor!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1082,7 +1079,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderToFloor!,
+                                  widget.orderToFloor!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1143,7 +1140,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderMoveDate!,
+                                  widget.orderMoveDate!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1170,7 +1167,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 10.0)),
+                          ].divide(const SizedBox(height: 10.0)),
                         ),
                       ),
                     ),
@@ -1181,7 +1178,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1246,7 +1243,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderAmount!,
+                                  widget.orderAmount!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1307,7 +1304,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderAdvancePaid!,
+                                  widget.orderAdvancePaid!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1368,7 +1365,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderPaymentStatus!,
+                                  widget.orderPaymentStatus!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1429,7 +1426,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderTrackingStatus!,
+                                  widget.orderTrackingStatus!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1456,7 +1453,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 10.0)),
+                          ].divide(const SizedBox(height: 10.0)),
                         ),
                       ),
                     ),
@@ -1467,7 +1464,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1532,7 +1529,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.orderNotes!,
+                                  widget.orderNotes!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1559,13 +1556,13 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 10.0)),
+                          ].divide(const SizedBox(height: 10.0)),
                         ),
                       ),
                     ),
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 0.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 0.0),
                       child: FFButtonWidget(
                         onPressed: () {
                           context.pushNamed(
@@ -1577,15 +1574,15 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                           );
                         },
                         text: 'Open Field Job',
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.local_shipping,
                           size: 20.0,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
                           iconColor: FlutterFlowTheme.of(context).primary,
                           color: Colors.transparent,
@@ -1602,22 +1599,22 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                     ),
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 0.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 0.0),
                       child: FFButtonWidget(
                         onPressed:
                             _generatingInvoice ? null : _generateInvoice,
                         text: _generatingInvoice
                             ? 'Generating…'
                             : 'Generate Invoice',
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.receipt_long,
                           size: 20.0,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
                           iconColor:
                               FlutterFlowTheme.of(context).primaryBackground,
@@ -1632,7 +1629,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                     ),
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
                       child: FFButtonWidget(
                         onPressed: () async {
                           context.pushNamed(
@@ -1646,15 +1643,15 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                         text: FFLocalizations.of(context).getText(
                           '0h0xt5ip' /* Edit Order */,
                         ),
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.edit,
                           size: 20.0,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
                           iconColor: FlutterFlowTheme.of(context).primary,
                           color: Colors.transparent,
@@ -1669,7 +1666,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                         ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 12.0)),
+                  ].divide(const SizedBox(height: 12.0)),
                 ),
               ),
             ),

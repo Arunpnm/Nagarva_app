@@ -5,13 +5,10 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
-import 'dart:ui';
 import '/index.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'new_order_page_model.dart';
 export 'new_order_page_model.dart';
 
@@ -170,7 +167,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -181,7 +178,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -202,7 +199,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                             borderRadius: BorderRadius.circular(16.0),
                           ),
                           child: Padding(
-                            padding: EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(20.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.start,
@@ -250,49 +247,49 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'inzvayo2' /* Full name */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ordCustomerFieldTextControllerValidator
@@ -312,56 +309,56 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'kzh2zgf1' /* +91 XXXXX XXXXX */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   keyboardType: TextInputType.number,
                                   validator: _model
                                       .ordPhoneFieldTextControllerValidator
                                       .asValidator(context),
                                 ),
-                              ].divide(SizedBox(height: 14.0)),
+                              ].divide(const SizedBox(height: 14.0)),
                             ),
                           ),
                         ),
@@ -373,7 +370,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                             borderRadius: BorderRadius.circular(16.0),
                           ),
                           child: Padding(
-                            padding: EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(20.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.start,
@@ -421,49 +418,49 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       '7t7zx16p' /* Origin city */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ordFromCityFieldTextControllerValidator
@@ -483,49 +480,49 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'rpzj35pp' /* Destination city */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ordToCityFieldTextControllerValidator
@@ -546,49 +543,49 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'xmvalzhf' /* Pickup address */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ordFromAddressFieldTextControllerValidator
@@ -608,49 +605,49 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'gjo6q6u9' /* Drop address */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ordToAddressFieldTextControllerValidator
@@ -670,49 +667,49 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'cqx4d0tm' /* e.g. 2nd floor */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ordFromFloorFieldTextControllerValidator
@@ -732,49 +729,49 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'gkhw0lho' /* e.g. Ground floor */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   validator: _model
                                       .ordToFloorFieldTextControllerValidator
@@ -788,7 +785,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     borderRadius: BorderRadius.circular(8.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         14.0, 12.0, 14.0, 12.0),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.max,
@@ -923,15 +920,15 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                       ),
                                                 ),
                                               ),
-                                          ].divide(SizedBox(height: 2.0)),
+                                          ].divide(const SizedBox(height: 2.0)),
                                         ),
                                         Padding(
                                           padding:
-                                              EdgeInsetsDirectional.fromSTEB(
+                                              const EdgeInsetsDirectional.fromSTEB(
                                                   12.0, 6.0, 12.0, 6.0),
                                           child: FFButtonWidget(
                                             onPressed: () async {
-                                              final _datePickedDate =
+                                              final datePickedDate =
                                                   await showDatePicker(
                                                 context: context,
                                                 initialDate:
@@ -943,32 +940,32 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                     context,
                                                     child!,
                                                     headerBackgroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     headerForegroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     headerTextStyle:
-                                                        TextStyle(),
+                                                        const TextStyle(),
                                                     pickerBackgroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     pickerForegroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     selectedDateTimeBackgroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     selectedDateTimeForegroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     actionButtonForegroundColor:
-                                                        Color(0x00000000),
+                                                        const Color(0x00000000),
                                                     iconSize: 24,
                                                   );
                                                 },
                                               );
 
-                                              if (_datePickedDate != null) {
+                                              if (datePickedDate != null) {
                                                 safeSetState(() {
                                                   _model.datePicked = DateTime(
-                                                    _datePickedDate.year,
-                                                    _datePickedDate.month,
-                                                    _datePickedDate.day,
+                                                    datePickedDate.year,
+                                                    datePickedDate.month,
+                                                    datePickedDate.day,
                                                   );
                                                 });
                                               } else if (_model.datePicked !=
@@ -988,14 +985,14 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                 .getText(
                                               'cdnifhil' /* Pick Date */,
                                             ),
-                                            icon: Icon(
+                                            icon: const Icon(
                                               Icons.calendar_today,
                                               size: 20.0,
                                             ),
                                             options: FFButtonOptions(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              iconPadding: EdgeInsetsDirectional
+                                              iconPadding: const EdgeInsetsDirectional
                                                   .fromSTEB(0.0, 0.0, 0.0, 0.0),
                                               iconColor:
                                                   FlutterFlowTheme.of(context)
@@ -1021,7 +1018,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     ),
                                   ),
                                 ),
-                              ].divide(SizedBox(height: 14.0)),
+                              ].divide(const SizedBox(height: 14.0)),
                             ),
                           ),
                         ),
@@ -1033,7 +1030,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                             borderRadius: BorderRadius.circular(16.0),
                           ),
                           child: Padding(
-                            padding: EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(20.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.start,
@@ -1081,49 +1078,49 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'j6tfu4aq' /* 0.00 */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: null,
                                   keyboardType: TextInputType.number,
                                   onChanged: (_) => safeSetState(() {}),
@@ -1199,7 +1196,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       FlutterFlowTheme.of(context).alternate,
                                   borderWidth: 1.0,
                                   borderRadius: 8.0,
-                                  margin: EdgeInsetsDirectional.fromSTEB(
+                                  margin: const EdgeInsetsDirectional.fromSTEB(
                                       12.0, 0.0, 12.0, 0.0),
                                   hidesUnderline: true,
                                   isOverButton: false,
@@ -1209,7 +1206,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       FFLocalizations.of(context).getText(
                                     'do548kxy' /* Service * */,
                                   ),
-                                  labelTextStyle: TextStyle(),
+                                  labelTextStyle: const TextStyle(),
                                 ),
                                 FlutterFlowDropDown<String>(
                                   controller: _model
@@ -1270,7 +1267,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       FlutterFlowTheme.of(context).alternate,
                                   borderWidth: 1.0,
                                   borderRadius: 8.0,
-                                  margin: EdgeInsetsDirectional.fromSTEB(
+                                  margin: const EdgeInsetsDirectional.fromSTEB(
                                       12.0, 0.0, 12.0, 0.0),
                                   hidesUnderline: true,
                                   isOverButton: false,
@@ -1280,7 +1277,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       FFLocalizations.of(context).getText(
                                     'laad7rkm' /* Branch * */,
                                   ),
-                                  labelTextStyle: TextStyle(),
+                                  labelTextStyle: const TextStyle(),
                                 ),
                                 FlutterFlowDropDown<String>(
                                   controller:
@@ -1338,7 +1335,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       FlutterFlowTheme.of(context).alternate,
                                   borderWidth: 1.0,
                                   borderRadius: 8.0,
-                                  margin: EdgeInsetsDirectional.fromSTEB(
+                                  margin: const EdgeInsetsDirectional.fromSTEB(
                                       12.0, 0.0, 12.0, 0.0),
                                   hidesUnderline: true,
                                   isOverButton: false,
@@ -1348,10 +1345,10 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       FFLocalizations.of(context).getText(
                                     '581zy15a' /* Order Type * */,
                                   ),
-                                  labelTextStyle: TextStyle(),
+                                  labelTextStyle: const TextStyle(),
                                 ),
                                 if (_model.ordType == 'Porter')
-                                  Container(
+                                  SizedBox(
                                     width: double.infinity,
                                     child: FlutterFlowDropDown<String>(
                                       controller: _model
@@ -1412,7 +1409,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                           .alternate,
                                       borderWidth: 1.0,
                                       borderRadius: 8.0,
-                                      margin: EdgeInsetsDirectional.fromSTEB(
+                                      margin: const EdgeInsetsDirectional.fromSTEB(
                                           12.0, 0.0, 12.0, 0.0),
                                       hidesUnderline: true,
                                       isOverButton: false,
@@ -1422,7 +1419,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                           FFLocalizations.of(context).getText(
                                         '3kefljy6' /* Porter Commission % */,
                                       ),
-                                      labelTextStyle: TextStyle(),
+                                      labelTextStyle: const TextStyle(),
                                     ),
                                   ),
                                 if (_model.ordType == 'Porter')
@@ -1443,7 +1440,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       ),
                                       filled: true,
                                     ),
-                                    style: TextStyle(),
+                                    style: const TextStyle(),
                                     keyboardType: TextInputType.number,
                                     onChanged: (_) => safeSetState(() {}),
                                   ),
@@ -1473,7 +1470,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     final net = amt - comm;
                                     return Container(
                                       width: double.infinity,
-                                      padding: EdgeInsets.all(14),
+                                      padding: const EdgeInsets.all(14),
                                       decoration: BoxDecoration(
                                         color: FlutterFlowTheme.of(context)
                                             .primaryBackground,
@@ -1492,7 +1489,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                               style: FlutterFlowTheme.of(
                                                       context)
                                                   .labelMedium),
-                                          SizedBox(height: 6),
+                                          const SizedBox(height: 6),
                                           _settlementLine(context,
                                               'Advance (Porter paid)', adv),
                                           _settlementLine(context,
@@ -1520,60 +1517,60 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         FFLocalizations.of(context).getText(
                                       'c6uor7wa' /* Additional details */,
                                     ),
-                                    enabledBorder: OutlineInputBorder(
+                                    enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
+                                    focusedBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    errorBorder: OutlineInputBorder(
+                                    errorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
-                                    focusedErrorBorder: OutlineInputBorder(
+                                    focusedErrorBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
                                         width: 1.0,
                                       ),
-                                      borderRadius: const BorderRadius.only(
+                                      borderRadius: BorderRadius.only(
                                         topLeft: Radius.circular(4.0),
                                         topRight: Radius.circular(4.0),
                                       ),
                                     ),
                                     filled: true,
                                   ),
-                                  style: TextStyle(),
+                                  style: const TextStyle(),
                                   maxLines: 3,
                                   validator: _model
                                       .ordNotesFieldTextControllerValidator
                                       .asValidator(context),
                                 ),
-                              ].divide(SizedBox(height: 14.0)),
+                              ].divide(const SizedBox(height: 14.0)),
                             ),
                           ),
                         ),
                         Padding(
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 16.0, 0.0, 16.0),
                           child: FFButtonWidget(
                             onPressed: () async {
@@ -1695,9 +1692,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       isEditing
                                           ? 'Order updated successfully!'
                                           : 'Order saved successfully!',
-                                      style: TextStyle(),
+                                      style: const TextStyle(),
                                     ),
-                                    duration: Duration(milliseconds: 4000),
+                                    duration: const Duration(milliseconds: 4000),
                                   ),
                                 );
                                 if (isEditing) {
@@ -1713,7 +1710,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                 }
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
+                                  const SnackBar(
                                     content: Text(
                                       'Failed to save order. Please try again.',
                                       style: TextStyle(),
@@ -1730,15 +1727,15 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                 : FFLocalizations.of(context).getText(
                                     'j7jprv8l' /* Save Order */,
                                   ),
-                            icon: Icon(
+                            icon: const Icon(
                               Icons.save,
                               size: 20.0,
                             ),
                             options: FFButtonOptions(
                               width: double.infinity,
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 0.0, 0.0, 0.0),
-                              iconPadding: EdgeInsetsDirectional.fromSTEB(
+                              iconPadding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 0.0, 0.0, 0.0),
                               iconColor: FlutterFlowTheme.of(context)
                                   .primaryBackground,
@@ -1751,9 +1748,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                             ),
                           ),
                         ),
-                      ].divide(SizedBox(height: 16.0)),
+                      ].divide(const SizedBox(height: 16.0)),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),
@@ -1766,7 +1763,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
   Widget _settlementLine(BuildContext context, String label, double value,
       {bool bold = false}) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

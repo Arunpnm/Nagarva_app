@@ -2,12 +2,9 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'fleet_page_model.dart';
 export 'fleet_page_model.dart';
 
@@ -81,7 +78,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -92,7 +89,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -114,7 +111,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -181,7 +178,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 2.0)),
+                                ].divide(const SizedBox(height: 2.0)),
                               ),
                             ),
                           ),
@@ -196,7 +193,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -263,7 +260,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 2.0)),
+                                ].divide(const SizedBox(height: 2.0)),
                               ),
                             ),
                           ),
@@ -278,7 +275,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -345,12 +342,12 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 2.0)),
+                                ].divide(const SizedBox(height: 2.0)),
                               ),
                             ),
                           ),
                         ),
-                      ].divide(SizedBox(width: 10.0)),
+                      ].divide(const SizedBox(width: 10.0)),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
@@ -392,7 +389,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                               scrollDirection: Axis.vertical,
                               itemCount: vehiclesListItem.length,
                               separatorBuilder: (_, __) =>
-                                  SizedBox(height: 12.0),
+                                  const SizedBox(height: 12.0),
                               itemBuilder: (context, vehiclesListItemIndex) {
                                 final vehiclesListItemItem =
                                     vehiclesListItem[vehiclesListItemIndex];
@@ -404,7 +401,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.all(16.0),
+                                    padding: const EdgeInsets.all(16.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
@@ -464,7 +461,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                                     BorderRadius.circular(12.0),
                                               ),
                                               child: Padding(
-                                                padding: EdgeInsetsDirectional
+                                                padding: const EdgeInsetsDirectional
                                                     .fromSTEB(
                                                         10.0, 4.0, 10.0, 4.0),
                                                 child: Text(
@@ -616,7 +613,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                             ),
                                           ],
                                         ),
-                                      ].divide(SizedBox(height: 6.0)),
+                                      ].divide(const SizedBox(height: 6.0)),
                                     ),
                                   ),
                                 );
@@ -624,7 +621,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                             );
                           },
                         ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
                     Container(
                       width: double.infinity,
@@ -633,7 +630,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -679,7 +676,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -804,7 +801,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 6.0)),
+                          ].divide(const SizedBox(height: 6.0)),
                         ),
                       ),
                     ),
@@ -815,7 +812,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -861,7 +858,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -986,7 +983,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 6.0)),
+                          ].divide(const SizedBox(height: 6.0)),
                         ),
                       ),
                     ),
@@ -997,7 +994,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1043,7 +1040,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -1168,7 +1165,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 6.0)),
+                          ].divide(const SizedBox(height: 6.0)),
                         ),
                       ),
                     ),
@@ -1179,7 +1176,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -1225,7 +1222,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
@@ -1350,11 +1347,11 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 6.0)),
+                          ].divide(const SizedBox(height: 6.0)),
                         ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

@@ -9,7 +9,7 @@ class VehicleTripsTable extends SupabaseTable<VehicleTripsRow> {
 }
 
 class VehicleTripsRow extends SupabaseDataRow {
-  VehicleTripsRow(Map<String, dynamic> data) : super(data);
+  VehicleTripsRow(super.data);
 
   @override
   SupabaseTable get table => VehicleTripsTable();

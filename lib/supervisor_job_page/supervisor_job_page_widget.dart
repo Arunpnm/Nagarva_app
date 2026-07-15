@@ -5,11 +5,9 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'supervisor_job_page_model.dart';
 export 'supervisor_job_page_model.dart';
 
@@ -318,20 +316,20 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         body: SafeArea(
           top: true,
           child: _model.isLoading
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : _model.loadError != null
                   ? Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(24),
                         child: Text(_model.loadError!, textAlign: TextAlign.center),
                       ),
                     )
                   : Padding(
-                      padding: EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(16.0),
                       child: ListView(
                         children: [
                           _orderSummaryCard(context),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           _stepBody(context),
                         ],
                       ),
@@ -345,7 +343,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     final o = _model.order!;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(12),
@@ -357,12 +355,12 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               style: FlutterFlowTheme.of(context)
                   .titleMedium
                   .override(font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text('${o.fromCity ?? ''} → ${o.toCity ?? ''}',
               style: FlutterFlowTheme.of(context).bodySmall.override(
                   font: GoogleFonts.inter(),
                   color: FlutterFlowTheme.of(context).secondaryText)),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text('Status: ${o.status ?? '—'} · Supervisor: ${o.supervisorStatus ?? 'not started'}',
               style: FlutterFlowTheme.of(context).bodySmall.override(
                   font: GoogleFonts.inter(),
@@ -408,7 +406,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       required Future<void> Function() onPressed}) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(12),
@@ -417,12 +415,12 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: FlutterFlowTheme.of(context).titleSmall),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(body,
               style: FlutterFlowTheme.of(context).bodySmall.override(
                   font: GoogleFonts.inter(),
                   color: FlutterFlowTheme.of(context).secondaryText)),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           FFButtonWidget(
             onPressed: _model.saving ? null : onPressed,
             text: _model.saving ? 'Please wait…' : buttonLabel,
@@ -442,7 +440,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   Widget _teamSelectionCard(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(12),
@@ -451,7 +449,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Select Labour Team', style: FlutterFlowTheme.of(context).titleSmall),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           if (_model.staffList.isEmpty)
             Text('No active staff found.',
                 style: FlutterFlowTheme.of(context).bodySmall.override(
@@ -484,7 +482,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                 );
               }).toList(),
             ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           FFButtonWidget(
             onPressed: _model.saving ? null : _startShifting,
             text: _model.saving ? 'Please wait…' : 'Start Shifting',
@@ -509,7 +507,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       children: [
         Container(
           width: double.infinity,
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: FlutterFlowTheme.of(context).secondaryBackground,
             borderRadius: BorderRadius.circular(12),
@@ -518,9 +516,9 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Job Expenses', style: FlutterFlowTheme.of(context).titleSmall),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               ..._model.jobExpenses.map((e) => Padding(
-                    padding: EdgeInsets.symmetric(vertical: 2),
+                    padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -533,23 +531,23 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                   )),
               if (_model.jobExpenses.isNotEmpty)
                 Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Text('Total: ₹${totalExpenses.toStringAsFixed(0)}',
                       style: FlutterFlowTheme.of(context).bodyMedium.override(
                           font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
                 ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _model.expenseCategory,
+                      initialValue: _model.expenseCategory,
                       items: kJobExpenseCategories
                           .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                           .toList(),
                       onChanged: (v) =>
                           setState(() => _model.expenseCategory = v ?? 'Fuel'),
-                      decoration: InputDecoration(labelText: 'Category'),
+                      decoration: const InputDecoration(labelText: 'Category'),
                     ),
                   ),
                 ],
@@ -557,13 +555,13 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               TextField(
                 controller: _model.expenseAmountController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Amount (₹)'),
+                decoration: const InputDecoration(labelText: 'Amount (₹)'),
               ),
               TextField(
                 controller: _model.expenseDescController,
-                decoration: InputDecoration(labelText: 'Note (optional)'),
+                decoration: const InputDecoration(labelText: 'Note (optional)'),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               FFButtonWidget(
                 onPressed: _model.saving ? null : _addExpense,
                 text: 'Add Expense',
@@ -580,10 +578,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
             ],
           ),
         ),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         Container(
           width: double.infinity,
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: FlutterFlowTheme.of(context).secondaryBackground,
             borderRadius: BorderRadius.circular(12),
@@ -595,9 +593,9 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               TextField(
                 controller: _model.notesController,
                 maxLines: 3,
-                decoration: InputDecoration(hintText: 'Any notes for the office…'),
+                decoration: const InputDecoration(hintText: 'Any notes for the office…'),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               FFButtonWidget(
                 onPressed: () =>
                     setState(() => _model.step = SupervisorJobStep.completing),
@@ -620,7 +618,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   Widget _otpCard(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(12),
@@ -629,14 +627,14 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Confirm with Customer', style: FlutterFlowTheme.of(context).titleSmall),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             'Show this code to the customer and ask them to confirm the job is done, then type it back in below.',
             style: FlutterFlowTheme.of(context).bodySmall.override(
                 font: GoogleFonts.inter(),
                 color: FlutterFlowTheme.of(context).secondaryText),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Center(
             child: Text(
               _model.displayedOtp ?? '----',
@@ -645,7 +643,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                       fontWeight: FontWeight.w700, letterSpacing: 8.0)),
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           TextField(
             controller: _model.enteredOtpController,
             keyboardType: TextInputType.number,
@@ -655,7 +653,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               errorText: _model.otpError ? 'Code does not match' : null,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           FFButtonWidget(
             onPressed: _model.saving ? null : _verifyAndComplete,
             text: _model.saving ? 'Verifying…' : 'Verify & Complete',
@@ -675,7 +673,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   Widget _doneCard(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(12),
@@ -683,9 +681,9 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       child: Column(
         children: [
           Icon(Icons.celebration, color: FlutterFlowTheme.of(context).primary, size: 40),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text('Job complete!', style: FlutterFlowTheme.of(context).titleMedium),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             _model.order?.supervisorStatus == 'approved'
                 ? 'Approved by the office.'

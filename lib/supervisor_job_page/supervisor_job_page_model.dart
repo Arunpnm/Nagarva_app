@@ -1,12 +1,7 @@
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'supervisor_job_page_widget.dart' show SupervisorJobPageWidget;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 /// Step machine for the on-site job flow — adapted from apc_webapp
 /// App.jsx's SupervisorJobPage (lines ~10369-10597), but mapped onto

@@ -9,7 +9,7 @@ class SettingsTable extends SupabaseTable<SettingsRow> {
 }
 
 class SettingsRow extends SupabaseDataRow {
-  SettingsRow(Map<String, dynamic> data) : super(data);
+  SettingsRow(super.data);
 
   @override
   SupabaseTable get table => SettingsTable();

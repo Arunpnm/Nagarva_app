@@ -3,11 +3,9 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'lead_detail_page_model.dart';
 export 'lead_detail_page_model.dart';
 
@@ -102,7 +100,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lead converted to order')),
+        const SnackBar(content: Text('Lead converted to order')),
       );
       context.pushNamed(
         OrderDetailPageWidget.routeName,
@@ -183,7 +181,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -194,7 +192,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -208,14 +206,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              widget!.leadCustomer!,
+                              widget.leadCustomer!,
                               style: FlutterFlowTheme.of(context)
                                   .titleMedium
                                   .override(
@@ -245,10 +243,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                 borderRadius: BorderRadius.circular(16.0),
                               ),
                               child: Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
                                     12.0, 6.0, 12.0, 6.0),
                                 child: Text(
-                                  widget!.leadStatus!,
+                                  widget.leadStatus!,
                                   style: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -286,7 +284,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -351,7 +349,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.leadPhone!,
+                                  widget.leadPhone!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -412,7 +410,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.leadEmail!,
+                                  widget.leadEmail!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -473,7 +471,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.leadSource!,
+                                  widget.leadSource!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -534,7 +532,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.leadBranch!,
+                                  widget.leadBranch!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -561,7 +559,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 10.0)),
+                          ].divide(const SizedBox(height: 10.0)),
                         ),
                       ),
                     ),
@@ -572,7 +570,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -637,7 +635,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.leadFromCity!,
+                                  widget.leadFromCity!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -698,7 +696,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.leadToCity!,
+                                  widget.leadToCity!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -759,7 +757,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.leadApproxDate!,
+                                  widget.leadApproxDate!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -820,7 +818,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.leadService!,
+                                  widget.leadService!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -847,7 +845,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 10.0)),
+                          ].divide(const SizedBox(height: 10.0)),
                         ),
                       ),
                     ),
@@ -858,7 +856,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -923,7 +921,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget!.leadNotes!,
+                                  widget.leadNotes!,
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -950,13 +948,13 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                                 ),
                               ],
                             ),
-                          ].divide(SizedBox(height: 10.0)),
+                          ].divide(const SizedBox(height: 10.0)),
                         ),
                       ),
                     ),
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
                       child: FFButtonWidget(
                         onPressed: _converting ? null : _convertToOrder,
                         text: _converting
@@ -964,15 +962,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                             : FFLocalizations.of(context).getText(
                                 'se81on2i' /* Convert to Order */,
                               ),
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.assignment_turned_in,
                           size: 20.0,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
                           iconColor:
                               FlutterFlowTheme.of(context).primaryBackground,
@@ -987,7 +985,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                     ),
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
                       child: FFButtonWidget(
                         onPressed: () async {
                           context.pushNamed(
@@ -1001,15 +999,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                         text: FFLocalizations.of(context).getText(
                           'mqy6axdn' /* Edit Lead */,
                         ),
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.edit,
                           size: 20.0,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
                           iconColor: FlutterFlowTheme.of(context).primary,
                           color: Colors.transparent,
@@ -1024,7 +1022,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                         ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 12.0)),
+                  ].divide(const SizedBox(height: 12.0)),
                 ),
               ),
             ),

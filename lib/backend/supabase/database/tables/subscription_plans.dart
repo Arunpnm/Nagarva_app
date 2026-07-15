@@ -10,7 +10,7 @@ class SubscriptionPlansTable extends SupabaseTable<SubscriptionPlansRow> {
 }
 
 class SubscriptionPlansRow extends SupabaseDataRow {
-  SubscriptionPlansRow(Map<String, dynamic> data) : super(data);
+  SubscriptionPlansRow(super.data);
 
   @override
   SupabaseTable get table => SubscriptionPlansTable();

@@ -3,11 +3,9 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'materials_page_model.dart';
 export 'materials_page_model.dart';
 
@@ -71,7 +69,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
           borderRadius: BorderRadius.circular(12.0),
         ),
         child: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,7 +92,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                       letterSpacing: 0.0,
                     ),
               ),
-            ].divide(SizedBox(height: 4.0)),
+            ].divide(const SizedBox(height: 4.0)),
           ),
         ),
       ),
@@ -113,7 +111,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
         borderRadius: BorderRadius.circular(10.0),
       ),
       child: Padding(
-        padding: EdgeInsetsDirectional.fromSTEB(16.0, 14.0, 16.0, 14.0),
+        padding: const EdgeInsetsDirectional.fromSTEB(16.0, 14.0, 16.0, 14.0),
         child: Row(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -143,7 +141,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                         letterSpacing: 0.0,
                       ),
                 ),
-              ].divide(SizedBox(height: 3.0)),
+              ].divide(const SizedBox(height: 3.0)),
             ),
             Container(
               decoration: BoxDecoration(
@@ -151,7 +149,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                 borderRadius: BorderRadius.circular(10.0),
               ),
               child: Padding(
-                padding: EdgeInsetsDirectional.fromSTEB(10.0, 4.0, 10.0, 4.0),
+                padding: const EdgeInsetsDirectional.fromSTEB(10.0, 4.0, 10.0, 4.0),
                 child: Text(
                   qtyLabel,
                   style: FlutterFlowTheme.of(context).labelMedium.override(
@@ -197,7 +195,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -208,7 +206,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -222,7 +220,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                             context, 'Total SKUs', '${materials.length}'),
                         _statCard(context, 'Low Stock', '$lowStockCount',
                             danger: lowStockCount > 0),
-                      ].divide(SizedBox(width: 12.0)),
+                      ].divide(const SizedBox(width: 12.0)),
                     ),
                     Text(
                       'Inventory',
@@ -248,13 +246,13 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                       ...materials.map((m) => _materialRow(context, m)),
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
                         onPressed: () {
                           // Add/restock form is still Phase 2 remainder —
                           // needs quantity/unit/cost inputs, not a stub.
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
+                            const SnackBar(
                               content: Text(
                                 'Add/Restock form not built yet — edit '
                                 'materials directly in Supabase for now.',
@@ -266,15 +264,15 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                         text: FFLocalizations.of(context).getText(
                           'lnbmsxqs' /* Add / Restock Item */,
                         ),
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.add_box,
                           size: 20.0,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
                           iconColor:
                               FlutterFlowTheme.of(context).primaryBackground,
@@ -287,7 +285,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                         ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

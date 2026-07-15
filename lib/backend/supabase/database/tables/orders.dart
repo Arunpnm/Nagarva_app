@@ -9,7 +9,7 @@ class OrdersTable extends SupabaseTable<OrdersRow> {
 }
 
 class OrdersRow extends SupabaseDataRow {
-  OrdersRow(Map<String, dynamic> data) : super(data);
+  OrdersRow(super.data);
 
   @override
   SupabaseTable get table => OrdersTable();
@@ -121,8 +121,8 @@ class OrdersRow extends SupabaseDataRow {
   set supervisorNotes(String? value) =>
       setField<String>('supervisor_notes', value);
 
-  dynamic? get jobTeam => getField<dynamic>('job_team');
-  set jobTeam(dynamic? value) => setField<dynamic>('job_team', value);
+  dynamic get jobTeam => getField<dynamic>('job_team');
+  set jobTeam(dynamic value) => setField<dynamic>('job_team', value);
 
   double? get porterCashCollect => getField<double>('porter_cash_collect');
   set porterCashCollect(double? value) =>

@@ -9,7 +9,7 @@ class TripsViewTable extends SupabaseTable<TripsViewRow> {
 }
 
 class TripsViewRow extends SupabaseDataRow {
-  TripsViewRow(Map<String, dynamic> data) : super(data);
+  TripsViewRow(super.data);
 
   @override
   SupabaseTable get table => TripsViewTable();

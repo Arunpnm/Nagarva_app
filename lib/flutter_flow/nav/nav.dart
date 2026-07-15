@@ -1,18 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 
-import '/backend/supabase/supabase.dart';
 
 import '/main.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
-import '/flutter_flow/lat_lng.dart';
-import '/flutter_flow/place.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import 'serialization_util.dart';
 
 import '/index.dart';
 
@@ -42,125 +35,125 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       debugLogDiagnostics: true,
       refreshListenable: appStateNotifier,
       navigatorKey: appNavigatorKey,
-      errorBuilder: (context, state) => LoginPageWidget(),
+      errorBuilder: (context, state) => const LoginPageWidget(),
       routes: [
         FFRoute(
           name: '_initialize',
           path: '/',
-          builder: (context, _) => LoginPageWidget(),
+          builder: (context, _) => const LoginPageWidget(),
         ),
         FFRoute(
           name: LoginPageWidget.routeName,
           path: LoginPageWidget.routePath,
-          builder: (context, params) => LoginPageWidget(),
+          builder: (context, params) => const LoginPageWidget(),
         ),
         FFRoute(
           name: HomePageWidget.routeName,
           path: HomePageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'HomePage')
-              : HomePageWidget(),
+              ? const NavBarPage(initialPage: 'HomePage')
+              : const HomePageWidget(),
         ),
         FFRoute(
           name: OrdersPageWidget.routeName,
           path: OrdersPageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'OrdersPage')
-              : OrdersPageWidget(),
+              ? const NavBarPage(initialPage: 'OrdersPage')
+              : const OrdersPageWidget(),
         ),
         FFRoute(
           name: LeadsPageWidget.routeName,
           path: LeadsPageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'LeadsPage')
-              : LeadsPageWidget(),
+              ? const NavBarPage(initialPage: 'LeadsPage')
+              : const LeadsPageWidget(),
         ),
         FFRoute(
           name: OperationsPageWidget.routeName,
           path: OperationsPageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'OperationsPage')
-              : OperationsPageWidget(),
+              ? const NavBarPage(initialPage: 'OperationsPage')
+              : const OperationsPageWidget(),
         ),
         FFRoute(
           name: PaymentsPageWidget.routeName,
           path: PaymentsPageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'PaymentsPage')
-              : PaymentsPageWidget(),
+              ? const NavBarPage(initialPage: 'PaymentsPage')
+              : const PaymentsPageWidget(),
         ),
         FFRoute(
           name: ExpensePageWidget.routeName,
           path: ExpensePageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'ExpensePage')
-              : ExpensePageWidget(),
+              ? const NavBarPage(initialPage: 'ExpensePage')
+              : const ExpensePageWidget(),
         ),
         FFRoute(
           name: SalaryPageWidget.routeName,
           path: SalaryPageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'SalaryPage')
-              : SalaryPageWidget(),
+              ? const NavBarPage(initialPage: 'SalaryPage')
+              : const SalaryPageWidget(),
         ),
         FFRoute(
           name: FleetPageWidget.routeName,
           path: FleetPageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'FleetPage')
-              : FleetPageWidget(),
+              ? const NavBarPage(initialPage: 'FleetPage')
+              : const FleetPageWidget(),
         ),
         FFRoute(
           name: QuotationPageWidget.routeName,
           path: QuotationPageWidget.routePath,
-          builder: (context, params) => QuotationPageWidget(),
+          builder: (context, params) => const QuotationPageWidget(),
         ),
         FFRoute(
           name: AccountsPageWidget.routeName,
           path: AccountsPageWidget.routePath,
-          builder: (context, params) => AccountsPageWidget(),
+          builder: (context, params) => const AccountsPageWidget(),
         ),
         FFRoute(
           name: PLReportPageWidget.routeName,
           path: PLReportPageWidget.routePath,
-          builder: (context, params) => PLReportPageWidget(),
+          builder: (context, params) => const PLReportPageWidget(),
         ),
         FFRoute(
           name: SettingsPageWidget.routeName,
           path: SettingsPageWidget.routePath,
           builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'SettingsPage')
-              : SettingsPageWidget(),
+              ? const NavBarPage(initialPage: 'SettingsPage')
+              : const SettingsPageWidget(),
         ),
         FFRoute(
           name: CalendarPageWidget.routeName,
           path: CalendarPageWidget.routePath,
-          builder: (context, params) => CalendarPageWidget(),
+          builder: (context, params) => const CalendarPageWidget(),
         ),
         FFRoute(
           name: MaterialsPageWidget.routeName,
           path: MaterialsPageWidget.routePath,
-          builder: (context, params) => MaterialsPageWidget(),
+          builder: (context, params) => const MaterialsPageWidget(),
         ),
         FFRoute(
           name: ReportsPageWidget.routeName,
           path: ReportsPageWidget.routePath,
-          builder: (context, params) => ReportsPageWidget(),
+          builder: (context, params) => const ReportsPageWidget(),
         ),
         FFRoute(
           name: UsersPageWidget.routeName,
           path: UsersPageWidget.routePath,
-          builder: (context, params) => UsersPageWidget(),
+          builder: (context, params) => const UsersPageWidget(),
         ),
         FFRoute(
           name: RecordPaymentPageWidget.routeName,
           path: RecordPaymentPageWidget.routePath,
-          builder: (context, params) => RecordPaymentPageWidget(),
+          builder: (context, params) => const RecordPaymentPageWidget(),
         ),
         FFRoute(
           name: QuickExpensePageWidget.routeName,
           path: QuickExpensePageWidget.routePath,
-          builder: (context, params) => QuickExpensePageWidget(),
+          builder: (context, params) => const QuickExpensePageWidget(),
         ),
         FFRoute(
           name: NewOrderPageWidget.routeName,
@@ -315,22 +308,22 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: QuickEntryPageWidget.routeName,
           path: QuickEntryPageWidget.routePath,
-          builder: (context, params) => QuickEntryPageWidget(),
+          builder: (context, params) => const QuickEntryPageWidget(),
         ),
         FFRoute(
           name: SignupPageWidget.routeName,
           path: SignupPageWidget.routePath,
-          builder: (context, params) => SignupPageWidget(),
+          builder: (context, params) => const SignupPageWidget(),
         ),
         FFRoute(
           name: OrgSetupPageWidget.routeName,
           path: OrgSetupPageWidget.routePath,
-          builder: (context, params) => OrgSetupPageWidget(),
+          builder: (context, params) => const OrgSetupPageWidget(),
         ),
         FFRoute(
           name: PlanPageWidget.routeName,
           path: PlanPageWidget.routePath,
-          builder: (context, params) => PlanPageWidget(),
+          builder: (context, params) => const PlanPageWidget(),
         ),
         FFRoute(
           name: SupervisorJobPageWidget.routeName,
@@ -503,7 +496,7 @@ class TransitionInfo {
   final Duration duration;
   final Alignment? alignment;
 
-  static TransitionInfo appDefault() => TransitionInfo(hasTransition: false);
+  static TransitionInfo appDefault() => const TransitionInfo(hasTransition: false);
 }
 
 class RootPageContext {

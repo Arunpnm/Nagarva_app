@@ -3,11 +3,9 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'expense_page_model.dart';
 export 'expense_page_model.dart';
 
@@ -81,7 +79,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -92,7 +90,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -106,7 +104,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.start,
@@ -189,7 +187,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                         .fontStyle,
                                   ),
                             ),
-                          ].divide(SizedBox(height: 6.0)),
+                          ].divide(const SizedBox(height: 6.0)),
                         ),
                       ),
                     ),
@@ -233,7 +231,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                               scrollDirection: Axis.vertical,
                               itemCount: expensesListItem.length,
                               separatorBuilder: (_, __) =>
-                                  SizedBox(height: 12.0),
+                                  const SizedBox(height: 12.0),
                               itemBuilder: (context, expensesListItemIndex) {
                                 final expensesListItemItem =
                                     expensesListItem[expensesListItemIndex];
@@ -245,7 +243,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.all(14.0),
+                                    padding: const EdgeInsets.all(14.0),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.max,
                                       mainAxisAlignment:
@@ -330,7 +328,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                                                 .fontStyle,
                                                       ),
                                             ),
-                                          ].divide(SizedBox(height: 3.0)),
+                                          ].divide(const SizedBox(height: 3.0)),
                                         ),
                                         Text(
                                           expensesListItemItem.amount!
@@ -372,7 +370,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                             );
                           },
                         ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
                     Text(
                       FFLocalizations.of(context).getText(
@@ -404,7 +402,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -497,7 +495,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(width: 12.0)),
+                              ].divide(const SizedBox(width: 12.0)),
                             ),
                           ],
                         ),
@@ -510,7 +508,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -603,7 +601,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(width: 12.0)),
+                              ].divide(const SizedBox(width: 12.0)),
                             ),
                           ],
                         ),
@@ -616,7 +614,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -709,7 +707,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(width: 12.0)),
+                              ].divide(const SizedBox(width: 12.0)),
                             ),
                           ],
                         ),
@@ -722,7 +720,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                         borderRadius: BorderRadius.circular(10.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(14.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -815,7 +813,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(width: 12.0)),
+                              ].divide(const SizedBox(width: 12.0)),
                             ),
                           ],
                         ),
@@ -823,7 +821,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                     ),
                     Padding(
                       padding:
-                          EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
+                          const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
                         onPressed: () {
                           print('AddExpenseBtn pressed ...');
@@ -831,15 +829,15 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                         text: FFLocalizations.of(context).getText(
                           'ul361nn3' /* Add Expense */,
                         ),
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.add,
                           size: 20.0,
                         ),
                         options: FFButtonOptions(
                           width: double.infinity,
-                          padding: EdgeInsetsDirectional.fromSTEB(
+                          padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
-                          iconPadding: EdgeInsetsDirectional.fromSTEB(
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 0.0, 0.0, 0.0),
                           iconColor:
                               FlutterFlowTheme.of(context).primaryBackground,
@@ -852,7 +850,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                         ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

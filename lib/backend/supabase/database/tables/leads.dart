@@ -9,7 +9,7 @@ class LeadsTable extends SupabaseTable<LeadsRow> {
 }
 
 class LeadsRow extends SupabaseDataRow {
-  LeadsRow(Map<String, dynamic> data) : super(data);
+  LeadsRow(super.data);
 
   @override
   SupabaseTable get table => LeadsTable();
@@ -76,8 +76,8 @@ class LeadsRow extends SupabaseDataRow {
   String? get branch => getField<String>('branch');
   set branch(String? value) => setField<String>('branch', value);
 
-  dynamic? get surveyData => getField<dynamic>('survey_data');
-  set surveyData(dynamic? value) => setField<dynamic>('survey_data', value);
+  dynamic get surveyData => getField<dynamic>('survey_data');
+  set surveyData(dynamic value) => setField<dynamic>('survey_data', value);
 
   DateTime? get createdAt => getField<DateTime>('created_at');
   set createdAt(DateTime? value) => setField<DateTime>('created_at', value);

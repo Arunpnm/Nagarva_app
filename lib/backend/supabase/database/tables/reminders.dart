@@ -9,7 +9,7 @@ class RemindersTable extends SupabaseTable<RemindersRow> {
 }
 
 class RemindersRow extends SupabaseDataRow {
-  RemindersRow(Map<String, dynamic> data) : super(data);
+  RemindersRow(super.data);
 
   @override
   SupabaseTable get table => RemindersTable();

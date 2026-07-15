@@ -10,7 +10,7 @@ class DashboardKpisViewTable extends SupabaseTable<DashboardKpisViewRow> {
 }
 
 class DashboardKpisViewRow extends SupabaseDataRow {
-  DashboardKpisViewRow(Map<String, dynamic> data) : super(data);
+  DashboardKpisViewRow(super.data);
 
   @override
   SupabaseTable get table => DashboardKpisViewTable();

@@ -2,13 +2,9 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'reports_page_model.dart';
 export 'reports_page_model.dart';
 
@@ -226,11 +222,11 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
         body: SafeArea(
           top: true,
           child: _model.isLoading
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : _model.loadError != null
                   ? Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(24),
                         child: Text(
                             'Could not load reports:\n${_model.loadError}',
                             textAlign: TextAlign.center),
@@ -239,15 +235,15 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
                   : RefreshIndicator(
                       onRefresh: _loadData,
                       child: ListView(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         children: [
                           _periodSelector(context),
-                          SizedBox(height: 12),
+                          const SizedBox(height: 12),
                           TextField(
                             controller: _searchController,
                             decoration: InputDecoration(
                               hintText: 'Search customer or city…',
-                              prefixIcon: Icon(Icons.search),
+                              prefixIcon: const Icon(Icons.search),
                               filled: true,
                               fillColor:
                                   FlutterFlowTheme.of(context).secondaryBackground,
@@ -262,23 +258,23 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
                               safeSetState(() {});
                             },
                           ),
-                          SizedBox(height: 20),
+                          const SizedBox(height: 20),
                           Text('Branch-wise Revenue',
                               style: FlutterFlowTheme.of(context).titleMedium),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           ..._model.branchRevenue.map((b) => _branchCard(context, b)),
-                          SizedBox(height: 20),
+                          const SizedBox(height: 20),
                           Text('Monthly Volume (Last 6 Months)',
                               style: FlutterFlowTheme.of(context).titleMedium),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           _monthlyVolumeChart(context),
-                          SizedBox(height: 20),
+                          const SizedBox(height: 20),
                           Text('Top Customers',
                               style: FlutterFlowTheme.of(context).titleMedium),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           if (_model.topCustomers.isEmpty)
                             Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Text('No orders yet.',
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -290,10 +286,10 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
                           else
                             ..._model.topCustomers
                                 .map((c) => _topCustomerRow(context, c)),
-                          SizedBox(height: 20),
+                          const SizedBox(height: 20),
                           Text('Service Mix',
                               style: FlutterFlowTheme.of(context).titleMedium),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           ..._serviceMixRows(context),
                         ],
                       ),
@@ -331,8 +327,8 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
 
   Widget _branchCard(BuildContext context, BranchRevenue b) {
     return Container(
-      margin: EdgeInsets.only(bottom: 10),
-      padding: EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(10),
@@ -352,7 +348,7 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
                       color: FlutterFlowTheme.of(context).secondaryText)),
             ],
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -384,7 +380,7 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
             .clamp(1.0, double.infinity)
             .toDouble();
     return Container(
-      padding: EdgeInsets.all(14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(10),
@@ -394,7 +390,7 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
           final double fraction =
               (m.revenue / maxRevenue).clamp(0.0, 1.0).toDouble();
           return Padding(
-            padding: EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
                 SizedBox(
@@ -416,7 +412,7 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
                     ),
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text('${m.orderCount}',
                     style: FlutterFlowTheme.of(context).bodySmall.override(
                         font: GoogleFonts.inter(),
@@ -431,8 +427,8 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
 
   Widget _topCustomerRow(BuildContext context, TopCustomer c) {
     return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         borderRadius: BorderRadius.circular(10),
@@ -469,8 +465,8 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
     return _model.serviceMix.map((s) {
       final pct = (s.count / total * 100);
       return Container(
-        margin: EdgeInsets.only(bottom: 8),
-        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: FlutterFlowTheme.of(context).secondaryBackground,
           borderRadius: BorderRadius.circular(10),

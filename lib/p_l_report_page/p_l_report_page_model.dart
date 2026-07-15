@@ -1,12 +1,6 @@
-import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'p_l_report_page_widget.dart' show PLReportPageWidget;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 /// Fixed branch list, matching apc_webapp App.jsx's BRANCHES constant.
 const List<String> kPLReportBranches = [

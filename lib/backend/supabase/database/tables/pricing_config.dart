@@ -10,7 +10,7 @@ class PricingConfigTable extends SupabaseTable<PricingConfigRow> {
 }
 
 class PricingConfigRow extends SupabaseDataRow {
-  PricingConfigRow(Map<String, dynamic> data) : super(data);
+  PricingConfigRow(super.data);
 
   @override
   SupabaseTable get table => PricingConfigTable();
@@ -22,6 +22,6 @@ class PricingConfigRow extends SupabaseDataRow {
   String? get orgId => getField<String>('org_id');
   set orgId(String? value) => setField<String>('org_id', value);
 
-  dynamic? get config => getField<dynamic>('config');
-  set config(dynamic? value) => setField<dynamic>('config', value);
+  dynamic get config => getField<dynamic>('config');
+  set config(dynamic value) => setField<dynamic>('config', value);
 }

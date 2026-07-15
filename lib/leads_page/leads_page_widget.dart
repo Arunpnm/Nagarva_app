@@ -2,13 +2,10 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'leads_page_model.dart';
 export 'leads_page_model.dart';
 
@@ -110,7 +107,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
           onPressed: () async {
             context.pushNamed(NewLeadPageWidget.routeName);
           },
-          backgroundColor: Color(0xFFFFA000),
+          backgroundColor: const Color(0xFFFFA000),
         ),
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
@@ -131,7 +128,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: [],
+          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
@@ -142,7 +139,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
               color: FlutterFlowTheme.of(context).primaryBackground,
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -164,7 +161,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -231,7 +228,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 2.0)),
+                                ].divide(const SizedBox(height: 2.0)),
                               ),
                             ),
                           ),
@@ -246,7 +243,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -313,7 +310,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 2.0)),
+                                ].divide(const SizedBox(height: 2.0)),
                               ),
                             ),
                           ),
@@ -328,7 +325,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -395,7 +392,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 2.0)),
+                                ].divide(const SizedBox(height: 2.0)),
                               ),
                             ),
                           ),
@@ -410,7 +407,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                               borderRadius: BorderRadius.circular(10.0),
                             ),
                             child: Padding(
-                              padding: EdgeInsetsDirectional.fromSTEB(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
                                   0.0, 10.0, 0.0, 10.0),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -477,12 +474,12 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                   .fontStyle,
                                         ),
                                   ),
-                                ].divide(SizedBox(height: 2.0)),
+                                ].divide(const SizedBox(height: 2.0)),
                               ),
                             ),
                           ),
                         ),
-                      ].divide(SizedBox(width: 10.0)),
+                      ].divide(const SizedBox(width: 10.0)),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
@@ -517,7 +514,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -559,7 +556,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                         .fontStyle,
                                               ),
                                         ),
-                                      ].divide(SizedBox(height: 2.0)),
+                                      ].divide(const SizedBox(height: 2.0)),
                                     ),
                                   ),
                                 ),
@@ -588,7 +585,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -630,7 +627,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                         .fontStyle,
                                               ),
                                         ),
-                                      ].divide(SizedBox(height: 2.0)),
+                                      ].divide(const SizedBox(height: 2.0)),
                                     ),
                                   ),
                                 ),
@@ -659,7 +656,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -701,7 +698,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                         .fontStyle,
                                               ),
                                         ),
-                                      ].divide(SizedBox(height: 2.0)),
+                                      ].divide(const SizedBox(height: 2.0)),
                                     ),
                                   ),
                                 ),
@@ -730,7 +727,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -772,7 +769,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                         .fontStyle,
                                               ),
                                         ),
-                                      ].divide(SizedBox(height: 2.0)),
+                                      ].divide(const SizedBox(height: 2.0)),
                                     ),
                                   ),
                                 ),
@@ -801,7 +798,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -843,7 +840,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                         .fontStyle,
                                               ),
                                         ),
-                                      ].divide(SizedBox(height: 2.0)),
+                                      ].divide(const SizedBox(height: 2.0)),
                                     ),
                                   ),
                                 ),
@@ -872,7 +869,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsetsDirectional.fromSTEB(
+                                    padding: const EdgeInsetsDirectional.fromSTEB(
                                         0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -914,13 +911,13 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                         .fontStyle,
                                               ),
                                         ),
-                                      ].divide(SizedBox(height: 2.0)),
+                                      ].divide(const SizedBox(height: 2.0)),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ].divide(SizedBox(width: 6.0)),
+                          ].divide(const SizedBox(width: 6.0)),
                         ),
                         Text(
                           FFLocalizations.of(context).getText(
@@ -956,7 +953,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                               scrollDirection: Axis.vertical,
                               itemCount: leadsListItem.length,
                               separatorBuilder: (_, __) =>
-                                  SizedBox(height: 12.0),
+                                  const SizedBox(height: 12.0),
                               itemBuilder: (context, leadsListItemIndex) {
                                 final leadsListItemItem =
                                     leadsListItem[leadsListItemIndex];
@@ -1028,7 +1025,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                       borderRadius: BorderRadius.circular(12.0),
                                     ),
                                     child: Padding(
-                                      padding: EdgeInsets.all(16.0),
+                                      padding: const EdgeInsets.all(16.0),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.max,
                                         mainAxisAlignment:
@@ -1197,9 +1194,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(SizedBox(width: 4.0)),
+                                                ].divide(const SizedBox(width: 4.0)),
                                               ),
-                                            ].divide(SizedBox(height: 4.0)),
+                                            ].divide(const SizedBox(height: 4.0)),
                                           ),
                                           Container(
                                             decoration: BoxDecoration(
@@ -1210,7 +1207,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                   BorderRadius.circular(12.0),
                                             ),
                                             child: Padding(
-                                              padding: EdgeInsetsDirectional
+                                              padding: const EdgeInsetsDirectional
                                                   .fromSTEB(
                                                       10.0, 4.0, 10.0, 4.0),
                                               child: Text(
@@ -1259,7 +1256,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                             );
                           },
                         ),
-                      ].divide(SizedBox(height: 12.0)),
+                      ].divide(const SizedBox(height: 12.0)),
                     ),
                     Container(
                       width: double.infinity,
@@ -1268,7 +1265,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1363,7 +1360,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 4.0)),
+                              ].divide(const SizedBox(height: 4.0)),
                             ),
                             Container(
                               decoration: BoxDecoration(
@@ -1372,7 +1369,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
                               child: Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
                                     10.0, 4.0, 10.0, 4.0),
                                 child: Text(
                                   FFLocalizations.of(context).getText(
@@ -1415,7 +1412,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1510,7 +1507,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 4.0)),
+                              ].divide(const SizedBox(height: 4.0)),
                             ),
                             Container(
                               decoration: BoxDecoration(
@@ -1519,7 +1516,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
                               child: Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
                                     10.0, 4.0, 10.0, 4.0),
                                 child: Text(
                                   FFLocalizations.of(context).getText(
@@ -1562,7 +1559,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1657,7 +1654,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 4.0)),
+                              ].divide(const SizedBox(height: 4.0)),
                             ),
                             Container(
                               decoration: BoxDecoration(
@@ -1666,7 +1663,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
                               child: Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
                                     10.0, 4.0, 10.0, 4.0),
                                 child: Text(
                                   FFLocalizations.of(context).getText(
@@ -1709,7 +1706,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1804,7 +1801,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                             .fontStyle,
                                       ),
                                 ),
-                              ].divide(SizedBox(height: 4.0)),
+                              ].divide(const SizedBox(height: 4.0)),
                             ),
                             Container(
                               decoration: BoxDecoration(
@@ -1813,7 +1810,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
                               child: Padding(
-                                padding: EdgeInsetsDirectional.fromSTEB(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
                                     10.0, 4.0, 10.0, 4.0),
                                 child: Text(
                                   FFLocalizations.of(context).getText(
@@ -1849,7 +1846,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                         ),
                       ),
                     ),
-                  ].divide(SizedBox(height: 16.0)),
+                  ].divide(const SizedBox(height: 16.0)),
                 ),
               ),
             ),

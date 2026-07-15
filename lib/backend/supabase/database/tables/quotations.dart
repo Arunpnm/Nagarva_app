@@ -9,7 +9,7 @@ class QuotationsTable extends SupabaseTable<QuotationsRow> {
 }
 
 class QuotationsRow extends SupabaseDataRow {
-  QuotationsRow(Map<String, dynamic> data) : super(data);
+  QuotationsRow(super.data);
 
   @override
   SupabaseTable get table => QuotationsTable();
@@ -42,11 +42,11 @@ class QuotationsRow extends SupabaseDataRow {
   int? get toFloor => getField<int>('to_floor');
   set toFloor(int? value) => setField<int>('to_floor', value);
 
-  dynamic? get items => getField<dynamic>('items');
-  set items(dynamic? value) => setField<dynamic>('items', value);
+  dynamic get items => getField<dynamic>('items');
+  set items(dynamic value) => setField<dynamic>('items', value);
 
-  dynamic? get charges => getField<dynamic>('charges');
-  set charges(dynamic? value) => setField<dynamic>('charges', value);
+  dynamic get charges => getField<dynamic>('charges');
+  set charges(dynamic value) => setField<dynamic>('charges', value);
 
   double? get subtotal => getField<double>('subtotal');
   set subtotal(double? value) => setField<double>('subtotal', value);
