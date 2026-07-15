@@ -1,0 +1,562 @@
+import '/backend/supabase/supabase.dart';
+import '/flutter_flow/flutter_flow_util.dart';
+import '/flutter_flow/flutter_flow_widgets.dart';
+import '/app_session.dart';
+import '/index.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'login_page_model.dart';
+export 'login_page_model.dart';
+
+/// Two-path login:
+/// - Vendor tab: Supabase Auth (email + password) — the org owner/admin.
+/// - Staff tab: phone + PIN, scoped to the vendor's org (client-side check
+///   for now; see CLAUDE_ADDENDUM_vendor_flow.md item 5 — this moves behind
+///   a Supabase Edge Function + RLS in Phase 0).
+class LoginPageWidget extends StatefulWidget {
+  const LoginPageWidget({super.key});
+
+  static String routeName = 'LoginPage';
+  static String routePath = '/login';
+
+  @override
+  State<LoginPageWidget> createState() => _LoginPageWidgetState();
+}
+
+class _LoginPageWidgetState extends State<LoginPageWidget> {
+  late LoginPageModel _model;
+
+  final scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _model = createModel(context, () => LoginPageModel());
+  }
+
+  @override
+  void dispose() {
+    _model.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleVendorLogin() async {
+    final email = _model.vendorEmailController!.text.trim();
+    final password = _model.vendorPasswordController!.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      safeSetState(() => _model.errorMessage = 'Enter email and password.');
+      return;
+    }
+
+    safeSetState(() {
+      _model.isLoading = true;
+      _model.errorMessage = null;
+    });
+
+    try {
+      final authResponse = await SupaFlow.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      final user = authResponse.user;
+      if (user == null) {
+        throw Exception('Invalid email or password.');
+      }
+
+      final members = await OrgMembersTable().queryRows(
+        queryFn: (q) => q.eq('user_id', user.id).limit(1),
+      );
+      if (members.isEmpty || members.first.orgId == null) {
+        throw Exception('This account is not linked to any organization.');
+      }
+      final orgId = members.first.orgId!;
+
+      final orgs = await OrganizationsTable().queryRows(
+        queryFn: (q) => q.eq('id', orgId).limit(1),
+      );
+      final org = orgs.isNotEmpty ? orgs.first : null;
+
+      Map<String, dynamic> limits = {};
+      Map<String, dynamic> features = {};
+      String? planName;
+      try {
+        final planId = org?.planId;
+        final plans = planId != null
+            ? await SubscriptionPlansTable()
+                .queryRows(queryFn: (q) => q.eq('id', planId).limit(1))
+            : await SubscriptionPlansTable().queryRows(
+                queryFn: (q) => q.eq('is_default_trial', true).limit(1),
+              );
+        if (plans.isNotEmpty) {
+          final plan = plans.first;
+          limits = (plan.limits is Map)
+              ? Map<String, dynamic>.from(plan.limits as Map)
+              : {};
+          features = (plan.features is Map)
+              ? Map<String, dynamic>.from(plan.features as Map)
+              : {};
+          planName = plan.name;
+        }
+      } catch (_) {
+        // Plan lookup is best-effort — don't block login on it.
+      }
+
+      AppSession.instance.setVendorSession(
+        authUserId: user.id,
+        orgId: orgId,
+        orgName: org?.name ?? '',
+        orgSlug: org?.slug ?? '',
+        limits: limits,
+        features: features,
+        planName: planName,
+        trialEndsAt: org?.trialEndsAt,
+      );
+
+      if (mounted) context.go(HomePageWidget.routePath);
+    } catch (e) {
+      safeSetState(() {
+        _model.errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _model.isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handleStaffLogin() async {
+    final input = _model.namePhoneFieldTextController!.text.trim();
+    final pin = _model.pinFieldTextController!.text.trim();
+
+    if (input.isEmpty || pin.isEmpty) {
+      safeSetState(
+          () => _model.errorMessage = 'Enter your name/phone and PIN.');
+      return;
+    }
+
+    safeSetState(() {
+      _model.isLoading = true;
+      _model.errorMessage = null;
+    });
+
+    try {
+      // Client-side phone/name + PIN match against `staff`. Insecure by
+      // design for now (see CLAUDE.md "Current login flow") — moves behind
+      // an Edge Function once RLS is in place.
+      var rows = await StaffTable().queryRows(
+        queryFn: (q) => q.eq('phone', input),
+      );
+      if (rows.isEmpty) {
+        rows = await StaffTable().queryRows(
+          queryFn: (q) => q.eq('name', input),
+        );
+      }
+      final match =
+          rows.where((r) => r.pin == pin && (r.active ?? true)).toList();
+      if (match.isEmpty) {
+        throw Exception('Invalid name/phone or PIN.');
+      }
+      final staff = match.first;
+      AppSession.instance.setStaff(staffId: staff.id!, staffName: staff.name);
+
+      final orgId = staff.orgId;
+      if (orgId != null) {
+        try {
+          final orgs = await OrganizationsTable().queryRows(
+            queryFn: (q) => q.eq('id', orgId).limit(1),
+          );
+          final org = orgs.isNotEmpty ? orgs.first : null;
+
+          Map<String, dynamic> limits = {};
+          Map<String, dynamic> features = {};
+          String? planName;
+          if (org?.planId != null) {
+            final plans = await SubscriptionPlansTable().queryRows(
+              queryFn: (q) => q.eq('id', org!.planId!).limit(1),
+            );
+            if (plans.isNotEmpty) {
+              final plan = plans.first;
+              limits = (plan.limits is Map)
+                  ? Map<String, dynamic>.from(plan.limits as Map)
+                  : {};
+              features = (plan.features is Map)
+                  ? Map<String, dynamic>.from(plan.features as Map)
+                  : {};
+              planName = plan.name;
+            }
+          }
+
+          AppSession.instance.setOrgOnly(
+            orgId: orgId,
+            orgName: org?.name,
+            orgSlug: org?.slug,
+            limits: limits,
+            features: features,
+            planName: planName,
+            trialEndsAt: org?.trialEndsAt,
+          );
+        } catch (_) {
+          // org_id column may not exist on this deployment yet — still
+          // scope the session to the org id we do have.
+          AppSession.instance.setOrgOnly(orgId: orgId);
+        }
+      }
+
+      if (mounted) context.go(HomePageWidget.routePath);
+    } catch (e) {
+      safeSetState(() {
+        _model.errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _model.isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: Scaffold(
+        key: scaffoldKey,
+        backgroundColor: const Color(0xFF0F1117),
+        body: SafeArea(
+          top: true,
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0F1117), Color(0xFF1A1A2E)],
+                stops: [0.0, 1.0],
+                begin: AlignmentDirectional(1.0, 1.0),
+                end: AlignmentDirectional(-1.0, -1.0),
+              ),
+            ),
+            alignment: const AlignmentDirectional(0.0, 0.0),
+            child: Center(
+              child: SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Column(
+                        children: [
+                          Container(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2A1200),
+                              borderRadius: BorderRadius.circular(45),
+                            ),
+                            child: const Icon(
+                              Icons.local_shipping,
+                              color: Color(0xFFFF6B35),
+                              size: 48,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            // Was hardcoded 'Arun Packers And Couriers'
+                            // (CLAUDE.md known bug #5). This screen is now
+                            // the shared multi-tenant login gateway (any
+                            // vendor's staff/owner can land here before an
+                            // org is known), so it shows the platform name
+                            // rather than one tenant's brand. Per-org
+                            // branding still applies post-login (see
+                            // SettingsPage / AppSession.currentOrgName).
+                            'Nagarva',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.interTight(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Industry ERP for packers & movers',
+                            style: GoogleFonts.inter(
+                              color: Colors.white54,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Vendor / Staff tab switcher
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E2035),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          children: [
+                            _tabButton(label: 'Vendor Login', index: 0),
+                            _tabButton(label: 'Staff Login', index: 1),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E2035),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.all(20),
+                        child: _model.activeTab == 0
+                            ? _buildVendorForm()
+                            : _buildStaffForm(),
+                      ),
+
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.lock,
+                              color: Color(0xFF888899), size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Secured & Encrypted',
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFF888899),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tabButton({required String label, required int index}) {
+    final selected = _model.activeTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => safeSetState(() {
+          _model.activeTab = index;
+          _model.errorMessage = null;
+        }),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFFF6B35) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: GoogleFonts.interTight(
+              color: selected ? Colors.white : Colors.white54,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVendorForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _textField(
+          controller: _model.vendorEmailController!,
+          focusNode: _model.vendorEmailFocusNode!,
+          label: 'Email',
+          hint: 'owner@company.com',
+          icon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        const SizedBox(height: 14),
+        _textField(
+          controller: _model.vendorPasswordController!,
+          focusNode: _model.vendorPasswordFocusNode!,
+          label: 'Password',
+          hint: 'Your password',
+          icon: Icons.lock_outline,
+          obscureText: !_model.vendorPasswordVisible,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _model.vendorPasswordVisible
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+              color: Colors.white38,
+              size: 20,
+            ),
+            onPressed: () => safeSetState(
+              () => _model.vendorPasswordVisible =
+                  !_model.vendorPasswordVisible,
+            ),
+          ),
+        ),
+        if (_model.errorMessage != null) ...[
+          const SizedBox(height: 14),
+          _errorBox(_model.errorMessage!),
+        ],
+        const SizedBox(height: 18),
+        FFButtonWidget(
+          text: 'Log In',
+          onPressed: _model.isLoading ? null : _handleVendorLogin,
+          options: FFButtonOptions(
+            width: double.infinity,
+            height: 52,
+            color: const Color(0xFFFF6B35),
+            textStyle: GoogleFonts.interTight(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            elevation: 0,
+          ),
+          showLoadingIndicator: _model.isLoading,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "New here? ",
+              style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+            ),
+            GestureDetector(
+              onTap: () => context.go(SignupPageWidget.routePath),
+              child: Text(
+                'Create an account',
+                style: GoogleFonts.inter(
+                  color: const Color(0xFFFF6B35),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStaffForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _textField(
+          controller: _model.namePhoneFieldTextController!,
+          focusNode: _model.namePhoneFieldFocusNode!,
+          label: 'Name or Phone',
+          hint: 'Enter your name or phone',
+          icon: Icons.person_outline,
+        ),
+        const SizedBox(height: 14),
+        _textField(
+          controller: _model.pinFieldTextController!,
+          focusNode: _model.pinFieldFocusNode!,
+          label: 'PIN',
+          hint: '4-digit PIN',
+          icon: Icons.pin_outlined,
+          keyboardType: TextInputType.number,
+          obscureText: !_model.pinFieldVisibility,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _model.pinFieldVisibility
+                  ? Icons.visibility_off
+                  : Icons.visibility,
+              color: Colors.white38,
+              size: 20,
+            ),
+            onPressed: () => safeSetState(
+              () => _model.pinFieldVisibility = !_model.pinFieldVisibility,
+            ),
+          ),
+        ),
+        if (_model.errorMessage != null) ...[
+          const SizedBox(height: 14),
+          _errorBox(_model.errorMessage!),
+        ],
+        const SizedBox(height: 18),
+        FFButtonWidget(
+          text: 'Log In',
+          onPressed: _model.isLoading ? null : _handleStaffLogin,
+          options: FFButtonOptions(
+            width: double.infinity,
+            height: 52,
+            color: const Color(0xFFFF6B35),
+            textStyle: GoogleFonts.interTight(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            elevation: 0,
+          ),
+          showLoadingIndicator: _model.isLoading,
+        ),
+      ],
+    );
+  }
+
+  Widget _errorBox(String message) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        message,
+        style: GoogleFonts.inter(color: Colors.redAccent, fontSize: 13),
+      ),
+    );
+  }
+
+  Widget _textField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      style: GoogleFonts.inter(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: GoogleFonts.inter(color: Colors.white54),
+        hintStyle: GoogleFonts.inter(color: Colors.white24),
+        prefixIcon: Icon(icon, color: Colors.white38, size: 20),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: const Color(0xFF2A2D45),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF3A3D55)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 1.5),
+        ),
+      ),
+    );
+  }
+}

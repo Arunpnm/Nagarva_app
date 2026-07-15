@@ -1,0 +1,61 @@
+import '../database.dart';
+
+class DashboardKpisViewTable extends SupabaseTable<DashboardKpisViewRow> {
+  @override
+  String get tableName => 'dashboard_kpis_view';
+
+  @override
+  DashboardKpisViewRow createRow(Map<String, dynamic> data) =>
+      DashboardKpisViewRow(data);
+}
+
+class DashboardKpisViewRow extends SupabaseDataRow {
+  DashboardKpisViewRow(Map<String, dynamic> data) : super(data);
+
+  @override
+  SupabaseTable get table => DashboardKpisViewTable();
+
+  String? get id => getField<String>('id');
+  set id(String? value) => setField<String>('id', value);
+
+  // Added along with the org_id column on the view (Phase 1 multi-tenancy
+  // pass) — see supabase/phase1_add_org_id.sql and the updated
+  // dashboard_kpis_view in supabase/views_dashboard_and_ops.sql.
+  String? get orgId => getField<String>('org_id');
+  set orgId(String? value) => setField<String>('org_id', value);
+
+  double? get revenueThisMonth => getField<double>('revenue_this_month');
+  set revenueThisMonth(double? value) =>
+      setField<double>('revenue_this_month', value);
+
+  double? get labourThisMonth => getField<double>('labour_this_month');
+  set labourThisMonth(double? value) =>
+      setField<double>('labour_this_month', value);
+
+  double? get expensesThisMonth => getField<double>('expenses_this_month');
+  set expensesThisMonth(double? value) =>
+      setField<double>('expenses_this_month', value);
+
+  double? get porterCommThisMonth => getField<double>('porter_comm_this_month');
+  set porterCommThisMonth(double? value) =>
+      setField<double>('porter_comm_this_month', value);
+
+  double? get netProfitThisMonth => getField<double>('net_profit_this_month');
+  set netProfitThisMonth(double? value) =>
+      setField<double>('net_profit_this_month', value);
+
+  double? get activeLeads => getField<double>('active_leads');
+  set activeLeads(double? value) => setField<double>('active_leads', value);
+
+  double? get ordersThisMonth => getField<double>('orders_this_month');
+  set ordersThisMonth(double? value) =>
+      setField<double>('orders_this_month', value);
+
+  double? get outstandingAmount => getField<double>('outstanding_amount');
+  set outstandingAmount(double? value) =>
+      setField<double>('outstanding_amount', value);
+
+  double? get remindersToday => getField<double>('reminders_today');
+  set remindersToday(double? value) =>
+      setField<double>('reminders_today', value);
+}
