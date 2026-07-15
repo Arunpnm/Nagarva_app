@@ -1,0 +1,2 @@
+-- SEED (run once per environment, adjust IDs):
+-- insert into org_members (org_id, user_id, role) values ('<APC_org_id>', '<owner_user_id>', 'owner');
