@@ -17,13 +17,39 @@ void main() async {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
 
-  // Don't fetch font files from Google's CDN at runtime (was causing
-  // network stack traces at startup — see CLAUDE.md known bug #3).
-  // Fonts should be bundled in assets/fonts/ and declared in pubspec.yaml;
-  // until that's done, GoogleFonts falls back to the platform default.
+  // Allow google_fonts to fetch font files at runtime. The proper v1
+  // launch fix is to bundle Inter / InterTight TTFs in assets/fonts/
+  // and declare them in pubspec.yaml, then set this back to false so
+  // the app works offline (job sites often have poor data).
+  // NOTE: if any other file sets this to false AFTER main() runs
+  // (e.g. inside FlutterFlowTheme), that assignment wins — it must be
+  // removed there too.
   GoogleFonts.config.allowRuntimeFetching = true;
 
   await SupaFlow.initialize();
+
+  // Restore org context on app start (browser reload / cold start).
+  // Supabase restores the auth session automatically, but currentOrgId
+  // is only set during the login flow — without this, every org-scoped
+  // query trips the OrgScope guard rail and pages render blank.
+  // TODO(W2): when the org switcher is built, persist the last-selected
+  // org and restore that instead of the first membership row.
+  final restoredUser = SupaFlow.client.auth.currentUser;
+  if (restoredUser != null && AppSession.instance.currentOrgId == null) {
+    try {
+      final row = await SupaFlow.client
+          .from('org_members')
+          .select('org_id')
+          .eq('user_id', restoredUser.id)
+          .limit(1)
+          .maybeSingle();
+      if (row != null && row['org_id'] != null) {
+        AppSession.instance.currentOrgId = row['org_id'] as String;
+      }
+    } catch (e) {
+      debugPrint('Org restore failed: $e');
+    }
+  }
 
   await FlutterFlowTheme.initialize();
 
