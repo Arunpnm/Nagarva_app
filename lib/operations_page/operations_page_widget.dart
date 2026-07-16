@@ -1,4 +1,4 @@
-import '/backend/supabase/supabase.dart';
+﻿import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -32,7 +32,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
+      // Phase 1 multi-tenancy pass â€” see supabase/phase1_add_org_id.sql.
       _model.tripsViewOut = await TripsViewTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
@@ -52,7 +52,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
     super.dispose();
   }
 
-  /// Owner-side half of the supervisor OTP job workflow — ported from
+  /// Owner-side half of the supervisor OTP job workflow â€” ported from
   /// apc_webapp App.jsx's Dashboard pendingApprovals/approveEntry/
   /// reopenEntry (lines ~1394-1416). See supervisor_job_page_widget.dart
   /// for the field side.
@@ -75,7 +75,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
       ...OrgScope.stamp(),
       'order_id': order.id,
       'status': order.status ?? 'delivered',
-      'note': '✅ Supervisor entries approved by owner/manager',
+      'note': 'âœ… Supervisor entries approved by owner/manager',
       'tracked_by': 'Owner',
     });
     await _loadPendingApprovals();
@@ -91,7 +91,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
       ...OrgScope.stamp(),
       'order_id': order.id,
       'status': order.status ?? 'transit',
-      'note': '↩️ Entries sent back to supervisor for correction',
+      'note': 'â†©ï¸ Entries sent back to supervisor for correction',
       'tracked_by': 'Owner',
     });
     await _loadPendingApprovals();
@@ -416,7 +416,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'upoxox4n' /* Chennai → Vellore */,
+                                    'upoxox4n' /* Chennai â†’ Vellore */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -575,7 +575,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'jzvjnco5' /* Salem → Erode */,
+                                    'jzvjnco5' /* Salem â†’ Erode */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -734,7 +734,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    '3jafcqnt' /* Coimbatore → Ooty */,
+                                    '3jafcqnt' /* Coimbatore â†’ Ooty */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -916,7 +916,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'ulog1xw6' /* Madurai → Tirunelveli */,
+                                    'ulog1xw6' /* Madurai â†’ Tirunelveli */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -986,6 +986,8 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                             return ListView.separated(
                               padding: EdgeInsets.zero,
                               primary: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               scrollDirection: Axis.vertical,
                               itemCount: tripsViewListItem.length,
                               separatorBuilder: (_, __) =>

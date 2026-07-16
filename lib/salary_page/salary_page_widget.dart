@@ -1,4 +1,4 @@
-import '/backend/supabase/supabase.dart';
+﻿import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -39,7 +39,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
       _model.staffList = staffRows.toList().cast<StaffRow>();
       safeSetState(() {});
       // LEAK_AUDIT.md leak #2 (Stage 1 fix): these two view queries had no
-      // filter at all (queryFn: (q) => q) — every org's attendance/advance
+      // filter at all (queryFn: (q) => q) â€” every org's attendance/advance
       // rows were returned. Both views carry org_id since the Phase 1
       // migration; just weren't filtered on it here.
       _model.attendanceViewOut = await AttendanceViewTable().queryRows(
@@ -191,7 +191,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'wro71qid' /* ₹1,82,000 */,
+                                'wro71qid' /* â‚¹1,82,000 */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .headlineMedium
@@ -255,6 +255,8 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
                               primary: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               scrollDirection: Axis.vertical,
                               itemCount: staffListItem.length,
                               separatorBuilder: (_, __) =>
@@ -437,6 +439,8 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
                               primary: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               scrollDirection: Axis.vertical,
                               itemCount: attendanceViewListItem.length,
                               separatorBuilder: (_, __) =>
@@ -552,7 +556,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                                                 Text(
                                                   FFLocalizations.of(context)
                                                       .getText(
-                                                    '1e5ruhq4' /* · */,
+                                                    '1e5ruhq4' /* Â· */,
                                                   ),
                                                   style: FlutterFlowTheme.of(
                                                           context)
@@ -754,6 +758,8 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
                               primary: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               scrollDirection: Axis.vertical,
                               itemCount: advancesViewListItem.length,
                               separatorBuilder: (_, __) =>
@@ -1191,7 +1197,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'pe7sgx36' /* ₹22,000 */,
+                                    'pe7sgx36' /* â‚¹22,000 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -1347,7 +1353,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'v7l0sq80' /* ₹20,000 */,
+                                    'v7l0sq80' /* â‚¹20,000 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -1503,7 +1509,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'ryt9t75l' /* ₹14,000 */,
+                                    'ryt9t75l' /* â‚¹14,000 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -1659,7 +1665,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'm9mx08au' /* ₹21,000 */,
+                                    'm9mx08au' /* â‚¹21,000 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -1815,7 +1821,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    '9bao5w4n' /* ₹18,000 */,
+                                    '9bao5w4n' /* â‚¹18,000 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall

@@ -1,4 +1,4 @@
-import '/backend/supabase/supabase.dart';
+﻿import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -32,7 +32,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
+      // Phase 1 multi-tenancy pass â€” see supabase/phase1_add_org_id.sql.
       _model.remindersViewOut = await RemindersViewTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
@@ -2407,7 +2407,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'n08p0hfe' /* Chennai → Vellore scheduled de... */,
+                                    'n08p0hfe' /* Chennai â†’ Vellore scheduled de... */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -2624,6 +2624,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                             return ListView.separated(
                               padding: EdgeInsets.zero,
                               primary: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               scrollDirection: Axis.vertical,
                               itemCount: remindersViewListItem.length,
                               separatorBuilder: (_, __) =>

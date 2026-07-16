@@ -1,4 +1,4 @@
-import '/backend/supabase/supabase.dart';
+﻿import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -32,7 +32,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
+      // Phase 1 multi-tenancy pass â€” see supabase/phase1_add_org_id.sql.
       _model.expensesOut = await ExpensesTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
@@ -138,7 +138,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'tvqzrm2l' /* ₹68,450 */,
+                                'tvqzrm2l' /* â‚¹68,450 */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .headlineMedium
@@ -164,7 +164,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'in7jd0fm' /* ↑ 12% vs last month */,
+                                'in7jd0fm' /* â†‘ 12% vs last month */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
@@ -228,6 +228,8 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                             return ListView.separated(
                               padding: EdgeInsets.zero,
                               primary: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               scrollDirection: Axis.vertical,
                               itemCount: expensesListItem.length,
                               separatorBuilder: (_, __) =>
@@ -469,7 +471,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'yiso3llp' /* ₹28,000 */,
+                                    'yiso3llp' /* â‚¹28,000 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -575,7 +577,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'dnmxextk' /* ₹12,500 */,
+                                    'dnmxextk' /* â‚¹12,500 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -681,7 +683,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'd93laitb' /* ₹18,000 */,
+                                    'd93laitb' /* â‚¹18,000 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -787,7 +789,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    '1zj61rwu' /* ₹9,950 */,
+                                    '1zj61rwu' /* â‚¹9,950 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall

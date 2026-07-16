@@ -1,4 +1,4 @@
-import '/backend/supabase/supabase.dart';
+﻿import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -31,7 +31,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
+      // Phase 1 multi-tenancy pass â€” see supabase/phase1_add_org_id.sql.
       _model.vehiclesOut = await VehiclesTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
@@ -386,6 +386,8 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                             return ListView.separated(
                               padding: EdgeInsets.zero,
                               primary: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               scrollDirection: Axis.vertical,
                               itemCount: vehiclesListItem.length,
                               separatorBuilder: (_, __) =>

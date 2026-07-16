@@ -1,4 +1,4 @@
-import '/backend/supabase/supabase.dart';
+﻿import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -950,6 +950,8 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                             return ListView.separated(
                               padding: EdgeInsets.zero,
                               primary: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               scrollDirection: Axis.vertical,
                               itemCount: leadsListItem.length,
                               separatorBuilder: (_, __) =>

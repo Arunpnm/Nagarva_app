@@ -1,4 +1,4 @@
-import '/backend/supabase/supabase.dart';
+﻿import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -366,6 +366,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             return ListView.separated(
                               padding: EdgeInsets.zero,
                               primary: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
                               scrollDirection: Axis.vertical,
                               itemCount: ordersListItem.length,
                               separatorBuilder: (_, __) =>
@@ -1600,6 +1602,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: ordersListItem.length,
                                     separatorBuilder: (_, __) =>
@@ -1927,6 +1931,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: pendingOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -2252,6 +2258,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: confirmedOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -2579,6 +2587,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: transitOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -2903,6 +2913,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: doneOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -3227,6 +3239,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: cancelledOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -4382,6 +4396,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: ordersListItem.length,
                                     separatorBuilder: (_, __) =>
@@ -4709,6 +4725,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: pendingOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -5034,6 +5052,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: confirmedOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -5361,6 +5381,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: transitOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -5685,6 +5707,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: doneOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -6009,6 +6033,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: cancelledOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -7164,6 +7190,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: ordersListItem.length,
                                     separatorBuilder: (_, __) =>
@@ -7491,6 +7519,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: pendingOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -7816,6 +7846,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: confirmedOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -8143,6 +8175,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: transitOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -8467,6 +8501,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: doneOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -8791,6 +8827,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: cancelledOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -9946,6 +9984,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: ordersListItem.length,
                                     separatorBuilder: (_, __) =>
@@ -10273,6 +10313,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: pendingOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -10598,6 +10640,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: confirmedOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -10925,6 +10969,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: transitOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -11249,6 +11295,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: doneOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -11573,6 +11621,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                   return ListView.separated(
                                     padding: EdgeInsets.zero,
                                     primary: false,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     scrollDirection: Axis.vertical,
                                     itemCount: cancelledOrder.length,
                                     separatorBuilder: (_, __) =>
@@ -12005,7 +12055,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'deirjap0' /* Chennai → Bangalore */,
+                                'deirjap0' /* Chennai â†’ Bangalore */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
@@ -12036,7 +12086,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'h6usjo38' /* ₹12,500 */,
+                                    'h6usjo38' /* â‚¹12,500 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -12191,7 +12241,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                's211a4r6' /* Mumbai → Pune */,
+                                's211a4r6' /* Mumbai â†’ Pune */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
@@ -12222,7 +12272,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    's2gc5g0q' /* ₹8,000 */,
+                                    's2gc5g0q' /* â‚¹8,000 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -12377,7 +12427,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                '4hm72mi9' /* Delhi → Noida */,
+                                '4hm72mi9' /* Delhi â†’ Noida */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
@@ -12408,7 +12458,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'bmvb44rc' /* ₹5,500 */,
+                                    'bmvb44rc' /* â‚¹5,500 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -12563,7 +12613,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'amrtvae4' /* Hyderabad → Chennai */,
+                                'amrtvae4' /* Hyderabad â†’ Chennai */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
@@ -12594,7 +12644,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    '67xw1isk' /* ₹9,200 */,
+                                    '67xw1isk' /* â‚¹9,200 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
