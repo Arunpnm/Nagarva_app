@@ -21,7 +21,7 @@ void main() async {
   // network stack traces at startup — see CLAUDE.md known bug #3).
   // Fonts should be bundled in assets/fonts/ and declared in pubspec.yaml;
   // until that's done, GoogleFonts falls back to the platform default.
-  GoogleFonts.config.allowRuntimeFetching = false;
+  GoogleFonts.config.allowRuntimeFetching = true;
 
   await SupaFlow.initialize();
 
