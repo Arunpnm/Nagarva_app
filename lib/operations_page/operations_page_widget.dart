@@ -1,4 +1,4 @@
-﻿import '/backend/supabase/supabase.dart';
+import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -32,11 +32,11 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass â€” see supabase/phase1_add_org_id.sql.
+      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
       _model.tripsViewOut = await TripsViewTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
-      _model.tripsViewList = _model.tripsViewOut!.toList().cast<TripsViewRow>();
+      _model.tripsViewList = (_model.tripsViewOut ?? []).toList().cast<TripsViewRow>();
       safeSetState(() {});
 
       await _loadPendingApprovals();
@@ -52,7 +52,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
     super.dispose();
   }
 
-  /// Owner-side half of the supervisor OTP job workflow â€” ported from
+  /// Owner-side half of the supervisor OTP job workflow — ported from
   /// apc_webapp App.jsx's Dashboard pendingApprovals/approveEntry/
   /// reopenEntry (lines ~1394-1416). See supervisor_job_page_widget.dart
   /// for the field side.
@@ -75,7 +75,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
       ...OrgScope.stamp(),
       'order_id': order.id,
       'status': order.status ?? 'delivered',
-      'note': 'âœ… Supervisor entries approved by owner/manager',
+      'note': '✅ Supervisor entries approved by owner/manager',
       'tracked_by': 'Owner',
     });
     await _loadPendingApprovals();
@@ -91,7 +91,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
       ...OrgScope.stamp(),
       'order_id': order.id,
       'status': order.status ?? 'transit',
-      'note': 'â†©ï¸ Entries sent back to supervisor for correction',
+      'note': '↩️ Entries sent back to supervisor for correction',
       'tracked_by': 'Owner',
     });
     await _loadPendingApprovals();
@@ -416,7 +416,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'upoxox4n' /* Chennai â†’ Vellore */,
+                                    'upoxox4n' /* Chennai → Vellore */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -575,7 +575,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'jzvjnco5' /* Salem â†’ Erode */,
+                                    'jzvjnco5' /* Salem → Erode */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -734,7 +734,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    '3jafcqnt' /* Coimbatore â†’ Ooty */,
+                                    '3jafcqnt' /* Coimbatore → Ooty */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -916,7 +916,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'ulog1xw6' /* Madurai â†’ Tirunelveli */,
+                                    'ulog1xw6' /* Madurai → Tirunelveli */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -1019,7 +1019,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                               CrossAxisAlignment.center,
                                           children: [
                                             Text(
-                                              tripsViewListItemItem.vehicleNo!,
+                                              tripsViewListItemItem.vehicleNo ?? '-',
                                               style: FlutterFlowTheme.of(
                                                       context)
                                                   .titleSmall
@@ -1054,7 +1054,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                                   ),
                                             ),
                                             Text(
-                                              tripsViewListItemItem.tripDate!,
+                                              tripsViewListItemItem.tripDate ?? '-',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -1098,7 +1098,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                               CrossAxisAlignment.center,
                                           children: [
                                             Text(
-                                              tripsViewListItemItem.driverName!,
+                                              tripsViewListItemItem.driverName ?? '-',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodyMedium
@@ -1134,7 +1134,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                             ),
                                             Text(
                                               tripsViewListItemItem
-                                                  .orderCustomer!,
+                                                  .orderCustomer ?? '-',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -1185,7 +1185,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                               size: 14.0,
                                             ),
                                             Text(
-                                              tripsViewListItemItem.fromLoc!,
+                                              tripsViewListItemItem.fromLoc ?? '-',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -1227,7 +1227,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                               size: 12.0,
                                             ),
                                             Text(
-                                              tripsViewListItemItem.toLoc!,
+                                              tripsViewListItemItem.toLoc ?? '-',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -1285,8 +1285,8 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                                   size: 14.0,
                                                 ),
                                                 Text(
-                                                  tripsViewListItemItem
-                                                      .fuelAmount!
+                                                  (tripsViewListItemItem
+                                                      .fuelAmount ?? 0)
                                                       .toString(),
                                                   style: FlutterFlowTheme.of(
                                                           context)
@@ -1338,8 +1338,8 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                                   size: 14.0,
                                                 ),
                                                 Text(
-                                                  tripsViewListItemItem
-                                                      .tollAmount!
+                                                  (tripsViewListItemItem
+                                                      .tollAmount ?? 0)
                                                       .toString(),
                                                   style: FlutterFlowTheme.of(
                                                           context)
@@ -1391,8 +1391,8 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                                                   size: 14.0,
                                                 ),
                                                 Text(
-                                                  tripsViewListItemItem
-                                                      .driverBata!
+                                                  (tripsViewListItemItem
+                                                      .driverBata ?? 0)
                                                       .toString(),
                                                   style: FlutterFlowTheme.of(
                                                           context)

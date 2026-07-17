@@ -39,7 +39,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
       _model.staffOut = await StaffTable().queryRows(
         queryFn: (q) => OrgScope.read(q).order('name'),
       );
-      _model.staffList = _model.staffOut!.toList().cast<StaffRow>();
+      _model.staffList = (_model.staffOut ?? []).toList().cast<StaffRow>();
       safeSetState(() {});
     });
 

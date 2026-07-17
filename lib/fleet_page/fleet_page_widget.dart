@@ -1,4 +1,4 @@
-﻿import '/backend/supabase/supabase.dart';
+import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -31,11 +31,12 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass â€” see supabase/phase1_add_org_id.sql.
+      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
       _model.vehiclesOut = await VehiclesTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
-      _model.vehiclesList = _model.vehiclesOut!.toList().cast<VehiclesRow>();
+      _model.vehiclesList =
+          (_model.vehiclesOut ?? []).toList().cast<VehiclesRow>();
       safeSetState(() {});
     });
 
@@ -419,8 +420,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                               CrossAxisAlignment.center,
                                           children: [
                                             Text(
-                                              vehiclesListItemItem
-                                                  .registration!,
+                                              vehiclesListItemItem.regNo,
                                               style: FlutterFlowTheme.of(
                                                       context)
                                                   .titleSmall
@@ -467,7 +467,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                                     .fromSTEB(
                                                         10.0, 4.0, 10.0, 4.0),
                                                 child: Text(
-                                                  vehiclesListItemItem.status!,
+                                                  vehiclesListItemItem.status ?? '-',
                                                   style: FlutterFlowTheme.of(
                                                           context)
                                                       .labelSmall
@@ -506,7 +506,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                           ],
                                         ),
                                         Text(
-                                          vehiclesListItemItem.type!,
+                                          vehiclesListItemItem.vehicleType ?? '-',
                                           style: FlutterFlowTheme.of(context)
                                               .bodyMedium
                                               .override(
@@ -544,7 +544,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                               CrossAxisAlignment.center,
                                           children: [
                                             Text(
-                                              vehiclesListItemItem.driver!,
+                                              vehiclesListItemItem.driverName ?? '-',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -579,7 +579,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                                       ),
                                             ),
                                             Text(
-                                              vehiclesListItemItem.odometer!,
+                                              '',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall

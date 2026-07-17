@@ -38,7 +38,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
       _model.materialsOut = await MaterialsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).order('name'),
       );
-      _model.materialsList = _model.materialsOut!.toList().cast<MaterialsRow>();
+      _model.materialsList = (_model.materialsOut ?? []).toList().cast<MaterialsRow>();
       safeSetState(() {});
     });
 

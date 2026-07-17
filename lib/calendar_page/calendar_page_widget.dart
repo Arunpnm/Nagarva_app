@@ -1,4 +1,4 @@
-﻿import '/backend/supabase/supabase.dart';
+import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -32,12 +32,12 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass â€” see supabase/phase1_add_org_id.sql.
+      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
       _model.remindersViewOut = await RemindersViewTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
       _model.remindersViewList =
-          _model.remindersViewOut!.toList().cast<RemindersViewRow>();
+          (_model.remindersViewOut ?? []).toList().cast<RemindersViewRow>();
       safeSetState(() {});
     });
 
@@ -2407,7 +2407,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                 ),
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'n08p0hfe' /* Chennai â†’ Vellore scheduled de... */,
+                                    'n08p0hfe' /* Chennai → Vellore scheduled de... */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
@@ -2674,7 +2674,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                             children: [
                                               Text(
                                                 remindersViewListItemItem
-                                                    .title!,
+                                                    .title ?? '-',
                                                 style:
                                                     FlutterFlowTheme.of(context)
                                                         .titleSmall
@@ -2710,7 +2710,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                               ),
                                               Text(
                                                 remindersViewListItemItem
-                                                    .description!,
+                                                    .description ?? '-',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall
@@ -2753,7 +2753,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                 children: [
                                                   Text(
                                                     remindersViewListItemItem
-                                                        .dueDate!,
+                                                        .dueDate ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .labelSmall
@@ -2806,7 +2806,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                                   2.0),
                                                       child: Text(
                                                         remindersViewListItemItem
-                                                            .reminderType!,
+                                                            .reminderType ?? '-',
                                                         style:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -2859,7 +2859,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                   ),
                                                   Text(
                                                     remindersViewListItemItem
-                                                        .leadCustomer!,
+                                                        .leadCustomer ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .labelSmall
@@ -2895,7 +2895,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                   ),
                                                   Text(
                                                     remindersViewListItemItem
-                                                        .orderCustomer!,
+                                                        .orderCustomer ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .labelSmall

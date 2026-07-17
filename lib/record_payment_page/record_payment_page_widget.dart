@@ -1,4 +1,4 @@
-﻿import '/backend/supabase/supabase.dart';
+import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -45,7 +45,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
             .order('move_date', ascending: true),
       );
       _model.pendingPayOrders =
-          _model.pendingPayOut!.toList().cast<OrdersRow>();
+          (_model.pendingPayOut ?? []).toList().cast<OrdersRow>();
       safeSetState(() {});
     });
 
@@ -671,7 +671,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                     decoration: InputDecoration(
                                       labelText:
                                           FFLocalizations.of(context).getText(
-                                        'jkxip03s' /* Amount Received (â‚¹) */,
+                                        'jkxip03s' /* Amount Received (₹) */,
                                       ),
                                       hintText:
                                           FFLocalizations.of(context).getText(
@@ -806,7 +806,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                         // Stage 1 pass: this used to match
                                         // on `eqOrNull('id', ...)`, so a
                                         // null selectedPayOrderId (possible
-                                        // â€” the visibility check above only
+                                        // — the visibility check above only
                                         // tests `== ''`, not null) would
                                         // have silently dropped the id
                                         // filter and updated every order in

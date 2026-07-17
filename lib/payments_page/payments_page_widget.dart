@@ -1,4 +1,4 @@
-﻿import '/backend/supabase/supabase.dart';
+import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -31,7 +31,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
 
     // On page load action.
     // LEAK_AUDIT.md leak #1 (Stage 1 fix): this query had no org_id filter
-    // at all â€” every org's pending-payment orders were returned. This page
+    // at all — every org's pending-payment orders were returned. This page
     // is a live bottom-nav tab (see main.dart's NavBarPage tabs map), not
     // dead code, so it's fixed in place rather than removed.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
@@ -41,7 +41,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
           'pending',
         ),
       );
-      _model.pendingList = _model.pendingOut!.toList().cast<OrdersRow>();
+      _model.pendingList = (_model.pendingOut ?? []).toList().cast<OrdersRow>();
       safeSetState(() {});
     });
 
@@ -155,7 +155,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                   ),
                                   Text(
                                     FFLocalizations.of(context).getText(
-                                      'blxm5b7q' /* â‚¹42,800 */,
+                                      'blxm5b7q' /* ₹42,800 */,
                                     ),
                                     style: FlutterFlowTheme.of(context)
                                         .headlineMedium
@@ -236,7 +236,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                   ),
                                   Text(
                                     FFLocalizations.of(context).getText(
-                                      'ckjxavu4' /* â‚¹1,24,000 */,
+                                      'ckjxavu4' /* ₹1,24,000 */,
                                     ),
                                     style: FlutterFlowTheme.of(context)
                                         .headlineMedium
@@ -387,7 +387,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                     .fromSTEB(
                                                         8.0, 2.0, 8.0, 2.0),
                                                 child: Text(
-                                                  pendingListItemItem.status!,
+                                                  pendingListItemItem.status ?? '-',
                                                   style: FlutterFlowTheme.of(
                                                           context)
                                                       .labelSmall
@@ -426,7 +426,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                           ].divide(const SizedBox(height: 4.0)),
                                         ),
                                         Text(
-                                          pendingListItemItem.amount!
+                                          (pendingListItemItem.amount ?? 0)
                                               .toString(),
                                           style: FlutterFlowTheme.of(context)
                                               .titleMedium
@@ -596,7 +596,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'upqv6idn' /* â‚¹12,500 */,
+                                'upqv6idn' /* ₹12,500 */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .titleMedium
@@ -730,7 +730,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'hy4o0jb5' /* â‚¹8,000 */,
+                                'hy4o0jb5' /* ₹8,000 */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .titleMedium
@@ -864,7 +864,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'xh1zqr2j' /* â‚¹5,500 */,
+                                'xh1zqr2j' /* ₹5,500 */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .titleMedium
@@ -998,7 +998,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'o2hirvdw' /* â‚¹16,800 */,
+                                'o2hirvdw' /* ₹16,800 */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .titleMedium

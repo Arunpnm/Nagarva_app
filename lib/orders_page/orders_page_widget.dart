@@ -1,4 +1,4 @@
-﻿import '/backend/supabase/supabase.dart';
+import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -38,7 +38,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
       _model.allOut = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q).order('created_at'),
       );
-      _model.ordersList = _model.allOut!.toList().cast<OrdersRow>();
+      _model.ordersList = (_model.allOut ?? []).toList().cast<OrdersRow>();
       safeSetState(() {});
       _model.pendingOut = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q)
@@ -48,7 +48,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
             )
             .order('created_at'),
       );
-      _model.pendingOrders = _model.pendingOut!.toList().cast<OrdersRow>();
+      _model.pendingOrders = (_model.pendingOut ?? []).toList().cast<OrdersRow>();
       safeSetState(() {});
       _model.confirmedOut = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q)
@@ -58,7 +58,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
             )
             .order('created_at'),
       );
-      _model.confirmedOrders = _model.confirmedOut!.toList().cast<OrdersRow>();
+      _model.confirmedOrders = (_model.confirmedOut ?? []).toList().cast<OrdersRow>();
       safeSetState(() {});
       _model.transitOut = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q)
@@ -68,7 +68,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
             )
             .order('created_at'),
       );
-      _model.transitOrders = _model.transitOut!.toList().cast<OrdersRow>();
+      _model.transitOrders = (_model.transitOut ?? []).toList().cast<OrdersRow>();
       safeSetState(() {});
       _model.doneOut = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q)
@@ -78,7 +78,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
             )
             .order('created_at'),
       );
-      _model.doneOrders = _model.doneOut!.toList().cast<OrdersRow>();
+      _model.doneOrders = (_model.doneOut ?? []).toList().cast<OrdersRow>();
       safeSetState(() {});
       _model.cancelledOut = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q)
@@ -88,7 +88,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
             )
             .order('created_at'),
       );
-      _model.cancelledOrders = _model.cancelledOut!.toList().cast<OrdersRow>();
+      _model.cancelledOrders = (_model.cancelledOut ?? []).toList().cast<OrdersRow>();
       safeSetState(() {});
     });
 
@@ -539,7 +539,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                       .fromSTEB(
                                                           10.0, 4.0, 10.0, 4.0),
                                                   child: Text(
-                                                    ordersListItemItem.status!,
+                                                    ordersListItemItem.status ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .labelSmall
@@ -592,7 +592,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                 size: 14.0,
                                               ),
                                               Text(
-                                                ordersListItemItem.fromCity!,
+                                                ordersListItemItem.fromCity ?? '-',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall
@@ -634,7 +634,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                 size: 14.0,
                                               ),
                                               Text(
-                                                ordersListItemItem.toCity!,
+                                                ordersListItemItem.toCity ?? '-',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall
@@ -714,7 +714,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     ),
                                               ),
                                               Text(
-                                                ordersListItemItem.amount!
+                                                (ordersListItemItem.amount ?? 0)
                                                     .toString(),
                                                 style:
                                                     FlutterFlowTheme.of(context)
@@ -1694,7 +1694,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   4.0),
                                                       child: Text(
                                                         ordersListItemItem
-                                                            .status!,
+                                                            .status ?? '-',
                                                         style:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -1747,7 +1747,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                   Text(
                                                     ordersListItemItem
-                                                        .fromCity!,
+                                                        .fromCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -1789,7 +1789,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     size: 14.0,
                                                   ),
                                                   Text(
-                                                    ordersListItemItem.toCity!,
+                                                    ordersListItemItem.toCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -1870,7 +1870,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                         ),
                                                   ),
                                                   Text(
-                                                    ordersListItemItem.amount!
+                                                    (ordersListItemItem.amount ?? 0)
                                                         .toString(),
                                                     style: FlutterFlowTheme.of(
                                                             context)
@@ -4488,7 +4488,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   4.0),
                                                       child: Text(
                                                         ordersListItemItem
-                                                            .status!,
+                                                            .status ?? '-',
                                                         style:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -4541,7 +4541,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                   Text(
                                                     ordersListItemItem
-                                                        .fromCity!,
+                                                        .fromCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -4583,7 +4583,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     size: 14.0,
                                                   ),
                                                   Text(
-                                                    ordersListItemItem.toCity!,
+                                                    ordersListItemItem.toCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -4664,7 +4664,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                         ),
                                                   ),
                                                   Text(
-                                                    ordersListItemItem.amount!
+                                                    (ordersListItemItem.amount ?? 0)
                                                         .toString(),
                                                     style: FlutterFlowTheme.of(
                                                             context)
@@ -7282,7 +7282,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   4.0),
                                                       child: Text(
                                                         ordersListItemItem
-                                                            .status!,
+                                                            .status ?? '-',
                                                         style:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -7335,7 +7335,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                   Text(
                                                     ordersListItemItem
-                                                        .fromCity!,
+                                                        .fromCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -7377,7 +7377,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     size: 14.0,
                                                   ),
                                                   Text(
-                                                    ordersListItemItem.toCity!,
+                                                    ordersListItemItem.toCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -7458,7 +7458,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                         ),
                                                   ),
                                                   Text(
-                                                    ordersListItemItem.amount!
+                                                    (ordersListItemItem.amount ?? 0)
                                                         .toString(),
                                                     style: FlutterFlowTheme.of(
                                                             context)
@@ -10076,7 +10076,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                                   4.0),
                                                       child: Text(
                                                         ordersListItemItem
-                                                            .status!,
+                                                            .status ?? '-',
                                                         style:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -10129,7 +10129,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                   ),
                                                   Text(
                                                     ordersListItemItem
-                                                        .fromCity!,
+                                                        .fromCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -10171,7 +10171,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                     size: 14.0,
                                                   ),
                                                   Text(
-                                                    ordersListItemItem.toCity!,
+                                                    ordersListItemItem.toCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -10252,7 +10252,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                         ),
                                                   ),
                                                   Text(
-                                                    ordersListItemItem.amount!
+                                                    (ordersListItemItem.amount ?? 0)
                                                         .toString(),
                                                     style: FlutterFlowTheme.of(
                                                             context)
@@ -12055,7 +12055,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'deirjap0' /* Chennai â†’ Bangalore */,
+                                'deirjap0' /* Chennai → Bangalore */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
@@ -12086,7 +12086,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'h6usjo38' /* â‚¹12,500 */,
+                                    'h6usjo38' /* ₹12,500 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -12241,7 +12241,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                's211a4r6' /* Mumbai â†’ Pune */,
+                                's211a4r6' /* Mumbai → Pune */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
@@ -12272,7 +12272,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    's2gc5g0q' /* â‚¹8,000 */,
+                                    's2gc5g0q' /* ₹8,000 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -12427,7 +12427,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                '4hm72mi9' /* Delhi â†’ Noida */,
+                                '4hm72mi9' /* Delhi → Noida */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
@@ -12458,7 +12458,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    'bmvb44rc' /* â‚¹5,500 */,
+                                    'bmvb44rc' /* ₹5,500 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
@@ -12613,7 +12613,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                             ),
                             Text(
                               FFLocalizations.of(context).getText(
-                                'amrtvae4' /* Hyderabad â†’ Chennai */,
+                                'amrtvae4' /* Hyderabad → Chennai */,
                               ),
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
@@ -12644,7 +12644,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                               children: [
                                 Text(
                                   FFLocalizations.of(context).getText(
-                                    '67xw1isk' /* â‚¹9,200 */,
+                                    '67xw1isk' /* ₹9,200 */,
                                   ),
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall

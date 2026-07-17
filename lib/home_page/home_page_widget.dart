@@ -44,7 +44,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       _model.dashKpiOut = await DashboardKpisViewTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
-      _model.kpiList = _model.dashKpiOut!.toList().cast<DashboardKpisViewRow>();
+      _model.kpiList = (_model.dashKpiOut ?? []).toList().cast<DashboardKpisViewRow>();
       safeSetState(() {});
       _model.dashUpcomingOut = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q)
@@ -55,7 +55,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
             .order('move_date', ascending: true),
       );
       _model.upcomingOrders =
-          _model.dashUpcomingOut!.toList().cast<OrdersRow>();
+          (_model.dashUpcomingOut ?? []).toList().cast<OrdersRow>();
       safeSetState(() {});
       _model.dashHotLeadsOut = await LeadsTable().queryRows(
         queryFn: (q) => OrgScope.read(q)
@@ -65,13 +65,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
             )
             .order('created_at'),
       );
-      _model.hotLeads = _model.dashHotLeadsOut!.toList().cast<LeadsRow>();
+      _model.hotLeads = (_model.dashHotLeadsOut ?? []).toList().cast<LeadsRow>();
       safeSetState(() {});
       _model.dashBranchOut = await BranchKpisViewTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
       _model.branchStats =
-          _model.dashBranchOut!.toList().cast<BranchKpisViewRow>();
+          (_model.dashBranchOut ?? []).toList().cast<BranchKpisViewRow>();
       safeSetState(() {});
     });
 

@@ -1,4 +1,4 @@
-﻿import '/backend/supabase/supabase.dart';
+import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -37,9 +37,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
       _model.leadsAllOut = await LeadsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).order('created_at'),
       );
-      _model.leadsList = _model.leadsAllOut!.toList().cast<LeadsRow>();
+      _model.leadsList = (_model.leadsAllOut ?? []).toList().cast<LeadsRow>();
       safeSetState(() {});
-      _model.allLeadsList = _model.leadsAllOut!.toList().cast<LeadsRow>();
+      _model.allLeadsList = (_model.leadsAllOut ?? []).toList().cast<LeadsRow>();
       safeSetState(() {});
       _model.leadsNewOut = await LeadsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eqOrNull(
@@ -47,7 +47,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
           'new',
         ),
       );
-      _model.newLeadsList = _model.leadsNewOut!.toList().cast<LeadsRow>();
+      _model.newLeadsList = (_model.leadsNewOut ?? []).toList().cast<LeadsRow>();
       safeSetState(() {});
       _model.leadsContactedOut = await LeadsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eqOrNull(
@@ -56,14 +56,14 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
         ),
       );
       _model.contactedLeadsList =
-          _model.leadsContactedOut!.toList().cast<LeadsRow>();
+          (_model.leadsContactedOut ?? []).toList().cast<LeadsRow>();
       safeSetState(() {});
       _model.leadsQualifiedOut = await LeadsTable().queryRows(
         queryFn: (q) => OrgScope.read(q)
             .or("status.eq.\"survey_done\", status.eq.\"quoted\""),
       );
       _model.qualifiedLeadsList =
-          _model.leadsQualifiedOut!.toList().cast<LeadsRow>();
+          (_model.leadsQualifiedOut ?? []).toList().cast<LeadsRow>();
       safeSetState(() {});
       _model.leadsWonOut = await LeadsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eqOrNull(
@@ -71,7 +71,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
           'converted',
         ),
       );
-      _model.wonLeadsList = _model.leadsWonOut!.toList().cast<LeadsRow>();
+      _model.wonLeadsList = (_model.leadsWonOut ?? []).toList().cast<LeadsRow>();
       safeSetState(() {});
       _model.leadsLostOut = await LeadsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eqOrNull(
@@ -79,7 +79,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
           'lost',
         ),
       );
-      _model.lostLeadsList = _model.leadsLostOut!.toList().cast<LeadsRow>();
+      _model.lostLeadsList = (_model.leadsLostOut ?? []).toList().cast<LeadsRow>();
       safeSetState(() {});
     });
 
@@ -1078,7 +1078,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                         ),
                                               ),
                                               Text(
-                                                leadsListItemItem.phone!,
+                                                leadsListItemItem.phone ?? '-',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall
@@ -1120,7 +1120,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                     CrossAxisAlignment.center,
                                                 children: [
                                                   Text(
-                                                    leadsListItemItem.fromCity!,
+                                                    leadsListItemItem.fromCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -1162,7 +1162,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                     size: 12.0,
                                                   ),
                                                   Text(
-                                                    leadsListItemItem.toCity!,
+                                                    leadsListItemItem.toCity ?? '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -1213,7 +1213,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                   .fromSTEB(
                                                       10.0, 4.0, 10.0, 4.0),
                                               child: Text(
-                                                leadsListItemItem.status!,
+                                                leadsListItemItem.status ?? '-',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .labelSmall

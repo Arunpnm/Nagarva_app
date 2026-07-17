@@ -28,26 +28,66 @@ void main() async {
 
   await SupaFlow.initialize();
 
-  // Restore org context on app start (browser reload / cold start).
-  // Supabase restores the auth session automatically, but currentOrgId
-  // is only set during the login flow — without this, every org-scoped
-  // query trips the OrgScope guard rail and pages render blank.
+  // Restore the full session on app start (browser reload / cold start).
+  // Supabase restores the auth user automatically, but AppSession is
+  // only populated during the login flow — without this, org-scoped
+  // queries trip the OrgScope guard rail and pages render blank, and
+  // isAuthenticated / plan gating silently break after a reload.
+  // Mirrors the vendor login flow: member -> org -> plan -> session.
   // TODO(W2): when the org switcher is built, persist the last-selected
   // org and restore that instead of the first membership row.
   final restoredUser = SupaFlow.client.auth.currentUser;
   if (restoredUser != null && AppSession.instance.currentOrgId == null) {
     try {
-      final row = await SupaFlow.client
+      final member = await SupaFlow.client
           .from('org_members')
           .select('org_id')
           .eq('user_id', restoredUser.id)
           .limit(1)
           .maybeSingle();
-      if (row != null && row['org_id'] != null) {
-        AppSession.instance.currentOrgId = row['org_id'] as String;
+      final orgId = member == null ? null : member['org_id'] as String?;
+      if (orgId != null) {
+        final org = await SupaFlow.client
+            .from('organizations')
+            .select('name, slug, plan_id, trial_ends_at')
+            .eq('id', orgId)
+            .maybeSingle();
+
+        Map<String, dynamic> limits = {};
+        Map<String, dynamic> features = {};
+        String? planName;
+        final planId = org == null ? null : org['plan_id'];
+        if (planId != null) {
+          final plan = await SupaFlow.client
+              .from('subscription_plans')
+              .select('name, limits, features')
+              .eq('id', planId)
+              .maybeSingle();
+          if (plan != null) {
+            if (plan['limits'] is Map) {
+              limits = Map<String, dynamic>.from(plan['limits'] as Map);
+            }
+            if (plan['features'] is Map) {
+              features = Map<String, dynamic>.from(plan['features'] as Map);
+            }
+            planName = plan['name'] as String?;
+          }
+        }
+
+        final trialRaw = org == null ? null : org['trial_ends_at'];
+        AppSession.instance.setVendorSession(
+          authUserId: restoredUser.id,
+          orgId: orgId,
+          orgName: org == null ? '' : (org['name'] as String? ?? ''),
+          orgSlug: org == null ? '' : (org['slug'] as String? ?? ''),
+          limits: limits,
+          features: features,
+          planName: planName,
+          trialEndsAt: trialRaw is String ? DateTime.tryParse(trialRaw) : null,
+        );
       }
     } catch (e) {
-      debugPrint('Org restore failed: $e');
+      debugPrint('Session restore failed: $e');
     }
   }
 
