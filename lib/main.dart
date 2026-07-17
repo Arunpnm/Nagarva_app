@@ -220,9 +220,26 @@ class NavBarPage extends StatefulWidget {
 }
 
 /// This is the private State class that goes with NavBarPage.
+/// Wide screens (>= 768 px): persistent collapsible left sidebar, like a
+/// web app. Narrow screens: the original bottom navigation bar.
 class _NavBarPageState extends State<NavBarPage> {
   String _currentPageName = 'HomePage';
   late Widget? _currentPage;
+
+  /// Sidebar expanded (labels visible) vs collapsed (icons only).
+  bool _railExpanded = true;
+
+  static const _navItems = [
+    (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard'),
+    (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders'),
+    (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM'),
+    (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations'),
+    (name: 'PaymentsPage', icon: Icons.payments, label: 'Payments'),
+    (name: 'ExpensePage', icon: Icons.receipt_long, label: 'Expenses'),
+    (name: 'SalaryPage', icon: Icons.badge, label: 'Salary'),
+    (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet'),
+    (name: 'SettingsPage', icon: Icons.settings, label: 'Settings'),
+  ];
 
   @override
   void initState() {
@@ -231,100 +248,366 @@ class _NavBarPageState extends State<NavBarPage> {
     _currentPage = widget.page;
   }
 
+  Map<String, Widget> get _tabs => {
+        'HomePage': const HomePageWidget(),
+        'OrdersPage': const OrdersPageWidget(),
+        'LeadsPage': const LeadsPageWidget(),
+        'OperationsPage': const OperationsPageWidget(),
+        'PaymentsPage': const PaymentsPageWidget(),
+        'ExpensePage': const ExpensePageWidget(),
+        'SalaryPage': const SalaryPageWidget(),
+        'FleetPage': const FleetPageWidget(),
+        'SettingsPage': const SettingsPageWidget(),
+      };
+
+  void _selectTab(int i) => safeSetState(() {
+        _currentPage = null;
+        _currentPageName = _navItems[i].name;
+      });
+
+  /// Lock: keep the vendor's Supabase Auth session on the device (so
+  /// staff PIN login still works — the Slack model), but clear the
+  /// in-app session and return to the login screen.
+  void _lockDevice() {
+    AppSession.instance.clear();
+    context.go('/login');
+  }
+
+  /// Logout: full sign-out. Removes the Supabase Auth session too, so
+  /// the device needs a fresh vendor login before staff PINs work again.
+  Future<void> _logout() async {
+    try {
+      await SupaFlow.client.auth.signOut();
+    } catch (_) {}
+    AppSession.instance.clear();
+    if (mounted) context.go('/login');
+  }
+
+  Widget _themeChip(String label, ThemeMode mode) {
+    final current = FlutterFlowTheme.themeMode;
+    final selected = current == mode ||
+        (current == ThemeMode.system &&
+            ((mode == ThemeMode.dark) ==
+                (Theme.of(context).brightness == Brightness.dark)));
+    final primary = FlutterFlowTheme.of(context).primary;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          MyApp.of(context).setThemeMode(mode);
+          safeSetState(() {});
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? primary : Colors.transparent,
+            border: Border.all(
+                color: selected
+                    ? primary
+                    : FlutterFlowTheme.of(context).secondaryText),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: selected
+                  ? Colors.white
+                  : FlutterFlowTheme.of(context).primaryText,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _footerButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 16),
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: FlutterFlowTheme.of(context).primaryText,
+        side: BorderSide(
+            color: FlutterFlowTheme.of(context).secondaryText.withOpacity(0.4)),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tabs = {
-      'HomePage': const HomePageWidget(),
-      'OrdersPage': const OrdersPageWidget(),
-      'LeadsPage': const LeadsPageWidget(),
-      'OperationsPage': const OperationsPageWidget(),
-      'PaymentsPage': const PaymentsPageWidget(),
-      'ExpensePage': const ExpensePageWidget(),
-      'SalaryPage': const SalaryPageWidget(),
-      'FleetPage': const FleetPageWidget(),
-      'SettingsPage': const SettingsPageWidget(),
-    };
-    final currentIndex = tabs.keys.toList().indexOf(_currentPageName);
+    final tabs = _tabs;
+    final currentIndex =
+        _navItems.indexWhere((e) => e.name == _currentPageName);
+    final body = _currentPage ?? tabs[_currentPageName];
+    final isWide = MediaQuery.of(context).size.width >= 768;
 
+    if (!isWide) {
+      // ------- MOBILE: original bottom navigation -------
+      return Scaffold(
+        resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
+        body: body,
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: currentIndex < 0 ? 0 : currentIndex,
+          onTap: _selectTab,
+          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+          selectedItemColor: FlutterFlowTheme.of(context).primary,
+          unselectedItemColor: FlutterFlowTheme.of(context).secondaryText,
+          showSelectedLabels: false,
+          showUnselectedLabels: false,
+          type: BottomNavigationBarType.fixed,
+          items: [
+            for (final item in _navItems)
+              BottomNavigationBarItem(
+                icon: Icon(item.icon),
+                label: '',
+                tooltip: item.label,
+              ),
+          ],
+        ),
+      );
+    }
+
+    // ------- WIDE: persistent collapsible sidebar -------
     return Scaffold(
       resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
-      body: _currentPage ?? tabs[_currentPageName],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (i) => safeSetState(() {
-          _currentPage = null;
-          _currentPageName = tabs.keys.toList()[i];
-        }),
-        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-        selectedItemColor: FlutterFlowTheme.of(context).primary,
-        unselectedItemColor: FlutterFlowTheme.of(context).secondaryText,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        type: BottomNavigationBarType.fixed,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.dashboard,
+      body: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            width: _railExpanded ? 230 : 72,
+            color: FlutterFlowTheme.of(context).secondaryBackground,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header: brand + collapse toggle
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: _railExpanded
+                        ? MainAxisAlignment.spaceBetween
+                        : MainAxisAlignment.center,
+                    children: [
+                      if (_railExpanded)
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(Icons.local_shipping,
+                                  color: FlutterFlowTheme.of(context).primary,
+                                  size: 26),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      AppSession.instance.currentOrgName ??
+                                          'Nagarva',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: FlutterFlowTheme.of(context)
+                                            .primaryText,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    Text(
+                                      AppSession.instance.currentStaffName ??
+                                          'Owner',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: FlutterFlowTheme.of(context)
+                                            .secondaryText,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      IconButton(
+                        tooltip: _railExpanded ? 'Collapse' : 'Expand',
+                        icon: Icon(
+                          _railExpanded
+                              ? Icons.chevron_left
+                              : Icons.chevron_right,
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                        ),
+                        onPressed: () => safeSetState(
+                            () => _railExpanded = !_railExpanded),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                // Nav items
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: _navItems.length,
+                    itemBuilder: (context, i) {
+                      final item = _navItems[i];
+                      final selected = i == currentIndex;
+                      final primary = FlutterFlowTheme.of(context).primary;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        child: Material(
+                          color: selected
+                              ? primary.withOpacity(0.12)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () => _selectTab(i),
+                            child: Tooltip(
+                              message: _railExpanded ? '' : item.label,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 11),
+                                child: Row(
+                                  mainAxisAlignment: _railExpanded
+                                      ? MainAxisAlignment.start
+                                      : MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      item.icon,
+                                      size: 22,
+                                      color: selected
+                                          ? primary
+                                          : FlutterFlowTheme.of(context)
+                                              .secondaryText,
+                                    ),
+                                    if (_railExpanded) ...[
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          item.label,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: selected
+                                                ? FontWeight.w600
+                                                : FontWeight.w400,
+                                            color: selected
+                                                ? primary
+                                                : FlutterFlowTheme.of(context)
+                                                    .primaryText,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // ---------- Footer: theme + lock/logout ----------
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: _railExpanded
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'THEME',
+                              style: TextStyle(
+                                fontSize: 11,
+                                letterSpacing: 1,
+                                color:
+                                    FlutterFlowTheme.of(context).secondaryText,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                _themeChip('Light', ThemeMode.light),
+                                const SizedBox(width: 6),
+                                _themeChip('Dark', ThemeMode.dark),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _footerButton(
+                                    icon: Icons.lock_outline,
+                                    label: 'Lock',
+                                    onTap: _lockDevice,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: _footerButton(
+                                    icon: Icons.logout,
+                                    label: 'Logout',
+                                    onTap: _logout,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            IconButton(
+                              tooltip: 'Toggle theme',
+                              icon: Icon(
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Icons.light_mode
+                                    : Icons.dark_mode,
+                                size: 20,
+                                color:
+                                    FlutterFlowTheme.of(context).secondaryText,
+                              ),
+                              onPressed: () => MyApp.of(context).setThemeMode(
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? ThemeMode.light
+                                    : ThemeMode.dark,
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Lock',
+                              icon: Icon(Icons.lock_outline,
+                                  size: 20,
+                                  color: FlutterFlowTheme.of(context)
+                                      .secondaryText),
+                              onPressed: _lockDevice,
+                            ),
+                            IconButton(
+                              tooltip: 'Logout',
+                              icon: Icon(Icons.logout,
+                                  size: 20,
+                                  color: FlutterFlowTheme.of(context)
+                                      .secondaryText),
+                              onPressed: _logout,
+                            ),
+                          ],
+                        ),
+                ),
+              ],
             ),
-            label: '',
-            tooltip: '',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.assignment,
-            ),
-            label: '',
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.people,
-            ),
-            label: '',
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.local_shipping,
-            ),
-            label: '',
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.payments,
-            ),
-            label: '',
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.receipt_long,
-            ),
-            label: '',
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.badge,
-            ),
-            label: '',
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.directions_car,
-            ),
-            label: '',
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.settings,
-            ),
-            label: '',
-            tooltip: '',
-          )
+          const VerticalDivider(width: 1, thickness: 1),
+          Expanded(child: body ?? const SizedBox.shrink()),
         ],
       ),
     );

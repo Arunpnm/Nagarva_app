@@ -10,9 +10,11 @@ export 'login_page_model.dart';
 
 /// Two-path login:
 /// - Vendor tab: Supabase Auth (email + password) — the org owner/admin.
-/// - Staff tab: phone + PIN, scoped to the vendor's org (client-side check
-///   for now; see CLAUDE_ADDENDUM_vendor_flow.md item 5 — this moves behind
-///   a Supabase Edge Function + RLS in Phase 0).
+/// - Staff tab: device-unlock model (the "Slack model"). Requires the
+///   owner to have signed in with the vendor account on this device at
+///   least once; the staff PIN check then runs INSIDE that authenticated,
+///   RLS-scoped session, so only this org's staff rows are ever visible
+///   and no anonymous access to the staff table is needed.
 class LoginPageWidget extends StatefulWidget {
   const LoginPageWidget({super.key});
 
@@ -28,10 +30,46 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  /// Org this device is set up for (vendor session present), else null.
+  /// Shown as a banner on the Staff tab so the device state is always
+  /// visible instead of guessed.
+  String? _deviceOrgName;
+  bool _deviceChecked = false;
+
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => LoginPageModel());
+    _checkDeviceSetup();
+  }
+
+  Future<void> _checkDeviceSetup() async {
+    final user = SupaFlow.client.auth.currentUser;
+    if (user == null) {
+      safeSetState(() => _deviceChecked = true);
+      return;
+    }
+    try {
+      final members = await OrgMembersTable().queryRows(
+        queryFn: (q) => q.eq('user_id', user.id).limit(1),
+      );
+      String? orgName;
+      if (members.isNotEmpty && members.first.orgId != null) {
+        final orgs = await OrganizationsTable().queryRows(
+          queryFn: (q) => q.eq('id', members.first.orgId!).limit(1),
+        );
+        orgName = orgs.isNotEmpty ? orgs.first.name : null;
+      }
+      safeSetState(() {
+        _deviceOrgName = orgName ?? 'your organization';
+        _deviceChecked = true;
+      });
+    } catch (_) {
+      safeSetState(() {
+        _deviceOrgName = 'your organization';
+        _deviceChecked = true;
+      });
+    }
   }
 
   @override
@@ -132,21 +170,33 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       return;
     }
 
+    // Device-unlock model: staff PIN login rides on top of the vendor's
+    // Supabase Auth session. Without it, RLS (org_isolation on `staff`)
+    // correctly returns zero rows — so fail with a clear setup message
+    // instead of a misleading "invalid PIN".
+    final authUser = SupaFlow.client.auth.currentUser;
+    if (authUser == null) {
+      safeSetState(() => _model.errorMessage =
+          'This device is not set up for staff login yet. '
+          'Ask the owner to log in once with the vendor account first.');
+      return;
+    }
+
     safeSetState(() {
       _model.isLoading = true;
       _model.errorMessage = null;
     });
 
     try {
-      // Client-side phone/name + PIN match against `staff`. Insecure by
-      // design for now (see CLAUDE.md "Current login flow") — moves behind
-      // an Edge Function once RLS is in place.
+      // Authenticated + RLS-scoped: only this org's staff are visible.
+      // Phone matches exactly; name matches case-insensitively so
+      // "rajesh kumar" finds "Rajesh Kumar".
       var rows = await StaffTable().queryRows(
         queryFn: (q) => q.eq('phone', input),
       );
       if (rows.isEmpty) {
         rows = await StaffTable().queryRows(
-          queryFn: (q) => q.eq('name', input),
+          queryFn: (q) => q.ilike('name', input),
         );
       }
       final match =
@@ -157,8 +207,10 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       final staff = match.first;
       AppSession.instance.setStaff(staffId: staff.id!, staffName: staff.name);
 
+      // Org context normally comes from the vendor session restore in
+      // main.dart; fill it from the staff row only if it is still empty.
       final orgId = staff.orgId;
-      if (orgId != null) {
+      if (AppSession.instance.currentOrgId == null && orgId != null) {
         try {
           final orgs = await OrganizationsTable().queryRows(
             queryFn: (q) => q.eq('id', orgId).limit(1),
@@ -168,10 +220,14 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           Map<String, dynamic> limits = {};
           Map<String, dynamic> features = {};
           String? planName;
-          if (org?.planId != null) {
-            final plans = await SubscriptionPlansTable().queryRows(
-              queryFn: (q) => q.eq('id', org!.planId!).limit(1),
-            );
+          try {
+            final planId = org?.planId;
+            final plans = planId != null
+                ? await SubscriptionPlansTable()
+                    .queryRows(queryFn: (q) => q.eq('id', planId).limit(1))
+                : await SubscriptionPlansTable().queryRows(
+                    queryFn: (q) => q.eq('is_default_trial', true).limit(1),
+                  );
             if (plans.isNotEmpty) {
               final plan = plans.first;
               limits = (plan.limits is Map)
@@ -182,6 +238,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                   : {};
               planName = plan.name;
             }
+          } catch (_) {
+            // Plan lookup is best-effort — don't block login on it.
           }
 
           AppSession.instance.setOrgOnly(
@@ -194,8 +252,6 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             trialEndsAt: org?.trialEndsAt,
           );
         } catch (_) {
-          // org_id column may not exist on this deployment yet — still
-          // scope the session to the org id we do have.
           AppSession.instance.setOrgOnly(orgId: orgId);
         }
       }
@@ -206,6 +262,40 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         _model.errorMessage = e.toString().replaceFirst('Exception: ', '');
         _model.isLoading = false;
       });
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _model.vendorEmailController!.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      safeSetState(() => _model.errorMessage =
+          'Enter your account email above first, then tap Forgot password.');
+      return;
+    }
+    safeSetState(() {
+      _model.isLoading = true;
+      _model.errorMessage = null;
+    });
+    try {
+      await SupaFlow.client.auth.resetPasswordForEmail(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Password reset link sent to $email. Check your inbox '
+              '(and spam folder).',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      safeSetState(() => _model.errorMessage =
+          e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      safeSetState(() => _model.isLoading = false);
     }
   }
 
@@ -403,6 +493,21 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             ),
           ),
         ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerRight,
+          child: GestureDetector(
+            onTap: _model.isLoading ? null : _handleForgotPassword,
+            child: Text(
+              'Forgot password?',
+              style: GoogleFonts.inter(
+                color: const Color(0xFFFF6B35),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
         if (_model.errorMessage != null) ...[
           const SizedBox(height: 14),
           _errorBox(_model.errorMessage!),
@@ -454,6 +559,45 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_deviceChecked) ...[
+          Container(
+            padding: const EdgeInsets.all(10),
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: _deviceOrgName != null
+                  ? const Color(0xFF15321B)
+                  : const Color(0xFF33270F),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _deviceOrgName != null
+                      ? Icons.verified_user
+                      : Icons.info_outline,
+                  size: 16,
+                  color: _deviceOrgName != null
+                      ? const Color(0xFF66BB6A)
+                      : const Color(0xFFFFB74D),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _deviceOrgName != null
+                        ? 'Device ready — $_deviceOrgName. Enter your PIN.'
+                        : 'Device not set up. Owner must log in once first.',
+                    style: GoogleFonts.inter(
+                      color: _deviceOrgName != null
+                          ? const Color(0xFF9CDFA3)
+                          : const Color(0xFFFFCC80),
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         _textField(
           controller: _model.namePhoneFieldTextController!,
           focusNode: _model.namePhoneFieldFocusNode!,
