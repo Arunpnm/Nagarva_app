@@ -3,73 +3,20 @@ import '/flutter_flow/flutter_flow_util.dart';
 import 'salary_page_widget.dart' show SalaryPageWidget;
 import 'package:flutter/material.dart';
 
+/// Week 3b rewrite: per-staff ledger (earned / paid / balance / advance)
+/// with month navigation. Replaces the old attendance+advances dump.
 class SalaryPageModel extends FlutterFlowModel<SalaryPageWidget> {
-  ///  Local state fields for this page.
+  DateTime month = DateTime(DateTime.now().year, DateTime.now().month);
 
   List<StaffRow> staffList = [];
-  void addToStaffList(StaffRow item) => staffList.add(item);
-  void removeFromStaffList(StaffRow item) => staffList.remove(item);
-  void removeAtIndexFromStaffList(int index) => staffList.removeAt(index);
-  void insertAtIndexInStaffList(int index, StaffRow item) =>
-      staffList.insert(index, item);
-  void updateStaffListAtIndex(int index, Function(StaffRow) updateFn) =>
-      staffList[index] = updateFn(staffList[index]);
+  List<OrderStaffRow> orderStaff = [];
+  List<SalaryPaymentsRow> payments = [];
+  List<StaffAdvancesRow> advances = [];
 
-  List<AttendanceRow> attendanceList = [];
-  void addToAttendanceList(AttendanceRow item) => attendanceList.add(item);
-  void removeFromAttendanceList(AttendanceRow item) =>
-      attendanceList.remove(item);
-  void removeAtIndexFromAttendanceList(int index) =>
-      attendanceList.removeAt(index);
-  void insertAtIndexInAttendanceList(int index, AttendanceRow item) =>
-      attendanceList.insert(index, item);
-  void updateAttendanceListAtIndex(
-          int index, Function(AttendanceRow) updateFn) =>
-      attendanceList[index] = updateFn(attendanceList[index]);
+  /// order_id -> order (for move_date month attribution + labels).
+  Map<String, OrdersRow> ordersById = {};
 
-  List<StaffAdvancesRow> advancesList = [];
-  void addToAdvancesList(StaffAdvancesRow item) => advancesList.add(item);
-  void removeFromAdvancesList(StaffAdvancesRow item) =>
-      advancesList.remove(item);
-  void removeAtIndexFromAdvancesList(int index) => advancesList.removeAt(index);
-  void insertAtIndexInAdvancesList(int index, StaffAdvancesRow item) =>
-      advancesList.insert(index, item);
-  void updateAdvancesListAtIndex(
-          int index, Function(StaffAdvancesRow) updateFn) =>
-      advancesList[index] = updateFn(advancesList[index]);
-
-  List<AttendanceViewRow> attendanceViewList = [];
-  void addToAttendanceViewList(AttendanceViewRow item) =>
-      attendanceViewList.add(item);
-  void removeFromAttendanceViewList(AttendanceViewRow item) =>
-      attendanceViewList.remove(item);
-  void removeAtIndexFromAttendanceViewList(int index) =>
-      attendanceViewList.removeAt(index);
-  void insertAtIndexInAttendanceViewList(int index, AttendanceViewRow item) =>
-      attendanceViewList.insert(index, item);
-  void updateAttendanceViewListAtIndex(
-          int index, Function(AttendanceViewRow) updateFn) =>
-      attendanceViewList[index] = updateFn(attendanceViewList[index]);
-
-  List<AdvancesViewRow> advancesViewList = [];
-  void addToAdvancesViewList(AdvancesViewRow item) =>
-      advancesViewList.add(item);
-  void removeFromAdvancesViewList(AdvancesViewRow item) =>
-      advancesViewList.remove(item);
-  void removeAtIndexFromAdvancesViewList(int index) =>
-      advancesViewList.removeAt(index);
-  void insertAtIndexInAdvancesViewList(int index, AdvancesViewRow item) =>
-      advancesViewList.insert(index, item);
-  void updateAdvancesViewListAtIndex(
-          int index, Function(AdvancesViewRow) updateFn) =>
-      advancesViewList[index] = updateFn(advancesViewList[index]);
-
-  ///  State fields for stateful widgets in this page.
-
-  // Stores action output result for [Backend Call - Query Rows] action in SalaryPage widget.
-  List<AttendanceViewRow>? attendanceViewOut;
-  // Stores action output result for [Backend Call - Query Rows] action in SalaryPage widget.
-  List<AdvancesViewRow>? advancesViewOut;
+  bool loading = true;
 
   @override
   void initState(BuildContext context) {}

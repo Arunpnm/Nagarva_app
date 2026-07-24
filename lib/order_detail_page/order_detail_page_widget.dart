@@ -1,9 +1,18 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
+import 'package:printing/printing.dart';
+
 import '/app_session.dart';
+import '/components/invoice_pdf.dart';
+import 'order_crew_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
@@ -210,6 +219,69 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
     }
   }
 
+  /// Fetches bytes for a public image URL (logo/signature). Best-effort:
+  /// invoice generation never fails just because an image is missing.
+  Future<Uint8List?> _fetchBytes(String? url) async {
+    if (url == null || url.isEmpty) return null;
+    try {
+      final res = await http.get(Uri.parse(url));
+      if (res.statusCode == 200) return res.bodyBytes;
+    } catch (_) {}
+    return null;
+  }
+
+  /// Loads the vendor's business profile + branding saved on the Settings
+  /// page (settings keys business_profile / signature_url, org logo_url)
+  /// and builds the branded A4 PDF.
+  Future<Uint8List> _buildInvoicePdfBytes({
+    required String invoiceNo,
+    required double baseAmount,
+    required bool interstate,
+    required double igst,
+    required double sgst,
+    required double cgst,
+    required double total,
+  }) async {
+    Map<String, dynamic> profile = const {};
+    String? signatureUrl;
+    try {
+      final rows = await SettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q)
+            .inFilter('key', ['business_profile', 'signature_url']),
+      );
+      for (final r in rows) {
+        if (r.key == 'business_profile' && (r.value ?? '').isNotEmpty) {
+          final decoded = jsonDecode(r.value!);
+          if (decoded is Map) profile = Map<String, dynamic>.from(decoded);
+        }
+        if (r.key == 'signature_url') signatureUrl = r.value;
+      }
+    } catch (_) {}
+    final logoBytes =
+        await _fetchBytes(AppSession.instance.currentOrgLogoUrl);
+    final signatureBytes = await _fetchBytes(signatureUrl);
+
+    return InvoicePdf.generate(
+      invoiceNo: invoiceNo,
+      customerName: _hideCustomer
+          ? 'Customer (hidden)'
+          : (widget.orderCustomer ?? '—'),
+      customerPhone: _hideCustomer ? null : widget.orderPhone,
+      fromCity: widget.orderFromCity,
+      toCity: widget.orderToCity,
+      baseAmount: baseAmount,
+      interstate: interstate,
+      igst: igst,
+      cgst: cgst,
+      sgst: sgst,
+      total: total,
+      orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+      profile: profile,
+      logoBytes: logoBytes,
+      signatureBytes: signatureBytes,
+    );
+  }
+
   void _showInvoiceDialog({
     required String invoiceNo,
     required double baseAmount,
@@ -219,59 +291,80 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
     required double cgst,
     required double total,
   }) {
-    final lines = [
-      'TAX INVOICE',
-      '',
-      (AppSession.instance.currentOrgName ?? 'Nagarva'),
-      'Invoice No: $invoiceNo',
-      'Date: ${DateFormat('dd MMM yyyy').format(DateTime.now())}',
-      '',
-      'Bill To: ${widget.orderCustomer ?? ''}',
-      'Phone: ${widget.orderPhone ?? ''}',
-      'From: ${widget.orderFromCity ?? ''}  →  To: ${widget.orderToCity ?? ''}',
-      '',
-      'HSN/SAC Code: 996719',
-      'Description: Old and Used Household Goods For Personal Usage Only, Not For Sale',
-      '',
-      'Freight & Moving Services: ${_currency.format(baseAmount)}',
-      if (interstate)
-        'IGST @ 5% (Interstate — ${widget.orderFromCity} → ${widget.orderToCity}): ${_currency.format(igst)}'
-      else ...[
-        'CGST @ 2.5% (Intrastate): ${_currency.format(cgst)}',
-        'SGST @ 2.5% (Intrastate): ${_currency.format(sgst)}',
-      ],
-      '',
-      'Total: ${_currency.format(total)}',
-      '',
-      'GST Payable by: Consignee',
-      'Reverse Charge: No',
-    ];
-    final invoiceText = lines.join('\n');
-
+    final safeName = invoiceNo.replaceAll('/', '-');
+    var busy = false;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Invoice $invoiceNo'),
-        content: SingleChildScrollView(
-          child: SelectableText(invoiceText),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text('Invoice $invoiceNo'),
+          content: Text(
+            busy
+                ? 'Preparing PDF…'
+                : 'Your tax invoice is ready. Download the PDF to share on '
+                    'WhatsApp/email, or print it directly.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      setDialogState(() => busy = true);
+                      final bytes = await _buildInvoicePdfBytes(
+                        invoiceNo: invoiceNo,
+                        baseAmount: baseAmount,
+                        interstate: interstate,
+                        igst: igst,
+                        sgst: sgst,
+                        cgst: cgst,
+                        total: total,
+                      );
+                      await Printing.layoutPdf(onLayout: (_) async => bytes);
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                    },
+              child: const Text('Print'),
+            ),
+            FilledButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      setDialogState(() => busy = true);
+                      final bytes = await _buildInvoicePdfBytes(
+                        invoiceNo: invoiceNo,
+                        baseAmount: baseAmount,
+                        interstate: interstate,
+                        igst: igst,
+                        sgst: sgst,
+                        cgst: cgst,
+                        total: total,
+                      );
+                      // Browser download on web with a proper filename.
+                      await Printing.sharePdf(
+                          bytes: bytes,
+                          filename: 'Invoice_$safeName.pdf');
+                      // Job done — close the dialog instead of leaving the
+                      // user staring at the same screen (Arun's feedback).
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(
+                                  'Invoice_$safeName.pdf downloaded — check your Downloads bar.')),
+                        );
+                      }
+                    },
+              child: const Text('Download PDF'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: invoiceText));
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invoice copied to clipboard')),
-                );
-              }
-            },
-            child: const Text('Copy'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
@@ -289,6 +382,16 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
     _model.dispose();
 
     super.dispose();
+  }
+
+  /// Privacy: supervisors must not see customer identity once the order is
+  /// completed (belt-and-braces on top of the OrdersPage masking, since this
+  /// page is also reachable by deep link with arbitrary params).
+  bool get _hideCustomer {
+    if (!AppSession.instance.isSupervisorSession) return false;
+    final st = (widget.orderStatus ?? '').toLowerCase();
+    return st == 'delivered' || st == 'done' || st == 'completed' ||
+        st == 'closed';
   }
 
   @override
@@ -332,7 +435,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
+              child: KeyboardScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -352,7 +455,9 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              widget.orderCustomer!,
+                              _hideCustomer
+                                  ? 'Customer (hidden)'
+                                  : (widget.orderCustomer ?? '—'),
                               style: FlutterFlowTheme.of(context)
                                   .titleMedium
                                   .override(
@@ -385,7 +490,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                 padding: const EdgeInsetsDirectional.fromSTEB(
                                     12.0, 6.0, 12.0, 6.0),
                                 child: Text(
-                                  widget.orderStatus!,
+                                  (widget.orderStatus ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -488,7 +593,9 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderPhone!,
+                                  _hideCustomer
+                                      ? '••••••••••'
+                                      : (widget.orderPhone ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -549,7 +656,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderService!,
+                                  (widget.orderService ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -610,7 +717,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderBranch!,
+                                  (widget.orderBranch ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -671,7 +778,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderType!,
+                                  (widget.orderType ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -774,7 +881,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderFromCity!,
+                                  (widget.orderFromCity ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -835,7 +942,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderToCity!,
+                                  (widget.orderToCity ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -896,7 +1003,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderFromAddress!,
+                                  (widget.orderFromAddress ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -957,7 +1064,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderToAddress!,
+                                  (widget.orderToAddress ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1018,7 +1125,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderFromFloor!,
+                                  (widget.orderFromFloor ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1079,7 +1186,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderToFloor!,
+                                  (widget.orderToFloor ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1140,7 +1247,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderMoveDate!,
+                                  (widget.orderMoveDate ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1243,7 +1350,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderAmount!,
+                                  (widget.orderAmount ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1304,7 +1411,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderAdvancePaid!,
+                                  (widget.orderAdvancePaid ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1365,7 +1472,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderPaymentStatus!,
+                                  (widget.orderPaymentStatus ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1426,7 +1533,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderTrackingStatus!,
+                                  (widget.orderTrackingStatus ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1529,7 +1636,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                                       ),
                                 ),
                                 Text(
-                                  widget.orderNotes!,
+                                  (widget.orderNotes ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -1560,6 +1667,10 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                         ),
                       ),
                     ),
+                    // Assign supervisor + labour/salary (owner view) —
+                    // was missing from the order flow entirely.
+                    if (widget.orderId != null)
+                      OrderCrewSection(orderId: widget.orderId!),
                     Padding(
                       padding:
                           const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 0.0),

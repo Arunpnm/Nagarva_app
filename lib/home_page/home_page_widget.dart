@@ -1,9 +1,12 @@
+import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
+import '/components/keyboard_scroll_view.dart';
+import '/components/quick_entry_dialog.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -36,6 +39,14 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) async {
+      // Vendor choice: only show the Porter KPI card when the org turned
+      // it on in Settings (settings key 'porter_enabled').
+      final porterRows = await SettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('key', 'porter_enabled'),
+      );
+      _model.porterEnabled = porterRows.isNotEmpty &&
+          (porterRows.first.value ?? '').toLowerCase() == 'true';
+      safeSetState(() {});
       // Phase 1 multi-tenancy pass: all four dashboard queries were
       // unscoped and would read every org's data. Filtered by
       // currentOrgId now — requires supabase/phase1_add_org_id.sql (and
@@ -100,9 +111,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            context.pushNamed(QuickEntryPageWidget.routeName);
+            // Popup on the same screen (matches the React web app),
+            // not a navigation to /quick-entry.
+            await QuickEntryDialog.show(context);
           },
           backgroundColor: const Color(0xFFFFA000),
+          tooltip: 'Quick Entry',
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
         drawer: Drawer(
           child: Column(
@@ -399,7 +414,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(20.0),
-              child: SingleChildScrollView(
+              child: KeyboardScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -499,6 +514,9 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
                                       children: [
+                                        // Money is owner-only — hidden for staff PIN sessions
+                                        // (part of the supervisor-restriction pass).
+                                        if (AppSession.instance.currentStaffId == null)
                                         Column(
                                           mainAxisSize: MainAxisSize.min,
                                           mainAxisAlignment:
@@ -904,6 +922,10 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                                       ),
                                                     ),
                                                   ),
+                                                  // Porter is Bengaluru/APC-specific — pan-India vendors may not
+                                                  // use Porter at all, so the card only shows when the vendor
+                                                  // turns it on (settings key 'porter_enabled', read on load).
+                                                  if (_model.porterEnabled)
                                                   InkWell(
                                                     splashColor:
                                                         Colors.transparent,
@@ -1435,6 +1457,9 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.center,
                                               children: [
+                                                // Money is owner-only — hidden for staff PIN sessions
+                                                // (part of the supervisor-restriction pass).
+                                                if (AppSession.instance.currentStaffId == null)
                                                 Flexible(
                                                   flex: 1,
                                                   child: InkWell(
@@ -1717,6 +1742,9 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                             ),
                           ),
                         ),
+                        // Money is owner-only — hidden for staff PIN sessions
+                        // (part of the supervisor-restriction pass).
+                        if (AppSession.instance.currentStaffId == null)
                         Padding(
                           padding: const EdgeInsetsDirectional.fromSTEB(
                               16.0, 0.0, 16.0, 0.0),

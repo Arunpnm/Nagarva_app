@@ -1,12 +1,15 @@
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
+import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'business_settings_section.dart';
 import 'settings_page_model.dart';
 export 'settings_page_model.dart';
 
@@ -42,6 +45,12 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         _model.org = orgs.isNotEmpty ? orgs.first : null;
         safeSetState(() {});
       }
+      final porterRows = await SettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('key', 'porter_enabled'),
+      );
+      _model.porterEnabled = porterRows.isNotEmpty &&
+          (porterRows.first.value ?? '').toLowerCase() == 'true';
+      safeSetState(() {});
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
@@ -95,7 +104,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
+              child: KeyboardScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -199,6 +208,62 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                         ),
                       ),
                     ),
+                    // Vendor preferences — Porter toggle. Persisted to the
+                    // org-scoped settings table ('porter_enabled') and read
+                    // by the dashboard to show/hide the Porter KPI card.
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: FlutterFlowTheme.of(context).secondaryBackground,
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 4.0),
+                        child: SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'Porter integration',
+                            style: FlutterFlowTheme.of(context)
+                                .titleSmall
+                                .override(
+                                  font: GoogleFonts.interTight(),
+                                  letterSpacing: 0.0,
+                                ),
+                          ),
+                          subtitle: Text(
+                            'Show Porter commission on the dashboard. Turn on '
+                            'only if your business uses Porter.',
+                            style: FlutterFlowTheme.of(context)
+                                .bodySmall
+                                .override(
+                                  font: GoogleFonts.inter(),
+                                  color: FlutterFlowTheme.of(context)
+                                      .secondaryText,
+                                  letterSpacing: 0.0,
+                                ),
+                          ),
+                          value: _model.porterEnabled,
+                          activeColor: FlutterFlowTheme.of(context).primary,
+                          onChanged: (v) async {
+                            safeSetState(() => _model.porterEnabled = v);
+                            await SettingsTable().upsert(
+                              {
+                                'key': 'porter_enabled',
+                                ...OrgScope.stamp(),
+                                'value': v.toString(),
+                                'updated_at':
+                                    DateTime.now().toIso8601String(),
+                              },
+                              onConflict: 'org_id,key',
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    // Vendor self-service branding: business details, logo,
+                    // e-signature — all feed the invoice PDF.
+                    const BusinessSettingsSection(),
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(

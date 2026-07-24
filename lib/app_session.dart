@@ -8,8 +8,15 @@ class AppSession extends ChangeNotifier {
   String? currentOrgId;
   String? currentOrgName;
   String? currentOrgSlug;
+
+  /// Per-tenant branding: `organizations.logo_url` (Supabase Storage public
+  /// URL). Shown in the sidebar header; falls back to the truck icon when
+  /// null. Requires the `logo_url` column migration
+  /// (supabase/20260717_org_logo_url.sql) before it can be set.
+  String? currentOrgLogoUrl;
   String? currentStaffId;
   String? currentStaffName;
+  String? currentStaffRole;
   Map<String, dynamic> planLimits = {};
   Map<String, dynamic> planFeatures = {};
   String? planName;
@@ -44,6 +51,7 @@ class AppSession extends ChangeNotifier {
     required String orgId,
     required String orgName,
     required String orgSlug,
+    String? logoUrl,
     Map<String, dynamic> limits = const {},
     Map<String, dynamic> features = const {},
     String? planName,
@@ -53,6 +61,7 @@ class AppSession extends ChangeNotifier {
     currentOrgId = orgId;
     currentOrgName = orgName;
     currentOrgSlug = orgSlug;
+    currentOrgLogoUrl = logoUrl;
     planLimits = Map<String, dynamic>.from(limits);
     planFeatures = Map<String, dynamic>.from(features);
     this.planName = planName;
@@ -60,11 +69,19 @@ class AppSession extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setStaff({required String staffId, required String staffName}) {
+  void setStaff(
+      {required String staffId, required String staffName, String? role}) {
     currentStaffId = staffId;
     currentStaffName = staffName;
+    currentStaffRole = role?.toLowerCase();
     notifyListeners();
   }
+
+  /// True when the active session is a staff PIN login with role
+  /// supervisor. Used for privacy gating: supervisors must not see
+  /// customer name/phone on orders that are already completed.
+  bool get isSupervisorSession =>
+      currentStaffId != null && currentStaffRole == 'supervisor';
 
   // Used by staff (PIN) login: we know the org but there's no Supabase
   // Auth user behind it yet (that arrives with the Phase 0 Edge Function).
@@ -73,6 +90,7 @@ class AppSession extends ChangeNotifier {
     required String orgId,
     String? orgName,
     String? orgSlug,
+    String? logoUrl,
     Map<String, dynamic> limits = const {},
     Map<String, dynamic> features = const {},
     String? planName,
@@ -81,6 +99,7 @@ class AppSession extends ChangeNotifier {
     currentOrgId = orgId;
     if (orgName != null) currentOrgName = orgName;
     if (orgSlug != null) currentOrgSlug = orgSlug;
+    if (logoUrl != null) currentOrgLogoUrl = logoUrl;
     if (limits.isNotEmpty) planLimits = Map<String, dynamic>.from(limits);
     if (features.isNotEmpty) {
       planFeatures = Map<String, dynamic>.from(features);
@@ -95,8 +114,10 @@ class AppSession extends ChangeNotifier {
     currentOrgId = null;
     currentOrgName = null;
     currentOrgSlug = null;
+    currentOrgLogoUrl = null;
     currentStaffId = null;
     currentStaffName = null;
+    currentStaffRole = null;
     planLimits = {};
     planFeatures = {};
     planName = null;

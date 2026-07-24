@@ -56,6 +56,11 @@ class OrdersRow extends SupabaseDataRow {
   set moveDate(DateTime value) => setField<DateTime>('move_date', value);
 
   double? get amount => getField<double>('amount');
+
+  /// Sum of payment_entries for this order — maintained by DB trigger
+  /// (20260718_payment_entries.sql). Balance due =
+  /// amount - advancePaid - paidTotal.
+  double get paidTotal => getField<double>('paid_total') ?? 0;
   set amount(double? value) => setField<double>('amount', value);
 
   String? get orderType => getField<String>('order_type');

@@ -8,6 +8,11 @@ class SettingsPageModel extends FlutterFlowModel<SettingsPageWidget> {
   // Was previously hardcoded (CLAUDE.md known bug #4).
   OrganizationsRow? org;
 
+  // Vendor preference: show Porter commission on the dashboard
+  // (settings key 'porter_enabled'). Porter is APC/Bengaluru-specific,
+  // so pan-India vendors keep it off.
+  bool porterEnabled = false;
+
   @override
   void initState(BuildContext context) {}
 

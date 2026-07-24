@@ -2,6 +2,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -108,6 +109,8 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
             context.pushNamed(NewLeadPageWidget.routeName);
           },
           backgroundColor: const Color(0xFFFFA000),
+          tooltip: 'New Lead',
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
@@ -140,7 +143,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
+              child: KeyboardScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,

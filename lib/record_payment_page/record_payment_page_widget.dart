@@ -1,19 +1,31 @@
+import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_drop_down.dart';
+import '/components/keyboard_scroll_view.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import '/flutter_flow/form_field_controller.dart';
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'record_payment_page_model.dart';
 export 'record_payment_page_model.dart';
 
-/// Select a pending order and record a payment against it.
+/// Record Payment (Week 3a rewrite).
+///
+/// Collections are payment_entries rows — amount + mode (cash/UPI/bank) +
+/// note + date — so an order can take any number of part-payments, exactly
+/// like APC's receipts. orders.paid_total and payment_status update via DB
+/// trigger (20260718_payment_entries.sql); the old page overwrote
+/// advance_paid and let the user hand-pick the status, both of which are
+/// gone. Accepts ?orderId= to preselect (used by the Payments page's
+/// per-order Record button).
 class RecordPaymentPageWidget extends StatefulWidget {
-  const RecordPaymentPageWidget({super.key});
+  const RecordPaymentPageWidget({super.key, this.orderId});
+
+  final String? orderId;
 
   static String routeName = 'RecordPaymentPage';
   static String routePath = '/record-payment';
@@ -28,31 +40,120 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  double _balance(OrdersRow o) =>
+      (o.amount ?? 0) - (o.advancePaid ?? 0) - o.paidTotal;
+
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => RecordPaymentPageModel());
 
-    // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy: scoped to the current org (CLAUDE.md bug #7).
-      _model.pendingPayOut = await OrdersTable().queryRows(
-        queryFn: (q) => OrgScope.read(q)
-            .neqOrNull(
-              'payment_status',
-              'paid',
-            )
-            .order('move_date', ascending: true),
-      );
-      _model.pendingPayOrders =
-          (_model.pendingPayOut ?? []).toList().cast<OrdersRow>();
-      safeSetState(() {});
-    });
-
-    _model.payAmountFieldTextController ??= TextEditingController();
-    _model.payAmountFieldFocusNode ??= FocusNode();
+    SchedulerBinding.instance.addPostFrameCallback((_) => _load());
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  Future<void> _load() async {
+    final rows = await OrdersTable().queryRows(
+      queryFn: (q) => OrgScope.read(q)
+          .neqOrNull('payment_status', 'paid')
+          .order('move_date', ascending: true),
+    );
+    _model.unpaidOrders =
+        rows.where((o) => _balance(o) > 0).toList().cast<OrdersRow>();
+    if (widget.orderId != null && widget.orderId!.isNotEmpty) {
+      for (final o in _model.unpaidOrders) {
+        if (o.id == widget.orderId) {
+          _model.selected = o;
+          break;
+        }
+      }
+      if (_model.selected != null) await _loadHistory();
+    }
+    _model.loading = false;
+    safeSetState(() {});
+  }
+
+  Future<void> _loadHistory() async {
+    final o = _model.selected;
+    if (o == null) {
+      _model.history = [];
+      return;
+    }
+    final rows = await PaymentEntriesTable().queryRows(
+      queryFn: (q) =>
+          OrgScope.read(q).eq('order_id', o.id!).order('created_at'),
+    );
+    _model.history = rows.toList().cast<PaymentEntriesRow>();
+  }
+
+  Future<void> _save() async {
+    final o = _model.selected;
+    if (o == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Select an order before saving a payment.')));
+      return;
+    }
+    final amount =
+        double.tryParse(_model.amountController!.text.trim()) ?? 0;
+    if (amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter a payment amount.')));
+      return;
+    }
+    final balance = _balance(o);
+    if (amount > balance) {
+      // Over-collection can be legit (tips, rounding) but is worth a
+      // confirmation — mirrors the APC over-collection flow's spirit
+      // without the full reason-chip machinery (that's a Week-4 refinement).
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('More than balance due'),
+          content: Text(
+              'Balance due is ₹${balance.toStringAsFixed(0)} but you entered '
+              '₹${amount.toStringAsFixed(0)}. Record anyway?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Record')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    safeSetState(() => _model.saving = true);
+    try {
+      await PaymentEntriesTable().insert({
+        ...OrgScope.stamp(),
+        'order_id': o.id,
+        'amount': amount,
+        'mode': _model.mode,
+        'note': _model.noteController!.text.trim().isEmpty
+            ? null
+            : _model.noteController!.text.trim(),
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              '₹${amount.toStringAsFixed(0)} recorded for ${o.customer}.')));
+      _model.amountController!.clear();
+      _model.noteController!.clear();
+      // Refresh: order paid_total changed via trigger.
+      await _load();
+      await _loadHistory();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not save: $e. '
+                'Has 20260718_payment_entries.sql been run?')));
+      }
+    } finally {
+      if (mounted) safeSetState(() => _model.saving = false);
+    }
   }
 
   @override
@@ -62,8 +163,77 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
     super.dispose();
   }
 
+  InputDecoration _dec(String label, {String? hint}) {
+    final theme = FlutterFlowTheme.of(context);
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle:
+          GoogleFonts.inter(color: theme.secondaryText, fontSize: 12.5),
+      filled: true,
+      fillColor: theme.secondaryBackground,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: theme.secondaryText.withOpacity(0.2)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: theme.secondaryText.withOpacity(0.2)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: theme.primary, width: 1.5),
+      ),
+    );
+  }
+
+  Widget _modeChip(String value, String label, IconData icon) {
+    final theme = FlutterFlowTheme.of(context);
+    final selected = _model.mode == value;
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => safeSetState(() => _model.mode = value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? theme.primary : theme.secondaryBackground,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 16,
+                  color: selected
+                      ? theme.primaryBackground
+                      : theme.secondaryText),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: selected
+                      ? theme.primaryBackground
+                      : theme.primaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final selected = _model.selected;
+    final balance = selected == null ? 0.0 : _balance(selected);
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -71,820 +241,234 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: theme.primaryBackground,
         appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+          backgroundColor: theme.primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              'ixue1cp3' /* Record Payment */,
-            ),
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
+            'Record Payment',
+            style: theme.titleLarge.override(
+                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
                   fontSize: 22.0,
                   letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: const [],
           centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
           top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      FFLocalizations.of(context).getText(
-                        'hatft2nd' /* Select Order */,
-                      ),
-                      style: FlutterFlowTheme.of(context).titleMedium.override(
-                            font: GoogleFonts.interTight(
-                              fontWeight: FlutterFlowTheme.of(context)
-                                  .titleMedium
-                                  .fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .titleMedium
-                                  .fontStyle,
-                            ),
-                            color: FlutterFlowTheme.of(context).primaryText,
-                            letterSpacing: 0.0,
-                            fontWeight: FlutterFlowTheme.of(context)
-                                .titleMedium
-                                .fontWeight,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .titleMedium
-                                .fontStyle,
-                          ),
-                    ),
-                    Text(
-                      FFLocalizations.of(context).getText(
-                        'aq7adrp6' /* Loading pending orders... */,
-                      ),
-                      style: FlutterFlowTheme.of(context).bodySmall.override(
-                            font: GoogleFonts.inter(
-                              fontWeight: FlutterFlowTheme.of(context)
-                                  .bodySmall
-                                  .fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .bodySmall
-                                  .fontStyle,
-                            ),
-                            color: FlutterFlowTheme.of(context).secondaryText,
-                            letterSpacing: 0.0,
-                            fontWeight: FlutterFlowTheme.of(context)
-                                .bodySmall
-                                .fontWeight,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .bodySmall
-                                .fontStyle,
-                          ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Builder(
-                          builder: (context) {
-                            final pendingPayOrder =
-                                _model.pendingPayOrders.toList();
-
-                            return ListView.separated(
-                              padding: EdgeInsets.zero,
-                              primary: false,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              scrollDirection: Axis.vertical,
-                              itemCount: pendingPayOrder.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 10.0),
-                              itemBuilder: (context, pendingPayOrderIndex) {
-                                final pendingPayOrderItem =
-                                    pendingPayOrder[pendingPayOrderIndex];
-                                return Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(12.0),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(14.0),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              pendingPayOrderItem.customer,
-                                              style: FlutterFlowTheme.of(
-                                                      context)
-                                                  .titleSmall
-                                                  .override(
-                                                    font:
-                                                        GoogleFonts.interTight(
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .fontStyle,
-                                                    ),
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .primaryText,
-                                                    letterSpacing: 0.0,
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleSmall
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleSmall
-                                                            .fontStyle,
-                                                  ),
-                                            ),
-                                            Row(
-                                              mainAxisSize: MainAxisSize.max,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                Text(
-                                                  pendingPayOrderItem.fromCity!,
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodySmall
-                                                      .override(
-                                                        font: GoogleFonts.inter(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                                ),
-                                                Icon(
-                                                  Icons.arrow_forward,
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .secondaryText,
-                                                  size: 12.0,
-                                                ),
-                                                Text(
-                                                  pendingPayOrderItem.toCity!,
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodySmall
-                                                      .override(
-                                                        font: GoogleFonts.inter(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                                ),
-                                              ].divide(const SizedBox(width: 4.0)),
-                                            ),
-                                            Text(
-                                              pendingPayOrderItem.amount!
-                                                  .toString(),
-                                              style:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .override(
-                                                        font: GoogleFonts.inter(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                            ),
-                                          ].divide(const SizedBox(height: 4.0)),
-                                        ),
-                                        Padding(
-                                          padding:
-                                              const EdgeInsetsDirectional.fromSTEB(
-                                                  14.0, 8.0, 14.0, 8.0),
-                                          child: FFButtonWidget(
-                                            onPressed: () async {
-                                              _model.selectedPayOrderId =
-                                                  pendingPayOrderItem.id;
-                                              safeSetState(() {});
-                                              _model.selectedPayCustomer =
-                                                  pendingPayOrderItem.customer;
-                                              safeSetState(() {});
-                                              _model.selectedPayTotalAmount =
-                                                  pendingPayOrderItem.amount
-                                                      ?.toString();
-                                              safeSetState(() {});
-                                              _model.selectedPayAdvancePaid =
-                                                  pendingPayOrderItem
-                                                      .advancePaid
-                                                      ?.toString();
-                                              safeSetState(() {});
-                                            },
-                                            text: FFLocalizations.of(context)
-                                                .getText(
-                                              '0ccwrohv' /* Select */,
-                                            ),
-                                            options: FFButtonOptions(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              iconPadding: const EdgeInsetsDirectional
-                                                  .fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primary,
-                                              textStyle: TextStyle(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryBackground,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8.0),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
+          child: _model.loading
+              ? const Center(child: CircularProgressIndicator())
+              : KeyboardScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // ---- Order picker -----------------------------------
+                      DropdownButtonFormField<String>(
+                        value: selected?.id,
+                        isExpanded: true,
+                        dropdownColor: theme.secondaryBackground,
+                        style: GoogleFonts.inter(
+                            color: theme.primaryText, fontSize: 13.5),
+                        decoration: _dec('Order'),
+                        hint: Text(
+                          _model.unpaidOrders.isEmpty
+                              ? 'No orders with balance due'
+                              : 'Select order',
+                          style: GoogleFonts.inter(
+                              color: theme.secondaryText, fontSize: 13),
                         ),
-                        if (!(_model.selectedPayOrderId == ''))
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: FlutterFlowTheme.of(context)
-                                  .secondaryBackground,
-                              borderRadius: BorderRadius.circular(12.0),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    FFLocalizations.of(context).getText(
-                                      'ia7jex1v' /* Payment Entry */,
-                                    ),
-                                    style: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .override(
-                                          font: GoogleFonts.interTight(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleSmall
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleSmall
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .primary,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        FFLocalizations.of(context).getText(
-                                          '3fjnyyny' /* Customer: */,
-                                        ),
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodySmall
-                                            .override(
-                                              font: GoogleFonts.inter(
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodySmall
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodySmall
-                                                        .fontStyle,
-                                              ),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .secondaryText,
-                                              letterSpacing: 0.0,
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .fontStyle,
-                                            ),
-                                      ),
-                                      Text(
-                                        _model.selectedPayCustomer!,
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .override(
-                                              font: GoogleFonts.inter(
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontStyle,
-                                              ),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primaryText,
-                                              letterSpacing: 0.0,
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontStyle,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        FFLocalizations.of(context).getText(
-                                          '2b7h3tqi' /* Total Amount: */,
-                                        ),
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodySmall
-                                            .override(
-                                              font: GoogleFonts.inter(
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodySmall
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodySmall
-                                                        .fontStyle,
-                                              ),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .secondaryText,
-                                              letterSpacing: 0.0,
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .fontStyle,
-                                            ),
-                                      ),
-                                      Text(
-                                        _model.selectedPayTotalAmount!,
-                                        style: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .override(
-                                              font: GoogleFonts.interTight(
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .titleSmall
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .titleSmall
-                                                        .fontStyle,
-                                              ),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primaryText,
-                                              letterSpacing: 0.0,
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .titleSmall
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .titleSmall
-                                                      .fontStyle,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        FFLocalizations.of(context).getText(
-                                          '2b6hm9cs' /* Already Paid: */,
-                                        ),
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodySmall
-                                            .override(
-                                              font: GoogleFonts.inter(
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodySmall
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodySmall
-                                                        .fontStyle,
-                                              ),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .secondaryText,
-                                              letterSpacing: 0.0,
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .fontStyle,
-                                            ),
-                                      ),
-                                      Text(
-                                        _model.selectedPayAdvancePaid!,
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .override(
-                                              font: GoogleFonts.inter(
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontStyle,
-                                              ),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primary,
-                                              letterSpacing: 0.0,
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontStyle,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                  TextFormField(
-                                    controller:
-                                        _model.payAmountFieldTextController,
-                                    focusNode: _model.payAmountFieldFocusNode,
-                                    obscureText: false,
-                                    decoration: InputDecoration(
-                                      labelText:
-                                          FFLocalizations.of(context).getText(
-                                        'jkxip03s' /* Amount Received (₹) */,
-                                      ),
-                                      hintText:
-                                          FFLocalizations.of(context).getText(
-                                        'wbj15dhe' /* 0.00 */,
-                                      ),
-                                      enabledBorder: const OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: Color(0x00000000),
-                                          width: 1.0,
-                                        ),
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(4.0),
-                                          topRight: Radius.circular(4.0),
-                                        ),
-                                      ),
-                                      focusedBorder: const OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: Color(0x00000000),
-                                          width: 1.0,
-                                        ),
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(4.0),
-                                          topRight: Radius.circular(4.0),
-                                        ),
-                                      ),
-                                      errorBorder: const OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: Color(0x00000000),
-                                          width: 1.0,
-                                        ),
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(4.0),
-                                          topRight: Radius.circular(4.0),
-                                        ),
-                                      ),
-                                      focusedErrorBorder: const OutlineInputBorder(
-                                        borderSide: BorderSide(
-                                          color: Color(0x00000000),
-                                          width: 1.0,
-                                        ),
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(4.0),
-                                          topRight: Radius.circular(4.0),
-                                        ),
-                                      ),
-                                      filled: true,
-                                    ),
-                                    style: const TextStyle(),
-                                    maxLines: null,
-                                    keyboardType: TextInputType.number,
-                                    validator: _model
-                                        .payAmountFieldTextControllerValidator
-                                        .asValidator(context),
-                                  ),
-                                  FlutterFlowDropDown<String>(
-                                    controller: _model
-                                            .payStatusDropdownValueController ??=
-                                        FormFieldController<String>(null),
-                                    options: [
-                                      FFLocalizations.of(context).getText(
-                                        'b6djs8q6' /* partial */,
-                                      ),
-                                      FFLocalizations.of(context).getText(
-                                        'gvzewymt' /* paid */,
-                                      )
-                                    ],
-                                    onChanged: (val) async {
-                                      safeSetState(() =>
-                                          _model.payStatusDropdownValue = val);
-                                      _model.newPayStatus =
-                                          _model.payStatusDropdownValue;
-                                      safeSetState(() {});
-                                    },
-                                    textStyle: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                    hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'iy6c88i0' /* Select status */,
-                                    ),
-                                    icon: Icon(
-                                      Icons.keyboard_arrow_down_rounded,
-                                      color: FlutterFlowTheme.of(context)
-                                          .secondaryText,
-                                      size: 24.0,
-                                    ),
-                                    fillColor: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    elevation: 2.0,
-                                    borderColor:
-                                        FlutterFlowTheme.of(context).alternate,
-                                    borderWidth: 1.0,
-                                    borderRadius: 8.0,
-                                    margin: const EdgeInsetsDirectional.fromSTEB(
-                                        12.0, 0.0, 12.0, 0.0),
-                                    hidesUnderline: true,
-                                    isOverButton: false,
-                                    isSearchable: false,
-                                    isMultiSelect: false,
-                                    labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'x9654k0w' /* Payment Status */,
-                                    ),
-                                    labelTextStyle: const TextStyle(),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        0.0, 14.0, 0.0, 14.0),
-                                    child: FFButtonWidget(
-                                      onPressed: () async {
-                                        // Follow-up from LEAK_AUDIT.md's
-                                        // Stage 1 pass: this used to match
-                                        // on `eqOrNull('id', ...)`, so a
-                                        // null selectedPayOrderId (possible
-                                        // — the visibility check above only
-                                        // tests `== ''`, not null) would
-                                        // have silently dropped the id
-                                        // filter and updated every order in
-                                        // the org instead of none. Guard
-                                        // explicitly and use a plain `eq`
-                                        // so a bad id fails loudly instead
-                                        // of matching everything.
-                                        final orderId =
-                                            _model.selectedPayOrderId;
-                                        if (orderId == null ||
-                                            orderId.isEmpty) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                  'Select an order before saving a payment.'),
-                                            ),
-                                          );
-                                          return;
-                                        }
-                                        await OrdersTable().update(
-                                          data: {
-                                            'advance_paid': double.tryParse(
-                                                _model
-                                                    .payAmountFieldTextController
-                                                    .text),
-                                            'payment_status':
-                                                _model.newPayStatus,
-                                          },
-                                          matchingRows: (rows) =>
-                                              OrgScope.write(rows)
-                                                  .eq('id', orderId),
-                                        );
-                                        context.pop();
-
-                                        safeSetState(() {});
-                                      },
-                                      text: FFLocalizations.of(context).getText(
-                                        'kzp3jna5' /* Save Payment */,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.check_circle,
-                                        size: 20.0,
-                                      ),
-                                      options: FFButtonOptions(
-                                        width: double.infinity,
-                                        padding: const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 0.0, 0.0, 0.0),
-                                        iconPadding:
-                                            const EdgeInsetsDirectional.fromSTEB(
-                                                0.0, 0.0, 0.0, 0.0),
-                                        iconColor: FlutterFlowTheme.of(context)
-                                            .primaryBackground,
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        textStyle: TextStyle(
-                                          color: FlutterFlowTheme.of(context)
-                                              .primaryBackground,
-                                        ),
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                      ),
-                                    ),
-                                  ),
-                                ].divide(const SizedBox(height: 14.0)),
+                        items: [
+                          for (final o in _model.unpaidOrders)
+                            DropdownMenuItem(
+                              value: o.id,
+                              child: Text(
+                                '${o.customer} · ${o.fromCity ?? ''} to ${o.toCity ?? ''} · due ₹${_balance(o).toStringAsFixed(0)}',
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                        ],
+                        onChanged: (v) async {
+                          _model.selected = _model.unpaidOrders
+                              .where((o) => o.id == v)
+                              .firstOrNull;
+                          await _loadHistory();
+                          safeSetState(() {});
+                        },
+                      ),
+                      if (selected != null) ...[
+                        const SizedBox(height: 12),
+                        // ---- Balance summary ------------------------------
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: theme.secondaryBackground,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                      ].divide(const SizedBox(height: 10.0)),
-                    ),
-                    Container(),
-                  ].divide(const SizedBox(height: 16.0)),
+                          child: Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: [
+                              _sumCol('Total',
+                                  '₹${(selected.amount ?? 0).toStringAsFixed(0)}'),
+                              _sumCol('Advance',
+                                  '₹${(selected.advancePaid ?? 0).toStringAsFixed(0)}'),
+                              _sumCol('Collected',
+                                  '₹${selected.paidTotal.toStringAsFixed(0)}'),
+                              _sumCol(
+                                  'Balance Due',
+                                  '₹${balance.toStringAsFixed(0)}',
+                                  highlight: true),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // ---- Entry form -----------------------------------
+                        TextField(
+                          controller: _model.amountController,
+                          focusNode: _model.amountFocusNode,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
+                          style: GoogleFonts.inter(
+                              color: theme.primaryText, fontSize: 15),
+                          decoration: _dec('Amount received (₹)'),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _modeChip('cash', 'Cash', Icons.payments),
+                            const SizedBox(width: 8),
+                            _modeChip('upi', 'UPI', Icons.qr_code),
+                            const SizedBox(width: 8),
+                            _modeChip(
+                                'bank', 'Bank', Icons.account_balance),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _model.noteController,
+                          focusNode: _model.noteFocusNode,
+                          style: GoogleFonts.inter(
+                              color: theme.primaryText, fontSize: 13.5),
+                          decoration: _dec('Note (optional)',
+                              hint: 'e.g. UPI ref, received by'),
+                        ),
+                        const SizedBox(height: 16),
+                        FFButtonWidget(
+                          onPressed: _model.saving ? null : _save,
+                          text: _model.saving ? 'Saving…' : 'Save Payment',
+                          icon: const Icon(Icons.check_circle, size: 20.0),
+                          options: FFButtonOptions(
+                            width: double.infinity,
+                            height: 48,
+                            padding: const EdgeInsetsDirectional.fromSTEB(
+                                0.0, 0.0, 0.0, 0.0),
+                            iconPadding:
+                                const EdgeInsetsDirectional.fromSTEB(
+                                    0.0, 0.0, 0.0, 0.0),
+                            iconColor: theme.primaryBackground,
+                            color: theme.primary,
+                            textStyle:
+                                TextStyle(color: theme.primaryBackground),
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                        ),
+                        // ---- History --------------------------------------
+                        const SizedBox(height: 20),
+                        Text(
+                          'Payment History (${_model.history.length})',
+                          style: GoogleFonts.interTight(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: theme.primaryText),
+                        ),
+                        const SizedBox(height: 8),
+                        if (_model.history.isEmpty)
+                          Text('No payments recorded yet for this order.',
+                              style: GoogleFonts.inter(
+                                  fontSize: 12.5,
+                                  color: theme.secondaryText))
+                        else
+                          ..._model.history.map((e) => Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: theme.secondaryBackground,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      e.mode == 'upi'
+                                          ? Icons.qr_code
+                                          : e.mode == 'bank'
+                                              ? Icons.account_balance
+                                              : Icons.payments,
+                                      size: 17,
+                                      color: theme.primary,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '₹${e.amount.toStringAsFixed(0)} · ${e.mode.toUpperCase()}',
+                                            style: GoogleFonts.interTight(
+                                                fontSize: 13.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: theme.primaryText),
+                                          ),
+                                          Text(
+                                            [
+                                              if (e.receivedAt != null)
+                                                dateTimeFormat('d MMM y',
+                                                    e.receivedAt),
+                                              if ((e.note ?? '')
+                                                  .isNotEmpty)
+                                                e.note!,
+                                            ].join(' · '),
+                                            style: GoogleFonts.inter(
+                                                fontSize: 11.5,
+                                                color:
+                                                    theme.secondaryText),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            ),
-          ),
         ),
       ),
+    );
+  }
+
+  Widget _sumCol(String label, String value, {bool highlight = false}) {
+    final theme = FlutterFlowTheme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: GoogleFonts.inter(
+                fontSize: 10.5, color: theme.secondaryText)),
+        const SizedBox(height: 2),
+        Text(value,
+            style: GoogleFonts.interTight(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: highlight ? theme.primary : theme.primaryText)),
+      ],
     );
   }
 }

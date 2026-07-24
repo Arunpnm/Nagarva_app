@@ -168,10 +168,17 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               color: const Color(0xFF2A1200),
                               borderRadius: BorderRadius.circular(40),
                             ),
-                            child: const Icon(
-                              Icons.local_shipping,
-                              color: Color(0xFFFF6B35),
-                              size: 44,
+                            clipBehavior: Clip.antiAlias,
+                            // Nagarva platform logo — same asset/fallback
+                            // convention as LoginPage.
+                            child: Image.asset(
+                              'assets/images/nagarva_logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.local_shipping,
+                                color: Color(0xFFFF6B35),
+                                size: 44,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),

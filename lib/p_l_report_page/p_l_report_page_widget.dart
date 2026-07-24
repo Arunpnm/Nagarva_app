@@ -43,6 +43,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
   List<ExpensesRow> _allExpenses = [];
   List<OrderStaffRow> _allOrderStaff = [];
   List<LeadsRow> _allLeads = [];
+  bool _porterEnabled = false;
 
   @override
   void initState() {
@@ -90,6 +91,14 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
       _allExpenses = results[1].cast<ExpensesRow>();
       _allOrderStaff = results[2].cast<OrderStaffRow>();
       _allLeads = results[3].cast<LeadsRow>();
+      // Porter is a per-vendor opt-in (settings key 'porter_enabled') —
+      // pan-India vendors that don't use Porter shouldn't see a commission
+      // line computed off stray flags.
+      final porterRows = await SettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('key', 'porter_enabled'),
+      );
+      _porterEnabled = porterRows.isNotEmpty &&
+          (porterRows.first.value ?? '').toLowerCase() == 'true';
       _recompute();
       _model.isLoading = false;
       _model.loadError = null;
@@ -138,7 +147,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
     _model.labour = labour;
     _model.orderExpenses = orderExpenses;
     _model.otherExpenses = otherExpenses;
-    _model.porterCommission = porterCommission;
+    _model.porterCommission = _porterEnabled ? porterCommission : 0.0;
 
     _model.branchPL = kPLReportBranches.map((branch) {
       final branchOrders = fo.where((o) => o.branch == branch).toList();

@@ -6,6 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'quick_expense_page_model.dart';
 export 'quick_expense_page_model.dart';
@@ -33,6 +34,15 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
 
     _model.expAmountFieldTextController ??= TextEditingController();
     _model.expAmountFieldFocusNode ??= FocusNode();
+
+    // Load recent orders for the optional link dropdown.
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      final rows = await OrdersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).order('created_at').limit(25),
+      );
+      _model.recentOrders = rows.toList().cast<OrdersRow>();
+      safeSetState(() {});
+    });
 
     _model.expDateFieldTextController ??= TextEditingController();
     _model.expDateFieldFocusNode ??= FocusNode();
@@ -352,67 +362,58 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                       .expDateFieldTextControllerValidator
                                       .asValidator(context),
                                 ),
-                                TextFormField(
-                                  controller:
-                                      _model.expOrderIdFieldTextController,
-                                  focusNode: _model.expOrderIdFieldFocusNode,
-                                  obscureText: false,
+                                // Was a free-text "Linked Order ID" — typing UUIDs by hand
+                                // invited typos, and an empty string crashed the uuid cast on
+                                // insert. Now an optional dropdown of this org's recent orders.
+                                DropdownButtonFormField<String>(
+                                  value: _model.linkedOrderId,
+                                  isExpanded: true,
+                                  dropdownColor:
+                                      FlutterFlowTheme.of(context).secondaryBackground,
+                                  style: GoogleFonts.inter(
+                                      color: FlutterFlowTheme.of(context).primaryText,
+                                      fontSize: 13.5),
                                   decoration: InputDecoration(
-                                    labelText:
-                                        FFLocalizations.of(context).getText(
-                                      '6awzasml' /* Linked Order ID (optional) */,
-                                    ),
-                                    hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'stv6m2em' /* Leave blank if not linked */,
-                                    ),
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
+                                    labelText: 'Linked Order (optional)',
+                                    labelStyle: GoogleFonts.inter(
+                                        color: FlutterFlowTheme.of(context).secondaryText,
+                                        fontSize: 12.5),
                                     filled: true,
+                                    fillColor:
+                                        FlutterFlowTheme.of(context).secondaryBackground,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(
+                                          color: FlutterFlowTheme.of(context)
+                                              .secondaryText
+                                              .withOpacity(0.2)),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: BorderSide(
+                                          color: FlutterFlowTheme.of(context)
+                                              .secondaryText
+                                              .withOpacity(0.2)),
+                                    ),
                                   ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .expOrderIdFieldTextControllerValidator
-                                      .asValidator(context),
+                                  hint: Text('No linked order',
+                                      style: GoogleFonts.inter(
+                                          color: FlutterFlowTheme.of(context).secondaryText,
+                                          fontSize: 13)),
+                                  items: [
+                                    const DropdownMenuItem<String>(
+                                        value: '', child: Text('No linked order')),
+                                    for (final o in _model.recentOrders)
+                                      DropdownMenuItem(
+                                        value: o.id,
+                                        child: Text(
+                                      '${o.customer} · ${o.fromCity ?? ''} to ${o.toCity ?? ''}',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                  ],
+                                  onChanged: (v) => safeSetState(
+                                      () => _model.linkedOrderId = (v ?? '').isEmpty ? null : v),
                                 ),
                                 TextFormField(
                                   controller: _model.expDescFieldTextController,
@@ -493,8 +494,9 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                     _model.expAmountFieldTextController.text),
                                 'category': _model.expCategory,
                                 'date': _model.expDateFieldTextController.text,
-                                'order_id':
-                                    _model.expOrderIdFieldTextController.text,
+                                // Null (not '') when unlinked — an empty
+                                // string used to crash the uuid cast.
+                                'order_id': _model.linkedOrderId,
                                 'description':
                                     _model.expDescFieldTextController.text,
                               });

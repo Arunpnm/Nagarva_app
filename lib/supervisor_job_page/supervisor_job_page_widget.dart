@@ -341,6 +341,15 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
 
   Widget _orderSummaryCard(BuildContext context) {
     final o = _model.order!;
+    // Privacy rule: once the job is completed, a supervisor no longer needs
+    // the customer's identity — mask the name (and never surface the phone
+    // here). Prevents post-job contact / lead poaching.
+    final completed = o.status == 'delivered' ||
+        o.status == 'closed' ||
+        o.supervisorStatus == 'completed_pending' ||
+        o.supervisorStatus == 'settled';
+    final hideCustomer =
+        completed && AppSession.instance.isSupervisorSession;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -351,7 +360,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(o.customer,
+          Text(hideCustomer ? 'Customer (hidden after completion)' : o.customer,
               style: FlutterFlowTheme.of(context)
                   .titleMedium
                   .override(font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),

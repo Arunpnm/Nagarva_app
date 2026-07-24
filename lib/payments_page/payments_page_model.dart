@@ -4,6 +4,9 @@ import 'payments_page_widget.dart' show PaymentsPageWidget;
 import 'package:flutter/material.dart';
 
 class PaymentsPageModel extends FlutterFlowModel<PaymentsPageWidget> {
+  /// Live 'Received (Month)' tile: Σ payment_entries received this month.
+  double receivedThisMonth = 0;
+
   ///  Local state fields for this page.
 
   List<OrdersRow> pendingList = [];

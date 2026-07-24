@@ -10,6 +10,9 @@ import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
+import 'components/notification_bell.dart';
+import 'permissions.dart';
+import 'staff_auth.dart';
 import 'index.dart';
 
 void main() async {
@@ -38,6 +41,13 @@ void main() async {
   // org and restore that instead of the first membership row.
   final restoredUser = SupaFlow.client.auth.currentUser;
   if (restoredUser != null && AppSession.instance.currentOrgId == null) {
+    // Shadow staff users (minted by the staff-login Edge Function) are
+    // marked with user_metadata.kind == 'staff'. On reload they must be
+    // restored as STAFF (filtered sidebar, no money KPIs) — never as a
+    // vendor, or a browser refresh would silently grant owner-level UI.
+    final meta = restoredUser.userMetadata ?? const <String, dynamic>{};
+    final restoredStaffId =
+        meta['kind'] == 'staff' ? meta['staff_id'] as String? : null;
     try {
       final member = await SupaFlow.client
           .from('org_members')
@@ -47,9 +57,11 @@ void main() async {
           .maybeSingle();
       final orgId = member == null ? null : member['org_id'] as String?;
       if (orgId != null) {
+        // select('*') on purpose: naming logo_url here would 400 the whole
+        // restore on a DB that hasn't run 20260717_org_logo_url.sql yet.
         final org = await SupaFlow.client
             .from('organizations')
-            .select('name, slug, plan_id, trial_ends_at')
+            .select('*')
             .eq('id', orgId)
             .maybeSingle();
 
@@ -75,16 +87,39 @@ void main() async {
         }
 
         final trialRaw = org == null ? null : org['trial_ends_at'];
-        AppSession.instance.setVendorSession(
-          authUserId: restoredUser.id,
-          orgId: orgId,
-          orgName: org == null ? '' : (org['name'] as String? ?? ''),
-          orgSlug: org == null ? '' : (org['slug'] as String? ?? ''),
-          limits: limits,
-          features: features,
-          planName: planName,
-          trialEndsAt: trialRaw is String ? DateTime.tryParse(trialRaw) : null,
-        );
+        if (restoredStaffId != null && restoredStaffId.isNotEmpty) {
+          // Staff session restore: staff identity + org context only.
+          AppSession.instance.setStaff(
+            staffId: restoredStaffId,
+            staffName: (meta['name'] as String?) ?? '',
+            role: meta['staff_role'] as String?,
+          );
+          await StaffPermissions.loadForStaff(restoredStaffId);
+          AppSession.instance.setOrgOnly(
+            orgId: orgId,
+            orgName: org == null ? null : org['name'] as String?,
+            orgSlug: org == null ? null : org['slug'] as String?,
+            logoUrl: org == null ? null : org['logo_url'] as String?,
+            limits: limits,
+            features: features,
+            planName: planName,
+            trialEndsAt:
+                trialRaw is String ? DateTime.tryParse(trialRaw) : null,
+          );
+        } else {
+          AppSession.instance.setVendorSession(
+            authUserId: restoredUser.id,
+            orgId: orgId,
+            orgName: org == null ? '' : (org['name'] as String? ?? ''),
+            orgSlug: org == null ? '' : (org['slug'] as String? ?? ''),
+            logoUrl: org == null ? null : org['logo_url'] as String?,
+            limits: limits,
+            features: features,
+            planName: planName,
+            trialEndsAt:
+                trialRaw is String ? DateTime.tryParse(trialRaw) : null,
+          );
+        }
       }
     } catch (e) {
       debugPrint('Session restore failed: $e');
@@ -229,17 +264,36 @@ class _NavBarPageState extends State<NavBarPage> {
   /// Sidebar expanded (labels visible) vs collapsed (icons only).
   bool _railExpanded = true;
 
-  static const _navItems = [
+  static const _allNavItems = [
     (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard'),
     (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders'),
     (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM'),
     (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations'),
     (name: 'PaymentsPage', icon: Icons.payments, label: 'Payments'),
     (name: 'ExpensePage', icon: Icons.receipt_long, label: 'Expenses'),
+    (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts'),
     (name: 'SalaryPage', icon: Icons.badge, label: 'Salary'),
+    (name: 'UsersPage', icon: Icons.groups, label: 'Staff'),
     (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet'),
+    (name: 'PLReportPage', icon: Icons.assessment, label: 'P & L'),
     (name: 'SettingsPage', icon: Icons.settings, label: 'Settings'),
   ];
+
+  /// Role-based navigation. Staff PIN sessions are field users, not the
+  /// owner: they only get the operational pages. Money (Payments, Expenses,
+  /// Salary), Staff management, Fleet, Leads, and Settings stay owner-only.
+  /// Combined with the customer-masking rules, this is the v1 supervisor
+  /// restriction Arun asked for. (Server-side RLS hardening per-role is a
+  /// v2 item; staff sessions ride the vendor's auth session by design.)
+  List<({String name, IconData icon, String label})> get _navItems {
+    if (AppSession.instance.currentStaffId == null) return _allNavItems;
+    // Permission-driven sidebar (Bilty-style matrix in staff.permissions).
+    // Falls back to the conservative field-crew set if permissions could
+    // not be loaded for this session.
+    final allowed = StaffPermissions.activeStaffPages ??
+        const {'HomePage', 'OrdersPage', 'OperationsPage'};
+    return _allNavItems.where((e) => allowed.contains(e.name)).toList();
+  }
 
   @override
   void initState() {
@@ -255,8 +309,11 @@ class _NavBarPageState extends State<NavBarPage> {
         'OperationsPage': const OperationsPageWidget(),
         'PaymentsPage': const PaymentsPageWidget(),
         'ExpensePage': const ExpensePageWidget(),
+        'AccountsPage': const AccountsPageWidget(),
         'SalaryPage': const SalaryPageWidget(),
+        'UsersPage': const UsersPageWidget(),
         'FleetPage': const FleetPageWidget(),
+        'PLReportPage': const PLReportPageWidget(),
         'SettingsPage': const SettingsPageWidget(),
       };
 
@@ -265,22 +322,69 @@ class _NavBarPageState extends State<NavBarPage> {
         _currentPageName = _navItems[i].name;
       });
 
-  /// Lock: keep the vendor's Supabase Auth session on the device (so
-  /// staff PIN login still works — the Slack model), but clear the
-  /// in-app session and return to the login screen.
-  void _lockDevice() {
+  /// Lock behaviour under the session-swap model:
+  /// - STAFF session active: restore the saved vendor session first
+  ///   (StaffAuth.lockToVendor, Option A) so the device is back on the
+  ///   vendor's auth — staff PIN unlock keeps working and no staff
+  ///   session lingers. If the restore fails (no stored token), fall
+  ///   back to a full sign-out so a staff session is never left behind.
+  /// - VENDOR session active: unchanged — keep the vendor's Supabase
+  ///   Auth session on the device (the Slack model), clear only the
+  ///   in-app session, return to the login screen.
+  Future<void> _lockDevice() async {
+    if (AppSession.instance.currentStaffId != null) {
+      final restored = await StaffAuth.lockToVendor();
+      if (!restored) {
+        try {
+          await SupaFlow.client.auth.signOut();
+        } catch (_) {}
+      }
+    }
+    StaffPermissions.clearActive();
     AppSession.instance.clear();
-    context.go('/login');
+    if (mounted) context.go('/login');
   }
 
-  /// Logout: full sign-out. Removes the Supabase Auth session too, so
-  /// the device needs a fresh vendor login before staff PINs work again.
+  /// Logout: full sign-out. Removes the Supabase Auth session AND the
+  /// stored vendor refresh token, so the device needs a fresh vendor
+  /// login before staff PINs work again.
   Future<void> _logout() async {
     try {
       await SupaFlow.client.auth.signOut();
     } catch (_) {}
+    await StaffAuth.clearStoredVendorToken();
+    StaffPermissions.clearActive();
     AppSession.instance.clear();
     if (mounted) context.go('/login');
+  }
+
+  /// Per-tenant logo in the sidebar header. Uses
+  /// AppSession.currentOrgLogoUrl (organizations.logo_url) when set;
+  /// falls back to the truck icon in a rounded amber chip so the header
+  /// never renders blank for orgs without a logo.
+  Widget _orgLogo({double size = 34}) {
+    final url = AppSession.instance.currentOrgLogoUrl;
+    final primary = FlutterFlowTheme.of(context).primary;
+    final fallback = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: primary.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(Icons.local_shipping, color: primary, size: size * 0.62),
+    );
+    if (url == null || url.isEmpty) return fallback;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        url,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+      ),
+    );
   }
 
   Widget _themeChip(String label, ThemeMode mode) {
@@ -343,6 +447,13 @@ class _NavBarPageState extends State<NavBarPage> {
   @override
   Widget build(BuildContext context) {
     final tabs = _tabs;
+    // Direct-URL guard: a staff session typing /payments etc. into the
+    // address bar gets bounced to the dashboard, matching the filtered nav.
+    if (AppSession.instance.currentStaffId != null &&
+        !_navItems.any((e) => e.name == _currentPageName) &&
+        _currentPage == null) {
+      _currentPageName = 'HomePage';
+    }
     final currentIndex =
         _navItems.indexWhere((e) => e.name == _currentPageName);
     final body = _currentPage ?? tabs[_currentPageName];
@@ -399,10 +510,9 @@ class _NavBarPageState extends State<NavBarPage> {
                       if (_railExpanded)
                         Expanded(
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Icon(Icons.local_shipping,
-                                  color: FlutterFlowTheme.of(context).primary,
-                                  size: 26),
+                              _orgLogo(size: 34),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
@@ -413,11 +523,13 @@ class _NavBarPageState extends State<NavBarPage> {
                                     Text(
                                       AppSession.instance.currentOrgName ??
                                           'Nagarva',
+                                      maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: FlutterFlowTheme.of(context)
                                             .primaryText,
-                                        fontSize: 15,
+                                        fontSize: 13.5,
+                                        height: 1.15,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -437,6 +549,11 @@ class _NavBarPageState extends State<NavBarPage> {
                             ],
                           ),
                         ),
+                      // In-app notifications: new leads (vendor) and order
+                      // assignments (supervisor). Realtime badge + popup.
+                      // Expanded-only: collapsed rail is 72px and bell +
+                      // toggle together would overflow it.
+                      if (_railExpanded) const NotificationBell(),
                       IconButton(
                         tooltip: _railExpanded ? 'Collapse' : 'Expand',
                         icon: Icon(

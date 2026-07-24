@@ -13,7 +13,9 @@ class UsersPageModel extends FlutterFlowModel<UsersPageWidget> {
   List<StaffRow>? staffOut;
   List<StaffRow> staffList = [];
 
-  // Role filter chip: null = All, else 'admin' | 'driver' | 'staff'.
+  // Role filter chip: null = All, else one of
+  // 'supervisor' | 'driver' | 'helper' | 'packer' | 'admin'
+  // (the real APC role set — compared lowercase against staff.role).
   String? roleFilter;
 
   @override

@@ -2,6 +2,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/components/keyboard_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -50,6 +51,42 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
     super.dispose();
   }
 
+  /// Insurance/permit expiry chip: red when expired, amber when due within
+  /// 30 days, nothing otherwise. Shown on each vehicle card so renewals
+  /// can't sneak up (Arun's fleet-reminder request; push reminders for
+  /// these ride on the Week-3 FCM work).
+  Widget _expiryBadge(String label, DateTime? date) {
+    if (date == null) return const SizedBox.shrink();
+    final now = DateTime.now();
+    final days = date.difference(DateTime(now.year, now.month, now.day)).inDays;
+    if (days > 30) return const SizedBox.shrink();
+    final expired = days < 0;
+    final color = expired ? const Color(0xFFC62828) : const Color(0xFFE6A400);
+    final text = expired
+        ? '$label expired ${-days}d ago'
+        : '$label expires in ${days}d';
+    return Container(
+      margin: const EdgeInsets.only(top: 6, right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+                fontSize: 10.5, fontWeight: FontWeight.w700, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -91,7 +128,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
+              child: KeyboardScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -412,6 +449,18 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
+                                        Wrap(
+                                          children: [
+                                            _expiryBadge(
+                                                'Insurance',
+                                                vehiclesListItemItem
+                                                    .insuranceExpiry),
+                                            _expiryBadge(
+                                                'Permit',
+                                                vehiclesListItemItem
+                                                    .permitExpiry),
+                                          ],
+                                        ),
                                         Row(
                                           mainAxisSize: MainAxisSize.max,
                                           mainAxisAlignment:

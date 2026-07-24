@@ -630,7 +630,8 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                                 .fontStyle,
                                                       ),
                                             ),
-                                            if (!_model.ldApproxDatePicked!)
+                                            if (!(_model.ldApproxDatePicked ??
+                                                false))
                                               Container(
                                                 child: Text(
                                                   FFLocalizations.of(context)
@@ -671,12 +672,14 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                       ),
                                                 ),
                                               ),
-                                            if (_model.ldApproxDatePicked ??
-                                                true)
+                                            if ((_model.ldApproxDatePicked ??
+                                                    false) &&
+                                                _model.ldApproxDate != null)
                                               Container(
                                                 child: Text(
-                                                  _model.ldApproxDate!
-                                                      .toString(),
+                                                  dateTimeFormat(
+                                                      'd MMM y',
+                                                      _model.ldApproxDate),
                                                   style: FlutterFlowTheme.of(
                                                           context)
                                                       .bodyMedium
@@ -722,35 +725,70 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                               final datePickedDate =
                                                   await showDatePicker(
                                                 context: context,
+                                                // Edit mode: open on the
+                                                // lead's saved date; allow
+                                                // past dates so editing an
+                                                // old lead doesn't assert
+                                                // (initialDate must be >=
+                                                // firstDate).
                                                 initialDate:
-                                                    getCurrentTimestamp,
-                                                firstDate: getCurrentTimestamp,
+                                                    _model.ldApproxDate ??
+                                                        getCurrentTimestamp,
+                                                firstDate: DateTime(2020),
                                                 lastDate: DateTime(2050),
                                                 builder: (context, child) {
+                                                  // FlutterFlow artifact fix:
+                                                  // the generated wrapper set
+                                                  // every color to 0x00000000
+                                                  // (fully transparent), which
+                                                  // rendered the ghost
+                                                  // calendar. Same themed
+                                                  // builder as the other
+                                                  // fixed pickers.
+                                                  final theme =
+                                                      FlutterFlowTheme.of(
+                                                          context);
                                                   return wrapInMaterialDatePickerTheme(
                                                     context,
                                                     child!,
                                                     headerBackgroundColor:
-                                                        const Color(0x00000000),
+                                                        theme.primary,
                                                     headerForegroundColor:
-                                                        const Color(0x00000000),
-                                                    headerTextStyle:
-                                                        const TextStyle(),
+                                                        Colors.white,
+                                                    headerTextStyle: theme
+                                                        .headlineLarge
+                                                        .override(
+                                                          font: GoogleFonts
+                                                              .interTight(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                          color: Colors.white,
+                                                          fontSize: 30.0,
+                                                        ),
                                                     pickerBackgroundColor:
-                                                        const Color(0x00000000),
+                                                        theme
+                                                            .secondaryBackground,
                                                     pickerForegroundColor:
-                                                        const Color(0x00000000),
+                                                        theme.primaryText,
                                                     selectedDateTimeBackgroundColor:
-                                                        const Color(0x00000000),
+                                                        theme.primary,
                                                     selectedDateTimeForegroundColor:
-                                                        const Color(0x00000000),
+                                                        Colors.white,
                                                     actionButtonForegroundColor:
-                                                        const Color(0x00000000),
+                                                        theme.primary,
                                                     iconSize: 24,
                                                   );
                                                 },
                                               );
 
+                                              // Only commit when a date
+                                              // was actually chosen —
+                                              // dismissing the dialog used
+                                              // to null ldApproxDate while
+                                              // setting picked=true, which
+                                              // crashed the display below
+                                              // ("Unexpected null value").
                                               if (datePickedDate != null) {
                                                 safeSetState(() {
                                                   _model.datePicked = DateTime(
@@ -758,19 +796,12 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                     datePickedDate.month,
                                                     datePickedDate.day,
                                                   );
-                                                });
-                                              } else if (_model.datePicked !=
-                                                  null) {
-                                                safeSetState(() {
-                                                  _model.datePicked =
-                                                      getCurrentTimestamp;
+                                                  _model.ldApproxDate =
+                                                      _model.datePicked;
+                                                  _model.ldApproxDatePicked =
+                                                      true;
                                                 });
                                               }
-                                              _model.ldApproxDate =
-                                                  _model.datePicked;
-                                              safeSetState(() {});
-                                              _model.ldApproxDatePicked = true;
-                                              safeSetState(() {});
                                             },
                                             text: FFLocalizations.of(context)
                                                 .getText(

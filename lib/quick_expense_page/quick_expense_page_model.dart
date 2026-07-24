@@ -5,6 +5,13 @@ import 'quick_expense_page_widget.dart' show QuickExpensePageWidget;
 import 'package:flutter/material.dart';
 
 class QuickExpensePageModel extends FlutterFlowModel<QuickExpensePageWidget> {
+  /// Recent orders for the optional "Linked Order" dropdown (replaced the
+  /// hand-typed UUID field).
+  List<OrdersRow> recentOrders = [];
+
+  /// Selected order id, or null for no link.
+  String? linkedOrderId;
+
   ///  Local state fields for this page.
 
   String? expCategory = 'Fuel';

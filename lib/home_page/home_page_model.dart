@@ -7,6 +7,12 @@ import 'package:flutter/material.dart';
 class HomePageModel extends FlutterFlowModel<HomePageWidget> {
   ///  Local state fields for this page.
 
+  /// Vendor choice: show the Porter commission KPI card. Porter is
+  /// Bengaluru/APC-specific; pan-India vendors opt in via Settings
+  /// (settings key 'porter_enabled', jsonb 'true'/'false'). Defaults off
+  /// for new orgs; APC seeds it on (see 20260717_notifications_and_settings.sql).
+  bool porterEnabled = false;
+
   List<DashboardKpisViewRow> kpiList = [];
   void addToKpiList(DashboardKpisViewRow item) => kpiList.add(item);
   void removeFromKpiList(DashboardKpisViewRow item) => kpiList.remove(item);

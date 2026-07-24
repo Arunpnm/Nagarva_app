@@ -148,7 +148,9 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: RecordPaymentPageWidget.routeName,
           path: RecordPaymentPageWidget.routePath,
-          builder: (context, params) => const RecordPaymentPageWidget(),
+          builder: (context, params) => RecordPaymentPageWidget(
+            orderId: params.getParam('orderId', ParamType.String),
+          ),
         ),
         FFRoute(
           name: QuickExpensePageWidget.routeName,

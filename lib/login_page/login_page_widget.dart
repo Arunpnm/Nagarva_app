@@ -3,6 +3,8 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
+import '/permissions.dart';
+import '/staff_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login_page_model.dart';
@@ -10,11 +12,17 @@ export 'login_page_model.dart';
 
 /// Two-path login:
 /// - Vendor tab: Supabase Auth (email + password) — the org owner/admin.
-/// - Staff tab: device-unlock model (the "Slack model"). Requires the
-///   owner to have signed in with the vendor account on this device at
-///   least once; the staff PIN check then runs INSIDE that authenticated,
-///   RLS-scoped session, so only this org's staff rows are ever visible
-///   and no anonymous access to the staff table is needed.
+/// - Staff tab: device-unlock model (the "Slack model"). The device must
+///   have been signed in with the vendor account at least once; the staff
+///   row is looked up INSIDE that authenticated, RLS-scoped session (so
+///   only this org's staff are visible). The PIN itself is then verified
+///   SERVER-SIDE by the `staff-login` Edge Function (bcrypt in Postgres),
+///   which mints a REAL Supabase session for the staff member. The app
+///   swaps to that session, so staff carry their own auth.uid() and every
+///   RLS policy applies to them exactly as it does to vendors. The
+///   vendor's refresh token is saved first so the sidebar Lock button can
+///   silently restore the vendor session (see /staff_auth.dart).
+///   No plaintext PIN is ever read or compared on the client.
 class LoginPageWidget extends StatefulWidget {
   const LoginPageWidget({super.key});
 
@@ -145,19 +153,52 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         orgId: orgId,
         orgName: org?.name ?? '',
         orgSlug: org?.slug ?? '',
+        logoUrl: org?.logoUrl,
         limits: limits,
         features: features,
         planName: planName,
         trialEndsAt: org?.trialEndsAt,
       );
 
+      // Remember this vendor session so a later staff PIN unlock can be
+      // Locked back to it without re-entering email/password (Option A).
+      await StaffAuth.saveVendorRefreshToken();
+
       if (mounted) context.go(HomePageWidget.routePath);
     } catch (e) {
       safeSetState(() {
-        _model.errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _model.errorMessage = _friendlyAuthError(e);
         _model.isLoading = false;
       });
     }
+  }
+
+  /// Turns raw Supabase/auth exceptions into human messages. The raw
+  /// AuthApiException toString (statusCode 400, code invalid_credentials…)
+  /// was being shown to users verbatim.
+  String _friendlyAuthError(Object e) {
+    final msg = e.toString().toLowerCase();
+    if (msg.contains('invalid_credentials') ||
+        msg.contains('invalid login credentials')) {
+      return 'Email or password is incorrect. Please try again.';
+    }
+    if (msg.contains('email_not_confirmed') ||
+        msg.contains('email not confirmed')) {
+      return 'Please verify your email first — check your inbox for the confirmation link.';
+    }
+    if (msg.contains('user_already_exists') ||
+        msg.contains('already registered')) {
+      return 'An account with this email already exists. Try logging in instead.';
+    }
+    if (msg.contains('rate limit') || msg.contains('too many')) {
+      return 'Too many attempts. Please wait a minute and try again.';
+    }
+    if (msg.contains('network') ||
+        msg.contains('socket') ||
+        msg.contains('failed host lookup')) {
+      return 'Could not reach the server. Check your internet connection.';
+    }
+    return e.toString().replaceFirst('Exception: ', '');
   }
 
   Future<void> _handleStaffLogin() async {
@@ -199,17 +240,75 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           queryFn: (q) => q.ilike('name', input),
         );
       }
-      final match =
-          rows.where((r) => r.pin == pin && (r.active ?? true)).toList();
-      if (match.isEmpty) {
+      // NOTE: no PIN comparison here anymore — the PIN never touches the
+      // client. We only narrow down WHICH staff row the person means; the
+      // PIN is verified server-side (bcrypt) by the staff-login function.
+      final candidates = rows.where((r) => (r.active ?? true)).toList();
+      if (candidates.isEmpty) {
         throw Exception('Invalid name/phone or PIN.');
       }
-      final staff = match.first;
-      AppSession.instance.setStaff(staffId: staff.id!, staffName: staff.name);
+
+      // Save the vendor's refresh token BEFORE swapping sessions, so the
+      // sidebar Lock button can silently restore the vendor later.
+      await StaffAuth.saveVendorRefreshToken();
+
+      // Ask the Edge Function to verify the PIN and mint a real session.
+      // If two staff share a name, try each candidate; the wrong ones
+      // simply come back 401 and we move on.
+      Map<String, dynamic>? result;
+      for (final s in candidates) {
+        if (s.id == null) continue;
+        try {
+          final res = await SupaFlow.client.functions.invoke(
+            'staff-login',
+            body: {'staff_id': s.id, 'pin': pin},
+          );
+          final data = res.data;
+          if (data is Map && data['access_token'] != null) {
+            result = Map<String, dynamic>.from(data);
+            break;
+          }
+        } catch (_) {
+          // 401 Invalid PIN (or transient error) for this candidate —
+          // try the next one.
+          continue;
+        }
+      }
+      if (result == null) {
+        throw Exception('Invalid name/phone or PIN.');
+      }
+
+      final staffInfo = Map<String, dynamic>.from(result['staff'] as Map);
+      final staffRefreshToken = result['refresh_token'] as String?;
+      if (staffRefreshToken == null || staffRefreshToken.isEmpty) {
+        throw Exception('Could not start staff session. Try again.');
+      }
+
+      // Swap this device to the staff member's OWN session. From here on
+      // every query runs with the staff's real auth.uid(), so RLS scopes
+      // them to the org via their org_members row automatically.
+      final swap =
+          await SupaFlow.client.auth.setSession(staffRefreshToken);
+      if (swap.session == null) {
+        throw Exception('Could not start staff session. Try again.');
+      }
+
+      AppSession.instance.setStaff(
+        staffId: staffInfo['id'] as String,
+        staffName: (staffInfo['name'] as String?) ?? '',
+        role: staffInfo['role'] as String?,
+      );
+
+      // Cache this staff member's permission matrix for the sidebar
+      // (runs under the freshly-swapped staff session).
+      await StaffPermissions.loadForStaff(staffInfo['id'] as String);
 
       // Org context normally comes from the vendor session restore in
-      // main.dart; fill it from the staff row only if it is still empty.
-      final orgId = staff.orgId;
+      // main.dart; fill it from the function's response only if it is
+      // still empty. (This lookup now runs under the STAFF session — it
+      // works because the Edge Function inserted the staff member's
+      // org_members row before returning.)
+      final orgId = staffInfo['org_id'] as String?;
       if (AppSession.instance.currentOrgId == null && orgId != null) {
         try {
           final orgs = await OrganizationsTable().queryRows(
@@ -246,6 +345,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             orgId: orgId,
             orgName: org?.name,
             orgSlug: org?.slug,
+            logoUrl: org?.logoUrl,
             limits: limits,
             features: features,
             planName: planName,
@@ -259,7 +359,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       if (mounted) context.go(HomePageWidget.routePath);
     } catch (e) {
       safeSetState(() {
-        _model.errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _model.errorMessage = _friendlyAuthError(e);
         _model.isLoading = false;
       });
     }
@@ -292,8 +392,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         );
       }
     } catch (e) {
-      safeSetState(() => _model.errorMessage =
-          e.toString().replaceFirst('Exception: ', ''));
+      safeSetState(() => _model.errorMessage = _friendlyAuthError(e));
     } finally {
       safeSetState(() => _model.isLoading = false);
     }
@@ -340,10 +439,20 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                               color: const Color(0xFF2A1200),
                               borderRadius: BorderRadius.circular(45),
                             ),
-                            child: const Icon(
-                              Icons.local_shipping,
-                              color: Color(0xFFFF6B35),
-                              size: 48,
+                            clipBehavior: Clip.antiAlias,
+                            // Nagarva platform logo. Drop the file at
+                            // assets/images/nagarva_logo.png (assets/images/
+                            // is already declared in pubspec). Until the
+                            // file exists, errorBuilder falls back to the
+                            // old truck icon so the screen never breaks.
+                            child: Image.asset(
+                              'assets/images/nagarva_logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.local_shipping,
+                                color: Color(0xFFFF6B35),
+                                size: 48,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),

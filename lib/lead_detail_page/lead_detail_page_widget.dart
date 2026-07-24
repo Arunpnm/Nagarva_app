@@ -1,3 +1,4 @@
+import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -63,6 +64,33 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
   /// created with amount 0 / status 'booked' — the office still needs to
   /// fill in the real quote via Edit Order once that flow exists (see
   /// CLAUDE.md's OrderDetailPage/NewOrderPage edit-mode gap).
+  /// Generates a human-readable order id like NGV-1007. orders.id is TEXT
+  /// (not uuid) and has NOT-NULL / no default, so the insert crashes with
+  /// 23502 unless we supply one. Counter lives in the settings table, per-
+  /// org, with the same PK convention as _nextInvoiceNo on OrderDetailPage.
+  Future<String> _nextOrderId() async {
+    final prefix =
+        (AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV');
+    const key = 'order_id_seq';
+    final rows = await SettingsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eq('key', key),
+    );
+    final current = rows.isNotEmpty
+        ? (int.tryParse(rows.first.value ?? '1000') ?? 1000)
+        : 1000;
+    final next = current + 1;
+    await SettingsTable().upsert(
+      {
+        'key': key,
+        ...OrgScope.stamp(),
+        'value': next.toString(),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      onConflict: 'org_id,key',
+    );
+    return '$prefix-$next';
+  }
+
   Future<void> _convertToOrder() async {
     if (widget.leadId == null) return;
     setState(() => _converting = true);
@@ -74,8 +102,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
         moveDate = DateTime.now();
       }
 
+      final newOrderId = await _nextOrderId();
       final order = await OrdersTable().insert({
         ...OrgScope.stamp(),
+        'id': newOrderId,
         'lead_id': widget.leadId,
         'customer': widget.leadCustomer ?? '',
         'phone': widget.leadPhone,

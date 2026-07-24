@@ -1,3 +1,4 @@
+import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
@@ -81,6 +82,31 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
     _model.dispose();
 
     super.dispose();
+  }
+
+  /// Same convention as lead_detail_page._nextOrderId — orders.id is text
+  /// with no default, must be supplied on insert or NOT-NULL fires (23502).
+  Future<String> _nextOrderId() async {
+    final prefix =
+        (AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV');
+    const key = 'order_id_seq';
+    final rows = await SettingsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eq('key', key),
+    );
+    final current = rows.isNotEmpty
+        ? (int.tryParse(rows.first.value ?? '1000') ?? 1000)
+        : 1000;
+    final next = current + 1;
+    await SettingsTable().upsert(
+      {
+        'key': key,
+        ...OrgScope.stamp(),
+        'value': next.toString(),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      onConflict: 'org_id,key',
+    );
+    return '$prefix-$next';
   }
 
   Future<void> _loadExistingOrder() async {
@@ -839,7 +865,8 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                                 .fontStyle,
                                                       ),
                                             ),
-                                            if (!_model.ordMoveDatePicked!)
+                                            if (!(_model.ordMoveDatePicked ??
+                                                false))
                                               Container(
                                                 child: Text(
                                                   FFLocalizations.of(context)
@@ -880,12 +907,14 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                       ),
                                                 ),
                                               ),
-                                            if (_model.ordMoveDatePicked ??
-                                                true)
+                                            if ((_model.ordMoveDatePicked ??
+                                                    false) &&
+                                                _model.ordMoveDate != null)
                                               Container(
                                                 child: Text(
-                                                  _model.ordMoveDate!
-                                                      .toString(),
+                                                  dateTimeFormat(
+                                                      'd MMM y',
+                                                      _model.ordMoveDate),
                                                   style: FlutterFlowTheme.of(
                                                           context)
                                                       .bodyMedium
@@ -931,35 +960,66 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                               final datePickedDate =
                                                   await showDatePicker(
                                                 context: context,
+                                                // Edit mode: open on the
+                                                // order's saved move date;
+                                                // allow past dates so
+                                                // editing an old order
+                                                // doesn't assert.
                                                 initialDate:
-                                                    getCurrentTimestamp,
-                                                firstDate: getCurrentTimestamp,
+                                                    _model.ordMoveDate ??
+                                                        getCurrentTimestamp,
+                                                firstDate: DateTime(2020),
                                                 lastDate: DateTime(2050),
                                                 builder: (context, child) {
+                                                  // FlutterFlow artifact fix:
+                                                  // generated wrapper used
+                                                  // fully transparent colors,
+                                                  // rendering the ghost
+                                                  // calendar. Same themed
+                                                  // builder as the leads
+                                                  // page fix.
+                                                  final theme =
+                                                      FlutterFlowTheme.of(
+                                                          context);
                                                   return wrapInMaterialDatePickerTheme(
                                                     context,
                                                     child!,
                                                     headerBackgroundColor:
-                                                        const Color(0x00000000),
+                                                        theme.primary,
                                                     headerForegroundColor:
-                                                        const Color(0x00000000),
-                                                    headerTextStyle:
-                                                        const TextStyle(),
+                                                        Colors.white,
+                                                    headerTextStyle: theme
+                                                        .headlineLarge
+                                                        .override(
+                                                          font: GoogleFonts
+                                                              .interTight(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                          color: Colors.white,
+                                                          fontSize: 30.0,
+                                                        ),
                                                     pickerBackgroundColor:
-                                                        const Color(0x00000000),
+                                                        theme
+                                                            .secondaryBackground,
                                                     pickerForegroundColor:
-                                                        const Color(0x00000000),
+                                                        theme.primaryText,
                                                     selectedDateTimeBackgroundColor:
-                                                        const Color(0x00000000),
+                                                        theme.primary,
                                                     selectedDateTimeForegroundColor:
-                                                        const Color(0x00000000),
+                                                        Colors.white,
                                                     actionButtonForegroundColor:
-                                                        const Color(0x00000000),
+                                                        theme.primary,
                                                     iconSize: 24,
                                                   );
                                                 },
                                               );
 
+                                              // Only commit when a date
+                                              // was actually chosen —
+                                              // dismissing used to null
+                                              // ordMoveDate while setting
+                                              // picked=true (crash).
                                               if (datePickedDate != null) {
                                                 safeSetState(() {
                                                   _model.datePicked = DateTime(
@@ -967,19 +1027,12 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                     datePickedDate.month,
                                                     datePickedDate.day,
                                                   );
-                                                });
-                                              } else if (_model.datePicked !=
-                                                  null) {
-                                                safeSetState(() {
-                                                  _model.datePicked =
-                                                      getCurrentTimestamp;
+                                                  _model.ordMoveDate =
+                                                      _model.datePicked;
+                                                  _model.ordMoveDatePicked =
+                                                      true;
                                                 });
                                               }
-                                              _model.ordMoveDate =
-                                                  _model.datePicked;
-                                              safeSetState(() {});
-                                              _model.ordMoveDatePicked = true;
-                                              safeSetState(() {});
                                             },
                                             text: FFLocalizations.of(context)
                                                 .getText(
@@ -1662,8 +1715,10 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         .eq('id', widget.orderId!),
                                   );
                                 } else {
+                                  final newOrderId = await _nextOrderId();
                                   _model.createdOrder =
                                       await OrdersTable().insert({
+                                    'id': newOrderId,
                                     // Phase 1 multi-tenancy pass: stamp
                                     // every insert with the current org
                                     // (requires supabase/phase1_add_org_id.sql

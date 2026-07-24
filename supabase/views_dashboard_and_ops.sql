@@ -1,3 +1,8 @@
+-- TYPE-SAFETY NOTE (added 2026-07-19): all joins cast both sides to ::text.
+-- This live schema mixes id types (staff.id uuid, orders.id text,
+-- attendance.staff_id text, ...) and bare `uuid = text` joins fail with
+-- 42883. uuid::text is always valid and text::text is a no-op, so the
+-- casts make every join type-proof without caring which side is which.
 -- ============================================================================
 -- Nagarva Supabase (hqqcapifefsaqvotqvlt) — missing dashboard/ops views
 -- ============================================================================
@@ -48,6 +53,17 @@
 --    (lib/salary_page, expects: id, staff_id, attendance_date, status,
 --     location_branch, marked_by, note, staff_name, staff_branch, staff_role)
 -- ---------------------------------------------------------------------------
+-- DROP-FIRST (added 2026-07-19): some of these views already exist in the
+-- live DB from an earlier partial run, and CREATE OR REPLACE VIEW cannot
+-- change an existing column's type (42P16 on reminders_view.due_date).
+-- Dropping first makes the whole file freely re-runnable.
+drop view if exists public.dashboard_kpis_view;
+drop view if exists public.branch_kpis_view;
+drop view if exists public.reminders_view;
+drop view if exists public.trips_view;
+drop view if exists public.advances_view;
+drop view if exists public.attendance_view;
+
 create or replace view public.attendance_view as
 select
   a.id,
@@ -62,7 +78,7 @@ select
   s.branch as staff_branch,
   s.role as staff_role
 from public.attendance a
-left join public.staff s on s.id = a.staff_id;
+left join public.staff s on s.id::text = a.staff_id::text;
 
 -- ---------------------------------------------------------------------------
 -- 2. advances_view — staff_advances joined with staff name/branch/role
@@ -83,7 +99,7 @@ select
   s.branch as staff_branch,
   s.role as staff_role
 from public.staff_advances sa
-left join public.staff s on s.id = sa.staff_id;
+left join public.staff s on s.id::text = sa.staff_id::text;
 
 -- ---------------------------------------------------------------------------
 -- 3. trips_view — vehicle_trips joined with the order's customer name
@@ -110,7 +126,7 @@ select
   vt.note,
   o.customer as order_customer
 from public.vehicle_trips vt
-left join public.orders o on o.id = vt.order_id;
+left join public.orders o on o.id::text = vt.order_id::text;
 
 -- ---------------------------------------------------------------------------
 -- 4. reminders_view — reminders joined with lead/order customer name
@@ -135,8 +151,8 @@ select
   l.customer as lead_customer,
   o.customer as order_customer
 from public.reminders r
-left join public.leads l on l.id = r.lead_id
-left join public.orders o on o.id = r.order_id;
+left join public.leads l on l.id::text = r.lead_id::text
+left join public.orders o on o.id::text = r.order_id::text;
 
 -- ---------------------------------------------------------------------------
 -- 5. branch_kpis_view — revenue/orders/outstanding/profit per branch

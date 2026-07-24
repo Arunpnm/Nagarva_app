@@ -6,6 +6,16 @@ import 'package:flutter/material.dart';
 class CalendarPageModel extends FlutterFlowModel<CalendarPageWidget> {
   ///  Local state fields for this page.
 
+  /// First day of the month currently shown in the grid.
+  DateTime visibleMonth = DateTime(DateTime.now().year, DateTime.now().month);
+
+  /// Day tapped in the grid; null = show all reminders below.
+  DateTime? selectedDay;
+
+  /// Orders shown as calendar events on their move_date (like the APC
+  /// reference app's calendar).
+  List<OrdersRow> ordersList = [];
+
   List<RemindersRow> remindersList = [];
   void addToRemindersList(RemindersRow item) => remindersList.add(item);
   void removeFromRemindersList(RemindersRow item) => remindersList.remove(item);
