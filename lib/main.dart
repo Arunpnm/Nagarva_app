@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -30,6 +32,30 @@ void main() async {
   GoogleFonts.config.allowRuntimeFetching = true;
 
   await SupaFlow.initialize();
+
+  // supabase_flutter's local-storage session recovery (recoverSession())
+  // runs in the background and is NOT awaited by Supabase.initialize() —
+  // reading .currentUser immediately afterward can see null even though a
+  // valid token is sitting in local storage, because recovery hasn't
+  // resolved yet. This made every reload/cold-start land on LoginPage
+  // instead of restoring the session (found testing item 1's "F5 while
+  // logged in" case: the token was provably in localStorage but the app
+  // showed the login screen anyway). Wait for the first auth-state event —
+  // always AuthChangeEvent.initialSession once recovery finishes, session
+  // or not — before trusting .currentUser, with a timeout as a safety net
+  // in case the event already fired before this listener attached.
+  final initialSessionSeen = Completer<void>();
+  final authSub = SupaFlow.client.auth.onAuthStateChange.listen((state) {
+    if (state.event == AuthChangeEvent.initialSession &&
+        !initialSessionSeen.isCompleted) {
+      initialSessionSeen.complete();
+    }
+  });
+  if (SupaFlow.client.auth.currentUser == null) {
+    await initialSessionSeen.future
+        .timeout(const Duration(seconds: 5), onTimeout: () {});
+  }
+  await authSub.cancel();
 
   // Restore the full session on app start (browser reload / cold start).
   // Supabase restores the auth user automatically, but AppSession is
