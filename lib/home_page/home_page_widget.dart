@@ -8,6 +8,7 @@ import '/flutter_flow/custom_functions.dart' as functions;
 import '/components/keyboard_scroll_view.dart';
 import '/components/quick_entry_dialog.dart';
 import '/index.dart';
+import '/permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -106,6 +107,18 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // This drawer used to list every page unconditionally, unlike the
+    // bottom nav / sidebar in main.dart's NavBarPage which filters by the
+    // staff permission matrix (StaffPermissions.activeStaffPages) — a
+    // staff member without e.g. Payments access could still see and tap
+    // it here, only to silently bounce back to Dashboard via NavBarPage's
+    // own URL guard. Mirrors the same allow-list so the two navs agree.
+    final allowedDrawerPages = AppSession.instance.currentStaffId == null
+        ? null
+        : (StaffPermissions.activeStaffPages ??
+            const {'HomePage', 'OrdersPage', 'OperationsPage'});
+    bool showDrawerPage(String pageName) =>
+        allowedDrawerPages == null || allowedDrawerPages.contains(pageName);
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -128,6 +141,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
           child: Column(
             mainAxisSize: MainAxisSize.max,
             children: [
+              if (showDrawerPage('HomePage'))
               InkWell(
                 splashColor: Colors.transparent,
                 focusColor: Colors.transparent,
@@ -155,6 +169,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   ),
                 ),
               ),
+              if (showDrawerPage('OrdersPage'))
               InkWell(
                 splashColor: Colors.transparent,
                 focusColor: Colors.transparent,
@@ -184,6 +199,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   ),
                 ),
               ),
+              if (showDrawerPage('LeadsPage'))
               InkWell(
                 splashColor: Colors.transparent,
                 focusColor: Colors.transparent,
@@ -213,6 +229,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   ),
                 ),
               ),
+              if (showDrawerPage('OperationsPage'))
               InkWell(
                 splashColor: Colors.transparent,
                 focusColor: Colors.transparent,
@@ -242,6 +259,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   ),
                 ),
               ),
+              if (showDrawerPage('PaymentsPage'))
               InkWell(
                 splashColor: Colors.transparent,
                 focusColor: Colors.transparent,
@@ -271,6 +289,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   ),
                 ),
               ),
+              if (showDrawerPage('ExpensePage'))
               InkWell(
                 splashColor: Colors.transparent,
                 focusColor: Colors.transparent,
@@ -300,6 +319,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   ),
                 ),
               ),
+              if (showDrawerPage('SalaryPage'))
               InkWell(
                 splashColor: Colors.transparent,
                 focusColor: Colors.transparent,
@@ -329,6 +349,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   ),
                 ),
               ),
+              if (showDrawerPage('SettingsPage'))
               InkWell(
                 splashColor: Colors.transparent,
                 focusColor: Colors.transparent,
@@ -364,10 +385,26 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 hoverColor: Colors.transparent,
                 highlightColor: Colors.transparent,
                 onTap: () async {
+                  // This drawer duplicates a Logout tile that (unlike
+                  // SettingsPage's, fixed per CLAUDE.md's 13 Jul 2026
+                  // changelog) never called signOut()/AppSession.clear() —
+                  // it just navigated to LoginPage while leaving the
+                  // session fully intact. Harmless-looking on its own, but
+                  // combined with LoginPage's new "already restored? skip
+                  // straight to Home" redirect it made Logout appear to do
+                  // nothing at all. Now matches settings_page_widget.dart's
+                  // real logout sequence.
                   if (Navigator.of(context).canPop()) {
                     context.pop();
                   }
-                  context.pushNamed(LoginPageWidget.routeName);
+                  try {
+                    await SupaFlow.client.auth.signOut();
+                  } catch (_) {
+                    // Staff (PIN) sessions have no Supabase Auth session
+                    // of their own to sign out of — ignore.
+                  }
+                  AppSession.instance.clear();
+                  if (context.mounted) context.go(LoginPageWidget.routePath);
                 },
                 child: Material(
                   color: Colors.transparent,
