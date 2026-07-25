@@ -50,7 +50,7 @@
 | # | Item | Est. effort | Target |
 |---|------|-------------|--------|
 | 1 | ✅ Full test pass A/B/C/C2/D (sessions, matrix, calendars, Accounts) | 1–2 hrs | 26 Jul |
-| 2 | `phase1_rename_settings_keys.sql` + live invoice test (→ APC/2627/001) — BLOCKS first real invoice | 1 hr | 26 Jul |
+| 2 | ✅ `phase1_rename_settings_keys.sql` + live invoice test (→ APC/2627/001) — BLOCKS first real invoice | 1 hr | 26 Jul |
 | 3 | Picker sweep (remaining transparent calendars) | 1–2 hrs | 27 Jul |
 | 4 | Dashboard period filter (month arrows + This/Last/3M/FY/All chips) | 2–3 hrs | 28 Jul |
 | 5 | Calendar page blank-render crash | 1–2 hrs | 29 Jul |
@@ -124,8 +124,14 @@ Survey→Quote→Order and Billing are the two long poles)
 
 ## KNOWN RISKS / NOTES
 
-- `phase1_rename_settings_keys.sql` MUST run before the first real
-  invoice or the counter duplicates at 001.
+- ~~`phase1_rename_settings_keys.sql` MUST run before the first real
+  invoice or the counter duplicates at 001.~~ **Confirmed done 25 Jul
+  2026** (Claude Code session, read-only check via authenticated REST
+  query, no data touched): `settings` already holds the renamed
+  `inv_seq_2627` key (value `2`), and two real invoices already exist
+  sequenced correctly — `APC/2627/001` (order NGV-1010) and
+  `APC/2627/002` (order NGV-1001). Both the migration and the live
+  invoice test are satisfied; nothing left to do here.
 - staff.pin plaintext column still populated — null it only after
   confirming Staff form + login fully use pin_hash path (item 6).
 - Staff-login endpoint has gateway JWT verification OFF by design
