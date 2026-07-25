@@ -53,7 +53,7 @@
 | 2 | ✅ `phase1_rename_settings_keys.sql` + live invoice test (→ APC/2627/001) — BLOCKS first real invoice | 1 hr | 26 Jul |
 | 3 | ✅ Picker sweep (remaining transparent calendars) | 1–2 hrs | 27 Jul |
 | 4 | ✅ Dashboard period filter (month arrows + This/Last/3M/FY/All chips) | 2–3 hrs | 28 Jul |
-| 5 | Calendar page blank-render crash | 1–2 hrs | 29 Jul |
+| 5 | ✅ Calendar page blank-render crash | 1–2 hrs | 29 Jul |
 | 6 | Cleanup: plan_id signup verify · Test 3 org_members delete · staff.pin null-out · PIN rate limiting | 1–2 hrs | 30 Jul |
 | 7 | Android on-device install (MIUI "Install via USB") + phone smoke test | 30 min | any day |
 
@@ -142,6 +142,26 @@ Survey→Quote→Order and Billing are the two long poles)
 - 🅿️ PWA / Play Store release pipeline
 
 ---
+
+**Item 5 note (25 Jul 2026):** root cause was `OrdersRow.moveDate`
+(`getField<DateTime>('move_date')!`) throwing for any order with a null
+`move_date` — Calendar page reads every org order unfiltered via
+`_orderDays()`/`_ordersOn()`, so one bad row blanked the whole page.
+Item 1's live test didn't reproduce it only because this org's seeded
+demo orders all happen to have a move_date. Fixed by reading the raw
+nullable field (`o.getField<DateTime>('move_date')`) instead of the
+throwing getter, skipping orders with no move_date. Also fixed the same
+pattern in home_page_widget.dart's new period-filter code (item 4,
+introduced this session) since it has the identical unfiltered-read
+shape. **Not yet fixed, flagged for item 13 (Beta hardening) instead of
+scope-creeping item 5** — the same `.moveDate` non-null assert is used
+unguarded in `p_l_report_page_widget.dart`, `reports_page_widget.dart`,
+`accounts_page_widget.dart`, and `orders_page_widget.dart`. None of
+these crashed in this session's testing (same reason: no null-move_date
+row exists in current seed data), but any of them would blank on a real
+org that has one. Consider a DB `NOT NULL` constraint on `orders.
+move_date` too, once existing rows are confirmed clean — would remove
+the whole bug class at the source instead of patching each read site.
 
 ## KNOWN RISKS / NOTES
 

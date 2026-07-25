@@ -193,8 +193,15 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   void _recomputePeriodKpis() {
     final (start, end) = _periodRange();
+    // OrdersRow.moveDate throws (getField<DateTime>('move_date')!) for any
+    // order whose move_date is null in the DB — found while fixing the
+    // Calendar page's identical crash (item 5, NAGARVA_STATUS.md). Guard
+    // here too since this method reads every org order unfiltered.
     final periodOrders = _allOrders
-        .where((o) => _inRange(o.moveDate, start, end))
+        .where((o) {
+          final d = o.getField<DateTime>('move_date');
+          return d != null && _inRange(d, start, end);
+        })
         .toList();
     final periodOrderIds = periodOrders.map((o) => o.id).toSet();
 

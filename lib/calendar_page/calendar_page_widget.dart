@@ -80,12 +80,22 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
     return out;
   }
 
+  // OrdersRow.moveDate does getField<DateTime>('move_date')! — a
+  // non-null assert that throws (blanking the whole page, item 5 in
+  // NAGARVA_STATUS.md) for any order whose move_date is actually null in
+  // the DB. move_date is a required field on the New Order form, but
+  // other insert paths (e.g. LeadDetailPage's convert-to-order, or old
+  // pre-validation rows) aren't guaranteed to have set it. Read the raw
+  // nullable field here instead of the throwing getter.
+  DateTime? _safeMoveDate(OrdersRow o) => o.getField<DateTime>('move_date');
+
   /// Days (in the visible month) that have at least one order moving.
   Set<int> _orderDays() {
     final out = <int>{};
     for (final o in _model.ordersList) {
-      final d = o.moveDate;
-      if (d.year == _model.visibleMonth.year &&
+      final d = _safeMoveDate(o);
+      if (d != null &&
+          d.year == _model.visibleMonth.year &&
           d.month == _model.visibleMonth.month) {
         out.add(d.day);
       }
@@ -94,7 +104,10 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
   }
 
   List<OrdersRow> _ordersOn(DateTime day) => _model.ordersList
-      .where((o) => _sameDay(o.moveDate, day))
+      .where((o) {
+        final d = _safeMoveDate(o);
+        return d != null && _sameDay(d, day);
+      })
       .toList();
 
   Widget _monthGrid(BuildContext context) {
