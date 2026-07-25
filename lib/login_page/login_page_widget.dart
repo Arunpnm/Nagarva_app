@@ -48,6 +48,19 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => LoginPageModel());
+    // main.dart restores AppSession from a persisted Supabase session
+    // before runApp() runs, but nothing ever acted on that — this page
+    // rendered the login form unconditionally regardless, so a browser
+    // reload (or staff device reopening the app) always bounced back to
+    // login even with a valid, already-restored session sitting in
+    // memory. If restore already succeeded, skip straight to Home instead
+    // of asking the user to log in again.
+    if (AppSession.instance.currentOrgId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go(HomePageWidget.routePath);
+      });
+      return;
+    }
     _checkDeviceSetup();
   }
 
