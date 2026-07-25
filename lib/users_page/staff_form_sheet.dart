@@ -80,7 +80,15 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
     _name = TextEditingController(text: s?.name ?? '');
     _phone = TextEditingController(text: s?.phone ?? '');
     _branch = TextEditingController(text: s?.branch ?? '');
-    _pin = TextEditingController(text: s?.pin ?? '');
+    // Deliberately never pre-filled with the existing PIN, even though
+    // s.pin is technically readable — staff.pin is a write-only conduit
+    // for the DB trigger that bcrypt-hashes it into pin_hash (see the
+    // class doc comment above); showing the current secret back in a
+    // plaintext field on every edit is the exact gap NAGARVA_STATUS.md's
+    // "staff.pin null-out" item flags. Leaving this blank on save keeps
+    // the existing PIN unchanged (see _save()'s null-if-empty payload
+    // and the trigger's own "new.pin is not null and new.pin <> ''" guard).
+    _pin = TextEditingController();
     _salary = TextEditingController(
         text: s?.salary == null ? '' : s!.salary!.toStringAsFixed(0));
     final r = (s?.role ?? 'helper').toLowerCase();
@@ -475,7 +483,9 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                     LengthLimitingTextInputFormatter(4),
                   ],
                   decoration: _dec(context, 'Login PIN',
-                      hint: '4 digits — staff uses phone + PIN to log in'),
+                      hint: isEdit
+                          ? 'Leave blank to keep current PIN'
+                          : '4 digits — staff uses phone + PIN to log in'),
                   validator: (v) {
                     final t = (v ?? '').trim();
                     if (t.isEmpty) return null; // optional

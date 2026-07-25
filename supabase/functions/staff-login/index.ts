@@ -72,7 +72,25 @@ Deno.serve(async (req: Request) => {
 
     const v = rows?.[0];
     if (!v) return json({ error: "Staff not found or inactive" }, 401);
-    if (!v.ok) return json({ error: "Invalid PIN" }, 401);
+    if (!v.ok) {
+      // 20260725_staff_pin_rate_limit.sql: verify_staff_pin now tracks
+      // failed attempts and locks out after 5 (15 min), atomically in
+      // Postgres so concurrent requests can't race the counter.
+      if (v.locked) {
+        const until = v.locked_until
+          ? new Date(v.locked_until).toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : null;
+        return json({
+          error: until
+            ? `Too many failed attempts. Try again after ${until}.`
+            : "Too many failed attempts. Try again later.",
+        }, 429);
+      }
+      return json({ error: "Invalid PIN" }, 401);
+    }
 
     const email = staffEmail(staff_id);
     let authUserId: string | null = v.auth_user_id;

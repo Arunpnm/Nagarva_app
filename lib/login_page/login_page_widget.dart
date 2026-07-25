@@ -281,9 +281,24 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             result = Map<String, dynamic>.from(data);
             break;
           }
+        } on FunctionException catch (e) {
+          // Rate limiting (20260725_staff_pin_rate_limit.sql): the Edge
+          // Function returns 429 with a specific "try again after HH:MM"
+          // message when this staff member is locked out. That message
+          // must reach the user directly — the old blanket catch here
+          // treated every error (including this one) as "wrong PIN, try
+          // the next same-name candidate," which silently discarded it
+          // and fell through to the generic "Invalid name/phone or PIN."
+          if (e.status == 429) {
+            final msg = (e.details is Map ? e.details['error'] : null)
+                    as String? ??
+                'Too many failed attempts. Try again later.';
+            throw Exception(msg);
+          }
+          // 401 Invalid PIN (or other transient error) for this
+          // candidate — try the next one.
+          continue;
         } catch (_) {
-          // 401 Invalid PIN (or transient error) for this candidate —
-          // try the next one.
           continue;
         }
       }

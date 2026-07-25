@@ -54,7 +54,7 @@
 | 3 | ✅ Picker sweep (remaining transparent calendars) | 1–2 hrs | 27 Jul |
 | 4 | ✅ Dashboard period filter (month arrows + This/Last/3M/FY/All chips) | 2–3 hrs | 28 Jul |
 | 5 | ✅ Calendar page blank-render crash | 1–2 hrs | 29 Jul |
-| 6 | Cleanup: plan_id signup verify · Test 3 org_members delete · staff.pin null-out · PIN rate limiting | 1–2 hrs | 30 Jul |
+| 6 | ✅ Cleanup: plan_id signup verify · Test 3 org_members delete · staff.pin null-out · PIN rate limiting | 1–2 hrs | 30 Jul |
 | 7 | Android on-device install (MIUI "Install via USB") + phone smoke test | 30 min | any day |
 
 **Week ETA: ~8–12 working hours → done by 1 Aug 2026**
@@ -162,6 +162,53 @@ row exists in current seed data), but any of them would blank on a real
 org that has one. Consider a DB `NOT NULL` constraint on `orders.
 move_date` too, once existing rows are confirmed clean — would remove
 the whole bug class at the source instead of patching each read site.
+
+**Item 6 note (25 Jul 2026), four sub-parts:**
+- **(a) plan_id signup verify — confirmed already correct.**
+  `signup_page_widget.dart` fetches the default trial plan before the
+  `organizations` insert and stamps `plan_id`/`plan_status`/
+  `trial_ends_at` on creation (matches CLAUDE.md's prior fix). Live
+  read-only REST check against the org this session is authenticated as
+  confirms `plan_id` is non-null (`plan_status: 'active'`). Nothing to
+  fix.
+- **(b) "Test 3" org_members delete — could NOT locate, flagged for
+  Arun.** RLS correctly scopes this session's authenticated queries to
+  only the current org's `org_members` row — I have no way to see
+  other orgs' test data (and shouldn't, without service-role access,
+  which I don't have and won't use). Whatever "Test 3" refers to needs
+  to be found and removed by Arun directly in the Supabase dashboard.
+- **(c) staff.pin null-out — app fix shipped, DB step ready-to-run.**
+  Root cause: `staff_form_sheet.dart` pre-filled the "Login PIN" field
+  with the existing plaintext PIN on every edit open (confirmed live in
+  item 1's testing — editing Vignesh showed "2222" in cleartext). The
+  `pin` column is a write-only conduit for a DB trigger
+  (`staff_hash_pin`, see `supabase/20260723_staff_auth_link_v2.sql`)
+  that bcrypt-hashes it into `pin_hash`, which is all the staff-login
+  Edge Function actually reads for auth — `pin` itself was never read
+  anywhere except this one display bug. Fixed: the field now always
+  starts blank ("Leave blank to keep current PIN"); the existing
+  blank-means-no-change save logic and validator were already correct.
+  **`supabase/20260725_staff_pin_rate_limit.sql`'s cleanup block
+  (`update public.staff set pin = null`) is ready to run** now that the
+  app no longer reads this column — needs Arun to execute in the
+  Supabase SQL editor.
+- **(d) PIN rate limiting — added, ready-to-run.** The `staff-login`
+  Edge Function had no lockout at all — unlimited attempts against a
+  4-digit PIN. `supabase/20260725_staff_pin_rate_limit.sql` (**not yet
+  executed — needs Arun to run in the Supabase SQL editor**) adds
+  `failed_pin_attempts`/`pin_locked_until` columns and rewrites
+  `verify_staff_pin` (same name/signature) to track and enforce a
+  5-attempts/15-minute lockout atomically in Postgres. The Edge Function
+  now returns 429 with a "try again after HH:MM" message on lockout,
+  and `login_page_widget.dart`'s staff-login handler was fixed to
+  actually surface that message — it previously caught every error
+  (401 wrong-PIN and this new 429 alike) the same way and silently fell
+  through to a generic "Invalid name/phone or PIN," which would have
+  swallowed the new lockout message entirely.
+  **Not live-testable from this session** (would require deploying the
+  Edge Function and either 5 real failed attempts against seeded staff,
+  or waiting out a real lockout window) — verified by code review and
+  `flutter analyze` only.
 
 ## KNOWN RISKS / NOTES
 
