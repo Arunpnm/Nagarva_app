@@ -49,7 +49,7 @@
 
 | # | Item | Est. effort | Target |
 |---|------|-------------|--------|
-| 1 | Full test pass A/B/C/C2/D (sessions, matrix, calendars, Accounts) | 1–2 hrs | 26 Jul |
+| 1 | ✅ Full test pass A/B/C/C2/D (sessions, matrix, calendars, Accounts) | 1–2 hrs | 26 Jul |
 | 2 | `phase1_rename_settings_keys.sql` + live invoice test (→ APC/2627/001) — BLOCKS first real invoice | 1 hr | 26 Jul |
 | 3 | Picker sweep (remaining transparent calendars) | 1–2 hrs | 27 Jul |
 | 4 | Dashboard period filter (month arrows + This/Last/3M/FY/All chips) | 2–3 hrs | 28 Jul |
@@ -58,6 +58,38 @@
 | 7 | Android on-device install (MIUI "Install via USB") + phone smoke test | 30 min | any day |
 
 **Week ETA: ~8–12 working hours → done by 1 Aug 2026**
+
+**Item 1 test-pass notes (25 Jul 2026, Claude Code session, live-tested
+against nagarva-demo with the owner logging in when a password was
+needed):** 5 real bugs found and fixed, each verified live in Chrome and
+committed/pushed separately:
+- Session restore silently failed on every reload/cold-start even with a
+  valid Supabase token in local storage — two compounding bugs: (1)
+  `main.dart` read `.currentUser` before `Supabase.initialize()`'s
+  background `recoverSession()` had resolved (a known supabase_flutter
+  web race), and (2) even once `AppSession` was correctly populated,
+  nothing ever redirected off `LoginPage` — the router builds it
+  unconditionally at `/`. Fixed both; reload now goes straight to the
+  dashboard as the restored session (vendor or staff).
+- Calendar page had ~470 lines of hardcoded FlutterFlow mockup reminder
+  cards ("Follow-up: Ravi Menon" etc.) rendering above the real "Active
+  Reminders (Live)" list, presented as if genuine. Removed.
+- HomePage's own hamburger drawer duplicated navigation with none of the
+  staff permission-matrix filtering the bottom nav/sidebar already has —
+  a staff member without Payments/Expenses/Salary/Settings access could
+  still see and tap those tiles (harmless due to a generic URL guard
+  elsewhere, but confusing). Its Logout tile also never called
+  `signOut()`/`AppSession.clear()` at all — just navigated to `/login`,
+  which the new redirect fix would've made look like Logout does nothing.
+  Both fixed: drawer now filters by `StaffPermissions.activeStaffPages`,
+  Logout does a real sign-out (verified: auth token gone from
+  localStorage, reload stays on login page).
+- Dashboard's "Upcoming Orders" had no `move_date >= today` filter, so it
+  showed the oldest confirmed orders ever created instead of ones
+  actually coming up. Fixed.
+- Permission matrix (view/edit/save/persist), date pickers on New
+  Order/New Lead (select + cancel), and Accounts (daily register +
+  day-detail expand) all tested clean, no fixes needed.
 
 ---
 
