@@ -51,7 +51,7 @@
 |---|------|-------------|--------|
 | 1 | ✅ Full test pass A/B/C/C2/D (sessions, matrix, calendars, Accounts) | 1–2 hrs | 26 Jul |
 | 2 | ✅ `phase1_rename_settings_keys.sql` + live invoice test (→ APC/2627/001) — BLOCKS first real invoice | 1 hr | 26 Jul |
-| 3 | Picker sweep (remaining transparent calendars) | 1–2 hrs | 27 Jul |
+| 3 | ✅ Picker sweep (remaining transparent calendars) | 1–2 hrs | 27 Jul |
 | 4 | Dashboard period filter (month arrows + This/Last/3M/FY/All chips) | 2–3 hrs | 28 Jul |
 | 5 | Calendar page blank-render crash | 1–2 hrs | 29 Jul |
 | 6 | Cleanup: plan_id signup verify · Test 3 org_members delete · staff.pin null-out · PIN rate limiting | 1–2 hrs | 30 Jul |
@@ -90,6 +90,12 @@ committed/pushed separately:
 - Permission matrix (view/edit/save/persist), date pickers on New
   Order/New Lead (select + cancel), and Accounts (daily register +
   day-detail expand) all tested clean, no fixes needed.
+
+**Item 3 note (25 Jul 2026):** grepped the whole app for
+`showDatePicker`/`showTimePicker`/`showDateRangePicker`/`DateTimePicker(`
+— only two call sites exist anywhere (New Order, New Lead), both already
+wrapped in `wrapInMaterialDatePickerTheme` and both live-tested clean in
+item 1. No other page has its own picker to sweep. Nothing to fix.
 
 ---
 
