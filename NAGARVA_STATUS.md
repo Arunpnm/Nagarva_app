@@ -55,7 +55,7 @@
 | 4 | ✅ Dashboard period filter (month arrows + This/Last/3M/FY/All chips) | 2–3 hrs | 28 Jul |
 | 5 | ✅ Calendar page blank-render crash | 1–2 hrs | 29 Jul |
 | 6 | ✅ Cleanup: plan_id signup verify · Test 3 org_members delete · staff.pin null-out · PIN rate limiting | 1–2 hrs | 30 Jul |
-| 7 | Android on-device install (MIUI "Install via USB") + phone smoke test | 30 min | any day |
+| 7 | 🔨 Android on-device install (MIUI "Install via USB") + phone smoke test | 30 min | any day |
 
 **Week ETA: ~8–12 working hours → done by 1 Aug 2026**
 
@@ -209,6 +209,51 @@ the whole bug class at the source instead of patching each read site.
   Edge Function and either 5 real failed attempts against seeded staff,
   or waiting out a real lockout window) — verified by code review and
   `flutter analyze` only.
+
+**Item 7 note (25 Jul 2026) — BLOCKED, needs Arun.**
+`flutter build apk --release` failed:
+`java.io.IOException: There is not enough space on the disk` — Gradle
+couldn't download the Android runtime jars it needs.
+`Get-PSDrive` shows **C: has 0 GB free** (215 GB used); D: has 415 GB
+free. Per this doc's own "New dev PC" note, only the Gradle *cache* was
+junctioned C:→D:\gradle_cache — the Android SDK itself is still on C:,
+which combined with everything else on that drive appears to have
+filled it. **Did not attempt to free space myself** (not a call to make
+unilaterally without knowing what's safe to remove on C:).
+
+**What's needed:** free up C:, or move more of the Android SDK setup to
+D: the same way the Gradle cache already was. Once there's headroom,
+re-run `flutter build apk --release` from `D:\nagarva_app` using the
+pinned SDK (`D:\software\flutter_windows_3.35.5-stable\flutter\bin\
+flutter.bat`) to confirm the build itself is healthy before sideloading.
+
+**Deferred as a result:** moving `MainActivity.kt` from the stale
+`android/app/src/main/kotlin/com/example/my_project/` path to
+`android/app/src/main/kotlin/in/nagarva/app/` (package is already
+`in.nagarva.app`) — this was flagged as safe tidy-up *if the build still
+passes after*, and I can't verify that without a working APK build. Not
+done this session.
+
+**MIUI sideload instructions (once you have a built APK):**
+1. Settings → About phone → tap "MIUI version" 7 times to unlock
+   Developer Options.
+2. Settings → Additional settings → Developer options → enable
+   **USB debugging** AND **Install via USB** (MIUI blocks sideloading
+   without both — this is the actual gate, not just USB debugging).
+3. Connect the phone, accept the "Allow USB debugging?" prompt.
+4. `flutter install` from `D:\nagarva_app` (or copy the APK from
+   `build/app/outputs/flutter-apk/app-release.apk` and open it on-device
+   via a file manager) to sideload.
+
+**Smoke-test checklist once installed:**
+- App opens without crashing, shows the Nagarva login screen.
+- Vendor login works (email/password).
+- Dashboard loads with real KPI numbers, period filter chips work.
+- Orders list loads and scrolls.
+- Staff PIN login works (device-unlock banner, then PIN).
+- Logout actually returns to the login screen and stays there (this
+  session fixed a real bug here — worth double-checking on a fresh
+  device where the bug's original symptom would have been most visible).
 
 ## KNOWN RISKS / NOTES
 
