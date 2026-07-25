@@ -118,7 +118,7 @@ figures cross-check against each other correctly).
 
 | # | Module | Scope | Est. effort | ETA (sequential) |
 |---|--------|-------|-------------|------------------|
-| 8 | Survey → Quotation → Order flow | Survey form, quote builder, customer-facing token links (`get_quotation_by_token()`, `submit_survey()` RPCs), e-sign/accept, convert to order | 12–18 hrs (~4–6 sessions) | ~10 Aug |
+| 8 | 🔨 Survey → Quotation → Order flow | Survey form, quote builder, customer-facing token links (`get_quotation_by_token()`, `submit_survey()` RPCs), e-sign/accept, convert to order | 12–18 hrs (~4–6 sessions) | ~10 Aug |
 | 9 | Org switcher (dual-membership accounts) | Switch UI + session org context | 2–3 hrs | ~12 Aug |
 | 10 | Vendor onboarding polish | First-run wizard: logo, GST, invoice prefix, staff seed | 3–4 hrs | ~14 Aug |
 | 11 | Subscription billing | Razorpay checkout, plan up/downgrade, trial-expiry lock, webhooks | 10–14 hrs (~4 sessions) | ~22 Aug |
@@ -254,6 +254,58 @@ done this session.
 - Logout actually returns to the login screen and stays there (this
   session fixed a real bug here — worth double-checking on a fresh
   device where the bug's original symptom would have been most visible).
+
+**Item 8 note (25 Jul 2026) — code complete, ready for review + SQL run,
+verification blocked by the disk-space issue below.** No product spec was
+available for this pass, so a scope assumption was made and documented at
+the top of `supabase/20260725_survey_quote_flow.sql` rather than stalling:
+vendor requests a survey for a lead (shareable link, no customer login) →
+customer fills a structured move-details form via `submit_survey()` →
+vendor builds a quote (single total + GST%, not a full line-item builder —
+that already exists separately in `quotation_page_widget.dart` for ad-hoc
+quotes) → shares a second link → customer views it via
+`get_quotation_by_token()` and accepts by typing their name (e-sign =
+typed name + timestamp, no signature-pad dependency) → vendor converts the
+accepted quote to a real order, seeded with the quote's actual total
+instead of the ₹0 the plain lead-convert path uses.
+
+What shipped:
+- `supabase/20260725_survey_quote_flow.sql` (**NOT YET RUN** — ready for
+  Arun to execute): new `surveys` table (RLS org-isolated) + `token`/
+  `accepted_at`/`accepted_by_name`/`survey_id` columns on the existing
+  `quotations` table (which already had `items`/`charges`/`subtotal`/
+  `gst_pct`/`total` — built on top of it rather than duplicating), plus
+  4 `security definer` RPCs granted to `anon`: `get_survey_by_token`,
+  `submit_survey`, `get_quotation_by_token`, `accept_quotation`. Each RPC
+  only ever touches the one row matching the exact token given (same
+  trust model as any share-link feature) — tokens are 24 random bytes,
+  not guessable/enumerable.
+- Two new public, unauthenticated pages: `lib/survey_page/` (`/survey?
+  token=...`) and `lib/quote_page/` (`/quote?token=...`), registered in
+  `nav.dart`/`index.dart`. Neither touches `AppSession` — they talk to
+  Supabase only through the anon RPCs above.
+- `lib/lead_detail_page/lead_detail_page_widget.dart`: new "Survey &
+  Quote" section — Request Survey / Create Quote / Convert Quote to
+  Order buttons, each showing the resulting share link in a copyable
+  dialog. Convert-to-order reuses the existing `_nextOrderId()` counter
+  and the same order-insert shape the plain lead-convert button already
+  used, just seeded from the quotation's real total.
+
+**Verification status:** `flutter analyze` is clean (140 issues, same
+baseline, 0 new). **Could not run `flutter test` or a live browser
+check** — see the disk-space note below, which broke the Dart test
+compiler mid-session. Manual verification of the actual survey-submit ->
+quote-accept -> convert-to-order loop, end to end in a browser, is still
+needed once disk space is freed.
+
+**Disk-space note (25 Jul 2026) — escalated from item 7's blocker.** C:
+has been at 0 GB free all session (see item 7). It's now also breaking
+`flutter test` directly — a run during item 8's work crashed the Dart
+compiler ("Error: The Dart compiler exited unexpectedly" / null-check on
+a null value) and hung for the full 12-minute timeout. `flutter analyze`
+still works and was used for all verification from this point forward.
+This is no longer just an Android-build problem — freeing C: drive space
+is now blocking the core dev/test loop too.
 
 ## KNOWN RISKS / NOTES
 

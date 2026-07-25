@@ -6,6 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'lead_detail_page_model.dart';
 export 'lead_detail_page_model.dart';
@@ -54,6 +55,21 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _converting = false;
+
+  // ---- Item 8 (CORE V1): Survey -> Quotation -> Order flow ---------------
+  // See supabase/20260725_survey_quote_flow.sql for the scope assumption.
+  // Deliberately scoped to this one file rather than also modifying
+  // quotation_page_widget.dart (a large, separate standalone quote-
+  // creation form that still works fine on its own for ad-hoc quotes not
+  // tied to a lead) — this is a simpler, self-contained lead-linked path:
+  // request a survey, get a quote back with a single total (not a full
+  // line-item builder), share it, convert once accepted.
+  SurveysRow? _survey;
+  QuotationsRow? _quotation;
+  bool _loadingLinked = true;
+  bool _requestingSurvey = false;
+  bool _creatingQuote = false;
+  bool _convertingQuote = false;
 
   /// "Convert to Order" used to just navigate to a blank NewOrderPage,
   /// discarding all the lead's data and never marking the lead as
@@ -171,8 +187,190 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => LeadDetailPageModel());
+    _loadLinked();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  Future<void> _loadLinked() async {
+    if (widget.leadId == null) {
+      setState(() => _loadingLinked = false);
+      return;
+    }
+    try {
+      final surveys = await SurveysTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('lead_id', widget.leadId!),
+      );
+      final quotations = await QuotationsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('lead_id', widget.leadId!),
+      );
+      setState(() {
+        _survey = surveys.isNotEmpty ? surveys.first : null;
+        _quotation = quotations.isNotEmpty ? quotations.first : null;
+        _loadingLinked = false;
+      });
+    } catch (_) {
+      setState(() => _loadingLinked = false);
+    }
+  }
+
+  String _shareLink(String path, String token) =>
+      '${Uri.base.origin}$path?token=$token';
+
+  void _showLinkDialog(String title, String link) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: SelectableText(link),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: link));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Link copied')),
+              );
+            },
+            child: const Text('Copy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _requestSurvey() async {
+    if (widget.leadId == null) return;
+    setState(() => _requestingSurvey = true);
+    try {
+      final row = await SurveysTable().insert({
+        ...OrgScope.stamp(),
+        'lead_id': widget.leadId,
+        'customer_name': widget.leadCustomer,
+        'customer_phone': widget.leadPhone,
+      });
+      setState(() => _survey = row);
+      if (!mounted) return;
+      _showLinkDialog(
+          'Survey link — share with the customer', _shareLink('/survey', row.token));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not create survey link: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _requestingSurvey = false);
+    }
+  }
+
+  Future<void> _createQuote() async {
+    if (widget.leadId == null) return;
+    final result = await showDialog<({double subtotal, double gstPct})>(
+      context: context,
+      builder: (_) => _QuoteAmountDialog(
+        initialNotes: _survey?.specialInstructions,
+      ),
+    );
+    if (result == null) return;
+    setState(() => _creatingQuote = true);
+    try {
+      final gstAmount =
+          (result.subtotal * result.gstPct / 100).roundToDouble();
+      final row = await QuotationsTable().insert({
+        ...OrgScope.stamp(),
+        'lead_id': widget.leadId,
+        'customer': widget.leadCustomer,
+        'phone': widget.leadPhone,
+        'from_address': _survey?.fromAddress ?? widget.leadFromCity,
+        'to_address': _survey?.toAddress ?? widget.leadToCity,
+        'items': const [],
+        'charges': const [],
+        'subtotal': result.subtotal,
+        'gst_pct': result.gstPct,
+        'gst_amount': gstAmount,
+        'total': result.subtotal + gstAmount,
+        'status': 'sent',
+      });
+      setState(() => _quotation = row);
+      if (!mounted) return;
+      _showLinkDialog(
+          'Quote link — share with the customer', _shareLink('/quote', row.token!));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not create quote: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _creatingQuote = false);
+    }
+  }
+
+  /// Same shape as _convertToOrder above, but seeded from the accepted
+  /// quotation's real pricing instead of amount 0 — the whole point of
+  /// routing a lead through Survey -> Quote first.
+  Future<void> _convertQuoteToOrder() async {
+    if (widget.leadId == null || _quotation == null) return;
+    setState(() => _convertingQuote = true);
+    try {
+      DateTime moveDate;
+      try {
+        moveDate = DateTime.parse(widget.leadApproxDate ?? '');
+      } catch (_) {
+        moveDate = DateTime.now();
+      }
+      final newOrderId = await _nextOrderId();
+      final order = await OrdersTable().insert({
+        ...OrgScope.stamp(),
+        'id': newOrderId,
+        'lead_id': widget.leadId,
+        'customer': _quotation!.customer ?? widget.leadCustomer ?? '',
+        'phone': _quotation!.phone ?? widget.leadPhone,
+        'from_city': widget.leadFromCity,
+        'to_city': widget.leadToCity,
+        'move_date': supaSerialize<DateTime>(moveDate),
+        'amount': _quotation!.total ?? 0.0,
+        'service': widget.leadService,
+        'branch': widget.leadBranch,
+        'notes': widget.leadNotes,
+        'status': 'booked',
+        'payment_status': 'pending',
+        'tracking_status': 'Booked',
+        'advance_paid': 0.0,
+      });
+      await LeadsTable().update(
+        data: {'status': 'confirmed'},
+        matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Quote converted to order')),
+      );
+      context.pushNamed(
+        OrderDetailPageWidget.routeName,
+        queryParameters: {
+          'orderId': serializeParam(order.id, ParamType.String),
+          'orderCustomer': serializeParam(order.customer, ParamType.String),
+          'orderPhone': serializeParam(order.phone, ParamType.String),
+          'orderFromCity': serializeParam(order.fromCity, ParamType.String),
+          'orderToCity': serializeParam(order.toCity, ParamType.String),
+          'orderMoveDate':
+              serializeParam(order.moveDate.toString(), ParamType.String),
+          'orderAmount':
+              serializeParam(order.amount?.toString(), ParamType.String),
+          'orderStatus': serializeParam(order.status, ParamType.String),
+        }.withoutNulls,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not convert quote: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _convertingQuote = false);
+    }
   }
 
   @override
@@ -180,6 +378,97 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
     _model.dispose();
 
     super.dispose();
+  }
+
+  Widget _surveyQuoteSection(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final survey = _survey;
+    final quotation = _quotation;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 14.0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Survey & Quote',
+              style: GoogleFonts.interTight(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: theme.primaryText)),
+          const SizedBox(height: 10),
+          // Step 1: survey
+          if (survey == null)
+            OutlinedButton.icon(
+              onPressed: _requestingSurvey ? null : _requestSurvey,
+              icon: const Icon(Icons.fact_check_outlined, size: 18),
+              label: Text(_requestingSurvey
+                  ? 'Creating link…'
+                  : 'Request Survey (send customer a link)'),
+            )
+          else if (survey.status == 'pending')
+            OutlinedButton.icon(
+              onPressed: () => _showLinkDialog('Survey link',
+                  _shareLink('/survey', survey.token)),
+              icon: const Icon(Icons.hourglass_top, size: 18),
+              label: const Text('Survey sent — awaiting customer response'),
+            )
+          else
+            Row(
+              children: [
+                Icon(Icons.check_circle, size: 18, color: theme.success),
+                const SizedBox(width: 6),
+                const Expanded(child: Text('Survey response received')),
+              ],
+            ),
+          const SizedBox(height: 10),
+          // Step 2: quote (needs a survey submitted first, or can be
+          // skipped straight from the lead — vendor's call).
+          if (quotation == null)
+            OutlinedButton.icon(
+              onPressed: _creatingQuote ? null : _createQuote,
+              icon: const Icon(Icons.request_quote_outlined, size: 18),
+              label: Text(
+                  _creatingQuote ? 'Creating…' : 'Create Quote'),
+            )
+          else if (quotation.status == 'accepted')
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.check_circle, size: 18, color: theme.success),
+                    const SizedBox(width: 6),
+                    Expanded(
+                        child: Text(
+                            'Quote accepted by ${quotation.acceptedByName ?? 'customer'}')),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed:
+                      _convertingQuote ? null : _convertQuoteToOrder,
+                  icon: const Icon(Icons.assignment_turned_in, size: 18),
+                  label: Text(_convertingQuote
+                      ? 'Converting…'
+                      : 'Convert Quote to Order'),
+                ),
+              ],
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: () => _showLinkDialog(
+                  'Quote link', _shareLink('/quote', quotation.token!)),
+              icon: const Icon(Icons.hourglass_top, size: 18),
+              label: const Text('Quote sent — awaiting customer acceptance'),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -982,6 +1271,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                         ),
                       ),
                     ),
+                    if (!_loadingLinked) _surveyQuoteSection(context),
                     Padding(
                       padding:
                           const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
@@ -1059,6 +1349,78 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Minimal quote-amount dialog for the lead-linked quote flow — a single
+/// total + GST%, not a line-item builder (that already exists as its own
+/// standalone form in quotation_page_widget.dart; this is deliberately
+/// simpler since it's meant to be fast to fire off after a survey comes
+/// back).
+class _QuoteAmountDialog extends StatefulWidget {
+  const _QuoteAmountDialog({this.initialNotes});
+
+  final String? initialNotes;
+
+  @override
+  State<_QuoteAmountDialog> createState() => _QuoteAmountDialogState();
+}
+
+class _QuoteAmountDialogState extends State<_QuoteAmountDialog> {
+  final _amountCtrl = TextEditingController();
+  final _gstCtrl = TextEditingController(text: '5');
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _gstCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create Quote'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.initialNotes != null && widget.initialNotes!.isNotEmpty) ...[
+            Text('From the survey: ${widget.initialNotes}',
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+          ],
+          TextField(
+            controller: _amountCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Quote amount (₹)'),
+            autofocus: true,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _gstCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'GST %'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final amount = double.tryParse(_amountCtrl.text.trim());
+            if (amount == null || amount <= 0) return;
+            final gst = double.tryParse(_gstCtrl.text.trim()) ?? 0;
+            Navigator.of(context)
+                .pop((subtotal: amount, gstPct: gst));
+          },
+          child: const Text('Create'),
+        ),
+      ],
     );
   }
 }
