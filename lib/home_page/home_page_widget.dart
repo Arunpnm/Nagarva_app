@@ -33,6 +33,19 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Raw, unfiltered data for the period-aware KPI row (item 4,
+  // NAGARVA_STATUS.md) — fetched once, recomputed client-side per
+  // selected period rather than re-querying the DB on every chip tap.
+  // Mirrors p_l_report_page_widget.dart's approach.
+  List<OrdersRow> _allOrders = [];
+  List<ExpensesRow> _allExpenses = [];
+  List<OrderStaffRow> _allOrderStaff = [];
+  // Current-state fields from dashboard_kpis_view that do NOT follow the
+  // period filter (see HomePageModel.periodType doc comment).
+  double _activeLeads = 0;
+  double _outstandingAmount = 0;
+  double _remindersToday = 0;
+
   @override
   void initState() {
     super.initState();
@@ -56,7 +69,24 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       _model.dashKpiOut = await DashboardKpisViewTable().queryRows(
         queryFn: (q) => OrgScope.read(q),
       );
-      _model.kpiList = (_model.dashKpiOut ?? []).toList().cast<DashboardKpisViewRow>();
+      final kpiRow = (_model.dashKpiOut ?? []).isNotEmpty
+          ? _model.dashKpiOut!.first
+          : null;
+      _activeLeads = kpiRow?.activeLeads ?? 0;
+      _outstandingAmount = kpiRow?.outstandingAmount ?? 0;
+      _remindersToday = kpiRow?.remindersToday ?? 0;
+      // Raw rows for the period-recomputed financial KPIs — see
+      // _recomputePeriodKpis below. Unfiltered by date (filtered
+      // client-side per the selected period instead).
+      final results = await Future.wait([
+        OrdersTable().queryRows(queryFn: (q) => OrgScope.read(q)),
+        ExpensesTable().queryRows(queryFn: (q) => OrgScope.read(q)),
+        OrderStaffTable().queryRows(queryFn: (q) => OrgScope.read(q)),
+      ]);
+      _allOrders = results[0].cast<OrdersRow>();
+      _allExpenses = results[1].cast<ExpensesRow>();
+      _allOrderStaff = results[2].cast<OrderStaffRow>();
+      _recomputePeriodKpis();
       safeSetState(() {});
       // "Upcoming" means move_date hasn't passed yet — without this filter
       // the query just returned the earliest-dated confirmed orders ever
@@ -103,6 +133,218 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     _model.dispose();
 
     super.dispose();
+  }
+
+  // ---- Period filter (item 4, NAGARVA_STATUS.md) --------------------------
+
+  /// [start, end) for the selected period, or (null, null) for 'all'.
+  (DateTime?, DateTime?) _periodRange() {
+    final month = _model.visibleMonth;
+    switch (_model.periodType) {
+      case '3m':
+        final now = DateTime.now();
+        return (
+          DateTime(now.year, now.month - 2),
+          DateTime(now.year, now.month + 1),
+        );
+      case 'fy':
+        final now = DateTime.now();
+        final fyStartYear = now.month >= 4 ? now.year : now.year - 1;
+        return (DateTime(fyStartYear, 4), DateTime(fyStartYear + 1, 4));
+      case 'all':
+        return (null, null);
+      case 'month':
+      default:
+        return (
+          DateTime(month.year, month.month),
+          DateTime(month.year, month.month + 1),
+        );
+    }
+  }
+
+  bool _inRange(DateTime date, DateTime? start, DateTime? end) {
+    if (start == null || end == null) return true;
+    return !date.isBefore(start) && date.isBefore(end);
+  }
+
+  String _periodLabel() {
+    final now = DateTime.now();
+    final month = _model.visibleMonth;
+    switch (_model.periodType) {
+      case '3m':
+        return 'LAST 3 MONTHS';
+      case 'fy':
+        final fyStartYear = now.month >= 4 ? now.year : now.year - 1;
+        return 'FY ${(fyStartYear % 100).toString().padLeft(2, '0')}-${((fyStartYear + 1) % 100).toString().padLeft(2, '0')}';
+      case 'all':
+        return 'ALL TIME';
+      case 'month':
+      default:
+        if (month.year == now.year && month.month == now.month) {
+          return 'THIS MONTH';
+        }
+        final prev = DateTime(now.year, now.month - 1);
+        if (month.year == prev.year && month.month == prev.month) {
+          return 'LAST MONTH';
+        }
+        return DateFormat('MMMM yyyy').format(month).toUpperCase();
+    }
+  }
+
+  void _recomputePeriodKpis() {
+    final (start, end) = _periodRange();
+    final periodOrders = _allOrders
+        .where((o) => _inRange(o.moveDate, start, end))
+        .toList();
+    final periodOrderIds = periodOrders.map((o) => o.id).toSet();
+
+    final revenue = periodOrders.fold(0.0, (s, o) => s + (o.amount ?? 0));
+    final labour = periodOrders.fold(
+        0.0,
+        (s, o) =>
+            s +
+            _allOrderStaff
+                .where((os) => os.orderId == o.id)
+                .fold(0.0, (a, os) => a + (os.salaryAmount ?? 0)));
+    // Unlike PLReportPage (which faithfully keeps the reference app's
+    // quirk of never date-filtering non-order-linked expenses), a
+    // period *toggle* on the dashboard should make "other expenses" move
+    // with the selected period too — that's the whole point of the UI.
+    final expenses = _allExpenses
+        .where((e) => _inRange(
+            e.orderId != null ? (e.expenseDate ?? DateTime.now()) : (e.expenseDate ?? e.createdAt ?? DateTime.now()),
+            start,
+            end))
+        .fold(0.0, (s, e) => s + (e.amount ?? 0));
+    final porterCommission = _model.porterEnabled
+        ? periodOrders
+            .where((o) => o.isPorter ?? (o.orderSource == 'porter'))
+            .fold(
+                0.0,
+                (s, o) =>
+                    s +
+                    ((o.amount ?? 0) * ((o.porterCommissionPct ?? 16) / 100))
+                        .roundToDouble())
+        : 0.0;
+
+    _model.kpiList = [
+      DashboardKpisViewRow({
+        'revenue_this_month': revenue,
+        'labour_this_month': labour,
+        'expenses_this_month': expenses,
+        'porter_comm_this_month': porterCommission,
+        'net_profit_this_month': revenue - labour - expenses - porterCommission,
+        'orders_this_month': periodOrderIds.length.toDouble(),
+        'active_leads': _activeLeads,
+        'outstanding_amount': _outstandingAmount,
+        'reminders_today': _remindersToday,
+      })
+    ];
+  }
+
+  void _setPeriodType(String type) {
+    _model.periodType = type;
+    if (type == 'month') {
+      _model.visibleMonth = DateTime(DateTime.now().year, DateTime.now().month);
+    }
+    _recomputePeriodKpis();
+    safeSetState(() {});
+  }
+
+  void _setLastMonth() {
+    final now = DateTime.now();
+    _model.periodType = 'month';
+    _model.visibleMonth = DateTime(now.year, now.month - 1);
+    _recomputePeriodKpis();
+    safeSetState(() {});
+  }
+
+  void _shiftMonth(int delta) {
+    _model.periodType = 'month';
+    _model.visibleMonth =
+        DateTime(_model.visibleMonth.year, _model.visibleMonth.month + delta);
+    _recomputePeriodKpis();
+    safeSetState(() {});
+  }
+
+  Widget _periodSelector(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final now = DateTime.now();
+    final chips = <(String, String, VoidCallback)>[
+      ('month-this', 'This', () => _setPeriodType('month')),
+      ('month-last', 'Last', _setLastMonth),
+      ('3m', '3M', () => _setPeriodType('3m')),
+      ('fy', 'FY', () => _setPeriodType('fy')),
+      ('all', 'All', () => _setPeriodType('all')),
+    ];
+    bool isSelected(String key) {
+      if (_model.periodType != 'month') return key == _model.periodType;
+      final isThisMonth = _model.visibleMonth.year == now.year &&
+          _model.visibleMonth.month == now.month;
+      if (key == 'month-this') return isThisMonth;
+      if (key == 'month-last') {
+        final prev = DateTime(now.year, now.month - 1);
+        return _model.visibleMonth.year == prev.year &&
+            _model.visibleMonth.month == prev.month;
+      }
+      return false;
+    }
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final (key, label, onTap) in chips)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 0.0, 6.0, 0.0),
+                      child: ChoiceChip(
+                        label: Text(label),
+                        selected: isSelected(key),
+                        onSelected: (_) => onTap(),
+                        labelStyle: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected(key)
+                              ? theme.primaryBackground
+                              : theme.primaryText,
+                        ),
+                        selectedColor: theme.primary,
+                        backgroundColor: theme.secondaryBackground,
+                        showCheckmark: false,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (_model.periodType == 'month') ...[
+            IconButton(
+              tooltip: 'Previous month',
+              icon: Icon(Icons.chevron_left, color: theme.secondaryText, size: 20),
+              onPressed: () => _shiftMonth(-1),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+            IconButton(
+              tooltip: 'Next month',
+              icon: Icon(Icons.chevron_right, color: theme.secondaryText, size: 20),
+              onPressed: () => _shiftMonth(1),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -532,6 +774,11 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                             ),
                           ),
                         ),
+                        // Money is owner-only, same guard as the KPI row
+                        // below — no point letting staff pick a period for
+                        // KPI cards they can't see anyway.
+                        if (AppSession.instance.currentStaffId == null)
+                          _periodSelector(context),
                         Container(
                           child: Padding(
                             padding: const EdgeInsetsDirectional.fromSTEB(
@@ -567,10 +814,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                                               CrossAxisAlignment.center,
                                           children: [
                                             Text(
-                                              FFLocalizations.of(context)
-                                                  .getText(
-                                                'pr9ovx1g' /* THIS MONTH */,
-                                              ),
+                                              _periodLabel(),
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .labelSmall

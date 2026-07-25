@@ -52,7 +52,7 @@
 | 1 | ✅ Full test pass A/B/C/C2/D (sessions, matrix, calendars, Accounts) | 1–2 hrs | 26 Jul |
 | 2 | ✅ `phase1_rename_settings_keys.sql` + live invoice test (→ APC/2627/001) — BLOCKS first real invoice | 1 hr | 26 Jul |
 | 3 | ✅ Picker sweep (remaining transparent calendars) | 1–2 hrs | 27 Jul |
-| 4 | Dashboard period filter (month arrows + This/Last/3M/FY/All chips) | 2–3 hrs | 28 Jul |
+| 4 | ✅ Dashboard period filter (month arrows + This/Last/3M/FY/All chips) | 2–3 hrs | 28 Jul |
 | 5 | Calendar page blank-render crash | 1–2 hrs | 29 Jul |
 | 6 | Cleanup: plan_id signup verify · Test 3 org_members delete · staff.pin null-out · PIN rate limiting | 1–2 hrs | 30 Jul |
 | 7 | Android on-device install (MIUI "Install via USB") + phone smoke test | 30 min | any day |
@@ -96,6 +96,21 @@ committed/pushed separately:
 — only two call sites exist anywhere (New Order, New Lead), both already
 wrapped in `wrapInMaterialDatePickerTheme` and both live-tested clean in
 item 1. No other page has its own picker to sweep. Nothing to fix.
+
+**Item 4 note (25 Jul 2026):** added This/Last/3M/FY/All chips + month
+arrows above the dashboard's financial KPI row (Revenue/Labour/Expenses/
+Net Profit) and the orders-in-period count, computed client-side from
+raw `orders`/`expenses`/`order_staff` (same approach as PLReportPage)
+rather than the fixed `dashboard_kpis_view` which only ever computed
+"this calendar month". One deliberate behaviour change: the period is
+now based on `orders.move_date` (matches Accounts/P&L pages) instead of
+the view's `orders.created_at` — a booked-in-July order that moves in
+June now correctly shows under June, not July. Active Leads/Outstanding/
+Reminders stay current-state, unaffected by the period picker (matches
+how those numbers are actually used). Live-tested: all 5 chips, both
+arrows, and the chip-highlight-follows-arrow-position behavior all
+verified correct with real seeded data (This/Last/3M/FY/All revenue
+figures cross-check against each other correctly).
 
 ---
 

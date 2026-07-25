@@ -59,6 +59,18 @@ class HomePageModel extends FlutterFlowModel<HomePageWidget> {
 
   String? targetInputStr = '';
 
+  /// Dashboard period filter (item 4, NAGARVA_STATUS.md): 'month' | '3m' |
+  /// 'fy' | 'all'. Only affects the financial KPI row (Revenue/Labour/
+  /// Expenses/Net Profit) and the orders-in-period count — Active Leads/
+  /// Outstanding/Reminders stay current-state regardless, since "active
+  /// leads in March" isn't a meaningful backward-looking metric.
+  String periodType = 'month';
+
+  /// Anchor month for periodType == 'month', steppable via the arrows.
+  /// "This"/"Last" chips jump this to the current/previous month; 3M/FY/All
+  /// ignore it entirely.
+  DateTime visibleMonth = DateTime(DateTime.now().year, DateTime.now().month);
+
   ///  State fields for stateful widgets in this page.
 
   // Stores action output result for [Backend Call - Query Rows] action in HomePage widget.
