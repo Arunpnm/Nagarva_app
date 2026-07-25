@@ -33,3 +33,5 @@ export '/org_setup_page/org_setup_page_widget.dart' show OrgSetupPageWidget;
 export '/plan_page/plan_page_widget.dart' show PlanPageWidget;
 export '/supervisor_job_page/supervisor_job_page_widget.dart'
     show SupervisorJobPageWidget;
+export '/survey_page/survey_page_widget.dart' show SurveyPageWidget;
+export '/quote_page/quote_page_widget.dart' show QuotePageWidget;

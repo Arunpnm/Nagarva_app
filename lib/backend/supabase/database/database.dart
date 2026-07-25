@@ -34,3 +34,4 @@ export 'tables/branch_kpis_view.dart';
 export 'tables/organizations.dart';
 export 'tables/org_members.dart';
 export 'tables/subscription_plans.dart';
+export 'tables/surveys.dart';

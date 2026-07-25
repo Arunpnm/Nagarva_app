@@ -334,6 +334,22 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             orderId: params.getParam('orderId', ParamType.String),
           ),
         ),
+        // Public, unauthenticated pages (item 8, CORE V1) — reached via a
+        // shared /survey?token=... or /quote?token=... link, no login.
+        FFRoute(
+          name: SurveyPageWidget.routeName,
+          path: SurveyPageWidget.routePath,
+          builder: (context, params) => SurveyPageWidget(
+            token: params.getParam('token', ParamType.String),
+          ),
+        ),
+        FFRoute(
+          name: QuotePageWidget.routeName,
+          path: QuotePageWidget.routePath,
+          builder: (context, params) => QuotePageWidget(
+            token: params.getParam('token', ParamType.String),
+          ),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

@@ -65,4 +65,19 @@ class QuotationsRow extends SupabaseDataRow {
 
   DateTime? get createdAt => getField<DateTime>('created_at');
   set createdAt(DateTime? value) => setField<DateTime>('created_at', value);
+
+  // Added by supabase/20260725_survey_quote_flow.sql (item 8, CORE V1) —
+  // customer-facing share link + e-sign acceptance tracking.
+  String? get token => getField<String>('token');
+  set token(String? value) => setField<String>('token', value);
+
+  String? get surveyId => getField<String>('survey_id');
+  set surveyId(String? value) => setField<String>('survey_id', value);
+
+  DateTime? get acceptedAt => getField<DateTime>('accepted_at');
+  set acceptedAt(DateTime? value) => setField<DateTime>('accepted_at', value);
+
+  String? get acceptedByName => getField<String>('accepted_by_name');
+  set acceptedByName(String? value) =>
+      setField<String>('accepted_by_name', value);
 }
