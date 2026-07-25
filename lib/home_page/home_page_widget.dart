@@ -57,12 +57,17 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       );
       _model.kpiList = (_model.dashKpiOut ?? []).toList().cast<DashboardKpisViewRow>();
       safeSetState(() {});
+      // "Upcoming" means move_date hasn't passed yet — without this filter
+      // the query just returned the earliest-dated confirmed orders ever
+      // created, so old/past moves stayed pinned at the top forever.
+      final todayDateOnly = DateTime.now().toIso8601String().split('T').first;
       _model.dashUpcomingOut = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q)
             .eqOrNull(
               'status',
               'confirmed',
             )
+            .gte('move_date', todayDateOnly)
             .order('move_date', ascending: true),
       );
       _model.upcomingOrders =
