@@ -1,4 +1,4 @@
-package in.nagarva.app
+package `in`.nagarva.app
 
 import io.flutter.embedding.android.FlutterActivity
 
