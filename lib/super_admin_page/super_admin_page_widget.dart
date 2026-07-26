@@ -4,6 +4,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'plans_tab.dart';
+import 'tenant_detail_page.dart';
 
 /// Platform (SaaS-operator) admin view — all-tenant list, plan management,
 /// per-org usage stats. Item 12 in NAGARVA_STATUS.md, built out into a real
@@ -142,6 +143,15 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
     }
   }
 
+  Future<void> _openTenant(OrganizationsRow org) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => TenantDetailPage(org: org, plans: _plans),
+    ));
+    // The detail page can flip active/plan — refresh the list on return
+    // rather than trying to sync two copies of the same row in memory.
+    _loadOrgs();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
@@ -208,67 +218,71 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                       itemBuilder: (context, i) {
                         final org = _orgs[i];
                         final usage = _usage[org.id] ?? const {};
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: theme.secondaryBackground,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      org.name,
-                                      style: GoogleFonts.interTight(
-                                          color: theme.primaryText,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w700),
-                                    ),
-                                  ),
-                                  if (!org.active)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: theme.error.withOpacity(0.12),
-                                        borderRadius:
-                                            BorderRadius.circular(6),
+                        return InkWell(
+                          onTap: () => _openTenant(org),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: theme.secondaryBackground,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        org.name,
+                                        style: GoogleFonts.interTight(
+                                            color: theme.primaryText,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700),
                                       ),
-                                      child: Text('inactive',
-                                          style: GoogleFonts.inter(
-                                              color: theme.error,
-                                              fontSize: 11)),
                                     ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${org.slug} · plan: ${planNameById[org.planId] ?? '—'} '
-                                '(${org.planStatus ?? '—'})',
-                                style: GoogleFonts.inter(
-                                    color: theme.secondaryText,
-                                    fontSize: 12.5),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${usage['orders'] ?? 0} orders · ${usage['leads'] ?? 0} leads · ${usage['staff'] ?? 0} staff',
-                                style: GoogleFonts.inter(
-                                    color: theme.primaryText,
-                                    fontSize: 12.5),
-                              ),
-                              const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () => _changePlan(org),
-                                  child: const Text('Change plan'),
+                                    if (!org.active)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: theme.error.withOpacity(0.12),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Text('suspended',
+                                            style: GoogleFonts.inter(
+                                                color: theme.error,
+                                                fontSize: 11)),
+                                      ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${org.slug} · plan: ${planNameById[org.planId] ?? '—'} '
+                                  '(${org.planStatus ?? '—'})',
+                                  style: GoogleFonts.inter(
+                                      color: theme.secondaryText,
+                                      fontSize: 12.5),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${usage['orders'] ?? 0} orders · ${usage['leads'] ?? 0} leads · ${usage['staff'] ?? 0} staff',
+                                  style: GoogleFonts.inter(
+                                      color: theme.primaryText,
+                                      fontSize: 12.5),
+                                ),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () => _changePlan(org),
+                                    child: const Text('Change plan'),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
