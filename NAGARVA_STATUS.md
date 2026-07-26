@@ -122,7 +122,7 @@ figures cross-check against each other correctly).
 | 9 | ✅ (partial) Org switcher (dual-membership accounts) | Switch UI + session org context — **unblocked 27 Jul (owner added to TEST 1 as a 2nd org_members row); live multi-org test still pending** | 2–3 hrs | ~12 Aug |
 | 10 | ✅ Vendor onboarding polish | First-run wizard: logo, GST, invoice prefix, staff seed | 3–4 hrs | ~14 Aug |
 | 11 | 🔨 Subscription billing | Razorpay checkout, plan up/downgrade, trial-expiry lock, webhooks — trial lock ✅, checkout **BLOCKED on real Razorpay keys** | 10–14 hrs (~4 sessions) | ~22 Aug |
-| 12 | ✅ (gated) Super-admin platform view | All-tenant list, plan override, usage stats — **unblocked 27 Jul (platform_admins seeded for the owner account); live all-tenant-list test still pending** | 4–6 hrs | ~25 Aug |
+| 12 | ✅ Super-admin platform console | All-tenant list + tenant detail + plan management + suspend/reactivate — **built out into a full console and live-verified 27 Jul 2026; see notes below for the one remaining migration** | 4–6 hrs | done |
 | 13 | 🔨 Beta hardening | Write-path isolation test, service-role audit, error reporting, backups | 4–6 hrs | ~28 Aug |
 
 **🎯 IPAMTOA beta launch ready: ~end of August 2026**
@@ -445,6 +445,78 @@ code-reviewed.
   in the notes above. Neither has been live-tested yet in this session;
   that's the next thing to verify, not assumed working just because the
   test data now exists.
+- **Item 12 update (27 Jul 2026, super-admin console pass) — built out
+  into a real platform console and live-tested end-to-end against
+  nagarva-demo. STEP 0 verify first**: confirmed the pre-existing
+  tenant list, plan-override dropdown, and usage counts already worked
+  exactly as described — nothing in that path was rebuilt, only added to.
+  - **Plans tab** (`lib/super_admin_page/plans_tab.dart` +
+    `plan_edit_sheet.dart`): lists every `subscription_plans` row (name,
+    price, billing period, limits, features) with a create/edit sheet.
+    The limit/feature keys shown are the real ones the app gates on,
+    grepped live rather than guessed (`max_users`/`max_orders`/
+    `max_leads`; `whatsapp`/`reports`/`gst_invoice`/`multi_branch` — the
+    first draft assumed `invoice`/`fleet`/`salary`, which don't exist in
+    the live data, corrected before ever saving). Saving merges onto the
+    plan's original jsonb rather than replacing it wholesale, so editing
+    price doesn't silently drop an unrelated feature key. Guards against
+    unsetting the last `is_default_trial` plan. **Live-verified**: list/
+    edit-sheet/pre-fill and the New Plan form all render correctly with
+    real data (Pro/Starter/Trial). **Found a real bug, not yet fixed in
+    SQL**: editing a plan's price closed the sheet with no error and even
+    showed the new value in the list — but reloading showed the old value
+    again. Root cause: `subscription_plans` has had a SELECT-only RLS
+    policy since `20260715_rls_v1.sql` ("read-only, managed via
+    dashboard"), no INSERT/UPDATE — RLS silently filters the write to zero
+    rows with no client-visible error. Migration written:
+    `supabase/20260727_subscription_plans_admin_write.sql` (**not run —
+    Arun runs all SQL**). Re-tested the Create Plan flow after diagnosing
+    this: it now surfaces a clean `PostgrestException ... 42501` in the
+    UI instead of a silent no-op, confirming both the diagnosis and that
+    the app's error handling is correct either way.
+  - **Tenant detail page** (`lib/super_admin_page/tenant_detail_page.dart`):
+    tapping a tenant card opens name/slug/GSTIN/created/plan/plan_status/
+    trial_ends_at/owner email + orders/leads/staff/invoices counts.
+    Owner email needs a new RPC (`get_org_owner_email`, joining
+    `org_members` → `auth.users`, security-definer + `is_platform_admin()`
+    gated) written to `supabase/20260727_super_admin_owner_email.sql`
+    (**not run**) — the page calls it defensively and shows
+    "— (needs 20260727_super_admin_owner_email.sql)" instead of erroring
+    when it's missing, confirmed live for both APC and TEST 1.
+  - **Tenant suspension** (Step 3): checked first whether
+    `organizations.active` already existed and was read anywhere — it
+    existed (since the original schema) but nothing consumed it, so this
+    wires up an existing column rather than adding one. `AppSession`
+    gained `orgActive`/`isSuspended`, threaded through
+    `org_session_loader.dart` into login, org-switch, and session-restore.
+    `NavBarPage`'s trial-expiry lock screen (item 11) was refactored into
+    a shared `_buildLockScreen(suspended:)` per this task's own
+    instruction to reuse it rather than build a second one — suspended
+    copy has no "View Plans" upsell. **Live-verified, full round trip**:
+    suspended TEST 1 from its tenant detail page, switched a real session
+    into it, confirmed the "Account suspended" lock screen rendered (not
+    the trial-expiry copy), confirmed the suspension survived a fresh
+    page reload, then reactivated it from the same page and confirmed
+    *that* also survived a reload. TEST 1 was left active/clean afterward.
+  - **Found and fixed one unrelated regression while testing the above**:
+    switching into TEST 1 to see the lock screen required the "Switch
+    Organization" button, which turned out to be missing after a page
+    reload for any multi-org account. Root cause: `main.dart`'s
+    session-restore path only ever queried the first `org_members` row
+    (`.limit(1).maybeSingle()`) and never populated
+    `AppSession.availableOrgs` — unlike `login_page_widget.dart`'s
+    explicit-login flow, which was correctly fixed when item 9 was built.
+    There was a pre-existing `TODO(W2)` comment flagging exactly this gap
+    that had been missed. Fixed in its own commit (not bundled with the
+    suspension work, since it's a pre-existing bug unrelated to this
+    session's task).
+  - **Two migrations still need Arun to run** before this console is
+    fully live: `supabase/20260727_subscription_plans_admin_write.sql`
+    (blocks Plans tab writes) and
+    `supabase/20260727_super_admin_owner_email.sql` (blocks the owner
+    email field — degrades gracefully without it, not a hard blocker).
+  - **Out of scope, per the task**: Razorpay/billing checkout, billing
+    history, per-tenant invoicing — none of this pass touched them.
 - **Item 11 (subscription billing) — trial-expiry lock built and
   live-verified (no false-positive regression); Razorpay checkout itself
   is genuinely blocked, same as already flagged.** `AppSession` gained
