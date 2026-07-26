@@ -1,6 +1,8 @@
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/supabase/org_session_loader.dart';
+import '/components/org_switcher_sheet.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -1313,6 +1315,63 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                         ),
                       ),
                     ),
+                    if (AppSession.instance.availableOrgs.length > 1)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                            0.0, 16.0, 0.0, 0.0),
+                        child: FFButtonWidget(
+                          onPressed: () async {
+                            final chosen = await showOrgSwitcherSheet(context);
+                            if (chosen == null ||
+                                chosen == AppSession.instance.currentOrgId) {
+                              return;
+                            }
+                            final sessionData =
+                                await loadOrgSessionData(chosen);
+                            AppSession.instance.setVendorSession(
+                              authUserId: AppSession.instance.authUserId!,
+                              orgId: sessionData.orgId,
+                              orgName: sessionData.orgName,
+                              orgSlug: sessionData.orgSlug,
+                              logoUrl: sessionData.logoUrl,
+                              limits: sessionData.limits,
+                              features: sessionData.features,
+                              planName: sessionData.planName,
+                              planStatus: sessionData.planStatus,
+                              trialEndsAt: sessionData.trialEndsAt,
+                            );
+                            // Full route rebuild so every org-scoped page
+                            // (Dashboard, Orders, Leads, ...) re-queries under
+                            // the newly-selected org instead of showing stale
+                            // data cached under the old one.
+                            if (mounted) {
+                              context.go(HomePageWidget.routePath);
+                            }
+                          },
+                          text: 'Switch Organization',
+                          icon: const Icon(
+                            Icons.swap_horiz,
+                            size: 20.0,
+                          ),
+                          options: FFButtonOptions(
+                            width: double.infinity,
+                            padding: const EdgeInsetsDirectional.fromSTEB(
+                                0.0, 0.0, 0.0, 0.0),
+                            iconPadding: const EdgeInsetsDirectional.fromSTEB(
+                                0.0, 0.0, 0.0, 0.0),
+                            iconColor: FlutterFlowTheme.of(context).primary,
+                            color: Colors.transparent,
+                            textStyle: TextStyle(
+                              color: FlutterFlowTheme.of(context).primary,
+                            ),
+                            borderSide: BorderSide(
+                              color: FlutterFlowTheme.of(context).primary,
+                              width: 1.0,
+                            ),
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                        ),
+                      ),
                     Padding(
                       padding:
                           const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),

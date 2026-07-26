@@ -1,5 +1,16 @@
 import 'package:flutter/foundation.dart';
 
+/// One row of `org_members` for the signed-in vendor, resolved at login.
+/// Most vendors have exactly one; a consultant/owner linked to more than
+/// one org sees a switcher (Settings page + LoginPage) built from this list.
+class OrgMembershipInfo {
+  const OrgMembershipInfo(
+      {required this.orgId, required this.orgName, this.role});
+  final String orgId;
+  final String orgName;
+  final String? role;
+}
+
 class AppSession extends ChangeNotifier {
   AppSession._();
   static final AppSession instance = AppSession._();
@@ -8,6 +19,12 @@ class AppSession extends ChangeNotifier {
   String? currentOrgId;
   String? currentOrgName;
   String? currentOrgSlug;
+
+  /// Every org this vendor's auth user has an `org_members` row for.
+  /// Populated on vendor login; empty for staff (PIN) sessions, which have
+  /// no membership concept — a staff row belongs to exactly one org. A
+  /// length > 1 is what gates the "Switch Organization" UI.
+  List<OrgMembershipInfo> availableOrgs = [];
 
   /// Per-tenant branding: `organizations.logo_url` (Supabase Storage public
   /// URL). Shown in the sidebar header; falls back to the truck icon when
@@ -20,6 +37,7 @@ class AppSession extends ChangeNotifier {
   Map<String, dynamic> planLimits = {};
   Map<String, dynamic> planFeatures = {};
   String? planName;
+  String? planStatus;
   DateTime? trialEndsAt;
 
   // A session is "in" once we know which org we're scoped to, and either
@@ -27,6 +45,18 @@ class AppSession extends ChangeNotifier {
   // been established.
   bool get isAuthenticated =>
       currentOrgId != null && (authUserId != null || currentStaffId != null);
+
+  /// Item 11 (NAGARVA_STATUS.md) — trial-expiry lock. True once the org's
+  /// trial window has passed and it was never upgraded (plan_status is
+  /// still 'trial' — an org that upgraded keeps whatever status the
+  /// upgrade set, e.g. 'active', and is never locked by this check even
+  /// if trial_ends_at is in the past). No Razorpay dependency: this is
+  /// pure app-side gating, independent of the actual checkout flow (which
+  /// IS blocked on real Razorpay API keys — see PlanPageWidget).
+  bool get isTrialExpired =>
+      planStatus == 'trial' &&
+      trialEndsAt != null &&
+      trialEndsAt!.isBefore(DateTime.now());
 
   bool hasFeature(String key) => planFeatures[key] == true;
 
@@ -55,7 +85,9 @@ class AppSession extends ChangeNotifier {
     Map<String, dynamic> limits = const {},
     Map<String, dynamic> features = const {},
     String? planName,
+    String? planStatus,
     DateTime? trialEndsAt,
+    List<OrgMembershipInfo>? availableOrgs,
   }) {
     this.authUserId = authUserId;
     currentOrgId = orgId;
@@ -65,7 +97,12 @@ class AppSession extends ChangeNotifier {
     planLimits = Map<String, dynamic>.from(limits);
     planFeatures = Map<String, dynamic>.from(features);
     this.planName = planName;
+    this.planStatus = planStatus;
     this.trialEndsAt = trialEndsAt;
+    // Switching orgs (not logging in fresh) calls this again with
+    // availableOrgs left null — keep the membership list as-is rather than
+    // wiping it back to empty.
+    if (availableOrgs != null) this.availableOrgs = availableOrgs;
     notifyListeners();
   }
 
@@ -94,6 +131,7 @@ class AppSession extends ChangeNotifier {
     Map<String, dynamic> limits = const {},
     Map<String, dynamic> features = const {},
     String? planName,
+    String? planStatus,
     DateTime? trialEndsAt,
   }) {
     currentOrgId = orgId;
@@ -105,6 +143,7 @@ class AppSession extends ChangeNotifier {
       planFeatures = Map<String, dynamic>.from(features);
     }
     if (planName != null) this.planName = planName;
+    if (planStatus != null) this.planStatus = planStatus;
     if (trialEndsAt != null) this.trialEndsAt = trialEndsAt;
     notifyListeners();
   }
@@ -121,7 +160,9 @@ class AppSession extends ChangeNotifier {
     planLimits = {};
     planFeatures = {};
     planName = null;
+    planStatus = null;
     trialEndsAt = null;
+    availableOrgs = [];
     notifyListeners();
   }
 }

@@ -1,4 +1,6 @@
 import '/backend/supabase/supabase.dart';
+import '/backend/supabase/org_session_loader.dart';
+import '/components/org_switcher_sheet.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
@@ -123,54 +125,59 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         throw Exception('Invalid email or password.');
       }
 
+      // Every org this user belongs to (not just the first) — a consultant
+      // or owner can be linked to more than one, and used to silently pick
+      // members.first, ignoring the rest. See app_session.dart's
+      // OrgMembershipInfo / availableOrgs.
       final members = await OrgMembersTable().queryRows(
-        queryFn: (q) => q.eq('user_id', user.id).limit(1),
+        queryFn: (q) => q.eq('user_id', user.id),
       );
-      if (members.isEmpty || members.first.orgId == null) {
+      final orgIds = members.map((m) => m.orgId).whereType<String>().toList();
+      if (orgIds.isEmpty) {
         throw Exception('This account is not linked to any organization.');
       }
-      final orgId = members.first.orgId!;
 
-      final orgs = await OrganizationsTable().queryRows(
-        queryFn: (q) => q.eq('id', orgId).limit(1),
+      final orgRows = await OrganizationsTable().queryRows(
+        queryFn: (q) => q.inFilter('id', orgIds),
       );
-      final org = orgs.isNotEmpty ? orgs.first : null;
+      final orgNameById = {for (final o in orgRows) o.id!: o.name};
+      final roleByOrgId = {
+        for (final m in members)
+          if (m.orgId != null) m.orgId!: m.role,
+      };
+      final availableOrgs = orgIds
+          .map((id) => OrgMembershipInfo(
+                orgId: id,
+                orgName: orgNameById[id] ?? '(unnamed org)',
+                role: roleByOrgId[id],
+              ))
+          .toList();
 
-      Map<String, dynamic> limits = {};
-      Map<String, dynamic> features = {};
-      String? planName;
-      try {
-        final planId = org?.planId;
-        final plans = planId != null
-            ? await SubscriptionPlansTable()
-                .queryRows(queryFn: (q) => q.eq('id', planId).limit(1))
-            : await SubscriptionPlansTable().queryRows(
-                queryFn: (q) => q.eq('is_default_trial', true).limit(1),
-              );
-        if (plans.isNotEmpty) {
-          final plan = plans.first;
-          limits = (plan.limits is Map)
-              ? Map<String, dynamic>.from(plan.limits as Map)
-              : {};
-          features = (plan.features is Map)
-              ? Map<String, dynamic>.from(plan.features as Map)
-              : {};
-          planName = plan.name;
-        }
-      } catch (_) {
-        // Plan lookup is best-effort — don't block login on it.
+      String orgId = orgIds.first;
+      if (availableOrgs.length > 1) {
+        if (!mounted) return;
+        // Stash the list before the picker needs it (showOrgSwitcherSheet
+        // reads AppSession.instance.availableOrgs / currentOrgId — neither
+        // is set yet on first login, so pass currentOrgId irrelevant here,
+        // the sheet just won't show a checkmark, which is correct pre-login).
+        AppSession.instance.availableOrgs = availableOrgs;
+        final chosen = await showOrgSwitcherSheet(context);
+        if (chosen != null) orgId = chosen;
       }
 
+      final sessionData = await loadOrgSessionData(orgId);
       AppSession.instance.setVendorSession(
         authUserId: user.id,
-        orgId: orgId,
-        orgName: org?.name ?? '',
-        orgSlug: org?.slug ?? '',
-        logoUrl: org?.logoUrl,
-        limits: limits,
-        features: features,
-        planName: planName,
-        trialEndsAt: org?.trialEndsAt,
+        orgId: sessionData.orgId,
+        orgName: sessionData.orgName,
+        orgSlug: sessionData.orgSlug,
+        logoUrl: sessionData.logoUrl,
+        limits: sessionData.limits,
+        features: sessionData.features,
+        planName: sessionData.planName,
+        planStatus: sessionData.planStatus,
+        trialEndsAt: sessionData.trialEndsAt,
+        availableOrgs: availableOrgs,
       );
 
       // Remember this vendor session so a later staff PIN unlock can be
