@@ -34,4 +34,6 @@ export '/plan_page/plan_page_widget.dart' show PlanPageWidget;
 export '/supervisor_job_page/supervisor_job_page_widget.dart'
     show SupervisorJobPageWidget;
 export '/survey_page/survey_page_widget.dart' show SurveyPageWidget;
+export '/super_admin_page/super_admin_page_widget.dart'
+    show SuperAdminPageWidget;
 export '/quote_page/quote_page_widget.dart' show QuotePageWidget;

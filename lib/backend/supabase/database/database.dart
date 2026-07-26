@@ -35,3 +35,4 @@ export 'tables/organizations.dart';
 export 'tables/org_members.dart';
 export 'tables/subscription_plans.dart';
 export 'tables/surveys.dart';
+export 'tables/platform_admins.dart';
