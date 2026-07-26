@@ -1,6 +1,6 @@
 # NAGARVA — Project Status & Roadmap
 
-> Last updated: 25 Jul 2026 · Owner: Arunkumar (Arponia Ventures)
+> Last updated: 27 Jul 2026 · Owner: Arunkumar (Arponia Ventures)
 > Update this file at the end of every working session.
 > Legend: ✅ done · 🔨 in progress · ⬜ pending · 🅿️ parked
 
@@ -54,7 +54,7 @@
 | 3 | ✅ Picker sweep (remaining transparent calendars) | 1–2 hrs | 27 Jul |
 | 4 | ✅ Dashboard period filter (month arrows + This/Last/3M/FY/All chips) | 2–3 hrs | 28 Jul |
 | 5 | ✅ Calendar page blank-render crash | 1–2 hrs | 29 Jul |
-| 6 | ✅ Cleanup: plan_id signup verify · Test 3 org_members delete · staff.pin null-out · PIN rate limiting | 1–2 hrs | 30 Jul |
+| 6 | ✅ Cleanup: plan_id signup verify · Test 3 org_members delete · staff.pin null-out · PIN rate limiting — **the 25 Jul ✅ was premature (6c/6d were only "ready to run"); actually executed + verified 27 Jul, see note below** | 1–2 hrs | 30 Jul |
 | 7 | 🔨 Android on-device install (MIUI "Install via USB") + phone smoke test | 30 min | any day |
 
 **Week ETA: ~8–12 working hours → done by 1 Aug 2026**
@@ -119,10 +119,10 @@ figures cross-check against each other correctly).
 | # | Module | Scope | Est. effort | ETA (sequential) |
 |---|--------|-------|-------------|------------------|
 | 8 | ✅ Survey → Quotation → Order flow | Survey form, quote builder, customer-facing token links (`get_quotation_by_token()`, `submit_survey()` RPCs), e-sign/accept, convert to order — **live-verified end-to-end 27 Jul 2026** | 12–18 hrs (~4–6 sessions) | done |
-| 9 | ✅ (partial) Org switcher (dual-membership accounts) | Switch UI + session org context | 2–3 hrs | ~12 Aug |
+| 9 | ✅ (partial) Org switcher (dual-membership accounts) | Switch UI + session org context — **unblocked 27 Jul (owner added to TEST 1 as a 2nd org_members row); live multi-org test still pending** | 2–3 hrs | ~12 Aug |
 | 10 | ✅ Vendor onboarding polish | First-run wizard: logo, GST, invoice prefix, staff seed | 3–4 hrs | ~14 Aug |
 | 11 | 🔨 Subscription billing | Razorpay checkout, plan up/downgrade, trial-expiry lock, webhooks — trial lock ✅, checkout **BLOCKED on real Razorpay keys** | 10–14 hrs (~4 sessions) | ~22 Aug |
-| 12 | ✅ (gated) Super-admin platform view | All-tenant list, plan override, usage stats | 4–6 hrs | ~25 Aug |
+| 12 | ✅ (gated) Super-admin platform view | All-tenant list, plan override, usage stats — **unblocked 27 Jul (platform_admins seeded for the owner account); live all-tenant-list test still pending** | 4–6 hrs | ~25 Aug |
 | 13 | 🔨 Beta hardening | Write-path isolation test, service-role audit, error reporting, backups | 4–6 hrs | ~28 Aug |
 
 **🎯 IPAMTOA beta launch ready: ~end of August 2026**
@@ -209,6 +209,39 @@ the whole bug class at the source instead of patching each read site.
   Edge Function and either 5 real failed attempts against seeded staff,
   or waiting out a real lockout window) — verified by code review and
   `flutter analyze` only.
+
+**Item 6 update (27 Jul 2026) — (b), (c), (d) all resolved; the 25 Jul ✅
+above was premature for two of the four sub-parts.**
+- **(b) "Test 3" org_members delete — resolved, was a red herring.**
+  There was never an `org_members` row to delete — "Test 3" was an
+  orphan `organizations` row (`25bf0c00-fc4e-42ba-878e-9a9852e01c8b`)
+  with zero members, which is exactly why the 25 Jul session's
+  RLS-scoped, authenticated-only query couldn't see it (correctly — an
+  org with no members is invisible to every normal session by design,
+  not a bug). Arun found and deleted it directly along with its 4
+  `settings` rows via the Supabase dashboard.
+- **(c) staff.pin null-out — DB step executed 27 Jul.**
+  `supabase/20260725_staff_pin_rate_limit.sql`'s cleanup block
+  (`update public.staff set pin = null`) has now been run. Verified: 0
+  plaintext PINs remain, 0 staff rows are missing `pin_hash` (i.e.
+  nothing was nulled that hadn't already been hashed first).
+- **(d) PIN rate limiting — DB step executed 27 Jul, needed one more
+  correction first.** `supabase/20260725_staff_pin_rate_limit.sql`
+  originally failed with `42P13` ("cannot change return type of
+  existing function") — `verify_staff_pin()` already existed (created by
+  `20260723_staff_auth_link_v2.sql`) returning 5 columns, and this
+  migration's version returns 7 (adds `locked`/`locked_until`);
+  `CREATE OR REPLACE FUNCTION` cannot change a return type in place, only
+  a plain `CREATE FUNCTION` can, so an explicit `DROP FUNCTION IF EXISTS`
+  was added before the `CREATE OR REPLACE`. Same lesson as
+  `views_dashboard_and_ops.sql`'s pre-existing `DROP VIEW IF EXISTS`
+  requirement for view column-type changes — see the new CLAUDE.md note
+  on this. Re-run succeeded; verified live: 2 rate-limit columns
+  (`failed_pin_attempts`, `pin_locked_until`) present on `staff`. Not yet
+  live-tested end-to-end (would need 5 real failed PIN attempts against a
+  seeded staff member, or waiting out a lockout window) — still
+  code-review-verified only for the actual lockout *behaviour*, though
+  the schema/function deployment itself is now confirmed live.
 
 **Item 7 note (25 Jul 2026) — BLOCKED, needs Arun.**
 `flutter build apk --release` failed:
@@ -404,6 +437,14 @@ code-reviewed.
   `insert into platform_admins (user_id) values ('<auth-uid>')` for
   whichever account should reach this page, then the all-tenant list can
   be verified live.
+- **Items 9 and 12 update (27 Jul 2026) — both unblocked, live tests
+  still pending.** Arun seeded `platform_admins` for the owner account
+  (unblocks item 12's all-tenant-list positive path) and added the owner
+  as a second `org_members` row on TEST 1 (unblocks item 9's multi-org
+  picker) directly via the Supabase dashboard — the two blockers flagged
+  in the notes above. Neither has been live-tested yet in this session;
+  that's the next thing to verify, not assumed working just because the
+  test data now exists.
 - **Item 11 (subscription billing) — trial-expiry lock built and
   live-verified (no false-positive regression); Razorpay checkout itself
   is genuinely blocked, same as already flagged.** `AppSession` gained

@@ -357,6 +357,18 @@ docs only, do not edit): `C:\Users\Arun\ArunPKRS2` — its context/pages.md and
 dsl/edit.dart are useful specs of intended behaviour.
 
 ## Conventions for Claude Code sessions
+- **Changing a function's return type or a view's column type needs an
+  explicit `DROP` first — `CREATE OR REPLACE` will not do it.** Postgres
+  rejects an in-place type change on both `CREATE OR REPLACE FUNCTION`
+  and `CREATE OR REPLACE VIEW`. This has now caused two live failures:
+  `42P16` on `reminders_view.due_date` (a view column's type changed) and
+  `42P13` on `verify_staff_pin` (`supabase/20260725_staff_pin_rate_limit.sql`
+  changed its return table from 5 columns to 7). Fix is `DROP VIEW IF
+  EXISTS ...` / `DROP FUNCTION IF EXISTS ...` immediately before the
+  `CREATE OR REPLACE`, inside the same transaction so there's no window
+  where the object doesn't exist. When writing new SQL that alters an
+  existing function/view's shape, add the `DROP IF EXISTS` up front
+  rather than finding out from a live 42P13/42P16.
 - **Every org-scoped query goes through `OrgScope` (`lib/backend/supabase/org_scope.dart`)** —
   see "Org scoping convention" above. Do not hand-write `.eq('org_id', ...)`.
 - Work in small verifiable steps: one page or one migration per commit-sized change.
