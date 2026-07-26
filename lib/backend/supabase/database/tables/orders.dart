@@ -55,6 +55,13 @@ class OrdersRow extends SupabaseDataRow {
   DateTime get moveDate => getField<DateTime>('move_date')!;
   set moveDate(DateTime value) => setField<DateTime>('move_date', value);
 
+  /// Null-safe read of the same column — use this anywhere a list of
+  /// orders is read unfiltered, since one row with no move_date will
+  /// otherwise throw on `.moveDate` and blank the whole page (the bug
+  /// fixed for Calendar in item 5; see NAGARVA_STATUS.md item 13 for the
+  /// other call sites that had the same unguarded pattern).
+  DateTime? get moveDateOrNull => getField<DateTime>('move_date');
+
   double? get amount => getField<double>('amount');
 
   /// Sum of payment_entries for this order — maintained by DB trigger

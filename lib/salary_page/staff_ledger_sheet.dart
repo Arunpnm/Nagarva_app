@@ -370,7 +370,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                         child: Text(
                           o == null
                               ? 'Order'
-                              : '${o.customer} · ${dateTimeFormat('d MMM', o.moveDate)}'
+                              : '${o.customer} · ${dateTimeFormat('d MMM', o.moveDateOrNull)}'
                                   '${(e.isHalfDay ?? false) ? ' · half day' : ''}',
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(

@@ -298,8 +298,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                           ParamType.String,
                                         ),
                                         'orderMoveDate': serializeParam(
-                                          ordersListItemItem.moveDate
-                                              .toString(),
+                                          ordersListItemItem.moveDateOrNull
+                                              ?.toString(),
                                           ParamType.String,
                                         ),
                                         'orderAmount': serializeParam(
@@ -557,8 +557,10 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                 CrossAxisAlignment.center,
                                             children: [
                                               Text(
-                                                ordersListItemItem.moveDate
-                                                    .toString(),
+                                                ordersListItemItem
+                                                        .moveDateOrNull
+                                                        ?.toString() ??
+                                                    '—',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall

@@ -110,8 +110,10 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
   }
 
   void _recompute() {
-    final fo =
-        _allOrders.where((o) => _inPeriod(o.moveDate, _model.period)).toList();
+    final fo = _allOrders.where((o) {
+      final move = o.moveDateOrNull;
+      return move != null && _inPeriod(move, _model.period);
+    }).toList();
     final foIds = fo.map((o) => o.id).toSet();
 
     final revenue = fo.fold(0.0, (s, o) => s + (o.amount ?? 0));

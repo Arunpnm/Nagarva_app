@@ -108,7 +108,8 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
   List<OrdersRow> get _filteredOrders {
     final q = _model.searchQuery.trim().toLowerCase();
     return _allOrders.where((o) {
-      if (!_inPeriod(o.moveDate, _model.period)) return false;
+      final move = o.moveDateOrNull;
+      if (move == null || !_inPeriod(move, _model.period)) return false;
       if (q.isEmpty) return true;
       return o.customer.toLowerCase().contains(q) ||
           (o.fromCity ?? '').toLowerCase().contains(q) ||
@@ -150,8 +151,10 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
       return m;
     });
     _model.monthlyVolume = months.map((m) {
-      final inMonth = _allOrders.where(
-          (o) => o.moveDate.year == m.year && o.moveDate.month == m.month);
+      final inMonth = _allOrders.where((o) {
+        final move = o.moveDateOrNull;
+        return move != null && move.year == m.year && move.month == m.month;
+      });
       return MonthlyVolume(
         label: _monthFormat.format(m),
         orderCount: inMonth.length,
@@ -166,13 +169,16 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
     }
     final top = byCustomer.entries.map((e) {
       final orders = e.value;
+      final dates = orders.map((o) => o.moveDateOrNull).whereType<DateTime>();
       return TopCustomer(
         customer: e.key,
         orderCount: orders.length,
         revenue: orders.fold(0.0, (s, o) => s + (o.amount ?? 0)),
-        lastDate: orders
-            .map((o) => o.moveDate)
-            .fold(orders.first.moveDate, (a, b) => a.isAfter(b) ? a : b),
+        // Orders with no move_date at all fall back to the epoch rather
+        // than crashing — this is a display-only "last move" string.
+        lastDate: dates.isEmpty
+            ? DateTime.fromMillisecondsSinceEpoch(0)
+            : dates.reduce((a, b) => a.isAfter(b) ? a : b),
       );
     }).toList()
       ..sort((a, b) => b.revenue.compareTo(a.revenue));

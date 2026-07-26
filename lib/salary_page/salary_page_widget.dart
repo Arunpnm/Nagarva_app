@@ -78,7 +78,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
   List<OrderStaffRow> _monthEntriesFor(String staffId) => _model.orderStaff
       .where((e) =>
           e.staffId == staffId &&
-          _inMonth(_model.ordersById[e.orderId]?.moveDate))
+          _inMonth(_model.ordersById[e.orderId]?.moveDateOrNull))
       .toList();
 
   List<SalaryPaymentsRow> _monthPaymentsFor(String staffId) => _model.payments

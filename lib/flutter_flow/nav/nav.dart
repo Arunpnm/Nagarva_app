@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 
 import '/main.dart';
+import '/app_session.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 import '/index.dart';
@@ -30,12 +31,31 @@ class AppStateNotifier extends ChangeNotifier {
   }
 }
 
+// Routes reachable without an AppSession — everything else bounces to
+// /login. Found missing during item 1's retest: navigating straight to
+// e.g. /calendar after Logout rendered the page with empty data instead
+// of redirecting, since nothing but each page's own queries enforced
+// auth. main() fully awaits Supabase session restore before runApp() (see
+// main.dart), so this can't race a still-restoring session on cold start.
+const _kPublicRoutePrefixes = ['/login', '/signup', '/survey', '/quote'];
+
+bool _isPublicRoute(String path) =>
+    path == '/' || _kPublicRoutePrefixes.any((p) => path.startsWith(p));
+
 GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       initialLocation: '/',
       debugLogDiagnostics: true,
       refreshListenable: appStateNotifier,
       navigatorKey: appNavigatorKey,
       errorBuilder: (context, state) => const LoginPageWidget(),
+      redirect: (context, state) {
+        final path = state.uri.path;
+        if (_isPublicRoute(path)) return null;
+        if (!AppSession.instance.isAuthenticated) {
+          return LoginPageWidget.routePath;
+        }
+        return null;
+      },
       routes: [
         FFRoute(
           name: '_initialize',
@@ -129,6 +149,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: CalendarPageWidget.routeName,
           path: CalendarPageWidget.routePath,
           builder: (context, params) => const CalendarPageWidget(),
+        ),
+        FFRoute(
+          name: SuperAdminPageWidget.routeName,
+          path: SuperAdminPageWidget.routePath,
+          builder: (context, params) => const SuperAdminPageWidget(),
         ),
         FFRoute(
           name: MaterialsPageWidget.routeName,

@@ -82,8 +82,9 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
       _upcoming = orders
           .where((o) =>
               _upcomingStatuses.contains((o.status ?? '').toLowerCase()) &&
-              o.moveDate
-                      .isAfter(DateTime(today.year, today.month, today.day - 1)))
+              (o.moveDateOrNull?.isAfter(
+                      DateTime(today.year, today.month, today.day - 1)) ??
+                  false))
           .toList();
     } catch (_) {}
     _loading = false;
@@ -132,7 +133,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
             serializeParam(o.amount?.toString(), ParamType.String),
         'orderStatus': serializeParam(o.status, ParamType.String),
         'orderMoveDate':
-            serializeParam(o.moveDate.toString(), ParamType.String),
+            serializeParam(o.moveDateOrNull?.toString(), ParamType.String),
       }.withoutNulls,
     );
   }
@@ -195,7 +196,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
             Text(
               [
                 '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}',
-                'Move: ${dateTimeFormat('d MMM', o.moveDate)}',
+                'Move: ${dateTimeFormat('d MMM', o.moveDateOrNull)}',
                 if ((o.phone ?? '').isNotEmpty) o.phone!,
               ].join('  ·  '),
               style: GoogleFonts.inter(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -17,8 +18,48 @@ import 'permissions.dart';
 import 'staff_auth.dart';
 import 'index.dart';
 
+/// Beta-hardening safety net (item 13, NAGARVA_STATUS.md): a widget that
+/// throws during build previously showed Flutter's default red error
+/// screen in debug and a blank/broken page in release — neither is
+/// something to hand a beta user. Logs to console for now; swap the
+/// `debugPrint` calls for a real crash-reporting SDK (Sentry etc.) once
+/// the owner has an account/DSN for one — that's a genuine blocker this
+/// pass can't fabricate without a real API key, same class of gap as
+/// item 11's Razorpay keys.
+void _installErrorHandlers() {
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exceptionAsString()}');
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Uncaught async error: $error\n$stack');
+    return true; // handled — don't crash the isolate.
+  };
+  ErrorWidget.builder = (details) => Material(
+        color: const Color(0xFFF5F5F5),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.error_outline, size: 40, color: Colors.redAccent),
+                SizedBox(height: 12),
+                Text(
+                  'Something went wrong loading this screen.\n'
+                  'Try going back and reopening it.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _installErrorHandlers();
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
 
@@ -129,6 +170,7 @@ void main() async {
             limits: limits,
             features: features,
             planName: planName,
+            planStatus: org == null ? null : org['plan_status'] as String?,
             trialEndsAt:
                 trialRaw is String ? DateTime.tryParse(trialRaw) : null,
           );
@@ -142,6 +184,7 @@ void main() async {
             limits: limits,
             features: features,
             planName: planName,
+            planStatus: org == null ? null : org['plan_status'] as String?,
             trialEndsAt:
                 trialRaw is String ? DateTime.tryParse(trialRaw) : null,
           );
@@ -470,8 +513,69 @@ class _NavBarPageState extends State<NavBarPage> {
     );
   }
 
+  /// Item 11's trial-expiry lock (NAGARVA_STATUS.md) — the org's trial
+  /// window passed and it was never upgraded. Replaces the whole tab shell
+  /// rather than just hiding one page, so nothing org-scoped (money
+  /// figures, customer data) renders while unpaid. Settings and Logout
+  /// stay reachable via their own buttons here since neither is a normal
+  /// nav tab in this state.
+  Widget _buildTrialExpiredScreen(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Scaffold(
+      backgroundColor: theme.primaryBackground,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_clock_outlined, size: 48, color: theme.primary),
+                const SizedBox(height: 16),
+                Text(
+                  'Your trial has ended',
+                  style: TextStyle(
+                    color: theme.primaryText,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Upgrade your plan to keep using ${AppSession.instance.currentOrgName ?? 'Nagarva'}.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: theme.secondaryText, fontSize: 13.5),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => context.push(PlanPageWidget.routePath),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text('View Plans'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(onPressed: _logout, child: const Text('Logout')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (AppSession.instance.isTrialExpired) {
+      return _buildTrialExpiredScreen(context);
+    }
     final tabs = _tabs;
     // Direct-URL guard: a staff session typing /payments etc. into the
     // address bar gets bounced to the dashboard, matching the filtered nav.

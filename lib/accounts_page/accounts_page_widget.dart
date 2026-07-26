@@ -110,7 +110,9 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
   ) {
     final byDate = <DateTime, List<OrdersRow>>{};
     for (final o in orders) {
-      final d = DateTime(o.moveDate.year, o.moveDate.month, o.moveDate.day);
+      final move = o.moveDateOrNull;
+      if (move == null) continue;
+      final d = DateTime(move.year, move.month, move.day);
       byDate.putIfAbsent(d, () => []).add(o);
     }
 
