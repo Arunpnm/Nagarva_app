@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -8,8 +10,28 @@ import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 import 'lead_detail_page_model.dart';
 export 'lead_detail_page_model.dart';
+
+/// 24 random bytes, hex-encoded — same scheme
+/// supabase/20260725_survey_quote_flow.sql documents for the DB-generated
+/// survey token default. Generated client-side for quotations because,
+/// found live-testing this flow: quotations.token's DB default
+/// (`encode(extensions.gen_random_bytes(24), 'hex')`, added by that same
+/// migration) isn't coming back populated on insert — the exact same
+/// symptom that made quotations.id need a client-generated uuid (see
+/// _createQuote below). surveys.token, from the same migration, works
+/// fine, so this is isolated to the pre-existing quotations table, not a
+/// pgcrypto/extension problem. Not fully root-caused (would need DB
+/// introspection this session doesn't have access to) — this sidesteps
+/// it the same safe way as the id fix, rather than leaving the flow
+/// broken pending a DB investigation.
+String _generateHexToken() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(24, (_) => random.nextInt(256));
+  return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+}
 
 /// Read-only view of a single lead with convert-to-order action.
 class LeadDetailPageWidget extends StatefulWidget {
@@ -280,6 +302,16 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
       final gstAmount =
           (result.subtotal * result.gstPct / 100).roundToDouble();
       final row = await QuotationsTable().insert({
+        // quotations.id has no DB-generated default (unlike surveys.id,
+        // which does) — found live-testing this flow: the insert failed
+        // with Postgres 23502 "null value in column id" every time.
+        // quotation_page_widget.dart's ad-hoc quote form has the exact
+        // same gap (never live-tested either) — flagged in
+        // NAGARVA_STATUS.md, not fixed here since it's a separate feature.
+        'id': const Uuid().v4(),
+        // token's DB default doesn't come back populated either — see
+        // _generateHexToken's doc comment above.
+        'token': _generateHexToken(),
         ...OrgScope.stamp(),
         'lead_id': widget.leadId,
         'customer': widget.leadCustomer,
