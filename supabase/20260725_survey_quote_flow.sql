@@ -2,8 +2,20 @@
 -- 20260725_survey_quote_flow.sql
 -- Item 8 (CORE V1, NAGARVA_STATUS.md): Survey -> Quotation -> Order flow.
 --
--- READY TO RUN — NOT YET EXECUTED. Paste into the Supabase SQL editor
--- when convenient. Idempotent — safe to re-run.
+-- EXECUTED 26 Jul 2026 against nagarva-demo (hqqcapifefsaqvotqvlt) — verified
+-- live: surveys table created, 4 quotations columns added, 4 RPCs registered.
+-- Idempotent — safe to re-run.
+--
+-- TWO CORRECTIONS vs the original draft, both found by running it:
+--   1. `lead_id` was declared `text`; leads.id is uuid, so the FK failed with
+--      42804 ("Key columns lead_id and id are of incompatible types").
+--      NOTE: orders.id IS text (NGV-XXXX) — that exception is real, but it
+--      does not extend to leads.id. Check the live schema, not the pattern.
+--   2. The RLS policy used `org_id = any (current_org_ids())`; current_org_ids()
+--      is set-returning and Postgres rejects those in policy expressions
+--      (0A000). Corrected to `org_id in (select current_org_ids())`, matching
+--      the house pattern already used in notifications / payment_entries /
+--      salary_payments.
 --
 -- SCOPE ASSUMPTION (no product spec was available for this pass — this is
 -- a deliberate, documented default rather than a stall):
@@ -25,14 +37,14 @@
 --      reuses the same insert pattern lead_detail_page_widget.dart already
 --      uses for lead->order conversion).
 --
--- Security model: all three customer-facing RPCs are `security definer`
+-- Security model: all four customer-facing RPCs are `security definer`
 -- and granted to `anon`, bypassing RLS entirely - each is scoped so a
 -- caller can only ever affect/read the ONE row matching the exact token
--- they were given (never a list/browse operation). Tokens are
--- gen_random_uuid()::text (122 bits of entropy) so they are not
--- guessable/enumerable. This is the same trust model as any "share link"
--- feature (Google Docs, Dropbox, etc.) - anyone with the link can act on
--- that one record, nothing else.
+-- they were given (never a list/browse operation). Tokens are 24 random
+-- bytes hex-encoded (192 bits of entropy) so they are not guessable or
+-- enumerable. This is the same trust model as any "share link" feature
+-- (Google Docs, Dropbox, etc.) - anyone with the link can act on that one
+-- record, nothing else.
 -- ============================================================================
 
 create extension if not exists pgcrypto with schema extensions;
@@ -41,7 +53,8 @@ create extension if not exists pgcrypto with schema extensions;
 create table if not exists public.surveys (
   id uuid primary key default extensions.gen_random_uuid(),
   org_id uuid not null references public.organizations(id),
-  lead_id text references public.leads(id),
+  -- uuid, NOT text: leads.id is uuid in this schema (see header correction #1)
+  lead_id uuid references public.leads(id),
   token text not null unique default encode(extensions.gen_random_bytes(24), 'hex'),
   customer_name text,
   customer_phone text,
@@ -61,11 +74,11 @@ create index if not exists surveys_lead_id_idx on public.surveys (lead_id);
 
 alter table public.surveys enable row level security;
 
+-- `in (select ...)` NOT `= any (...)`: see header correction #2.
 drop policy if exists surveys_org_isolation on public.surveys;
-create policy surveys_org_isolation on public.surveys
-  for all
-  using (org_id = any (current_org_ids()))
-  with check (org_id = any (current_org_ids()));
+create policy surveys_org_isolation on public.surveys for all to authenticated
+  using (org_id in (select current_org_ids()) or is_platform_admin())
+  with check (org_id in (select current_org_ids()) or is_platform_admin());
 
 -- 2. quotations: token + acceptance tracking ---------------------------------
 alter table public.quotations add column if not exists token text unique
@@ -104,7 +117,7 @@ $$;
 revoke all on function public.get_survey_by_token(text) from public;
 grant execute on function public.get_survey_by_token(text) to anon;
 
--- 5. submit_survey — public, one-row-only write ------------------------------
+-- 4. submit_survey — public, one-row-only write ------------------------------
 create or replace function public.submit_survey(
   p_token text,
   p_customer_name text,
@@ -140,7 +153,7 @@ $$;
 revoke all on function public.submit_survey(text, text, text, text, text, date, jsonb, text) from public;
 grant execute on function public.submit_survey(text, text, text, text, text, date, jsonb, text) to anon;
 
--- 6. get_quotation_by_token — public, read-only ------------------------------
+-- 5. get_quotation_by_token — public, read-only ------------------------------
 create or replace function public.get_quotation_by_token(p_token text)
 returns table (
   id text,
@@ -177,7 +190,7 @@ $$;
 revoke all on function public.get_quotation_by_token(text) from public;
 grant execute on function public.get_quotation_by_token(text) to anon;
 
--- 7. accept_quotation — public, one-row-only write ---------------------------
+-- 6. accept_quotation — public, one-row-only write ---------------------------
 create or replace function public.accept_quotation(p_token text, p_signature_name text)
 returns boolean
 language plpgsql
@@ -197,3 +210,21 @@ $$;
 
 revoke all on function public.accept_quotation(text, text) from public;
 grant execute on function public.accept_quotation(text, text) to anon;
+
+-- ============================================================================
+-- POST-RUN VERIFICATION (executed 26 Jul 2026 — returned 1 / 4 / 4):
+--
+--   select
+--     (select count(*) from information_schema.tables
+--        where table_schema='public' and table_name='surveys') as surveys_table,
+--     (select count(*) from information_schema.columns
+--        where table_schema='public' and table_name='quotations'
+--          and column_name in ('token','survey_id','accepted_at','accepted_by_name')) as quote_cols,
+--     (select count(*) from information_schema.routines
+--        where routine_schema='public' and routine_name in
+--          ('get_survey_by_token','submit_survey','get_quotation_by_token','accept_quotation')) as rpcs;
+--
+-- STILL TO DO: live end-to-end test of the survey -> quote -> accept ->
+-- convert-to-order loop in the browser. The Dart side shipped analyze-clean
+-- but has never been exercised against a real database.
+-- ============================================================================

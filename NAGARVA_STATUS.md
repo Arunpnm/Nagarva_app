@@ -118,7 +118,7 @@ figures cross-check against each other correctly).
 
 | # | Module | Scope | Est. effort | ETA (sequential) |
 |---|--------|-------|-------------|------------------|
-| 8 | 🔨 Survey → Quotation → Order flow | Survey form, quote builder, customer-facing token links (`get_quotation_by_token()`, `submit_survey()` RPCs), e-sign/accept, convert to order — **BLOCKED, needs Arun to run the SQL** | 12–18 hrs (~4–6 sessions) | ~10 Aug |
+| 8 | ✅ Survey → Quotation → Order flow | Survey form, quote builder, customer-facing token links (`get_quotation_by_token()`, `submit_survey()` RPCs), e-sign/accept, convert to order — **live-verified end-to-end 27 Jul 2026** | 12–18 hrs (~4–6 sessions) | done |
 | 9 | ✅ (partial) Org switcher (dual-membership accounts) | Switch UI + session org context | 2–3 hrs | ~12 Aug |
 | 10 | ✅ Vendor onboarding polish | First-run wizard: logo, GST, invoice prefix, staff seed | 3–4 hrs | ~14 Aug |
 | 11 | 🔨 Subscription billing | Razorpay checkout, plan up/downgrade, trial-expiry lock, webhooks — trial lock ✅, checkout **BLOCKED on real Razorpay keys** | 10–14 hrs (~4 sessions) | ~22 Aug |
@@ -471,6 +471,72 @@ code-reviewed.
 both have headroom. Item 7 (Android on-device install) can resume once a
 physical device is available to sideload to — not attempted this pass
 (session was web-only).
+
+**27 Jul 2026 — item 8 live-verified end-to-end, two real bugs found and
+fixed** (Claude Code session, continuation of 26 Jul — Arun ran
+`supabase/20260725_survey_quote_flow.sql` successfully against nagarva-demo,
+confirmed live: surveys table = 1 row, quotations new columns = 4, RPCs
+registered = 4; the file on disk was corrected to match what actually
+executed — see its own header for the two corrections, both already
+applied, do not revert). Full loop tested in Chrome against the real
+database, not code review: vendor Request Survey → customer fills
+`/survey?token=...` with no auth session → re-visit shows "already
+submitted" (the `and status = 'pending'` guard surfaces correctly in the
+UI) → vendor Create Quote → customer views `/quote?token=...` with real
+totals → accepts by typing a name → re-visit shows "Accepted by
+[name]" persists (re-accept correctly can't re-trigger since the accept
+form is hidden once accepted) → vendor Convert Quote to Order → real
+order created with the quotation's actual total (₹39,900, confirmed via
+the Orders list, not ₹0) and the lead flips to `confirmed`.
+
+Two real, previously-unverified bugs found and fixed along the way —
+both only surface against a live database, which is exactly why this
+verification pass mattered:
+- **`quotations.id` has no DB-generated default** (unlike `surveys.id`,
+  which does) — every `_createQuote()` insert failed with Postgres 23502
+  "null value in column id" until fixed. Root-caused via the Dart VM's
+  own console log (Flutter DevTools' Logging tab turned out to be
+  gesture-arena noise, not app output — `read_console_messages` on the
+  page's own tab is what actually surfaces `print()`/uncaught-exception
+  output for a `flutter run -d chrome` debug build). Fixed by generating
+  the id client-side (`const Uuid().v4()`, added `uuid` as a direct
+  pubspec dependency — it was only ever a transitive
+  `dependency_override`). **`quotation_page_widget.dart`'s separate
+  ad-hoc quote form has the exact same gap and was never live-tested
+  either** — flagged here, not fixed, since it's a different feature
+  outside this pass's scope.
+- **`quotations.token`'s DB default also doesn't come back populated on
+  new inserts**, even though it uses the identical expression as
+  `surveys.token` (which does work) — not fully root-caused (would need
+  DB introspection access this session doesn't have), but confirmed via
+  a pre-existing quotation row (created before the migration ran, then
+  backfilled by the migration's own `UPDATE ... WHERE token IS NULL`
+  step) which had a real token and worked fine once loaded. Fixed the
+  same way as `id`: generate a 24-random-byte hex token client-side
+  (`_generateHexToken()`) rather than trust the column default.
+- **Separately, `quote_page_widget.dart` crashed** (caught cleanly by
+  this session's own item-13 `ErrorWidget.builder` — first real proof
+  that safety net works) on that same pre-existing quotation row:
+  `items`/`charges` are `jsonb`, and this row had them stored as a JSON
+  object instead of an array (likely from a different, older insert path
+  that never sets these fields at all). `(q['items'] as List?)` threw a
+  `TypeError` instead of returning null. Fixed with an `is List` check
+  instead of an unsafe cast — defensive against any legacy row shape,
+  not just this one.
+
+Also checked per this session's own request: neither `survey_page_widget.dart`
+nor `quote_page_widget.dart` touch the `surveys`/`quotations` tables
+directly anywhere — both go through the four RPCs exclusively, so the new
+`to authenticated` restriction on the `surveys` RLS policy (added in the
+same migration-run correction pass) doesn't affect them. `surveys.dart`
+already existed as a generated table class (built in the original item 8
+pass, not missing as the task briefing wondered).
+
+`flutter analyze` clean (149 issues, same baseline, 0 new), `flutter test`
+passes. Every fix in this entry is live-verified in Chrome against
+nagarva-demo, not just code-reviewed — this whole pass existed specifically
+because the previous "code complete, analyze-clean" state had never been
+run against a real database.
 
 ## KNOWN RISKS / NOTES
 
