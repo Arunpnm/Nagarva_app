@@ -116,13 +116,19 @@ void main() async {
     final restoredStaffId =
         meta['kind'] == 'staff' ? meta['staff_id'] as String? : null;
     try {
-      final member = await SupaFlow.client
+      // Every membership, not just the first — item 9's org switcher
+      // needs availableOrgs populated here too, not just on a fresh
+      // login. Found live-testing item 12's suspension lock screen: the
+      // "Switch Organization" button never appeared after a page reload
+      // because this query (unlike login_page_widget.dart's, fixed when
+      // the switcher was built) still only ever restored the first
+      // membership row and never populated availableOrgs at all.
+      final members = await SupaFlow.client
           .from('org_members')
-          .select('org_id')
-          .eq('user_id', restoredUser.id)
-          .limit(1)
-          .maybeSingle();
-      final orgId = member == null ? null : member['org_id'] as String?;
+          .select('org_id, role')
+          .eq('user_id', restoredUser.id);
+      final orgId =
+          members.isNotEmpty ? members.first['org_id'] as String? : null;
       if (orgId != null) {
         // select('*') on purpose: naming logo_url here would 400 the whole
         // restore on a DB that hasn't run 20260717_org_logo_url.sql yet.
@@ -131,6 +137,35 @@ void main() async {
             .select('*')
             .eq('id', orgId)
             .maybeSingle();
+
+        // Same availableOrgs build as login_page_widget.dart's — silent
+        // restore always keeps using the first membership (no picker on
+        // a background reload), but the switcher needs the full list
+        // populated regardless of which one ends up active.
+        List<OrgMembershipInfo> availableOrgs = [];
+        if (restoredStaffId == null || restoredStaffId.isEmpty) {
+          final orgIds = members
+              .map((m) => m['org_id'] as String?)
+              .whereType<String>()
+              .toSet()
+              .toList();
+          if (orgIds.length > 1) {
+            final orgRows = await SupaFlow.client
+                .from('organizations')
+                .select('id, name')
+                .inFilter('id', orgIds);
+            final orgNameById = {
+              for (final o in orgRows) o['id'] as String: o['name'] as String?
+            };
+            availableOrgs = members
+                .map((m) => OrgMembershipInfo(
+                      orgId: m['org_id'] as String,
+                      orgName: orgNameById[m['org_id']] ?? '(unnamed org)',
+                      role: m['role'] as String?,
+                    ))
+                .toList();
+          }
+        }
 
         Map<String, dynamic> limits = {};
         Map<String, dynamic> features = {};
@@ -189,6 +224,7 @@ void main() async {
             trialEndsAt:
                 trialRaw is String ? DateTime.tryParse(trialRaw) : null,
             orgActive: org == null ? true : (org['active'] as bool? ?? true),
+            availableOrgs: availableOrgs,
           );
         }
       }
