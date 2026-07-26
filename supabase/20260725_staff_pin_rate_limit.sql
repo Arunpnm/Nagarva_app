@@ -2,8 +2,14 @@
 -- 20260725_staff_pin_rate_limit.sql
 -- Item 6 (NAGARVA_STATUS.md THIS WEEK): PIN rate limiting.
 --
--- READY TO RUN — NOT YET EXECUTED. Paste into the Supabase SQL editor
--- when convenient. Idempotent — safe to re-run.
+-- Idempotent — safe to re-run.
+--
+-- CORRECTION (27 Jul 2026): the original failed with 42P13 "cannot change
+-- return type of existing function". 20260723_staff_auth_link_v2.sql created
+-- verify_staff_pin() returning 5 columns; this version returns 7 (adds
+-- `locked` / `locked_until`), and CREATE OR REPLACE FUNCTION cannot change a
+-- return type in place. Added an explicit DROP FUNCTION first — same lesson
+-- as the DROP VIEW IF EXISTS requirement in views_dashboard_and_ops.sql.
 --
 -- The staff-login Edge Function (supabase/functions/staff-login/index.ts)
 -- had no lockout at all: verify_staff_pin() just did a bcrypt compare and
@@ -17,10 +23,16 @@
 -- Policy: 5 failed attempts -> 15 minute lockout, then the counter resets.
 -- A correct PIN always resets the counter immediately. Adjust
 -- v_max_attempts / v_lock_minutes below if a different policy is wanted.
+--
+-- NOTE: the DROP + CREATE run inside one transaction in the Supabase SQL
+-- editor, so there is no window where verify_staff_pin does not exist.
 -- ============================================================================
 
 alter table public.staff add column if not exists failed_pin_attempts integer not null default 0;
 alter table public.staff add column if not exists pin_locked_until timestamptz;
+
+-- Required: the return type changes from 5 columns to 7 (see header).
+drop function if exists public.verify_staff_pin(uuid, text);
 
 create or replace function public.verify_staff_pin(p_staff_id uuid, p_pin text)
 returns table (
@@ -99,12 +111,20 @@ revoke all on function public.verify_staff_pin(uuid, text) from authenticated;
 grant execute on function public.verify_staff_pin(uuid, text) to service_role;
 
 -- ============================================================================
--- CLEANUP — DO NOT RUN NOW, separate step, only after the app fix in
--- lib/users_page/staff_form_sheet.dart (never pre-fills/reads staff.pin
--- for display) has been deployed. Nulls the plaintext PIN column now
--- that nothing in the app reads it — the pin_hash trigger from
--- 20260723_staff_auth_link_v2.sql is untouched by this migration and
--- keeps working exactly as before (it only fires on INSERT or when a
--- new non-empty pin is written).
+-- CLEANUP — DO NOT RUN NOW, separate step, only after BOTH:
+--   (a) the app fix in lib/users_page/staff_form_sheet.dart (never
+--       pre-fills/reads staff.pin for display) is deployed, AND
+--   (b) a real staff PIN login has been tested successfully against the
+--       rewritten function above — this is what catches a stale deployed
+--       Edge Function expecting the old 5-column return type.
+-- Nulls the plaintext PIN column now that nothing in the app reads it. The
+-- pin_hash trigger from 20260723_staff_auth_link_v2.sql is untouched by this
+-- migration and keeps working exactly as before (it only fires on INSERT or
+-- when a new non-empty pin is written).
 --   update public.staff set pin = null;
+--
+-- Verified safe to run when this returns unhashed = 0:
+--   select count(*) filter (where pin is not null and pin_hash is null) as unhashed
+--   from public.staff;
+-- (Confirmed 0 across all 8 staff rows on 27 Jul 2026.)
 -- ============================================================================
