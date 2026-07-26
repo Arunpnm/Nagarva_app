@@ -14,6 +14,7 @@ class OrgSessionData {
     this.planName,
     this.planStatus,
     this.trialEndsAt,
+    this.orgActive = true,
   });
 
   final String orgId;
@@ -25,6 +26,7 @@ class OrgSessionData {
   final String? planName;
   final String? planStatus;
   final DateTime? trialEndsAt;
+  final bool orgActive;
 }
 
 Future<OrgSessionData> loadOrgSessionData(String orgId) async {
@@ -68,5 +70,6 @@ Future<OrgSessionData> loadOrgSessionData(String orgId) async {
     planName: planName,
     planStatus: org?.planStatus,
     trialEndsAt: org?.trialEndsAt,
+    orgActive: org?.active ?? true,
   );
 }

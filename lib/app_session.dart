@@ -40,6 +40,12 @@ class AppSession extends ChangeNotifier {
   String? planStatus;
   DateTime? trialEndsAt;
 
+  /// organizations.active — defaults true so a null/missing column (or a
+  /// session that hasn't loaded it yet) never wrongly locks someone out.
+  /// Threaded through the same three call sites as planStatus (login,
+  /// org-switch, session-restore).
+  bool orgActive = true;
+
   // A session is "in" once we know which org we're scoped to, and either
   // a Supabase Auth user (vendor login) or a staff row (PIN login) has
   // been established.
@@ -57,6 +63,13 @@ class AppSession extends ChangeNotifier {
       planStatus == 'trial' &&
       trialEndsAt != null &&
       trialEndsAt!.isBefore(DateTime.now());
+
+  /// Super-admin console, Step 3 (NAGARVA_STATUS.md) — a platform admin
+  /// suspended this tenant via organizations.active. Deliberately a
+  /// separate getter from isTrialExpired (different cause, different
+  /// message) even though NavBarPage's lock screen shows both the same
+  /// way — see main.dart.
+  bool get isSuspended => !orgActive;
 
   bool hasFeature(String key) => planFeatures[key] == true;
 
@@ -87,6 +100,7 @@ class AppSession extends ChangeNotifier {
     String? planName,
     String? planStatus,
     DateTime? trialEndsAt,
+    bool orgActive = true,
     List<OrgMembershipInfo>? availableOrgs,
   }) {
     this.authUserId = authUserId;
@@ -99,6 +113,7 @@ class AppSession extends ChangeNotifier {
     this.planName = planName;
     this.planStatus = planStatus;
     this.trialEndsAt = trialEndsAt;
+    this.orgActive = orgActive;
     // Switching orgs (not logging in fresh) calls this again with
     // availableOrgs left null — keep the membership list as-is rather than
     // wiping it back to empty.
@@ -133,6 +148,7 @@ class AppSession extends ChangeNotifier {
     String? planName,
     String? planStatus,
     DateTime? trialEndsAt,
+    bool? orgActive,
   }) {
     currentOrgId = orgId;
     if (orgName != null) currentOrgName = orgName;
@@ -145,6 +161,7 @@ class AppSession extends ChangeNotifier {
     if (planName != null) this.planName = planName;
     if (planStatus != null) this.planStatus = planStatus;
     if (trialEndsAt != null) this.trialEndsAt = trialEndsAt;
+    if (orgActive != null) this.orgActive = orgActive;
     notifyListeners();
   }
 
@@ -162,6 +179,7 @@ class AppSession extends ChangeNotifier {
     planName = null;
     planStatus = null;
     trialEndsAt = null;
+    orgActive = true;
     availableOrgs = [];
     notifyListeners();
   }

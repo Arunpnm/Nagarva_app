@@ -1339,6 +1339,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                               planName: sessionData.planName,
                               planStatus: sessionData.planStatus,
                               trialEndsAt: sessionData.trialEndsAt,
+                              orgActive: sessionData.orgActive,
                             );
                             // Full route rebuild so every org-scoped page
                             // (Dashboard, Orders, Leads, ...) re-queries under

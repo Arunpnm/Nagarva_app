@@ -173,6 +173,7 @@ void main() async {
             planStatus: org == null ? null : org['plan_status'] as String?,
             trialEndsAt:
                 trialRaw is String ? DateTime.tryParse(trialRaw) : null,
+            orgActive: org == null ? true : (org['active'] as bool? ?? true),
           );
         } else {
           AppSession.instance.setVendorSession(
@@ -187,6 +188,7 @@ void main() async {
             planStatus: org == null ? null : org['plan_status'] as String?,
             trialEndsAt:
                 trialRaw is String ? DateTime.tryParse(trialRaw) : null,
+            orgActive: org == null ? true : (org['active'] as bool? ?? true),
           );
         }
       }
@@ -513,13 +515,17 @@ class _NavBarPageState extends State<NavBarPage> {
     );
   }
 
-  /// Item 11's trial-expiry lock (NAGARVA_STATUS.md) — the org's trial
-  /// window passed and it was never upgraded. Replaces the whole tab shell
-  /// rather than just hiding one page, so nothing org-scoped (money
-  /// figures, customer data) renders while unpaid. Settings and Logout
-  /// stay reachable via their own buttons here since neither is a normal
-  /// nav tab in this state.
-  Widget _buildTrialExpiredScreen(BuildContext context) {
+  /// Item 11's trial-expiry lock, extended in the super-admin console pass
+  /// (NAGARVA_STATUS.md) to also cover Step 3's tenant suspension —
+  /// AppSession.isSuspended reuses this exact screen per that task's own
+  /// instruction ("must hit the same lock screen as trial-expiry... reuse
+  /// it, don't build a second one"), just with different copy and no
+  /// "View Plans" upsell (a suspension isn't a self-serve billing problem).
+  /// Replaces the whole tab shell rather than just hiding one page, so
+  /// nothing org-scoped (money figures, customer data) renders while
+  /// locked out. Settings and Logout aren't reachable as normal nav tabs
+  /// in this state, so Logout gets its own button here.
+  Widget _buildLockScreen(BuildContext context, {required bool suspended}) {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
       backgroundColor: theme.primaryBackground,
@@ -530,10 +536,15 @@ class _NavBarPageState extends State<NavBarPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_clock_outlined, size: 48, color: theme.primary),
+                Icon(
+                    suspended
+                        ? Icons.block_outlined
+                        : Icons.lock_clock_outlined,
+                    size: 48,
+                    color: suspended ? theme.error : theme.primary),
                 const SizedBox(height: 16),
                 Text(
-                  'Your trial has ended',
+                  suspended ? 'Account suspended' : 'Your trial has ended',
                   style: TextStyle(
                     color: theme.primaryText,
                     fontSize: 19,
@@ -542,25 +553,28 @@ class _NavBarPageState extends State<NavBarPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Upgrade your plan to keep using ${AppSession.instance.currentOrgName ?? 'Nagarva'}.',
+                  suspended
+                      ? '${AppSession.instance.currentOrgName ?? 'This account'} has been suspended. Contact Nagarva support to reactivate.'
+                      : 'Upgrade your plan to keep using ${AppSession.instance.currentOrgName ?? 'Nagarva'}.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: theme.secondaryText, fontSize: 13.5),
                 ),
                 const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => context.push(PlanPageWidget.routePath),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                if (!suspended)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => context.push(PlanPageWidget.routePath),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('View Plans'),
                     ),
-                    child: const Text('View Plans'),
                   ),
-                ),
                 const SizedBox(height: 8),
                 TextButton(onPressed: _logout, child: const Text('Logout')),
               ],
@@ -573,8 +587,11 @@ class _NavBarPageState extends State<NavBarPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (AppSession.instance.isSuspended) {
+      return _buildLockScreen(context, suspended: true);
+    }
     if (AppSession.instance.isTrialExpired) {
-      return _buildTrialExpiredScreen(context);
+      return _buildLockScreen(context, suspended: false);
     }
     final tabs = _tabs;
     // Direct-URL guard: a staff session typing /payments etc. into the

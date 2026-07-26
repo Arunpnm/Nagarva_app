@@ -177,6 +177,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         planName: sessionData.planName,
         planStatus: sessionData.planStatus,
         trialEndsAt: sessionData.trialEndsAt,
+        orgActive: sessionData.orgActive,
         availableOrgs: availableOrgs,
       );
 
