@@ -175,8 +175,17 @@ class _QuotePageWidgetState extends State<QuotePageWidget> {
   Widget _quoteView(FlutterFlowTheme theme) {
     final q = _quote!;
     final status = q['status'] as String? ?? 'draft';
-    final items = (q['items'] as List?) ?? const [];
-    final charges = (q['charges'] as List?) ?? const [];
+    // items/charges are jsonb — the app's own quote-creation path always
+    // writes a real [] array, but pre-existing rows from other insert
+    // paths (e.g. the ad-hoc quotation_page_widget.dart form, which
+    // doesn't set these fields at all) can leave them as a JSON object or
+    // null instead, which crashed this page's build with a TypeError
+    // before this guard (found live-testing item 8 against real seed
+    // data, not something the new flow itself produces).
+    final itemsRaw = q['items'];
+    final chargesRaw = q['charges'];
+    final items = itemsRaw is List ? itemsRaw : const [];
+    final charges = chargesRaw is List ? chargesRaw : const [];
     final accepted = status == 'accepted';
 
     return SingleChildScrollView(
