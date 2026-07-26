@@ -3,21 +3,27 @@ import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'plans_tab.dart';
 
-/// Platform (SaaS-operator) admin view — all-tenant list, plan override,
-/// per-org usage stats. Item 12 in NAGARVA_STATUS.md.
+/// Platform (SaaS-operator) admin view — all-tenant list, plan management,
+/// per-org usage stats. Item 12 in NAGARVA_STATUS.md, built out into a real
+/// console in the "super-admin console" pass.
 ///
 /// Gated on the `platform_admins` table (RLS, `is_platform_admin()`) that
-/// already exists live per `supabase/migrations/20260715_rls_v1.sql` —
-/// that migration's own "KNOWN GAPS" note flags `platform_admins` seeding
-/// as not done, so by default NO account passes this gate yet. Access
-/// denial is intentional, not a bug: the owner needs to insert one row
-/// (`insert into platform_admins (user_id) values ('<auth-uid>')`) for
-/// whichever account should be able to reach this page.
+/// already exists live per `supabase/migrations/20260715_rls_v1.sql`.
+/// Access denial is intentional, not a bug: the owner needs a row in that
+/// table for whichever account should be able to reach this page.
 ///
 /// Not linked from the bottom nav / drawer on purpose — reachable only by
 /// direct URL (`/super-admin`) for whoever actually is a platform admin, so
 /// regular vendor/staff sessions never see it as an option.
+///
+/// This file (and the other files in lib/super_admin_page/) is the ONE
+/// documented exception to the OrgScope convention — every query here is
+/// deliberately unscoped by org_id, authorized by RLS's
+/// is_platform_admin() bypass rather than the client. Keep that exception
+/// contained to this directory; nowhere else in the app should read
+/// cross-tenant.
 class SuperAdminPageWidget extends StatefulWidget {
   const SuperAdminPageWidget({super.key});
 
@@ -176,84 +182,102 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
 
     final planNameById = {for (final p in _plans) p.id!: p.name};
 
-    return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
         backgroundColor: theme.primaryBackground,
-        title: Text('Platform Admin — ${_orgs.length} tenants'),
-      ),
-      body: _loadingOrgs
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadOrgs,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _orgs.length,
-                itemBuilder: (context, i) {
-                  final org = _orgs[i];
-                  final usage = _usage[org.id] ?? const {};
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: theme.secondaryBackground,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                org.name,
-                                style: GoogleFonts.interTight(
-                                    color: theme.primaryText,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                            if (!org.active)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: theme.error.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text('inactive',
-                                    style: GoogleFonts.inter(
-                                        color: theme.error, fontSize: 11)),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${org.slug} · plan: ${planNameById[org.planId] ?? '—'} '
-                          '(${org.planStatus ?? '—'})',
-                          style: GoogleFonts.inter(
-                              color: theme.secondaryText, fontSize: 12.5),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${usage['orders'] ?? 0} orders · ${usage['leads'] ?? 0} leads · ${usage['staff'] ?? 0} staff',
-                          style: GoogleFonts.inter(
-                              color: theme.primaryText, fontSize: 12.5),
-                        ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () => _changePlan(org),
-                            child: const Text('Change plan'),
+        appBar: AppBar(
+          backgroundColor: theme.primaryBackground,
+          title: Text('Platform Admin — ${_orgs.length} tenants'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Tenants'),
+              Tab(text: 'Plans'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _loadingOrgs
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+                    onRefresh: _loadOrgs,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _orgs.length,
+                      itemBuilder: (context, i) {
+                        final org = _orgs[i];
+                        final usage = _usage[org.id] ?? const {};
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: theme.secondaryBackground,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ),
-                      ],
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      org.name,
+                                      style: GoogleFonts.interTight(
+                                          color: theme.primaryText,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                  if (!org.active)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: theme.error.withOpacity(0.12),
+                                        borderRadius:
+                                            BorderRadius.circular(6),
+                                      ),
+                                      child: Text('inactive',
+                                          style: GoogleFonts.inter(
+                                              color: theme.error,
+                                              fontSize: 11)),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${org.slug} · plan: ${planNameById[org.planId] ?? '—'} '
+                                '(${org.planStatus ?? '—'})',
+                                style: GoogleFonts.inter(
+                                    color: theme.secondaryText,
+                                    fontSize: 12.5),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${usage['orders'] ?? 0} orders · ${usage['leads'] ?? 0} leads · ${usage['staff'] ?? 0} staff',
+                                style: GoogleFonts.inter(
+                                    color: theme.primaryText,
+                                    fontSize: 12.5),
+                              ),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () => _changePlan(org),
+                                  child: const Text('Change plan'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
+                  ),
+            const PlansTab(),
+          ],
+        ),
+      ),
     );
   }
 }
