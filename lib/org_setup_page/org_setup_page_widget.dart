@@ -1,10 +1,12 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/logo_upload_card.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
+import '/users_page/staff_form_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'org_setup_page_model.dart';
@@ -23,11 +25,23 @@ class OrgSetupPageWidget extends StatefulWidget {
 class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
   late OrgSetupPageModel _model;
   final _formKey = GlobalKey<FormState>();
+  List<StaffRow> _seededStaff = [];
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => OrgSetupPageModel());
+    _loadStaff();
+  }
+
+  Future<void> _loadStaff() async {
+    final rows = await StaffTable().queryRows(queryFn: (q) => OrgScope.read(q));
+    if (mounted) setState(() => _seededStaff = rows);
+  }
+
+  Future<void> _addTeamMember() async {
+    final saved = await StaffFormSheet.show(context);
+    if (saved) _loadStaff();
   }
 
   @override
@@ -203,6 +217,47 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                           ),
                         ),
                       ],
+                    ),
+                  ]),
+                  const SizedBox(height: 20),
+                  _sectionHeader(theme, 'Branding'),
+                  const SizedBox(height: 12),
+                  const LogoUploadCard(),
+                  const SizedBox(height: 20),
+                  _sectionHeader(theme, 'Your Team'),
+                  const SizedBox(height: 12),
+                  _buildCard(theme, [
+                    if (_seededStaff.isEmpty)
+                      Text(
+                        'No staff added yet — you can add drivers, packers, '
+                        'and supervisors now or later from Users.',
+                        style: GoogleFonts.inter(
+                            color: theme.secondaryText, fontSize: 13),
+                      )
+                    else
+                      ..._seededStaff.map((s) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                Icon(Icons.person_outline,
+                                    size: 18, color: theme.secondaryText),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${s.name ?? ''} · ${s.role ?? ''}',
+                                    style: GoogleFonts.inter(
+                                        color: theme.primaryText,
+                                        fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _addTeamMember,
+                      icon: const Icon(Icons.person_add_alt_1, size: 18),
+                      label: const Text('Add Team Member'),
                     ),
                   ]),
                   if (_model.errorMessage != null) ...[
