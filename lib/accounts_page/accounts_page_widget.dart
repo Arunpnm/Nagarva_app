@@ -28,8 +28,14 @@ class AccountsPageWidget extends StatefulWidget {
   State<AccountsPageWidget> createState() => _AccountsPageWidgetState();
 }
 
-class _AccountsPageWidgetState extends State<AccountsPageWidget> {
+class _AccountsPageWidgetState extends State<AccountsPageWidget>
+    with RefreshOnPopMixin<AccountsPageWidget> {
   late AccountsPageModel _model;
+
+  // Refresh-after-write fix (parity brief Part 1): re-run the load when a
+  // pushed route (e.g. an opening-balance edit) is popped.
+  @override
+  void onPageRefresh() => _loadData();
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -132,7 +138,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
         // amount until that field is ported (tracked separately).
         final orderQuote = amount;
         final advancePaid = o.advancePaid ?? 0;
-        final bookingAdvance = amount; // no dedicated booking_advance column yet
+        final bookingAdvance =
+            amount; // no dedicated booking_advance column yet
 
         revenue += amount;
         quote += orderQuote;
@@ -329,15 +336,13 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                       context, 'Order expenses', row.orderExpenses, true),
                   _detailLine(
                       context, 'Other expenses', row.otherExpenses, true),
-                  _detailLine(context, 'Porter commission',
-                      row.porterCommission, true),
+                  _detailLine(
+                      context, 'Porter commission', row.porterCommission, true),
                   if (row.overCollected > 0)
-                    _detailLine(
-                        context, 'Over-collected (unexplained)',
+                    _detailLine(context, 'Over-collected (unexplained)',
                         row.overCollected, false),
                   const Divider(height: 24),
-                  _detailLine(context, 'Net profit/loss', row.profitLoss,
-                      false,
+                  _detailLine(context, 'Net profit/loss', row.profitLoss, false,
                       bold: true),
                   _detailLine(
                       context, 'Running balance', row.runningBalance, false,
@@ -351,8 +356,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
     );
   }
 
-  Widget _detailLine(BuildContext context, String label, double value,
-      bool isExpense,
+  Widget _detailLine(
+      BuildContext context, String label, double value, bool isExpense,
       {bool bold = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -440,8 +445,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                             Container(
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color:
-                                    FlutterFlowTheme.of(context).secondaryBackground,
+                                color: FlutterFlowTheme.of(context)
+                                    .secondaryBackground,
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
                               child: Padding(
@@ -462,8 +467,9 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                                           .override(
                                               font: GoogleFonts.interTight(
                                                   fontWeight: FontWeight.w600),
-                                              color: FlutterFlowTheme.of(context)
-                                                  .primary),
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .primary),
                                     ),
                                   ],
                                 ),
@@ -506,7 +512,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                             const SizedBox(height: 8),
                             if (_model.dailyRows.isEmpty)
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 24),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 24),
                                 child: Text(
                                   'No orders yet — the register fills in once orders have a move date.',
                                   style: FlutterFlowTheme.of(context)
@@ -545,11 +552,10 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                                                           context)
                                                       .bodyMedium
                                                       .override(
-                                                          font: GoogleFonts
-                                                              .inter(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600)),
+                                                          font: GoogleFonts.inter(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600)),
                                                 ),
                                                 Text(
                                                   '${row.dayOrders.length} order${row.dayOrders.length == 1 ? '' : 's'} · Rev ${_currency.format(row.revenue)}',
@@ -571,24 +577,25 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
                                               children: [
                                                 Text(
                                                   '${row.profitLoss >= 0 ? '+' : '-'}${_currency.format(row.profitLoss.abs())}',
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .titleSmall
-                                                      .override(
-                                                        font: GoogleFonts
-                                                            .interTight(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600),
-                                                        color: row.profitLoss >=
-                                                                0
-                                                            ? FlutterFlowTheme
-                                                                    .of(context)
-                                                                .primary
-                                                            : FlutterFlowTheme
-                                                                    .of(context)
-                                                                .error,
-                                                      ),
+                                                  style:
+                                                      FlutterFlowTheme.of(
+                                                              context)
+                                                          .titleSmall
+                                                          .override(
+                                                            font: GoogleFonts
+                                                                .interTight(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600),
+                                                            color: row.profitLoss >=
+                                                                    0
+                                                                ? FlutterFlowTheme.of(
+                                                                        context)
+                                                                    .primary
+                                                                : FlutterFlowTheme.of(
+                                                                        context)
+                                                                    .error,
+                                                          ),
                                                 ),
                                                 Text(
                                                   'Bal ${_currency.format(row.runningBalance)}',
@@ -635,11 +642,9 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget> {
           const SizedBox(height: 2),
           Text(
             _currency.format(value.abs()),
-            style: FlutterFlowTheme.of(context)
-                .titleSmall
-                .override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
-                    color: color),
+            style: FlutterFlowTheme.of(context).titleSmall.override(
+                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                color: color),
           ),
         ],
       ),

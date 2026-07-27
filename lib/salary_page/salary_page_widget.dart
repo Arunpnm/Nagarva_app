@@ -31,7 +31,8 @@ class SalaryPageWidget extends StatefulWidget {
   State<SalaryPageWidget> createState() => _SalaryPageWidgetState();
 }
 
-class _SalaryPageWidgetState extends State<SalaryPageWidget> {
+class _SalaryPageWidgetState extends State<SalaryPageWidget>
+    with RefreshOnPopMixin<SalaryPageWidget> {
   late SalaryPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -45,6 +46,11 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
+
+  // Refresh-after-write fix (parity brief Part 1): re-run the load when a
+  // pushed route (e.g. StaffLedgerSheet's pay/advance actions) is popped.
+  @override
+  void onPageRefresh() => _load();
 
   Future<void> _load() async {
     _model.loading = true;
@@ -71,9 +77,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
   }
 
   bool _inMonth(DateTime? d) =>
-      d != null &&
-      d.year == _model.month.year &&
-      d.month == _model.month.month;
+      d != null && d.year == _model.month.year && d.month == _model.month.month;
 
   List<OrderStaffRow> _monthEntriesFor(String staffId) => _model.orderStaff
       .where((e) =>
@@ -85,12 +89,11 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
       .where((p) => p.staffId == staffId && _inMonth(p.paidDate))
       .toList();
 
-  List<StaffAdvancesRow> _pendingAdvancesFor(String staffId) =>
-      _model.advances
-          .where((a) =>
-              a.staffId == staffId &&
-              (a.status ?? 'pending').toLowerCase() == 'pending')
-          .toList();
+  List<StaffAdvancesRow> _pendingAdvancesFor(String staffId) => _model.advances
+      .where((a) =>
+          a.staffId == staffId &&
+          (a.status ?? 'pending').toLowerCase() == 'pending')
+      .toList();
 
   double _sumOS(List<OrderStaffRow> l) =>
       l.fold(0.0, (s, e) => s + (e.salaryAmount ?? 0));
@@ -133,8 +136,8 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                 style: GoogleFonts.interTight(
                     fontSize: 12.5, fontWeight: FontWeight.w800, color: c)),
             Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 9, color: theme.secondaryText)),
+                style:
+                    GoogleFonts.inter(fontSize: 9, color: theme.secondaryText)),
           ],
         );
 
@@ -197,8 +200,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
             mini('ADVANCE', advance,
                 advance > 0 ? theme.error : theme.secondaryText),
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right,
-                size: 18, color: theme.secondaryText),
+            Icon(Icons.chevron_right, size: 18, color: theme.secondaryText),
           ],
         ),
       ),
@@ -209,12 +211,12 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     final monthLabel = DateFormat('MMMM yyyy').format(_model.month);
-    final totalEarned = _model.staffList.fold(
-        0.0, (s, st) => s + _sumOS(_monthEntriesFor(st.id!)));
-    final totalPaid = _model.staffList.fold(
-        0.0, (s, st) => s + _sumPay(_monthPaymentsFor(st.id!)));
-    final totalAdvance = _model.staffList.fold(
-        0.0, (s, st) => s + _sumAdv(_pendingAdvancesFor(st.id!)));
+    final totalEarned = _model.staffList
+        .fold(0.0, (s, st) => s + _sumOS(_monthEntriesFor(st.id!)));
+    final totalPaid = _model.staffList
+        .fold(0.0, (s, st) => s + _sumPay(_monthPaymentsFor(st.id!)));
+    final totalAdvance = _model.staffList
+        .fold(0.0, (s, st) => s + _sumAdv(_pendingAdvancesFor(st.id!)));
 
     return GestureDetector(
       onTap: () {
@@ -230,10 +232,10 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
           title: Text(
             'Salary & Staff',
             style: theme.titleLarge.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                ),
+              font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+              fontSize: 22.0,
+              letterSpacing: 0.0,
+            ),
           ),
           centerTitle: true,
           elevation: 0.0,
@@ -258,15 +260,13 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                         child: Column(
                           children: [
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 IconButton(
                                   icon: Icon(Icons.chevron_left,
                                       color: theme.primary),
                                   onPressed: () => safeSetState(() =>
-                                      _model.month = DateTime(
-                                          _model.month.year,
+                                      _model.month = DateTime(_model.month.year,
                                           _model.month.month - 1)),
                                 ),
                                 Text(monthLabel,
@@ -278,26 +278,22 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
                                   icon: Icon(Icons.chevron_right,
                                       color: theme.primary),
                                   onPressed: () => safeSetState(() =>
-                                      _model.month = DateTime(
-                                          _model.month.year,
+                                      _model.month = DateTime(_model.month.year,
                                           _model.month.month + 1)),
                                 ),
                               ],
                             ),
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceAround,
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 _totalCol('Earned', totalEarned,
                                     const Color(0xFF2E7D32)),
                                 _totalCol('Paid Out', totalPaid,
                                     const Color(0xFF1565C0)),
-                                _totalCol(
-                                    'To Pay',
-                                    totalEarned - totalPaid,
+                                _totalCol('To Pay', totalEarned - totalPaid,
                                     theme.primary),
-                                _totalCol('Advances', totalAdvance,
-                                    theme.error),
+                                _totalCol(
+                                    'Advances', totalAdvance, theme.error),
                               ],
                             ),
                             const SizedBox(height: 6),
@@ -330,8 +326,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget> {
             style: GoogleFonts.interTight(
                 fontSize: 14.5, fontWeight: FontWeight.w800, color: c)),
         Text(label,
-            style:
-                GoogleFonts.inter(fontSize: 10, color: theme.secondaryText)),
+            style: GoogleFonts.inter(fontSize: 10, color: theme.secondaryText)),
       ],
     );
   }

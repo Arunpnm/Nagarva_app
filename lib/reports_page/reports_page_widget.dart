@@ -31,8 +31,13 @@ class ReportsPageWidget extends StatefulWidget {
   State<ReportsPageWidget> createState() => _ReportsPageWidgetState();
 }
 
-class _ReportsPageWidgetState extends State<ReportsPageWidget> {
+class _ReportsPageWidgetState extends State<ReportsPageWidget>
+    with RefreshOnPopMixin<ReportsPageWidget> {
   late ReportsPageModel _model;
+
+  // Refresh-after-write fix (parity brief Part 1).
+  @override
+  void onPageRefresh() => _loadData();
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -251,8 +256,8 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
                               hintText: 'Search customer or city…',
                               prefixIcon: const Icon(Icons.search),
                               filled: true,
-                              fillColor:
-                                  FlutterFlowTheme.of(context).secondaryBackground,
+                              fillColor: FlutterFlowTheme.of(context)
+                                  .secondaryBackground,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide: BorderSide.none,
@@ -268,7 +273,8 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
                           Text('Branch-wise Revenue',
                               style: FlutterFlowTheme.of(context).titleMedium),
                           const SizedBox(height: 8),
-                          ..._model.branchRevenue.map((b) => _branchCard(context, b)),
+                          ..._model.branchRevenue
+                              .map((b) => _branchCard(context, b)),
                           const SizedBox(height: 20),
                           Text('Monthly Volume (Last 6 Months)',
                               style: FlutterFlowTheme.of(context).titleMedium),
@@ -447,9 +453,8 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(c.customer,
-                    style: FlutterFlowTheme.of(context)
-                        .bodyMedium
-                        .override(font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+                    style: FlutterFlowTheme.of(context).bodyMedium.override(
+                        font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
                 Text(
                     '${c.orderCount} order${c.orderCount == 1 ? '' : 's'} · last ${_dayFormat.format(c.lastDate)}',
                     style: FlutterFlowTheme.of(context).bodySmall.override(
@@ -467,7 +472,8 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget> {
   }
 
   List<Widget> _serviceMixRows(BuildContext context) {
-    final total = _model.filteredOrderCount == 0 ? 1 : _model.filteredOrderCount;
+    final total =
+        _model.filteredOrderCount == 0 ? 1 : _model.filteredOrderCount;
     return _model.serviceMix.map((s) {
       final pct = (s.count / total * 100);
       return Container(

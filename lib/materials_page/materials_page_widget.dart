@@ -24,7 +24,8 @@ class MaterialsPageWidget extends StatefulWidget {
   State<MaterialsPageWidget> createState() => _MaterialsPageWidgetState();
 }
 
-class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
+class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
+    with RefreshOnPopMixin<MaterialsPageWidget> {
   late MaterialsPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -34,15 +35,22 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
     super.initState();
     _model = createModel(context, () => MaterialsPageModel());
 
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      _model.materialsOut = await MaterialsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).order('name'),
-      );
-      _model.materialsList = (_model.materialsOut ?? []).toList().cast<MaterialsRow>();
-      safeSetState(() {});
-    });
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadMaterials());
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  // Refresh-after-write fix (parity brief Part 1).
+  @override
+  void onPageRefresh() => _loadMaterials();
+
+  Future<void> _loadMaterials() async {
+    _model.materialsOut = await MaterialsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).order('name'),
+    );
+    _model.materialsList =
+        (_model.materialsOut ?? []).toList().cast<MaterialsRow>();
+    safeSetState(() {});
   }
 
   @override
@@ -149,7 +157,8 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                 borderRadius: BorderRadius.circular(10.0),
               ),
               child: Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(10.0, 4.0, 10.0, 4.0),
+                padding:
+                    const EdgeInsetsDirectional.fromSTEB(10.0, 4.0, 10.0, 4.0),
                 child: Text(
                   qtyLabel,
                   style: FlutterFlowTheme.of(context).labelMedium.override(
@@ -216,8 +225,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                     Row(
                       mainAxisSize: MainAxisSize.max,
                       children: [
-                        _statCard(
-                            context, 'Total SKUs', '${materials.length}'),
+                        _statCard(context, 'Total SKUs', '${materials.length}'),
                         _statCard(context, 'Low Stock', '$lowStockCount',
                             danger: lowStockCount > 0),
                       ].divide(const SizedBox(width: 12.0)),
@@ -235,9 +243,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                         _model.materialsOut == null
                             ? 'Loading…'
                             : 'No materials tracked yet for this org.',
-                        style: FlutterFlowTheme.of(context)
-                            .bodySmall
-                            .override(
+                        style: FlutterFlowTheme.of(context).bodySmall.override(
                               font: GoogleFonts.inter(),
                               color: FlutterFlowTheme.of(context).secondaryText,
                             ),
@@ -245,8 +251,8 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                     else
                       ...materials.map((m) => _materialRow(context, m)),
                     Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
                         onPressed: () {
                           // Add/restock form is still Phase 2 remainder —

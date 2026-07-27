@@ -35,7 +35,8 @@ class UsersPageWidget extends StatefulWidget {
   State<UsersPageWidget> createState() => _UsersPageWidgetState();
 }
 
-class _UsersPageWidgetState extends State<UsersPageWidget> {
+class _UsersPageWidgetState extends State<UsersPageWidget>
+    with RefreshOnPopMixin<UsersPageWidget> {
   late UsersPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -49,6 +50,11 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
+
+  // Refresh-after-write fix (parity brief Part 1): re-run when
+  // StaffFormSheet (add/edit) is popped back to this list.
+  @override
+  void onPageRefresh() => _reload();
 
   Future<void> _reload() async {
     _model.staffOut = await StaffTable().queryRows(
@@ -112,8 +118,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
           borderRadius: BorderRadius.circular(20.0),
         ),
         child: Padding(
-          padding:
-              const EdgeInsetsDirectional.fromSTEB(16.0, 10.0, 16.0, 10.0),
+          padding: const EdgeInsetsDirectional.fromSTEB(16.0, 10.0, 16.0, 10.0),
           child: Text(
             label,
             textAlign: TextAlign.center,
@@ -184,27 +189,27 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                             s.name,
                             overflow: TextOverflow.ellipsis,
                             style: theme.titleSmall.override(
-                                  font: GoogleFonts.interTight(),
-                                  color: theme.primaryText,
-                                  letterSpacing: 0.0,
-                                ),
+                              font: GoogleFonts.interTight(),
+                              color: theme.primaryText,
+                              letterSpacing: 0.0,
+                            ),
                           ),
                           Text(
                             _cap((s.role ?? '—').toLowerCase()),
                             style: theme.bodySmall.override(
-                                  font: GoogleFonts.inter(),
-                                  color: theme.primary,
-                                  letterSpacing: 0.0,
-                                ),
+                              font: GoogleFonts.inter(),
+                              color: theme.primary,
+                              letterSpacing: 0.0,
+                            ),
                           ),
                           Text(
                             detailBits.isEmpty ? '—' : detailBits.join(' · '),
                             overflow: TextOverflow.ellipsis,
                             style: theme.bodySmall.override(
-                                  font: GoogleFonts.inter(),
-                                  color: theme.secondaryText,
-                                  letterSpacing: 0.0,
-                                ),
+                              font: GoogleFonts.inter(),
+                              color: theme.secondaryText,
+                              letterSpacing: 0.0,
+                            ),
                           ),
                         ].divide(const SizedBox(height: 3.0)),
                       ),
@@ -226,10 +231,10 @@ class _UsersPageWidgetState extends State<UsersPageWidget> {
                       child: Text(
                         active ? 'Active' : 'Inactive',
                         style: theme.labelSmall.override(
-                              font: GoogleFonts.inter(),
-                              color: active ? theme.primary : theme.error,
-                              letterSpacing: 0.0,
-                            ),
+                          font: GoogleFonts.inter(),
+                          color: active ? theme.primary : theme.error,
+                          letterSpacing: 0.0,
+                        ),
                       ),
                     ),
                   ),

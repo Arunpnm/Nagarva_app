@@ -28,8 +28,13 @@ class PLReportPageWidget extends StatefulWidget {
   State<PLReportPageWidget> createState() => _PLReportPageWidgetState();
 }
 
-class _PLReportPageWidgetState extends State<PLReportPageWidget> {
+class _PLReportPageWidgetState extends State<PLReportPageWidget>
+    with RefreshOnPopMixin<PLReportPageWidget> {
   late PLReportPageModel _model;
+
+  // Refresh-after-write fix (parity brief Part 1).
+  @override
+  void onPageRefresh() => _loadData();
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -166,20 +171,26 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
           .where((e) => e.orderId != null && branchIds.contains(e.orderId))
           .fold(0.0, (s, e) => s + (e.amount ?? 0));
       return BranchPL(
-          branch: branch, revenue: rev, labour: lab, expenses: exp,
+          branch: branch,
+          revenue: rev,
+          labour: lab,
+          expenses: exp,
           profit: rev - lab - exp);
     }).toList();
 
-    final fl =
-        _allLeads.where((l) => _inPeriod(l.createdAt ?? DateTime.now(), _model.period))
-            .toList();
-    _model.leadSources = kPLReportSources.map((src) {
-      final leadsForSrc = fl.where((l) => l.source == src).toList();
-      final converted =
-          leadsForSrc.where((l) => l.status == 'confirmed').length;
-      return LeadSourceStat(
-          source: src, total: leadsForSrc.length, converted: converted);
-    }).where((s) => s.total > 0).toList()
+    final fl = _allLeads
+        .where((l) => _inPeriod(l.createdAt ?? DateTime.now(), _model.period))
+        .toList();
+    _model.leadSources = kPLReportSources
+        .map((src) {
+          final leadsForSrc = fl.where((l) => l.source == src).toList();
+          final converted =
+              leadsForSrc.where((l) => l.status == 'confirmed').length;
+          return LeadSourceStat(
+              source: src, total: leadsForSrc.length, converted: converted);
+        })
+        .where((s) => s.total > 0)
+        .toList()
       ..sort((a, b) => b.total.compareTo(a.total));
   }
 
@@ -221,7 +232,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
-                        child: Text('Could not load report:\n${_model.loadError}',
+                        child: Text(
+                            'Could not load report:\n${_model.loadError}',
                             textAlign: TextAlign.center),
                       ),
                     )
@@ -235,8 +247,11 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                           Row(
                             children: [
                               Expanded(
-                                  child: _statCard(context, Icons.trending_up,
-                                      'Revenue', _model.revenue,
+                                  child: _statCard(
+                                      context,
+                                      Icons.trending_up,
+                                      'Revenue',
+                                      _model.revenue,
                                       FlutterFlowTheme.of(context).primary)),
                               const SizedBox(width: 12),
                               Expanded(
@@ -261,13 +276,11 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                                       'Net Profit',
                                       _model.netProfit,
                                       _model.netProfit >= 0
-                                          ? FlutterFlowTheme.of(context)
-                                              .primary
+                                          ? FlutterFlowTheme.of(context).primary
                                           : FlutterFlowTheme.of(context)
                                               .error)),
                               const SizedBox(width: 12),
-                              Expanded(
-                                  child: _marginCard(context)),
+                              Expanded(child: _marginCard(context)),
                             ],
                           ),
                           const SizedBox(height: 20),
@@ -332,9 +345,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
     );
   }
 
-  Widget _statCard(
-      BuildContext context, IconData icon, String label, double value,
-      Color color) {
+  Widget _statCard(BuildContext context, IconData icon, String label,
+      double value, Color color) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -374,8 +386,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.percent, color: FlutterFlowTheme.of(context).primary,
-                size: 22.0),
+            Icon(Icons.percent,
+                color: FlutterFlowTheme.of(context).primary, size: 22.0),
             const SizedBox(height: 4),
             Text('${_model.margin.toStringAsFixed(1)}%',
                 style: FlutterFlowTheme.of(context).headlineSmall.override(
@@ -399,7 +411,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
             .clamp(1.0, double.infinity)
             .toDouble();
     return _model.branchPL.map((b) {
-      final double fraction = (b.revenue / maxRevenue).clamp(0.0, 1.0).toDouble();
+      final double fraction =
+          (b.revenue / maxRevenue).clamp(0.0, 1.0).toDouble();
       return Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
@@ -414,10 +427,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(b.branch,
-                    style: FlutterFlowTheme.of(context)
-                        .bodyMedium
-                        .override(
-                            font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+                    style: FlutterFlowTheme.of(context).bodyMedium.override(
+                        font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
                 Text(
                   '${_currency.format(b.profit.abs())} ${b.profit >= 0 ? 'profit' : 'loss'} · ${b.margin.toStringAsFixed(0)}%',
                   style: FlutterFlowTheme.of(context).bodySmall.override(
@@ -511,8 +522,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget> {
                       ? FlutterFlowTheme.of(context).titleSmall
                       : FlutterFlowTheme.of(context).bodyMedium)
                   .override(
-                      font: GoogleFonts.interTight(
-                          fontWeight: FontWeight.w600))),
+                      font:
+                          GoogleFonts.interTight(fontWeight: FontWeight.w600))),
         ],
       ),
     );

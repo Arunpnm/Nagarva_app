@@ -1,8 +1,67 @@
 # NAGARVA — Project Status & Roadmap
 
-> Last updated: 27 Jul 2026 · Owner: Arunkumar (Arponia Ventures)
+> Last updated: 28 Jul 2026 · Owner: Arunkumar (Arponia Ventures)
 > Update this file at the end of every working session.
 > Legend: ✅ done · 🔨 in progress · ⬜ pending · 🅿️ parked
+
+---
+
+## 🔨 27-28 Jul 2026 — Parity brief (nagarva_parity_brief.md), worked in priority order 1,5,2,4,3,6
+
+- **✅ Part 1 — refresh-after-write bug — FIXED, live-verified in Chrome.**
+  Root cause: `NavBarPage` (main.dart) swaps a single `body` slot between tab
+  widgets, so each tab's State is created once and reused for as long as
+  that tab stays selected — every list/dashboard page fetched its data once
+  in `initState` with no mechanism to know a route pushed on top of it
+  (RecordPaymentPage, NewOrderPage, a staff sheet, ...) had written new
+  data. Switching tabs "fixed" it only because that path *does*
+  dispose/recreate the State — which is why it looked like a per-screen
+  quirk instead of one systemic gap.
+  Fix: `lib/flutter_flow/nav/nav.dart` now has a single app-wide
+  `nagarvaRouteObserver` (`RouteObserver<ModalRoute<dynamic>>` — typed on
+  `ModalRoute`, not `PageRoute`, because several write surfaces are
+  `showModalBottomSheet`/`showDialog` routes, which are `PopupRoute`s;
+  `RouteObserver.didPop` only fires when both the popped route and the
+  route below it match the observer's generic type) registered via
+  `observers:` on the `GoRouter`. A new `RefreshOnPopMixin` wraps the
+  subscribe/unsubscribe boilerplate — a page just implements
+  `onPageRefresh()` calling its existing load method. Applied to: HomePage,
+  OrdersPage, LeadsPage, PaymentsPage, ExpensePage, SalaryPage,
+  OperationsPage, FleetPage, UsersPage, MaterialsPage, CalendarPage,
+  AccountsPage, PLReportPage, ReportsPage, LeadDetailPage (its
+  `_loadLinked()` survey/quotation refresh). `flutter analyze` held at the
+  152 baseline throughout (a batch of `unnecessary_import` lints appeared
+  and were cleaned up — most pages already get `nav.dart` transitively via
+  `flutter_flow_util.dart`).
+  **Real crash found and fixed while live-testing this**: fully paying off
+  an order via RecordPaymentPage (`payment_status` → `'paid'`) crashed with
+  `FlutterError: "There should be exactly one item with [DropdownButton]'s
+  value"` — the order drops out of `_model.unpaidOrders` on reload but
+  `_model.selected` (the dropdown's `value`) was never cleared, and only
+  ever got reassigned when reached via `?orderId=` in the first place (the
+  generic Quick-Entry entry point never reassigned it at all). Fixed in
+  `record_payment_page_widget.dart`'s `_load()`: re-resolves the current
+  selection by id against the fresh list every time (whether it came from
+  `widget.orderId` or a prior manual dropdown pick), falling back to no
+  selection when the order paid off completely instead of crashing.
+  **Live-verified in Chrome** (`flutter run -d chrome`, logged in as APC
+  owner): recorded a partial payment on Rohit Malhotra's order from
+  PaymentsPage → list totals updated with no navigation; recorded a full
+  payoff on two different orders via HomePage's Quick Entry → Record
+  Payment (previously the exact crash repro) → no crash, dropdown correctly
+  reset to "Select order", and HomePage's Outstanding tile updated
+  (₹1.1L → ₹95.5K) immediately on returning to the dashboard, no tab
+  switch needed.
+  **Known residual gap, not fixed this pass (scoped out, see brief Part 1
+  vs. detail pages):** OrderDetailPage and LeadDetailPage display their own
+  order/lead fields purely from nav-query params (`widget.orderCustomer`
+  etc.), never re-querying the row itself — a pre-existing limitation, not
+  introduced by this pass. Editing an order/lead and popping back to its
+  own detail page still shows the stale nav-param snapshot (though the
+  *list* pages you'd navigate from now correctly refresh). Fixing this
+  needs converting ~19-32 `widget.xxx` reads per page to a fresh fetch by
+  id, which is a contained but real follow-up, not attempted blind in the
+  same pass as the systemic fix.
 
 ---
 

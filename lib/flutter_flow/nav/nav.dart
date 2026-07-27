@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-
 import '/main.dart';
 import '/app_session.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -42,11 +41,80 @@ const _kPublicRoutePrefixes = ['/login', '/signup', '/survey', '/quote'];
 bool _isPublicRoute(String path) =>
     path == '/' || _kPublicRoutePrefixes.any((p) => path.startsWith(p));
 
+/// Refresh-after-write fix (parity brief Part 1, 27 Jul 2026).
+///
+/// Root cause: NavBarPage swaps its single `body` slot between tab widgets
+/// (Home/Orders/Leads/... — see main.dart's `_tabs`/`_currentPage`), so a
+/// tab's State is created once and reused for as long as that tab stays
+/// selected. Every list/dashboard page fetched its data once in `initState`
+/// with no way to know a route pushed on top of it (RecordPaymentPage,
+/// NewOrderPage, a staff-advance sheet, ...) had written new data — popping
+/// back just revealed the same State object with its stale in-memory list.
+/// Switching tabs "fixed" it only because that path *does* dispose/recreate
+/// the State, which is what made this look like a per-screen quirk instead
+/// of one systemic gap.
+///
+/// Fix: a single RouteObserver on the root Navigator, subscribed to by every
+/// affected page via the RefreshOnPopMixin below. `didPopNext()` fires
+/// exactly when a route pushed on top of a subscribed page is popped, so
+/// each page can re-run its existing load method without needing every push
+/// call site to be awaited/chained individually.
+///
+/// Typed on [ModalRoute] rather than [PageRoute]: several of the write
+/// surfaces this needs to catch (StaffLedgerSheet's Pay/Advance/Settle,
+/// staff_form_sheet, plan_edit_sheet, ...) are `showModalBottomSheet`/
+/// `showDialog` routes, which are [PopupRoute]s, not [PageRoute]s — both
+/// extend [ModalRoute], which is the common type that covers full pushed
+/// pages, dialogs, and bottom sheets alike. `RouteObserver.didPop` only
+/// fires when both the popped route and the route below it match the
+/// observer's generic type, so `PageRoute` would silently miss every
+/// sheet/dialog dismissal.
+final RouteObserver<ModalRoute<dynamic>> nagarvaRouteObserver =
+    RouteObserver<ModalRoute<dynamic>>();
+
+/// Mix into a page's State to re-fetch data whenever a route pushed on top
+/// of it is popped. Implement [onPageRefresh] to call the page's existing
+/// load method (e.g. `_loadData()`); everything else is handled here.
+mixin RefreshOnPopMixin<T extends StatefulWidget> on State<T>
+    implements RouteAware {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      nagarvaRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    nagarvaRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPush() {}
+
+  @override
+  void didPop() {}
+
+  @override
+  void didPushNext() {}
+
+  @override
+  void didPopNext() => onPageRefresh();
+
+  /// Called when this page becomes visible again after a route pushed on
+  /// top of it was popped — re-run the page's data load here.
+  void onPageRefresh();
+}
+
 GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       initialLocation: '/',
       debugLogDiagnostics: true,
       refreshListenable: appStateNotifier,
       navigatorKey: appNavigatorKey,
+      observers: [nagarvaRouteObserver],
       errorBuilder: (context, state) => const LoginPageWidget(),
       redirect: (context, state) {
         final path = state.uri.path;
@@ -539,7 +607,8 @@ class TransitionInfo {
   final Duration duration;
   final Alignment? alignment;
 
-  static TransitionInfo appDefault() => const TransitionInfo(hasTransition: false);
+  static TransitionInfo appDefault() =>
+      const TransitionInfo(hasTransition: false);
 }
 
 class RootPageContext {

@@ -22,7 +22,8 @@ class CalendarPageWidget extends StatefulWidget {
   State<CalendarPageWidget> createState() => _CalendarPageWidgetState();
 }
 
-class _CalendarPageWidgetState extends State<CalendarPageWidget> {
+class _CalendarPageWidgetState extends State<CalendarPageWidget>
+    with RefreshOnPopMixin<CalendarPageWidget> {
   late CalendarPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -33,24 +34,30 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
     _model = createModel(context, () => CalendarPageModel());
 
     // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
-      _model.remindersViewOut = await RemindersViewTable().queryRows(
-        queryFn: (q) => OrgScope.read(q),
-      );
-      _model.remindersViewList =
-          (_model.remindersViewOut ?? []).toList().cast<RemindersViewRow>();
-      safeSetState(() {});
-      // Orders double as calendar events on their move_date (reference-app
-      // behaviour): dots on the grid, details in the day panel on tap.
-      final orders = await OrdersTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).order('move_date'),
-      );
-      _model.ordersList = orders.toList().cast<OrdersRow>();
-      safeSetState(() {});
-    });
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadCalendarData());
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  // Refresh-after-write fix (parity brief Part 1).
+  @override
+  void onPageRefresh() => _loadCalendarData();
+
+  Future<void> _loadCalendarData() async {
+    // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
+    _model.remindersViewOut = await RemindersViewTable().queryRows(
+      queryFn: (q) => OrgScope.read(q),
+    );
+    _model.remindersViewList =
+        (_model.remindersViewOut ?? []).toList().cast<RemindersViewRow>();
+    safeSetState(() {});
+    // Orders double as calendar events on their move_date (reference-app
+    // behaviour): dots on the grid, details in the day panel on tap.
+    final orders = await OrdersTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).order('move_date'),
+    );
+    _model.ordersList = orders.toList().cast<OrdersRow>();
+    safeSetState(() {});
   }
 
   @override
@@ -59,7 +66,6 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
 
     super.dispose();
   }
-
 
   // ---- Month grid helpers -------------------------------------------------
 
@@ -103,12 +109,10 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
     return out;
   }
 
-  List<OrdersRow> _ordersOn(DateTime day) => _model.ordersList
-      .where((o) {
+  List<OrdersRow> _ordersOn(DateTime day) => _model.ordersList.where((o) {
         final d = _safeMoveDate(o);
         return d != null && _sameDay(d, day);
-      })
-      .toList();
+      }).toList();
 
   Widget _monthGrid(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
@@ -154,8 +158,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                     '$day',
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      fontWeight:
-                          isToday || isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isToday || isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: isSelected
                           ? theme.primaryBackground
                           : theme.primaryText,
@@ -171,8 +176,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         Container(
                           width: 5,
                           height: 5,
-                          margin:
-                              const EdgeInsets.symmetric(horizontal: 1),
+                          margin: const EdgeInsets.symmetric(horizontal: 1),
                           decoration: BoxDecoration(
                             color: theme.primary,
                             shape: BoxShape.circle,
@@ -182,8 +186,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         Container(
                           width: 5,
                           height: 5,
-                          margin:
-                              const EdgeInsets.symmetric(horizontal: 1),
+                          margin: const EdgeInsets.symmetric(horizontal: 1),
                           decoration: const BoxDecoration(
                             color: Color(0xFFE6A400),
                             shape: BoxShape.circle,
@@ -231,8 +234,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                 IconButton(
                   icon: Icon(Icons.chevron_left, color: theme.primary),
                   onPressed: () => safeSetState(() {
-                    _model.visibleMonth =
-                        DateTime(month.year, month.month - 1);
+                    _model.visibleMonth = DateTime(month.year, month.month - 1);
                     _model.selectedDay = null;
                   }),
                 ),
@@ -247,8 +249,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                 IconButton(
                   icon: Icon(Icons.chevron_right, color: theme.primary),
                   onPressed: () => safeSetState(() {
-                    _model.visibleMonth =
-                        DateTime(month.year, month.month + 1);
+                    _model.visibleMonth = DateTime(month.year, month.month + 1);
                     _model.selectedDay = null;
                   }),
                 ),
@@ -257,7 +258,15 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
             const SizedBox(height: 6),
             Row(
               children: [
-                for (final d in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
+                for (final d in [
+                  'Mon',
+                  'Tue',
+                  'Wed',
+                  'Thu',
+                  'Fri',
+                  'Sat',
+                  'Sun'
+                ])
                   Expanded(
                     child: Text(
                       d,
@@ -278,7 +287,6 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
       ),
     );
   }
-
 
   Widget _dayEventsCard(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
@@ -320,8 +328,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
             ),
             Text(
               '${orders.length} order(s)',
-              style: GoogleFonts.inter(
-                  fontSize: 11.5, color: theme.secondaryText),
+              style:
+                  GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
             ),
             const SizedBox(height: 10),
             if (orders.isEmpty)
@@ -371,8 +379,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
                                 child: Text(
@@ -410,8 +417,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                               '${o.fromCity ?? ''} → ${o.toCity ?? ''}',
                             ].join('  ·  '),
                             style: GoogleFonts.inter(
-                                fontSize: 11.5,
-                                color: theme.secondaryText),
+                                fontSize: 11.5, color: theme.secondaryText),
                           ),
                           if (o.amount != null) ...[
                             const SizedBox(height: 3),
@@ -620,7 +626,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                             children: [
                                               Text(
                                                 remindersViewListItemItem
-                                                    .title ?? '-',
+                                                        .title ??
+                                                    '-',
                                                 style:
                                                     FlutterFlowTheme.of(context)
                                                         .titleSmall
@@ -656,7 +663,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                               ),
                                               Text(
                                                 remindersViewListItemItem
-                                                    .description ?? '-',
+                                                        .description ??
+                                                    '-',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall
@@ -699,7 +707,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                 children: [
                                                   Text(
                                                     remindersViewListItemItem
-                                                        .dueDate ?? '-',
+                                                            .dueDate ??
+                                                        '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .labelSmall
@@ -745,14 +754,12 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                     child: Padding(
                                                       padding:
                                                           const EdgeInsetsDirectional
-                                                              .fromSTEB(
-                                                                  6.0,
-                                                                  2.0,
-                                                                  6.0,
-                                                                  2.0),
+                                                              .fromSTEB(6.0,
+                                                              2.0, 6.0, 2.0),
                                                       child: Text(
                                                         remindersViewListItemItem
-                                                            .reminderType ?? '-',
+                                                                .reminderType ??
+                                                            '-',
                                                         style:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -787,7 +794,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                       ),
                                                     ),
                                                   ),
-                                                ].divide(const SizedBox(width: 8.0)),
+                                                ].divide(
+                                                    const SizedBox(width: 8.0)),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -805,7 +813,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                   ),
                                                   Text(
                                                     remindersViewListItemItem
-                                                        .leadCustomer ?? '-',
+                                                            .leadCustomer ??
+                                                        '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .labelSmall
@@ -841,7 +850,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                   ),
                                                   Text(
                                                     remindersViewListItemItem
-                                                        .orderCustomer ?? '-',
+                                                            .orderCustomer ??
+                                                        '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .labelSmall
@@ -875,9 +885,11 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(const SizedBox(width: 4.0)),
+                                                ].divide(
+                                                    const SizedBox(width: 4.0)),
                                               ),
-                                            ].divide(const SizedBox(height: 3.0)),
+                                            ].divide(
+                                                const SizedBox(height: 3.0)),
                                           ),
                                         ),
                                       ].divide(const SizedBox(width: 12.0)),
@@ -891,8 +903,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget> {
                       ].divide(const SizedBox(height: 10.0)),
                     ),
                     Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
                         onPressed: () {
                           print('AddReminderBtn pressed ...');

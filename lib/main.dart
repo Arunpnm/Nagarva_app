@@ -378,7 +378,11 @@ class _NavBarPageState extends State<NavBarPage> {
     (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations'),
     (name: 'PaymentsPage', icon: Icons.payments, label: 'Payments'),
     (name: 'ExpensePage', icon: Icons.receipt_long, label: 'Expenses'),
-    (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts'),
+    (
+      name: 'AccountsPage',
+      icon: Icons.account_balance_wallet,
+      label: 'Accounts'
+    ),
     (name: 'SalaryPage', icon: Icons.badge, label: 'Salary'),
     (name: 'UsersPage', icon: Icons.groups, label: 'Staff'),
     (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet'),
@@ -699,8 +703,7 @@ class _NavBarPageState extends State<NavBarPage> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
@@ -745,8 +748,8 @@ class _NavBarPageState extends State<NavBarPage> {
                               : Icons.chevron_right,
                           color: FlutterFlowTheme.of(context).secondaryText,
                         ),
-                        onPressed: () => safeSetState(
-                            () => _railExpanded = !_railExpanded),
+                        onPressed: () =>
+                            safeSetState(() => _railExpanded = !_railExpanded),
                       ),
                     ],
                   ),

@@ -33,9 +33,15 @@ class OperationsPageWidget extends StatefulWidget {
   State<OperationsPageWidget> createState() => _OperationsPageWidgetState();
 }
 
-class _OperationsPageWidgetState extends State<OperationsPageWidget> {
+class _OperationsPageWidgetState extends State<OperationsPageWidget>
+    with RefreshOnPopMixin<OperationsPageWidget> {
   late OperationsPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Refresh-after-write fix (parity brief Part 1): re-run the load when a
+  // pushed route (e.g. Order Details after an approve/reopen) is popped.
+  @override
+  void onPageRefresh() => _load();
 
   List<OrdersRow> _active = [];
   List<OrdersRow> _upcoming = [];
@@ -67,8 +73,8 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
   Future<void> _load() async {
     try {
       final results = await Future.wait([
-        OrdersTable().queryRows(
-            queryFn: (q) => OrgScope.read(q).order('move_date')),
+        OrdersTable()
+            .queryRows(queryFn: (q) => OrgScope.read(q).order('move_date')),
         VehicleTripsTable().queryRows(
             queryFn: (q) => OrgScope.read(q).order('trip_date').limit(25)),
       ]);
@@ -76,8 +82,8 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
       _trips = (results[1] as List).cast<VehicleTripsRow>();
       final today = DateTime.now();
       _active = orders
-          .where((o) =>
-              _activeStatuses.contains((o.status ?? '').toLowerCase()))
+          .where(
+              (o) => _activeStatuses.contains((o.status ?? '').toLowerCase()))
           .toList();
       _upcoming = orders
           .where((o) =>
@@ -125,12 +131,10 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
         'orderId': serializeParam(o.id, ParamType.String),
         'orderCustomer': serializeParam(
             hide ? 'Customer (hidden)' : o.customer, ParamType.String),
-        'orderPhone':
-            serializeParam(hide ? null : o.phone, ParamType.String),
+        'orderPhone': serializeParam(hide ? null : o.phone, ParamType.String),
         'orderFromCity': serializeParam(o.fromCity, ParamType.String),
         'orderToCity': serializeParam(o.toCity, ParamType.String),
-        'orderAmount':
-            serializeParam(o.amount?.toString(), ParamType.String),
+        'orderAmount': serializeParam(o.amount?.toString(), ParamType.String),
         'orderStatus': serializeParam(o.status, ParamType.String),
         'orderMoveDate':
             serializeParam(o.moveDateOrNull?.toString(), ParamType.String),
@@ -178,8 +182,8 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                           color: theme.primaryText)),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -199,8 +203,8 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                 'Move: ${dateTimeFormat('d MMM', o.moveDateOrNull)}',
                 if ((o.phone ?? '').isNotEmpty) o.phone!,
               ].join('  ·  '),
-              style: GoogleFonts.inter(
-                  fontSize: 11.5, color: theme.secondaryText),
+              style:
+                  GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
             ),
           ],
         ),
@@ -219,8 +223,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
       ),
       child: Row(
         children: [
-          Icon(Icons.local_shipping,
-              size: 18, color: theme.secondaryText),
+          Icon(Icons.local_shipping, size: 18, color: theme.secondaryText),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -264,10 +267,10 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
           automaticallyImplyLeading: true,
           title: Text('Operations',
               style: theme.titleLarge.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
-                    fontSize: 22.0,
-                    letterSpacing: 0.0,
-                  )),
+                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                fontSize: 22.0,
+                letterSpacing: 0.0,
+              )),
           centerTitle: true,
           elevation: 0.0,
           actions: [
@@ -291,16 +294,14 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                       if (_active.isEmpty)
                         Text('No jobs currently in progress.',
                             style: GoogleFonts.inter(
-                                fontSize: 12.5,
-                                color: theme.secondaryText))
+                                fontSize: 12.5, color: theme.secondaryText))
                       else
                         ..._active.map(_orderCard),
                       _sectionTitle('Upcoming (${_upcoming.length})'),
                       if (_upcoming.isEmpty)
                         Text('No upcoming orders.',
                             style: GoogleFonts.inter(
-                                fontSize: 12.5,
-                                color: theme.secondaryText))
+                                fontSize: 12.5, color: theme.secondaryText))
                       else
                         ..._upcoming.map(_orderCard),
                       _sectionTitle('Vehicle Trip Log (${_trips.length})'),
@@ -334,8 +335,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget> {
                               0.0, 0.0, 0.0, 0.0),
                           color: theme.primary,
                           iconColor: theme.primaryBackground,
-                          textStyle:
-                              TextStyle(color: theme.primaryBackground),
+                          textStyle: TextStyle(color: theme.primaryBackground),
                           borderRadius: BorderRadius.circular(10.0),
                         ),
                       ),

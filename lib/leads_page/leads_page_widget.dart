@@ -21,7 +21,8 @@ class LeadsPageWidget extends StatefulWidget {
   State<LeadsPageWidget> createState() => _LeadsPageWidgetState();
 }
 
-class _LeadsPageWidgetState extends State<LeadsPageWidget> {
+class _LeadsPageWidgetState extends State<LeadsPageWidget>
+    with RefreshOnPopMixin<LeadsPageWidget> {
   late LeadsPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -32,59 +33,67 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
     _model = createModel(context, () => LeadsPageModel());
 
     // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass: every tab below was unscoped. Requires
-      // supabase/phase1_add_org_id.sql to be run first.
-      _model.leadsAllOut = await LeadsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).order('created_at'),
-      );
-      _model.leadsList = (_model.leadsAllOut ?? []).toList().cast<LeadsRow>();
-      safeSetState(() {});
-      _model.allLeadsList = (_model.leadsAllOut ?? []).toList().cast<LeadsRow>();
-      safeSetState(() {});
-      _model.leadsNewOut = await LeadsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).eqOrNull(
-          'status',
-          'new',
-        ),
-      );
-      _model.newLeadsList = (_model.leadsNewOut ?? []).toList().cast<LeadsRow>();
-      safeSetState(() {});
-      _model.leadsContactedOut = await LeadsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).eqOrNull(
-          'status',
-          'contacted',
-        ),
-      );
-      _model.contactedLeadsList =
-          (_model.leadsContactedOut ?? []).toList().cast<LeadsRow>();
-      safeSetState(() {});
-      _model.leadsQualifiedOut = await LeadsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q)
-            .or("status.eq.\"survey_done\", status.eq.\"quoted\""),
-      );
-      _model.qualifiedLeadsList =
-          (_model.leadsQualifiedOut ?? []).toList().cast<LeadsRow>();
-      safeSetState(() {});
-      _model.leadsWonOut = await LeadsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).eqOrNull(
-          'status',
-          'converted',
-        ),
-      );
-      _model.wonLeadsList = (_model.leadsWonOut ?? []).toList().cast<LeadsRow>();
-      safeSetState(() {});
-      _model.leadsLostOut = await LeadsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).eqOrNull(
-          'status',
-          'lost',
-        ),
-      );
-      _model.lostLeadsList = (_model.leadsLostOut ?? []).toList().cast<LeadsRow>();
-      safeSetState(() {});
-    });
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadLeads());
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  // Refresh-after-write fix (parity brief Part 1): re-run on load and every
+  // time a pushed route (New/Edit Lead, Lead Detail) is popped back to.
+  @override
+  void onPageRefresh() => _loadLeads();
+
+  Future<void> _loadLeads() async {
+    // Phase 1 multi-tenancy pass: every tab below was unscoped. Requires
+    // supabase/phase1_add_org_id.sql to be run first.
+    _model.leadsAllOut = await LeadsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).order('created_at'),
+    );
+    _model.leadsList = (_model.leadsAllOut ?? []).toList().cast<LeadsRow>();
+    safeSetState(() {});
+    _model.allLeadsList = (_model.leadsAllOut ?? []).toList().cast<LeadsRow>();
+    safeSetState(() {});
+    _model.leadsNewOut = await LeadsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eqOrNull(
+        'status',
+        'new',
+      ),
+    );
+    _model.newLeadsList = (_model.leadsNewOut ?? []).toList().cast<LeadsRow>();
+    safeSetState(() {});
+    _model.leadsContactedOut = await LeadsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eqOrNull(
+        'status',
+        'contacted',
+      ),
+    );
+    _model.contactedLeadsList =
+        (_model.leadsContactedOut ?? []).toList().cast<LeadsRow>();
+    safeSetState(() {});
+    _model.leadsQualifiedOut = await LeadsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q)
+          .or("status.eq.\"survey_done\", status.eq.\"quoted\""),
+    );
+    _model.qualifiedLeadsList =
+        (_model.leadsQualifiedOut ?? []).toList().cast<LeadsRow>();
+    safeSetState(() {});
+    _model.leadsWonOut = await LeadsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eqOrNull(
+        'status',
+        'converted',
+      ),
+    );
+    _model.wonLeadsList = (_model.leadsWonOut ?? []).toList().cast<LeadsRow>();
+    safeSetState(() {});
+    _model.leadsLostOut = await LeadsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eqOrNull(
+        'status',
+        'lost',
+      ),
+    );
+    _model.lostLeadsList =
+        (_model.leadsLostOut ?? []).toList().cast<LeadsRow>();
+    safeSetState(() {});
   }
 
   @override
@@ -517,8 +526,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        0.0, 10.0, 0.0, 10.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
@@ -588,8 +598,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        0.0, 10.0, 0.0, 10.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
@@ -659,8 +670,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        0.0, 10.0, 0.0, 10.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
@@ -730,8 +742,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        0.0, 10.0, 0.0, 10.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
@@ -801,8 +814,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        0.0, 10.0, 0.0, 10.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
@@ -872,8 +886,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        0.0, 10.0, 0.0, 10.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0.0, 10.0, 0.0, 10.0),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
@@ -1123,7 +1138,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                     CrossAxisAlignment.center,
                                                 children: [
                                                   Text(
-                                                    leadsListItemItem.fromCity ?? '-',
+                                                    leadsListItemItem
+                                                            .fromCity ??
+                                                        '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -1165,7 +1182,8 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                     size: 12.0,
                                                   ),
                                                   Text(
-                                                    leadsListItemItem.toCity ?? '-',
+                                                    leadsListItemItem.toCity ??
+                                                        '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodySmall
@@ -1199,9 +1217,11 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                                   .fontStyle,
                                                         ),
                                                   ),
-                                                ].divide(const SizedBox(width: 4.0)),
+                                                ].divide(
+                                                    const SizedBox(width: 4.0)),
                                               ),
-                                            ].divide(const SizedBox(height: 4.0)),
+                                            ].divide(
+                                                const SizedBox(height: 4.0)),
                                           ),
                                           Container(
                                             decoration: BoxDecoration(
@@ -1212,8 +1232,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget> {
                                                   BorderRadius.circular(12.0),
                                             ),
                                             child: Padding(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(
+                                              padding:
+                                                  const EdgeInsetsDirectional
+                                                      .fromSTEB(
                                                       10.0, 4.0, 10.0, 4.0),
                                               child: Text(
                                                 leadsListItemItem.status ?? '-',

@@ -20,7 +20,8 @@ class FleetPageWidget extends StatefulWidget {
   State<FleetPageWidget> createState() => _FleetPageWidgetState();
 }
 
-class _FleetPageWidgetState extends State<FleetPageWidget> {
+class _FleetPageWidgetState extends State<FleetPageWidget>
+    with RefreshOnPopMixin<FleetPageWidget> {
   late FleetPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -31,17 +32,24 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
     _model = createModel(context, () => FleetPageModel());
 
     // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
-      _model.vehiclesOut = await VehiclesTable().queryRows(
-        queryFn: (q) => OrgScope.read(q),
-      );
-      _model.vehiclesList =
-          (_model.vehiclesOut ?? []).toList().cast<VehiclesRow>();
-      safeSetState(() {});
-    });
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadVehicles());
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  // Refresh-after-write fix (parity brief Part 1): re-run when a pushed
+  // route (vehicle detail/edit sheet) is popped back to this list.
+  @override
+  void onPageRefresh() => _loadVehicles();
+
+  Future<void> _loadVehicles() async {
+    // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
+    _model.vehiclesOut = await VehiclesTable().queryRows(
+      queryFn: (q) => OrgScope.read(q),
+    );
+    _model.vehiclesList =
+        (_model.vehiclesOut ?? []).toList().cast<VehiclesRow>();
+    safeSetState(() {});
   }
 
   @override
@@ -62,9 +70,8 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
     if (days > 30) return const SizedBox.shrink();
     final expired = days < 0;
     final color = expired ? const Color(0xFFC62828) : const Color(0xFFE6A400);
-    final text = expired
-        ? '$label expired ${-days}d ago'
-        : '$label expires in ${days}d';
+    final text =
+        expired ? '$label expired ${-days}d ago' : '$label expires in ${days}d';
     return Container(
       margin: const EdgeInsets.only(top: 6, right: 6),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -512,11 +519,13 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                                     BorderRadius.circular(12.0),
                                               ),
                                               child: Padding(
-                                                padding: const EdgeInsetsDirectional
-                                                    .fromSTEB(
+                                                padding:
+                                                    const EdgeInsetsDirectional
+                                                        .fromSTEB(
                                                         10.0, 4.0, 10.0, 4.0),
                                                 child: Text(
-                                                  vehiclesListItemItem.status ?? '-',
+                                                  vehiclesListItemItem.status ??
+                                                      '-',
                                                   style: FlutterFlowTheme.of(
                                                           context)
                                                       .labelSmall
@@ -555,7 +564,8 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                           ],
                                         ),
                                         Text(
-                                          vehiclesListItemItem.vehicleType ?? '-',
+                                          vehiclesListItemItem.vehicleType ??
+                                              '-',
                                           style: FlutterFlowTheme.of(context)
                                               .bodyMedium
                                               .override(
@@ -593,7 +603,8 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                               CrossAxisAlignment.center,
                                           children: [
                                             Text(
-                                              vehiclesListItemItem.driverName ?? '-',
+                                              vehiclesListItemItem.driverName ??
+                                                  '-',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -727,8 +738,9 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        10.0, 4.0, 10.0, 4.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
                                         '4y3ru7fx' /* Active */,
@@ -909,8 +921,9 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        10.0, 4.0, 10.0, 4.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
                                         '8ruxjpwt' /* Active */,
@@ -1091,8 +1104,9 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        10.0, 4.0, 10.0, 4.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
                                         '0iqxfjkn' /* In Service */,
@@ -1273,8 +1287,9 @@ class _FleetPageWidgetState extends State<FleetPageWidget> {
                                     borderRadius: BorderRadius.circular(12.0),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        10.0, 4.0, 10.0, 4.0),
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            10.0, 4.0, 10.0, 4.0),
                                     child: Text(
                                       FFLocalizations.of(context).getText(
                                         'r70u0y2w' /* Idle */,

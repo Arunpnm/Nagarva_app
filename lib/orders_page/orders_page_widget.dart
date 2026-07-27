@@ -22,7 +22,8 @@ class OrdersPageWidget extends StatefulWidget {
   State<OrdersPageWidget> createState() => _OrdersPageWidgetState();
 }
 
-class _OrdersPageWidgetState extends State<OrdersPageWidget> {
+class _OrdersPageWidgetState extends State<OrdersPageWidget>
+    with RefreshOnPopMixin<OrdersPageWidget> {
   late OrdersPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -33,22 +34,29 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
     _model = createModel(context, () => OrdersPageModel());
 
     // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass: every tab below was unscoped and would
-      // list orders across all orgs. Requires supabase/phase1_add_org_id.sql
-      // to be run first (see that file's header).
-      _model.allOut = await OrdersTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).order('created_at'),
-      );
-      _model.ordersList = (_model.allOut ?? []).toList().cast<OrdersRow>();
-      safeSetState(() {});
-      // The five per-status queries that used to follow (pending/confirmed/
-      // transit/done/cancelled) fed the four duplicated chip blocks that
-      // were removed — filtering is client-side on ordersList now, so one
-      // query replaces six.
-    });
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadOrders());
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  // Refresh-after-write fix (parity brief Part 1): re-run on load and every
+  // time a pushed route (New/Edit Order, Order Detail) is popped back to.
+  @override
+  void onPageRefresh() => _loadOrders();
+
+  Future<void> _loadOrders() async {
+    // Phase 1 multi-tenancy pass: every tab below was unscoped and would
+    // list orders across all orgs. Requires supabase/phase1_add_org_id.sql
+    // to be run first (see that file's header).
+    _model.allOut = await OrdersTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).order('created_at'),
+    );
+    _model.ordersList = (_model.allOut ?? []).toList().cast<OrdersRow>();
+    safeSetState(() {});
+    // The five per-status queries that used to follow (pending/confirmed/
+    // transit/done/cancelled) fed the four duplicated chip blocks that
+    // were removed — filtering is client-side on ordersList now, so one
+    // query replaces six.
   }
 
   @override
@@ -58,14 +66,15 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
     super.dispose();
   }
 
-
   /// Privacy: supervisors must not see customer identity on completed
   /// orders (post-job contact / lead-poaching prevention). Owner/vendor
   /// sessions are unaffected.
   bool _hideCustomerFor(OrdersRow o) {
     if (!AppSession.instance.isSupervisorSession) return false;
     final st = (o.status ?? '').toLowerCase();
-    return st == 'delivered' || st == 'done' || st == 'completed' ||
+    return st == 'delivered' ||
+        st == 'done' ||
+        st == 'completed' ||
         st == 'closed';
   }
 
@@ -98,12 +107,10 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
               label,
               textAlign: TextAlign.center,
               style: theme.labelMedium.override(
-                    font: GoogleFonts.inter(),
-                    color: selected
-                        ? theme.primaryBackground
-                        : theme.primaryText,
-                    letterSpacing: 0.0,
-                  ),
+                font: GoogleFonts.inter(),
+                color: selected ? theme.primaryBackground : theme.primaryText,
+                letterSpacing: 0.0,
+              ),
             ),
           ),
         ),
@@ -414,11 +421,13 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                           12.0),
                                                 ),
                                                 child: Padding(
-                                                  padding: const EdgeInsetsDirectional
-                                                      .fromSTEB(
+                                                  padding:
+                                                      const EdgeInsetsDirectional
+                                                          .fromSTEB(
                                                           10.0, 4.0, 10.0, 4.0),
                                                   child: Text(
-                                                    ordersListItemItem.status ?? '-',
+                                                    ordersListItemItem.status ??
+                                                        '-',
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .labelSmall
@@ -471,7 +480,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                 size: 14.0,
                                               ),
                                               Text(
-                                                ordersListItemItem.fromCity ?? '-',
+                                                ordersListItemItem.fromCity ??
+                                                    '-',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall
@@ -513,7 +523,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                 size: 14.0,
                                               ),
                                               Text(
-                                                ordersListItemItem.toCity ?? '-',
+                                                ordersListItemItem.toCity ??
+                                                    '-',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall
@@ -547,7 +558,8 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget> {
                                                               .fontStyle,
                                                     ),
                                               ),
-                                            ].divide(const SizedBox(width: 4.0)),
+                                            ].divide(
+                                                const SizedBox(width: 4.0)),
                                           ),
                                           Row(
                                             mainAxisSize: MainAxisSize.max,

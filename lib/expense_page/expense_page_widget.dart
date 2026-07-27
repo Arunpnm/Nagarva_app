@@ -21,7 +21,8 @@ class ExpensePageWidget extends StatefulWidget {
   State<ExpensePageWidget> createState() => _ExpensePageWidgetState();
 }
 
-class _ExpensePageWidgetState extends State<ExpensePageWidget> {
+class _ExpensePageWidgetState extends State<ExpensePageWidget>
+    with RefreshOnPopMixin<ExpensePageWidget> {
   late ExpensePageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -32,16 +33,24 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
     _model = createModel(context, () => ExpensePageModel());
 
     // On page load action.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
-      _model.expensesOut = await ExpensesTable().queryRows(
-        queryFn: (q) => OrgScope.read(q),
-      );
-      _model.expensesList = (_model.expensesOut ?? []).toList().cast<ExpensesRow>();
-      safeSetState(() {});
-    });
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadExpenses());
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  // Refresh-after-write fix (parity brief Part 1): re-run when a pushed
+  // route (Quick Expense) is popped back to this list.
+  @override
+  void onPageRefresh() => _loadExpenses();
+
+  Future<void> _loadExpenses() async {
+    // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
+    _model.expensesOut = await ExpensesTable().queryRows(
+      queryFn: (q) => OrgScope.read(q),
+    );
+    _model.expensesList =
+        (_model.expensesOut ?? []).toList().cast<ExpensesRow>();
+    safeSetState(() {});
   }
 
   @override
@@ -262,7 +271,8 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              expensesListItemItem.category ?? '-',
+                                              expensesListItemItem.category ??
+                                                  '-',
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodyMedium
@@ -297,7 +307,10 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                                                       ),
                                             ),
                                             Text(
-                                              dateTimeFormat('d MMM y', expensesListItemItem.expenseDate),
+                                              dateTimeFormat(
+                                                  'd MMM y',
+                                                  expensesListItemItem
+                                                      .expenseDate),
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -823,8 +836,8 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget> {
                       ),
                     ),
                     Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
                         onPressed: () {
                           print('AddExpenseBtn pressed ...');

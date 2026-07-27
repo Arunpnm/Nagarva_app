@@ -22,7 +22,8 @@ class PaymentsPageWidget extends StatefulWidget {
   State<PaymentsPageWidget> createState() => _PaymentsPageWidgetState();
 }
 
-class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
+class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
+    with RefreshOnPopMixin<PaymentsPageWidget> {
   late PaymentsPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -33,48 +34,52 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
     _model = createModel(context, () => PaymentsPageModel());
 
     // On page load action.
-    // LEAK_AUDIT.md leak #1 (Stage 1 fix): this query had no org_id filter
-    // at all — every org's pending-payment orders were returned. This page
-    // is a live bottom-nav tab (see main.dart's NavBarPage tabs map), not
-    // dead code, so it's fixed in place rather than removed.
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      // Arun's bug report: after a part-payment the trigger flips
-      // payment_status to 'partial' and the order VANISHED from this list
-      // (it only matched 'pending'). Correct definition of "pending
-      // payment" = anything with a balance still due, whatever the status
-      // label — so fetch non-paid and filter on the actual balance.
-      _model.pendingOut = await OrdersTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).neqOrNull(
-          'payment_status',
-          'paid',
-        ),
-      );
-      _model.pendingList = (_model.pendingOut ?? [])
-          .toList()
-          .cast<OrdersRow>()
-          .where((o) =>
-              ((o.amount ?? 0) -
-                  (o.advancePaid ?? 0) -
-                  o.paidTotal) >
-              0)
-          .toList();
-      safeSetState(() {});
-      // Live 'Received (Month)' tile — the old one was a hardcoded
-      // FlutterFlow string (₹1,24,000), same disease as the fake invoices.
-      final now = DateTime.now();
-      final entries = await PaymentEntriesTable().queryRows(
-        queryFn: (q) => OrgScope.read(q),
-      );
-      _model.receivedThisMonth = entries
-          .where((e) =>
-              e.receivedAt != null &&
-              e.receivedAt!.year == now.year &&
-              e.receivedAt!.month == now.month)
-          .fold(0.0, (s, e) => s + e.amount);
-      safeSetState(() {});
-    });
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadPayments());
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  // Refresh-after-write fix (parity brief Part 1): re-run when a pushed
+  // route (Record Payment) is popped back to this list.
+  @override
+  void onPageRefresh() => _loadPayments();
+
+  // LEAK_AUDIT.md leak #1 (Stage 1 fix): this query had no org_id filter
+  // at all — every org's pending-payment orders were returned. This page
+  // is a live bottom-nav tab (see main.dart's NavBarPage tabs map), not
+  // dead code, so it's fixed in place rather than removed.
+  Future<void> _loadPayments() async {
+    // Arun's bug report: after a part-payment the trigger flips
+    // payment_status to 'partial' and the order VANISHED from this list
+    // (it only matched 'pending'). Correct definition of "pending
+    // payment" = anything with a balance still due, whatever the status
+    // label — so fetch non-paid and filter on the actual balance.
+    _model.pendingOut = await OrdersTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).neqOrNull(
+        'payment_status',
+        'paid',
+      ),
+    );
+    _model.pendingList = (_model.pendingOut ?? [])
+        .toList()
+        .cast<OrdersRow>()
+        .where(
+            (o) => ((o.amount ?? 0) - (o.advancePaid ?? 0) - o.paidTotal) > 0)
+        .toList();
+    safeSetState(() {});
+    // Live 'Received (Month)' tile — the old one was a hardcoded
+    // FlutterFlow string (₹1,24,000), same disease as the fake invoices.
+    final now = DateTime.now();
+    final entries = await PaymentEntriesTable().queryRows(
+      queryFn: (q) => OrgScope.read(q),
+    );
+    _model.receivedThisMonth = entries
+        .where((e) =>
+            e.receivedAt != null &&
+            e.receivedAt!.year == now.year &&
+            e.receivedAt!.month == now.month)
+        .fold(0.0, (s, e) => s + e.amount);
+    safeSetState(() {});
   }
 
   @override
@@ -410,11 +415,13 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                     BorderRadius.circular(8.0),
                                               ),
                                               child: Padding(
-                                                padding: const EdgeInsetsDirectional
-                                                    .fromSTEB(
+                                                padding:
+                                                    const EdgeInsetsDirectional
+                                                        .fromSTEB(
                                                         8.0, 2.0, 8.0, 2.0),
                                                 child: Text(
-                                                  pendingListItemItem.status ?? '-',
+                                                  pendingListItemItem.status ??
+                                                      '-',
                                                   style: FlutterFlowTheme.of(
                                                           context)
                                                       .labelSmall
@@ -457,40 +464,44 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.end,
                                           children: [
-                                        Text(
-                                          // Balance due, not gross amount:
-                                          // amount - advance - collected.
-                                          '₹${((pendingListItemItem.amount ?? 0) - (pendingListItemItem.advancePaid ?? 0) - pendingListItemItem.paidTotal).toStringAsFixed(0)} due',
-                                          style: FlutterFlowTheme.of(context)
-                                              .titleMedium
-                                              .override(
-                                                font: GoogleFonts.interTight(
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .titleMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .titleMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
+                                            Text(
+                                              // Balance due, not gross amount:
+                                              // amount - advance - collected.
+                                              '₹${((pendingListItemItem.amount ?? 0) - (pendingListItemItem.advancePaid ?? 0) - pendingListItemItem.paidTotal).toStringAsFixed(0)} due',
+                                              style: FlutterFlowTheme.of(
+                                                      context)
+                                                  .titleMedium
+                                                  .override(
+                                                    font:
+                                                        GoogleFonts.interTight(
+                                                      fontWeight:
+                                                          FlutterFlowTheme.of(
+                                                                  context)
+                                                              .titleMedium
+                                                              .fontWeight,
+                                                      fontStyle:
+                                                          FlutterFlowTheme.of(
+                                                                  context)
+                                                              .titleMedium
+                                                              .fontStyle,
+                                                    ),
+                                                    color: FlutterFlowTheme.of(
+                                                            context)
                                                         .error,
-                                                letterSpacing: 0.0,
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .titleMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .titleMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                          const SizedBox(height: 6),
+                                                    letterSpacing: 0.0,
+                                                    fontWeight:
+                                                        FlutterFlowTheme.of(
+                                                                context)
+                                                            .titleMedium
+                                                            .fontWeight,
+                                                    fontStyle:
+                                                        FlutterFlowTheme.of(
+                                                                context)
+                                                            .titleMedium
+                                                            .fontStyle,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 6),
                                             InkWell(
                                               onTap: () {
                                                 context.pushNamed(
@@ -504,19 +515,18 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                 );
                                               },
                                               child: Container(
-                                                padding: const EdgeInsets
-                                                    .symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 5),
-                                                margin: const EdgeInsets
-                                                    .only(bottom: 6),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 5),
+                                                margin: const EdgeInsets.only(
+                                                    bottom: 6),
                                                 decoration: BoxDecoration(
                                                   color: FlutterFlowTheme.of(
                                                           context)
                                                       .primary,
                                                   borderRadius:
-                                                      BorderRadius.circular(
-                                                          8),
+                                                      BorderRadius.circular(8),
                                                 ),
                                                 child: Text('Record',
                                                     style: GoogleFonts.inter(
@@ -534,13 +544,11 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                 // ready-made message. wa.me
                                                 // needs country code; assume
                                                 // India for 10-digit numbers.
-                                                final raw =
-                                                    (pendingListItemItem
-                                                                .phone ??
-                                                            '')
-                                                        .replaceAll(
-                                                            RegExp(r'[^0-9]'),
-                                                            '');
+                                                final raw = (pendingListItemItem
+                                                            .phone ??
+                                                        '')
+                                                    .replaceAll(
+                                                        RegExp(r'[^0-9]'), '');
                                                 if (raw.isEmpty) return;
                                                 final phone = raw.length == 10
                                                     ? '91$raw'
@@ -555,16 +563,15 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                     'https://wa.me/$phone?text=$msg');
                                               },
                                               child: Container(
-                                                padding: const EdgeInsets
-                                                    .symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 5),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 5),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(
-                                                      0xFF25D366),
+                                                  color:
+                                                      const Color(0xFF25D366),
                                                   borderRadius:
-                                                      BorderRadius.circular(
-                                                          8),
+                                                      BorderRadius.circular(8),
                                                 ),
                                                 child: Row(
                                                   mainAxisSize:
@@ -575,8 +582,8 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                                         color: Colors.white),
                                                     const SizedBox(width: 4),
                                                     Text('Remind',
-                                                        style: GoogleFonts
-                                                            .inter(
+                                                        style:
+                                                            GoogleFonts.inter(
                                                                 fontSize: 11,
                                                                 fontWeight:
                                                                     FontWeight
@@ -589,7 +596,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget> {
                                             ),
                                           ],
                                         ),
-                                    ],
+                                      ],
                                     ),
                                   ),
                                 );

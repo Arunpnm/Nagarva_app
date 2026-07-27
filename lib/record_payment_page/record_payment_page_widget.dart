@@ -54,6 +54,10 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
   }
 
   Future<void> _load() async {
+    // Keep whatever was selected before this (re)load — either the nav
+    // param on first load, or the dropdown's current pick on a reload after
+    // Save Payment — so a refresh doesn't silently drop the user's choice.
+    final keepId = _model.selected?.id ?? widget.orderId;
     final rows = await OrdersTable().queryRows(
       queryFn: (q) => OrgScope.read(q)
           .neqOrNull('payment_status', 'paid')
@@ -61,14 +65,24 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
     );
     _model.unpaidOrders =
         rows.where((o) => _balance(o) > 0).toList().cast<OrdersRow>();
-    if (widget.orderId != null && widget.orderId!.isNotEmpty) {
-      for (final o in _model.unpaidOrders) {
-        if (o.id == widget.orderId) {
-          _model.selected = o;
-          break;
-        }
-      }
-      if (_model.selected != null) await _loadHistory();
+    // Bug found live-testing the parity brief's Part 1 verify step: a
+    // payment that fully settles the balance (payment_status -> 'paid')
+    // drops that order out of unpaidOrders, but `_model.selected` — and so
+    // the DropdownButtonFormField's `value` — kept the old id, which no
+    // longer matched any item. That's not "stale UI", it's a hard crash:
+    // "There should be exactly one item with [DropdownButton]'s value" ...
+    // "Either zero or 2 or more DropdownMenuItems were detected with the
+    // same value". Re-resolving by id here (instead of only reassigning
+    // when widget.orderId was set) fixes both the orderId-preselected path
+    // and the generic Quick-Entry path, and falls back to no selection
+    // (the dropdown's placeholder) when the order paid off completely.
+    _model.selected = keepId == null
+        ? null
+        : _model.unpaidOrders.where((o) => o.id == keepId).firstOrNull;
+    if (_model.selected != null) {
+      await _loadHistory();
+    } else {
+      _model.history = [];
     }
     _model.loading = false;
     safeSetState(() {});

@@ -71,12 +71,20 @@ class LeadDetailPageWidget extends StatefulWidget {
   State<LeadDetailPageWidget> createState() => _LeadDetailPageWidgetState();
 }
 
-class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
+class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
+    with RefreshOnPopMixin<LeadDetailPageWidget> {
   late LeadDetailPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _converting = false;
+
+  // Refresh-after-write fix (parity brief Part 1): re-run when a pushed
+  // route (Request Survey / Create Quote share-link dialogs, or Edit Lead)
+  // is popped back to this page, so the Survey & Quote section reflects
+  // newly-created rows without needing a full back-and-forth to LeadsPage.
+  @override
+  void onPageRefresh() => _loadLinked();
 
   // ---- Item 8 (CORE V1): Survey -> Quotation -> Order flow ---------------
   // See supabase/20260725_survey_quote_flow.sql for the scope assumption.
@@ -107,8 +115,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
   /// 23502 unless we supply one. Counter lives in the settings table, per-
   /// org, with the same PK convention as _nextInvoiceNo on OrderDetailPage.
   Future<String> _nextOrderId() async {
-    final prefix =
-        (AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV');
+    final prefix = (AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV');
     const key = 'order_id_seq';
     final rows = await SettingsTable().queryRows(
       queryFn: (q) => OrgScope.read(q).eq('key', key),
@@ -174,18 +181,16 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
         OrderDetailPageWidget.routeName,
         queryParameters: {
           'orderId': serializeParam(order.id, ParamType.String),
-          'orderCustomer':
-              serializeParam(order.customer, ParamType.String),
+          'orderCustomer': serializeParam(order.customer, ParamType.String),
           'orderPhone': serializeParam(order.phone, ParamType.String),
-          'orderFromCity':
-              serializeParam(order.fromCity, ParamType.String),
+          'orderFromCity': serializeParam(order.fromCity, ParamType.String),
           'orderToCity': serializeParam(order.toCity, ParamType.String),
           'orderMoveDate':
               serializeParam(order.moveDate.toString(), ParamType.String),
           'orderAmount':
               serializeParam(order.amount?.toString(), ParamType.String),
-          'orderAdvancePaid': serializeParam(
-              order.advancePaid?.toString(), ParamType.String),
+          'orderAdvancePaid':
+              serializeParam(order.advancePaid?.toString(), ParamType.String),
           'orderStatus': serializeParam(order.status, ParamType.String),
           'orderPaymentStatus':
               serializeParam(order.paymentStatus, ParamType.String),
@@ -276,8 +281,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
       });
       setState(() => _survey = row);
       if (!mounted) return;
-      _showLinkDialog(
-          'Survey link — share with the customer', _shareLink('/survey', row.token));
+      _showLinkDialog('Survey link — share with the customer',
+          _shareLink('/survey', row.token));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -299,8 +304,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
     if (result == null) return;
     setState(() => _creatingQuote = true);
     try {
-      final gstAmount =
-          (result.subtotal * result.gstPct / 100).roundToDouble();
+      final gstAmount = (result.subtotal * result.gstPct / 100).roundToDouble();
       final row = await QuotationsTable().insert({
         // quotations.id has no DB-generated default (unlike surveys.id,
         // which does) — found live-testing this flow: the insert failed
@@ -328,8 +332,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
       });
       setState(() => _quotation = row);
       if (!mounted) return;
-      _showLinkDialog(
-          'Quote link — share with the customer', _shareLink('/quote', row.token!));
+      _showLinkDialog('Quote link — share with the customer',
+          _shareLink('/quote', row.token!));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -444,8 +448,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
             )
           else if (survey.status == 'pending')
             OutlinedButton.icon(
-              onPressed: () => _showLinkDialog('Survey link',
-                  _shareLink('/survey', survey.token)),
+              onPressed: () => _showLinkDialog(
+                  'Survey link', _shareLink('/survey', survey.token)),
               icon: const Icon(Icons.hourglass_top, size: 18),
               label: const Text('Survey sent — awaiting customer response'),
             )
@@ -464,8 +468,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
             OutlinedButton.icon(
               onPressed: _creatingQuote ? null : _createQuote,
               icon: const Icon(Icons.request_quote_outlined, size: 18),
-              label: Text(
-                  _creatingQuote ? 'Creating…' : 'Create Quote'),
+              label: Text(_creatingQuote ? 'Creating…' : 'Create Quote'),
             )
           else if (quotation.status == 'accepted')
             Column(
@@ -482,8 +485,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                 ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
-                  onPressed:
-                      _convertingQuote ? null : _convertQuoteToOrder,
+                  onPressed: _convertingQuote ? null : _convertQuoteToOrder,
                   icon: const Icon(Icons.assignment_turned_in, size: 18),
                   label: Text(_convertingQuote
                       ? 'Converting…'
@@ -1305,8 +1307,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                     ),
                     if (!_loadingLinked) _surveyQuoteSection(context),
                     Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 14.0, 0.0, 14.0),
                       child: FFButtonWidget(
                         onPressed: _converting ? null : _convertToOrder,
                         text: _converting
@@ -1336,8 +1338,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget> {
                       ),
                     ),
                     Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 14.0, 0.0, 14.0),
                       child: FFButtonWidget(
                         onPressed: () async {
                           context.pushNamed(
@@ -1418,7 +1420,8 @@ class _QuoteAmountDialogState extends State<_QuoteAmountDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.initialNotes != null && widget.initialNotes!.isNotEmpty) ...[
+          if (widget.initialNotes != null &&
+              widget.initialNotes!.isNotEmpty) ...[
             Text('From the survey: ${widget.initialNotes}',
                 style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 12),
@@ -1447,8 +1450,7 @@ class _QuoteAmountDialogState extends State<_QuoteAmountDialog> {
             final amount = double.tryParse(_amountCtrl.text.trim());
             if (amount == null || amount <= 0) return;
             final gst = double.tryParse(_gstCtrl.text.trim()) ?? 0;
-            Navigator.of(context)
-                .pop((subtotal: amount, gstPct: gst));
+            Navigator.of(context).pop((subtotal: amount, gstPct: gst));
           },
           child: const Text('Create'),
         ),
