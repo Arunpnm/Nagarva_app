@@ -132,7 +132,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
           onPressed: () async {
             context.pushNamed(NewOrderPageWidget.routeName);
           },
-          backgroundColor: const Color(0xFFFFA000),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
           tooltip: 'New Order',
           child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),

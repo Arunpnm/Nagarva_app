@@ -3,16 +3,19 @@ import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
+import 'components/mobile_bottom_nav.dart';
 import 'components/notification_bell.dart';
 import 'permissions.dart';
 import 'staff_auth.dart';
@@ -234,6 +237,7 @@ void main() async {
   }
 
   await FlutterFlowTheme.initialize();
+  await NotificationPrefs.initialize();
 
   await FFLocalizations.initialize();
 
@@ -303,6 +307,16 @@ class _MyAppState extends State<MyApp> {
         FlutterFlowTheme.saveThemeMode(mode);
       });
 
+  /// Parity brief Part 2b: 'light' / 'dark' / 'midnight'. Midnight rides
+  /// ThemeMode.dark (same brightness) with FlutterFlowTheme.isMidnight
+  /// picking MidnightModeTheme's darker backgrounds over DarkModeTheme's.
+  void setThemeVariant(String variant) => safeSetState(() {
+        final mode = variant == 'light' ? ThemeMode.light : ThemeMode.dark;
+        _themeMode = mode;
+        FlutterFlowTheme.saveThemeMode(mode);
+        FlutterFlowTheme.saveMidnight(variant == 'midnight');
+      });
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
@@ -362,14 +376,26 @@ class NavBarPage extends StatefulWidget {
 }
 
 /// This is the private State class that goes with NavBarPage.
-/// Wide screens (>= 768 px): persistent collapsible left sidebar, like a
-/// web app. Narrow screens: the original bottom navigation bar.
+/// Wide screens (>= 600 px, parity brief Part 5c/5d): persistent
+/// collapsible left rail, like a web app — tablet (600-1024dp) and
+/// desktop (>1024dp) share the same rail; nothing distinguishes them
+/// beyond how much horizontal space happens to be available. Narrow
+/// screens (<600dp): the custom MobileBottomNav (Part 5a/5b).
 class _NavBarPageState extends State<NavBarPage> {
   String _currentPageName = 'HomePage';
   late Widget? _currentPage;
 
   /// Sidebar expanded (labels visible) vs collapsed (icons only).
+  /// Parity brief Part 5c: this choice must persist across sessions —
+  /// loaded from SharedPreferences in initState, saved on every toggle.
   bool _railExpanded = true;
+  static const _kRailExpandedKey = '__rail_expanded__';
+
+  /// Scroll-aware bottom nav (parity brief Part 5b): hidden while the
+  /// user scrolls down, revealed while scrolling up. Deliberately driven
+  /// only by UserScrollNotification.direction — no idle timer anywhere,
+  /// so the nav can never vanish while the user is simply stationary.
+  bool _navVisible = true;
 
   static const _allNavItems = [
     (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard'),
@@ -411,6 +437,16 @@ class _NavBarPageState extends State<NavBarPage> {
     super.initState();
     _currentPageName = widget.initialPage ?? _currentPageName;
     _currentPage = widget.page;
+    SharedPreferences.getInstance().then((prefs) {
+      final saved = prefs.getBool(_kRailExpandedKey);
+      if (saved != null && mounted) safeSetState(() => _railExpanded = saved);
+    });
+  }
+
+  void _setRailExpanded(bool expanded) {
+    safeSetState(() => _railExpanded = expanded);
+    SharedPreferences.getInstance()
+        .then((prefs) => prefs.setBool(_kRailExpandedKey, expanded));
   }
 
   Map<String, Widget> get _tabs => {
@@ -498,17 +534,13 @@ class _NavBarPageState extends State<NavBarPage> {
     );
   }
 
-  Widget _themeChip(String label, ThemeMode mode) {
-    final current = FlutterFlowTheme.themeMode;
-    final selected = current == mode ||
-        (current == ThemeMode.system &&
-            ((mode == ThemeMode.dark) ==
-                (Theme.of(context).brightness == Brightness.dark)));
+  Widget _themeChip(String label, String variant) {
+    final selected = FlutterFlowTheme.effectiveVariant(context) == variant;
     final primary = FlutterFlowTheme.of(context).primary;
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          MyApp.of(context).setThemeMode(mode);
+          MyApp.of(context).setThemeVariant(variant);
           safeSetState(() {});
         },
         child: Container(
@@ -644,35 +676,40 @@ class _NavBarPageState extends State<NavBarPage> {
     final currentIndex =
         _navItems.indexWhere((e) => e.name == _currentPageName);
     final body = _currentPage ?? tabs[_currentPageName];
-    final isWide = MediaQuery.of(context).size.width >= 768;
+    // Parity brief Part 5c: tablet (600-1024dp) gets the same collapsible
+    // rail as desktop (>1024dp, Part 5d — "existing sidebar unchanged")
+    // rather than the cramped bottom nav a 768dp cutoff used to force on
+    // small tablets. Below 600dp: MobileBottomNav (Part 5a/5b).
+    final isWide = MediaQuery.of(context).size.width >= 600;
 
     if (!isWide) {
-      // ------- MOBILE: original bottom navigation -------
+      // ------- MOBILE: custom bottom nav (parity brief Part 5a/5b) -------
       return Scaffold(
         resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
-        body: body,
-        bottomNavigationBar: BottomNavigationBar(
+        body: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            // Scroll-aware only — no idle timer anywhere, so the nav can
+            // never disappear while the user is simply stationary.
+            if (notification.direction == ScrollDirection.reverse) {
+              if (_navVisible) safeSetState(() => _navVisible = false);
+            } else if (notification.direction == ScrollDirection.forward) {
+              if (!_navVisible) safeSetState(() => _navVisible = true);
+            }
+            return false;
+          },
+          child: body ?? const SizedBox.shrink(),
+        ),
+        bottomNavigationBar: MobileBottomNav(
+          items: _navItems,
           currentIndex: currentIndex < 0 ? 0 : currentIndex,
           onTap: _selectTab,
-          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-          selectedItemColor: FlutterFlowTheme.of(context).primary,
-          unselectedItemColor: FlutterFlowTheme.of(context).secondaryText,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          type: BottomNavigationBarType.fixed,
-          items: [
-            for (final item in _navItems)
-              BottomNavigationBarItem(
-                icon: Icon(item.icon),
-                label: '',
-                tooltip: item.label,
-              ),
-          ],
+          visible: _navVisible,
         ),
       );
     }
 
-    // ------- WIDE: persistent collapsible sidebar -------
+    // ------- WIDE (tablet 600-1024dp + desktop >1024dp): persistent
+    // collapsible sidebar -------
     return Scaffold(
       resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
       body: Row(
@@ -748,8 +785,7 @@ class _NavBarPageState extends State<NavBarPage> {
                               : Icons.chevron_right,
                           color: FlutterFlowTheme.of(context).secondaryText,
                         ),
-                        onPressed: () =>
-                            safeSetState(() => _railExpanded = !_railExpanded),
+                        onPressed: () => _setRailExpanded(!_railExpanded),
                       ),
                     ],
                   ),
@@ -842,9 +878,11 @@ class _NavBarPageState extends State<NavBarPage> {
                             const SizedBox(height: 6),
                             Row(
                               children: [
-                                _themeChip('Light', ThemeMode.light),
+                                _themeChip('Light', 'light'),
                                 const SizedBox(width: 6),
-                                _themeChip('Dark', ThemeMode.dark),
+                                _themeChip('Dark', 'dark'),
+                                const SizedBox(width: 6),
+                                _themeChip('Midnight', 'midnight'),
                               ],
                             ),
                             const SizedBox(height: 12),
@@ -872,7 +910,7 @@ class _NavBarPageState extends State<NavBarPage> {
                       : Column(
                           children: [
                             IconButton(
-                              tooltip: 'Toggle theme',
+                              tooltip: 'Toggle theme (Light/Dark/Midnight)',
                               icon: Icon(
                                 Theme.of(context).brightness == Brightness.dark
                                     ? Icons.light_mode
@@ -881,11 +919,17 @@ class _NavBarPageState extends State<NavBarPage> {
                                 color:
                                     FlutterFlowTheme.of(context).secondaryText,
                               ),
-                              onPressed: () => MyApp.of(context).setThemeMode(
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? ThemeMode.light
-                                    : ThemeMode.dark,
-                              ),
+                              // Collapsed rail has no room for 3 chips —
+                              // cycles light -> dark -> midnight -> light.
+                              onPressed: () {
+                                const order = ['light', 'dark', 'midnight'];
+                                final next = order[(order.indexOf(
+                                            FlutterFlowTheme.effectiveVariant(
+                                                context)) +
+                                        1) %
+                                    order.length];
+                                MyApp.of(context).setThemeVariant(next);
+                              },
                             ),
                             IconButton(
                               tooltip: 'Lock',

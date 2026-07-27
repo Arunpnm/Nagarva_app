@@ -486,7 +486,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.local_shipping,
-                                color: Color(0xFFFF6B35),
+                                color: Color(0xFFE3B23C),
                                 size: 48,
                               ),
                             ),
@@ -587,7 +587,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFFF6B35) : Colors.transparent,
+            color: selected ? const Color(0xFFE3B23C) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
@@ -646,7 +646,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             child: Text(
               'Forgot password?',
               style: GoogleFonts.inter(
-                color: const Color(0xFFFF6B35),
+                color: const Color(0xFFE3B23C),
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -664,7 +664,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           options: FFButtonOptions(
             width: double.infinity,
             height: 52,
-            color: const Color(0xFFFF6B35),
+            color: const Color(0xFFE3B23C),
             textStyle: GoogleFonts.interTight(
               color: Colors.white,
               fontSize: 16,
@@ -688,7 +688,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
               child: Text(
                 'Create an account',
                 style: GoogleFonts.inter(
-                  color: const Color(0xFFFF6B35),
+                  color: const Color(0xFFE3B23C),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -783,7 +783,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           options: FFButtonOptions(
             width: double.infinity,
             height: 52,
-            color: const Color(0xFFFF6B35),
+            color: const Color(0xFFE3B23C),
             textStyle: GoogleFonts.interTight(
               color: Colors.white,
               fontSize: 16,
@@ -843,7 +843,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFFE3B23C), width: 1.5),
         ),
       ),
     );

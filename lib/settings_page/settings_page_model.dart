@@ -13,6 +13,12 @@ class SettingsPageModel extends FlutterFlowModel<SettingsPageWidget> {
   // so pan-India vendors keep it off.
   bool porterEnabled = false;
 
+  // Per-device toggle for the NotificationBell's in-app popup — see
+  // NotificationPrefs (components/notification_bell.dart). Defaults true
+  // to match popupsEnabled's default; SettingsPageWidget.initState
+  // overwrites this from the actual stored preference.
+  bool notificationsEnabled = true;
+
   @override
   void initState(BuildContext context) {}
 

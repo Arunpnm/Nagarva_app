@@ -345,21 +345,22 @@ class _HomePageWidgetState extends State<HomePageWidget>
             ),
           ),
           if (_model.periodType == 'month') ...[
+            // Parity brief Part 5e: these were constrained to 32x32dp,
+            // under the 48dp Material minimum — a frequently-used control
+            // (dashboard period navigation) worth padding out properly.
             IconButton(
               tooltip: 'Previous month',
               icon: Icon(Icons.chevron_left,
                   color: theme.secondaryText, size: 20),
               onPressed: () => _shiftMonth(-1),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             ),
             IconButton(
               tooltip: 'Next month',
               icon: Icon(Icons.chevron_right,
                   color: theme.secondaryText, size: 20),
               onPressed: () => _shiftMonth(1),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             ),
           ],
         ],
@@ -395,7 +396,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
             // not a navigation to /quick-entry.
             await QuickEntryDialog.show(context);
           },
-          backgroundColor: const Color(0xFFFFA000),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
           tooltip: 'Quick Entry',
           child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),

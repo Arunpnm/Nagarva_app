@@ -117,7 +117,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
           onPressed: () async {
             context.pushNamed(NewLeadPageWidget.routeName);
           },
-          backgroundColor: const Color(0xFFFFA000),
+          backgroundColor: FlutterFlowTheme.of(context).primary,
           tooltip: 'New Lead',
           child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),

@@ -6,6 +6,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const kThemeModeKey = '__theme_mode__';
+// Parity brief Part 2b: a third "Midnight" option alongside Light/Dark.
+// Midnight is still ThemeMode.dark under the hood (same brightness, same
+// MaterialApp.themeMode) — this flag just picks MidnightModeTheme over
+// DarkModeTheme for the actual colors once brightness is already dark.
+const kMidnightKey = '__theme_midnight__';
 
 SharedPreferences? _prefs;
 
@@ -26,10 +31,25 @@ abstract class FlutterFlowTheme {
       ? _prefs?.remove(kThemeModeKey)
       : _prefs?.setBool(kThemeModeKey, mode == ThemeMode.dark);
 
+  static bool get isMidnight => _prefs?.getBool(kMidnightKey) ?? false;
+
+  static void saveMidnight(bool value) => value
+      ? _prefs?.setBool(kMidnightKey, true)
+      : _prefs?.remove(kMidnightKey);
+
   static FlutterFlowTheme of(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
-        ? DarkModeTheme()
-        : LightModeTheme();
+    if (Theme.of(context).brightness == Brightness.dark) {
+      return isMidnight ? MidnightModeTheme() : DarkModeTheme();
+    }
+    return LightModeTheme();
+  }
+
+  /// Which of 'light' / 'dark' / 'midnight' is actually in effect right
+  /// now — resolves ThemeMode.system via the current platform brightness
+  /// rather than assuming an explicit choice was made.
+  static String effectiveVariant(BuildContext context) {
+    if (Theme.of(context).brightness != Brightness.dark) return 'light';
+    return isMidnight ? 'midnight' : 'dark';
   }
 
   @Deprecated('Use primary instead')
@@ -144,9 +164,11 @@ class LightModeTheme extends FlutterFlowTheme {
   @Deprecated('Use tertiary instead')
   Color get tertiaryColor => tertiary;
 
-  late Color primary = const Color(0xFFF59E0B);
-  late Color secondary = const Color(0xFFD97706);
-  late Color tertiary = const Color(0xFF6366F1);
+  // Brand rebrand (parity brief Part 2b, 27 Jul 2026): navy #0F2A47,
+  // gold #E3B23C, teal #1FA98C, applied to every theme's accent triad.
+  late Color primary = const Color(0xFFE3B23C);
+  late Color secondary = const Color(0xFFC79A32);
+  late Color tertiary = const Color(0xFF1FA98C);
   late Color alternate = const Color(0xFFE0E3E7);
   late Color primaryText = const Color(0xFF0F172A);
   late Color secondaryText = const Color(0xFF64748B);
@@ -330,14 +352,18 @@ class DarkModeTheme extends FlutterFlowTheme {
   @Deprecated('Use tertiary instead')
   Color get tertiaryColor => tertiary;
 
-  late Color primary = const Color(0xFFFFA000);
-  late Color secondary = const Color(0xFFFF8C00);
-  late Color tertiary = const Color(0xFF818CF8);
+  // Brand rebrand (parity brief Part 2b, 27 Jul 2026): navy #0F2A47,
+  // gold #E3B23C, teal #1FA98C. primaryBackground is the brand navy
+  // itself; secondaryBackground is a lighter navy tint for card surfaces
+  // to read as distinct from the page background.
+  late Color primary = const Color(0xFFE3B23C);
+  late Color secondary = const Color(0xFFC79A32);
+  late Color tertiary = const Color(0xFF1FA98C);
   late Color alternate = const Color(0xFF262D34);
   late Color primaryText = const Color(0xFFFFFFFF);
   late Color secondaryText = const Color(0xFF94A3B8);
-  late Color primaryBackground = const Color(0xFF0D0E17);
-  late Color secondaryBackground = const Color(0xFF1B1F36);
+  late Color primaryBackground = const Color(0xFF0F2A47);
+  late Color secondaryBackground = const Color(0xFF17395E);
   late Color accent1 = const Color(0x4C4B39EF);
   late Color accent2 = const Color(0x4D39D2C0);
   late Color accent3 = const Color(0x4DEE8B60);
@@ -346,6 +372,15 @@ class DarkModeTheme extends FlutterFlowTheme {
   late Color warning = const Color(0xFFF9CF58);
   late Color error = const Color(0xFFEF4444);
   late Color info = const Color(0xFFFFFFFF);
+}
+
+/// Midnight — a third, deeper-black theme option (parity brief Part 2b),
+/// distinct from Dark. Same brand accent triad as Dark, but backgrounds
+/// drop to near-black for AMOLED/low-light preference (the "Dim vs Lights
+/// Out" pattern) instead of the brand-navy background Dark uses.
+class MidnightModeTheme extends DarkModeTheme {
+  late Color primaryBackground = const Color(0xFF07121D);
+  late Color secondaryBackground = const Color(0xFF0F1F30);
 }
 
 class FFDesignTokens {

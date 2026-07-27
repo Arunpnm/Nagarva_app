@@ -63,6 +63,91 @@
   id, which is a contained but real follow-up, not attempted blind in the
   same pass as the systemic fix.
 
+- **✅ Part 5 — nav touch targets + responsive layout — BUILT, live-verified
+  at mobile only before a network outage blocked further testing (see
+  below).**
+  - New `lib/components/mobile_bottom_nav.dart`: replaces the stock
+    `BottomNavigationBar` (which squeezed up to 12 destinations into a
+    fixed bar with no labels and well under the 48dp tap-target minimum —
+    the exact phone-test complaint). Every destination is now ≥64dp
+    wide/tall (evenly distributed if the full set fits, horizontally
+    scrollable otherwise for the full 12-item owner nav on a narrow
+    phone), labels always visible, active state = filled gold pill behind
+    a 27px icon + bold gold label (not a colour shift).
+  - Scroll-aware hide/reveal: `main.dart`'s mobile branch wraps `body` in
+    `NotificationListener<UserScrollNotification>`, toggling `_navVisible`
+    only on `ScrollDirection.forward`/`reverse` — no idle timer anywhere,
+    so the nav can't vanish while the user is stationary.
+  - Breakpoint lowered from 768dp to 600dp: 600-1024dp (tablet) and
+    >1024dp (desktop) now both get the existing collapsible left rail
+    (previously devices in the 600-768dp gap wrongly got the cramped
+    mobile bar). The rail's expanded/collapsed choice is now persisted via
+    SharedPreferences (`_setRailExpanded`), loaded on `NavBarPage.initState`
+    — it wasn't before.
+  - Tap-target audit (5e): grepped for explicit small `BoxConstraints`/
+    zero-padding icon buttons app-wide. Found and fixed one real
+    violation — HomePage's period-navigation prev/next-month arrows were
+    constrained to 32x32dp; now 48x48dp. Survey CFT counters (the brief's
+    other named concern) don't exist yet — will be built to the 48dp spec
+    from the start in Part 3, not retrofitted.
+  - **Live-verified**: mobile viewport (390px) in Chrome, logged in as APC
+    owner — new bottom nav renders with labels, gold active pill, correct
+    icons for the full 12-item owner set.
+  - **Not yet live-verified (built + `flutter analyze` clean only)**:
+    tablet (820px) and desktop (1440px) breakpoints, scroll-hide/reveal
+    behaviour, and rail-persistence across a reload — the preview
+    browser's external network access dropped entirely mid-session
+    (`fetch('https://example.com')` itself timed out, not just Supabase),
+    blocking login before these could be checked. Will verify once network
+    access is confirmed back.
+
+- **✅ Part 2 — dead settings + fleet gaps — BUILT, partially live-verified
+  (payments/dashboard flows only, before the same network outage).**
+  - **2a settings toggles**: Notifications is now a real `Switch`
+    (`lib/components/notification_bell.dart`'s new `NotificationPrefs`,
+    SharedPreferences-backed, default on) gating only the disruptive
+    in-app popup — the bell's badge/list still show everything regardless
+    of this setting. Dark Mode row replaced with a working Light/Dark/
+    Midnight selector (see 2b). Language/Export Data/Backup rows removed
+    entirely from `settings_page_widget.dart` per the brief's table.
+  - **2b theme**: brand rebrand to navy `#0F2A47` / gold `#E3B23C` / teal
+    `#1FA98C` applied to `flutter_flow_theme.dart`'s Light and Dark themes
+    (primary/secondary/tertiary + Dark's backgrounds), the 3 hardcoded
+    orange FABs (Home/Leads/Orders), and the previously-independent
+    hardcoded orange (`0xFFFF6B35`) on LoginPage/SignupPage. Added a real
+    third **Midnight** theme (`MidnightModeTheme extends DarkModeTheme`,
+    near-black backgrounds, same accent triad) — didn't exist before at
+    all, despite NAGARVA_STATUS.md previously claiming "3 themes" as done.
+    `FlutterFlowTheme.effectiveVariant(context)`/`MyApp.setThemeVariant`
+    are the new shared selection logic; the desktop sidebar's existing
+    Light/Dark chips extended to 3-way, and the exact same control is now
+    also on mobile via SettingsPage (it never was before — this was the
+    "yesterday's build didn't have it" gap the owner flagged live this
+    session).
+  - **2c Fleet**: `lib/fleet_page/vehicle_detail_sheet.dart` (new) — tap a
+    vehicle card to view full detail (type, driver, status, insurance/
+    permit expiry with overdue highlighting, last service, notes) with an
+    Edit action, plus a new "Add Vehicle" FAB; both were entirely missing
+    before (not even a tap handler existed). Expiry alert notifications
+    deliberately NOT built (parked per the brief).
+    **Found and removed while in this file**: FleetPage had 4 fully
+    hardcoded fake vehicle cards (TN-01-AB-1234 through TN-04-GH-3456,
+    leftover FlutterFlow mockup data) rendering below the real list,
+    un-tappable and misleading — removed (732 lines). Did not fix the
+    page's still-hardcoded top stat tiles ('4'/'Active', '2'/...) —
+    flagged here as a follow-up, out of the explicit 2c ask.
+  - **Live-verified**: none of Part 2 specifically (network outage hit
+    before reaching Settings/Fleet in this session's browser pass) — code
+    reviewed and `flutter analyze` clean, but mark as **built-not-verified**
+    per the brief's own instruction until a live pass confirms the
+    Notifications switch, theme selector, and vehicle detail/edit sheet
+    actually work end-to-end in the browser.
+  - **Network outage note**: mid-session the preview browser lost all
+    external connectivity (`fetch('https://example.com')` itself timed
+    out) — this is why Part 2 and the rest of Part 5 couldn't be
+    live-tested this pass. Not a code issue; re-verify once connectivity
+    is confirmed.
+
 ---
 
 ## ✅ COMPLETED

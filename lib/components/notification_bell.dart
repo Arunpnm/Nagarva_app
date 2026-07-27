@@ -5,6 +5,26 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const _kNotificationsEnabledKey = '__notifications_enabled__';
+
+/// Per-device notification preference (parity brief Part 2a — this
+/// control previously did nothing at all). Gates only the disruptive
+/// in-app SnackBar popup on new Realtime notifications; the bell's badge
+/// and list still show every notification regardless, so turning this off
+/// mutes interruptions without hiding anything.
+class NotificationPrefs {
+  static SharedPreferences? _prefs;
+
+  static Future<void> initialize() async =>
+      _prefs = await SharedPreferences.getInstance();
+
+  static bool get popupsEnabled => _prefs?.getBool(_kNotificationsEnabledKey) ?? true;
+
+  static Future<void> setPopupsEnabled(bool value) async =>
+      _prefs?.setBool(_kNotificationsEnabledKey, value);
+}
 
 /// Sidebar notification bell (v1 in-app notifications).
 ///
@@ -87,6 +107,7 @@ class _NotificationBellState extends State<NotificationBell> {
             final row = payload.newRecord;
             if (!_forMe(row) || !mounted) return;
             setState(() => _items.insert(0, NotificationsRow(row)));
+            if (!NotificationPrefs.popupsEnabled) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(

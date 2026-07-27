@@ -176,7 +176,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.local_shipping,
-                                color: Color(0xFFFF6B35),
+                                color: Color(0xFFE3B23C),
                                 size: 44,
                               ),
                             ),
@@ -295,7 +295,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               onPressed: _model.isLoading ? null : _handleSignup,
                               options: FFButtonOptions(
                                 height: 52,
-                                color: const Color(0xFFFF6B35),
+                                color: const Color(0xFFE3B23C),
                                 textStyle: GoogleFonts.interTight(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -327,7 +327,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             child: Text(
                               'Log in',
                               style: GoogleFonts.inter(
-                                color: const Color(0xFFFF6B35),
+                                color: const Color(0xFFE3B23C),
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -384,7 +384,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFFF6B35), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFFE3B23C), width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
