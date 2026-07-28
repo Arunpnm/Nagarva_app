@@ -104,15 +104,24 @@ begin
   end if;
 
   -- ---- Pool 1: owner (org_members.role = 'owner') ----
+  -- Table aliased and every selected column re-aliased (m_*) because this
+  -- function's OUT parameters (user_id, staff_id, staff_role, staff_name,
+  -- staff_auth_user_id, locked_until, ...) are implicitly declared as
+  -- plpgsql variables in scope here. A bare `select user_id, ... from
+  -- org_members` is ambiguous the moment a column name exactly matches an
+  -- OUT param name (hit live: 42702 on `user_id`) — qualifying the table
+  -- and renaming the output columns sidesteps it for good, including for
+  -- OUT params that don't collide with a real column name.
   for v_owner in
-    select user_id, pin_hash from public.org_members
-    where org_id = p_org_id and role = 'owner' and pin_hash is not null
+    select om.user_id as m_user_id, om.pin_hash as m_pin_hash
+    from public.org_members om
+    where om.org_id = p_org_id and om.role = 'owner' and om.pin_hash is not null
   loop
-    if v_owner.pin_hash = extensions.crypt(p_pin, v_owner.pin_hash) then
+    if v_owner.m_pin_hash = extensions.crypt(p_pin, v_owner.m_pin_hash) then
       insert into public.org_pin_attempts (org_id, failed_attempts, locked_until)
         values (p_org_id, 0, null)
         on conflict (org_id) do update set failed_attempts = 0, locked_until = null;
-      return query select true, 'owner'::text, v_owner.user_id, null::uuid,
+      return query select true, 'owner'::text, v_owner.m_user_id, null::uuid,
                           null::text, null::text, null::uuid,
                           false, null::timestamptz;
       return;
@@ -121,21 +130,27 @@ begin
 
   -- ---- Pool 2: staff (active only) ----
   for v_staff in
-    select id, role, name, auth_user_id, pin_hash from public.staff
-    where org_id = p_org_id and coalesce(active, true) and pin_hash is not null
+    select s.id as s_id, s.role as s_role, s.name as s_name,
+           s.auth_user_id as s_auth_user_id, s.pin_hash as s_pin_hash
+    from public.staff s
+    where s.org_id = p_org_id and coalesce(s.active, true) and s.pin_hash is not null
   loop
-    if v_staff.pin_hash = extensions.crypt(p_pin, v_staff.pin_hash) then
+    if v_staff.s_pin_hash = extensions.crypt(p_pin, v_staff.s_pin_hash) then
       insert into public.org_pin_attempts (org_id, failed_attempts, locked_until)
         values (p_org_id, 0, null)
         on conflict (org_id) do update set failed_attempts = 0, locked_until = null;
-      return query select true, 'staff'::text, null::uuid, v_staff.id,
-                          v_staff.role, v_staff.name, v_staff.auth_user_id,
+      return query select true, 'staff'::text, null::uuid, v_staff.s_id,
+                          v_staff.s_role, v_staff.s_name, v_staff.s_auth_user_id,
                           false, null::timestamptz;
       return;
     end if;
   end loop;
 
   -- ---- No match in either pool: count as one failed org-wide attempt ----
+  -- RETURNING must stay fully schema-qualified too (same reason as the two
+  -- loops above) — a bare `returning failed_attempts, locked_until` would
+  -- hit the identical 42702 against the `locked_until` OUT param; it just
+  -- hadn't been reached yet because the owner-loop bug aborted first.
   insert into public.org_pin_attempts (org_id, failed_attempts, locked_until)
     values (p_org_id, 1, null)
   on conflict (org_id) do update
@@ -148,7 +163,8 @@ begin
             then now() + (v_lock_minutes || ' minutes')::interval
           else null
         end
-  returning failed_attempts, locked_until into v_attempts;
+  returning public.org_pin_attempts.failed_attempts, public.org_pin_attempts.locked_until
+    into v_attempts;
 
   return query select false, null::text, null::uuid, null::uuid,
                       null::text, null::text, null::uuid,
