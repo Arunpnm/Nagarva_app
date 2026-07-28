@@ -24,6 +24,16 @@
 -- Run this AFTER confirming `pricing_config` has a unique constraint (or
 -- equivalent) allowing one row per org — added below if missing, since the
 -- upsert relies on it.
+--
+-- RLS: `pricing_config` is NOT new — it predates this migration (org_id
+-- was added to it back in phase1_add_org_id.sql, and the table itself is
+-- older still, part of the original FlutterFlow-exported schema). It is
+-- one of the 16 tables CLAUDE.md's "Multi-tenancy status" section lists
+-- as still lacking RLS. Adding the standard org_isolation policy here
+-- (same pattern as notifications/payment_entries/salary_payments) is what
+-- triggered Supabase's "table without RLS" advisor warning on the first
+-- run of this migration — not a new table being created without RLS, an
+-- existing unprotected one finally getting it.
 
 begin;
 
@@ -39,6 +49,15 @@ begin
       add constraint pricing_config_org_id_key unique (org_id);
   end if;
 end $$;
+
+-- RLS — same org_isolation pattern as payment_entries/notifications/
+-- salary_payments. enable + drop-if-exists-then-create are both safe to
+-- re-run if this table somehow already had them from elsewhere.
+alter table public.pricing_config enable row level security;
+drop policy if exists org_isolation on public.pricing_config;
+create policy org_isolation on public.pricing_config for all to authenticated
+  using (org_id in (select current_org_ids()) or is_platform_admin())
+  with check (org_id in (select current_org_ids()) or is_platform_admin());
 
 -- The default seed payload, applied to every org that doesn't already
 -- have these specific keys set.
@@ -174,3 +193,7 @@ commit;
 --   select org_id, config->'cft_ranges'->0, config->'packages'->0,
 --          jsonb_object_keys(config->'charge_defaults')
 --   from pricing_config;
+--   select relrowsecurity from pg_class where relname = 'pricing_config';
+--     -- should be true
+--   select policyname from pg_policies where tablename = 'pricing_config';
+--     -- should list org_isolation
