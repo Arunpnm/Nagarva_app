@@ -25,15 +25,16 @@
 -- equivalent) allowing one row per org — added below if missing, since the
 -- upsert relies on it.
 --
--- RLS: `pricing_config` is NOT new — it predates this migration (org_id
--- was added to it back in phase1_add_org_id.sql, and the table itself is
--- older still, part of the original FlutterFlow-exported schema). It is
--- one of the 16 tables CLAUDE.md's "Multi-tenancy status" section lists
--- as still lacking RLS. Adding the standard org_isolation policy here
--- (same pattern as notifications/payment_entries/salary_payments) is what
--- triggered Supabase's "table without RLS" advisor warning on the first
--- run of this migration — not a new table being created without RLS, an
--- existing unprotected one finally getting it.
+-- CONFIRMED against the live schema (owner checked directly, 28 Jul
+-- 2026): `pricing_config` is `id` (int, pk) / `config` (jsonb) / `org_id`
+-- (uuid), **already has RLS enabled with an `org_isolation` policy** —
+-- this table is NOT one of the still-unprotected ones, correcting an
+-- earlier wrong assumption in this file (CLAUDE.md's "16 tables lacking
+-- RLS" list is stale on this point). No RLS changes needed or made here.
+-- One row exists today: id=1, org_id=<APC's id>, config={} (empty
+-- placeholder) — the upsert below updates that row in place rather than
+-- inserting a second one, via the same unique-constraint-on-org_id path
+-- as any other org.
 
 begin;
 
@@ -49,15 +50,6 @@ begin
       add constraint pricing_config_org_id_key unique (org_id);
   end if;
 end $$;
-
--- RLS — same org_isolation pattern as payment_entries/notifications/
--- salary_payments. enable + drop-if-exists-then-create are both safe to
--- re-run if this table somehow already had them from elsewhere.
-alter table public.pricing_config enable row level security;
-drop policy if exists org_isolation on public.pricing_config;
-create policy org_isolation on public.pricing_config for all to authenticated
-  using (org_id in (select current_org_ids()) or is_platform_admin())
-  with check (org_id in (select current_org_ids()) or is_platform_admin());
 
 -- The default seed payload, applied to every org that doesn't already
 -- have these specific keys set.
@@ -178,13 +170,18 @@ with seed as (
     "gst": {"sac":"996719","default_pct":5,"rates":[0,5,12,18]}
   }'::jsonb as defaults
 )
+-- No `id` column here — pricing_config.id is its own int PK, unrelated to
+-- org_id, and the upsert below targets rows by org_id alone.
 insert into public.pricing_config (org_id, config)
 select o.id, seed.defaults
 from public.organizations o, seed
 on conflict (org_id) do update
-  -- excluded.config is the seed payload we tried to insert; the org's
-  -- pre-existing config (if any) wins on any overlapping key, which is
-  -- what keeps a vendor's own edits from being clobbered on re-run.
+  -- jsonb `||`: on a duplicate key, the RIGHT operand wins. That must be
+  -- the org's own pre-existing config, not the seed defaults, or a
+  -- re-run of this migration would silently overwrite anything a vendor
+  -- has already customized. (`excluded.config` is the seed payload this
+  -- INSERT tried to write; `public.pricing_config.config` is the row's
+  -- current value pre-update.)
   set config = excluded.config || coalesce(public.pricing_config.config, '{}'::jsonb);
 
 commit;
@@ -193,7 +190,3 @@ commit;
 --   select org_id, config->'cft_ranges'->0, config->'packages'->0,
 --          jsonb_object_keys(config->'charge_defaults')
 --   from pricing_config;
---   select relrowsecurity from pg_class where relname = 'pricing_config';
---     -- should be true
---   select policyname from pg_policies where tablename = 'pricing_config';
---     -- should list org_isolation
