@@ -90,16 +90,27 @@
     constrained to 32x32dp; now 48x48dp. Survey CFT counters (the brief's
     other named concern) don't exist yet — will be built to the 48dp spec
     from the start in Part 3, not retrofitted.
-  - **Live-verified**: mobile viewport (390px) in Chrome, logged in as APC
-    owner — new bottom nav renders with labels, gold active pill, correct
-    icons for the full 12-item owner set.
-  - **Not yet live-verified (built + `flutter analyze` clean only)**:
-    tablet (820px) and desktop (1440px) breakpoints, scroll-hide/reveal
-    behaviour, and rail-persistence across a reload — the preview
-    browser's external network access dropped entirely mid-session
-    (`fetch('https://example.com')` itself timed out, not just Supabase),
-    blocking login before these could be checked. Will verify once network
-    access is confirmed back.
+  - **Live-verified (28 Jul 2026, network access restored)**: all three
+    breakpoints in Chrome, logged in as APC owner — 390px (mobile bottom
+    nav + drawer, no truncation, no duplication), 820px (tablet
+    collapsible rail, all 12 items), 1440px (desktop sidebar, unchanged
+    per Part 5d). Theme persistence confirmed directly via
+    `localStorage` (`flutter.__theme_mode__`/`flutter.__theme_midnight__`
+    both save correctly on picking Midnight).
+  - **Still not live-verified**: scroll-hide/reveal behaviour specifically
+    (didn't scroll a long list during this pass) and rail-expanded-state
+    persistence across a full page reload (only toggled it, didn't
+    reload to confirm SharedPreferences round-trips). Both are
+    low-risk — same persistence mechanism already confirmed working for
+    theme — but not directly clicked-through.
+  - **Nav-drawer duplication the owner reported after this fix landed**:
+    investigated live — a fresh page load shows zero duplication (single
+    icon per drawer row, single hamburger, full unbroken bottom-nav
+    labels). Most likely a stale hot-reload on the owner's running
+    `flutter run` session, since the drawer fix changed the widget tree
+    shape (`Column` -> `SafeArea`+`ListView`), which hot reload can fail
+    to apply cleanly. Asked the owner to hot-restart (capital `R`) or
+    fully restart `flutter run` and confirm.
 
 - **✅ Part 2 — dead settings + fleet gaps — BUILT, partially live-verified
   (payments/dashboard flows only, before the same network outage).**
