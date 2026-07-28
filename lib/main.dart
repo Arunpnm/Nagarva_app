@@ -10,6 +10,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/backend/supabase/supabase.dart';
+import '/backend/device_org_binding.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/internationalization.dart';
@@ -17,6 +18,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
 import 'components/mobile_bottom_nav.dart';
 import 'components/notification_bell.dart';
+import 'nav_items.dart';
 import 'permissions.dart';
 import 'staff_auth.dart';
 import 'index.dart';
@@ -238,6 +240,7 @@ void main() async {
 
   await FlutterFlowTheme.initialize();
   await NotificationPrefs.initialize();
+  await DeviceOrgBinding.initialize();
 
   await FFLocalizations.initialize();
 
@@ -397,24 +400,11 @@ class _NavBarPageState extends State<NavBarPage> {
   /// so the nav can never vanish while the user is simply stationary.
   bool _navVisible = true;
 
-  static const _allNavItems = [
-    (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard'),
-    (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders'),
-    (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM'),
-    (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations'),
-    (name: 'PaymentsPage', icon: Icons.payments, label: 'Payments'),
-    (name: 'ExpensePage', icon: Icons.receipt_long, label: 'Expenses'),
-    (
-      name: 'AccountsPage',
-      icon: Icons.account_balance_wallet,
-      label: 'Accounts'
-    ),
-    (name: 'SalaryPage', icon: Icons.badge, label: 'Salary'),
-    (name: 'UsersPage', icon: Icons.groups, label: 'Staff'),
-    (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet'),
-    (name: 'PLReportPage', icon: Icons.assessment, label: 'P & L'),
-    (name: 'SettingsPage', icon: Icons.settings, label: 'Settings'),
-  ];
+  // Moved to lib/nav_items.dart (kAllNavItems) so this list has exactly one
+  // source of truth — HomePage's hamburger drawer used to hand-duplicate
+  // its own copy that silently drifted to only 8 of these 12 items
+  // (Accounts/Staff/Fleet/P&L were just missing, not permission-filtered).
+  static const _allNavItems = kAllNavItems;
 
   /// Role-based navigation. Staff PIN sessions are field users, not the
   /// owner: they only get the operational pages. Money (Payments, Expenses,

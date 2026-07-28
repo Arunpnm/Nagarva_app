@@ -296,6 +296,16 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                         ),
                       ),
                     ),
+                    // Parity brief Part 7: owners set their own PIN here,
+                    // logged in the normal (email/password) way — this is
+                    // the only path that can set a PIN in the first place,
+                    // since the PIN screen itself has nothing to check
+                    // against until one exists. Staff-only sessions never
+                    // reach this page's normal route (SettingsPage isn't in
+                    // the staff nav set), so no staff-vs-owner gate is
+                    // needed beyond that.
+                    if (AppSession.instance.currentStaffId == null)
+                      const _PinSettingCard(),
                     // Vendor self-service branding: business details, logo,
                     // e-signature — all feed the invoice PDF.
                     const BusinessSettingsSection(),
@@ -989,6 +999,120 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Set/change the PIN used by the unified PIN login screen (parity brief
+/// Part 7). Writes org_members.pin (write-only — the
+/// org_members_hash_pin_trigger in 20260728_org_pin_login.sql bcrypt-hashes
+/// it into pin_hash and never stores the plaintext), matched on the
+/// current authenticated user's own row so a vendor can only ever set
+/// their own PIN, never another org's.
+class _PinSettingCard extends StatefulWidget {
+  const _PinSettingCard();
+
+  @override
+  State<_PinSettingCard> createState() => _PinSettingCardState();
+}
+
+class _PinSettingCardState extends State<_PinSettingCard> {
+  final _pinController = TextEditingController();
+  bool _saving = false;
+  String? _message;
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final pin = _pinController.text.trim();
+    if (pin.length != 4 || int.tryParse(pin) == null) {
+      setState(() => _message = 'Enter exactly 4 digits.');
+      return;
+    }
+    final userId = SupaFlow.client.auth.currentUser?.id;
+    final orgId = AppSession.instance.currentOrgId;
+    if (userId == null || orgId == null) return;
+    setState(() {
+      _saving = true;
+      _message = null;
+    });
+    try {
+      await OrgMembersTable().update(
+        data: {'pin': pin},
+        matchingRows: (q) =>
+            q.eq('org_id', orgId).eq('user_id', userId),
+      );
+      _pinController.clear();
+      setState(() => _message = 'PIN updated.');
+    } catch (e) {
+      setState(() => _message = 'Could not update PIN: $e');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('App PIN',
+              style: GoogleFonts.interTight(
+                  fontWeight: FontWeight.w700, color: theme.primaryText)),
+          const SizedBox(height: 4),
+          Text(
+            'Set or change the 4-digit PIN used to sign in on this and '
+            'other devices.',
+            style:
+                GoogleFonts.inter(fontSize: 12.5, color: theme.secondaryText),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _pinController,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  decoration:
+                      const InputDecoration(labelText: 'New PIN', counterText: ''),
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primary,
+                      foregroundColor: Colors.white),
+                  child: Text(_saving ? 'Saving...' : 'Save'),
+                ),
+              ),
+            ],
+          ),
+          if (_message != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(_message!,
+                  style: GoogleFonts.inter(
+                      fontSize: 12, color: theme.secondaryText)),
+            ),
+        ],
       ),
     );
   }

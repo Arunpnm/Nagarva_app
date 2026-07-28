@@ -5,9 +5,11 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
+import '/components/global_search_delegate.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/components/quick_entry_dialog.dart';
 import '/index.dart';
+import '/nav_items.dart';
 import '/permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -401,247 +403,39 @@ class _HomePageWidgetState extends State<HomePageWidget>
           child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
         drawer: Drawer(
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              if (showDrawerPage('HomePage'))
-                InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    if (scaffoldKey.currentState!.isDrawerOpen ||
-                        scaffoldKey.currentState!.isEndDrawerOpen) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.dashboard,
-                      ),
-                      title: Text(
-                        FFLocalizations.of(context).getText(
-                          '6jm5gmle' /* Dashboard */,
+          child: SafeArea(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                // Parity brief Part 5/nav-completeness fix: this drawer used
+                // to hand-duplicate main.dart's nav item list and had
+                // silently drifted to only 8 of the 12 real destinations
+                // (Accounts/Staff/Fleet/P&L were missing outright, not
+                // permission-filtered — found live-testing on a real
+                // phone). Now built from the single shared kAllNavItems
+                // list (lib/nav_items.dart) so the two navs can't diverge
+                // again. Every tile keeps a real 48dp+ tap target via
+                // ListTile's own default sizing.
+                for (final item in kAllNavItems)
+                  if (showDrawerPage(item.name))
+                    InkWell(
+                      onTap: () {
+                        if (scaffoldKey.currentState!.isDrawerOpen ||
+                            scaffoldKey.currentState!.isEndDrawerOpen) {
+                          Navigator.pop(context);
+                        }
+                        if (item.name != 'HomePage') {
+                          context.pushNamed(item.name);
+                        }
+                      },
+                      child: Material(
+                        color: Colors.transparent,
+                        child: ListTile(
+                          leading: Icon(item.icon),
+                          title: Text(item.label),
                         ),
-                        style: const TextStyle(),
                       ),
-                      dense: false,
                     ),
-                  ),
-                ),
-              if (showDrawerPage('OrdersPage'))
-                InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    if (scaffoldKey.currentState!.isDrawerOpen ||
-                        scaffoldKey.currentState!.isEndDrawerOpen) {
-                      Navigator.pop(context);
-                    }
-
-                    context.pushNamed(OrdersPageWidget.routeName);
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.assignment,
-                      ),
-                      title: Text(
-                        FFLocalizations.of(context).getText(
-                          '7zw0hsiv' /* Orders */,
-                        ),
-                        style: const TextStyle(),
-                      ),
-                      dense: false,
-                    ),
-                  ),
-                ),
-              if (showDrawerPage('LeadsPage'))
-                InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    if (scaffoldKey.currentState!.isDrawerOpen ||
-                        scaffoldKey.currentState!.isEndDrawerOpen) {
-                      Navigator.pop(context);
-                    }
-
-                    context.pushNamed(LeadsPageWidget.routeName);
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.people,
-                      ),
-                      title: Text(
-                        FFLocalizations.of(context).getText(
-                          '00uuhim0' /* Leads */,
-                        ),
-                        style: const TextStyle(),
-                      ),
-                      dense: false,
-                    ),
-                  ),
-                ),
-              if (showDrawerPage('OperationsPage'))
-                InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    if (scaffoldKey.currentState!.isDrawerOpen ||
-                        scaffoldKey.currentState!.isEndDrawerOpen) {
-                      Navigator.pop(context);
-                    }
-
-                    context.pushNamed(OperationsPageWidget.routeName);
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.local_shipping,
-                      ),
-                      title: Text(
-                        FFLocalizations.of(context).getText(
-                          'ma1gh78n' /* Operations */,
-                        ),
-                        style: const TextStyle(),
-                      ),
-                      dense: false,
-                    ),
-                  ),
-                ),
-              if (showDrawerPage('PaymentsPage'))
-                InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    if (scaffoldKey.currentState!.isDrawerOpen ||
-                        scaffoldKey.currentState!.isEndDrawerOpen) {
-                      Navigator.pop(context);
-                    }
-
-                    context.pushNamed(PaymentsPageWidget.routeName);
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.payments,
-                      ),
-                      title: Text(
-                        FFLocalizations.of(context).getText(
-                          'hvlovaib' /* Payments */,
-                        ),
-                        style: const TextStyle(),
-                      ),
-                      dense: false,
-                    ),
-                  ),
-                ),
-              if (showDrawerPage('ExpensePage'))
-                InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    if (scaffoldKey.currentState!.isDrawerOpen ||
-                        scaffoldKey.currentState!.isEndDrawerOpen) {
-                      Navigator.pop(context);
-                    }
-
-                    context.pushNamed(ExpensePageWidget.routeName);
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.receipt_long,
-                      ),
-                      title: Text(
-                        FFLocalizations.of(context).getText(
-                          'vykd2ud6' /* Expenses */,
-                        ),
-                        style: const TextStyle(),
-                      ),
-                      dense: false,
-                    ),
-                  ),
-                ),
-              if (showDrawerPage('SalaryPage'))
-                InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    if (scaffoldKey.currentState!.isDrawerOpen ||
-                        scaffoldKey.currentState!.isEndDrawerOpen) {
-                      Navigator.pop(context);
-                    }
-
-                    context.pushNamed(SalaryPageWidget.routeName);
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.badge,
-                      ),
-                      title: Text(
-                        FFLocalizations.of(context).getText(
-                          'c0k3ad1n' /* Salary */,
-                        ),
-                        style: const TextStyle(),
-                      ),
-                      dense: false,
-                    ),
-                  ),
-                ),
-              if (showDrawerPage('SettingsPage'))
-                InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    if (scaffoldKey.currentState!.isDrawerOpen ||
-                        scaffoldKey.currentState!.isEndDrawerOpen) {
-                      Navigator.pop(context);
-                    }
-
-                    context.pushNamed(SettingsPageWidget.routeName);
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.settings,
-                      ),
-                      title: Text(
-                        FFLocalizations.of(context).getText(
-                          '4hnz864d' /* Settings */,
-                        ),
-                        style: const TextStyle(),
-                      ),
-                      dense: false,
-                    ),
-                  ),
-                ),
               InkWell(
                 splashColor: Colors.transparent,
                 focusColor: Colors.transparent,
@@ -688,6 +482,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
             ],
           ),
         ),
+        ),
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
@@ -707,7 +502,18 @@ class _HomePageWidgetState extends State<HomePageWidget>
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: const [],
+          actions: [
+            // Restored gap vs the reference app: the header "Mobile /
+            // Name..." global customer search (orders + leads by name or
+            // phone) — see GlobalSearchDelegate. 48x48dp default IconButton
+            // target.
+            IconButton(
+              tooltip: 'Search orders & leads',
+              icon: const Icon(Icons.search),
+              onPressed: () =>
+                  showSearch(context: context, delegate: GlobalSearchDelegate()),
+            ),
+          ],
           centerTitle: true,
           elevation: 0.0,
         ),

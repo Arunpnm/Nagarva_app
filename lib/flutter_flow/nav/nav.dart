@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '/main.dart';
 import '/app_session.dart';
+import '/backend/device_org_binding.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 import '/index.dart';
@@ -36,7 +37,14 @@ class AppStateNotifier extends ChangeNotifier {
 // of redirecting, since nothing but each page's own queries enforced
 // auth. main() fully awaits Supabase session restore before runApp() (see
 // main.dart), so this can't race a still-restoring session on cold start.
-const _kPublicRoutePrefixes = ['/login', '/signup', '/survey', '/quote'];
+const _kPublicRoutePrefixes = [
+  '/login',
+  '/signup',
+  '/survey',
+  '/quote',
+  '/pin-login',
+  '/bind-org',
+];
 
 bool _isPublicRoute(String path) =>
     path == '/' || _kPublicRoutePrefixes.any((p) => path.startsWith(p));
@@ -128,12 +136,29 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: '_initialize',
           path: '/',
-          builder: (context, _) => const LoginPageWidget(),
+          // Parity brief Part 7: PIN-first entry. A device with no org
+          // bound yet sees the one-time binding screen; a bound device
+          // goes straight to the PIN screen. The old email/password +
+          // phone/PIN LoginPageWidget is still reachable (both new
+          // screens link to it) but is no longer the default landing page.
+          builder: (context, _) => DeviceOrgBinding.isBound
+              ? const PinLoginPageWidget()
+              : const OrgBindingPageWidget(),
         ),
         FFRoute(
           name: LoginPageWidget.routeName,
           path: LoginPageWidget.routePath,
           builder: (context, params) => const LoginPageWidget(),
+        ),
+        FFRoute(
+          name: PinLoginPageWidget.routeName,
+          path: PinLoginPageWidget.routePath,
+          builder: (context, params) => const PinLoginPageWidget(),
+        ),
+        FFRoute(
+          name: OrgBindingPageWidget.routeName,
+          path: OrgBindingPageWidget.routePath,
+          builder: (context, params) => const OrgBindingPageWidget(),
         ),
         FFRoute(
           name: HomePageWidget.routeName,

@@ -35,8 +35,13 @@ class MobileBottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
   final bool visible;
 
-  static const double barHeight = 64.0;
-  static const double _itemWidth = 64.0;
+  static const double barHeight = 68.0;
+  // Widened from an earlier 64dp — at 64dp "Dashboard"/"Leads / CRM" (the
+  // full owner nav set's longest labels) truncated to "Dashbo…" even on a
+  // single line, found live-testing on a real phone. 76dp plus the 2-line
+  // wrap in _NavItem below comfortably fits every label in this app's nav
+  // set without ellipsis.
+  static const double _itemWidth = 76.0;
 
   @override
   Widget build(BuildContext context) {
@@ -130,14 +135,24 @@ class _NavItem extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? theme.primary : theme.secondaryText,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Text(
+                item.label,
+                textAlign: TextAlign.center,
+                // 2 lines rather than 1 + ellipsis: at any width narrow
+                // enough to matter, "Dashboard" and "Leads / CRM" (this
+                // app's longest labels) still fit fully across two lines
+                // instead of truncating — Part 5a requires labels ALWAYS
+                // visible, not just present.
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 9.5,
+                  height: 1.1,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? theme.primary : theme.secondaryText,
+                ),
               ),
             ),
           ],

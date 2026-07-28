@@ -232,13 +232,124 @@
     and the subtotal reacts, save, then open the resulting order (once
     converted) and confirm the breakdown section renders.
 
+- **🔨 Part 7 — Unified PIN login (nagarva_part7_login.md, added mid-session)
+  — BUILT, NOT DEPLOYED, NOT LIVE-VERIFIED.** The single riskiest piece of
+  this session — a real auth-flow change, not a UI reskin — so this entry
+  is deliberately detailed. Confirmed the design with the owner before
+  writing any code: the owner's PIN does **not** create a shadow auth user
+  the way staff PINs do; it verifies against a hash on the owner's own
+  `org_members` row and, on match, mints a session for the owner's real,
+  pre-existing Supabase Auth account. Every existing owner-only permission
+  check in the app (`currentStaffId == null` nav filtering, Lock/logout,
+  RLS keyed on `auth.uid()`) is therefore untouched.
+  - **`supabase/20260728_org_pin_login.sql` (NOT YET RUN)**: adds
+    `pin`/`pin_hash` to `org_members` with the same write-only bcrypt-hash
+    trigger pattern as `staff.pin`/`staff.pin_hash`; a new
+    `org_pin_attempts` table for **org-wide** rate limiting (5 fails / 15
+    min) — necessarily org-wide rather than per-row like
+    `verify_staff_pin()`, because the PIN screen doesn't know in advance
+    whether 4 digits belong to the owner or a staff member, so there's no
+    single row to attribute a failed guess to until a match is found; the
+    unified `verify_org_pin(org_id, pin)` RPC that checks the owner pool
+    then the staff pool in one call; and a pre-auth `resolve_org_by_slug`
+    RPC for the one-time device binding screen (no session exists yet at
+    that point, so a normal RLS-scoped table read isn't possible).
+  - **`supabase/functions/pin-login/index.ts` (NOT YET DEPLOYED)**: new
+    Edge Function, separate from the existing `staff-login` function
+    (left completely untouched) so the new org-wide PIN pool can't affect
+    that already-shipped, already-tested path. Calls `verify_org_pin`;
+    on an owner match, mints a session directly for that real
+    `auth_user_id` (`admin.auth.admin.getUserById` + the same
+    generateLink/verifyOtp mint `staff-login` already uses); on a staff
+    match, reuses that exact shadow-user-creation flow.
+  - **Client**: `lib/backend/device_org_binding.dart` (SharedPreferences-
+    backed org binding), `lib/login_page/org_binding_page_widget.dart`
+    (one-time org-code entry, shown when no org is bound), and
+    `lib/login_page/pin_login_page_widget.dart` (the 4-digit-box screen:
+    auto-advance, backspace-back, auto-submit on the 4th digit, an
+    on-screen numpad, and a shake animation on a wrong PIN — ported from
+    the reference `LoginScreen`, adapted to Nagarva's own gold/navy brand
+    rather than the reference app's own internal theme tokens). The app's
+    initial route (`nav.dart`'s `_initialize`) now shows
+    `PinLoginPageWidget` if a device is bound, `OrgBindingPageWidget` if
+    not — **replacing** the old two-tab `LoginPageWidget` as the default
+    landing screen.
+  - **The old `LoginPageWidget` (email/password + phone/PIN) was
+    deliberately NOT deleted.** It's still fully intact and reachable via
+    a link on both new screens ("Use email login instead" / "First time?
+    Log in with email instead") for two reasons: (1) it's the only path
+    that can set an owner's PIN in the first place — see the new
+    Settings "App PIN" card below, which needs a normal logged-in session
+    to reach — and (2) none of this could be live-tested this session
+    (see below), so keeping a known-working fallback reachable is a
+    deliberate safety net, not an oversight.
+  - **New Settings card** (`_PinSettingCard` in settings_page_widget.dart,
+    owner-only): lets the owner set/change their PIN after a normal
+    email/password login, writing `org_members.pin` (write-only, hashed
+    by the new trigger) matched to their own `(org_id, user_id)` row.
+    **Live-test risk flagged explicitly**: this assumes `org_members`'
+    existing RLS permits a user to update their own row's `pin` column —
+    that policy's exact shape was not visible from this session (no live
+    DB access), so this is the single most likely point of live-test
+    failure in all of Part 7.
+  - **What's NOT done**: the SQL migration is not run and the Edge
+    Function is not deployed — **the entire feature is inert until both
+    happen** (the PIN screen will show a generic error on submit until
+    then, which is safe — it fails closed, not open). Nothing in Part 7
+    was live-tested even once — the network outage that blocked Parts
+    2/3/4/5's verification was already in effect before Part 7 was
+    written, and never lifted this session. Flagged built-not-verified
+    per the brief's own instruction, but stated more forcefully here
+    given this is auth code: **do not consider this safe to rely on
+    until you have personally walked through org binding, owner PIN
+    set-up, owner PIN login, and staff PIN login end-to-end.**
+  - Also not done: the exact reference-app pixel dimensions (58x66px
+    boxes, JetBrains Mono at the reference's precise weight/size) were
+    approximated rather than measured against a live render; the
+    multi-owner case (more than one `org_members` row with role='owner'
+    per org) works correctly in `verify_org_pin`'s loop but hasn't been
+    exercised since APC currently has one owner.
+
+- **✅ Follow-up fixes from live testing (owner testing directly on their
+  own machine, same repo, while this session continued — real bugs, acted
+  on immediately):**
+  - **Nav completeness bug**: HomePage's hamburger drawer hand-duplicated
+    main.dart's nav item list and had silently drifted to only 8 of the
+    12 real destinations — Accounts, Staff, Fleet, and P&L were missing
+    outright (not permission-filtered, just never added when those pages
+    were built). Fixed by extracting the list to `lib/nav_items.dart`
+    (`kAllNavItems`) as the single shared source for both the drawer and
+    NavBarPage's bottom nav/sidebar — they cannot drift apart again.
+  - **Bottom nav label truncation**: at the 64dp item width from the
+    initial Part 5 build, "Dashboard" and "Leads / CRM" (this app's
+    longest labels) truncated to "Dashbo…" etc. on a real phone —
+    Part 5a requires labels always fully visible. Widened to 76dp and
+    switched the label `Text` from 1-line-ellipsis to a 2-line wrap
+    (`lib/components/mobile_bottom_nav.dart`), which fits every label in
+    the current nav set without truncation.
+  - **Missing global search**: the reference app's header "Mobile /
+    Name..." search (finds a customer across orders and leads by name or
+    phone, ~line 14383) had no Nagarva equivalent at all. Added
+    `lib/components/global_search_delegate.dart` using Flutter's built-in
+    `SearchDelegate` (rather than the reference app's absolutely-
+    positioned dropdown, which doesn't translate directly) — a search
+    icon in HomePage's AppBar opens it; matches the reference app's own
+    behaviour of navigating to the Orders/Leads *list* on tap, not a
+    specific record's detail page.
+  - Not live-verified by me directly (same lack of external network this
+    whole session) — but the owner was actively testing the drawer/nav
+    issue live on their own machine and reported it, so treat that one
+    as effectively field-verified once they confirm the fix; the search
+    delegate and label-width fix are code-reviewed/analyze-clean only.
+
 - **⬜ Part 6 — Materials/inventory port, WA templates, gap report — NOT
   STARTED.** Per the brief: "Only start this after 1-5 are done and
   committed... if time runs out, report as not started." Parts 1, 5, 2,
-  4 are done and committed; Part 3 only partially so; time ran out before
-  reaching Part 6 at all. Nothing here has been touched — no Materials
-  page port, no `wa_templates` table/migration, no gap-report pass over
-  the reference app. Flagged honestly rather than a token attempt.
+  4, 3 are done (or done-with-caveats) and committed; Part 7 (added
+  mid-session) took the remaining time instead. Nothing here has been
+  touched — no Materials page port, no `wa_templates` table/migration, no
+  gap-report pass over the reference app. Flagged honestly rather than a
+  token attempt.
 
 ---
 
