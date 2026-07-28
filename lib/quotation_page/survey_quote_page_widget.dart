@@ -80,8 +80,47 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   bool _loading = true;
   bool _saving = false;
 
-  final _qty = <String, int>{}; // "cat|item|sub" -> qty
+  /// Quote lines, keyed "cat|item|sub".
+  ///
+  /// **CFT is captured on the line when it is added, never resolved at
+  /// total time.** This replaced a `Map<String,int>` of quantities whose
+  /// CFT was looked up by walking `_config.surveyCats` every time a total
+  /// was computed. That lookup returned 0 for anything not in the
+  /// catalogue — which is every custom item — so custom items silently
+  /// contributed nothing to the CFT total and under-sized the suggested
+  /// package and vehicle on live quotes.
+  ///
+  /// Storing per line also means a quote keeps the numbers it was
+  /// actually quoted at: editing a catalogue CFT later re-prices history
+  /// under the old model, but not under this one.
+  final _lines = <String, _QuoteLine>{};
   late final Map<String, TextEditingController> _amountCtrl;
+
+  int _qtyOf(String key) => _lines[key]?.qty ?? 0;
+
+  /// Adds [delta] to a line, creating it (capturing [cft]) if needed and
+  /// dropping it at zero so empty lines never reach the payload.
+  void _bump(String key,
+      {required int delta,
+      required String cat,
+      required String item,
+      required String sub,
+      required num cft}) {
+    setState(() {
+      final existing = _lines[key];
+      final next = (existing?.qty ?? 0) + delta;
+      if (next <= 0) {
+        _lines.remove(key);
+        return;
+      }
+      if (existing == null) {
+        _lines[key] = _QuoteLine(
+            cat: cat, item: item, sub: sub, cft: cft, qty: next);
+      } else {
+        existing.qty = next;
+      }
+    });
+  }
 
   /// Search over the item list. Matches category, item and variant names,
   /// so typing "sofa" or "washing" jumps straight to it instead of
@@ -90,25 +129,10 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   String _search = '';
 
   /// Custom (one-off) items the surveyor adds on site for anything the
-  /// configured catalogue doesn't cover.
-  ///
-  /// Kept in a separate list with their CFT carried alongside, because
-  /// _totalCft and _save resolve CFT by walking `_config.surveyCats` —
-  /// a custom item isn't in there, so it would otherwise silently count
-  /// as 0 CFT and skew the suggested package. They live under the
-  /// reserved [_kCustomCat] category and their CFT is looked up here
-  /// first.
+  /// configured catalogue doesn't cover. The CFT here seeds the line at
+  /// add-time; the line owns it from then on.
   static const String _kCustomCat = 'Custom Items';
   final List<({String name, num cft})> _customItems = [];
-
-  num? _customCftFor(String key) {
-    final parts = key.split('|');
-    if (parts.length < 3 || parts[0] != _kCustomCat) return null;
-    for (final c in _customItems) {
-      if (c.name == parts[1]) return c.cft;
-    }
-    return null;
-  }
 
   bool _matchesSearch(String cat, String item, String sub) {
     if (_search.isEmpty) return true;
@@ -180,32 +204,18 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
 
   double _amount(String key) => double.tryParse(_amountCtrl[key]!.text) ?? 0;
 
-  int get _totalItems => _qty.values.fold(0, (s, q) => s + q);
+  int get _totalItems => _lines.values.fold(0, (s, l) => s + l.qty);
 
-  num get _totalCft {
-    if (_config == null) return 0;
-    num total = 0;
-    _qty.forEach((key, qty) {
-      if (qty <= 0) return;
-      // Custom items aren't in surveyCats — resolve their CFT first, or
-      // they'd count as 0 and under-size the suggested package.
-      final custom = _customCftFor(key);
-      if (custom != null) {
-        total += custom * qty;
-        return;
-      }
-      final parts = key.split('|');
-      final cat = parts[0], itemName = parts[1], subLabel = parts[2];
-      final items = _config!.surveyCats[cat] ?? [];
-      for (final it in items) {
-        if (it.name != itemName) continue;
-        for (final s in it.subs) {
-          if (s.label == subLabel) total += s.cft * qty;
-        }
-      }
-    });
-    return total;
-  }
+  /// Sums the CFT stored on each line. No catalogue lookup — see
+  /// [_lines]' doc comment for why that lookup was the bug.
+  num get _totalCft =>
+      _lines.values.fold<num>(0, (s, l) => s + l.cft * l.qty);
+
+  /// Lines that would be persisted with cft == 0. Surfaced in the UI and
+  /// confirmed at save, rather than silently producing a quote whose
+  /// suggested package is too small.
+  List<_QuoteLine> get _zeroCftLines =>
+      _lines.values.where((l) => l.cft <= 0).toList();
 
   PackageInfo? get _suggestedPackage => _config == null
       ? null
@@ -238,33 +248,61 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           const SnackBar(content: Text('Enter customer name first.')));
       return;
     }
+
+    // Block a save that would persist 0-CFT lines unless explicitly
+    // confirmed — those are what silently under-sized the package before.
+    final zeros = _zeroCftLines;
+    if (zeros.isNotEmpty) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Some items have no CFT'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'These lines will be saved with 0 CFT, so they will not '
+                'count towards the suggested package or vehicle size:',
+              ),
+              const SizedBox(height: 10),
+              for (final l in zeros.take(6))
+                Text('•  ${l.item}${l.sub == 'Qty' ? '' : ' — ${l.sub}'}'),
+              if (zeros.length > 6) Text('…and ${zeros.length - 6} more'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Go back and fix'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Save anyway'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+    }
+
     setState(() => _saving = true);
     try {
-      final items = <Map<String, dynamic>>[];
-      _qty.forEach((key, qty) {
-        if (qty <= 0) return;
-        final parts = key.split('|');
-        final cat = parts[0], itemName = parts[1], subLabel = parts[2];
-        // Same custom-item lookup as _totalCft, so a one-off item is
-        // persisted with its real CFT rather than 0.
-        num cft = _customCftFor(key) ?? 0;
-        if (cft == 0) {
-          for (final it in _config!.surveyCats[cat] ?? <SurveyItem>[]) {
-            if (it.name != itemName) continue;
-            for (final s in it.subs) {
-              if (s.label == subLabel) cft = s.cft;
-            }
-          }
-        }
-        items.add({
-          'cat': cat,
-          'item': itemName,
-          'sub': subLabel,
-          'qty': qty,
-          'cft': cft,
-          'totalCftItem': cft * qty,
-        });
-      });
+      // CFT comes off the line, captured when it was added. No catalogue
+      // lookup here — that lookup is exactly what returned 0 for custom
+      // items and mis-priced live quotes.
+      final items = <Map<String, dynamic>>[
+        for (final l in _lines.values)
+          {
+            'cat': l.cat,
+            'item': l.item,
+            'sub': l.sub,
+            'qty': l.qty,
+            'cft': l.cft,
+            'totalCftItem': l.cft * l.qty,
+            if (l.cat == _kCustomCat) 'custom': true,
+          },
+      ];
       final charges = <String, dynamic>{
         for (final f in kDefaultChargeFields) f.key: _amount(f.key),
       };
@@ -551,7 +589,8 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
 
   Widget _customItemRow(FlutterFlowTheme theme, ({String name, num cft}) c) {
     final key = '$_kCustomCat|${c.name}|Qty';
-    final qty = _qty[key] ?? 0;
+    final qty = _qtyOf(key);
+    final zeroCft = c.cft <= 0;
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -561,18 +600,36 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             : theme.primaryBackground,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-            color: qty > 0
-                ? theme.primary
-                : theme.secondaryText.withValues(alpha: 0.3)),
+            color: zeroCft && qty > 0
+                ? theme.warning
+                : qty > 0
+                    ? theme.primary
+                    : theme.secondaryText.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           Expanded(
-            child: Text('${c.name} (${c.cft} cft)',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                    fontSize: 12.5, color: theme.primaryText)),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text('${c.name} (${c.cft} cft)',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                          fontSize: 12.5, color: theme.primaryText)),
+                ),
+                // Make a 0-CFT line obvious at the point of entry, not
+                // only at save time.
+                if (zeroCft) ...[
+                  const SizedBox(width: 6),
+                  Tooltip(
+                    message: 'No CFT — will not count towards the package',
+                    child: Icon(Icons.warning_amber_rounded,
+                        size: 16, color: theme.warning),
+                  ),
+                ],
+              ],
+            ),
           ),
           SizedBox(
             width: 36,
@@ -583,16 +640,27 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               icon: Icon(Icons.delete_outline, size: 18, color: theme.error),
               onPressed: () => setState(() {
                 _customItems.removeWhere((x) => x.name == c.name);
-                _qty.remove(key);
+                _lines.remove(key);
               }),
             ),
           ),
           _stepper(
             theme,
             qty: qty,
-            onMinus:
-                qty > 0 ? () => setState(() => _qty[key] = qty - 1) : null,
-            onPlus: () => setState(() => _qty[key] = qty + 1),
+            onMinus: qty > 0
+                ? () => _bump(key,
+                    delta: -1,
+                    cat: _kCustomCat,
+                    item: c.name,
+                    sub: 'Qty',
+                    cft: c.cft)
+                : null,
+            onPlus: () => _bump(key,
+                delta: 1,
+                cat: _kCustomCat,
+                item: c.name,
+                sub: 'Qty',
+                cft: c.cft),
           ),
         ],
       ),
@@ -657,8 +725,15 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     }
     setState(() {
       _customItems.add((name: name, cft: cft));
-      // Start at 1 — the surveyor just told us this item exists.
-      _qty['$_kCustomCat|$name|Qty'] = 1;
+      // Start at 1 — the surveyor just told us this item exists. CFT is
+      // baked onto the line here and never re-resolved.
+      _lines['$_kCustomCat|$name|Qty'] = _QuoteLine(
+        cat: _kCustomCat,
+        item: name,
+        sub: 'Qty',
+        cft: cft,
+        qty: 1,
+      );
       // Clear the search so the new row isn't hidden by a filter that no
       // longer matches anything.
       _itemSearch.clear();
@@ -732,7 +807,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   Widget _variantRow(
       FlutterFlowTheme theme, String cat, String itemName, SurveySubItem sub) {
     final key = '$cat|$itemName|${sub.label}';
-    final qty = _qty[key] ?? 0;
+    final qty = _qtyOf(key);
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -761,9 +836,21 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           _stepper(
             theme,
             qty: qty,
-            onMinus:
-                qty > 0 ? () => setState(() => _qty[key] = qty - 1) : null,
-            onPlus: () => setState(() => _qty[key] = qty + 1),
+            // sub.cft is read here, at add time, and stored on the line.
+            onMinus: qty > 0
+                ? () => _bump(key,
+                    delta: -1,
+                    cat: cat,
+                    item: itemName,
+                    sub: sub.label,
+                    cft: sub.cft)
+                : null,
+            onPlus: () => _bump(key,
+                delta: 1,
+                cat: cat,
+                item: itemName,
+                sub: sub.label,
+                cft: sub.cft),
           ),
         ],
       ),
@@ -1025,4 +1112,32 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       ),
     );
   }
+}
+
+/// One line on a quote.
+///
+/// [cft] is captured when the line is created and is never recomputed
+/// from the catalogue. That is the whole point: the previous model kept
+/// only quantities and resolved CFT by walking `_config.surveyCats` at
+/// total time, which returned 0 for any item not in the catalogue — i.e.
+/// every custom item — so custom items contributed nothing to the CFT
+/// total and under-sized the suggested package on live quotes.
+///
+/// Storing it per line also means a saved quote keeps the numbers it was
+/// actually quoted at, rather than silently re-pricing if someone edits
+/// the org's catalogue CFT values later.
+class _QuoteLine {
+  _QuoteLine({
+    required this.cat,
+    required this.item,
+    required this.sub,
+    required this.cft,
+    required this.qty,
+  });
+
+  final String cat;
+  final String item;
+  final String sub;
+  final num cft;
+  int qty;
 }

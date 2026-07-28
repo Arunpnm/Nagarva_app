@@ -25,6 +25,21 @@ class QuotationBreakdownSection extends StatefulWidget {
       _QuotationBreakdownSectionState();
 }
 
+/// Counts persisted lines with cft <= 0. Tolerates cft arriving as a num
+/// or a string, since jsonb round-trips have produced both.
+int _zeroCftCount(List<dynamic> items) {
+  var n = 0;
+  for (final raw in items) {
+    if (raw is! Map) continue;
+    final v = raw['cft'];
+    final cft = v is num ? v : num.tryParse('$v');
+    // A line with no cft key at all predates the field entirely — don't
+    // flag it as a zero, it just wasn't recorded.
+    if (v != null && (cft == null || cft <= 0)) n++;
+  }
+  return n;
+}
+
 class _QuotationBreakdownSectionState
     extends State<QuotationBreakdownSection> {
   QuotationsRow? _quotation;
@@ -94,6 +109,42 @@ class _QuotationBreakdownSectionState
                 style: GoogleFonts.inter(
                     fontSize: 12.5, color: theme.secondaryText)),
             const SizedBox(height: 8),
+          ],
+          // Flags quotes saved before the 28 Jul 2026 custom-item CFT fix,
+          // where a line persisted with cft 0 and so contributed nothing
+          // to the CFT total — making the suggested package and vehicle
+          // too small. Read-only warning: nothing is rewritten, because
+          // the intended CFT for a one-off item can't be inferred after
+          // the fact. See supabase/diagnostics_zero_cft_quotes.sql.
+          if (_zeroCftCount(items) > 0) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.warning.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.warning.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      size: 17, color: theme.warning),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${_zeroCftCount(items)} item line(s) on this quote have '
+                      'no CFT, so the total CFT and suggested vehicle may be '
+                      'under-sized. Re-quote before dispatch if it matters.',
+                      style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          height: 1.35,
+                          color: theme.primaryText),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
           for (final line in chargeLines)
             Padding(
