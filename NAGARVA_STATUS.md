@@ -173,6 +173,50 @@
     `/survey?token=...` correctly, submit the ad-hoc quote form and
     confirm the insert succeeds without a duplicate-key/null-id error).
 
+- **🔨 Part 3 — Survey & Quote port — DATA LAYER + MIGRATION BUILT, UI NOT
+  STARTED.** Per the brief's own explicit permission ("Parts 3 and 6 are
+  the largest and may not finish today... a truthful 'built, not
+  verified' is worth more than a false tick"), this is a deliberate,
+  honest partial stop rather than a rushed half-working UI.
+  - **What's built**: `lib/backend/pricing_defaults.dart` — Dart port of
+    `SURVEY_CATS` (all 5 categories actually present in the reference
+    file — Bedrooms, Living Room, Kitchen, Miscellaneous, Cartons &
+    Packing; the brief said "six categories" but the source only has
+    five, confirmed by reading it directly rather than guessing),
+    `DEFAULT_CFT_RANGES`, `DEFAULT_PACKAGES`, `DEFAULT_PORTER_RATES`, and
+    the full charge-field list with the 5 billing-mode-eligible keys
+    (packing/unpacking/loading/unloading/materials) flagged. A
+    `PricingConfig.loadForCurrentOrg()` loader reads the org's
+    `pricing_config.config` jsonb and falls back to these Dart constants
+    **key-by-key** (not row-by-row), so a vendor who's only customized
+    `packages` still gets APC's default `survey_cats`.
+  - `supabase/20260728_pricing_config_survey_seed.sql` (**NOT YET
+    RUN**): extends the existing `pricing_config` table (per the brief's
+    instruction — did not create a new table) with a unique constraint on
+    `org_id` (needed for the upsert) plus an idempotent seed — re-running
+    it only fills in keys an org's `config` doesn't already have
+    (`excluded.config || pricing_config.config`, existing keys always
+    win), so it's safe to run again after a vendor customizes their
+    pricing.
+  - **What's NOT built (all of 3a-3e's actual UI)**: the item-counter
+    survey screen (~50 `+/-` counters across the 5 categories), the
+    package-suggestion summary card, the redesigned quotation charges
+    form (billing-mode dropdowns, other charges, add-ons, discount), the
+    GST rate/type/show-in-PDF UI, and surfacing any of this on
+    OrderDetailPage. None of this was started — the data these screens
+    will need is ready, but building 5 interconnected screens well enough
+    to trust was not something to rush in the time remaining this
+    session.
+  - **Not live-verified** (nothing to verify yet — no UI built).
+
+- **⬜ Part 6 — Materials/inventory port, WA templates, gap report — NOT
+  STARTED.** Per the brief: "Only start this after 1-5 are done and
+  committed... if time runs out, report as not started." Parts 1, 5, 2,
+  4 are done and committed; Part 3 only partially so; time ran out before
+  reaching Part 6 at all. Nothing here has been touched — no Materials
+  page port, no `wa_templates` table/migration, no gap-report pass over
+  the reference app. Flagged honestly rather than a token attempt.
+
 ---
 
 ## ✅ COMPLETED
@@ -186,7 +230,14 @@
 - ✅ Vendor↔staff session swap; silent vendor restore on Lock;
       staff-aware app reload (no privilege escalation on refresh)
 - ✅ GitHub repo + green CI (analyze + sanity tests)
-- ✅ Brand system: navy/gold/teal, Manrope + IBM Plex Mono, 3 themes
+- ✅ Brand system: navy/gold/teal, 3 themes — **corrected 28 Jul 2026**:
+      this line was inaccurate before today's parity-brief pass (colors
+      were actually amber/orange `#F59E0B`/`#FFA000`, and there were only
+      2 themes, not 3 — see Part 2 entry above for what was actually
+      fixed). The **Manrope + IBM Plex Mono** font claim is still not
+      true — the app uses Inter/Inter Tight (Google Fonts) throughout;
+      no font swap was in today's scope, flagging here rather than
+      silently repeating the claim
 
 ### Staff & RBAC
 - ✅ Staff CRUD (roles, PIN, PF/ESIC toggles, active/inactive, plan gating)
