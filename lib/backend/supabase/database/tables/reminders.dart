@@ -50,4 +50,29 @@ class RemindersRow extends SupabaseDataRow {
 
   String? get createdBy => getField<String>('created_by');
   set createdBy(String? value) => setField<String>('created_by', value);
+
+  // ---- Added by supabase/20260728_reminders_and_soft_delete.sql (item 10).
+  // This table pre-dated that migration with lead_id/order_id FK columns and
+  // a `done` boolean; the migration added the polymorphic pair and a real
+  // status, backfilled both, and keeps `status` and `done` in sync with a
+  // trigger. So `done` above and `status` here always agree — read either,
+  // but prefer `status`, since it can also express 'cancelled', which the
+  // boolean cannot.
+  String? get entityType => getField<String>('entity_type');
+  set entityType(String? value) => setField<String>('entity_type', value);
+
+  /// TEXT, not uuid — holds a leads.id/quotations.id (uuid-as-text) or an
+  /// orders.id (NGV-XXXX).
+  String? get entityId => getField<String>('entity_id');
+  set entityId(String? value) => setField<String>('entity_id', value);
+
+  String? get status => getField<String>('status');
+  set status(String? value) => setField<String>('status', value);
+
+  DateTime? get completedAt => getField<DateTime>('completed_at');
+  set completedAt(DateTime? value) =>
+      setField<DateTime>('completed_at', value);
+
+  String? get assignedTo => getField<String>('assigned_to');
+  set assignedTo(String? value) => setField<String>('assigned_to', value);
 }

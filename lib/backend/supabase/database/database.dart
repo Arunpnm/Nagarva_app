@@ -10,6 +10,8 @@ export 'tables/expenses.dart';
 export 'tables/leads.dart';
 export 'tables/materials.dart';
 export 'tables/notifications.dart';
+export 'tables/audit_log.dart';
+export 'tables/follow_up_logs.dart';
 export 'tables/payment_entries.dart';
 export 'tables/salary_payments.dart';
 export 'tables/order_staff.dart';

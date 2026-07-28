@@ -309,6 +309,40 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                     // Vendor self-service branding: business details, logo,
                     // e-signature — all feed the invoice PDF.
                     const BusinessSettingsSection(),
+                    // Item 11.6: recycle bin. Owner-only, same gate as the
+                    // PIN card above.
+                    if (AppSession.instance.currentStaffId == null)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color:
+                              FlutterFlowTheme.of(context).secondaryBackground,
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        child: ListTile(
+                          leading: Icon(Icons.restore_from_trash,
+                              color: FlutterFlowTheme.of(context).primary),
+                          title: Text(
+                            'Deleted Items',
+                            style: GoogleFonts.interTight(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: FlutterFlowTheme.of(context).primaryText,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Restore anything deleted in the last 90 days',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                            ),
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () =>
+                              context.pushNamed(RecycleBinPage.routeName),
+                        ),
+                      ),
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(

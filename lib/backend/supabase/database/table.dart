@@ -1,10 +1,36 @@
+import '/backend/soft_delete.dart';
 import 'database.dart';
 
 abstract class SupabaseTable<T extends SupabaseDataRow> {
   String get tableName;
   T createRow(Map<String, dynamic> data);
 
-  PostgrestFilterBuilder _select() => SupaFlow.client.from(tableName).select();
+  /// Soft delete (fix brief #2, item 11) — the read-side half.
+  ///
+  /// The brief calls this the risky part: "a deleted lead that vanishes
+  /// from the list but still counts in dashboard numbers is worse than no
+  /// delete at all", and "half-done soft delete is worse than none".
+  ///
+  /// So the filter is applied HERE, at the one funnel every read already
+  /// passes through, rather than at ~40 individual call sites. Every
+  /// `queryRows`/`querySingleRow` in the app — lists, dashboard KPIs, P&L
+  /// totals, reports, dropdown lookups — gets it automatically, including
+  /// queries written in future that nobody remembers to update. It is
+  /// applied by TABLE, not by screen, which is what the brief asked for.
+  ///
+  /// `update`/`delete` deliberately do NOT go through here: they build off
+  /// `.from(tableName).update(...)` directly, so restoring a deleted row
+  /// still works.
+  ///
+  /// The ONE read that must bypass this is the recycle bin, which exists
+  /// to show deleted rows — see SoftDeleteService.recycleBin, which
+  /// queries `SupaFlow.client.from(...)` directly and says so.
+  PostgrestFilterBuilder _select() {
+    final q = SupaFlow.client.from(tableName).select();
+    return kSoftDeleteTables.contains(tableName)
+        ? q.isFilter('deleted_at', null)
+        : q;
+  }
 
   Future<List<T>> queryRows({
     required PostgrestTransformBuilder Function(PostgrestFilterBuilder) queryFn,

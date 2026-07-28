@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '/config/app_config.dart';
 import '/backend/lead_status.dart';
+import '/backend/reminders_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -113,7 +114,15 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
     _model.lostLeadsList =
         (_model.leadsLostOut ?? []).toList().cast<LeadsRow>();
     safeSetState(() {});
+
+    // Item 10.5: which leads have an overdue follow-up. One query for the
+    // whole list rather than per row.
+    final overdue = await RemindersService.overdueEntityIds(kEntityLead);
+    if (mounted) safeSetState(() => _overdueLeadIds = overdue);
   }
+
+  /// Lead ids with at least one overdue reminder — drives the list badge.
+  Set<String> _overdueLeadIds = {};
 
   @override
   void dispose() {
@@ -1298,6 +1307,30 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                             ].divide(
                                                 const SizedBox(height: 4.0)),
                                           ),
+                                          // Item 10.5: overdue follow-up
+                                          // badge, so the list itself
+                                          // shows which leads are going
+                                          // quiet.
+                                          if (_overdueLeadIds
+                                              .contains(leadsListItemItem.id))
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsetsDirectional
+                                                      .fromSTEB(
+                                                      0, 0, 6, 0),
+                                              child: Tooltip(
+                                                message:
+                                                    'Follow-up overdue',
+                                                child: Icon(
+                                                  Icons
+                                                      .notification_important,
+                                                  size: 18,
+                                                  color: FlutterFlowTheme.of(
+                                                          context)
+                                                      .error,
+                                                ),
+                                              ),
+                                            ),
                                           // Item 5.5: was a raw
                                           // `status ?? '-'` in a single
                                           // flat colour. Now canonicalised

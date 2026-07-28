@@ -7,6 +7,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/components/global_search_delegate.dart';
 import '/components/keyboard_scroll_view.dart';
+import '/components/follow_up_summary_card.dart';
 import '/components/quick_entry_dialog.dart';
 import '/index.dart';
 import '/nav_items.dart';
@@ -69,7 +70,14 @@ class _HomePageWidgetState extends State<HomePageWidget>
   // pushed on top of Home (Record Payment, Quick Expense, New Order/Lead,
   // ...) is popped back to it.
   @override
-  void onPageRefresh() => _loadDashboard();
+  void onPageRefresh() {
+    _loadDashboard();
+    // Item 10.7: a follow-up completed on a lead must update the
+    // dashboard count on the way back.
+    _followUpKey.currentState?.reload();
+  }
+
+  final _followUpKey = GlobalKey<FollowUpSummaryCardState>();
 
   Future<void> _loadDashboard() async {
     // Vendor choice: only show the Porter KPI card when the org turned
@@ -606,6 +614,10 @@ class _HomePageWidgetState extends State<HomePageWidget>
                         // KPI cards they can't see anyway.
                         if (AppSession.instance.currentStaffId == null)
                           _periodSelector(context),
+                        // Item 10.5: today's / overdue follow-up counts.
+                        // Not money-gated — staff chase leads too. Renders
+                        // nothing when both counts are zero.
+                        FollowUpSummaryCard(key: _followUpKey),
                         Container(
                           child: Padding(
                             padding: const EdgeInsetsDirectional.fromSTEB(

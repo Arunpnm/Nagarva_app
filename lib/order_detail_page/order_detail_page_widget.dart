@@ -6,6 +6,8 @@ import 'package:printing/printing.dart';
 
 import '/app_session.dart';
 import '/backend/signature_service.dart';
+import '/backend/soft_delete.dart';
+import '/components/delete_action.dart';
 import '/backend/tracking_service.dart';
 import '/components/invoice_pdf.dart';
 import '/components/share_link_sheet.dart';
@@ -130,6 +132,83 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
 
   // ---- Item 6: tracking link --------------------------------------------
   bool _sharingTracking = false;
+
+  // ---- Item 11: delete --------------------------------------------------
+  bool _deleting = false;
+
+  /// Owner-only, and blocked entirely once payments exist or a GST invoice
+  /// has been issued — the guard is `can_delete_order()` server-side, so
+  /// the UI is not the only thing enforcing it.
+  Future<void> _deleteOrder() async {
+    if (widget.orderId == null) return;
+    setState(() => _deleting = true);
+    try {
+      final deleted = await DeleteAction.run(
+        context,
+        table: 'orders',
+        id: widget.orderId!,
+        entityLabel: 'order',
+        // Mandatory reason for orders, per item 11.4.
+        reasonRequired: true,
+        check: () => SoftDeleteService.canDeleteOrder(widget.orderId!),
+        onAlternative: (alt) {
+          if (alt == 'cancel_order') _cancelOrder();
+        },
+      );
+      if (deleted && mounted) context.pop();
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
+  }
+
+  /// The alternative offered when an order can't be deleted: keeps the row
+  /// and its financial record, takes it out of active jobs, and lands on
+  /// the customer-facing timeline like any other status change.
+  Future<void> _cancelOrder() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel this order?'),
+        content: const Text(
+          'The order and its payment history are kept, but it moves out of '
+          'your active jobs. This is the right choice for an order that was '
+          'called off.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep it'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+                foregroundColor: FlutterFlowTheme.of(context).error),
+            child: const Text('Cancel order'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await TrackingService.setStatus(
+        orderId: widget.orderId!,
+        status: 'cancelled',
+        note: 'Order cancelled',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Order cancelled')),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not cancel: $e')),
+        );
+      }
+    }
+  }
 
   /// Refresh-after-write: re-read the signature so the chip flips from
   /// "Awaiting" to "Signed" when returning to this page, without a
@@ -2000,6 +2079,16 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         ),
                       ),
                     ),
+                    // Item 11: owner-only, destructive, at the very bottom.
+                    // Staff don't see it at all rather than seeing a
+                    // button that always refuses.
+                    if (widget.orderId != null && SoftDeleteService.isOwner)
+                      DeleteAction.button(
+                        context: context,
+                        busy: _deleting,
+                        label: 'Delete Order',
+                        onPressed: _deleteOrder,
+                      ),
                   ].divide(const SizedBox(height: 12.0)),
                 ),
               ),

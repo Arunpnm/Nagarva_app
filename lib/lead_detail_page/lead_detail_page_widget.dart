@@ -5,7 +5,11 @@ import '/config/app_config.dart';
 import '/backend/lead_status.dart';
 import '/components/detail_row.dart';
 import '/components/lead_status_strip.dart';
+import '/backend/reminders_service.dart';
 import '/backend/signature_service.dart';
+import '/backend/soft_delete.dart';
+import '/components/delete_action.dart';
+import '/components/reminders_section.dart';
 import '/backend/tracking_service.dart';
 import '/components/share_link_sheet.dart';
 import '/backend/supabase/supabase.dart';
@@ -91,7 +95,12 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   // is popped back to this page, so the Survey & Quote section reflects
   // newly-created rows without needing a full back-and-forth to LeadsPage.
   @override
-  void onPageRefresh() => _loadLinked();
+  void onPageRefresh() {
+    _loadLinked();
+    // Item 10.7: reminders added/completed in a pushed route or sheet must
+    // show immediately too.
+    _remindersKey.currentState?.reload();
+  }
 
   // ---- Item 8 (CORE V1): Survey -> Quotation -> Order flow ---------------
   // See supabase/20260725_survey_quote_flow.sql for the scope assumption.
@@ -118,6 +127,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   // ---- Item 3: signature on the quote ----------------------------------
   SignatureRequest? _quoteSignature;
   bool _sendingQuoteSignature = false;
+
+  // ---- Item 10: reminders ----------------------------------------------
+  final _remindersKey = GlobalKey<RemindersSectionState>();
+  bool _deleting = false;
 
   String get _canonicalStatus => canonicalLeadStatus(_status);
 
@@ -486,6 +499,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       setState(() => _survey = row);
       // Item 5.2: sending a survey moves the lead to at least follow_up.
       await _setLeadStatus(kLeadStatusFollowUp);
+      // Item 10.4: chase the survey if the customer doesn't fill it in.
+      await RemindersService.autoCreate(
+        entityType: kEntityLead,
+        entityId: widget.leadId!,
+        title: 'Survey follow-up: ${widget.leadCustomer ?? 'customer'}',
+        days: kDefaultSurveyFollowUpDays,
+      );
+      _remindersKey.currentState?.reload();
       if (!mounted) return;
       _showLinkDialog('Survey link — share with the customer',
           _shareLink('/survey', row.token));
@@ -539,6 +560,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       setState(() => _quotation = row);
       // Item 5.2: a quote existing means the lead is at least 'quoted'.
       await _setLeadStatus(kLeadStatusQuoted);
+      // Item 10.4: "a quote sitting without chase is dead revenue".
+      await RemindersService.autoCreate(
+        entityType: kEntityLead,
+        entityId: widget.leadId!,
+        title: 'Quote follow-up: ${widget.leadCustomer ?? 'customer'}',
+        days: kDefaultQuoteFollowUpDays,
+      );
+      _remindersKey.currentState?.reload();
       if (!mounted) return;
       _showLinkDialog('Quote link — share with the customer',
           _shareLink('/quote', row.token!));
@@ -988,6 +1017,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                         DetailNote(text: widget.leadNotes),
                       ],
                     ),
+                    // Item 10: REMINDERS, above Survey & Quote as specified.
+                    if (widget.leadId != null)
+                      RemindersSection(
+                        key: _remindersKey,
+                        entityType: kEntityLead,
+                        entityId: widget.leadId!,
+                        customerName: widget.leadCustomer,
+                        customerPhone: widget.leadPhone,
+                      ),
                     // Item 5.4: pipeline progress strip, APC parity.
                     LeadStatusStrip(
                       status: _status,
@@ -1066,6 +1104,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                         ),
                       ),
                     ),
+                    // Item 11: destructive, at the bottom, deliberately
+                    // separated from the primary actions above.
+                    if (widget.leadId != null)
+                      DeleteAction.button(
+                        context: context,
+                        busy: _deleting,
+                        label: 'Delete Lead',
+                        onPressed: _deleteLead,
+                      ),
                   ].divide(const SizedBox(height: 12.0)),
                 ),
               ),
@@ -1074,6 +1121,32 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         ),
       ),
     );
+  }
+
+  /// Item 11: soft-delete this lead. Blocked once converted — the order
+  /// still references it, and "Lost" is the honest state for a lead that
+  /// didn't work out.
+  Future<void> _deleteLead() async {
+    setState(() => _deleting = true);
+    try {
+      final deleted = await DeleteAction.run(
+        context,
+        table: 'leads',
+        id: widget.leadId!,
+        entityLabel: 'lead',
+        check: () => SoftDeleteService.canDeleteLead(widget.leadId!),
+        onAlternative: (alt) {
+          if (alt == 'mark_lost') _confirmMarkLost();
+        },
+      );
+      if (deleted && mounted) {
+        // Straight back to the list — staying on a detail page for a row
+        // that no longer exists would just show stale data.
+        context.pop();
+      }
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
   }
 }
 

@@ -458,6 +458,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: PlanPageWidget.routePath,
           builder: (context, params) => const PlanPageWidget(),
         ),
+        // Item 11.6: owner-only recycle bin, reached from Settings.
+        FFRoute(
+          name: RecycleBinPage.routeName,
+          path: RecycleBinPage.routePath,
+          builder: (context, params) => const RecycleBinPage(),
+        ),
         FFRoute(
           name: SupervisorJobPageWidget.routeName,
           path: SupervisorJobPageWidget.routePath,
