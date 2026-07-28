@@ -6,6 +6,128 @@
 
 ---
 
+## 🔨 28 Jul 2026 — Live APK test fix brief #2 (nagarva_livetest_fix_brief_2.md)
+
+Worked in the brief's own suggested order: 1 → 2 → 5 → 8+9 → 3 → 6 → 7 → 4.
+
+- **✅ Item 1 — survey link crash on APK — FIXED.**
+  `Uri.base.origin` throws `Bad state: Origin is only applicable schemes
+  http and https: file:///` inside an APK, where `Uri.base` is `file:///`
+  rather than the page URL it is on web. Added
+  `lib/config/app_config.dart` with `kPublicBaseUrl`
+  (`https://nagarva.in`, overridable via
+  `--dart-define=NAGARVA_PUBLIC_BASE_URL`) plus `buildPublicLink` /
+  `buildTokenLink`. Both call sites converted; repo-wide grep confirms no
+  live `Uri.base` usage remains.
+  **Still needed before the acceptance test passes:** the Flutter web app
+  must actually be deployed at that origin, and WhatsApp share is not
+  wired — the link is currently shown in a copyable dialog.
+
+- **✅ Item 2 — detailed quote data lost on Convert to Order — FIXED.**
+  Two independent causes. (1) `orders.quotation_id` was never written, so
+  Order Details' existing `QuotationBreakdownSection` — which resolves
+  that link to render item lines/charges/GST — always found null. The
+  data was never lost, just unlinked. (2) `_loadLinked()` took
+  `rows.first` off an *unordered* query, so on a lead with more than one
+  quote it picked an arbitrary row, often the older simple quote
+  (`items: []`) instead of the detailed one just built. Now newest-first
+  with `_pickBestQuote` preferring a quote that has line items.
+  Also collapsed the two near-identical order-insert copies into one
+  `_createOrderFromLead` — that duplication *was* the underlying cause,
+  since only one copy was ever taught about quotes. **No migration
+  needed**: `orders` already had `quotation_id`, `from_address`,
+  `to_address`, `from_floor`, `to_floor`.
+
+- **✅ Item 5 — lead status flow — BUILT.**
+  Found a real live bug while defining the enum: LeadsPage's "Won" tab
+  queried `status = 'converted'` while Convert to Order writes
+  `'confirmed'` (as does PLReportPage), so **won leads never appeared in
+  that tab at all**. New `lib/backend/lead_status.dart` is the single
+  source of truth (`new → follow_up → survey_done → quoted → confirmed`,
+  + terminal `lost`), and `canonicalLeadStatus()` normalises legacy
+  spellings *on read* — so the app is correct whether or not the backfill
+  migration has been run. Auto-transitions never downgrade; survey
+  submission is reconciled on page load since it happens on the
+  customer's phone with no in-app event to hook. `LeadStatusStrip`
+  component gives the APC-parity progress strip with 48dp targets and
+  manual override; `lost` is behind a confirm dialog with an optional
+  reason appended to notes. Also removed a latent crash: the header
+  rendered `widget.leadStatus!`, which threw on any lead opened without
+  that nav param.
+  → `supabase/20260728_lead_status_canonical.sql` written, **NOT run.**
+
+- **✅ Item 9 — drawer + search ignore the theme — FIXED.**
+  The brief guessed hardcoded colours; it was the reverse. Those widgets
+  specify no colours at all (correctly), and `main.dart` passed
+  MaterialApp bare `ThemeData(brightness: ...)` carrying none of the
+  brand palette — so everything resolving against `Theme.of(context)`
+  (Drawer, ListTile, dialogs, bottom sheets, the search field) kept stock
+  Material grey while everything drawn from `FlutterFlowTheme` re-themed.
+  Midnight compounded it: it rides `ThemeMode.dark`, so `Theme.of()`
+  returned an *identical* ThemeData for Dark and Midnight.
+  Added `FlutterFlowTheme.toThemeData()` and made `darkTheme` pick by
+  variant. `GlobalSearchDelegate.appBarTheme()` overridden — SearchDelegate
+  does not inherit the ambient theme, so that was the only reachable fix
+  for the search surface.
+  **Live-verified in Chrome:** app boots clean, no console errors, and
+  dark mode now renders on brand navy `#0F2A47` instead of Material's
+  default grey. Deeper verification (drawer open, theme toggle, Lead
+  Details) needs a login this session did not have.
+
+- **✅ Item 4 — Lead Details alignment — PARTLY DONE.**
+  New `lib/components/detail_row.dart` (`DetailRow` / `DetailCard` /
+  `DetailNote`). Lead Details' Contact, Move Details and Notes cards
+  converted (−540 lines of boilerplate). Reported "Notes / Notes"
+  duplicate fixed (a section header wrapping a row with the same label),
+  empty Email row now hidden, "No notes yet" empty state added, and a
+  second null-crash (`widget.leadNotes!`) removed.
+  **NOT done:** the same sweep on Order Details (17 identical hand-rolled
+  rows) and the Quote screens, and the Survey & Quote section's
+  pill/button sizing (item 4.2).
+
+- **⚠️ Item 8 — dashboard blank space — NOT FIXED, could not reproduce.**
+  The brief's suspected cause is provably absent: there is no
+  `Visibility(...)` anywhere in `lib/`, and no placeholder widget is
+  rendered for a hidden tile — every permission gate is already a
+  collection-`if` that omits the child entirely, and the drawer already
+  filters before rendering. One suspicious find not yet confirmed as the
+  cause: an unconditional `Container(height: 100.0)` at the very bottom
+  of HomePage's column (a FlutterFlow artifact). Reproducing this needs a
+  logged-in session with a permission-restricted staff account, which
+  this session did not have. **Needs a screenshot showing which tile and
+  which screen.**
+
+- **🔨 Items 3 + 6 — signature and tracking links — BACKEND ONLY.**
+  `supabase/20260728_public_links_sign_and_track.sql` (**NOT run**):
+  `document_signatures`, `orders.tracking_token` (backfilled +
+  partial-unique), `order_status_history`, all org-scoped with
+  `org_isolation` RLS, plus three SECURITY DEFINER accessors granted to
+  `service_role` only. Edge Functions `sign-document` and `track-order`
+  written (**NOT deployed**). Anon RLS on `quotations`/`orders` stays
+  closed — the token is the credential, dereferenced only inside the
+  RPCs. Crew details on the tracking page are gated inside the RPC, not
+  the Edge Function, so a later edit to the function cannot leak them.
+  **The entire Flutter side is unbuilt**: `/sign/<token>` and
+  `/track/<token>` public routes, signature pad, "Send for Signature" /
+  "Share Tracking Link" actions, status chips, `status_history` writes on
+  staff-side status change, and the PDF signature block.
+
+- **⬜ Item 7 — multi-language — NOT STARTED.**
+  Largest surface area in the brief and deliberately last in its own
+  suggested order. Note the app already has `FFLocalizations` +
+  `internationalization.dart` with 11 locales declared, so this is a
+  migration/extraction job rather than a greenfield one — worth deciding
+  whether to migrate to ARB/`gen-l10n` or extend the existing mechanism
+  before starting.
+
+**Verification status, stated plainly:** `flutter analyze` held at the
+152-issue baseline for every commit. The app was live-booted in Chrome
+and renders cleanly in both light and dark. Nothing past the device-binding
+screen was exercised — that needs org credentials. No SQL was run and no
+Edge Function was deployed from this session.
+
+---
+
 ## 🔨 27-28 Jul 2026 — Parity brief (nagarva_parity_brief.md), worked in priority order 1,5,2,4,3,6
 
 - **✅ Part 1 — refresh-after-write bug — FIXED, live-verified in Chrome.**
