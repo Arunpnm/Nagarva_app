@@ -42,6 +42,8 @@ const _kPublicRoutePrefixes = [
   '/signup',
   '/survey',
   '/quote',
+  '/sign',
+  '/track',
   '/pin-login',
   '/bind-org',
 ];
@@ -476,6 +478,23 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: QuotePageWidget.routeName,
           path: QuotePageWidget.routePath,
           builder: (context, params) => QuotePageWidget(
+            token: params.getParam('token', ParamType.String),
+          ),
+        ),
+        // Fix brief #2 items 3 and 6 — same public-link pattern as the two
+        // above, but these read/write via the sign-document / track-order
+        // Edge Functions rather than anon-granted RPCs.
+        FFRoute(
+          name: SignPageWidget.routeName,
+          path: SignPageWidget.routePath,
+          builder: (context, params) => SignPageWidget(
+            token: params.getParam('token', ParamType.String),
+          ),
+        ),
+        FFRoute(
+          name: TrackPageWidget.routeName,
+          path: TrackPageWidget.routePath,
+          builder: (context, params) => TrackPageWidget(
             token: params.getParam('token', ParamType.String),
           ),
         ),

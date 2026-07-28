@@ -82,6 +82,53 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
 
   final _qty = <String, int>{}; // "cat|item|sub" -> qty
   late final Map<String, TextEditingController> _amountCtrl;
+
+  /// Search over the item list. Matches category, item and variant names,
+  /// so typing "sofa" or "washing" jumps straight to it instead of
+  /// scrolling five collapsed categories.
+  final _itemSearch = TextEditingController();
+  String _search = '';
+
+  /// Custom (one-off) items the surveyor adds on site for anything the
+  /// configured catalogue doesn't cover.
+  ///
+  /// Kept in a separate list with their CFT carried alongside, because
+  /// _totalCft and _save resolve CFT by walking `_config.surveyCats` —
+  /// a custom item isn't in there, so it would otherwise silently count
+  /// as 0 CFT and skew the suggested package. They live under the
+  /// reserved [_kCustomCat] category and their CFT is looked up here
+  /// first.
+  static const String _kCustomCat = 'Custom Items';
+  final List<({String name, num cft})> _customItems = [];
+
+  num? _customCftFor(String key) {
+    final parts = key.split('|');
+    if (parts.length < 3 || parts[0] != _kCustomCat) return null;
+    for (final c in _customItems) {
+      if (c.name == parts[1]) return c.cft;
+    }
+    return null;
+  }
+
+  bool _matchesSearch(String cat, String item, String sub) {
+    if (_search.isEmpty) return true;
+    final q = _search.toLowerCase();
+    return cat.toLowerCase().contains(q) ||
+        item.toLowerCase().contains(q) ||
+        sub.toLowerCase().contains(q);
+  }
+
+  /// Variants of [item] that survive the current search. An item whose
+  /// own name matches keeps all of its variants, so searching "sofa"
+  /// shows every sofa size rather than none.
+  List<SurveySubItem> _visibleSubs(SurveyItem item) {
+    if (_search.isEmpty) return item.subs;
+    final q = _search.toLowerCase();
+    if (item.name.toLowerCase().contains(q)) return item.subs;
+    return item.subs
+        .where((s) => s.label.toLowerCase().contains(q))
+        .toList();
+  }
   final _billingMode = <String, String>{}; // billable key -> included/additional
   double _gstPct = kGstDefaultPct.toDouble();
   String _gstType = 'auto'; // auto | intra | inter
@@ -124,6 +171,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     _phone.dispose();
     _fromAddr.dispose();
     _toAddr.dispose();
+    _itemSearch.dispose();
     for (final c in _amountCtrl.values) {
       c.dispose();
     }
@@ -139,6 +187,13 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     num total = 0;
     _qty.forEach((key, qty) {
       if (qty <= 0) return;
+      // Custom items aren't in surveyCats — resolve their CFT first, or
+      // they'd count as 0 and under-size the suggested package.
+      final custom = _customCftFor(key);
+      if (custom != null) {
+        total += custom * qty;
+        return;
+      }
       final parts = key.split('|');
       final cat = parts[0], itemName = parts[1], subLabel = parts[2];
       final items = _config!.surveyCats[cat] ?? [];
@@ -190,11 +245,15 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         if (qty <= 0) return;
         final parts = key.split('|');
         final cat = parts[0], itemName = parts[1], subLabel = parts[2];
-        num cft = 0;
-        for (final it in _config!.surveyCats[cat] ?? <SurveyItem>[]) {
-          if (it.name != itemName) continue;
-          for (final s in it.subs) {
-            if (s.label == subLabel) cft = s.cft;
+        // Same custom-item lookup as _totalCft, so a one-off item is
+        // persisted with its real CFT rather than 0.
+        num cft = _customCftFor(key) ?? 0;
+        if (cft == 0) {
+          for (final it in _config!.surveyCats[cat] ?? <SurveyItem>[]) {
+            if (it.name != itemName) continue;
+            for (final s in it.subs) {
+              if (s.label == subLabel) cft = s.cft;
+            }
           }
         }
         items.add({
@@ -272,8 +331,29 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   const SizedBox(height: 14),
                   _packageCard(theme),
                   const SizedBox(height: 14),
+                  _itemSearchBar(theme),
+                  const SizedBox(height: 10),
+                  _customItemsSection(theme),
                   ..._config!.surveyCats.entries
                       .map((e) => _categorySection(theme, e.key, e.value)),
+                  if (_search.isNotEmpty && !_anySearchMatch())
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      child: Column(
+                        children: [
+                          Text('No items match "$_search"',
+                              style: GoogleFonts.inter(
+                                  fontSize: 13.5,
+                                  color: theme.secondaryText)),
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: () => _addCustomItem(preset: _search),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: Text('Add "$_search" as a custom item'),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 14),
                   _chargesCard(theme),
                   const SizedBox(height: 14),
@@ -380,60 +460,101 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     );
   }
 
-  Widget _categorySection(
-      FlutterFlowTheme theme, String cat, List<SurveyItem> items) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
+  Widget _itemSearchBar(FlutterFlowTheme theme) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _itemSearch,
+            onChanged: (v) => setState(() => _search = v.trim()),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: 'Search items…',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _search.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      onPressed: () {
+                        _itemSearch.clear();
+                        setState(() => _search = '');
+                      },
+                    ),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
         ),
-        child: ExpansionTile(
-          title: Text(cat,
-              style: GoogleFonts.interTight(
-                  fontWeight: FontWeight.w700, color: theme.primaryText)),
-          children: [
-            for (final item in items) _itemRow(theme, cat, item),
-            const SizedBox(height: 6),
-          ],
+        const SizedBox(width: 8),
+        SizedBox(
+          height: 48,
+          child: OutlinedButton.icon(
+            onPressed: () => _addCustomItem(),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Custom'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.primary,
+              side: BorderSide(color: theme.primary),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _itemRow(FlutterFlowTheme theme, String cat, SurveyItem item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+  /// True if anything in the catalogue (or the custom list) survives the
+  /// current search — drives the "no matches, add it as custom" prompt.
+  bool _anySearchMatch() {
+    for (final c in _customItems) {
+      if (_matchesSearch(_kCustomCat, c.name, 'Qty')) return true;
+    }
+    for (final entry in _config!.surveyCats.entries) {
+      for (final item in entry.value) {
+        if (_visibleSubs(item).isNotEmpty) return true;
+      }
+    }
+    return false;
+  }
+
+  Widget _customItemsSection(FlutterFlowTheme theme) {
+    final visible = _customItems
+        .where((c) => _matchesSearch(_kCustomCat, c.name, 'Qty'))
+        .toList();
+    if (visible.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(0, 6, 0, 10),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(item.name,
-              style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: theme.primaryText)),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            children: [
-              for (final sub in item.subs) _variantCounter(theme, cat, item.name, sub),
-            ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(_kCustomCat,
+                style: GoogleFonts.interTight(
+                    fontWeight: FontWeight.w700, color: theme.primaryText)),
           ),
-          const SizedBox(height: 4),
+          for (final c in visible)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: _customItemRow(theme, c),
+            ),
         ],
       ),
     );
   }
 
-  Widget _variantCounter(
-      FlutterFlowTheme theme, String cat, String itemName, SurveySubItem sub) {
-    final key = '$cat|$itemName|${sub.label}';
+  Widget _customItemRow(FlutterFlowTheme theme, ({String name, num cft}) c) {
+    final key = '$_kCustomCat|${c.name}|Qty';
     final qty = _qty[key] ?? 0;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
         color: qty > 0
             ? theme.primary.withValues(alpha: 0.12)
@@ -445,22 +566,230 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 : theme.secondaryText.withValues(alpha: 0.3)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Text('${sub.label} (${sub.cft} cft)',
-              style: GoogleFonts.inter(fontSize: 11.5, color: theme.primaryText)),
-          const SizedBox(width: 6),
-          // 48x48dp tap targets throughout (parity brief Part 5e — built
-          // to spec from the start rather than retrofitted).
+          Expanded(
+            child: Text('${c.name} (${c.cft} cft)',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                    fontSize: 12.5, color: theme.primaryText)),
+          ),
+          SizedBox(
+            width: 36,
+            height: 40,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              tooltip: 'Remove custom item',
+              icon: Icon(Icons.delete_outline, size: 18, color: theme.error),
+              onPressed: () => setState(() {
+                _customItems.removeWhere((x) => x.name == c.name);
+                _qty.remove(key);
+              }),
+            ),
+          ),
+          _stepper(
+            theme,
+            qty: qty,
+            onMinus:
+                qty > 0 ? () => setState(() => _qty[key] = qty - 1) : null,
+            onPlus: () => setState(() => _qty[key] = qty + 1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Adds a one-off item not in the configured catalogue. [preset]
+  /// pre-fills the name when launched from the "no matches" prompt.
+  Future<void> _addCustomItem({String? preset}) async {
+    final nameCtrl = TextEditingController(text: preset ?? '');
+    final cftCtrl = TextEditingController();
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Add custom item'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Item name',
+                hintText: 'e.g. Piano, Aquarium',
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: cftCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'CFT per unit',
+                hintText: 'e.g. 30',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    final name = nameCtrl.text.trim();
+    final cft = num.tryParse(cftCtrl.text.trim()) ?? 0;
+    nameCtrl.dispose();
+    cftCtrl.dispose();
+    if (added != true || name.isEmpty) return;
+    if (!mounted) return;
+    if (_customItems.any((c) => c.name.toLowerCase() == name.toLowerCase())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('"$name" is already in the list.')),
+      );
+      return;
+    }
+    setState(() {
+      _customItems.add((name: name, cft: cft));
+      // Start at 1 — the surveyor just told us this item exists.
+      _qty['$_kCustomCat|$name|Qty'] = 1;
+      // Clear the search so the new row isn't hidden by a filter that no
+      // longer matches anything.
+      _itemSearch.clear();
+      _search = '';
+    });
+  }
+
+  Widget _categorySection(
+      FlutterFlowTheme theme, String cat, List<SurveyItem> items) {
+    // Hide a whole category when nothing in it matches the search.
+    final visibleItems =
+        items.where((i) => _visibleSubs(i).isNotEmpty).toList();
+    if (visibleItems.isEmpty) return const SizedBox.shrink();
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: theme.secondaryBackground,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ExpansionTile(
+          // Auto-expand while searching so matches are visible without
+          // having to open each category by hand. The ValueKey forces
+          // ExpansionTile to rebuild its state when the search toggles,
+          // since initiallyExpanded is only read on first build.
+          key: ValueKey('$cat-${_search.isNotEmpty}'),
+          initiallyExpanded: _search.isNotEmpty,
+          title: Text(cat,
+              style: GoogleFonts.interTight(
+                  fontWeight: FontWeight.w700, color: theme.primaryText)),
+          children: [
+            for (final item in visibleItems) _itemRow(theme, cat, item),
+            const SizedBox(height: 6),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _itemRow(FlutterFlowTheme theme, String cat, SurveyItem item) {
+    // When a search is active, show only the variants that match, so the
+    // list collapses to just the relevant lines.
+    final subs = _visibleSubs(item);
+    if (subs.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(item.name,
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: theme.primaryText)),
+          const SizedBox(height: 6),
+          // Was a `Wrap` of intrinsic-width pills. Because each pill sized
+          // itself to its own label ("Top Load (15 cft)" vs "Small (5
+          // cft)"), the rows came out ragged and the +/- controls sat at a
+          // different x on every line — the misalignment reported from the
+          // phone. Now every variant is a full-width row: label flexes on
+          // the left, the stepper is a fixed-width cluster pinned right,
+          // so all the controls line up in one column.
+          for (final sub in subs) _variantRow(theme, cat, item.name, sub),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _variantRow(
+      FlutterFlowTheme theme, String cat, String itemName, SurveySubItem sub) {
+    final key = '$cat|$itemName|${sub.label}';
+    final qty = _qty[key] ?? 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: qty > 0
+            ? theme.primary.withValues(alpha: 0.12)
+            : theme.primaryBackground,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: qty > 0
+                ? theme.primary
+                : theme.secondaryText.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${sub.label} (${sub.cft} cft)',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  GoogleFonts.inter(fontSize: 12.5, color: theme.primaryText),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _stepper(
+            theme,
+            qty: qty,
+            onMinus:
+                qty > 0 ? () => setState(() => _qty[key] = qty - 1) : null,
+            onPlus: () => setState(() => _qty[key] = qty + 1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Fixed-width so every row's controls align on one vertical grid.
+  /// 40x40 tap targets (parity brief Part 5e).
+  Widget _stepper(
+    FlutterFlowTheme theme, {
+    required int qty,
+    required VoidCallback? onMinus,
+    required VoidCallback onPlus,
+  }) {
+    return SizedBox(
+      width: 102,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
           SizedBox(
             width: 40,
             height: 40,
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: const Icon(Icons.remove_circle_outline, size: 20),
-              onPressed: qty > 0
-                  ? () => setState(() => _qty[key] = qty - 1)
-                  : null,
+              onPressed: onMinus,
             ),
           ),
           SizedBox(
@@ -476,7 +805,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: const Icon(Icons.add_circle_outline, size: 20),
-              onPressed: () => setState(() => _qty[key] = qty + 1),
+              onPressed: onPlus,
             ),
           ),
         ],
