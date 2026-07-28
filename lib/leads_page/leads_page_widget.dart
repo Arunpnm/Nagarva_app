@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '/config/app_config.dart';
+import '/backend/lead_status.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -66,43 +67,48 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
     safeSetState(() {});
     _model.allLeadsList = (_model.leadsAllOut ?? []).toList().cast<LeadsRow>();
     safeSetState(() {});
+    // Live-test fix brief #2, item 5: every tab below matched a single
+    // hand-written status string, and the "Won" tab's string was
+    // 'converted' while Convert to Order actually writes 'confirmed' — so
+    // won leads never appeared in it. Tabs now match against the canonical
+    // value PLUS its known legacy spellings (leadStatusMatchValues), so
+    // they are correct whether or not
+    // supabase/20260728_lead_status_canonical.sql has been run yet.
     _model.leadsNewOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eqOrNull(
-        'status',
-        'new',
-      ),
+      queryFn: (q) => OrgScope
+          .read(q)
+          .inFilter('status', leadStatusMatchValues(kLeadStatusNew)),
     );
     _model.newLeadsList = (_model.leadsNewOut ?? []).toList().cast<LeadsRow>();
     safeSetState(() {});
     _model.leadsContactedOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eqOrNull(
-        'status',
-        'contacted',
-      ),
+      queryFn: (q) => OrgScope
+          .read(q)
+          .inFilter('status', leadStatusMatchValues(kLeadStatusFollowUp)),
     );
     _model.contactedLeadsList =
         (_model.leadsContactedOut ?? []).toList().cast<LeadsRow>();
     safeSetState(() {});
     _model.leadsQualifiedOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q)
-          .or("status.eq.\"survey_done\", status.eq.\"quoted\""),
+      queryFn: (q) => OrgScope.read(q).inFilter('status', [
+        ...leadStatusMatchValues(kLeadStatusSurveyDone),
+        ...leadStatusMatchValues(kLeadStatusQuoted),
+      ]),
     );
     _model.qualifiedLeadsList =
         (_model.leadsQualifiedOut ?? []).toList().cast<LeadsRow>();
     safeSetState(() {});
     _model.leadsWonOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eqOrNull(
-        'status',
-        'converted',
-      ),
+      queryFn: (q) => OrgScope
+          .read(q)
+          .inFilter('status', leadStatusMatchValues(kLeadStatusConfirmed)),
     );
     _model.wonLeadsList = (_model.leadsWonOut ?? []).toList().cast<LeadsRow>();
     safeSetState(() {});
     _model.leadsLostOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eqOrNull(
-        'status',
-        'lost',
-      ),
+      queryFn: (q) => OrgScope
+          .read(q)
+          .inFilter('status', leadStatusMatchValues(kLeadStatusLost)),
     );
     _model.lostLeadsList =
         (_model.leadsLostOut ?? []).toList().cast<LeadsRow>();
@@ -1292,11 +1298,18 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                             ].divide(
                                                 const SizedBox(height: 4.0)),
                                           ),
+                                          // Item 5.5: was a raw
+                                          // `status ?? '-'` in a single
+                                          // flat colour. Now canonicalised
+                                          // (so legacy 'contacted'/
+                                          // 'converted' rows read
+                                          // correctly) and tinted per
+                                          // stage.
                                           Container(
                                             decoration: BoxDecoration(
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primaryBackground,
+                                              color: leadStatusColor(
+                                                      leadsListItemItem.status)
+                                                  .withValues(alpha: 0.14),
                                               borderRadius:
                                                   BorderRadius.circular(12.0),
                                             ),
@@ -1306,39 +1319,14 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                                       .fromSTEB(
                                                       10.0, 4.0, 10.0, 4.0),
                                               child: Text(
-                                                leadsListItemItem.status ?? '-',
-                                                style: FlutterFlowTheme.of(
-                                                        context)
-                                                    .labelSmall
-                                                    .override(
-                                                      font: GoogleFonts.inter(
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .labelSmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .labelSmall
-                                                                .fontStyle,
-                                                      ),
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .primary,
-                                                      letterSpacing: 0.0,
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .labelSmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .labelSmall
-                                                              .fontStyle,
-                                                    ),
+                                                leadStatusLabel(
+                                                    leadsListItemItem.status),
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 11.0,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: leadStatusColor(
+                                                      leadsListItemItem.status),
+                                                ),
                                               ),
                                             ),
                                           ),

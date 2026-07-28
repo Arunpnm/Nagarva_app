@@ -2,6 +2,8 @@ import 'dart:math';
 
 import '/app_session.dart';
 import '/config/app_config.dart';
+import '/backend/lead_status.dart';
+import '/components/lead_status_strip.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -102,6 +104,47 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   bool _creatingQuote = false;
   bool _convertingQuote = false;
 
+  // ---- Item 5: lead status pipeline ------------------------------------
+  // Seeded from the nav param so the strip renders instantly, then
+  // refreshed from the DB in _loadLinked (the param is a snapshot from
+  // whenever LeadsPage last loaded and can be stale).
+  String? _status;
+  bool _savingStatus = false;
+
+  String get _canonicalStatus => canonicalLeadStatus(_status);
+
+  /// Writes [target] to the lead, never downgrading (item 5.2: "Never
+  /// auto-downgrade"). Pass [force] for an explicit manual chip tap, which
+  /// is allowed to move the lead backwards or to `lost`.
+  Future<void> _setLeadStatus(String target, {bool force = false}) async {
+    if (widget.leadId == null) return;
+    final next =
+        force ? canonicalLeadStatus(target) : advanceLeadStatus(_status, target);
+    if (next == _canonicalStatus) return;
+    final previous = _status;
+    setState(() {
+      _status = next;
+      _savingStatus = true;
+    });
+    try {
+      await LeadsTable().update(
+        data: {'status': next},
+        matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
+      );
+    } catch (e) {
+      // Roll the optimistic update back so the strip can't show a stage
+      // the database never accepted.
+      if (mounted) {
+        setState(() => _status = previous);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update status: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingStatus = false);
+    }
+  }
+
   /// "Convert to Order" used to just navigate to a blank NewOrderPage,
   /// discarding all the lead's data and never marking the lead as
   /// converted (so it could never show up as a win in PLReportPage's lead
@@ -137,9 +180,32 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     return '$prefix-$next';
   }
 
-  Future<void> _convertToOrder() async {
+  /// The one place an order is created from a lead.
+  ///
+  /// Live-test fix brief #2, item 2: there used to be two near-identical
+  /// copies of this insert — `_convertToOrder` (plain "Convert to Order"
+  /// button) and `_convertQuoteToOrder` (the Survey & Quote section's
+  /// button). Only the second one was ever taught about quotes, and even
+  /// it only copied the *total*: it never set `quotation_id`, so
+  /// `QuotationBreakdownSection` on Order Details (which resolves the
+  /// order's linked quotation to render item lines, charges and GST)
+  /// always found null and rendered nothing. That is the reported
+  /// "detailed quote data not carried into the order".
+  ///
+  /// Both buttons now funnel through here, so a future change can't teach
+  /// one path about quotes and silently miss the other.
+  ///
+  /// No schema change was needed: `orders` already has `quotation_id`,
+  /// `from_address`, `to_address`, `from_floor`, `to_floor`, and the item
+  /// lines / charge lines / GST split live on the linked `quotations` row
+  /// (jsonb `items` + `charges`, plus `gst_pct`/`gst_amount`) rather than
+  /// being duplicated onto the order.
+  Future<void> _createOrderFromLead({
+    required QuotationsRow? quote,
+    required String successMessage,
+    required String errorPrefix,
+  }) async {
     if (widget.leadId == null) return;
-    setState(() => _converting = true);
     try {
       DateTime moveDate;
       try {
@@ -153,12 +219,22 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         ...OrgScope.stamp(),
         'id': newOrderId,
         'lead_id': widget.leadId,
-        'customer': widget.leadCustomer ?? '',
-        'phone': widget.leadPhone,
+        // Link back to the quote so Order Details can render its item
+        // lines, and so the invoice can later be generated from the same
+        // lines rather than a bare total.
+        if (quote != null) 'quotation_id': quote.id,
+        'customer': quote?.customer ?? widget.leadCustomer ?? '',
+        'phone': quote?.phone ?? widget.leadPhone,
         'from_city': widget.leadFromCity,
         'to_city': widget.leadToCity,
+        // Survey/quote captures the full street address and floor; a lead
+        // only ever has the city. Prefer the richer values when present.
+        if (quote?.fromAddress != null) 'from_address': quote!.fromAddress,
+        if (quote?.toAddress != null) 'to_address': quote!.toAddress,
+        if (quote?.fromFloor != null) 'from_floor': quote!.fromFloor,
+        if (quote?.toFloor != null) 'to_floor': quote!.toFloor,
         'move_date': supaSerialize<DateTime>(moveDate),
-        'amount': 0.0,
+        'amount': quote?.total ?? 0.0,
         'service': widget.leadService,
         'branch': widget.leadBranch,
         'notes': widget.leadNotes,
@@ -170,13 +246,13 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 
       // LEAK_AUDIT.md write-gap fix: matched only on id before.
       await LeadsTable().update(
-        data: {'status': 'confirmed'},
+        data: {'status': kLeadStatusConfirmed},
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
       );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lead converted to order')),
+        SnackBar(content: Text(successMessage)),
       );
       context.pushNamed(
         OrderDetailPageWidget.routeName,
@@ -204,7 +280,38 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not convert lead: $e')),
+        SnackBar(content: Text('$errorPrefix: $e')),
+      );
+    }
+  }
+
+  Future<void> _convertToOrder() async {
+    if (widget.leadId == null) return;
+    setState(() => _converting = true);
+    try {
+      // Even the plain "Convert to Order" button now picks up a quote if
+      // the lead has one. Re-read rather than trusting the cached
+      // `_quotation`, so a quote built moments ago in another route is
+      // still caught if the refresh hasn't landed yet.
+      var quote = _quotation;
+      try {
+        final rows = await QuotationsTable().queryRows(
+          queryFn: (q) => OrgScope
+              .read(q)
+              .eq('lead_id', widget.leadId!)
+              .order('created_at', ascending: false),
+        );
+        quote = _pickBestQuote(rows) ?? quote;
+      } catch (_) {
+        // Fall back to whatever was already loaded; a lookup failure
+        // shouldn't block converting the lead.
+      }
+      await _createOrderFromLead(
+        quote: quote,
+        successMessage: quote == null
+            ? 'Lead converted to order'
+            : 'Lead converted to order (quote attached)',
+        errorPrefix: 'Could not convert lead',
       );
     } finally {
       if (mounted) setState(() => _converting = false);
@@ -215,6 +322,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   void initState() {
     super.initState();
     _model = createModel(context, () => LeadDetailPageModel());
+    _status = widget.leadStatus;
     _loadLinked();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
@@ -226,20 +334,79 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       return;
     }
     try {
+      // Live-test fix brief #2 item 2: both of these used to take
+      // `rows.first` off an UNORDERED query, so with more than one survey
+      // or quote on a lead the page showed (and Convert to Order used) an
+      // arbitrary row — in practice often the older, simpler one. That is
+      // the main reason a freshly-built detailed quote appeared to be
+      // "lost" on conversion. Now explicitly newest-first.
       final surveys = await SurveysTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).eq('lead_id', widget.leadId!),
+        queryFn: (q) => OrgScope
+            .read(q)
+            .eq('lead_id', widget.leadId!)
+            .order('created_at', ascending: false),
       );
       final quotations = await QuotationsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).eq('lead_id', widget.leadId!),
+        queryFn: (q) => OrgScope
+            .read(q)
+            .eq('lead_id', widget.leadId!)
+            .order('created_at', ascending: false),
       );
+      // The nav param is a snapshot from whenever LeadsPage last loaded —
+      // re-read so the progress strip reflects reality (e.g. the customer
+      // submitted the survey since this page was opened).
+      final leads = await LeadsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('id', widget.leadId!),
+      );
+
+      if (!mounted) return;
       setState(() {
         _survey = surveys.isNotEmpty ? surveys.first : null;
-        _quotation = quotations.isNotEmpty ? quotations.first : null;
+        _quotation = _pickBestQuote(quotations);
+        if (leads.isNotEmpty) _status = leads.first.status;
         _loadingLinked = false;
       });
+
+      // Item 5.2 auto-transitions, reconciled on every load rather than
+      // only at the moment of the action: a customer submitting the survey
+      // happens on their phone, so there is no in-app event to hook. This
+      // catches up whenever the page is opened or refreshed. advanceOnly
+      // semantics mean a lead already further along is never pulled back.
+      await _reconcileStatusFromProgress();
     } catch (_) {
-      setState(() => _loadingLinked = false);
+      if (mounted) setState(() => _loadingLinked = false);
     }
+  }
+
+  /// Derives the stage implied by the survey/quote rows and advances the
+  /// lead to it if it is further along than where the lead currently sits.
+  Future<void> _reconcileStatusFromProgress() async {
+    final survey = _survey;
+    final quote = _quotation;
+    String? implied;
+    if (survey != null) {
+      implied = kLeadStatusFollowUp;
+      if (survey.submittedAt != null) implied = kLeadStatusSurveyDone;
+    }
+    if (quote != null) implied = kLeadStatusQuoted;
+    if (implied == null) return;
+    if (advanceLeadStatus(_status, implied) == _canonicalStatus) return;
+    await _setLeadStatus(implied);
+  }
+
+  /// "Detailed quote takes precedence over simple quote if both exist"
+  /// (fix brief #2, item 2). [rows] must already be newest-first.
+  ///
+  /// A detailed quote (SurveyQuotePageWidget) writes a non-empty `items`
+  /// list; the simple one-total quote created from this page's own "Create
+  /// Quote" dialog writes `items: []`. So: newest quote that actually has
+  /// line items, else just the newest quote of any kind.
+  static QuotationsRow? _pickBestQuote(List<QuotationsRow> rows) {
+    if (rows.isEmpty) return null;
+    for (final r in rows) {
+      if (r.items is List && (r.items as List).isNotEmpty) return r;
+    }
+    return rows.first;
   }
 
   // Was '${Uri.base.origin}$path?token=$token' — threw "Bad state: Origin is
@@ -284,6 +451,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         'customer_phone': widget.leadPhone,
       });
       setState(() => _survey = row);
+      // Item 5.2: sending a survey moves the lead to at least follow_up.
+      await _setLeadStatus(kLeadStatusFollowUp);
       if (!mounted) return;
       _showLinkDialog('Survey link — share with the customer',
           _shareLink('/survey', row.token));
@@ -335,6 +504,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         'status': 'sent',
       });
       setState(() => _quotation = row);
+      // Item 5.2: a quote existing means the lead is at least 'quoted'.
+      await _setLeadStatus(kLeadStatusQuoted);
       if (!mounted) return;
       _showLinkDialog('Quote link — share with the customer',
           _shareLink('/quote', row.token!));
@@ -351,62 +522,82 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// Same shape as _convertToOrder above, but seeded from the accepted
   /// quotation's real pricing instead of amount 0 — the whole point of
   /// routing a lead through Survey -> Quote first.
+  /// Item 5.3: `lost` requires a confirm dialog + optional reason.
+  Future<void> _confirmMarkLost() async {
+    final reasonController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Mark lead as lost?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'The lead stays in the list under "Lost" and can be reopened '
+              'later.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Reason (optional)',
+                hintText: 'e.g. went with a cheaper vendor',
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+                foregroundColor: leadStatusColor(kLeadStatusLost)),
+            child: const Text('Mark lost'),
+          ),
+        ],
+      ),
+    );
+    final reason = reasonController.text.trim();
+    reasonController.dispose();
+    if (confirmed != true) return;
+
+    await _setLeadStatus(kLeadStatusLost, force: true);
+
+    // Append the reason to the lead's notes rather than adding a column —
+    // `leads` has no lost_reason field and inventing one would mean a
+    // migration for a free-text note. Only written when the status change
+    // itself succeeded.
+    if (reason.isEmpty || !mounted) return;
+    if (_canonicalStatus != kLeadStatusLost) return;
+    try {
+      final stamp = DateFormat('dd MMM yyyy').format(DateTime.now());
+      final existing = (widget.leadNotes ?? '').trim();
+      final appended = existing.isEmpty
+          ? 'Lost ($stamp): $reason'
+          : '$existing\n\nLost ($stamp): $reason';
+      await LeadsTable().update(
+        data: {'notes': appended},
+        matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
+      );
+    } catch (_) {
+      // The status change is the important part and already landed;
+      // failing to record the note shouldn't surface as an error.
+    }
+  }
+
   Future<void> _convertQuoteToOrder() async {
     if (widget.leadId == null || _quotation == null) return;
     setState(() => _convertingQuote = true);
     try {
-      DateTime moveDate;
-      try {
-        moveDate = DateTime.parse(widget.leadApproxDate ?? '');
-      } catch (_) {
-        moveDate = DateTime.now();
-      }
-      final newOrderId = await _nextOrderId();
-      final order = await OrdersTable().insert({
-        ...OrgScope.stamp(),
-        'id': newOrderId,
-        'lead_id': widget.leadId,
-        'customer': _quotation!.customer ?? widget.leadCustomer ?? '',
-        'phone': _quotation!.phone ?? widget.leadPhone,
-        'from_city': widget.leadFromCity,
-        'to_city': widget.leadToCity,
-        'move_date': supaSerialize<DateTime>(moveDate),
-        'amount': _quotation!.total ?? 0.0,
-        'service': widget.leadService,
-        'branch': widget.leadBranch,
-        'notes': widget.leadNotes,
-        'status': 'booked',
-        'payment_status': 'pending',
-        'tracking_status': 'Booked',
-        'advance_paid': 0.0,
-      });
-      await LeadsTable().update(
-        data: {'status': 'confirmed'},
-        matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Quote converted to order')),
-      );
-      context.pushNamed(
-        OrderDetailPageWidget.routeName,
-        queryParameters: {
-          'orderId': serializeParam(order.id, ParamType.String),
-          'orderCustomer': serializeParam(order.customer, ParamType.String),
-          'orderPhone': serializeParam(order.phone, ParamType.String),
-          'orderFromCity': serializeParam(order.fromCity, ParamType.String),
-          'orderToCity': serializeParam(order.toCity, ParamType.String),
-          'orderMoveDate':
-              serializeParam(order.moveDate.toString(), ParamType.String),
-          'orderAmount':
-              serializeParam(order.amount?.toString(), ParamType.String),
-          'orderStatus': serializeParam(order.status, ParamType.String),
-        }.withoutNulls,
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not convert quote: $e')),
+      await _createOrderFromLead(
+        quote: _quotation,
+        successMessage: 'Quote converted to order',
+        errorPrefix: 'Could not convert quote',
       );
     } finally {
       if (mounted) setState(() => _convertingQuote = false);
@@ -620,40 +811,27 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                                         .fontStyle,
                                   ),
                             ),
+                            // Item 5: was a static `widget.leadStatus!` —
+                            // which also crashed outright on any lead
+                            // opened without that nav param. Now driven by
+                            // live state, canonicalised, and colour-coded
+                            // per stage.
                             Container(
                               decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context)
-                                    .primaryBackground,
+                                color: leadStatusColor(_status)
+                                    .withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(16.0),
                               ),
                               child: Padding(
                                 padding: const EdgeInsetsDirectional.fromSTEB(
                                     12.0, 6.0, 12.0, 6.0),
                                 child: Text(
-                                  widget.leadStatus!,
-                                  style: FlutterFlowTheme.of(context)
-                                      .labelMedium
-                                      .override(
-                                        font: GoogleFonts.inter(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .labelMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .labelMedium
-                                            .fontStyle,
-                                      ),
+                                  leadStatusLabel(_status),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12.0,
+                                    fontWeight: FontWeight.w700,
+                                    color: leadStatusColor(_status),
+                                  ),
                                 ),
                               ),
                             ),
@@ -1335,6 +1513,13 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                           ].divide(const SizedBox(height: 10.0)),
                         ),
                       ),
+                    ),
+                    // Item 5.4: pipeline progress strip, APC parity.
+                    LeadStatusStrip(
+                      status: _status,
+                      busy: _savingStatus,
+                      onStageTap: (stage) => _setLeadStatus(stage, force: true),
+                      onMarkLost: _confirmMarkLost,
                     ),
                     if (!_loadingLinked) _surveyQuoteSection(context),
                     Padding(
