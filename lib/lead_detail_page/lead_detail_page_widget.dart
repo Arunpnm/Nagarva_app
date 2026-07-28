@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '/app_session.dart';
+import '/config/app_config.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -241,8 +242,11 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     }
   }
 
-  String _shareLink(String path, String token) =>
-      '${Uri.base.origin}$path?token=$token';
+  // Was '${Uri.base.origin}$path?token=$token' — threw "Bad state: Origin is
+  // only applicable schemes http and https: file:///" on a real APK, where
+  // Uri.base is file:/// rather than the page URL it is on web. See
+  // kPublicBaseUrl's doc comment in lib/config/app_config.dart.
+  String _shareLink(String path, String token) => buildTokenLink(path, token);
 
   void _showLinkDialog(String title, String link) {
     showDialog(

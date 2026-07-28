@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '/config/app_config.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -136,7 +137,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
         'from_address': lead.fromCity ?? '',
         'to_address': lead.toCity ?? '',
       });
-      final link = '${Uri.base.origin}/survey?token=${row.token}';
+      // Not Uri.base.origin — that is file:/// inside an APK and throws.
+      // See kPublicBaseUrl in lib/config/app_config.dart.
+      final link = buildTokenLink('/survey', row.token);
       if (!mounted) return;
       await showDialog(
         context: context,
