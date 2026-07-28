@@ -60,6 +60,32 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
     super.dispose();
   }
 
+  Widget _filterChip(
+      BuildContext context, String label, bool selected, VoidCallback onTap) {
+    final theme = FlutterFlowTheme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 36),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? theme.primary : theme.secondaryBackground,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+              color: selected ? theme.primary : theme.secondaryText),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : theme.primaryText,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -230,10 +256,55 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                                         .fontStyle,
                                   ),
                         ),
+                        // Parity brief Part 4a: month/week/order-wise
+                        // filters — this page previously had none at all.
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final p in const [
+                                ('week', 'This Week'),
+                                ('month', 'This Month'),
+                                ('all', 'All')
+                              ])
+                                _filterChip(context, p.$2,
+                                    _model.periodFilter == p.$1, () {
+                                  safeSetState(
+                                      () => _model.periodFilter = p.$1);
+                                }),
+                              _filterChip(
+                                  context, 'Order-linked only',
+                                  _model.orderWiseOnly, () {
+                                safeSetState(() =>
+                                    _model.orderWiseOnly =
+                                        !_model.orderWiseOnly);
+                              }),
+                            ],
+                          ),
+                        ),
                         Builder(
                           builder: (context) {
-                            final expensesListItem =
-                                _model.expensesList.toList();
+                            final now = DateTime.now();
+                            final expensesListItem = _model.expensesList
+                                .where((e) {
+                                  if (_model.orderWiseOnly &&
+                                      e.orderId == null) {
+                                    return false;
+                                  }
+                                  final d = e.expenseDate ?? e.createdAt;
+                                  if (_model.periodFilter == 'all' ||
+                                      d == null) {
+                                    return true;
+                                  }
+                                  if (_model.periodFilter == 'week') {
+                                    return now.difference(d).inDays <= 7;
+                                  }
+                                  return d.year == now.year &&
+                                      d.month == now.month;
+                                })
+                                .toList();
 
                             return ListView.separated(
                               padding: EdgeInsets.zero,

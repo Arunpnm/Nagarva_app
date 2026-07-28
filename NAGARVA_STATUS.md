@@ -148,6 +148,31 @@
     live-tested this pass. Not a code issue; re-verify once connectivity
     is confirmed.
 
+- **✅ Part 4 — smaller gaps — BUILT, not live-verified (same network
+  outage; code-reviewed + `flutter analyze` clean).**
+  - **4a Expense filters**: This Week/This Month/All period chips (by
+    `expense_date` falling back to `created_at`) plus an "Order-linked
+    only" toggle (`order_id != null`), computed client-side over the
+    already-loaded `expensesList` — this page had zero filters before.
+  - **4b Leads — Generate Survey Link on the card**: LeadDetailPage
+    already had a working "Request Survey" (built earlier this project) —
+    the gap was specifically the list card having no shortcut. Added a
+    48x48dp icon button per card (`_quickSurveyLink` in
+    `leads_page_widget.dart`) that inserts a `surveys` row (client-generated
+    `id`/`token`, same scheme as the detail page's `_generateHexToken` —
+    `surveys.lead_id` confirmed uuid, matches `LeadsRow.id`) and shows a
+    copyable link dialog without leaving the list.
+  - **4c quotation_page_widget.dart fix**: its ad-hoc quote's
+    `QuotationsTable().insert()` had the same `id`/`token`-has-no-DB-default
+    gap already fixed in `lead_detail_page_widget.dart` (CONSTRAINTS
+    section) — was never live-tested. Now generates both client-side
+    before insert, matching the established pattern exactly.
+  - **Not live-verified**: same network outage as Parts 2/5 — flagged
+    built-not-verified pending a live pass (record an expense and check
+    the filters, tap the new lead-card button and confirm the link opens
+    `/survey?token=...` correctly, submit the ad-hoc quote form and
+    confirm the insert succeeds without a duplicate-key/null-id error).
+
 ---
 
 ## ✅ COMPLETED

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -5,8 +7,18 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 import 'quotation_page_model.dart';
 export 'quotation_page_model.dart';
+
+/// 24 random bytes, hex-encoded — same scheme as
+/// lead_detail_page_widget.dart's `_generateHexToken` (quotations.token
+/// has no working DB default; see that file's doc comment for why).
+String _generateHexToken() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(24, (_) => random.nextInt(256));
+  return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+}
 
 /// Create a new moving quotation.
 class QuotationPageWidget extends StatefulWidget {
@@ -719,9 +731,16 @@ class _QuotationPageWidgetState extends State<QuotationPageWidget> {
                           // items/charges/gst_pct/gst_amount need the GST
                           // invoice UI from Phase 3 before they can be set
                           // here.
+                          // Parity brief Part 4c: quotations.id and
+                          // .token have no DB default (same gap fixed in
+                          // lead_detail_page_widget.dart's _createQuote) —
+                          // never live-tested here before. Generated
+                          // client-side on every insert.
                           final amount = double.tryParse(
                               _model.estimateAmountTextController.text);
                           await QuotationsTable().insert({
+                            'id': const Uuid().v4(),
+                            'token': _generateHexToken(),
                             ...OrgScope.stamp(),
                             'customer': _model.customerNameTextController.text,
                             'phone': _model.customerPhoneTextController.text,

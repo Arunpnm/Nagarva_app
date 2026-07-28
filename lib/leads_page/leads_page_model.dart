@@ -79,6 +79,10 @@ class LeadsPageModel extends FlutterFlowModel<LeadsPageWidget> {
 
   String? leadsFilter = 'all';
 
+  // Parity brief Part 4b: which lead's quick "Generate Survey Link" is
+  // currently in flight, so only that card's button shows a spinner.
+  String? surveyLinkLoadingLeadId;
+
   ///  State fields for stateful widgets in this page.
 
   // Stores action output result for [Backend Call - Query Rows] action in LeadsPage widget.

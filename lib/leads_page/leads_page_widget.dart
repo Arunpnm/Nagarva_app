@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -6,9 +8,19 @@ import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 import 'leads_page_model.dart';
 export 'leads_page_model.dart';
+
+/// Same scheme as lead_detail_page_widget.dart's `_generateHexToken` —
+/// surveys.token has no working DB default.
+String _generateSurveyToken() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(24, (_) => random.nextInt(256));
+  return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+}
 
 /// CRM lead pipeline for Arun Packers.
 class LeadsPageWidget extends StatefulWidget {
@@ -101,6 +113,60 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
     _model.dispose();
 
     super.dispose();
+  }
+
+  // Parity brief Part 4b: LeadDetailPage already had "Request Survey"
+  // (see its _requestSurvey) — the missing piece was a quick entry point
+  // right on the list card, without needing to open the full detail page
+  // first. surveys.lead_id is uuid (matches LeadsRow.id's type).
+  bool _generatingSurveyFor(String? leadId) =>
+      leadId != null && _model.surveyLinkLoadingLeadId == leadId;
+
+  Future<void> _quickSurveyLink(LeadsRow lead) async {
+    if (lead.id == null) return;
+    safeSetState(() => _model.surveyLinkLoadingLeadId = lead.id);
+    try {
+      final row = await SurveysTable().insert({
+        'id': const Uuid().v4(),
+        'token': _generateSurveyToken(),
+        ...OrgScope.stamp(),
+        'lead_id': lead.id,
+        'customer_name': lead.customer,
+        'customer_phone': lead.phone ?? '',
+        'from_address': lead.fromCity ?? '',
+        'to_address': lead.toCity ?? '',
+      });
+      final link = '${Uri.base.origin}/survey?token=${row.token}';
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Survey link created'),
+          content: SelectableText(link),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: link));
+                Navigator.of(context).pop();
+              },
+              child: const Text('Copy & close'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not create survey link: $e')),
+        );
+      }
+    } finally {
+      if (mounted) safeSetState(() => _model.surveyLinkLoadingLeadId = null);
+    }
   }
 
   @override
@@ -1272,6 +1338,38 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                                     ),
                                               ),
                                             ),
+                                          ),
+                                          // Parity brief Part 4b: quick
+                                          // "Generate Survey Link" right on
+                                          // the card — LeadDetailPage's
+                                          // "Request Survey" already
+                                          // covered the detail-page half.
+                                          SizedBox(
+                                            width: 48,
+                                            height: 48,
+                                            child:
+                                                _generatingSurveyFor(
+                                                        leadsListItemItem.id)
+                                                    ? const Padding(
+                                                        padding:
+                                                            EdgeInsets.all(
+                                                                14),
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                                strokeWidth:
+                                                                    2),
+                                                      )
+                                                    : IconButton(
+                                                        tooltip:
+                                                            'Generate Survey Link',
+                                                        icon: const Icon(
+                                                            Icons
+                                                                .assignment_outlined,
+                                                            size: 20),
+                                                        onPressed: () =>
+                                                            _quickSurveyLink(
+                                                                leadsListItemItem),
+                                                      ),
                                           ),
                                         ],
                                       ),

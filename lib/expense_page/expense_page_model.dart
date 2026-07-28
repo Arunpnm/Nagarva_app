@@ -1,4 +1,5 @@
 import '/backend/supabase/supabase.dart';
+
 import '/flutter_flow/flutter_flow_util.dart';
 import 'expense_page_widget.dart' show ExpensePageWidget;
 import 'package:flutter/material.dart';
@@ -19,6 +20,10 @@ class ExpensePageModel extends FlutterFlowModel<ExpensePageWidget> {
 
   // Stores action output result for [Backend Call - Query Rows] action in ExpensePage widget.
   List<ExpensesRow>? expensesOut;
+
+  // Parity brief Part 4a: period + order-wise filters. 'week'/'month'/'all'.
+  String periodFilter = 'month';
+  bool orderWiseOnly = false;
 
   @override
   void initState(BuildContext context) {}
