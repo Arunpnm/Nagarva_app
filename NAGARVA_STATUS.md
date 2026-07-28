@@ -173,12 +173,9 @@
     `/survey?token=...` correctly, submit the ad-hoc quote form and
     confirm the insert succeeds without a duplicate-key/null-id error).
 
-- **🔨 Part 3 — Survey & Quote port — DATA LAYER + MIGRATION BUILT, UI NOT
-  STARTED.** Per the brief's own explicit permission ("Parts 3 and 6 are
-  the largest and may not finish today... a truthful 'built, not
-  verified' is worth more than a false tick"), this is a deliberate,
-  honest partial stop rather than a rushed half-working UI.
-  - **What's built**: `lib/backend/pricing_defaults.dart` — Dart port of
+- **✅ Part 3 — Survey & Quote port — BUILT (data layer, migration, and UI
+  all done), NOT live-verified (network outage — see below).**
+  - **Data layer**: `lib/backend/pricing_defaults.dart` — Dart port of
     `SURVEY_CATS` (all 5 categories actually present in the reference
     file — Bedrooms, Living Room, Kitchen, Miscellaneous, Cartons &
     Packing; the brief said "six categories" but the source only has
@@ -197,17 +194,43 @@
     it only fills in keys an org's `config` doesn't already have
     (`excluded.config || pricing_config.config`, existing keys always
     win), so it's safe to run again after a vendor customizes their
-    pricing.
-  - **What's NOT built (all of 3a-3e's actual UI)**: the item-counter
-    survey screen (~50 `+/-` counters across the 5 categories), the
-    package-suggestion summary card, the redesigned quotation charges
-    form (billing-mode dropdowns, other charges, add-ons, discount), the
-    GST rate/type/show-in-PDF UI, and surfacing any of this on
-    OrderDetailPage. None of this was started — the data these screens
-    will need is ready, but building 5 interconnected screens well enough
-    to trust was not something to rush in the time remaining this
-    session.
-  - **Not live-verified** (nothing to verify yet — no UI built).
+    pricing. **The UI below reads pricing_config at runtime, so it will
+    fall back to the Dart defaults until this migration is run** —
+    functional either way, just not yet reading a vendor's own overrides.
+  - **New page: `lib/quotation_page/survey_quote_page_widget.dart`**
+    (`SurveyQuotePageWidget`, route `/survey-quote`) — the itemized
+    builder: expandable category sections with a `+/-` counter per
+    variant (48x48dp tap targets throughout, built to the Part 5e spec
+    from the start), a live "N items · N CFT · Suggested: <package>"
+    card, the full charges section (Freight/Transport, Advance Paid,
+    the 5 billing-mode-toggle charges rendered as label + Incl-in-
+    Freight/Additional dropdown + amount field, Other Charges, Add-on
+    Services, Discount), and GST (rate/type/show-in-PDF + live
+    interstate/intrastate split display). Saves a real `quotations` row
+    (client-generated `id`/`token`, `items` as the itemized array,
+    `charges` as the amounts map plus `_billingMode`/`_gstType`/
+    `_gstShowInPdf`/`_totalCft`/`_totalItems`/`_suggestedPackage` as
+    metadata keys in the same jsonb).
+  - **Entry point**: LeadDetailPage's lead-with-no-quote-yet state now
+    shows both the existing quick "Create Quote" dialog (subtotal + GST%
+    only — untouched, still the shipped/live-verified path) and a new
+    "Build Detailed Quote" button opening the new page — additive, not a
+    replacement.
+  - **3e — `lib/order_detail_page/quotation_breakdown_section.dart`**
+    (new, mirrors `OrderCrewSection`'s embed pattern): if an order has a
+    linked `quotations` row (`orders.quotation_id`), OrderDetailPage now
+    shows itemized charge lines + subtotal/GST/total instead of just a
+    bare total — read-only, additive, doesn't touch OrderDetailPage's
+    existing nav-param-only state (see Part 1's residual-gap note above).
+  - **Not live-verified**: the preview browser's network outage (see
+    Parts 2/4/5 above) hit before this could be opened in Chrome —
+    code-reviewed and `flutter analyze` clean (151 issues, under the 152
+    baseline) but flagged built-not-verified. Verify: open a lead with no
+    quote, tap "Build Detailed Quote", add a few items across categories,
+    confirm the CFT total/package suggestion updates live, toggle a
+    billing-mode dropdown and confirm the amount field enables/disables
+    and the subtotal reacts, save, then open the resulting order (once
+    converted) and confirm the breakdown section renders.
 
 - **⬜ Part 6 — Materials/inventory port, WA templates, gap report — NOT
   STARTED.** Per the brief: "Only start this after 1-5 are done and

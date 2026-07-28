@@ -465,10 +465,37 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           // Step 2: quote (needs a survey submitted first, or can be
           // skipped straight from the lead — vendor's call).
           if (quotation == null)
-            OutlinedButton.icon(
-              onPressed: _creatingQuote ? null : _createQuote,
-              icon: const Icon(Icons.request_quote_outlined, size: 18),
-              label: Text(_creatingQuote ? 'Creating…' : 'Create Quote'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _creatingQuote ? null : _createQuote,
+                  icon: const Icon(Icons.request_quote_outlined, size: 18),
+                  label: Text(_creatingQuote ? 'Creating…' : 'Create Quote'),
+                ),
+                // Parity brief Part 3: the fuller itemized CFT survey +
+                // charges/GST builder, as an alternative to the quick
+                // subtotal-only dialog above.
+                OutlinedButton.icon(
+                  onPressed: () => context.pushNamed(
+                    SurveyQuotePageWidget.routeName,
+                    queryParameters: {
+                      'leadId': serializeParam(widget.leadId, ParamType.String),
+                      'leadCustomer':
+                          serializeParam(widget.leadCustomer, ParamType.String),
+                      'leadPhone':
+                          serializeParam(widget.leadPhone, ParamType.String),
+                      'leadFromCity':
+                          serializeParam(widget.leadFromCity, ParamType.String),
+                      'leadToCity':
+                          serializeParam(widget.leadToCity, ParamType.String),
+                    },
+                  ),
+                  icon: const Icon(Icons.list_alt, size: 18),
+                  label: const Text('Build Detailed Quote'),
+                ),
+              ],
             )
           else if (quotation.status == 'accepted')
             Column(

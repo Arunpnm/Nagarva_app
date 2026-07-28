@@ -197,6 +197,17 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const QuotationPageWidget(),
         ),
         FFRoute(
+          name: SurveyQuotePageWidget.routeName,
+          path: SurveyQuotePageWidget.routePath,
+          builder: (context, params) => SurveyQuotePageWidget(
+            leadId: params.getParam('leadId', ParamType.String),
+            leadCustomer: params.getParam('leadCustomer', ParamType.String),
+            leadPhone: params.getParam('leadPhone', ParamType.String),
+            leadFromCity: params.getParam('leadFromCity', ParamType.String),
+            leadToCity: params.getParam('leadToCity', ParamType.String),
+          ),
+        ),
+        FFRoute(
           name: AccountsPageWidget.routeName,
           path: AccountsPageWidget.routePath,
           builder: (context, params) => const AccountsPageWidget(),

@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import '/app_session.dart';
 import '/components/invoice_pdf.dart';
 import 'order_crew_section.dart';
+import 'quotation_breakdown_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -1667,6 +1668,11 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                         ),
                       ),
                     ),
+                    // Parity brief Part 3e: itemized quotation breakdown,
+                    // if this order has one linked — was previously just a
+                    // bare total with no itemisation.
+                    if (widget.orderId != null)
+                      QuotationBreakdownSection(orderId: widget.orderId!),
                     // Assign supervisor + labour/salary (owner view) —
                     // was missing from the order flow entirely.
                     if (widget.orderId != null)

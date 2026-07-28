@@ -9,6 +9,8 @@ export '/expense_page/expense_page_widget.dart' show ExpensePageWidget;
 export '/salary_page/salary_page_widget.dart' show SalaryPageWidget;
 export '/fleet_page/fleet_page_widget.dart' show FleetPageWidget;
 export '/quotation_page/quotation_page_widget.dart' show QuotationPageWidget;
+export '/quotation_page/survey_quote_page_widget.dart'
+    show SurveyQuotePageWidget;
 export '/accounts_page/accounts_page_widget.dart' show AccountsPageWidget;
 export '/p_l_report_page/p_l_report_page_widget.dart' show PLReportPageWidget;
 export '/settings_page/settings_page_widget.dart' show SettingsPageWidget;
