@@ -348,14 +348,21 @@ class _MyAppState extends State<MyApp> {
         Locale('te'),
         Locale('ru'),
       ],
-      theme: ThemeData(
-        brightness: Brightness.light,
-        useMaterial3: false,
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        useMaterial3: false,
-      ),
+      // Item 9: these used to be bare `ThemeData(brightness: ...)` with no
+      // brand colours at all, so every Material-themed widget that
+      // (correctly) doesn't hardcode its own colours — Drawer, ListTile,
+      // SearchDelegate's search field, dialogs, bottom sheets — resolved
+      // against stock Material defaults and visibly ignored the theme
+      // switch. Now derived from the same palette FlutterFlowTheme uses.
+      //
+      // darkTheme is chosen by variant, not just brightness: Midnight
+      // rides ThemeMode.dark, so without this Dark and Midnight handed
+      // back an identical ThemeData and no Material widget could tell
+      // them apart.
+      theme: LightModeTheme().toThemeData(),
+      darkTheme: FlutterFlowTheme.isMidnight
+          ? MidnightModeTheme().toThemeData()
+          : DarkModeTheme().toThemeData(),
       themeMode: _themeMode,
       routerConfig: _router,
     );

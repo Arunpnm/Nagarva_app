@@ -21,6 +21,43 @@ import '/index.dart';
 class GlobalSearchDelegate extends SearchDelegate<void> {
   GlobalSearchDelegate() : super(searchFieldLabel: 'Mobile / Name...');
 
+  /// Item 9 (theme not applied to the search bar).
+  ///
+  /// SearchDelegate does NOT simply inherit the ambient theme: its default
+  /// `appBarTheme` deliberately overrides the app bar to a white/grey
+  /// surface with `InputBorder.none` so the search field looks "plain",
+  /// which is why the search bar stayed light while the rest of the app
+  /// went dark. Overriding it is the only way to make the search surface
+  /// follow the theme — restyling the widgets inside it can't reach the
+  /// app bar SearchDelegate builds itself.
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    final ff = FlutterFlowTheme.of(context);
+    final base = Theme.of(context);
+    return base.copyWith(
+      appBarTheme: AppBarTheme(
+        backgroundColor: ff.primaryBackground,
+        foregroundColor: ff.primaryText,
+        iconTheme: IconThemeData(color: ff.primaryText),
+        elevation: 0,
+      ),
+      scaffoldBackgroundColor: ff.primaryBackground,
+      inputDecorationTheme: InputDecorationTheme(
+        hintStyle: TextStyle(color: ff.secondaryText),
+        border: InputBorder.none,
+      ),
+      textTheme: base.textTheme.copyWith(
+        // The query text itself, which otherwise renders near-black.
+        titleLarge: base.textTheme.titleLarge?.copyWith(color: ff.primaryText),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: ff.primary,
+        selectionColor: ff.primary.withValues(alpha: 0.3),
+        selectionHandleColor: ff.primary,
+      ),
+    );
+  }
+
   @override
   List<Widget> buildActions(BuildContext context) => [
         if (query.isNotEmpty)

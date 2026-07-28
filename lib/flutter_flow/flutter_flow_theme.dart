@@ -52,6 +52,101 @@ abstract class FlutterFlowTheme {
     return isMidnight ? 'midnight' : 'dark';
   }
 
+  /// Builds a real Material [ThemeData] from this palette.
+  ///
+  /// Live-test fix brief #2, item 9 ("theme not applied: left sidebar +
+  /// search button"). The reported cause was hardcoded colours in those
+  /// widgets; the actual cause was the reverse. `main.dart` passed
+  ///
+  ///     theme:     ThemeData(brightness: Brightness.light,  useMaterial3: false)
+  ///     darkTheme: ThemeData(brightness: Brightness.dark,   useMaterial3: false)
+  ///
+  /// i.e. bare Material defaults carrying none of the brand palette. The
+  /// Drawer, its ListTiles and SearchDelegate's search field specify no
+  /// colours of their own (correctly!), so they resolved against those
+  /// stock defaults instead of FlutterFlowTheme — which is why the rest of
+  /// the app re-themed and they did not.
+  ///
+  /// Midnight made it worse: it rides `ThemeMode.dark`, so `Theme.of()`
+  /// handed back the *identical* ThemeData for Dark and Midnight and no
+  /// Material-themed widget could tell them apart. Passing the midnight
+  /// palette through here is what actually separates them.
+  ThemeData toThemeData() {
+    final brightness =
+        this is LightModeTheme ? Brightness.light : Brightness.dark;
+    final onPrimary =
+        primary.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    return ThemeData(
+      brightness: brightness,
+      useMaterial3: false,
+      scaffoldBackgroundColor: primaryBackground,
+      canvasColor: primaryBackground,
+      cardColor: secondaryBackground,
+      dividerColor: alternate,
+      primaryColor: primary,
+      colorScheme: ColorScheme(
+        brightness: brightness,
+        primary: primary,
+        onPrimary: onPrimary,
+        secondary: secondary,
+        onSecondary: onPrimary,
+        tertiary: tertiary,
+        onTertiary: onPrimary,
+        error: error,
+        onError: Colors.white,
+        surface: secondaryBackground,
+        onSurface: primaryText,
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: primaryBackground,
+        scrimColor: Colors.black.withValues(alpha: 0.5),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: secondaryText,
+        textColor: primaryText,
+      ),
+      iconTheme: IconThemeData(color: secondaryText),
+      appBarTheme: AppBarTheme(
+        backgroundColor: primaryBackground,
+        foregroundColor: primaryText,
+        iconTheme: IconThemeData(color: primaryText),
+        elevation: 0,
+      ),
+      dialogTheme: DialogThemeData(backgroundColor: secondaryBackground),
+      bottomSheetTheme:
+          BottomSheetThemeData(backgroundColor: secondaryBackground),
+      popupMenuTheme: PopupMenuThemeData(color: secondaryBackground),
+      inputDecorationTheme: InputDecorationTheme(
+        hintStyle: TextStyle(color: secondaryText),
+        labelStyle: TextStyle(color: secondaryText),
+        iconColor: secondaryText,
+        prefixIconColor: secondaryText,
+        suffixIconColor: secondaryText,
+        border: UnderlineInputBorder(
+          borderSide: BorderSide(color: alternate),
+        ),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: alternate),
+        ),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: primary),
+        ),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: primary,
+        selectionColor: primary.withValues(alpha: 0.3),
+        selectionHandleColor: primary,
+      ),
+      // SearchDelegate renders its query/hint with the ambient text theme;
+      // without these the typed query stayed near-black on the dark navy
+      // search bar.
+      textTheme: ThemeData(brightness: brightness).textTheme.apply(
+            bodyColor: primaryText,
+            displayColor: primaryText,
+          ),
+    );
+  }
+
   @Deprecated('Use primary instead')
   Color get primaryColor => primary;
   @Deprecated('Use secondary instead')
