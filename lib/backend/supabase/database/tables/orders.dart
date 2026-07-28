@@ -154,4 +154,11 @@ class OrdersRow extends SupabaseDataRow {
   String? get trackingStatus => getField<String>('tracking_status');
   set trackingStatus(String? value) =>
       setField<String>('tracking_status', value);
+
+  // Added by supabase/20260728_public_links_sign_and_track.sql (item 6) —
+  // the credential for the public /track?token=... page. Null-safe read:
+  // returns null on any row predating that migration.
+  String? get trackingToken => getField<String>('tracking_token');
+  set trackingToken(String? value) =>
+      setField<String>('tracking_token', value);
 }

@@ -5,7 +5,11 @@ import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 
 import '/app_session.dart';
+import '/backend/signature_service.dart';
+import '/backend/tracking_service.dart';
 import '/components/invoice_pdf.dart';
+import '/components/share_link_sheet.dart';
+import '/config/app_config.dart';
 import 'order_crew_section.dart';
 import 'quotation_breakdown_section.dart';
 import '/backend/supabase/supabase.dart';
@@ -112,12 +116,146 @@ class OrderDetailPageWidget extends StatefulWidget {
   State<OrderDetailPageWidget> createState() => _OrderDetailPageWidgetState();
 }
 
-class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
+class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
+    with RefreshOnPopMixin<OrderDetailPageWidget> {
   late OrderDetailPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _generatingInvoice = false;
+
+  // ---- Item 3: customer signature ---------------------------------------
+  SignatureRequest? _signature;
+  bool _sendingSignature = false;
+
+  // ---- Item 6: tracking link --------------------------------------------
+  bool _sharingTracking = false;
+
+  /// Refresh-after-write: re-read the signature so the chip flips from
+  /// "Awaiting" to "Signed" when returning to this page, without a
+  /// restart. The customer signs on their own phone, so there is no
+  /// in-app event to hook — reconciling on refresh is the only way.
+  @override
+  void onPageRefresh() => _loadSignature();
+
+  Future<void> _loadSignature() async {
+    if (widget.orderId == null) return;
+    try {
+      final sig = await SignatureService.find(
+        documentType: 'invoice',
+        documentId: widget.orderId!,
+      );
+      if (mounted) setState(() => _signature = sig);
+    } catch (_) {
+      // Supplemental — a failure here must not blank the page.
+    }
+  }
+
+  Future<void> _sendForSignature() async {
+    if (widget.orderId == null) return;
+    setState(() => _sendingSignature = true);
+    try {
+      final sig = await SignatureService.getOrCreate(
+        documentType: 'invoice',
+        documentId: widget.orderId!,
+        customerName: widget.orderCustomer,
+      );
+      if (!mounted) return;
+      setState(() => _signature = sig);
+      final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+      await ShareLinkSheet.show(
+        context,
+        title: sig.isSigned ? 'Already signed' : 'Send for signature',
+        subtitle: sig.isSigned
+            ? 'Signed by ${sig.customerName ?? 'the customer'}'
+                '${sig.signedAt == null ? '' : ' on ${DateFormat('d MMM yyyy').format(sig.signedAt!.toLocal())}'}.'
+                ' The link still opens a read-only copy.'
+            : 'The customer opens this link, reviews the invoice and signs '
+                'on their phone. No login needed.',
+        link: sig.link,
+        phone: widget.orderPhone,
+        message: 'Hello${widget.orderCustomer == null ? '' : ' ${widget.orderCustomer}'}, '
+            'please review and accept your invoice from $org:',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not create signature link: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _sendingSignature = false);
+    }
+  }
+
+  Future<void> _shareTrackingLink() async {
+    if (widget.orderId == null) return;
+    setState(() => _sharingTracking = true);
+    try {
+      final token = await TrackingService.tokenForOrder(widget.orderId!);
+      if (token == null) {
+        throw Exception(
+            'This order has no tracking token yet. Run the 28 Jul migration.');
+      }
+      if (!mounted) return;
+      final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+      await ShareLinkSheet.show(
+        context,
+        title: 'Share tracking link',
+        subtitle: 'The customer can follow their move status live. No login '
+            'needed — the link itself is the access.',
+        link: buildTokenLink('/track', token),
+        phone: widget.orderPhone,
+        message: 'Hello${widget.orderCustomer == null ? '' : ' ${widget.orderCustomer}'}, '
+            'you can track your move with $org here:',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not create tracking link: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _sharingTracking = false);
+    }
+  }
+
+  Widget _signatureStatusChip(BuildContext context) {
+    final sig = _signature;
+    if (sig == null) return const SizedBox.shrink();
+    final theme = FlutterFlowTheme.of(context);
+    final signed = sig.isSigned;
+    final color = signed ? theme.tertiary : theme.warning;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Icon(signed ? Icons.verified : Icons.hourglass_empty,
+              size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              signed
+                  ? 'Signed by ${sig.customerName ?? 'customer'}'
+                      '${sig.signedAt == null ? '' : ' on ${DateFormat('d MMM yyyy').format(sig.signedAt!.toLocal())}'}'
+                  : 'Awaiting customer signature',
+              style: GoogleFonts.inter(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: theme.primaryText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   static final _currency =
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
@@ -262,7 +400,23 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
         await _fetchBytes(AppSession.instance.currentOrgLogoUrl);
     final signatureBytes = await _fetchBytes(signatureUrl);
 
+    // Item 3: embed the customer's e-signature once they've signed via
+    // the public /sign link. Re-read rather than trusting the cached
+    // _signature, so a PDF generated right after they sign isn't stale.
+    SignatureRequest? sig = _signature;
+    try {
+      sig = await SignatureService.find(
+            documentType: 'invoice',
+            documentId: widget.orderId!,
+          ) ??
+          sig;
+    } catch (_) {}
+
     return InvoicePdf.generate(
+      customerSignatureBytes:
+          (sig?.isSigned ?? false) ? sig!.signatureBytes : null,
+      customerSignedByName: (sig?.isSigned ?? false) ? sig!.customerName : null,
+      customerSignedAt: (sig?.isSigned ?? false) ? sig!.signedAt : null,
       invoiceNo: invoiceNo,
       customerName: _hideCustomer
           ? 'Customer (hidden)'
@@ -374,6 +528,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => OrderDetailPageModel());
+    _loadSignature();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
@@ -1677,6 +1832,68 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget> {
                     // was missing from the order flow entirely.
                     if (widget.orderId != null)
                       OrderCrewSection(orderId: widget.orderId!),
+                    // Items 3 + 6: signature status and the two customer
+                    // share actions.
+                    _signatureStatusChip(context),
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 14.0, 0.0, 0.0),
+                      child: FFButtonWidget(
+                        onPressed:
+                            _sendingSignature ? null : _sendForSignature,
+                        text: _sendingSignature
+                            ? 'Preparing…'
+                            : (_signature?.isSigned ?? false)
+                                ? 'View signed copy'
+                                : 'Send for Signature',
+                        icon: const Icon(Icons.draw, size: 20.0),
+                        options: FFButtonOptions(
+                          width: double.infinity,
+                          padding: const EdgeInsetsDirectional.fromSTEB(
+                              0.0, 0.0, 0.0, 0.0),
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
+                              0.0, 0.0, 0.0, 0.0),
+                          iconColor: FlutterFlowTheme.of(context).primary,
+                          color: Colors.transparent,
+                          textStyle: TextStyle(
+                            color: FlutterFlowTheme.of(context).primary,
+                          ),
+                          borderSide: BorderSide(
+                            color: FlutterFlowTheme.of(context).primary,
+                            width: 1.0,
+                          ),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 14.0, 0.0, 0.0),
+                      child: FFButtonWidget(
+                        onPressed: _sharingTracking ? null : _shareTrackingLink,
+                        text: _sharingTracking
+                            ? 'Preparing…'
+                            : 'Share Tracking Link',
+                        icon: const Icon(Icons.share_location, size: 20.0),
+                        options: FFButtonOptions(
+                          width: double.infinity,
+                          padding: const EdgeInsetsDirectional.fromSTEB(
+                              0.0, 0.0, 0.0, 0.0),
+                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
+                              0.0, 0.0, 0.0, 0.0),
+                          iconColor: FlutterFlowTheme.of(context).primary,
+                          color: Colors.transparent,
+                          textStyle: TextStyle(
+                            color: FlutterFlowTheme.of(context).primary,
+                          ),
+                          borderSide: BorderSide(
+                            color: FlutterFlowTheme.of(context).primary,
+                            width: 1.0,
+                          ),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                    ),
                     Padding(
                       padding:
                           const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 0.0),

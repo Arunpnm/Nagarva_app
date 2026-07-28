@@ -53,3 +53,23 @@ String buildPublicLink(
 /// sign, track) — they all share the `?token=<token>` shape.
 String buildTokenLink(String path, String token) =>
     buildPublicLink(path, params: {'token': token});
+
+/// Builds a `wa.me` deep link that opens WhatsApp with [message]
+/// pre-filled (fix brief #2, items 3 and 6 — "WhatsApp-first" sharing).
+///
+/// [phone] may be in any local format; non-digits are stripped and a bare
+/// 10-digit Indian number gets a 91 country code, since that is what the
+/// app's own phone fields hold. Pass null to open the WhatsApp share
+/// sheet with no recipient chosen.
+///
+/// Note this is the plain consumer-app deep link, deliberately NOT the
+/// AiSensy Business API — CLAUDE.md's Phase 4 rule is that AiSensy is
+/// only ever called from a Supabase Edge Function so the API key never
+/// ships in the APK. This just opens the user's own WhatsApp.
+String buildWhatsAppLink({String? phone, required String message}) {
+  final encoded = Uri.encodeComponent(message);
+  final digits = (phone ?? '').replaceAll(RegExp(r'\D'), '');
+  if (digits.isEmpty) return 'https://wa.me/?text=$encoded';
+  final withCode = digits.length == 10 ? '91$digits' : digits;
+  return 'https://wa.me/$withCode?text=$encoded';
+}

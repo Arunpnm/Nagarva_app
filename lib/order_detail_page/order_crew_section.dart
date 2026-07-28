@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
+import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -92,6 +93,14 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
         },
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId),
       );
+      // Item 6: every status change feeds the customer-facing timeline.
+      if (bumpStatus) {
+        await TrackingService.logStatus(
+          orderId: widget.orderId,
+          status: 'team_assigned',
+          note: 'Crew assigned',
+        );
+      }
       await _load();
       if (mounted) {
         final name = _staffById(staffId)?.name ?? 'Supervisor';

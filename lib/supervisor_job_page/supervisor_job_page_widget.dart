@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -148,6 +149,20 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       'note': note,
       'tracked_by': AppSession.instance.currentStaffName ?? 'Supervisor',
     });
+    // Item 6: also feed the CUSTOMER-facing timeline. Two tables record
+    // this event today and that overlap is deliberate for now, not an
+    // oversight: `order_tracking` is the internal audit trail (tracked_by
+    // is a staff *name* string) and predates this work, while
+    // `order_status_history` is what the public get_order_tracking() RPC
+    // reads and carries a real changed_by uuid. Consolidating them means
+    // rewriting the RPC and backfilling, which is not worth doing in the
+    // same pass that introduces the feature. Logged from here so the two
+    // can't drift.
+    await TrackingService.logStatus(
+      orderId: widget.orderId!,
+      status: newStatus,
+      note: note,
+    );
   }
 
   Future<void> _startJob() async {

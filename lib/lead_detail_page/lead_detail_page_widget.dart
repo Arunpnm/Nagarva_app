@@ -5,6 +5,9 @@ import '/config/app_config.dart';
 import '/backend/lead_status.dart';
 import '/components/detail_row.dart';
 import '/components/lead_status_strip.dart';
+import '/backend/signature_service.dart';
+import '/backend/tracking_service.dart';
+import '/components/share_link_sheet.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -111,6 +114,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   // whenever LeadsPage last loaded and can be stale).
   String? _status;
   bool _savingStatus = false;
+
+  // ---- Item 3: signature on the quote ----------------------------------
+  SignatureRequest? _quoteSignature;
+  bool _sendingQuoteSignature = false;
 
   String get _canonicalStatus => canonicalLeadStatus(_status);
 
@@ -245,6 +252,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         'advance_paid': 0.0,
       });
 
+      // Item 6: seed the customer-facing tracking timeline at its first
+      // stage, so a freshly-converted order already has a "Confirmed"
+      // entry with a real timestamp rather than an empty timeline.
+      await TrackingService.logStatus(
+        orderId: newOrderId,
+        status: 'booked',
+        note: 'Order confirmed',
+      );
+
       // LEAK_AUDIT.md write-gap fix: matched only on id before.
       await LeadsTable().update(
         data: {'status': kLeadStatusConfirmed},
@@ -367,6 +383,22 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         if (leads.isNotEmpty) _status = leads.first.status;
         _loadingLinked = false;
       });
+
+      // Item 3: refresh-after-write for the signature chip. The customer
+      // signs on their own phone, so this reconcile-on-load is the only
+      // way the chip ever flips from Awaiting to Signed.
+      final quote = _quotation;
+      if (quote != null) {
+        try {
+          final sig = await SignatureService.find(
+            documentType: 'quote',
+            documentId: quote.id,
+          );
+          if (mounted) setState(() => _quoteSignature = sig);
+        } catch (_) {
+          // Supplemental — never blank the page over this.
+        }
+      }
 
       // Item 5.2 auto-transitions, reconciled on every load rather than
       // only at the moment of the action: a customer submitting the survey
@@ -723,9 +755,76 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               icon: const Icon(Icons.hourglass_top, size: 18),
               label: const Text('Quote sent — awaiting customer acceptance'),
             ),
+          // Item 3: e-signature on the quote, alongside the plain view
+          // link above. Separate action because accepting a quote and
+          // signing it are different things — the customer can read the
+          // quote without committing.
+          const SizedBox(height: 8),
+          if (_quoteSignature?.isSigned ?? false)
+            Row(
+              children: [
+                Icon(Icons.verified, size: 17, color: theme.tertiary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Signed by ${_quoteSignature!.customerName ?? 'customer'}'
+                    '${_quoteSignature!.signedAt == null ? '' : ' on ${DateFormat('d MMM yyyy').format(_quoteSignature!.signedAt!.toLocal())}'}',
+                    style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: theme.primaryText),
+                  ),
+                ),
+              ],
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: _sendingQuoteSignature
+                  ? null
+                  : () => _sendQuoteForSignature(quotation!),
+              icon: const Icon(Icons.draw, size: 18),
+              label: Text(_sendingQuoteSignature
+                  ? 'Preparing…'
+                  : _quoteSignature == null
+                      ? 'Send for Signature'
+                      : 'Awaiting signature — resend link'),
+            ),
         ],
       ),
     );
+  }
+
+  /// Item 3: creates (or reuses) the quote's signature request and opens
+  /// the WhatsApp-first share sheet.
+  Future<void> _sendQuoteForSignature(QuotationsRow quotation) async {
+    setState(() => _sendingQuoteSignature = true);
+    try {
+      final sig = await SignatureService.getOrCreate(
+        documentType: 'quote',
+        documentId: quotation.id,
+        customerName: quotation.customer ?? widget.leadCustomer,
+      );
+      if (!mounted) return;
+      setState(() => _quoteSignature = sig);
+      final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+      await ShareLinkSheet.show(
+        context,
+        title: 'Send quote for signature',
+        subtitle: 'The customer reviews the quotation and signs on their '
+            'phone. No login needed.',
+        link: sig.link,
+        phone: widget.leadPhone,
+        message: 'Hello${widget.leadCustomer == null ? '' : ' ${widget.leadCustomer}'}, '
+            'please review and accept your quotation from $org:',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not create signature link: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _sendingQuoteSignature = false);
+    }
   }
 
   @override

@@ -41,6 +41,11 @@ class InvoicePdf {
     Map<String, dynamic> profile = const {},
     Uint8List? logoBytes,
     Uint8List? signatureBytes,
+    // Customer's e-signature captured via the public /sign link
+    // (fix brief #2, item 3). All three are null on an unsigned invoice.
+    Uint8List? customerSignatureBytes,
+    String? customerSignedByName,
+    DateTime? customerSignedAt,
   }) async {
     final regular = await PdfGoogleFonts.notoSansRegular();
     final bold = await PdfGoogleFonts.notoSansBold();
@@ -348,6 +353,38 @@ class InvoicePdf {
                   ),
                 ),
                 pw.SizedBox(width: 24),
+                // Customer acceptance block (fix brief #2, item 3). Only
+                // rendered once the customer has actually signed via the
+                // public /sign link — an unsigned invoice shows nothing
+                // here rather than an empty "accepted by" line, which
+                // would read as though acceptance had been captured.
+                if (customerSignatureBytes != null) ...[
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      pw.Container(
+                        height: 42,
+                        child: pw.Image(
+                            pw.MemoryImage(customerSignatureBytes),
+                            fit: pw.BoxFit.contain),
+                      ),
+                      pw.Container(
+                          width: 150, height: .8, color: PdfColors.grey600),
+                      pw.SizedBox(height: 3),
+                      pw.Text(
+                        'Accepted by ${customerSignedByName ?? 'Customer'}',
+                        style: pw.TextStyle(font: bold, fontSize: 8.5),
+                      ),
+                      if (customerSignedAt != null)
+                        pw.Text(
+                          _fmtSignedAt(customerSignedAt),
+                          style: pw.TextStyle(
+                              font: regular, fontSize: 8, color: _grey),
+                        ),
+                    ],
+                  ),
+                  pw.SizedBox(width: 24),
+                ],
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
@@ -408,6 +445,16 @@ class InvoicePdf {
     );
 
     return doc.save();
+  }
+
+  /// Local formatter so this file needs no intl import for one label.
+  static String _fmtSignedAt(DateTime dt) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final l = dt.toLocal();
+    return '${l.day} ${months[l.month - 1]} ${l.year}';
   }
 
   static pw.Widget _totalRow(
