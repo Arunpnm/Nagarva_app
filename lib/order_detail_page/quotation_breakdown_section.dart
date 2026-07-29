@@ -43,7 +43,12 @@ int _zeroCftCount(List<dynamic> items) {
 class QuotationBreakdownSectionState
     extends State<QuotationBreakdownSection> {
   QuotationsRow? _quotation;
+  OrdersRow? _order;
   bool _loading = true;
+
+  /// True when this order carries a frozen snapshot, i.e. it was
+  /// converted after 20260729_order_quote_snapshot.sql landed.
+  bool get _hasSnapshot => _order?.quoteSnapshotAt != null;
 
   @override
   void initState() {
@@ -62,7 +67,8 @@ class QuotationBreakdownSectionState
       final orders = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId),
       );
-      final quotationId = orders.isNotEmpty ? orders.first.quotationId : null;
+      _order = orders.isNotEmpty ? orders.first : null;
+      final quotationId = _order?.quotationId;
       if (quotationId != null) {
         final quotes = await QuotationsTable().queryRows(
           queryFn: (q) => OrgScope.read(q).eq('id', quotationId),
@@ -79,13 +85,44 @@ class QuotationBreakdownSectionState
 
   @override
   Widget build(BuildContext context) {
-    if (_loading || _quotation == null) return const SizedBox.shrink();
+    // With a snapshot we no longer need the live quote at all — an order
+    // converted from a quote that was later deleted still shows what it
+    // was confirmed on.
+    if (_loading || (_quotation == null && !_hasSnapshot)) {
+      return const SizedBox.shrink();
+    }
     final theme = FlutterFlowTheme.of(context);
-    final q = _quotation!;
-    final items = (q.items is List) ? q.items as List : const [];
-    final charges = (q.charges is Map)
-        ? Map<String, dynamic>.from(q.charges as Map)
-        : <String, dynamic>{};
+    final q = _quotation;
+    final o = _order;
+
+    // Item 2: PREFER THE SNAPSHOT. orders.quotation_id stays the live
+    // link, but once a quote can be revised (operational flow 1.2) or
+    // signed (item 3), what the linked quote says now is not necessarily
+    // what this order was confirmed on. The frozen figures win; the live
+    // quote is only the fallback for orders converted before the snapshot
+    // existed.
+    final items = _hasSnapshot
+        ? (o!.quoteItems is List ? o.quoteItems as List : const [])
+        : ((q?.items is List) ? q!.items as List : const []);
+    final charges = _hasSnapshot
+        ? (o!.quoteCharges is Map
+            ? Map<String, dynamic>.from(o.quoteCharges as Map)
+            : <String, dynamic>{})
+        : ((q?.charges is Map)
+            ? Map<String, dynamic>.from(q!.charges as Map)
+            : <String, dynamic>{});
+
+    final subtotal = _hasSnapshot ? o!.quoteSubtotal : q?.subtotal;
+    final gstPct = _hasSnapshot ? o!.quoteGstPct : q?.gstPct;
+    final gstAmount = _hasSnapshot ? o!.quoteGstAmount : q?.gstAmount;
+    final total = _hasSnapshot ? o!.quoteTotal : q?.total;
+    final packing = _hasSnapshot
+        ? o!.quotePackingType
+        : charges['_suggestedPackage']?.toString();
+    // Snapshot stores the RESOLVED inter/intra; the live quote may still
+    // say 'auto', which _gstModeLabel correctly renders as nothing.
+    final gstMode =
+        _hasSnapshot ? o!.quoteGstMode : _gstModeRaw(charges);
 
     // Carries the charge KEY as well as label+amount, so the billing
     // mode (included / additional) can be resolved per line below.
@@ -140,8 +177,8 @@ class QuotationBreakdownSectionState
             const SizedBox(height: 10),
           ],
           // Packing / suggested package, and the crew+vehicle it implies.
-          if ((charges['_suggestedPackage'] ?? '').toString().isNotEmpty) ...[
-            _kv(theme, 'Package', '${charges['_suggestedPackage']}'),
+          if ((packing ?? '').isNotEmpty) ...[
+            _kv(theme, 'Package', packing!),
             const SizedBox(height: 6),
           ],
           // Flags quotes saved before the 28 Jul 2026 custom-item CFT fix,
@@ -221,22 +258,22 @@ class QuotationBreakdownSectionState
             children: [
               Text('Subtotal',
                   style: GoogleFonts.inter(color: theme.secondaryText)),
-              Text('₹${(q.subtotal ?? 0).toStringAsFixed(0)}',
+              Text('₹${(subtotal ?? 0).toStringAsFixed(0)}',
                   style: GoogleFonts.inter(color: theme.primaryText)),
             ],
           ),
           // Item 2: GST mode (IGST vs CGST+SGST) as well as the amount.
-          // `_gstType` is what the surveyor chose on the quote —
-          // 'auto' means it was derived from the from/to states.
+          // From the snapshot this is the RESOLVED mode; from a live
+          // quote it may still be 'auto', which renders as no suffix.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'GST (${(q.gstPct ?? 0).toStringAsFixed(0)}%)'
-                '${_gstModeLabel(charges)}',
+                'GST (${(gstPct ?? 0).toStringAsFixed(0)}%)'
+                '${_gstModeSuffix(gstMode)}',
                 style: GoogleFonts.inter(color: theme.secondaryText),
               ),
-              Text('₹${(q.gstAmount ?? 0).toStringAsFixed(0)}',
+              Text('₹${(gstAmount ?? 0).toStringAsFixed(0)}',
                   style: GoogleFonts.inter(color: theme.primaryText)),
             ],
           ),
@@ -247,7 +284,7 @@ class QuotationBreakdownSectionState
               Text('Total',
                   style: GoogleFonts.interTight(
                       fontWeight: FontWeight.w700, color: theme.primaryText)),
-              Text('₹${(q.total ?? 0).toStringAsFixed(0)}',
+              Text('₹${(total ?? 0).toStringAsFixed(0)}',
                   style: GoogleFonts.interTight(
                       fontWeight: FontWeight.w700, color: theme.primary)),
             ],
@@ -267,13 +304,18 @@ String _billingMode(Map<String, dynamic> charges, String key) {
   return 'additional';
 }
 
-/// " · IGST" / " · CGST+SGST" suffix for the GST row. Returns an empty
-/// string when the quote stored no mode, rather than guessing — showing
-/// the wrong split on a tax line is worse than showing none.
-String _gstModeLabel(Map<String, dynamic> charges) {
-  final t = charges['_gstType'];
-  if (t == 'inter') return ' · IGST';
-  if (t == 'intra') return ' · CGST+SGST';
+/// The live quote's raw `_gstType`, which may be 'auto'. Only used as the
+/// fallback for orders with no snapshot — a snapshot stores the resolved
+/// value instead.
+String? _gstModeRaw(Map<String, dynamic> charges) =>
+    charges['_gstType']?.toString();
+
+/// " · IGST" / " · CGST+SGST" suffix for the GST row. Empty for 'auto' or
+/// null rather than guessing — showing the wrong split on a tax line is
+/// worse than showing none.
+String _gstModeSuffix(String? mode) {
+  if (mode == 'inter') return ' · IGST';
+  if (mode == 'intra') return ' · CGST+SGST';
   return '';
 }
 

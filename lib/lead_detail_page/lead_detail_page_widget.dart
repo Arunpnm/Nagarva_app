@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '/app_session.dart';
 import '/config/app_config.dart';
+import '/backend/gst_state_codes.dart';
 import '/backend/lead_status.dart';
 import '/components/detail_row.dart';
 import '/components/lead_status_strip.dart';
@@ -265,6 +266,11 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         'advance_paid': 0.0,
       });
 
+      // Item 2: freeze the quote figures onto the order.
+      if (quote != null) {
+        await _writeQuoteSnapshot(newOrderId, quote);
+      }
+
       // Item 6: seed the customer-facing tracking timeline at its first
       // stage, so a freshly-converted order already has a "Confirmed"
       // entry with a real timestamp rather than an empty timeline.
@@ -312,6 +318,66 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$errorPrefix: $e')),
       );
+    }
+  }
+
+  /// Item 2: freezes the quote's figures onto the order at conversion.
+  ///
+  /// Written as a SEPARATE update rather than folded into the order
+  /// insert, deliberately: the snapshot columns arrive in
+  /// supabase/20260729_order_quote_snapshot.sql, and if that hasn't been
+  /// run yet an insert naming unknown columns would 400 and take the
+  /// whole conversion with it. Isolated and swallowed, a missing column
+  /// costs the snapshot only — the order, the lead status flip and the
+  /// tracking entry all still land. Snapshots start populating by
+  /// themselves once the migration runs, with no code change.
+  ///
+  /// `orders.quotation_id` remains the live link; this is the historic
+  /// record of what the order was confirmed on, for when a quote is later
+  /// revised (operational flow 1.2) or signed (item 3).
+  Future<void> _writeQuoteSnapshot(String orderId, QuotationsRow quote) async {
+    try {
+      final charges = (quote.charges is Map)
+          ? Map<String, dynamic>.from(quote.charges as Map)
+          : <String, dynamic>{};
+
+      // Resolve the GST mode NOW. The quote stores '_gstType' = 'auto'
+      // when the surveyor let it derive from the from/to cities — but
+      // that derivation re-runs against whatever the addresses say
+      // later. Freezing 'auto' would re-introduce exactly the drift this
+      // snapshot exists to prevent, so resolve it to inter/intra here.
+      final rawMode = charges['_gstType'];
+      final resolvedMode = (rawMode == 'inter' || rawMode == 'intra')
+          ? rawMode as String
+          : (isInterState(
+                  quote.fromAddress ?? widget.leadFromCity,
+                  quote.toAddress ?? widget.leadToCity)
+              ? 'inter'
+              : 'intra');
+
+      num? asNum(dynamic v) => v is num ? v : num.tryParse('$v');
+
+      await OrdersTable().update(
+        data: {
+          'quote_items': quote.items,
+          'quote_charges': quote.charges,
+          'quote_subtotal': quote.subtotal,
+          'quote_gst_pct': quote.gstPct,
+          'quote_gst_amount': quote.gstAmount,
+          'quote_total': quote.total,
+          'quote_gst_mode': resolvedMode,
+          'quote_packing_type': charges['_suggestedPackage'],
+          'quote_total_cft': asNum(charges['_totalCft']),
+          // Versioning isn't built yet (no quotations.version column), so
+          // this is 1 — which is correct, not a placeholder: the first
+          // quote IS v1.
+          'quote_version': quote.version ?? 1,
+          'quote_snapshot_at': DateTime.now().toUtc().toIso8601String(),
+        },
+        matchingRows: (q) => OrgScope.write(q).eq('id', orderId),
+      );
+    } catch (_) {
+      // See doc comment — never fail the conversion over the snapshot.
     }
   }
 

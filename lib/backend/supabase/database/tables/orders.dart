@@ -161,4 +161,25 @@ class OrdersRow extends SupabaseDataRow {
   String? get trackingToken => getField<String>('tracking_token');
   set trackingToken(String? value) =>
       setField<String>('tracking_token', value);
+
+  // ---- Order-time quote snapshot (item 2) --------------------------------
+  // Added by supabase/20260729_order_quote_snapshot.sql. Frozen at Convert
+  // to Order so a later quote revision or signature can't change what the
+  // order was confirmed on. `quotationId` above stays the LIVE link; these
+  // are the historic record. All null-safe: they simply return null on any
+  // row predating the migration, and `quoteSnapshotAt == null` is the flag
+  // for "no snapshot, fall back to the linked quote".
+  dynamic get quoteItems => getField<dynamic>('quote_items');
+  dynamic get quoteCharges => getField<dynamic>('quote_charges');
+  double? get quoteSubtotal => getField<double>('quote_subtotal');
+  double? get quoteGstPct => getField<double>('quote_gst_pct');
+  double? get quoteGstAmount => getField<double>('quote_gst_amount');
+  double? get quoteTotal => getField<double>('quote_total');
+
+  /// 'inter' | 'intra' — resolved at conversion, never 'auto'.
+  String? get quoteGstMode => getField<String>('quote_gst_mode');
+  String? get quotePackingType => getField<String>('quote_packing_type');
+  double? get quoteTotalCft => getField<double>('quote_total_cft');
+  int? get quoteVersion => getField<int>('quote_version');
+  DateTime? get quoteSnapshotAt => getField<DateTime>('quote_snapshot_at');
 }

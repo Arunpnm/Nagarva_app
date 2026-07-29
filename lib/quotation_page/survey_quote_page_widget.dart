@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '/backend/gst_state_codes.dart';
 import '/backend/pricing_defaults.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -51,22 +52,6 @@ class SurveyQuotePageWidget extends StatefulWidget {
   @override
   State<SurveyQuotePageWidget> createState() => _SurveyQuotePageWidgetState();
 }
-
-// City -> GST state code, same lookup as order_detail_page_widget.dart's
-// invoice generation (kept local — that one is private to its own file).
-const Map<String, int> _kGstStateCodes = {
-  'tamil nadu': 33, 'chennai': 33, 'coimbatore': 33,
-  'karnataka': 29, 'bangalore': 29, 'bengaluru': 29,
-  'andhra pradesh': 37, 'telangana': 36, 'hyderabad': 36,
-  'kerala': 32, 'maharashtra': 27, 'mumbai': 27, 'pune': 27,
-  'delhi': 7, 'haryana': 6, 'gurgaon': 6, 'uttar pradesh': 9, 'noida': 9,
-  'gujarat': 24, 'rajasthan': 8, 'west bengal': 19, 'kolkata': 19,
-  'madhya pradesh': 23, 'punjab': 3, 'odisha': 21,
-};
-int _gstStateCode(String? city) =>
-    _kGstStateCodes[(city ?? '').toLowerCase().trim()] ?? 33;
-bool _isInterState(String? a, String? b) =>
-    _gstStateCode(a) != _gstStateCode(b);
 
 String _hexToken() {
   final r = Random.secure();
@@ -236,7 +221,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   bool get _isInterstate {
     if (_gstType == 'intra') return false;
     if (_gstType == 'inter') return true;
-    return _isInterState(_fromAddr.text, _toAddr.text);
+    return isInterState(_fromAddr.text, _toAddr.text);
   }
 
   double get _gstAmount => (_subtotal * (_gstPct / 100)).roundToDouble();

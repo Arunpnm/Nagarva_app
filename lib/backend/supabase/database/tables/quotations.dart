@@ -80,4 +80,13 @@ class QuotationsRow extends SupabaseDataRow {
   String? get acceptedByName => getField<String>('accepted_by_name');
   set acceptedByName(String? value) =>
       setField<String>('accepted_by_name', value);
+
+  /// Quote version. The column does NOT exist yet — quote versioning is
+  /// specified in nagarva_operational_flow.md 1.2 but not built, so this
+  /// returns null today and the order snapshot records version 1.
+  ///
+  /// Present now so that when versioning lands, the snapshot starts
+  /// capturing real version numbers with no further change here. Reading
+  /// an absent column through getField is null-safe, not an error.
+  int? get version => getField<int>('version');
 }

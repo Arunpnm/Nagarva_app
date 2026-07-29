@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '/backend/gst_state_codes.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 
@@ -27,45 +29,6 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
 import 'order_detail_page_model.dart';
 export 'order_detail_page_model.dart';
-
-/// City → GST state code lookup, used to auto-detect interstate vs
-/// intrastate supply for invoicing. Ported from apc_webapp App.jsx's
-/// STATE_CODES (lines ~506-516) — unknown cities default to Tamil Nadu
-/// (33), matching the reference app's own default (its company GSTIN
-/// starts with 33).
-const Map<String, int> _kGstStateCodes = {
-  'tamil nadu': 33,
-  'chennai': 33,
-  'coimbatore': 33,
-  'karnataka': 29,
-  'bangalore': 29,
-  'bengaluru': 29,
-  'andhra pradesh': 37,
-  'telangana': 36,
-  'hyderabad': 36,
-  'kerala': 32,
-  'maharashtra': 27,
-  'mumbai': 27,
-  'pune': 27,
-  'delhi': 7,
-  'haryana': 6,
-  'gurgaon': 6,
-  'uttar pradesh': 9,
-  'noida': 9,
-  'gujarat': 24,
-  'rajasthan': 8,
-  'west bengal': 19,
-  'kolkata': 19,
-  'madhya pradesh': 23,
-  'punjab': 3,
-  'odisha': 21,
-};
-
-int _gstStateCode(String? city) =>
-    _kGstStateCodes[(city ?? '').toLowerCase().trim()] ?? 33;
-
-bool _isInterState(String? fromCity, String? toCity) =>
-    _gstStateCode(fromCity) != _gstStateCode(toCity);
 
 /// Read-only view of a single order.
 class OrderDetailPageWidget extends StatefulWidget {
@@ -427,7 +390,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       const gstPct = 5.0; // no per-order gst_pct column yet — flat default,
       // same as the reference app's default.
       final interstate =
-          _isInterState(widget.orderFromCity, widget.orderToCity);
+          isInterState(widget.orderFromCity, widget.orderToCity);
       final igst = interstate ? (amount * gstPct / 100).roundToDouble() : 0.0;
       final sgst =
           interstate ? 0.0 : (amount * (gstPct / 2) / 100).roundToDouble();
