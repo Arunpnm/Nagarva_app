@@ -157,12 +157,47 @@ select p.proname,
                      'resolve_survey_cats')
  order by p.proname;
 
--- C2. Sanity: anon must NOT be able to read the underlying tables directly.
---     Expect zero rows granting anon on these.
-select table_name, grantee, privilege_type
-  from information_schema.role_table_grants
- where table_schema = 'public'
-   and grantee in ('anon')
-   and table_name in ('surveys','quotations','document_signatures',
-                      'pricing_config','app_defaults')
- order by table_name, privilege_type;
+-- C2. CLOSED — and the check below was WRONG as originally written.
+--
+-- It expected zero anon grants on these tables. That expectation was
+-- incorrect: Supabase bootstraps every project with
+--   GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated
+-- so those grants are present on every table from day one and were not
+-- introduced by any migration here. Finding them is the default state,
+-- not a leak.
+--
+-- Grants are irrelevant while RLS holds, and RLS was verified directly
+-- (29 Jul):
+--   surveys, quotations, document_signatures, pricing_config,
+--   customer_surveys — RLS enabled, 1 policy each, all {authenticated},
+--   `org_id in (select current_org_ids()) or is_platform_admin()`.
+--   No policy admits anon.
+--   app_defaults — RLS enabled, 0 policies, by design; only SECURITY
+--   DEFINER functions read it.
+--   rls_forced false everywhere, which is standard Supabase and only
+--   affects the owner role.
+-- Net: anon reads zero rows from all six.
+--
+-- Do NOT revoke these grants. It gains nothing real and risks the PIN
+-- login flow.
+--
+-- The query below is kept only as the RLS check that should have been
+-- written in the first place — policies are what actually gate anon, so
+-- that is what to inspect.
+select c.relname            as table_name,
+       c.relrowsecurity     as rls_enabled,
+       c.relforcerowsecurity as rls_forced,
+       count(p.polname)     as policy_count,
+       coalesce(string_agg(distinct r.rolname, ','), '(none)') as policy_roles
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  left join pg_policy p on p.polrelid = c.oid
+  left join lateral unnest(p.polroles) pr(oid) on true
+  left join pg_roles r on r.oid = pr.oid
+ where n.nspname = 'public'
+   and c.relname in ('surveys','quotations','document_signatures',
+                     'pricing_config','app_defaults','customer_surveys')
+ group by c.relname, c.relrowsecurity, c.relforcerowsecurity
+ order by c.relname;
+-- rls_enabled must be true on all six. policy_roles must never contain
+-- 'anon'. app_defaults legitimately has policy_count 0.
