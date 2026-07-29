@@ -119,7 +119,28 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
     // whole list rather than per row.
     final overdue = await RemindersService.overdueEntityIds(kEntityLead);
     if (mounted) safeSetState(() => _overdueLeadIds = overdue);
+
+    // Leads whose customer has actually submitted the survey. Without
+    // this a vendor has to open every lead to discover a response came
+    // in, which is the difference between the survey link being useful
+    // and being ignored. One query for the whole list, not per row.
+    try {
+      final submitted = await SurveysTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('status', 'submitted'),
+      );
+      if (mounted) {
+        safeSetState(() => _surveyRespondedLeadIds = {
+              for (final s in submitted)
+                if (s.leadId != null) s.leadId!,
+            });
+      }
+    } catch (_) {
+      // Badge is supplemental — never block the list over it.
+    }
   }
+
+  /// Lead ids with a submitted customer survey — drives the list badge.
+  Set<String> _surveyRespondedLeadIds = {};
 
   /// Lead ids with at least one overdue reminder — drives the list badge.
   Set<String> _overdueLeadIds = {};
@@ -1311,6 +1332,27 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           // badge, so the list itself
                                           // shows which leads are going
                                           // quiet.
+                                          // Survey response waiting to
+                                          // be quoted.
+                                          if (_surveyRespondedLeadIds
+                                              .contains(leadsListItemItem.id))
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsetsDirectional
+                                                      .fromSTEB(0, 0, 6, 0),
+                                              child: Tooltip(
+                                                message:
+                                                    'Survey response received',
+                                                child: Icon(
+                                                  Icons
+                                                      .assignment_turned_in,
+                                                  size: 18,
+                                                  color: FlutterFlowTheme.of(
+                                                          context)
+                                                      .tertiary,
+                                                ),
+                                              ),
+                                            ),
                                           if (_overdueLeadIds
                                               .contains(leadsListItemItem.id))
                                             Padding(

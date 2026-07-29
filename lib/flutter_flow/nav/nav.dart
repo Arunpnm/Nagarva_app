@@ -227,6 +227,8 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: SurveyQuotePageWidget.routeName,
           path: SurveyQuotePageWidget.routePath,
           builder: (context, params) => SurveyQuotePageWidget(
+            // Prefills the builder from a submitted customer survey.
+            surveyId: params.getParam('surveyId', ParamType.String),
             leadId: params.getParam('leadId', ParamType.String),
             leadCustomer: params.getParam('leadCustomer', ParamType.String),
             leadPhone: params.getParam('leadPhone', ParamType.String),

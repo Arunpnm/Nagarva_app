@@ -13,6 +13,7 @@ import '/components/delete_action.dart';
 import '/components/reminders_section.dart';
 import '/backend/tracking_service.dart';
 import '/components/share_link_sheet.dart';
+import '/components/survey_response_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -379,6 +380,27 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } catch (_) {
       // See doc comment — never fail the conversion over the snapshot.
     }
+  }
+
+  /// Opens the detailed quote builder seeded from this survey's
+  /// submitted selections, so the vendor doesn't re-key what the customer
+  /// already entered on the public page.
+  void _openQuoteBuilder(SurveysRow survey) {
+    context.pushNamed(
+      SurveyQuotePageWidget.routeName,
+      queryParameters: {
+        'surveyId': serializeParam(survey.id, ParamType.String),
+        'leadId': serializeParam(widget.leadId, ParamType.String),
+        'leadCustomer': serializeParam(
+            survey.customerName ?? widget.leadCustomer, ParamType.String),
+        'leadPhone': serializeParam(
+            survey.customerPhone ?? widget.leadPhone, ParamType.String),
+        'leadFromCity': serializeParam(
+            survey.fromAddress ?? widget.leadFromCity, ParamType.String),
+        'leadToCity': serializeParam(
+            survey.toAddress ?? widget.leadToCity, ParamType.String),
+      }.withoutNulls,
+    );
   }
 
   Future<void> _convertToOrder() async {
@@ -777,12 +799,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               label: const Text('Survey sent — awaiting customer response'),
             )
           else
-            Row(
-              children: [
-                Icon(Icons.check_circle, size: 18, color: theme.success),
-                const SizedBox(width: 6),
-                const Expanded(child: Text('Survey response received')),
-              ],
+            // Was a bare "Survey response received" line — the items the
+            // customer had gone to the trouble of listing were invisible
+            // in the app, so the whole survey link delivered nothing to
+            // the vendor. Now the full submission, grouped by category,
+            // with the total CFT and the package it implies.
+            SurveyResponseSection(
+              survey: survey,
+              onBuildQuote: () => _openQuoteBuilder(survey),
             ),
           const SizedBox(height: 10),
           // Step 2: quote (needs a survey submitted first, or can be

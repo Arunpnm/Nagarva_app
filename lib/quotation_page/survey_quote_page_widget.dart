@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '/backend/gst_state_codes.dart';
 import '/backend/pricing_defaults.dart';
+import '/components/survey_response_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -29,6 +30,7 @@ import 'package:uuid/uuid.dart';
 class SurveyQuotePageWidget extends StatefulWidget {
   const SurveyQuotePageWidget({
     super.key,
+    this.surveyId,
     this.leadId,
     this.leadCustomer,
     this.leadPhone,
@@ -37,6 +39,11 @@ class SurveyQuotePageWidget extends StatefulWidget {
     this.leadFromFloor,
     this.leadToFloor,
   });
+
+  /// When set, the builder seeds its item lines from that survey's
+  /// submitted selections instead of starting empty — so a vendor never
+  /// re-keys what the customer already entered on the public page.
+  final String? surveyId;
 
   final String? leadId;
   final String? leadCustomer;
@@ -171,7 +178,74 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             : 5.0;
         _loading = false;
       });
+      if (widget.surveyId != null) _seedFromSurvey();
     });
+  }
+
+
+  /// Seeds the item lines from a submitted customer survey.
+  ///
+  /// `surveys.rooms` carries cat/item/sub/cft/qty per selection, which maps
+  /// 1:1 onto _QuoteLine — including the CFT, which is taken FROM THE
+  /// SURVEY rather than re-resolved against the catalogue. That preserves
+  /// the same rule as the custom-item fix: the number quoted is the number
+  /// captured, and a later catalogue edit cannot rewrite it.
+  ///
+  /// Best-effort: a failure here leaves the builder empty and usable, which
+  /// is strictly better than blocking the vendor from quoting at all.
+  Future<void> _seedFromSurvey() async {
+    try {
+      final rows = await SurveysTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('id', widget.surveyId!),
+      );
+      if (rows.isEmpty || !mounted) return;
+      final survey = rows.first;
+      final lines = parseSurveyRooms(survey.rooms);
+      if (lines.isEmpty) return;
+
+      setState(() {
+        for (final l in lines) {
+          final key = '${l.cat}|${l.item}|${l.sub}';
+          // Merge rather than overwrite, in case the same selection
+          // appears twice in the submission.
+          final existing = _lines[key];
+          _lines[key] = _QuoteLine(
+            cat: l.cat,
+            item: l.item,
+            sub: l.sub,
+            cft: l.cft,
+            qty: (existing?.qty ?? 0) + l.qty,
+          );
+          // A survey line whose category isn't in this org's catalogue
+          // still has to be visible and editable, so surface it in the
+          // custom list.
+          final known = (_config?.surveyCats[l.cat] ?? const <SurveyItem>[])
+              .any((i) => i.name == l.item);
+          if (!known && !_customItems.any((c) => c.name == l.item)) {
+            _customItems.add((name: l.item, cft: l.cft));
+          }
+        }
+        if ((survey.fromAddress ?? '').isNotEmpty) {
+          _fromAddr.text = survey.fromAddress!;
+        }
+        if ((survey.toAddress ?? '').isNotEmpty) {
+          _toAddr.text = survey.toAddress!;
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Prefilled ${lines.length} item'
+                '${lines.length == 1 ? '' : 's'} from the customer survey '
+                '($_totalCft CFT). Adjust before quoting.'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (_) {
+      // Leave the builder empty rather than failing the screen.
+    }
   }
 
   @override
