@@ -532,8 +532,8 @@ class _LogCallSheetState extends State<_LogCallSheet> {
                 icon: const Icon(Icons.chat, size: 18),
                 label: const Text('Message on WhatsApp'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF25D366),
-                  side: const BorderSide(color: Color(0xFF25D366)),
+                  foregroundColor: kWhatsAppGreen,
+                  side: const BorderSide(color: kWhatsAppGreen),
                 ),
               ),
             ),

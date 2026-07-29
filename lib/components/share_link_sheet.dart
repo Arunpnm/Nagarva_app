@@ -132,7 +132,7 @@ class ShareLinkSheet extends StatelessWidget {
                       icon: const Icon(Icons.chat, size: 19),
                       label: const Text('WhatsApp'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF25D366),
+                        backgroundColor: kWhatsAppGreen,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10)),

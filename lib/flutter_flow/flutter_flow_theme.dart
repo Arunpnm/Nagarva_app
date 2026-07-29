@@ -12,6 +12,32 @@ const kThemeModeKey = '__theme_mode__';
 // DarkModeTheme for the actual colors once brightness is already dark.
 const kMidnightKey = '__theme_midnight__';
 
+// ---------------------------------------------------------------------------
+// Brand palette — the ONE definition (fix brief #2, item 9.3: "brand
+// navy/gold/teal should live only in the ThemeData definitions").
+//
+// The gold was previously written out as a raw `Color(0xFFE3B23C)` in
+// twelve separate places across LoginPage and SignupPage, plus again in
+// lead_status.dart — so a rebrand meant finding all thirteen.
+//
+// These exist for the two legitimate cases where a colour must NOT follow
+// the active theme:
+//   * LoginPage / SignupPage run pre-auth, before any org or theme is
+//     resolved, and are deliberately fixed platform branding.
+//   * Semantic stage colours that happen to reuse a brand hue.
+// Everywhere else inside the app, read from FlutterFlowTheme.of(context)
+// instead of reaching for these.
+// ---------------------------------------------------------------------------
+const Color kBrandGold = Color(0xFFE3B23C);
+const Color kBrandTeal = Color(0xFF1FA98C);
+const Color kBrandNavy = Color(0xFF0F2A47);
+
+/// WhatsApp's own brand green. Not part of the Nagarva palette and
+/// deliberately never themed — a WhatsApp button that isn't WhatsApp green
+/// stops being recognisable. Named so it reads as intentional rather than
+/// as a stray hex someone forgot to theme.
+const Color kWhatsAppGreen = Color(0xFF25D366);
+
 SharedPreferences? _prefs;
 
 abstract class FlutterFlowTheme {

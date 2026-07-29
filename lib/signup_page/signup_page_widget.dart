@@ -1,3 +1,4 @@
+import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -176,7 +177,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.local_shipping,
-                                color: Color(0xFFE3B23C),
+                                color: kBrandGold,
                                 size: 44,
                               ),
                             ),
@@ -295,7 +296,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               onPressed: _model.isLoading ? null : _handleSignup,
                               options: FFButtonOptions(
                                 height: 52,
-                                color: const Color(0xFFE3B23C),
+                                color: kBrandGold,
                                 textStyle: GoogleFonts.interTight(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -327,7 +328,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             child: Text(
                               'Log in',
                               style: GoogleFonts.inter(
-                                color: const Color(0xFFE3B23C),
+                                color: kBrandGold,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -384,7 +385,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE3B23C), width: 1.5),
+        borderSide: const BorderSide(color: kBrandGold, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),

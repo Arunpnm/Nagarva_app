@@ -1,3 +1,4 @@
+import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/components/org_switcher_sheet.dart';
@@ -486,7 +487,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.local_shipping,
-                                color: Color(0xFFE3B23C),
+                                color: kBrandGold,
                                 size: 48,
                               ),
                             ),
@@ -587,7 +588,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFE3B23C) : Colors.transparent,
+            color: selected ? kBrandGold : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
@@ -646,7 +647,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             child: Text(
               'Forgot password?',
               style: GoogleFonts.inter(
-                color: const Color(0xFFE3B23C),
+                color: kBrandGold,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -664,7 +665,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           options: FFButtonOptions(
             width: double.infinity,
             height: 52,
-            color: const Color(0xFFE3B23C),
+            color: kBrandGold,
             textStyle: GoogleFonts.interTight(
               color: Colors.white,
               fontSize: 16,
@@ -688,7 +689,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
               child: Text(
                 'Create an account',
                 style: GoogleFonts.inter(
-                  color: const Color(0xFFE3B23C),
+                  color: kBrandGold,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -783,7 +784,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           options: FFButtonOptions(
             width: double.infinity,
             height: 52,
-            color: const Color(0xFFE3B23C),
+            color: kBrandGold,
             textStyle: GoogleFonts.interTight(
               color: Colors.white,
               fontSize: 16,
@@ -843,7 +844,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFE3B23C), width: 1.5),
+          borderSide: const BorderSide(color: kBrandGold, width: 1.5),
         ),
       ),
     );

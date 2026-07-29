@@ -16,6 +16,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '/flutter_flow/flutter_flow_theme.dart';
+
 const String kLeadStatusNew = 'new';
 const String kLeadStatusFollowUp = 'follow_up';
 const String kLeadStatusSurveyDone = 'survey_done';
@@ -110,13 +112,13 @@ String leadStageShortLabel(String canonical) {
 Color leadStatusColor(String? raw) {
   switch (canonicalLeadStatus(raw)) {
     case kLeadStatusFollowUp:
-      return const Color(0xFFE3B23C); // brand gold
+      return kBrandGold; 
     case kLeadStatusSurveyDone:
       return const Color(0xFF3B82F6);
     case kLeadStatusQuoted:
       return const Color(0xFF8B5CF6);
     case kLeadStatusConfirmed:
-      return const Color(0xFF1FA98C); // brand teal
+      return kBrandTeal; 
     case kLeadStatusLost:
       return const Color(0xFFEF4444);
     default:
