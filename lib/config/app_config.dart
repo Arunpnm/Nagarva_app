@@ -23,7 +23,7 @@ library;
 /// domain from settings and fall back to this constant.
 const String kPublicBaseUrl = String.fromEnvironment(
   'NAGARVA_PUBLIC_BASE_URL',
-  defaultValue: 'https://nagarva.in',
+  defaultValue: 'https://link.nagarva.in',
 );
 
 /// Builds a customer-facing shareable link.

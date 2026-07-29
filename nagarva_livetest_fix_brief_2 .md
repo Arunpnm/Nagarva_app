@@ -172,8 +172,143 @@ Could not create survey link: Bad state: Origin is only applicable schemes http 
 
 ---
 
-## Suggested order of work
+## Item 10 — Follow-ups, reminders & call log on leads and quotes (BUSINESS-CRITICAL)
 
-1. Item 1 (blocker, small fix) → 2. Item 2 (data integrity) → 3. Item 5 (status flow) → 4. Item 8 + 9 (quick layout/theme fixes, good batch) → 5. Item 3 (signatures, needs SQL) → 6. Item 6 (tracking, builds on same public-link pattern) → 7. Item 7 (multi-language, biggest surface area — do last so new screens from Items 3/6 get localized too) → 8. Item 4 (polish, fold into Item 7's overflow work).
+**Gap:** Nagarva's Lead Details has no reminder or follow-up capability at all. This is mandatory for the business — leads are won or lost on repeated follow-up, and a quote sitting without chase is dead revenue. APC already has the right pattern and Nagarva must reach parity or better.
+
+**Reference (APC lead screen):** a REMINDERS section with `+ Add`, each reminder showing title ("Quote follow-up: <customer>"), due date, a note line ("Followup by 3pm today"), and per-reminder `+ Log Call` and `Done` actions, plus a collapsible "Show all N calls" history.
+
+**Requirements:**
+
+1. **Multiple follow-ups per lead AND per quote.** Not one "next follow-up date" field — a full list. A lead can have several open reminders (call back, site visit, price negotiation) simultaneously.
+
+2. **Schema (propose SQL for Boss):**
+   - `reminders`: `id uuid pk`, `org_id`, `entity_type` ('lead' | 'quote' | 'order'), `entity_id text` (TEXT to accommodate `orders.id` NGV-XXXX — cast with `::text` on joins), `title`, `note`, `due_at timestamptz`, `status` ('open' | 'done' | 'cancelled'), `completed_at`, `assigned_to` (staff id, nullable — defaults to creator), `created_by`, `created_at`.
+   - `follow_up_logs`: `id uuid pk`, `org_id`, `entity_type`, `entity_id text`, `reminder_id uuid null` (set when logged against a specific reminder), `channel` ('call' | 'whatsapp' | 'sms' | 'email' | 'visit' | 'other'), `outcome` ('connected' | 'no_answer' | 'busy' | 'callback_requested' | 'not_interested' | 'converted'), `notes text`, `next_action_at timestamptz null`, `logged_by`, `logged_at`.
+   - RLS on both: `org_id in (select current_org_ids())`.
+   - Indexes on `(org_id, entity_type, entity_id)` and `(org_id, status, due_at)` — the second drives the due-today list.
+
+3. **Lead Details UI (new section, above Survey & Quote):**
+   - REMINDERS header with `+ Add` button → dialog: title, due date+time picker, note, assign to staff.
+   - Each open reminder row: title, due date (red if overdue, amber if today), note line, with `Log Call` and `Done` actions.
+   - `Log Call` opens a quick sheet: channel, outcome, notes, and an optional "set next follow-up" date — if set, it **auto-creates the next reminder** in the same action. This is the key loop: never leave a lead without a next step.
+   - Collapsible "Show all N follow-ups" → chronological log history with who/when/outcome.
+   - Completed reminders collapse out of the main view but stay in history.
+
+4. **Quotation screen:** same reminders + log widget, scoped to the quote. When a quote is sent, **auto-create a follow-up reminder** (default +2 days, configurable in Settings) titled "Quote follow-up: <customer name>" — matching APC's behaviour. Same for survey sent (default +1 day).
+
+5. **Surfacing (this is where the value is — reminders nobody sees are useless):**
+   - Dashboard tile/section: **Today's Follow-ups** and **Overdue** counts, tapping through to a filtered list.
+   - Leads list: badge/icon on rows with overdue follow-ups; sort/filter by "needs follow-up".
+   - Optional local notification at due time (device-level, no server push needed for v1).
+
+6. **WhatsApp tie-in:** `Log Call` sheet includes a WhatsApp quick-action that opens the existing template flow and auto-logs a `whatsapp` channel entry on return.
+
+7. Refresh-after-write applies — adding/completing a reminder must reflect immediately (systemic bug).
+
+**Acceptance:** On device — add two reminders to a lead, log a call against one with outcome "callback_requested" and a next date, confirm the next reminder auto-creates; send a quote and confirm the follow-up reminder auto-appears; dashboard shows correct today/overdue counts; history shows all logged calls with timestamps and staff names.
+
+---
+
+## Item 11 — Delete / archive is missing app-wide (leads, quotes, orders, staff, everything)
+
+**Gap:** There is no delete function anywhere in Nagarva. Test rows, duplicate leads, wrong entries, and departed staff all accumulate with no way to remove them. APC has `Delete Lead` on the lead screen; Nagarva has nothing.
+
+**Core principle — soft delete, not hard delete.** Every entity gets `deleted_at timestamptz`, `deleted_by uuid`, `delete_reason text`. Deleted rows disappear from all lists and lookups but stay in the database. Reasons: (a) accidental deletes are recoverable, (b) financial and GST records must be retained by law, (c) a hard delete would cascade and silently destroy linked payments, salary ledger entries, and P&L history. Hard delete is reserved for the super-admin console only.
+
+**Rules per entity:**
+
+| Entity | Delete allowed? | Behaviour |
+|---|---|---|
+| Lead | Yes | Soft delete. Blocked if already converted to an order — offer "mark as Lost" instead. |
+| Quote | Yes | Soft delete. Blocked if the quote is signed (Item 3) or already converted — supersede with a new version instead. |
+| Order | **Restricted** | Soft delete (owner-only) **only if** no payments recorded and no GST invoice issued. If either exists → block, and offer **Cancel Order** (status change, keeps the audit trail). Never delete an invoiced order — GST records must be retained. |
+| Payment entry | Owner-only | Soft delete with mandatory reason; must reverse the linked ledger/P&L effect, not just hide the row. |
+| Staff | Yes | **Deactivate, don't delete** (`active = false`) — salary ledger, attendance, and job history all reference the staff row. Hard delete only if the staff member has zero linked records. Deactivating must also invalidate their PIN login. |
+| Expense / Material / Fleet | Yes | Soft delete, owner or manager. |
+
+**Implementation:**
+
+1. **Schema (propose SQL for Boss):** add `deleted_at`, `deleted_by`, `delete_reason` to `leads`, `quotes`, `orders`, `payments`, `expenses`, `materials`, `fleet`. Add partial indexes `where deleted_at is null` on the hot list queries.
+2. **RLS / read filtering:** update every RLS policy and every list query to append `and deleted_at is null`. This is the highest-risk part — a missed spot means deleted rows reappear somewhere. Grep systematically for each table's read paths.
+3. **Guard functions:** a DB-side check (or Edge Function) that validates the rules table above before allowing the update — don't rely on the UI alone. E.g. `can_delete_order(order_id)` returns false when payments or an invoice exist.
+4. **UI:**
+   - `Delete` action in the overflow/bottom of each detail screen — destructive styling (red), never adjacent to a primary action.
+   - Confirmation dialog stating what will happen ("This lead will be removed from your list. It can be restored by the owner.") with a **mandatory reason** field for orders and payments.
+   - Blocked cases explain *why* and offer the alternative (Lost / Cancel Order / Deactivate).
+   - Undo snackbar for ~10 seconds after a lead or quote delete — cheapest way to prevent most support requests.
+5. **Permissions:** leads/quotes deletable by owner + manager; orders, payments, staff by **owner only**. Wire into the existing role gating (`AppSession.currentStaffId == null` for owner, per Part 7 login).
+6. **Recycle bin (Settings → Deleted Items):** owner-only list of soft-deleted records from the last 90 days with a Restore action. Small screen, big payoff — turns every accidental delete into a non-event.
+7. **Audit:** every delete writes to an `audit_log` (entity, id, action, actor, reason, timestamp) if one exists; if not, propose the table.
+8. Refresh-after-write applies — the row must vanish from the list immediately.
+
+**Acceptance:** Delete a lead → gone from list, restorable from recycle bin. Try to delete an order with a payment → blocked with Cancel Order offered. Try to delete an invoiced order → blocked. Deactivate a staff member → their PIN no longer logs in, salary history intact. No deleted record appears in any list, KPI, dashboard count, or P&L figure.
+
+---
+
+## Session command block — finish Items 3 + 6, plus custom-item CFT fix
+
+Paste into Claude Code as one instruction. Boss runs the two `supabase functions deploy` commands himself.
+
+### A. Custom-item CFT fix (do first — data correctness)
+
+Currently `_totalCft` and `_save` resolve CFT by walking `_config.surveyCats`, so any custom item not in the catalogue silently counts as **0 CFT**, under-sizing the suggested package and vehicle. Fix structurally, not with a special case:
+
+1. Store `cft` **on the item line itself** at add-time — catalogue items copy their CFT value in when added; custom items carry the CFT entered in the name+CFT dialog.
+2. Change `_totalCft` and `_save` to **sum the stored per-line `cft`**, with no lookup against `_config.surveyCats` at total time.
+3. Persist `cft` per line in the quote items table/JSON so historic quotes keep the numbers they were actually quoted at (catalogue CFT revisions must never retroactively change an old quote — matters for customer disputes).
+4. Guard: block save if any line has `cft == 0` unless the user explicitly confirms, so a zero can never pass unnoticed.
+5. Backfill note for Boss: existing quotes with custom items may hold 0 CFT — flag them rather than silently rewriting.
+
+### B. Finish Item 3 (signatures) — in-app side
+
+- "Send for Signature" action on the quote screen and invoice screen → creates `sign_token`, builds link from `kPublicBaseUrl`, opens WhatsApp share with template.
+- Signature status chip on lead/order/quote detail: *Awaiting signature* → *Signed on <date>*.
+- PDF signature block: embed the stored signature image + "Accepted by <name>, <date>" above the line on both quote and invoice PDFs.
+- Apply refresh-after-write so status flips without restart.
+
+### C. Finish Item 6 (tracking) — in-app side
+
+- "Share Tracking Link" action on Order Details → token + WhatsApp share.
+- `status_history` writes on **every** order status change (`order_id text`, `status`, `changed_at`, `changed_by`) — this is what drives the public timeline; without it `/track` shows a static page.
+- Status chips on Order Details reflecting current stage.
+- Keep the timeline as a **display-layer mapping** over the existing `booked/transit/delivered/...` vocabulary. Do **not** write finer-grained stage names into `orders.status` — that would make in-progress orders vanish from OrdersPage tabs (same trap SupervisorJobPage documents).
+
+### D. Boss runs these before testing
+
+```
+supabase functions deploy sign-document
+supabase functions deploy track-order
+```
+
+Then hot restart. Both public pages fail to load until these are deployed.
+
+### E. Then Item 10 (follow-ups) + Item 11 (delete) — full specs in the sections above
+
+These are the two largest gaps and both need SQL from Boss before the Flutter side lands. Sequence:
+
+1. **Propose the migrations first, in one file**, for Boss to review and run:
+   - `reminders` + `follow_up_logs` tables (Item 10), RLS `org_id in (select current_org_ids())`, indexes on `(org_id, entity_type, entity_id)` and `(org_id, status, due_at)`.
+   - `deleted_at` / `deleted_by` / `delete_reason` columns across `leads`, `quotes`, `orders`, `payments`, `expenses`, `materials`, `fleet` (Item 11), plus partial indexes `where deleted_at is null`, and the `can_delete_order()` guard function.
+   - `entity_id` must be **text** in both new tables — `orders.id` is TEXT (NGV-XXXX), so joins need `::text` casts.
+   - Enable RLS explicitly in the migration file itself (`alter table ... enable row level security`) rather than relying on the Supabase UI prompt.
+2. **Item 11's RLS/read sweep is the risky part** — add `and deleted_at is null` to every read path in the same pass: RLS policies, list queries, dashboard KPIs, P&L totals. Go table-by-table, not screen-by-screen. A deleted lead that vanishes from the list but still counts in dashboard numbers is worse than no delete at all.
+3. Then build the Flutter side for both: REMINDERS section on Lead Details + quote screen with `+ Add` / `Log Call` / `Done` and the auto-chain (logging a call with a next date auto-creates the next reminder); delete actions with destructive styling, mandatory reason for orders/payments, blocked cases offering Lost / Cancel Order / Deactivate, undo snackbar, and the owner-only recycle bin in Settings.
+4. Auto-create "Quote follow-up: <customer>" (+2 days) on quote sent, and a survey follow-up (+1 day) on survey sent.
+5. Staff deletion is **deactivation** (`active = false`) — this already invalidates PIN login, since `verify_org_pin()` filters on `coalesce(s.active, true)`.
+
+Items 5 (status flow) and 10 both restructure Lead Details — do them in one sitting so the screen is only rebuilt once.
+
+### F. Acceptance for this session
+
+- Add a custom item with a typed CFT → total and vehicle suggestion include it; save and reopen → CFT persists.
+- Send a signature link from the APK, sign on another phone, status flips in-app, regenerated PDF shows the signature block.
+- Share a tracking link, change order status staff-side, customer page timeline advances; order still appears in the correct OrdersPage tab throughout.
+
+1. Item 1 (blocker, small fix) → 2. Item 10 (business-critical gap — follow-ups) → 3. Item 11 (delete/archive — do the schema + RLS sweep in one focused pass) → 4. Item 2 (data integrity) → 5. Item 5 (status flow — pairs naturally with Item 10, both touch Lead Details) → 6. Item 8 + 9 (quick layout/theme fixes, good batch) → 7. Item 3 (signatures, needs SQL) → 8. Item 6 (tracking, builds on same public-link pattern) → 9. Item 7 (multi-language, biggest surface area — do last so new screens from Items 3/6/10/11 get localized too) → 10. Item 4 (polish, fold into Item 7's overflow work).
+
+**Note on Items 5 + 10:** both add sections to Lead Details and both need the same refresh-after-write fix — worth doing in one sitting so the screen is only restructured once.
+
+**Note on Item 11:** the `deleted_at is null` filter must be added to every read path in the same pass as the schema change. Half-done soft delete is worse than none — rows that reappear in one screen but not another erode trust in the data.
 
 All SQL migrations: output as ready-to-run statements for Boss to execute in Supabase (project `hqqcapifefsaqvotqvlt`); remember explicit `DROP FUNCTION` before changing return types, per `CLAUDE.md`.
