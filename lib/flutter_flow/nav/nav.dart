@@ -37,6 +37,32 @@ class AppStateNotifier extends ChangeNotifier {
 // of redirecting, since nothing but each page's own queries enforced
 // auth. main() fully awaits Supabase session restore before runApp() (see
 // main.dart), so this can't race a still-restoring session on cold start.
+// WHERE CUSTOMER LINKS ACTUALLY RESOLVE (29 Jul 2026). kPublicBaseUrl now
+// points at link.nagarva.in — a plain static site, NOT this Flutter build.
+// So a customer opening a shared link never reaches the routes below:
+//
+//   /survey  -> STATIC SITE. Live and verified end-to-end.
+//   /sign    -> STATIC SITE. Live.
+//   /quote   -> NOTHING SERVES IT. Still 404s for the customer.
+//   /track   -> NOTHING SERVES IT. Still 404s for the customer.
+//
+// /track is the one the handoff brief missed: "Share Tracking Link" on
+// Order Details builds its URL from the same kPublicBaseUrl, so it broke
+// the moment that constant moved off nagarva.in, in exactly the way
+// /quote did.
+//
+// The Flutter pages for all four are DELIBERATELY KEPT, not deleted:
+// SignPage and TrackPage are the only implementations that exist at all,
+// and SurveyPage/QuotePage still work if this build is ever served on a
+// host that owns those paths. They are dead only with respect to the
+// current link base, which is a config choice, not a code fact.
+//
+// Note the Flutter SurveyPage/QuotePage still call the ORIGINAL RPCs
+// (get_survey_by_token / submit_survey / get_quotation_by_token /
+// accept_quotation), not the newer anon-granted public_* family the
+// static site uses. If the originals are ever dropped, these pages break
+// silently — they are not exercised by any current flow, so nothing
+// would catch it.
 const _kPublicRoutePrefixes = [
   '/login',
   '/signup',
