@@ -216,7 +216,14 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   /// restart. The customer signs on their own phone, so there is no
   /// in-app event to hook — reconciling on refresh is the only way.
   @override
-  void onPageRefresh() => _loadSignature();
+  void onPageRefresh() {
+    _loadSignature();
+    // Item 2: re-pull the linked quote so an edited quote's lines,
+    // charges and GST show without a restart.
+    _breakdownKey.currentState?.reload();
+  }
+
+  final _breakdownKey = GlobalKey<QuotationBreakdownSectionState>();
 
   Future<void> _loadSignature() async {
     if (widget.orderId == null) return;
@@ -858,7 +865,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                     // if this order has one linked — was previously just a
                     // bare total with no itemisation.
                     if (widget.orderId != null)
-                      QuotationBreakdownSection(orderId: widget.orderId!),
+                      QuotationBreakdownSection(
+                          key: _breakdownKey, orderId: widget.orderId!),
                     // Assign supervisor + labour/salary (owner view) —
                     // was missing from the order flow entirely.
                     if (widget.orderId != null)
