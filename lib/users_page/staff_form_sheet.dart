@@ -133,17 +133,65 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
             : double.tryParse(_salary.text.trim()),
         'pf_applicable': _pfApplicable,
         'esic_applicable': _esicApplicable,
-        'active': _active,
         'permissions': StaffPermissions.encode(_perms),
       };
+
       if (isEdit) {
+        // Auth plan REVISED, item 1: deactivation must also KILL LIVE
+        // SESSIONS. Staff are on their own personal phones, so a leaver
+        // walks out still holding a valid JWT — and `active = false`
+        // alone does nothing about that, because staff-login only checks
+        // active status AT LOGIN. An already-minted token keeps working
+        // until it expires.
+        //
+        // The app cannot revoke: that needs the admin API and the service
+        // role. So the active flag is deliberately NOT in `data` above —
+        // it is routed through the staff-deactivate Edge Function, which
+        // flips the row and signs the user out in one call so the two
+        // can't drift apart.
+        final wasActive = widget.existing!.active ?? true;
+        if (_active != wasActive) {
+          final res = await SupaFlow.client.functions.invoke(
+            'staff-deactivate',
+            body: {'staff_id': widget.existing!.id, 'active': _active},
+          );
+          final body = res.data;
+          if (body is! Map || body['ok'] != true) {
+            throw Exception(
+              (body is Map ? body['error'] as String? : null) ??
+                  'Could not change active status.',
+            );
+          }
+          // Surfaced, not swallowed. The row IS deactivated at this point
+          // — but if the sign-out failed, that phone keeps working until
+          // its token expires, and the owner needs to know that rather
+          // than seeing a clean success.
+          if (!_active &&
+              body['had_auth_user'] == true &&
+              body['sessions_revoked'] != true &&
+              mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Deactivated, but their existing session could NOT be '
+                  'revoked (${body['revoke_error'] ?? 'unknown error'}). '
+                  'That device stays signed in until its token expires.',
+                ),
+                duration: const Duration(seconds: 10),
+              ),
+            );
+          }
+        }
         await StaffTable().update(
           data: data,
           matchingRows: (q) =>
               OrgScope.write(q).eq('id', widget.existing!.id!),
         );
       } else {
-        await StaffTable().insert({...OrgScope.stamp(), ...data});
+        // New staff: no session can exist yet, so the flag goes in
+        // directly.
+        await StaffTable().insert(
+            {...OrgScope.stamp(), ...data, 'active': _active});
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
