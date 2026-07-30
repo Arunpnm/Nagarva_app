@@ -85,15 +85,32 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
       _error = null;
     });
     try {
-      final res = await SupaFlow.client.functions.invoke(
-        'pin-login',
-        body: {'org_id': orgId, 'pin': pin},
-      );
+      // Auth plan REVISED item 4. A device bound to a specific PERSON
+      // goes to `staff-login` with {staff_id, pin} — it never searches the
+      // org-wide pool and so cannot reach the owner's credentials at all.
+      // That is the structural fix for the privilege escalation; the
+      // collision guard in verify_org_pin is the stopgap for devices still
+      // on the old org-only binding.
+      //
+      // `pin-login` is now effectively owner-only: reached only by a
+      // device bound by org slug with no staff_id.
+      final staffId = DeviceOrgBinding.boundStaffId;
+      final res = staffId != null
+          ? await SupaFlow.client.functions.invoke(
+              'staff-login',
+              body: {'staff_id': staffId, 'pin': pin},
+            )
+          : await SupaFlow.client.functions.invoke(
+              'pin-login',
+              body: {'org_id': orgId, 'pin': pin},
+            );
       final data = res.data;
       if (data is! Map || data['access_token'] == null) {
         throw Exception('Wrong PIN. Try again.');
       }
-      final kind = data['kind'] as String?;
+      // staff-login returns no `kind` — it only ever authenticates staff,
+      // which is the point. Treat its response as the staff branch.
+      final kind = staffId != null ? 'staff' : data['kind'] as String?;
       final refreshToken = data['refresh_token'] as String;
 
       final swap = await SupaFlow.client.auth.setSession(refreshToken);

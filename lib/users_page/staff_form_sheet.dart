@@ -1,3 +1,7 @@
+import 'package:url_launcher/url_launcher.dart';
+
+import '/app_session.dart';
+import '/config/app_config.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -199,6 +203,102 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
         _saving = false;
         _error = e.toString();
       });
+    }
+  }
+
+  /// Mints a single-use device invite and shows it once.
+  ///
+  /// The plaintext code exists only in this dialog — the server stores
+  /// only its sha256. If the owner closes it without sending, they
+  /// generate a new one; there is no way to retrieve it.
+  Future<void> _generateInvite() async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final res = await SupaFlow.client.functions.invoke(
+        'staff-invite',
+        body: {'action': 'generate', 'staff_id': widget.existing!.id},
+      );
+      final data = res.data;
+      if (data is! Map || data['ok'] != true) {
+        throw Exception(
+          (data is Map ? data['error'] as String? : null) ??
+              'Could not create an invite.',
+        );
+      }
+      if (!mounted) return;
+      setState(() => _saving = false);
+
+      final code = data['code'] as String;
+      final name = (data['staff_name'] as String?) ?? 'your team member';
+      final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+      final message = 'Hi $name, set up the $org app on your phone.\n\n'
+          'Open Nagarva, tap "I have an invite code", and enter:\n\n'
+          '$code\n\n'
+          'This code works once and expires. Do not share it.';
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Device invite'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(
+                code,
+                style: GoogleFonts.robotoMono(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 3,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Single use, and it expires. Send it to $name — they enter '
+                'it on their own phone, then set their PIN.\n\n'
+                'You will not be able to see this code again.',
+                style: GoogleFonts.inter(fontSize: 12.5, height: 1.4),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: code));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Code copied')),
+                );
+              },
+              child: const Text('Copy'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                final uri = Uri.parse(buildWhatsAppLink(
+                  phone: widget.existing?.phone,
+                  message: message,
+                ));
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              },
+              icon: const Icon(Icons.chat, size: 18),
+              label: const Text('WhatsApp'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = e.toString();
+        });
+      }
     }
   }
 
@@ -605,6 +705,31 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                           ),
                   ),
                 ),
+                // Auth plan REVISED item 3: remote onboarding. The owner
+                // runs three branches and can't set up a supervisor's
+                // phone in person — and must never hand over a credential
+                // of his own. A single-use code binds that person's own
+                // phone to their own staff_id.
+                //
+                // Only on an existing staff member: a code needs a
+                // staff_id, which doesn't exist until the row is saved.
+                if (isEdit) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 46,
+                    child: OutlinedButton.icon(
+                      onPressed: _saving ? null : _generateInvite,
+                      icon: const Icon(Icons.qr_code_2, size: 19),
+                      label: const Text('Generate device invite'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.primary,
+                        side: BorderSide(color: theme.primary),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

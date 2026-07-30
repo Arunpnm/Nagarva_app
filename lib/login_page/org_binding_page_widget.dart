@@ -32,6 +32,73 @@ class _OrgBindingPageWidgetState extends State<OrgBindingPageWidget> {
     super.dispose();
   }
 
+  /// Redeems a staff invite and binds this device to that PERSON.
+  ///
+  /// Deliberately does not log anyone in — it establishes whose phone
+  /// this is. The PIN screen that follows establishes that it is really
+  /// them. A leaked code alone must not be enough.
+  Future<void> _redeemInvite() async {
+    final ctrl = TextEditingController();
+    final theme = FlutterFlowTheme.of(context);
+    final code = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Enter your invite code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your owner sends this to you. It works once.',
+              style: TextStyle(fontSize: 13, color: theme.secondaryText),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.characters,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 22, letterSpacing: 4, fontWeight: FontWeight.w700),
+              decoration: const InputDecoration(hintText: 'ABCD2345'),
+              onSubmitted: (v) => Navigator.of(dialogContext).pop(v),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(ctrl.text),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    final entered = code?.trim() ?? '';
+    ctrl.dispose();
+    if (entered.isEmpty) return;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final err = await DeviceOrgBinding.redeemInvite(entered);
+    if (!mounted) return;
+    if (err != null) {
+      setState(() {
+        _loading = false;
+        _error = err;
+      });
+      return;
+    }
+    // Bound to a person now — straight to the PIN screen, which will
+    // route to staff-login because boundStaffId is set.
+    context.goNamed(PinLoginPageWidget.routeName);
+  }
+
   Future<void> _bind() async {
     final slug = _slugController.text.trim();
     if (slug.isEmpty) {
@@ -107,6 +174,22 @@ class _OrgBindingPageWidgetState extends State<OrgBindingPageWidget> {
                         backgroundColor: theme.primary,
                         foregroundColor: Colors.white),
                     child: Text(_loading ? 'Checking...' : 'Continue'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Auth plan REVISED item 3. Staff never type an org code:
+                // that only binds "which company", which is what forced
+                // PIN login to search an org-wide pool. An invite binds
+                // this phone to ONE staff_id, so login can go straight to
+                // staff-login and never touch the owner's credentials.
+                OutlinedButton.icon(
+                  onPressed: _loading ? null : _redeemInvite,
+                  icon: const Icon(Icons.vpn_key, size: 18),
+                  label: const Text('I have an invite code'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    foregroundColor: theme.primary,
+                    side: BorderSide(color: theme.primary),
                   ),
                 ),
                 const SizedBox(height: 12),
