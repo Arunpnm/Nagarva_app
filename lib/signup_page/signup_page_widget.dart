@@ -35,14 +35,6 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     super.dispose();
   }
 
-  String _slugify(String name) {
-    return name
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '-')
-        .replaceAll(RegExp(r'-+'), '-')
-        .replaceAll(RegExp(r'^-|-$'), '');
-  }
-
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -57,7 +49,11 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     });
 
     try {
-      // 1. Create Supabase Auth user
+      // 1. Create (or, on a retried signup, re-authenticate as) the
+      // Supabase Auth user. Org creation itself no longer happens here —
+      // it moved server-side into create-org / create_org_with_owner(),
+      // which is atomic, idempotent, and is the only thing allowed to
+      // write organizations/org_members now.
       final authResponse = await SupaFlow.client.auth.signUp(
         email: email,
         password: password,
@@ -73,63 +69,80 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
         return;
       }
 
-      final userId = user.id;
-      final baseSlug = _slugify(company);
-      // Append 4 chars of userId to avoid collisions
-      final slug = '$baseSlug-${userId.replaceAll('-', '').substring(0, 4)}';
+      // "Confirm email" is currently OFF, so signUp() returns a session
+      // directly and SupaFlow.client's auth state now holds it — that's
+      // what functions.invoke() below authenticates with. If confirm-email
+      // is ever turned on (a separate, not-yet-done step), session will be
+      // null here until the user clicks the emailed link; create-org can't
+      // be called without a JWT, so stop and tell them to confirm instead
+      // of throwing on a 401.
+      if (authResponse.session == null) {
+        safeSetState(() {
+          _model.errorMessage =
+              'Account created — please confirm your email, then log in.';
+          _model.isLoading = false;
+        });
+        return;
+      }
 
-      // 2. Load the default trial plan (fetched before the org insert so
-      // plan_id/plan_status/trial_ends_at can be stamped on creation —
-      // previously this was fetched after and never written back, leaving
-      // organizations.plan_id NULL on every signup).
-      final plans = await SubscriptionPlansTable().queryRows(
-        queryFn: (q) => q.eq('is_default_trial', true).limit(1),
+      // 2. Bootstrap the org via the create-org Edge Function
+      // (create_org_with_owner() under the hood) instead of inserting into
+      // organizations/org_members directly — that RPC is atomic, retry-safe,
+      // and is the only thing with a service-role grant to write those
+      // tables now.
+      final res = await SupaFlow.client.functions.invoke(
+        'create-org',
+        body: {
+          'org_name': company,
+          if (phone.isNotEmpty) 'phone': phone,
+        },
       );
-      final plan = plans.isNotEmpty ? plans.first : null;
-      final trialEndsAt = DateTime.now().toUtc().add(const Duration(days: 14));
 
-      // 3. Create organization
-      // NOTE: 'email' and 'owner_id' are deliberately NOT sent here — the
-      // owner-confirmed live schema for organizations is (id, name, slug,
-      // gstin, phone, plan_id, plan_status, trial_ends_at, active,
-      // created_at), which has neither column. Ownership is recorded via
-      // org_members.role = 'owner' below instead.
-      final org = await OrganizationsTable().insert({
-        'name': company,
-        'slug': slug,
-        'phone': phone.isEmpty ? null : phone,
-        'plan_id': plan?.id,
-        'plan_status': 'trial',
-        'trial_ends_at': trialEndsAt.toIso8601String(),
-        'active': true,
-      });
+      final data = res.data;
+      if (data is! Map || data['ok'] != true) {
+        final serverError =
+            (data is Map && data['error'] is String) ? data['error'] as String : null;
+        throw Exception(serverError ?? 'Could not create organisation.');
+      }
 
-      final orgId = org.id!;
+      // 3. caller_role is the ONLY thing this gates on — standalone, never
+      // combined with is_new. A staff/manager account at someone else's
+      // org that lands here also gets is_new=false, identical to a genuine
+      // signup retry on that field alone; only caller_role tells them
+      // apart, and only 'owner' may ever get a vendor session out of this
+      // screen.
+      final callerRole = data['caller_role'];
+      if (callerRole != 'owner') {
+        safeSetState(() {
+          _model.errorMessage =
+              'This email already belongs to a team on Nagarva. Please log in instead.';
+          _model.isLoading = false;
+        });
+        return;
+      }
 
-      // 4. Create org membership
-      await OrgMembersTable().insert({
-        'org_id': orgId,
-        'user_id': userId,
-        'role': 'owner',
-      });
-
-      // 5. Set app session
+      // 4. Set app session from create-org's response — org_id/org_slug/
+      // plan fields all come from the server now, not computed client-side.
       AppSession.instance.setVendorSession(
-        authUserId: userId,
-        orgId: orgId,
-        orgName: company,
-        orgSlug: slug,
-        limits: (plan?.limits is Map)
-            ? Map<String, dynamic>.from(plan!.limits as Map)
+        authUserId: user.id,
+        orgId: data['org_id'] as String,
+        orgName: data['org_name'] as String? ?? company,
+        orgSlug: data['org_slug'] as String,
+        limits: (data['limits'] is Map)
+            ? Map<String, dynamic>.from(data['limits'] as Map)
             : {},
-        features: (plan?.features is Map)
-            ? Map<String, dynamic>.from(plan!.features as Map)
+        features: (data['features'] is Map)
+            ? Map<String, dynamic>.from(data['features'] as Map)
             : {},
-        planName: plan?.name ?? 'Free Trial',
-        trialEndsAt: org.trialEndsAt,
+        planName: data['plan_name'] as String? ?? 'Free Trial',
+        planStatus: data['plan_status'] as String?,
+        trialEndsAt: data['trial_ends_at'] != null
+            ? DateTime.tryParse(data['trial_ends_at'] as String)
+            : null,
+        orgActive: data['org_active'] as bool? ?? true,
       );
 
-      // 6. Go to org setup
+      // 5. Go to org setup
       if (mounted) {
         context.go(OrgSetupPageWidget.routePath);
       }
