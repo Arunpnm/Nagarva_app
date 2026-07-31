@@ -306,6 +306,49 @@ const kDefaultChargeFields = <ChargeField>[
   ChargeField('advanceOnQuote', 'Advance Paid'),
 ];
 
+/// Part 8 Rev B, item 4: how a charge line is priced — per-org
+/// configurable (`pricing_config.config['charge_basis']`), never
+/// hardcoded per key. Only the 6 keys that are real fields in
+/// [kDefaultChargeFields] today get a basis; the other 3 named in the
+/// Rev A brief's Item 4 table (rearrangement, toll/parking/octroi,
+/// insurance) aren't charge fields in this app yet, so they're seeded in
+/// pricing_config for forward-compatibility (see
+/// supabase/20260801_pricing_config_charge_basis.sql) but have no UI here.
+const kChargeBasisOptions = [
+  'lumpsum',
+  'per_cft',
+  'per_floor',
+  'per_trip',
+  'per_km',
+  'percent_of_declared_value',
+  'at_actuals',
+];
+
+const kChargeBasisLabels = {
+  'lumpsum': 'Lumpsum',
+  'per_cft': 'Per CFT',
+  'per_floor': 'Per Floor',
+  'per_trip': 'Per Trip',
+  'per_km': 'Per KM',
+  'percent_of_declared_value': '% of Declared Value',
+  'at_actuals': 'At Actuals',
+};
+
+/// Mirrors the SQL migration's default map exactly — matches this app's
+/// ACTUAL current behaviour (e.g. no per-km field anywhere, so transport
+/// defaults to lumpsum, not per_km, unlike the reference APC web app).
+const kDefaultChargeBasis = <String, String>{
+  'packing': 'per_cft',
+  'loading': 'lumpsum',
+  'transport': 'lumpsum',
+  'unloading': 'lumpsum',
+  'unpacking': 'per_cft',
+  'rearrangement': 'lumpsum',
+  'materials': 'at_actuals',
+  'toll_parking_octroi': 'at_actuals',
+  'insurance': 'percent_of_declared_value',
+};
+
 /// GST is fixed to SAC 996719 per the brief; rate is selectable from
 /// these options (matches the reference app's <select>).
 const kGstSac = '996719';
@@ -342,12 +385,20 @@ class PricingConfig {
     required this.cftRanges,
     required this.packages,
     required this.porterRates,
+    required this.chargeBasis,
   });
 
   final Map<String, List<SurveyItem>> surveyCats;
   final List<CftRange> cftRanges;
   final List<PackageInfo> packages;
   final Map<String, num> porterRates;
+
+  /// Part 8 Rev B item 4. Unlike the other sections, this merges key by
+  /// key against [kDefaultChargeBasis] even when the org HAS a
+  /// `charge_basis` entry — a vendor who has only customized `packing` in
+  /// Settings must not lose sensible defaults for every other key, same
+  /// reasoning as the whole-section fallback above but one level deeper.
+  final Map<String, String> chargeBasis;
 
   static Future<PricingConfig> loadForCurrentOrg() async {
     final rows = await PricingConfigTable().queryRows(
@@ -360,6 +411,7 @@ class PricingConfig {
         cftRanges: kDefaultCftRanges,
         packages: kDefaultPackages,
         porterRates: kDefaultPorterRates,
+        chargeBasis: kDefaultChargeBasis,
       );
     }
     return PricingConfig._(
@@ -368,7 +420,21 @@ class PricingConfig {
       packages: _parsePackages(config['packages']) ?? kDefaultPackages,
       porterRates: _parsePorterRates(config['porter_rates']) ??
           kDefaultPorterRates,
+      chargeBasis: _parseChargeBasis(config['charge_basis']),
     );
+  }
+
+  static Map<String, String> _parseChargeBasis(dynamic raw) {
+    final merged = Map<String, String>.from(kDefaultChargeBasis);
+    if (raw is Map) {
+      for (final entry in raw.entries) {
+        final value = entry.value;
+        if (value is String && kChargeBasisOptions.contains(value)) {
+          merged[entry.key.toString()] = value;
+        }
+      }
+    }
+    return merged;
   }
 
   static Map<String, List<SurveyItem>>? _parseSurveyCats(dynamic raw) {

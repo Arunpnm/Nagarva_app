@@ -12,14 +12,20 @@ import '/components/pdf_branding.dart';
 /// documents, not one combined) — this one only makes sense once a quote
 /// exists, unlike the survey which goes out earlier in the pipeline.
 ///
-/// Renders the CURRENT `quote_charges`/`quotations.charges` shape: a flat
-/// key -> amount map from `kDefaultChargeFields`, with a *per-key*
-/// included/additional toggle (`_billingMode`) for the 5 billable fields
-/// (packing/unpacking/loading/unloading/materials) — there is no per-line
-/// "basis" (per-CFT / per-floor / per-trip) anywhere in this shape yet.
-/// That is Item 4's job (a real data-model addition, not a rendering
-/// choice) — this generator renders whatever exists today and is written
-/// so Item 4 can extend it with a basis column later without a rewrite.
+/// Renders `quote_charges`/`quotations.charges`: a flat key -> value map
+/// from `kDefaultChargeFields`, with a *per-key* included/additional
+/// toggle (`_billingMode`) for the 5 billable fields (packing/unpacking/
+/// loading/unloading/materials).
+///
+/// Each value is either a plain number (legacy/lumpsum — no basis
+/// breakdown to show) or, since Part 8 Rev B item 4, an object
+/// `{amount, basis, qty, rate}` (or `{amount, basis, declaredValue, rate}`
+/// for percent_of_declared_value) for any of the 6 basis-aware keys
+/// (transport/packing/unpacking/loading/unloading/materials) the vendor
+/// has priced by CFT/floor/trip/km/actuals/declared-value instead of a
+/// flat lumpsum. [detailed] toggles whether that breakdown — plus the
+/// Inclusions/Exclusions block — is shown; false renders the same
+/// Summary view as before Item 4 existed.
 class QuotePdf {
   static Future<Uint8List> generate({
     required String leadRef,
@@ -42,14 +48,59 @@ class QuotePdf {
     String? customerSignedByName,
     DateTime? customerSignedAt,
     DateTime? generatedAt,
+    bool detailed = false,
   }) async {
     final fonts = await PdfBranding.loadFonts();
     final now = generatedAt ?? DateTime.now();
     final validUntil = now.add(const Duration(days: 15));
 
+    // A charge value is either a plain number (legacy/lumpsum) or an
+    // {amount, basis, ...} object (item 4). Reader rule: a number is
+    // always legacy lumpsum, regardless of what pricing_config says today
+    // — never re-derive basis from current config for an already-saved
+    // quote, or reprinting it later would silently disagree with what the
+    // customer actually accepted.
+    Map<String, dynamic>? detail(String key) {
+      final v = charges[key];
+      return v is Map ? Map<String, dynamic>.from(v) : null;
+    }
+
     num amt(String key) {
       final v = charges[key];
-      return v is num ? v : (num.tryParse('$v') ?? 0);
+      if (v is num) return v;
+      final d = detail(key);
+      if (d != null && d['amount'] is num) return d['amount'] as num;
+      return num.tryParse('$v') ?? 0;
+    }
+
+    String? basisDescription(String key) {
+      final d = detail(key);
+      if (d == null) return null;
+      final basis = d['basis'] as String? ?? 'lumpsum';
+      switch (basis) {
+        case 'per_cft':
+        case 'per_floor':
+        case 'per_trip':
+        case 'per_km':
+          final qty = d['qty'];
+          final rate = d['rate'];
+          final unit = {
+            'per_cft': 'CFT',
+            'per_floor': 'Floor(s)',
+            'per_trip': 'Trip(s)',
+            'per_km': 'KM',
+          }[basis];
+          return '$qty $unit × ${PdfBranding.rupees(rate is num ? rate : 0)}';
+        case 'percent_of_declared_value':
+          final declared = d['declaredValue'];
+          final rate = d['rate'];
+          return '${PdfBranding.rupees(declared is num ? declared : 0)} × $rate%';
+        case 'at_actuals':
+          return 'At actuals';
+        case 'lumpsum':
+        default:
+          return null;
+      }
     }
 
     final billingMode = charges['_billingMode'] is Map
@@ -131,10 +182,16 @@ class QuotePdf {
 
           // ---- Charge lines ----
           pw.Table(
-            columnWidths: const {
-              0: pw.FlexColumnWidth(6),
-              1: pw.FlexColumnWidth(2),
-            },
+            columnWidths: detailed
+                ? const {
+                    0: pw.FlexColumnWidth(5),
+                    1: pw.FlexColumnWidth(4),
+                    2: pw.FlexColumnWidth(2),
+                  }
+                : const {
+                    0: pw.FlexColumnWidth(6),
+                    1: pw.FlexColumnWidth(2),
+                  },
             border: const pw.TableBorder(
               horizontalInside: pw.BorderSide(color: PdfColors.grey300, width: .5),
             ),
@@ -148,6 +205,13 @@ class QuotePdf {
                         style: pw.TextStyle(
                             font: fonts.bold, fontSize: 9, color: PdfColors.white)),
                   ),
+                  if (detailed)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: pw.Text('BASIS',
+                          style: pw.TextStyle(
+                              font: fonts.bold, fontSize: 9, color: PdfColors.white)),
+                    ),
                   pw.Padding(
                     padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     child: pw.Text('AMOUNT',
@@ -164,8 +228,18 @@ class QuotePdf {
                     child: pw.Text(f.label,
                         style: pw.TextStyle(font: fonts.regular, fontSize: 9)),
                   ),
+                  if (detailed)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      child: pw.Text(basisDescription(f.key) ?? '—',
+                          style: pw.TextStyle(
+                              font: fonts.regular, fontSize: 8, color: PdfBranding.grey)),
+                    ),
                   pw.Padding(
                     padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    // `lines` already excludes zero/null-amount fields
+                    // (below) — Rev A's "never print ₹0" rule is met by
+                    // omission, the rule's other allowed option.
                     child: pw.Text(PdfBranding.rupees(amt(f.key)),
                         textAlign: pw.TextAlign.right,
                         style: pw.TextStyle(font: fonts.regular, fontSize: 9)),
@@ -178,6 +252,7 @@ class QuotePdf {
                     child: pw.Text('Discount',
                         style: pw.TextStyle(font: fonts.regular, fontSize: 9)),
                   ),
+                  if (detailed) pw.SizedBox(),
                   pw.Padding(
                     padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                     child: pw.Text('- ${PdfBranding.rupees(discount)}',
@@ -249,6 +324,41 @@ class QuotePdf {
               style: pw.TextStyle(
                   font: fonts.regular, fontSize: 8.5, fontStyle: pw.FontStyle.italic)),
           pw.SizedBox(height: 14),
+
+          // ---- Inclusions / Exclusions (Rev A brief, item 4 — detailed
+          // variant only). Content comes from the vendor's own Settings
+          // (quote_inclusions/quote_exclusions, same convention as
+          // invoice_terms) rather than invented generic business terms —
+          // "exclusions are where disputes come from" is exactly why this
+          // shouldn't be text this generator makes up on the vendor's
+          // behalf. Degrades to a hint, not fabricated content, when empty.
+          if (detailed) ...[
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(
+                  child: _inclusionsBlock(
+                    fonts,
+                    title: 'INCLUSIONS',
+                    color: PdfColors.green700,
+                    text: PdfBranding.p(profile, 'quote_inclusions'),
+                    hint: 'Add what\'s included in Settings to show it here.',
+                  ),
+                ),
+                pw.SizedBox(width: 16),
+                pw.Expanded(
+                  child: _inclusionsBlock(
+                    fonts,
+                    title: 'EXCLUSIONS',
+                    color: PdfColors.red700,
+                    text: PdfBranding.p(profile, 'quote_exclusions'),
+                    hint: 'Add what\'s excluded in Settings to show it here.',
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 14),
+          ],
 
           // ---- Terms ----
           if (PdfBranding.p(profile, 'quote_terms').isNotEmpty) ...[
@@ -331,6 +441,47 @@ class QuotePdf {
                   font: bold ? fonts.bold : fonts.regular, fontSize: 9)),
           pw.Text(value,
               style: pw.TextStyle(font: fonts.bold, fontSize: 9)),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _inclusionsBlock(
+    PdfFonts fonts, {
+    required String title,
+    required PdfColor color,
+    required String text,
+    required String hint,
+  }) {
+    final items = text.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: PdfBranding.lightRow,
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border(left: pw.BorderSide(color: color, width: 2.5)),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(title,
+              style: pw.TextStyle(font: fonts.bold, fontSize: 8.5, color: color)),
+          pw.SizedBox(height: 4),
+          if (items.isEmpty)
+            pw.Text(hint,
+                style: pw.TextStyle(
+                    font: fonts.regular,
+                    fontSize: 7.5,
+                    fontStyle: pw.FontStyle.italic,
+                    color: PdfBranding.grey))
+          else
+            for (final line in items)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 1.5),
+                child: pw.Text('• ${line.trim()}',
+                    style: pw.TextStyle(
+                        font: fonts.regular, fontSize: 8, color: PdfBranding.grey)),
+              ),
         ],
       ),
     );

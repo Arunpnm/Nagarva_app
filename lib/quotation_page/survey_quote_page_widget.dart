@@ -146,6 +146,22 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         .toList();
   }
   final _billingMode = <String, String>{}; // billable key -> included/additional
+
+  // ---- Part 8 Rev B item 4: per-line charge basis -----------------------
+  // Only these 6 keys are real charge fields today that Rev B's basis
+  // list also names (transport, packing, unpacking, loading, unloading,
+  // materials) - rearrangement/toll-parking/insurance are in the SQL
+  // migration's default map for forward-compatibility but aren't real
+  // fields in kDefaultChargeFields yet, so they get no UI here.
+  static const _basisAwareKeys = {
+    'transport', 'packing', 'unpacking', 'loading', 'unloading', 'materials',
+  };
+  final _basis = <String, String>{}; // key -> one of kChargeBasisOptions
+  final _rateCtrl = <String, TextEditingController>{}; // per_cft/per_floor/per_trip/per_km
+  final _qtyCtrl = <String, TextEditingController>{}; // per_floor/per_trip/per_km only (per_cft uses _totalCft live)
+  final _declaredValueCtrl = <String, TextEditingController>{}; // percent_of_declared_value
+  final _pctCtrl = <String, TextEditingController>{}; // percent_of_declared_value
+
   double _gstPct = kGstDefaultPct.toDouble();
   String _gstType = 'auto'; // auto | intra | inter
   bool _gstShowInPdf = true;
@@ -169,6 +185,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     for (final f in kDefaultChargeFields.where((f) => f.billable)) {
       _billingMode[f.key] = 'included';
     }
+    for (final key in _basisAwareKeys) {
+      _rateCtrl[key] = TextEditingController();
+      _qtyCtrl[key] = TextEditingController();
+      _declaredValueCtrl[key] = TextEditingController();
+      _pctCtrl[key] = TextEditingController();
+    }
     PricingConfig.loadForCurrentOrg().then((c) {
       if (!mounted) return;
       setState(() {
@@ -176,6 +198,13 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         _gstPct = kGstRateOptions.contains(kGstDefaultPct)
             ? kGstDefaultPct.toDouble()
             : 5.0;
+        // Org-configured default per key, from pricing_config - never a
+        // Dart-hardcoded default per Rev B's decision. PricingConfig
+        // already merges in kDefaultChargeBasis key-by-key when an org
+        // hasn't customized a given key, so this is always a real value.
+        for (final key in _basisAwareKeys) {
+          _basis[key] = c.chargeBasis[key] ?? 'lumpsum';
+        }
         _loading = false;
       });
       if (widget.surveyId != null) _seedFromSurvey();
@@ -258,10 +287,79 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     for (final c in _amountCtrl.values) {
       c.dispose();
     }
+    for (final c in [
+      ..._rateCtrl.values,
+      ..._qtyCtrl.values,
+      ..._declaredValueCtrl.values,
+      ..._pctCtrl.values,
+    ]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
-  double _amount(String key) => double.tryParse(_amountCtrl[key]!.text) ?? 0;
+  /// Basis-aware for the 6 keys Rev B's item 4 covers: computes the
+  /// amount from qty x rate (or declared-value x pct) instead of reading
+  /// a plain typed-in amount, for every basis except lumpsum/at_actuals
+  /// (which have no such breakdown and keep the plain field).
+  double _amount(String key) {
+    if (!_basisAwareKeys.contains(key)) {
+      return double.tryParse(_amountCtrl[key]!.text) ?? 0;
+    }
+    switch (_basis[key] ?? 'lumpsum') {
+      case 'per_cft':
+        final rate = double.tryParse(_rateCtrl[key]!.text) ?? 0;
+        return (_totalCft * rate).roundToDouble();
+      case 'per_floor':
+      case 'per_trip':
+      case 'per_km':
+        final qty = double.tryParse(_qtyCtrl[key]!.text) ?? 0;
+        final rate = double.tryParse(_rateCtrl[key]!.text) ?? 0;
+        return (qty * rate).roundToDouble();
+      case 'percent_of_declared_value':
+        final declared = double.tryParse(_declaredValueCtrl[key]!.text) ?? 0;
+        final pct = double.tryParse(_pctCtrl[key]!.text) ?? 0;
+        return (declared * pct / 100).roundToDouble();
+      case 'lumpsum':
+      case 'at_actuals':
+      default:
+        return double.tryParse(_amountCtrl[key]!.text) ?? 0;
+    }
+  }
+
+  /// The jsonb value written for one charge line (Rev B item 4's shape
+  /// upgrade). Plain number for lumpsum - matches the legacy shape
+  /// exactly, so an org that never touches basis writes identical data to
+  /// before. Any other basis writes the full breakdown object so the PDF
+  /// (and any future reader) can show qty/rate, not just a total.
+  dynamic _chargeValue(String key) {
+    final amount = _amount(key);
+    if (!_basisAwareKeys.contains(key)) return amount;
+    final basis = _basis[key] ?? 'lumpsum';
+    if (basis == 'lumpsum') return amount;
+    final obj = <String, dynamic>{'amount': amount, 'basis': basis};
+    switch (basis) {
+      case 'per_cft':
+        obj['qty'] = _totalCft;
+        obj['rate'] = double.tryParse(_rateCtrl[key]!.text) ?? 0;
+        break;
+      case 'per_floor':
+      case 'per_trip':
+      case 'per_km':
+        obj['qty'] = double.tryParse(_qtyCtrl[key]!.text) ?? 0;
+        obj['rate'] = double.tryParse(_rateCtrl[key]!.text) ?? 0;
+        break;
+      case 'percent_of_declared_value':
+        obj['declaredValue'] =
+            double.tryParse(_declaredValueCtrl[key]!.text) ?? 0;
+        obj['rate'] = double.tryParse(_pctCtrl[key]!.text) ?? 0;
+        break;
+      case 'at_actuals':
+      default:
+        break;
+    }
+    return obj;
+  }
 
   int get _totalItems => _lines.values.fold(0, (s, l) => s + l.qty);
 
@@ -363,7 +461,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           },
       ];
       final charges = <String, dynamic>{
-        for (final f in kDefaultChargeFields) f.key: _amount(f.key),
+        for (final f in kDefaultChargeFields) f.key: _chargeValue(f.key),
       };
       charges['_billingMode'] = _billingMode;
       charges['_gstType'] = _gstType;
@@ -980,7 +1078,10 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _amountField(theme, 'transport', 'Freight / Transport'),
+          Text('Freight / Transport',
+              style: GoogleFonts.inter(fontSize: 13, color: theme.primaryText)),
+          const SizedBox(height: 6),
+          _basisRow(theme, 'transport'),
           const SizedBox(height: 10),
           _amountField(theme, 'advanceOnQuote', 'Advance Paid'),
           const SizedBox(height: 14),
@@ -1034,37 +1135,154 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     final included = (_billingMode[f.key] ?? 'included') == 'included';
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-              flex: 2,
-              child: Text(f.label,
-                  style: GoogleFonts.inter(
-                      fontSize: 13, color: theme.primaryText))),
-          Expanded(
-            flex: 2,
-            child: DropdownButtonFormField<String>(
-              initialValue: _billingMode[f.key] ?? 'included',
-              isDense: true,
-              items: const [
-                DropdownMenuItem(
-                    value: 'included', child: Text('Incl. in Freight')),
-                DropdownMenuItem(
-                    value: 'additional', child: Text('Additional')),
-              ],
-              onChanged: (v) =>
-                  setState(() => _billingMode[f.key] = v ?? 'included'),
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                  flex: 2,
+                  child: Text(f.label,
+                      style: GoogleFonts.inter(
+                          fontSize: 13, color: theme.primaryText))),
+              Expanded(
+                flex: 2,
+                child: DropdownButtonFormField<String>(
+                  initialValue: _billingMode[f.key] ?? 'included',
+                  isDense: true,
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'included', child: Text('Incl. in Freight')),
+                    DropdownMenuItem(
+                        value: 'additional', child: Text('Additional')),
+                  ],
+                  onChanged: (v) =>
+                      setState(() => _billingMode[f.key] = v ?? 'included'),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: _amountField(theme, f.key, '₹', enabled: !included),
-          ),
+          // Basis + amount only matter once this line is actually charged
+          // separately — a line bundled into freight has nothing to price
+          // on its own (Part 8 Rev B item 4).
+          if (!included) ...[
+            const SizedBox(height: 6),
+            _basisRow(theme, f.key),
+          ],
         ],
       ),
     );
+  }
+
+  /// Basis dropdown + whatever value fields that basis needs (Part 8 Rev
+  /// B item 4). Shared between the 5 billable rows above and the
+  /// transport row below — transport has no included/additional toggle
+  /// (it's never bundled into itself) but still gets a basis.
+  Widget _basisRow(FlutterFlowTheme theme, String key) {
+    final basis = _basis[key] ?? 'lumpsum';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          flex: 2,
+          child: DropdownButtonFormField<String>(
+            initialValue: basis,
+            isDense: true,
+            decoration: const InputDecoration(labelText: 'Basis', isDense: true),
+            items: [
+              for (final b in kChargeBasisOptions)
+                DropdownMenuItem(
+                  value: b,
+                  child: Text(kChargeBasisLabels[b]!,
+                      style: const TextStyle(fontSize: 12)),
+                ),
+            ],
+            onChanged: (v) => setState(() => _basis[key] = v ?? 'lumpsum'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(flex: 3, child: _basisValueFields(theme, key, basis)),
+      ],
+    );
+  }
+
+  Widget _basisValueFields(FlutterFlowTheme theme, String key, String basis) {
+    switch (basis) {
+      case 'per_cft':
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text('$_totalCft CFT',
+                  style: GoogleFonts.inter(
+                      fontSize: 12.5, color: theme.secondaryText)),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: TextField(
+                controller: _rateCtrl[key],
+                keyboardType: TextInputType.number,
+                decoration:
+                    const InputDecoration(labelText: '₹/CFT', isDense: true),
+              ),
+            ),
+          ],
+        );
+      case 'per_floor':
+      case 'per_trip':
+      case 'per_km':
+        final unitLabel = basis == 'per_floor'
+            ? 'Floors'
+            : basis == 'per_trip'
+                ? 'Trips'
+                : 'KM';
+        return Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _qtyCtrl[key],
+                keyboardType: TextInputType.number,
+                decoration:
+                    InputDecoration(labelText: unitLabel, isDense: true),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: TextField(
+                controller: _rateCtrl[key],
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Rate', isDense: true),
+              ),
+            ),
+          ],
+        );
+      case 'percent_of_declared_value':
+        return Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _declaredValueCtrl[key],
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                    labelText: 'Declared ₹', isDense: true),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: TextField(
+                controller: _pctCtrl[key],
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: '%', isDense: true),
+              ),
+            ),
+          ],
+        );
+      case 'lumpsum':
+      case 'at_actuals':
+      default:
+        return _amountField(theme, key, '₹');
+    }
   }
 
   Widget _gstCard(FlutterFlowTheme theme) => _card(

@@ -816,19 +816,25 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     ? null
                     : _downloadSurveyPdf,
               ),
-              IconButton(
+              // Part 8 Rev B item 4: Summary (single total per line, as
+              // before item 4 existed) vs Detailed (qty/rate/basis
+              // breakdown + Inclusions/Exclusions) — a menu instead of a
+              // single tap since there are now two documents to choose
+              // from, not because the download itself changed.
+              PopupMenuButton<bool>(
                 tooltip: 'Download Quote PDF',
-                iconSize: 19,
-                visualDensity: VisualDensity.compact,
+                enabled: quotation != null && !_downloadingQuotePdf,
                 icon: _downloadingQuotePdf
                     ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.picture_as_pdf_outlined),
-                onPressed: (quotation == null || _downloadingQuotePdf)
-                    ? null
-                    : _downloadQuotePdf,
+                    : const Icon(Icons.picture_as_pdf_outlined, size: 19),
+                onSelected: (detailed) => _downloadQuotePdf(detailed: detailed),
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: false, child: Text('Summary PDF')),
+                  PopupMenuItem(value: true, child: Text('Detailed PDF')),
+                ],
               ),
             ],
           ),
@@ -1063,7 +1069,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     }
   }
 
-  Future<void> _downloadQuotePdf() async {
+  Future<void> _downloadQuotePdf({bool detailed = false}) async {
     final quotation = _quotation;
     if (quotation == null || _downloadingQuotePdf) return;
     setState(() => _downloadingQuotePdf = true);
@@ -1114,6 +1120,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             (sig?.isSigned ?? false) ? sig!.signatureBytes : null,
         customerSignedByName: (sig?.isSigned ?? false) ? sig!.customerName : null,
         customerSignedAt: (sig?.isSigned ?? false) ? sig!.signedAt : null,
+        detailed: detailed,
       );
       await Printing.sharePdf(
         bytes: bytes,
