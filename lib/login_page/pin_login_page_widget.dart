@@ -185,13 +185,13 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
     }
   }
 
-  Widget _digitBox(int i) {
+  Widget _digitBox(int i, {double width = 58}) {
     final theme = FlutterFlowTheme.of(context);
     final filled = _digits[i].isNotEmpty;
     final active = _focusedBox == i;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      width: 58,
+      width: width,
       height: 66,
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -260,25 +260,39 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                     style: GoogleFonts.inter(
                         fontSize: 13, color: theme.secondaryText)),
                 const SizedBox(height: 28),
-                AnimatedBuilder(
-                  animation: _shakeCtrl,
-                  builder: (context, child) {
-                    final t = _shakeCtrl.value;
-                    final dx = (t == 0 || t == 1)
-                        ? 0.0
-                        : 10 * (t < 0.5 ? 1 : -1) * (1 - (t - 0.5).abs() * 2);
-                    return Transform.translate(
-                        offset: Offset(dx, 0), child: child);
+                // Same fragile-hardcode class as the keypad below: 4x58px
+                // + 3x12px gaps + 48px outer padding = 316px needed, only
+                // ~4dp of headroom on a 320dp-wide phone. Computed from
+                // available space instead (58px cap, 44px floor — these
+                // are static indicators, not tap targets, so Material's
+                // 48dp touch-target minimum doesn't apply here the way it
+                // does to _numKey).
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const gap = 12.0;
+                    final boxWidth =
+                        ((constraints.maxWidth - 3 * gap) / 4).clamp(44.0, 58.0);
+                    return AnimatedBuilder(
+                      animation: _shakeCtrl,
+                      builder: (context, child) {
+                        final t = _shakeCtrl.value;
+                        final dx = (t == 0 || t == 1)
+                            ? 0.0
+                            : 10 * (t < 0.5 ? 1 : -1) * (1 - (t - 0.5).abs() * 2);
+                        return Transform.translate(
+                            offset: Offset(dx, 0), child: child);
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (var i = 0; i < 4; i++) ...[
+                            _digitBox(i, width: boxWidth),
+                            if (i < 3) const SizedBox(width: gap),
+                          ],
+                        ],
+                      ),
+                    );
                   },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (var i = 0; i < 4; i++) ...[
-                        _digitBox(i),
-                        if (i < 3) const SizedBox(width: 12),
-                      ],
-                    ],
-                  ),
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
