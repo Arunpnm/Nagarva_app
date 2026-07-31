@@ -41,9 +41,16 @@ class NotificationPrefs {
 ///
 /// True push (FCM) is Week 3 — same table will feed it.
 class NotificationBell extends StatefulWidget {
-  const NotificationBell({super.key, this.iconSize = 22});
+  const NotificationBell({super.key, this.iconSize = 22, this.iconColor});
 
   final double iconSize;
+
+  /// Overrides the icon's colour. Null keeps the original sidebar look
+  /// (`theme.secondaryText`) — pass `IconTheme.of(context).color` when
+  /// placing this in an AppBar's actions so it matches whatever colour
+  /// the AppBar's other icons resolve to in every theme variant, instead
+  /// of hardcoding a colour that would only be right in one theme.
+  final Color? iconColor;
 
   @override
   State<NotificationBell> createState() => _NotificationBellState();
@@ -244,19 +251,25 @@ class _NotificationBellState extends State<NotificationBell> {
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     return InkWell(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       onTap: _openList,
-      child: Padding(
-        padding: const EdgeInsets.all(6),
+      child: SizedBox(
+        // Fixed 48x48 minimum touch target regardless of icon size —
+        // Part 8 addendum item 1 (previously just enough Padding to
+        // roughly frame the icon, ~34x34, below Material's minimum).
+        width: 48,
+        height: 48,
         child: Stack(
+          alignment: Alignment.center,
           clipBehavior: Clip.none,
           children: [
             Icon(Icons.notifications_none,
-                color: theme.secondaryText, size: widget.iconSize),
+                color: widget.iconColor ?? theme.secondaryText,
+                size: widget.iconSize),
             if (_unread > 0)
               Positioned(
-                right: -3,
-                top: -3,
+                right: 4,
+                top: 4,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 4, vertical: 1.5),
@@ -267,7 +280,8 @@ class _NotificationBellState extends State<NotificationBell> {
                   constraints:
                       const BoxConstraints(minWidth: 15, minHeight: 14),
                   child: Text(
-                    _unread > 9 ? '9+' : '$_unread',
+                    // Cap at 99+ (Part 8 addendum item 1) — was 9+.
+                    _unread > 99 ? '99+' : '$_unread',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,

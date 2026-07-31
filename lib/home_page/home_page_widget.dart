@@ -6,6 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/components/global_search_delegate.dart';
+import '/components/notification_bell.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/components/follow_up_summary_card.dart';
 import '/components/quick_entry_dialog.dart';
@@ -511,6 +512,18 @@ class _HomePageWidgetState extends State<HomePageWidget>
                 ),
           ),
           actions: [
+            // Part 8 addendum item 1: the Dashboard AppBar (mobile) had no
+            // notification entry point at all — NotificationBell already
+            // existed and was wired into the wide-screen sidebar rail
+            // (main.dart's NavBarPage header) but was never placed here,
+            // so it was invisible on the phone-width layout this bug was
+            // actually reported from. Reusing the same widget rather than
+            // building a second one — it already has its own unread
+            // badge, Realtime subscription, and mark-all-read popup.
+            // iconColor matches whatever the search icon resolves to
+            // (AppBar's default IconTheme) instead of a hardcoded colour,
+            // so it stays correct across light/dark/midnight.
+            NotificationBell(iconColor: IconTheme.of(context).color),
             // Restored gap vs the reference app: the header "Mobile /
             // Name..." global customer search (orders + leads by name or
             // phone) — see GlobalSearchDelegate. 48x48dp default IconButton
