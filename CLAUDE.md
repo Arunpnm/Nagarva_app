@@ -101,61 +101,66 @@ before running; verify against live column names first.
   set to 0 after a brief mis-seed at 1 (which would have made the first
   invoice 002). Do not "fix" the counter to 1 for a fresh year.
 
-## Current login flow (two-path; still partly insecure by design)
-LoginPage (see `lib/login_page/login_page_widget.dart`) has two tabs:
-- **Vendor**: Supabase Auth email+password → looks up `org_members` for the
-  org, then `organizations` and `subscription_plans` → calls
-  `AppSession.instance.setVendorSession(...)`.
-- **Staff**: client-side Postgres read on `staff` matching phone/name + pin
-  (insecure by design for now) → `AppSession.instance.setOrgOnly(...)` /
-  `setStaff(...)`.
-Both paths converge on `AppSession.instance` (`lib/app_session.dart`) holding
-`currentOrgId`, `currentStaffId`, plan limits/features, etc. Must eventually
-move the staff path behind a Supabase Edge Function + RLS (Phase 0).
+## Current login flow (REWRITTEN 1 Aug 2026 — was two-path/insecure-by-design,
+now PIN-first; verified against `lib/flutter_flow/nav/nav.dart` directly, not
+carried over from memory)
+The root route `/` (`createRouter`'s `_initialize`) is PIN-first, per Part 7
+(`nagarva_part7_login.md`):
+- `DeviceOrgBinding.isBound` false → **OrgBindingPageWidget** (`/bind-org`,
+  one-time org-code entry via the pre-auth `resolve_org_by_slug` RPC).
+- Bound → **PinLoginPageWidget** (`/pin-login`) — the shared 4-digit PIN
+  screen for both owner and staff (see the file's own doc comment; also see
+  this session's keypad-layout fix, `lib/login_page/pin_login_page_widget.dart`).
+  Submits to the `pin-login` or `staff-login` Edge Function depending on
+  whether the device is bound to a specific `staff_id`
+  (`DeviceOrgBinding.boundStaffId`) or just an org — a person-bound device
+  never searches the owner PIN pool at all, which is the structural fix for
+  the privilege-escalation bug `verify_org_pin`'s collision guard also
+  defends against. Both paths mint a real Supabase Auth session (bcrypt
+  verified in Postgres; staff get a shadow `staff-<uuid>@staff.nagarva.in`
+  auth user) — there is no client-side/insecure PIN check left anywhere.
+- **LoginPageWidget** (`/login`, the old two-tab email/password + phone/PIN
+  screen) still exists and is still reachable — both new screens link to it
+  ("Use email login instead" / "First time? Log in with email instead") —
+  but is no longer the default landing page. It's also still the only path
+  that can set an owner's PIN for the first time (Settings' "App PIN" card
+  needs a normal logged-in session to reach) and the vendor self-registration
+  entry point (→ SignupPage → the `create-org` Edge Function).
+- `GoRouter`'s top-level `redirect:` bounces any non-public route to `/login`
+  (not `/pin-login`) when `AppSession.isAuthenticated` is false — `/`,
+  `/login`, `/signup`, `/survey*`, `/quote*`, `/sign*`, `/track*`,
+  `/pin-login`, `/bind-org` are the public prefixes (`_kPublicRoutePrefixes`
+  in `nav.dart`); everything else requires a session.
+All paths converge on `AppSession.instance` (`lib/app_session.dart`) holding
+`currentOrgId`, `currentStaffId`, plan limits/features, `availableOrgs`, etc.
 
-## Page inventory (28 pages)
-Wired and mostly working: LoginPage, SignupPage, OrgSetupPage, PlanPage,
-HomePage (dashboard: greeting, monthly target, upcoming orders, hot leads,
-branch performance), OrdersPage (status tabs), LeadsPage (status filters),
-NewOrderPage, NewLeadPage, RecordPaymentPage (org-scoped 13 Jul 2026 later
-pass), QuickExpensePage, SalaryPage, OperationsPage (trips), CalendarPage
-(reminders), FleetPage, SettingsPage (now loads real org data for the
-profile card — see 13 Jul 2026 changelog below), UsersPage, MaterialsPage,
-QuotationPage (all three wired to real data 13 Jul 2026 — see changelog),
-**AccountsPage** (rebuilt 13 Jul 2026 later pass — see changelog; was a
-100%-hardcoded mockup, now a real Daily Accounts Register), **PLReportPage
-and ReportsPage** (rebuilt same day, see changelog), **SupervisorJobPage**
-(new page, same day — the field-side of the supervisor OTP job workflow).
-
-**CORRECTED 13 Jul 2026 (later pass), then corrected again the same
-day:** OrderDetailPage and LeadDetailPage were first (wrongly) called
-"wired and mostly working," then (also wrongly) called "100% hardcoded
-mockups." Neither is accurate. They actually receive and display real
-data via navigation query params from OrdersPage/LeadsPage (e.g.
-`widget.orderCustomer`) — they just started this session with zero
-further actions wired up. Since then both gained real actions:
-OrderDetailPage has "Generate Invoice" (GST invoicing) and "Open Field
-Job" (SupervisorJobPage); LeadDetailPage's "Convert to Order" now
-actually creates a real order + flips the lead to 'confirmed'. Both
-pages' "Edit" buttons — **FIXED, see latest changelog entry** — now pass
-`orderId`/`leadId` to NewOrderPage/NewLeadPage, which load and update the
-existing row instead of always creating a new one. QuickEntryPage is the
-one page still genuinely 100% static with no real params at all (by
-design — see its correction entry below, nothing to fix there).
-
-**QuickEntryPage corrected too**: earlier entries in this doc (including
-one from this very session) called it "100% static" and queued it for
-the same rebuild treatment as AccountsPage — that was wrong. It's a
-4-button shortcut launcher with no data of its own to display (New
-Inquiry / Confirm Booking / Record Payment / Quick Expense, each just
-`context.pushNamed` to an already-real page). There's nothing to wire —
-it's complete and working as designed. Removed from the task list.
-
-No remaining empty shells. PLReportPage, ReportsPage, and AccountsPage
-were all rebuilt this session (see changelog) — that earlier claim about
-AccountsPage's "five-column split" needing a `bank_accounts` schema
-decision was wrong; see the 13 Jul 2026 later-pass changelog entry for
-what the reference app actually does.
+## Page inventory (REWRITTEN 1 Aug 2026 — was a 13 Jul, 28-page snapshot;
+the per-page build history below it stops the same day and had gone stale
+for weeks. Verified via `nav.dart`'s registered routes directly — 35 named
+routes as of today, grouped by area; exhaustive per-page narrative history
+was not reconstructed, see the Changelog for that)
+- **Onboarding/auth**: OrgBindingPage, PinLoginPage, LoginPage (fallback),
+  SignupPage, OrgSetupPage, PlanPage.
+- **Core CRM/ops**: HomePage, OrdersPage, OrderDetailPage, LeadsPage,
+  LeadDetailPage, NewOrderPage, NewLeadPage, OperationsPage, CalendarPage,
+  QuickEntryPage (a 4-button shortcut launcher with no data of its own —
+  not a shell, working as designed).
+- **Finance**: PaymentsPage, RecordPaymentPage, QuickExpensePage,
+  ExpensePage, SalaryPage, AccountsPage, PLReportPage, ReportsPage.
+- **Quotation/survey (staff-side)**: QuotationPage (ad-hoc single-total
+  quote), SurveyQuotePage (the itemized CFT/charges/GST builder,
+  `/survey-quote`), SupervisorJobPage (field-side of the supervisor OTP job
+  workflow).
+- **People/assets**: UsersPage, FleetPage, MaterialsPage, SettingsPage
+  (includes the owner-only Recycle Bin, reached via a button rather than
+  its own route).
+- **Public, no auth, token-keyed** (customer-facing, built since the 13 Jul
+  snapshot this section replaces): SurveyPage (`/survey`), QuotePage
+  (`/quote`), SignPage (`/sign`, signature capture via
+  `lib/components/signature_pad.dart`), TrackPage (`/track`).
+- **Platform**: SuperAdminPage (`/super-admin`, direct-URL only, not linked
+  from any nav, gated on a `platform_admins` row).
+No empty shells remain anywhere in this list as of today.
 
 ## Known bugs / immediate issues
 1. **~~dashboard_kpis_view (and likely all 6 views) missing in Nagarva project~~
@@ -414,6 +419,21 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **1 Aug 2026, "Current login flow" + "Page inventory" rewritten
+  (NG-002 remainder, consolidated module register).** Both sections were
+  flagged as stale in the same-day RLS-correction entry below but
+  deliberately left untouched then — this closes that out. "Current login
+  flow" described the pre-Part-7 two-tab LoginPage with an insecure
+  client-side staff PIN check; rewritten against `nav.dart` directly to
+  describe the actual PIN-first `_initialize` route, the
+  owner/staff-pool split via `DeviceOrgBinding.boundStaffId`, and the
+  `redirect:`/`_kPublicRoutePrefixes` auth guard. "Page inventory" was a
+  13 Jul 2026 snapshot (28 pages) with a long since-superseded per-page
+  correction history; rewritten as a grouped list of all 35 routes
+  currently registered in `nav.dart` (verified by grep, not reconstructed
+  from memory) rather than re-narrating each page's build history — the
+  four public token-keyed customer pages (Survey/Quote/Sign/Track) and
+  SuperAdminPage didn't exist at all in the section being replaced.
 - **1 Aug 2026, RLS section corrected (reconciliation pass).** This doc's
   "Multi-tenancy status" section and its two cross-references (the
   `settings` schema note, the Roadmap's Phase 0 entry) had claimed since
