@@ -118,9 +118,19 @@ Deno.serve(async (req: Request) => {
     //   planName, planStatus, trialEndsAt, orgActive
     // authUserId is not returned here - the client already has it, it's
     // whoever it just authenticated as.
+    //
+    // caller_role IS THE FIELD THE CLIENT MUST GATE ON, not is_new. A
+    // staff/manager member at someone else's org hitting this endpoint
+    // also gets is_new=false - identical to a genuine signup retry on
+    // that field alone. Only caller_role distinguishes them. Step 3 (the
+    // signup_page_widget.dart rewrite, not yet built) must call
+    // setVendorSession() only when caller_role === 'owner', checked as
+    // its own standalone condition - never compounded with is_new, so
+    // there is no flag combination that lets a non-owner through.
     return json({
       ok: true,
       is_new: row.is_new,
+      caller_role: row.caller_role,
       org_id: row.org_id,
       org_name: row.org_name,
       org_slug: row.org_slug,

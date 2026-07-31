@@ -198,6 +198,31 @@ $$;
 -- multi-org ownership becomes a real feature later, it needs its own
 -- authenticated "create another org" action reached from inside the app,
 -- not this pre-org bootstrap endpoint.
+--
+-- CALLER_ROLE and the multi-membership determinism rule (added after
+-- review): the idempotent-return path exposed a real gap — the client
+-- needs to know WHAT role p_user_id holds in the org being returned,
+-- because a staff/manager at Org A hitting the public signup screen must
+-- NOT be handed a session there. is_new alone can't carry that: a
+-- first-time signup is is_new=true/role=owner, a genuine retry of that
+-- same signup is is_new=false/role=owner, and a staff member at someone
+-- else's org is ALSO is_new=false — indistinguishable from a retry by
+-- is_new alone. So this now also returns caller_role, and the client
+-- (step 3, not yet built) must branch on caller_role = 'owner' as a
+-- standalone check, not on any combination involving is_new.
+--
+-- If p_user_id somehow holds memberships in more than one org (invited
+-- as staff somewhere, later becomes an owner elsewhere, or any other
+-- path that isn't this function, since this function itself only ever
+-- creates one membership per user), the pick is DETERMINISTIC: the
+-- membership with the earliest org_members.created_at — i.e. the first
+-- org this identity ever joined, by membership creation time, regardless
+-- of role. Enforced by `order by created_at asc limit 1` below, not an
+-- unordered `limit 1` — an unordered pick over a table with no default
+-- ordering is not guaranteed stable across calls or Postgres versions,
+-- which would mean the same user could get handed a different org (and
+-- a different caller_role) on different requests. That nondeterminism is
+-- itself a bug class worth naming, not just avoiding by accident.
 -- ---------------------------------------------------------------------------
 
 drop function if exists public.create_org_with_owner(uuid, text, text, text);
@@ -219,7 +244,14 @@ returns table (
   plan_limits jsonb,
   plan_features jsonb,
   trial_ends_at timestamptz,
-  org_active boolean
+  org_active boolean,
+  -- p_user_id's role in the returned org_id. 'owner' on every freshly
+  -- created org (this function is the only writer of that first
+  -- membership, and it always writes 'owner'). On the idempotent path,
+  -- whatever org_members.role the picked existing membership actually
+  -- holds — may or may not be 'owner'. The client must check this before
+  -- treating the caller as the org's owner.
+  caller_role text
 )
 language plpgsql
 security definer
@@ -241,7 +273,10 @@ begin
   end if;
 
   -- ---- Idempotency check: does this identity already belong to an org? ----
-  select om.org_id into v_existing
+  -- Deterministic pick: earliest membership by created_at. See the
+  -- CALLER_ROLE header note above for why this must be ordered, not an
+  -- unordered `limit 1`.
+  select om.org_id, om.role into v_existing
     from public.org_members om
    where om.user_id = p_user_id
    order by om.created_at asc
@@ -251,7 +286,7 @@ begin
     return query
     select false, o.id, o.name, o.slug, o.plan_id, sp.name, o.plan_status,
            coalesce(sp.limits, '{}'::jsonb), coalesce(sp.features, '{}'::jsonb),
-           o.trial_ends_at, o.active
+           o.trial_ends_at, o.active, v_existing.role
       from public.organizations o
       left join public.subscription_plans sp on sp.id = o.plan_id
      where o.id = v_existing.org_id;
@@ -332,7 +367,7 @@ begin
   select true, v_org.id, v_org.name, v_org.slug, v_org.plan_id, v_plan.name,
          v_org.plan_status, coalesce(v_plan.limits, '{}'::jsonb),
          coalesce(v_plan.features, '{}'::jsonb), v_org.trial_ends_at,
-         v_org.active;
+         v_org.active, 'owner'::text;
 end;
 $$;
 
@@ -355,16 +390,24 @@ commit;
 --   -- fresh org
 --   select * from public.create_org_with_owner(
 --     gen_random_uuid(), 'Test Movers Pvt Ltd', '9876543210', null);
---   -- expect is_new = true, a real slug, plan_name populated, trial_ends_at
---   -- ~7 days out. Then check the three rows landed:
+--   -- expect is_new = true, caller_role = 'owner', a real slug, plan_name
+--   -- populated, trial_ends_at ~7 days out. Then check the three rows
+--   -- landed:
 --   --   select * from organizations where slug = '<the slug just returned>';
 --   --   select * from org_members where org_id = '<that id>';
 --   --   select config->'cft_ranges' from pricing_config where org_id = '<that id>';
 --
 --   -- idempotency: call AGAIN with the SAME p_user_id used above
 --   -- (grab it from org_members.user_id, not a new gen_random_uuid())
---   -- expect is_new = false, same org_id as the first call, no new row in
---   -- organizations.
+--   -- expect is_new = false, caller_role = 'owner', same org_id as the
+--   -- first call, no new row in organizations.
+--
+--   -- caller_role for a non-owner: insert a scratch org_members row with
+--   -- role = 'manager' for a throwaway user_id, then call the function
+--   -- with that SAME p_user_id and any org_name. Expect is_new = false,
+--   -- caller_role = 'manager', org_id = the org from that scratch row —
+--   -- this is the exact case the client (step 3) must refuse to hand a
+--   -- vendor session for.
 --
 --   -- rollback check: temporarily rename pricing_config.org_id to force
 --   -- the last insert to fail, call the function, confirm NEITHER the
