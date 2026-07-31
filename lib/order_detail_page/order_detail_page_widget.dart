@@ -406,6 +406,10 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
         sgst: sgst,
         cgst: cgst,
         total: amount,
+        // Part 8 addendum item 3: lets _buildInvoicePdfBytes fall back to
+        // the quote's signature when this order has none of its own yet.
+        quotationId:
+            existing.isNotEmpty ? existing.first.quotationId : null,
       );
     } catch (e) {
       if (!mounted) return;
@@ -439,6 +443,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     required double sgst,
     required double cgst,
     required double total,
+    String? quotationId,
   }) async {
     Map<String, dynamic> profile = const {};
     String? signatureUrl;
@@ -471,11 +476,36 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
           sig;
     } catch (_) {}
 
+    // Part 8 addendum item 3: an invoice-specific signature always takes
+    // precedence if one was captured. Only when NONE exists does this fall
+    // back to the quote's signature via the order's quotation_id — the
+    // invoice signature-request button (Send for Signature, below) still
+    // works exactly as before and, once used, permanently overrides this
+    // fallback for this order.
+    var inherited = false;
+    if (!(sig?.isSigned ?? false) && (quotationId ?? '').isNotEmpty) {
+      try {
+        final quoteSig = await SignatureService.find(
+          documentType: 'quote',
+          documentId: quotationId!,
+        );
+        if (quoteSig?.isSigned ?? false) {
+          sig = quoteSig;
+          inherited = true;
+        }
+      } catch (_) {}
+    }
+    final quoteRef = (quotationId ?? '').length >= 8
+        ? quotationId!.substring(0, 8).toUpperCase()
+        : quotationId;
+
     return InvoicePdf.generate(
       customerSignatureBytes:
           (sig?.isSigned ?? false) ? sig!.signatureBytes : null,
       customerSignedByName: (sig?.isSigned ?? false) ? sig!.customerName : null,
       customerSignedAt: (sig?.isSigned ?? false) ? sig!.signedAt : null,
+      signatureInherited: inherited,
+      inheritedFromQuoteRef: inherited ? quoteRef : null,
       invoiceNo: invoiceNo,
       customerName: _hideCustomer
           ? 'Customer (hidden)'
@@ -504,6 +534,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     required double sgst,
     required double cgst,
     required double total,
+    String? quotationId,
   }) {
     final safeName = invoiceNo.replaceAll('/', '-');
     var busy = false;
@@ -532,6 +563,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         sgst: sgst,
                         cgst: cgst,
                         total: total,
+                        quotationId: quotationId,
                       );
                       await Printing.layoutPdf(onLayout: (_) async => bytes);
                       if (dialogContext.mounted) {
@@ -553,6 +585,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         sgst: sgst,
                         cgst: cgst,
                         total: total,
+                        quotationId: quotationId,
                       );
                       // Browser download on web with a proper filename.
                       await Printing.sharePdf(

@@ -14,6 +14,10 @@ import '/components/reminders_section.dart';
 import '/backend/tracking_service.dart';
 import '/components/share_link_sheet.dart';
 import '/components/survey_response_section.dart';
+import '/backend/pricing_defaults.dart';
+import '/components/pdf_branding.dart';
+import '/components/survey_pdf.dart';
+import '/components/quote_pdf.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -23,6 +27,7 @@ import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:printing/printing.dart';
 import 'package:uuid/uuid.dart';
 import 'lead_detail_page_model.dart';
 export 'lead_detail_page_model.dart';
@@ -129,6 +134,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   // ---- Item 3: signature on the quote ----------------------------------
   SignatureRequest? _quoteSignature;
   bool _sendingQuoteSignature = false;
+
+  // ---- Part 8 addendum item 2: Survey/Quote PDF export ------------------
+  bool _downloadingSurveyPdf = false;
+  bool _downloadingQuotePdf = false;
 
   // ---- Item 10: reminders ----------------------------------------------
   final _remindersKey = GlobalKey<RemindersSectionState>();
@@ -776,11 +785,53 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Survey & Quote',
-              style: GoogleFonts.interTight(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: theme.primaryText)),
+          Row(
+            children: [
+              Expanded(
+                child: Text('Survey & Quote',
+                    style: GoogleFonts.interTight(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: theme.primaryText)),
+              ),
+              // Part 8 addendum item 2: two separate documents, not one
+              // combined (Rev B, Q2) - the survey PDF exists before pricing
+              // does, so the quote button stays disabled until a quote
+              // does. Downloads survey_pdf.dart/quote_pdf.dart output via
+              // Printing.sharePdf, same share/download path invoice_pdf.dart
+              // already uses.
+              IconButton(
+                tooltip: 'Download Survey PDF',
+                iconSize: 19,
+                visualDensity: VisualDensity.compact,
+                icon: _downloadingSurveyPdf
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.description_outlined),
+                onPressed: (survey == null ||
+                        survey.status == 'pending' ||
+                        _downloadingSurveyPdf)
+                    ? null
+                    : _downloadSurveyPdf,
+              ),
+              IconButton(
+                tooltip: 'Download Quote PDF',
+                iconSize: 19,
+                visualDensity: VisualDensity.compact,
+                icon: _downloadingQuotePdf
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.picture_as_pdf_outlined),
+                onPressed: (quotation == null || _downloadingQuotePdf)
+                    ? null
+                    : _downloadQuotePdf,
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           // Step 1: survey
           if (survey == null)
@@ -943,6 +994,138 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       );
     } finally {
       if (mounted) setState(() => _sendingQuoteSignature = false);
+    }
+  }
+
+  /// Loads the vendor's business profile + logo the same way
+  /// order_detail_page_widget.dart does for the invoice, so the survey and
+  /// quote PDFs carry the same branding rather than a second, possibly
+  /// drifting copy of this lookup.
+  Future<(Map<String, dynamic>, Uint8List?)> _loadProfileAndLogo() async {
+    Map<String, dynamic> profile = const {};
+    try {
+      final rows = await SettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('key', 'business_profile'),
+      );
+      if (rows.isNotEmpty && (rows.first.value ?? '').isNotEmpty) {
+        final decoded = jsonDecode(rows.first.value!);
+        if (decoded is Map) profile = Map<String, dynamic>.from(decoded);
+      }
+    } catch (_) {}
+    final logoBytes =
+        await PdfBranding.fetchBytes(AppSession.instance.currentOrgLogoUrl);
+    return (profile, logoBytes);
+  }
+
+  /// A short human-readable reference for PDF filenames/headers. Leads
+  /// have no dedicated short code (just a uuid `id`), so this truncates it
+  /// the same way orders' own text ids read as a short reference.
+  String get _leadRef =>
+      (widget.leadId ?? '').length >= 8
+          ? widget.leadId!.substring(0, 8).toUpperCase()
+          : (widget.leadId ?? 'LEAD');
+
+  Future<void> _downloadSurveyPdf() async {
+    final survey = _survey;
+    if (survey == null || _downloadingSurveyPdf) return;
+    setState(() => _downloadingSurveyPdf = true);
+    try {
+      final (profile, logoBytes) = await _loadProfileAndLogo();
+      final config = await PricingConfig.loadForCurrentOrg();
+      final lines = parseSurveyRooms(survey.rooms);
+      final bytes = await SurveyPdf.generate(
+        leadRef: _leadRef,
+        customerName: survey.customerName ?? widget.leadCustomer ?? 'Customer',
+        customerPhone: survey.customerPhone ?? widget.leadPhone,
+        moveDate: survey.moveDate,
+        fromAddress: survey.fromAddress,
+        toAddress: survey.toAddress,
+        fromCity: widget.leadFromCity,
+        toCity: widget.leadToCity,
+        lines: lines,
+        orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+        profile: profile,
+        logoBytes: logoBytes,
+        cftRanges: config.cftRanges,
+        packages: config.packages,
+      );
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: SurveyPdf.filename(_leadRef, DateTime.now()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not generate survey PDF: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _downloadingSurveyPdf = false);
+    }
+  }
+
+  Future<void> _downloadQuotePdf() async {
+    final quotation = _quotation;
+    if (quotation == null || _downloadingQuotePdf) return;
+    setState(() => _downloadingQuotePdf = true);
+    try {
+      final (profile, logoBytes) = await _loadProfileAndLogo();
+      final charges = quotation.charges is Map
+          ? Map<String, dynamic>.from(quotation.charges as Map)
+          : <String, dynamic>{};
+      final gstType = charges['_gstType'] as String?;
+      final interstate = gstType == 'inter'
+          ? true
+          : gstType == 'intra'
+              ? false
+              : isInterState(
+                  quotation.fromAddress ?? widget.leadFromCity ?? '',
+                  quotation.toAddress ?? widget.leadToCity ?? '',
+                );
+      // Re-read rather than trusting the cached _quoteSignature, same
+      // reasoning as the invoice's signature fetch: a signature captured
+      // moments ago on the customer's own phone must show up here without
+      // needing the page reopened.
+      SignatureRequest? sig = _quoteSignature;
+      try {
+        sig = await SignatureService.find(
+              documentType: 'quote',
+              documentId: quotation.id,
+            ) ??
+            sig;
+      } catch (_) {}
+      final bytes = await QuotePdf.generate(
+        leadRef: _leadRef,
+        customerName: quotation.customer ?? widget.leadCustomer ?? 'Customer',
+        customerPhone: quotation.phone ?? widget.leadPhone,
+        fromAddress: quotation.fromAddress,
+        toAddress: quotation.toAddress,
+        fromCity: widget.leadFromCity,
+        toCity: widget.leadToCity,
+        charges: charges,
+        subtotal: quotation.subtotal ?? 0,
+        gstPct: quotation.gstPct ?? kGstDefaultPct.toDouble(),
+        gstAmount: quotation.gstAmount ?? 0,
+        total: quotation.total ?? 0,
+        interstate: interstate,
+        orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+        profile: profile,
+        logoBytes: logoBytes,
+        customerSignatureBytes:
+            (sig?.isSigned ?? false) ? sig!.signatureBytes : null,
+        customerSignedByName: (sig?.isSigned ?? false) ? sig!.customerName : null,
+        customerSignedAt: (sig?.isSigned ?? false) ? sig!.signedAt : null,
+      );
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: QuotePdf.filename(_leadRef, DateTime.now()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not generate quote PDF: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _downloadingQuotePdf = false);
     }
   }
 

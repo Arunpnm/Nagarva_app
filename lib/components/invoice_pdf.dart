@@ -46,6 +46,14 @@ class InvoicePdf {
     Uint8List? customerSignatureBytes,
     String? customerSignedByName,
     DateTime? customerSignedAt,
+    // Part 8 addendum item 3: true when customerSignatureBytes came from
+    // the QUOTE's signature (documentType: 'quote'), not an invoice-
+    // specific one — the invoice lookup found nothing and this order's
+    // quotation_id was used to fall back. Must never be presented as if
+    // signed on the invoice itself; see the provenance line below. Ignored
+    // when customerSignatureBytes is null.
+    bool signatureInherited = false,
+    String? inheritedFromQuoteRef,
   }) async {
     final regular = await PdfGoogleFonts.notoSansRegular();
     final bold = await PdfGoogleFonts.notoSansBold();
@@ -353,15 +361,16 @@ class InvoicePdf {
                   ),
                 ),
                 pw.SizedBox(width: 24),
-                // Customer acceptance block (fix brief #2, item 3). Only
-                // rendered once the customer has actually signed via the
-                // public /sign link — an unsigned invoice shows nothing
-                // here rather than an empty "accepted by" line, which
-                // would read as though acceptance had been captured.
-                if (customerSignatureBytes != null) ...[
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.center,
-                    children: [
+                // Customer acceptance block (fix brief #2, item 3; Part 8
+                // addendum item 3). Always rendered now — an unsigned
+                // invoice used to show nothing here at all, which the
+                // addendum's own acceptance test calls out as worse than a
+                // visible "Awaiting" line: a blank area on a document sent
+                // to a customer reads as an oversight, not a status.
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    if (customerSignatureBytes != null) ...[
                       pw.Container(
                         height: 42,
                         child: pw.Image(
@@ -381,10 +390,40 @@ class InvoicePdf {
                           style: pw.TextStyle(
                               font: regular, fontSize: 8, color: _grey),
                         ),
-                    ],
-                  ),
-                  pw.SizedBox(width: 24),
-                ],
+                      // Provenance line — an inherited quote signature must
+                      // never read as if it were signed on the invoice
+                      // itself (Rev B, item 3): quote acceptance and
+                      // delivery confirmation are legally different things,
+                      // so this is stated, not left implicit.
+                      if (signatureInherited)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.only(top: 2),
+                          child: pw.Text(
+                            'Signature carried forward from quotation'
+                            '${inheritedFromQuoteRef == null ? '' : ' $inheritedFromQuoteRef'}',
+                            textAlign: pw.TextAlign.center,
+                            style: pw.TextStyle(
+                                font: regular,
+                                fontSize: 7,
+                                fontStyle: pw.FontStyle.italic,
+                                color: _grey),
+                          ),
+                        ),
+                    ] else
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(vertical: 14),
+                        child: pw.Text(
+                          'Awaiting customer signature',
+                          style: pw.TextStyle(
+                              font: regular,
+                              fontSize: 8.5,
+                              fontStyle: pw.FontStyle.italic,
+                              color: _grey),
+                        ),
+                      ),
+                  ],
+                ),
+                pw.SizedBox(width: 24),
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
