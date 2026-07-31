@@ -153,6 +153,16 @@ registration increment. 9 onward is convenience.
    not check email. Fits the market, costs per SMS, adds a dependency.
 3. **Self-serve registration or approval-gated?** Self-serve grows faster;
    approval suits IPAMTOA-led adoption where you already know everyone.
+4. **PIN keypad digit shuffling — raised and rejected (1 Aug 2026).**
+   Randomising key positions per session was floated as a shoulder-surfing
+   deterrent, but explicitly not implemented: it fights the muscle memory
+   staff build entering a PIN many times a day on `PinLoginPageWidget`
+   (`lib/login_page/pin_login_page_widget.dart`), and the actual bug found
+   the same day — a 4-wide keypad grid instead of the standard 3-wide
+   dialpad layout — was the real usability problem, not the fixed layout
+   itself. Left here as a possible future **per-org security setting**
+   (opt-in, not a default) if a specific customer ever asks for it —
+   nothing to build unless that happens.
 
 ---
 

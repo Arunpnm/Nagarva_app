@@ -210,10 +210,11 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
     );
   }
 
-  Widget _numKey(String label, {VoidCallback? onTap, Widget? icon}) {
+  Widget _numKey(String label,
+      {VoidCallback? onTap, Widget? icon, double width = 72}) {
     final theme = FlutterFlowTheme.of(context);
     return SizedBox(
-      width: 72,
+      width: width,
       height: 56,
       child: Material(
         color: theme.secondaryBackground,
@@ -292,19 +293,65 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                           : null),
                 ),
                 const SizedBox(height: 20),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final d in ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
-                      _numKey(d, onTap: () => _tapDigit(d)),
-                    const SizedBox(width: 72, height: 56),
-                    _numKey('0', onTap: () => _tapDigit('0')),
-                    _numKey('',
-                        icon: const Icon(Icons.backspace_outlined, size: 20),
-                        onTap: _tapBackspace),
-                  ],
+                // Fixed 3-wide grid (phone dialpad / ATM / calculator
+                // convention), not a width-dependent Wrap — the previous
+                // Wrap happened to fit 4 keys per row on some screen
+                // widths (1 2 3 4 / 5 6 7 8 / 9 _ 0 <-), which fights
+                // muscle memory for staff dialling a PIN many times a day.
+                // 0 centred in the bottom row, backspace bottom-right.
+                //
+                // Key width is computed from available space (72px cap,
+                // 48px floor — Material's minimum touch target) rather
+                // than hardcoded, so 3 columns stays provably true on any
+                // screen instead of relying on 72px happening to fit the
+                // narrowest phone we'd expect. The old Wrap's bug was a
+                // device-dependent layout; a hardcoded key width in its
+                // replacement would just be the same class of assumption
+                // with a different number.
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    const gap = 10.0;
+                    final keyWidth =
+                        ((constraints.maxWidth - 2 * gap) / 3).clamp(48.0, 72.0);
+                    return Column(
+                      children: [
+                        for (final row in [
+                          ['1', '2', '3'],
+                          ['4', '5', '6'],
+                          ['7', '8', '9'],
+                        ]) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (final d in row) ...[
+                                _numKey(d,
+                                    width: keyWidth,
+                                    onTap: () => _tapDigit(d)),
+                                if (d != row.last)
+                                  const SizedBox(width: gap),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: gap),
+                        ],
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(width: keyWidth, height: 56),
+                            const SizedBox(width: gap),
+                            _numKey('0',
+                                width: keyWidth, onTap: () => _tapDigit('0')),
+                            const SizedBox(width: gap),
+                            _numKey('',
+                                width: keyWidth,
+                                icon: const Icon(Icons.backspace_outlined,
+                                    size: 20),
+                                onTap: _tapBackspace),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 TextButton(
