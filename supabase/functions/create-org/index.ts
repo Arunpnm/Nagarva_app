@@ -130,7 +130,14 @@ Deno.serve(async (req: Request) => {
     return json({
       ok: true,
       is_new: row.is_new,
-      caller_role: row.caller_role,
+      // The SQL function already normalises this to lowercase (org_members.role
+      // has no CHECK constraint enforcing casing at the DB level pre-31 Jul,
+      // and 20260731_org_members_role_check.sql only constrains rows written
+      // AFTER it runs, not retroactively). Lower-cased again here anyway -
+      // free, and this is the exact value step 3 will do `=== 'owner'` against,
+      // so it costs nothing to not depend on a single layer for that.
+      caller_role:
+        typeof row.caller_role === "string" ? row.caller_role.toLowerCase() : row.caller_role,
       org_id: row.org_id,
       org_name: row.org_name,
       org_slug: row.org_slug,

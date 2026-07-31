@@ -286,7 +286,20 @@ begin
     return query
     select false, o.id, o.name, o.slug, o.plan_id, sp.name, o.plan_status,
            coalesce(sp.limits, '{}'::jsonb), coalesce(sp.features, '{}'::jsonb),
-           o.trial_ends_at, o.active, v_existing.role
+           o.trial_ends_at, o.active,
+           -- Confirmed 31 Jul: org_members.role is plain text, no check
+           -- constraint, nothing stops 'Owner'/'OWNER' ever landing in
+           -- it. lower() HERE, at the read that feeds caller_role, means
+           -- the exact-string gate in step 3 (caller_role == 'owner') is
+           -- correct regardless of how any row's casing got written -
+           -- including rows written before the CHECK constraint in
+           -- 20260731_org_members_role_check.sql existed, or written by
+           -- something other than this function entirely (a dashboard
+           -- edit, a future admin tool). Normalising at the write site
+           -- (this function only ever writes the literal 'owner') is not
+           -- enough on its own, because this branch reads a row THIS
+           -- function did not write.
+           lower(v_existing.role)
       from public.organizations o
       left join public.subscription_plans sp on sp.id = o.plan_id
      where o.id = v_existing.org_id;
@@ -294,6 +307,20 @@ begin
   end if;
 
   -- ---- Slug generation with a bounded retry on collision. ----
+  -- Confirmed 31 Jul: organizations.slug is NOT NULL, UNIQUE, no default -
+  -- this retry loop is load-bearing, not defensive over-engineering. Two
+  -- "Sri Balaji Packers" signing up is a realistic collision here, not a
+  -- hypothetical.
+  --
+  -- CHOSEN APPROACH: retry with a deterministic suffix, not a random
+  -- component from the start. Attempt 1 is the clean slug
+  -- ("sri-balaji-packers") so the common case reads well; only on an
+  -- actual collision does attempt 2 append 4 hex chars of p_user_id
+  -- (deterministic - a genuine retry of the SAME signup lands on the
+  -- SAME disambiguated slug rather than burning a new suffix every
+  -- retry) and, in the near-impossible case that also collides, attempt
+  -- 3 falls back to a random suffix. Three failures in a row exhausts the
+  -- loop and raises rather than looping forever - see below.
   v_base_slug := trim(both '-' from
                    regexp_replace(lower(p_org_name), '[^a-z0-9]+', '-', 'g'));
   if v_base_slug = '' then
