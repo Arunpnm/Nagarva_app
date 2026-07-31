@@ -70,8 +70,10 @@ before running; verify against live column names first.
 
 ### `settings` table — current live schema (updated 14 Jul 2026)
 - Composite primary key `(org_id, key)`, FK `org_id` → `organizations`. **RLS
-  is enabled with two policies** — the first table in the app to have real
-  RLS (see "Multi-tenancy status" below for the other 16).
+  is enabled with two policies.** (This used to say "the first table in the
+  app to have real RLS, see below for the other 16" — that was true on 14
+  Jul but stale since 15 Jul, when RLS was rolled out to every other core
+  table too. See "Multi-tenancy status" below, corrected 1 Aug 2026.)
 - `value` is **jsonb**, migrated from `text` on 14 Jul 2026 via a `try_jsonb`
   helper (valid JSON passed through as-is, plain text wrapped as a JSON
   string). Practical effect: legacy numeric-looking values (the invoice
@@ -245,19 +247,45 @@ what the reference app actually does.
   the exact list of what's done vs still open. PLReportPage/ReportsPage are
   still empty shells (nothing to scope yet); OrderDetailPage/LeadDetailPage/
   QuickEntryPage need full data-wiring before scoping is even applicable.
-- **RLS status updated 14 Jul 2026: `settings` now has RLS enabled (two
-  policies)** — the first of the 17 core tables to get it. The other 16
+- **CORRECTED 1 Aug 2026 (reconciliation pass) — the paragraph below was
+  stale since 15 Jul 2026 and had gone uncorrected for over two weeks.**
+  `supabase/migrations/20260715_rls_v1.sql` — committed by Arun directly
+  the day after the paragraph below was written, not from a Claude Code
+  session, which is why it was missed here — enables RLS on all 18
+  org-scoped tables (`orders`, `leads`, `staff`, `expenses`, `vehicles`,
+  `attendance`, `staff_advances`, `vehicle_trips`, `reminders`,
+  `quotations`, `materials`, `complaints`, `order_staff`, `order_tracking`,
+  `pricing_config`, `transactions`, `customer_surveys`, `settings`) via an
+  `org_isolation` policy (`org_id in (select current_org_ids())`), plus
+  `organizations`/`org_members`/`subscription_plans`/`platform_admins`
+  individually. `NAGARVA_STATUS.md`'s 26 Jul 2026 entry already caught
+  this same staleness and flagged it for a follow-up pass that never
+  happened until now. The blocker described below (staff PIN path having
+  no real `auth.uid()`) is *also* stale on its own terms — Part 7's
+  `pin-login`/`staff-login` Edge Functions (see `nagarva_part7_login.md`
+  and `NAGARVA_STATUS.md`) mint a real Supabase Auth session (shadow user,
+  bcrypt-verified) for staff PIN logins now, so that precondition is met
+  too. The "Current login flow" section above and "Page inventory" section
+  below still describe the OLD client-side-PIN/two-tab-LoginPage
+  architecture Part 7 replaced — flagged here as a second, related
+  staleness this pass did not fix (out of scope for a targeted RLS
+  correction; worth its own pass).
+  <details><summary>Original 14 Jul 2026 paragraph, kept for history</summary>
+
+  RLS status updated 14 Jul 2026: `settings` now has RLS enabled (two
+  policies) — the first of the 17 core tables to get it. The other 16
   (orders, leads, staff, expenses, vehicles, attendance, staff_advances,
   vehicle_trips, reminders, quotations, materials, complaints, order_staff,
-  order_tracking, pricing_config, transactions) still have **no RLS** — anon
+  order_tracking, pricing_config, transactions) still have no RLS — anon
   key can still read everything on those, including staff PINs. Per the
-  owner: rolling out RLS on the rest is **blocked on the staff-login Edge
-  Function** (see "Current login flow" above) — RLS policies need a real
-  `auth.uid()` to check against, and the staff PIN path doesn't produce one
+  owner: rolling out RLS on the rest is blocked on the staff-login Edge
+  Function (see "Current login flow" above) — RLS policies need a real
+  auth.uid() to check against, and the staff PIN path doesn't produce one
   yet (it's a client-side Postgres read, no Supabase Auth session). Vendor
   login already uses Supabase Auth, so RLS wouldn't block that path today —
   but policies keyed on org membership need to work for both login paths at
   once, hence waiting for the Edge Function before writing them.
+  </details>
 - Old/legacy SQL files (`nagarva_schema.sql`, `views_phase1.sql`,
   `views_phase2.sql`) on the owner's machine are considered **superseded**
   by `supabase/phase1_add_org_id.sql` + `supabase/views_dashboard_and_ops.sql`
@@ -314,12 +342,15 @@ backstop (see "Multi-tenancy status" above) and are not superseded by this.
 ## Roadmap (agreed with owner)
 - **Phase 0 — Database foundation:** ~~create the 6 views~~ / ~~add org_id to
   all tables~~ / ~~seed APC data~~ reported done 13 Jul 2026 ("Phase 0b").
-  ~~RLS on `settings`~~ done 14 Jul 2026 (see "settings table" schema note
-  above). Remaining: RLS on the other 16 tables (blocked on the staff-login
-  Edge Function providing a real `auth.uid()` — see "Multi-tenancy status");
-  login via Edge Function itself (vendor flow already uses Supabase Auth per
-  CLAUDE_ADDENDUM_vendor_flow.md, but the staff PIN path is still
-  client-side/insecure by design — see "Current login flow").
+  ~~RLS on `settings`~~ done 14 Jul 2026, ~~RLS on the other 16 tables~~ done
+  15 Jul 2026 (`supabase/migrations/20260715_rls_v1.sql` — see "Multi-tenancy
+  status", corrected 1 Aug 2026 after standing stale here for two weeks).
+  ~~Login via Edge Function~~ also done — Part 7's `pin-login`/`staff-login`
+  Edge Functions (see `nagarva_part7_login.md`) replaced the old client-side
+  staff PIN check with a real bcrypt-verified Supabase Auth session; the
+  "Current login flow" section above still describes the pre-Part-7
+  architecture and needs its own update pass (not done here, out of scope
+  for this correction).
 - **Phase 1 — Tenant-safe app:** org_id in every table class, filter on every query,
   stamp on every insert; org-based branding from settings.
 - **Phase 2 — Complete the shell pages:** Quotation, Materials, Users
@@ -383,6 +414,23 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **1 Aug 2026, RLS section corrected (reconciliation pass).** This doc's
+  "Multi-tenancy status" section and its two cross-references (the
+  `settings` schema note, the Roadmap's Phase 0 entry) had claimed since
+  14 Jul 2026 that only `settings` had RLS and the other 16 tables were
+  blocked on the staff-login Edge Function. Both halves of that claim went
+  stale the very next day: `supabase/migrations/20260715_rls_v1.sql`
+  (committed by Arun directly, not from a Claude Code session) enabled RLS
+  on all 18 org-scoped tables, and Part 7's `pin-login`/`staff-login` Edge
+  Functions later gave the staff PIN path a real Supabase Auth session.
+  `NAGARVA_STATUS.md`'s own 26 Jul 2026 entry had already caught this same
+  staleness and deferred the fix to "next session" — that session didn't
+  happen until today. All three spots corrected in place (old text kept
+  in a collapsed `<details>` block on the main one, for history). The
+  "Current login flow" and "Page inventory" sections are flagged as a
+  second, related staleness (still describe the pre-Part-7 architecture)
+  but were **not** rewritten this pass — out of scope for a targeted RLS
+  correction, worth its own pass.
 - **14 Jul 2026 (later), migrations verified live + counter convention fix**
   (claude.ai session, owner ran SQL in the Supabase editor with screenshots):
   - Confirmed `settings.value` is jsonb on the live DB

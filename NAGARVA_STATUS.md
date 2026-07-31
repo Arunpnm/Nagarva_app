@@ -1,8 +1,79 @@
 # NAGARVA — Project Status & Roadmap
 
-> Last updated: 28 Jul 2026 · Owner: Arunkumar (Arponia Ventures)
+> Last updated: 01 Aug 2026 · Owner: Arunkumar (Arponia Ventures)
 > Update this file at the end of every working session.
 > Legend: ✅ done · 🔨 in progress · ⬜ pending · 🅿️ parked
+
+---
+
+## ✅ 01 Aug 2026 — reconciliation pass (report only, nothing fixed in this pass)
+
+This file's newest entries below stop at 28 Jul 2026 and had gone stale —
+sessions since then were never recorded here. Read this file and
+`nagarva_parity_brief.md` in full and cross-checked every claim worth
+checking against the actual code (not against what either doc says).
+
+**Discrepancies found — tracker claim vs. code:**
+
+- **Items 3+6 (signature/tracking) — this file's own 28 Jul entry above
+  ("BACKEND ONLY... the entire Flutter side is unbuilt") is wrong as of
+  today.** `lib/sign_page/sign_page_widget.dart`,
+  `lib/components/signature_pad.dart`,
+  `lib/backend/signature_service.dart`, `lib/track_page/`, and the
+  `sign-document`/`track-order` Edge Functions all exist, are deployed,
+  and are wired into Lead Details and Order Details. A later session
+  built all of this without updating this file.
+- **Parity brief Part 4 item 4 ("Lead Details alignment") — this file's
+  28 Jul entry says the Order Details `DetailRow` sweep was NOT done.**
+  `grep -c "DetailRow" lib/order_detail_page/order_detail_page_widget.dart`
+  returns 20 — the sweep happened, in the same undocumented gap as above.
+- **`CLAUDE.md`'s multi-tenancy/RLS section was still stale** — this
+  file's own 26 Jul entry (line ~864 below) already flagged that
+  `CLAUDE.md` needed a reconciliation pass and deferred it "to next
+  session." That session apparently never happened until now — see the
+  fix logged in `CLAUDE.md`'s own changelog today.
+
+**Three parity sub-items independently verified (grep-level), confirmed
+built and functional — no discrepancy, matching this file's own claims:**
+
+- **Part 4a (expense filters)** — real. `expense_page_widget.dart` has
+  This Week/This Month/All chips plus an Order-linked-only toggle, and
+  the rendered list's `.where()` clause actually reads
+  `_model.periodFilter`/`_model.orderWiseOnly` (not just UI state with no
+  effect).
+- **Part 2c (fleet detail sheet)** — real.
+  `lib/fleet_page/vehicle_detail_sheet.dart` exists with insurance/permit
+  expiry fields and an edit mode, wired into `fleet_page_widget.dart` for
+  both "Add Vehicle" and tapping an existing card.
+- **Part 5 (touch targets)** — real. Bottom nav items are 76×68dp
+  (`mobile_bottom_nav.dart`'s `_itemWidth`/`barHeight`), HomePage's
+  month-nav arrows explicitly set
+  `constraints: BoxConstraints(minWidth: 48, minHeight: 48)`, and the
+  AppBar's search `IconButton` has no size override, so it resolves to
+  Flutter's Material default of 48×48 (confirmed no app-wide
+  `IconButtonTheme` shrinks it anywhere).
+
+**Confirmed still accurate (genuinely open, not built):**
+
+- Materials (Part 6a) is **partially** built, not fully "not started" —
+  `MaterialsPage` already queries real `MaterialsTable()` data (a 13 Jul
+  fix, predates this brief), but the specific feature Part 6a actually
+  asks for — a quick-use widget in order expenses that decrements stock
+  and books cost — does not exist (`quickUse`/`decrementStock`/
+  `min_stock` have zero hits in `lib/` outside the generated table
+  class).
+- `wa_templates` (Part 6b) — zero references anywhere in `lib/` or
+  `supabase/`. Not started.
+- Multi-language (Item 7) — no evidence of work beyond the pre-existing
+  `FFLocalizations` scaffold. Not started.
+
+**Not checked in this pass:** anything that depends on live DB state
+(whether a flagged-not-run migration has actually been run, RLS enforced
+in practice vs. just declared, `platform_admins`/multi-org test rows) —
+none of that is visible from the repo alone. Also not an exhaustive
+line-by-line audit of every remaining item in either document — this was
+a targeted pass on the claims most likely to be stale or most
+consequential if wrong.
 
 ---
 
