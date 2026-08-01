@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 
 import '/app_session.dart';
+import '/permissions.dart';
 import '/backend/signature_service.dart';
 import '/backend/soft_delete.dart';
 import '/components/delete_action.dart';
@@ -865,7 +866,12 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                           key: _breakdownKey, orderId: widget.orderId!),
                     // Assign supervisor + labour/salary (owner view) —
                     // was missing from the order flow entirely.
-                    if (widget.orderId != null)
+                    // Permission-model decision (1 Aug 2026), Step 4 sweep:
+                    // absent, not disabled, for a staff session without
+                    // salary.view — a supervisor must not see this section
+                    // at all.
+                    if (widget.orderId != null &&
+                        StaffPermissions.canActive('salary', 'view'))
                       OrderCrewSection(orderId: widget.orderId!),
                     // Items 3 + 6: signature status and the two customer
                     // share actions.
@@ -996,6 +1002,9 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         ),
                       ),
                     ),
+                    // Permission-model decision (1 Aug 2026), Step 4 sweep:
+                    // absent, not disabled, without orders.edit.
+                    if (StaffPermissions.canActive('orders', 'edit'))
                     Padding(
                       padding:
                           const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),

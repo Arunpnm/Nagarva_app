@@ -1,3 +1,4 @@
+import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 
 /// Nagarva staff permissions model.
@@ -104,14 +105,34 @@ class StaffPermissions {
           Map<String, Map<String, bool>> perms, String moduleKey) =>
       (perms[moduleKey] ?? const {}).values.any((v) => v == true);
 
+  /// Canonical role vocabulary (permission-model decision, 1 Aug 2026,
+  /// "supersedes Users Kickoff §1"). `org_members.role` (owner/staff/
+  /// manager) and `staff.role` (manager/supervisor/driver/helper/packer/
+  /// admin) used three overlapping vocabularies before this — this is the
+  /// one list everything should normalise to. `admin` is kept as a read
+  /// alias for `owner` (see [_normalizeRole]) rather than migrated in the
+  /// DB, per the decision's own instruction not to run that migration
+  /// blind.
+  static const kCanonicalRoles = [
+    'owner', 'manager', 'supervisor', 'driver', 'packer', 'helper',
+  ];
+
+  /// `admin` -> `owner` alias on read only; every other value passes
+  /// through lowercased. Never write `'admin'` as a new role — new staff
+  /// rows should use `'owner'`/`'manager'` directly.
+  static String _normalizeRole(String? role) {
+    final r = (role ?? '').toLowerCase();
+    return r == 'admin' ? 'owner' : r;
+  }
+
   /// Role defaults. Used to pre-fill the matrix when a role is picked,
   /// and as the fallback for staff rows that have no permissions yet.
   ///
   /// Money modules (Payments/Expenses/Salary/P&L) are OFF for every role
-  /// except admin — grant them per person if you want a specific
+  /// except owner/manager — grant them per person if you want a specific
   /// supervisor to see money.
   static Map<String, Map<String, bool>> presetFor(String role) {
-    final r = role.toLowerCase();
+    final r = _normalizeRole(role);
 
     Map<String, Map<String, bool>> build(Map<String, List<String>> spec) {
       final out = <String, Map<String, bool>>{};
@@ -121,13 +142,30 @@ class StaffPermissions {
       return out;
     }
 
-    switch (r) {
-      case 'admin':
-        // Full access to everything, including money modules.
-        return {
+    Map<String, Map<String, bool>> fullAccess() => {
           for (final m in kPermModules)
             m.key: {for (final a in kPermActions) a: true}
         };
+
+    switch (r) {
+      case 'owner':
+        // Full access to everything, including money modules. Also
+        // short-circuited before this is ever called for a real vendor
+        // session — see AppSession.currentStaffId == null callers and
+        // [canActive] — but presetFor('owner') resolves correctly on its
+        // own too, for direct callers and tests.
+        return fullAccess();
+      case 'manager':
+        // Real preset, previously missing entirely (defect 2) — a
+        // manager fell through to the conservative `default` case below,
+        // i.e. dashboard/orders/operations view-only, which is not what
+        // any prior brief describes a manager as. Modelled as full
+        // access, matching every manager row in the Part 8 kickoff's own
+        // now-superseded role-default table (manager = 1 for all 14
+        // keys there) — not an owner-level *bypass* (still goes through
+        // the matrix, still overridable per person), just the same
+        // breadth of grant.
+        return fullAccess();
       case 'supervisor':
         return build({
           'dashboard': ['view'],
@@ -160,15 +198,40 @@ class StaffPermissions {
     }
   }
 
-  /// Effective permissions for a logged-in staff member: their saved
-  /// matrix, or the role preset when nothing has been configured yet.
+  /// Effective permissions for a logged-in staff member: role preset as
+  /// the foundation, with any saved per-action overrides layered on top.
+  ///
+  /// FIXED (defect 1, permission-model decision 1 Aug 2026): this used to
+  /// be all-or-nothing — any saved permissions at all discarded the role
+  /// preset entirely, so granting a supervisor one extra permission
+  /// silently dropped every other permission their role had (a module
+  /// absent from the saved matrix stopped inheriting its default instead
+  /// of falling back to it). Now merges per **action**: saving
+  /// `{"orders": {"delete": true}}` overrides only `orders.delete` —
+  /// `orders.view`/`create`/`edit` still come from the role preset.
+  ///
+  /// `owner` short-circuits to full access unconditionally, before the
+  /// saved matrix is even consulted — matches Users Kickoff §3.2's rule
+  /// that an owner's permissions can never be edited down.
   static Map<String, Map<String, bool>> effective({
     required dynamic rawPermissions,
     required String? role,
   }) {
+    final canonicalRole = _normalizeRole(role);
+    if (canonicalRole == 'owner') return presetFor('owner');
+
+    final base = presetFor(canonicalRole);
     final saved = decode(rawPermissions);
-    if (!isEmpty(saved)) return saved;
-    return presetFor(role ?? '');
+    if (isEmpty(saved)) return base;
+
+    final merged = <String, Map<String, bool>>{};
+    for (final moduleKey in {...base.keys, ...saved.keys}) {
+      merged[moduleKey] = {
+        ...?base[moduleKey],
+        ...?saved[moduleKey],
+      };
+    }
+    return merged;
   }
 
   // ------------------------------------------------------------------
@@ -177,6 +240,13 @@ class StaffPermissions {
   // "no staff permissions loaded" and the sidebar falls back to the
   // conservative hardcoded allow-list.
   static Set<String>? activeStaffPages;
+
+  /// Full effective-permissions map for the active staff session, cached
+  /// alongside [activeStaffPages] so [canActive] doesn't recompute
+  /// `effective()` (a decode + merge) on every widget build. Added for
+  /// defect 3 (permission-model decision, 1 Aug 2026) — enforcement was
+  /// nav-only before this; individual buttons/cards need a cheap check.
+  static Map<String, Map<String, bool>>? activePerms;
 
   /// Load the logged-in staff member's effective permissions and cache
   /// the allowed page names for the sidebar. Runs under the STAFF
@@ -189,6 +259,7 @@ class StaffPermissions {
       );
       if (rows.isEmpty) {
         activeStaffPages = null;
+        activePerms = null;
         return;
       }
       final r = rows.first;
@@ -197,12 +268,30 @@ class StaffPermissions {
         role: r.role,
       );
       activeStaffPages = allowedPageNames(eff);
+      activePerms = eff;
     } catch (_) {
       activeStaffPages = null;
+      activePerms = null;
     }
   }
 
-  static void clearActive() => activeStaffPages = null;
+  static void clearActive() {
+    activeStaffPages = null;
+    activePerms = null;
+  }
+
+  /// The one call a UI gate should use (defect 3 enforcement sweep,
+  /// permission-model decision 1 Aug 2026): true for a vendor/owner
+  /// session (no staff PIN identity — [AppSession.currentStaffId] null,
+  /// the existing pattern main.dart's nav filtering already relies on)
+  /// or a staff session whose cached [activePerms] grants [action] on
+  /// [moduleKey]. Encapsulates both branches so a call site can't forget
+  /// the owner-bypass half and accidentally hide something from the
+  /// owner's own session.
+  static bool canActive(String moduleKey, String action) {
+    if (AppSession.instance.currentStaffId == null) return true;
+    return can(activePerms ?? const {}, moduleKey, action);
+  }
 
   /// Page names this permission set may open (drives the sidebar).
   static Set<String> allowedPageNames(Map<String, Map<String, bool>> perms) {
