@@ -138,7 +138,14 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
             : double.tryParse(_salary.text.trim()),
         'pf_applicable': _pfApplicable,
         'esic_applicable': _esicApplicable,
-        'permissions': StaffPermissions.encode(_perms),
+        // Owner role: always full access regardless of whatever _perms
+        // happens to hold (Step 3.2) - the matrix is disabled in the UI
+        // for this case, but the write path enforces it independently
+        // rather than trusting the UI state alone.
+        'permissions': StaffPermissions.encode(
+            StaffPermissions.isOwnerRole(_role)
+                ? StaffPermissions.presetFor(_role)
+                : _perms),
         // Users Kickoff Step 3.4 ("PIN reset... clears failed_pin_attempts
         // and pin_locked_until"): verify_staff_pin only clears these on a
         // SUCCESSFUL login (20260725_staff_pin_rate_limit.sql:84) - never
@@ -363,6 +370,12 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
     final theme = FlutterFlowTheme.of(context);
     const labelColWidth = 128.0;
     const checkColWidth = 46.0;
+    // Users Kickoff Step 3.2: "Owner role cannot have permissions edited
+    // (always all) — render the matrix disabled with an explanatory
+    // line." Checked via the alias (StaffPermissions.isOwnerRole), so
+    // this also covers an existing role='admin' row without needing to
+    // touch the role dropdown itself or rewrite anyone's stored role.
+    final isOwner = StaffPermissions.isOwnerRole(_role);
 
     return Container(
       decoration: BoxDecoration(
@@ -385,19 +398,31 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              TextButton(
-                onPressed: _saving
-                    ? null
-                    : () => setState(
-                        () => _perms = StaffPermissions.presetFor(_role)),
-                child: Text(
-                  'Reset to role defaults',
-                  style:
-                      GoogleFonts.inter(color: theme.primary, fontSize: 12),
+              if (!isOwner)
+                TextButton(
+                  onPressed: _saving
+                      ? null
+                      : () => setState(
+                          () => _perms = StaffPermissions.presetFor(_role)),
+                  child: Text(
+                    'Reset to role defaults',
+                    style:
+                        GoogleFonts.inter(color: theme.primary, fontSize: 12),
+                  ),
                 ),
-              ),
             ],
           ),
+          if (isOwner) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Owner has full access to everything. This can\'t be '
+              'restricted here.',
+              style: GoogleFonts.inter(
+                  color: theme.secondaryText,
+                  fontSize: 11.5,
+                  fontStyle: FontStyle.italic),
+            ),
+          ],
           // Horizontal scroll keeps the checkbox columns usable on phones.
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -470,14 +495,14 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                           width: checkColWidth,
                           height: 32,
                           child: Checkbox(
-                            value: _perms[m.key]?[a] ?? false,
+                            value: isOwner ? true : (_perms[m.key]?[a] ?? false),
                             activeColor: theme.primary,
                             side: BorderSide(
                                 color:
                                     theme.secondaryText.withOpacity(0.5)),
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
-                            onChanged: _saving
+                            onChanged: (_saving || isOwner)
                                 ? null
                                 : (v) =>
                                     _togglePerm(m.key, a, v ?? false),

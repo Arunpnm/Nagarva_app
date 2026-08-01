@@ -133,6 +133,13 @@ class StaffPermissions {
     return r == 'admin' ? 'owner' : r;
   }
 
+  /// Public alias check for callers outside this file (e.g.
+  /// staff_form_sheet.dart's "owner role can't have permissions edited"
+  /// rule, Users Kickoff Step 3.2) that need to know whether a raw
+  /// `staff.role` value resolves to owner-equivalent access, without
+  /// duplicating the 'admin' alias logic locally.
+  static bool isOwnerRole(String? role) => _normalizeRole(role) == 'owner';
+
   /// Role defaults. Used to pre-fill the matrix when a role is picked,
   /// and as the fallback for staff rows that have no permissions yet.
   ///

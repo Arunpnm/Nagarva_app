@@ -18,6 +18,9 @@ class UsersPageModel extends FlutterFlowModel<UsersPageWidget> {
   // (the real APC role set — compared lowercase against staff.role).
   String? roleFilter;
 
+  // Users Kickoff Step 3.1: search by name/phone.
+  String searchQuery = '';
+
   @override
   void initState(BuildContext context) {}
 

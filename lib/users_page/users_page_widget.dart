@@ -72,10 +72,21 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
   }
 
   List<StaffRow> get _filteredStaff {
-    if (_model.roleFilter == null) return _model.staffList;
-    return _model.staffList
-        .where((s) => (s.role ?? '').toLowerCase() == _model.roleFilter)
-        .toList();
+    var out = _model.staffList;
+    if (_model.roleFilter != null) {
+      out = out
+          .where((s) => (s.role ?? '').toLowerCase() == _model.roleFilter)
+          .toList();
+    }
+    final q = _model.searchQuery.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      out = out
+          .where((s) =>
+              s.name.toLowerCase().contains(q) ||
+              (s.phone ?? '').toLowerCase().contains(q))
+          .toList();
+    }
+    return out;
   }
 
   Future<void> _addStaff() async {
@@ -321,6 +332,32 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                                 FlutterFlowTheme.of(context).primaryBackground,
                           ),
                           borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                    ),
+                    // Users Kickoff Step 3.1: search by name/phone.
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 4.0, 0.0, 0.0),
+                      child: TextFormField(
+                        initialValue: _model.searchQuery,
+                        onChanged: (v) =>
+                            safeSetState(() => _model.searchQuery = v),
+                        style: GoogleFonts.inter(
+                            color: FlutterFlowTheme.of(context).primaryText),
+                        decoration: InputDecoration(
+                          hintText: 'Search by name or phone',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          isDense: true,
+                          filled: true,
+                          fillColor:
+                              FlutterFlowTheme.of(context).secondaryBackground,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
                     ),
