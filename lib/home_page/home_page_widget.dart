@@ -387,10 +387,21 @@ class _HomePageWidgetState extends State<HomePageWidget>
     // staff member without e.g. Payments access could still see and tap
     // it here, only to silently bounce back to Dashboard via NavBarPage's
     // own URL guard. Mirrors the same allow-list so the two navs agree.
-    final allowedDrawerPages = AppSession.instance.currentStaffId == null
-        ? null
-        : (StaffPermissions.activeStaffPages ??
-            const {'HomePage', 'OrdersPage', 'OperationsPage'});
+    //
+    // Users Kickoff Step 2 (1 Aug 2026): activeStaffPages is a
+    // kPermModules-derived set and only ever applies to a MANAGER
+    // session — owner never filters, and supervisor/field-staff's nav
+    // items (SupJobsComingSoon, MyAttComingSoon, ...) aren't in
+    // kPermModules at all and never will be (their set is fixed by role,
+    // not per-person customizable — see nav_items.dart). Applying the
+    // old owner-vs-any-staff branch here would have filtered a
+    // supervisor/field-staff drawer down to nothing, since none of their
+    // items could ever match activeStaffPages.
+    final allowedDrawerPages = isOwnerOrManagerSession &&
+            AppSession.instance.currentStaffId != null
+        ? (StaffPermissions.activeStaffPages ??
+            const {'HomePage', 'OrdersPage', 'OperationsPage'})
+        : null; // owner, and supervisor/field-staff: unfiltered (fixed) set
     bool showDrawerPage(String pageName) =>
         allowedDrawerPages == null || allowedDrawerPages.contains(pageName);
     return GestureDetector(
@@ -421,11 +432,16 @@ class _HomePageWidgetState extends State<HomePageWidget>
                 // silently drifted to only 8 of the 12 real destinations
                 // (Accounts/Staff/Fleet/P&L were missing outright, not
                 // permission-filtered — found live-testing on a real
-                // phone). Now built from the single shared kAllNavItems
-                // list (lib/nav_items.dart) so the two navs can't diverge
-                // again. Every tile keeps a real 48dp+ tap target via
+                // phone). Users Kickoff Step 2 (1 Aug 2026): now calls the
+                // same navItemsForCurrentSession() main.dart's NavBarPage
+                // uses, instead of reading kAllNavItems directly — that
+                // raw list is only ever correct for an owner/manager
+                // session, so reading it directly here would have shown a
+                // supervisor/field-staff session the wrong 19-item drawer
+                // again, the exact class of drift this fix already closed
+                // once. Every tile keeps a real 48dp+ tap target via
                 // ListTile's own default sizing.
-                for (final item in kAllNavItems)
+                for (final item in navItemsForCurrentSession())
                   if (showDrawerPage(item.name))
                     InkWell(
                       onTap: () {

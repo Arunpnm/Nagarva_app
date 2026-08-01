@@ -6,6 +6,9 @@ import 'package:provider/provider.dart';
 import '/main.dart';
 import '/app_session.dart';
 import '/backend/device_org_binding.dart';
+import '/components/coming_soon_page.dart';
+import '/nav_items.dart';
+import '/permissions.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 import '/index.dart';
@@ -76,6 +79,42 @@ const _kPublicRoutePrefixes = [
 
 bool _isPublicRoute(String path) =>
     path == '/' || _kPublicRoutePrefixes.any((p) => path.startsWith(p));
+
+/// Route guard (Users Kickoff Step 2.4 / permission-model decision 4).
+///
+/// `StaffPermissions.activeStaffPages` only ever filtered which tabs the
+/// sidebar/bottom-nav/drawer render — presentation, not enforcement. A
+/// deep link, a stale nav stack, or (on web) a typed URL reached the
+/// target page directly regardless. This closes that: deliberately
+/// scoped to top-level nav destinations only (the three lists in
+/// nav_items.dart) — detail/action pages (OrderDetailPage,
+/// NewOrderPage, a staff sheet, ...) are not nav destinations at all and
+/// are intentionally NOT covered here, since none of the three role nav
+/// sets name them; those stay gated by the existing per-button
+/// `StaffPermissions.canActive` checks, which is the correct layer for
+/// them, not a blanket route-level block that would also stop
+/// legitimate in-app navigation (tap an order -> OrderDetailPage) for
+/// every session type.
+bool _isTopLevelNavRoute(String routeName) =>
+    kOwnerManagerNavItems.any((i) => i.name == routeName) ||
+    kSupervisorNavItems.any((i) => i.name == routeName) ||
+    kFieldStaffNavItems.any((i) => i.name == routeName);
+
+bool _routeAllowedForCurrentSession(String routeName) {
+  if (AppSession.instance.currentStaffId == null) return true; // owner/vendor: never filtered
+  if (isOwnerOrManagerSession) {
+    // Manager: same permission-driven set main.dart's _navItems computes.
+    // Null (not loaded yet) fails open rather than bouncing a fresh
+    // session before StaffPermissions.loadForStaff() has even resolved.
+    final allowed = StaffPermissions.activeStaffPages;
+    return allowed == null || allowed.contains(routeName);
+  }
+  // Supervisor/field-staff: fixed by role, not permission-matrix-driven.
+  final fixedSet = AppSession.instance.currentStaffRole == 'supervisor'
+      ? kSupervisorNavItems
+      : kFieldStaffNavItems;
+  return fixedSet.any((i) => i.name == routeName);
+}
 
 /// Refresh-after-write fix (parity brief Part 1, 27 Jul 2026).
 ///
@@ -157,6 +196,20 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         if (_isPublicRoute(path)) return null;
         if (!AppSession.instance.isAuthenticated) {
           return LoginPageWidget.routePath;
+        }
+        final routeName = state.name;
+        if (routeName != null &&
+            _isTopLevelNavRoute(routeName) &&
+            !_routeAllowedForCurrentSession(routeName)) {
+          final home = homeNavNameForCurrentSession();
+          try {
+            return GoRouter.of(context).namedLocation(home);
+          } catch (_) {
+            // Should not happen (home is always one of the three fixed
+            // nav sets, all registered above) - fail toward a known-safe
+            // route rather than propagate a router exception.
+            return LoginPageWidget.routePath;
+          }
         }
         return null;
       },
@@ -532,6 +585,33 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             token: params.getParam('token', ParamType.String),
           ),
         ),
+        // Users Kickoff Step 2: real routes for every nav destination that
+        // only has a Coming Soon placeholder today (see nav_items.dart).
+        // Registered as actual routes, not just _tabs map keys inside
+        // NavBarPage, for two reasons: HomePage's drawer navigates via
+        // context.pushNamed(item.name), which needs a real route to find;
+        // and the route guard below needs a real path to intercept a
+        // direct deep link to one of these the same way it does for every
+        // other destination.
+        for (final entry in <(String name, String path, String title)>[
+          ('SurveysComingSoon', '/surveys', 'Surveys'),
+          ('InboxComingSoon', '/inbox', 'Inbox'),
+          ('SurveyComingSoon', '/survey-new', 'Survey'),
+          ('ReviewsComingSoon', '/reviews', 'Reviews'),
+          ('SupEntryComingSoon', '/sup-entry', 'Job Entry'),
+          ('SupJobsComingSoon', '/sup-jobs', 'My Jobs'),
+          ('SupTeamComingSoon', '/sup-team', 'My Team'),
+          ('SupSalComingSoon', '/sup-sal', 'My Earnings'),
+          ('SupAttComingSoon', '/sup-att', 'My Attendance'),
+          ('StaffTeamAttendance', '/team-attendance', 'Team Attendance'),
+          ('MyAttComingSoon', '/my-att', 'My Attendance'),
+          ('MySalComingSoon', '/my-sal', 'My Earnings'),
+        ])
+          FFRoute(
+            name: entry.$1,
+            path: entry.$2,
+            builder: (context, params) => ComingSoonPage(title: entry.$3),
+          ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

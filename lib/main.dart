@@ -16,6 +16,7 @@ import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
+import 'components/coming_soon_page.dart';
 import 'components/mobile_bottom_nav.dart';
 import 'components/notification_bell.dart';
 import 'nav_items.dart';
@@ -407,32 +408,35 @@ class _NavBarPageState extends State<NavBarPage> {
   /// so the nav can never vanish while the user is simply stationary.
   bool _navVisible = true;
 
-  // Moved to lib/nav_items.dart (kAllNavItems) so this list has exactly one
-  // source of truth — HomePage's hamburger drawer used to hand-duplicate
-  // its own copy that silently drifted to only 8 of these 12 items
-  // (Accounts/Staff/Fleet/P&L were just missing, not permission-filtered).
-  static const _allNavItems = kAllNavItems;
-
-  /// Role-based navigation. Staff PIN sessions are field users, not the
-  /// owner: they only get the operational pages. Money (Payments, Expenses,
-  /// Salary), Staff management, Fleet, Leads, and Settings stay owner-only.
-  /// Combined with the customer-masking rules, this is the v1 supervisor
-  /// restriction Arun asked for. (Server-side RLS hardening per-role is a
-  /// v2 item; staff sessions ride the vendor's auth session by design.)
-  List<({String name, IconData icon, String label})> get _navItems {
-    if (AppSession.instance.currentStaffId == null) return _allNavItems;
-    // Permission-driven sidebar (Bilty-style matrix in staff.permissions).
-    // Falls back to the conservative field-crew set if permissions could
-    // not be loaded for this session.
+  /// Users Kickoff Step 2: three genuinely different destination sets,
+  /// not one list filtered three ways — see nav_items.dart's own header
+  /// for why supervisor/field-staff aren't just a permission-filtered
+  /// subset of the owner's 19 items. `navItemsForCurrentSession()` picks
+  /// the right base set (and computes "staff"'s dynamic label); the
+  /// per-person permission matrix is layered on top of it here, but only
+  /// for owner/manager sessions — supervisor/field-staff sets are fixed
+  /// by role and were never permission-matrix-driven in the first place.
+  List<NavItem> get _navItems {
+    final base = navItemsForCurrentSession();
+    if (AppSession.instance.currentStaffId == null) return base; // owner/vendor: no filter at all
+    if (!isOwnerOrManagerSession) return base; // supervisor/field-staff: fixed set
+    // Manager: permission-driven subset of the 19, same mechanism as
+    // before Step 2. Falls back to a conservative default if permissions
+    // could not be loaded for this session yet.
     final allowed = StaffPermissions.activeStaffPages ??
         const {'HomePage', 'OrdersPage', 'OperationsPage'};
-    return _allNavItems.where((e) => allowed.contains(e.name)).toList();
+    return base.where((e) => allowed.contains(e.name)).toList();
   }
 
   @override
   void initState() {
     super.initState();
-    _currentPageName = widget.initialPage ?? _currentPageName;
+    // Users Kickoff Step 2.2/2.3 "Home redirect": only applied when the
+    // caller didn't already ask for a specific landing page (e.g. a deep
+    // link) — a fresh login/session-restore has no widget.initialPage,
+    // so this is where a supervisor/field-staff session actually lands
+    // on their own home instead of the owner's Dashboard.
+    _currentPageName = widget.initialPage ?? homeNavNameForCurrentSession();
     _currentPage = widget.page;
     SharedPreferences.getInstance().then((prefs) {
       final saved = prefs.getBool(_kRailExpandedKey);
@@ -446,20 +450,44 @@ class _NavBarPageState extends State<NavBarPage> {
         .then((prefs) => prefs.setBool(_kRailExpandedKey, expanded));
   }
 
-  Map<String, Widget> get _tabs => {
-        'HomePage': const HomePageWidget(),
-        'OrdersPage': const OrdersPageWidget(),
-        'LeadsPage': const LeadsPageWidget(),
-        'OperationsPage': const OperationsPageWidget(),
-        'PaymentsPage': const PaymentsPageWidget(),
-        'ExpensePage': const ExpensePageWidget(),
-        'AccountsPage': const AccountsPageWidget(),
-        'SalaryPage': const SalaryPageWidget(),
-        'UsersPage': const UsersPageWidget(),
-        'FleetPage': const FleetPageWidget(),
-        'PLReportPage': const PLReportPageWidget(),
-        'SettingsPage': const SettingsPageWidget(),
+  Map<String, Widget> get _tabs {
+    if (!isOwnerOrManagerSession) {
+      // Supervisor/field-staff: every destination in their fixed nav set
+      // is a placeholder today except "Team Attendance" (shares copy
+      // with the owner/manager "staff" entry's non-money label, since
+      // neither has a real screen yet either).
+      return {
+        for (final item in _navItems)
+          item.name: ComingSoonPage(title: item.label),
       };
+    }
+    return {
+      'HomePage': const HomePageWidget(),
+      'OrdersPage': const OrdersPageWidget(),
+      'LeadsPage': const LeadsPageWidget(),
+      'OperationsPage': const OperationsPageWidget(),
+      'PaymentsPage': const PaymentsPageWidget(),
+      'ExpensePage': const ExpensePageWidget(),
+      'AccountsPage': const AccountsPageWidget(),
+      'SalaryPage': const SalaryPageWidget(),
+      'UsersPage': const UsersPageWidget(),
+      'FleetPage': const FleetPageWidget(),
+      'PLReportPage': const PLReportPageWidget(),
+      'SettingsPage': const SettingsPageWidget(),
+      // Newly reachable from nav (Users Kickoff Step 2.1) — none of these
+      // three were in the old 12-item nav either, so they were only ever
+      // reachable by typing their route directly. Real pages, not
+      // placeholders — see nav_items.dart's correction note.
+      'CalendarPage': const CalendarPageWidget(),
+      'MaterialsPage': const MaterialsPageWidget(),
+      'ReportsPage': const ReportsPageWidget(),
+      // Genuinely unbuilt (Step 2.1: "route to a Coming soon placeholder").
+      'SurveysComingSoon': const ComingSoonPage(title: 'Surveys'),
+      'InboxComingSoon': const ComingSoonPage(title: 'Inbox'),
+      'SurveyComingSoon': const ComingSoonPage(title: 'Survey'),
+      'ReviewsComingSoon': const ComingSoonPage(title: 'Reviews'),
+    };
+  }
 
   void _selectTab(int i) => safeSetState(() {
         _currentPage = null;

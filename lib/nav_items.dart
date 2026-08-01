@@ -1,28 +1,145 @@
 import 'package:flutter/material.dart';
 
-/// Single source of truth for the app's top-level navigation destinations.
+import '/app_session.dart';
+import '/permissions.dart';
+
+/// Navigation model — Users Kickoff Step 2 (1 Aug 2026).
 ///
-/// Previously duplicated in two places that drifted apart: main.dart's
-/// NavBarPage (bottom nav / sidebar, permission-filtered) had all 12, but
-/// HomePage's own hamburger drawer hand-duplicated only 8 of them
-/// (Accounts, Staff, Fleet, and P&L were simply missing — not filtered
-/// out by permission, just never added when those pages were built).
-/// Found live-testing the mobile drawer after the Part 5 nav rebuild.
-const kAllNavItems = [
+/// Previously a single 12-item list (`kAllNavItems`) filtered down to a
+/// permission-driven subset for every staff session — a supervisor just
+/// saw fewer of the owner's own tabs. Step 2 replaces that with three
+/// **genuinely different** destination sets, not one list filtered three
+/// ways: owner/manager get the full 19-entry operational nav; supervisor
+/// gets 5 job-focused destinations of their own (plus a differently-
+/// labelled "staff" entry) that don't exist in the owner's nav at all;
+/// field staff (driver/helper/packer) get 2. The existing per-person
+/// permission matrix (`StaffPermissions.effective`/`presetFor`) still
+/// governs which of the 19 owner/manager destinations a *manager*
+/// session can reach (and, independently, in-page action gates like
+/// Edit/Delete via `canActive` — unaffected by this file) — it does not
+/// apply to the supervisor/field-staff sets, which are fixed by role,
+/// not per-person customizable.
+///
+/// Single source of truth for main.dart's bottom nav/sidebar AND
+/// HomePage's drawer — both used to read `kAllNavItems` directly and
+/// drifted apart once already (see the history note below); both now
+/// call [navItemsForCurrentSession] instead of branching on session type
+/// themselves, so they cannot drift apart again.
+typedef NavItem = ({String name, IconData icon, String label});
+
+/// The 19 owner/manager destinations (Users Kickoff Step 2.1). Six of
+/// these route to `ComingSoonPage` today — `surveys`, `inbox`, `survey`
+/// and `reviews` are genuinely unbuilt. **`materials`, `reports` and
+/// `calendar` are NOT unbuilt** despite the kickoff brief listing them
+/// as placeholder candidates — `MaterialsPage`, `ReportsPage` and
+/// `CalendarPage` all already exist and are wired to real pages here.
+/// (Corrected against the actual routed pages in `nav.dart`, not copied
+/// from the brief — see report.)
+///
+/// `'staff'`'s label is computed at read time, not stored here — see
+/// [navItemsForCurrentSession].
+///
+/// History (pre-Step-2): this list previously had 12 entries and was
+/// duplicated in two places that drifted apart — main.dart's NavBarPage
+/// had all 12, but HomePage's own hamburger drawer hand-duplicated only
+/// 8 (Accounts, Staff, Fleet, P&L were simply missing, not permission-
+/// filtered). Both call sites now read this file instead of hand-rolling
+/// their own copy — see [navItemsForCurrentSession].
+const kOwnerManagerNavItems = <NavItem>[
   (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard'),
-  (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders'),
   (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM'),
+  (name: 'SurveysComingSoon', icon: Icons.fact_check, label: 'Surveys'),
+  (name: 'InboxComingSoon', icon: Icons.inbox, label: 'Inbox'),
+  (name: 'SurveyComingSoon', icon: Icons.add_task, label: 'Survey'),
+  (name: 'CalendarPage', icon: Icons.calendar_month, label: 'Calendar'),
+  (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders'),
   (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations'),
+  (name: 'ReviewsComingSoon', icon: Icons.star_outline, label: 'Reviews'),
   (name: 'PaymentsPage', icon: Icons.payments, label: 'Payments'),
   (name: 'ExpensePage', icon: Icons.receipt_long, label: 'Expenses'),
-  (
-    name: 'AccountsPage',
-    icon: Icons.account_balance_wallet,
-    label: 'Accounts'
-  ),
-  (name: 'SalaryPage', icon: Icons.badge, label: 'Salary'),
-  (name: 'UsersPage', icon: Icons.groups, label: 'Staff'),
+  (name: 'UsersPage', icon: Icons.groups, label: 'Staff'), // label overridden dynamically
   (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet'),
+  (name: 'MaterialsPage', icon: Icons.inventory_2, label: 'Materials'),
+  (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts'),
   (name: 'PLReportPage', icon: Icons.assessment, label: 'P & L'),
+  (name: 'ReportsPage', icon: Icons.bar_chart, label: 'Reports'),
+  (name: 'SalaryPage', icon: Icons.badge, label: 'Salary'),
   (name: 'SettingsPage', icon: Icons.settings, label: 'Settings'),
 ];
+
+/// Backward-compat alias — kept because the pre-Step-2 name is still the
+/// obvious thing to grep for. Same list.
+const kAllNavItems = kOwnerManagerNavItems;
+
+/// Supervisor nav (Users Kickoff Step 2.2): 5 job-focused destinations +
+/// "staff", fixed "Team Attendance" (never "Salary & Staff" — supervisors
+/// don't get salary.edit). None of the 5 have a real screen yet (Step 2's
+/// own instruction: wire the nav now, build the screens later) —
+/// `sup-jobs` is NOT the same thing as the existing `SupervisorJobPage`
+/// (that's the field-side of a specific job's OTP workflow, opened from
+/// an order; this is a "My Jobs" list view across all of a supervisor's
+/// assigned jobs, which doesn't exist).
+const kSupervisorNavItems = <NavItem>[
+  (name: 'SupEntryComingSoon', icon: Icons.edit_note, label: 'Job Entry'),
+  (name: 'SupJobsComingSoon', icon: Icons.work_outline, label: 'My Jobs'),
+  (name: 'SupTeamComingSoon', icon: Icons.groups_outlined, label: 'My Team'),
+  (name: 'SupSalComingSoon', icon: Icons.currency_rupee, label: 'My Earnings'),
+  (name: 'SupAttComingSoon', icon: Icons.event_available, label: 'My Attendance'),
+  (name: 'StaffTeamAttendance', icon: Icons.groups, label: 'Team Attendance'),
+];
+
+/// Field staff nav (Users Kickoff Step 2.3): driver / helper / packer.
+/// Neither screen exists yet.
+const kFieldStaffNavItems = <NavItem>[
+  (name: 'MyAttComingSoon', icon: Icons.event_available, label: 'My Attendance'),
+  (name: 'MySalComingSoon', icon: Icons.currency_rupee, label: 'My Earnings'),
+];
+
+/// Canonical "is this session owner-or-manager" check for nav purposes —
+/// a vendor session (no staff identity) or a staff session whose role is
+/// `owner`/`manager`. Mirrors the permission-model decision's answer to
+/// the "manager nav gate" question: checks `staff.role`, never
+/// `org_members.role`.
+bool get isOwnerOrManagerSession {
+  if (AppSession.instance.currentStaffId == null) return true;
+  final role = AppSession.instance.currentStaffRole;
+  return role == 'owner' || role == 'manager';
+}
+
+/// The role-appropriate home destination (Users Kickoff Step 2.2/2.3
+/// "Home redirect"). Only meaningful for a fresh landing, not every
+/// rebuild — callers apply this once, not on every navigation.
+String homeNavNameForCurrentSession() {
+  if (isOwnerOrManagerSession) return 'HomePage';
+  if (AppSession.instance.currentStaffRole == 'supervisor') {
+    return 'SupJobsComingSoon';
+  }
+  return 'MySalComingSoon';
+}
+
+/// The full nav set for the current session type, **before** the
+/// per-person permission filter a manager session still goes through
+/// (see main.dart's `_navItems`, which applies `StaffPermissions.
+/// activeStaffPages` on top of this for a manager — never for owner,
+/// which bypasses filtering entirely, and never for supervisor/field
+/// staff, whose sets are fixed by role). The "staff" entry's label is
+/// computed here since it depends on a runtime permission check
+/// (`salary.edit`), not something a const list can express.
+List<NavItem> navItemsForCurrentSession() {
+  if (!isOwnerOrManagerSession) {
+    final role = AppSession.instance.currentStaffRole;
+    return role == 'supervisor' ? kSupervisorNavItems : kFieldStaffNavItems;
+  }
+  final canEditSalary = StaffPermissions.canActive('salary', 'edit');
+  return [
+    for (final item in kOwnerManagerNavItems)
+      if (item.name == 'UsersPage')
+        (
+          name: item.name,
+          icon: item.icon,
+          label: canEditSalary ? 'Salary & Staff' : 'Team Attendance',
+        )
+      else
+        item,
+  ];
+}

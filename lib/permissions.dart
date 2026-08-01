@@ -54,6 +54,14 @@ const kPermModules = <PermModule>[
   PermModule('fleet', 'Fleet', 'FleetPage'),
   PermModule('pl_report', 'P & L', 'PLReportPage', moneyModule: true),
   PermModule('settings', 'Settings', 'SettingsPage'),
+  // Added per the permission-model decision (1 Aug 2026), decision 2:
+  // "fleet" and "accounts" were already asked for but already existed
+  // above (flagged back rather than duplicated) - these three are the
+  // genuinely new ones. Keys are cheap now, expensive to retrofit once
+  // real staff.permissions rows exist with a fixed module set.
+  PermModule('quotations', 'Quotations', 'QuotationPage'),
+  PermModule('materials', 'Materials', 'MaterialsPage'),
+  PermModule('reports', 'Reports', 'ReportsPage'),
 ];
 
 /// Helpers for reading/writing the jsonb payload.

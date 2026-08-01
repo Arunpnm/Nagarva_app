@@ -126,6 +126,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
       _error = null;
     });
     try {
+      final settingNewPin = _pin.text.trim().isNotEmpty;
       final data = <String, dynamic>{
         'name': _name.text.trim(),
         'phone': _phone.text.trim().isEmpty ? null : _phone.text.trim(),
@@ -138,6 +139,16 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
         'pf_applicable': _pfApplicable,
         'esic_applicable': _esicApplicable,
         'permissions': StaffPermissions.encode(_perms),
+        // Users Kickoff Step 3.4 ("PIN reset... clears failed_pin_attempts
+        // and pin_locked_until"): verify_staff_pin only clears these on a
+        // SUCCESSFUL login (20260725_staff_pin_rate_limit.sql:84) - never
+        // when an owner/manager sets a brand new PIN here. Without this, a
+        // currently-locked-out staff member given a fresh PIN would stay
+        // locked until the timer expires despite now holding a valid PIN.
+        // No migration needed - both columns already exist and are plain
+        // writes in the same update.
+        if (settingNewPin) 'failed_pin_attempts': 0,
+        if (settingNewPin) 'pin_locked_until': null,
       };
 
       if (isEdit) {
