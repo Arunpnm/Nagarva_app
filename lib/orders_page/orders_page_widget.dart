@@ -223,16 +223,24 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                               final st = (o.status ?? '').toLowerCase();
                               switch (_model.selectedTab) {
                                 case 'Completed':
+                                  // Order Details Session 1, item 5: Mark
+                                  // Order Complete introduces status
+                                  // 'closed' (financial close, distinct
+                                  // from 'delivered'/job-complete) — must
+                                  // land here, not fall through to
+                                  // Pending by omission.
                                   return st == 'delivered' ||
                                       st == 'done' ||
-                                      st == 'completed';
+                                      st == 'completed' ||
+                                      st == 'closed';
                                 case 'Cancelled':
                                   return st == 'cancelled';
                                 case 'Pending':
                                   return st != 'delivered' &&
                                       st != 'done' &&
                                       st != 'completed' &&
-                                      st != 'cancelled';
+                                      st != 'cancelled' &&
+                                      st != 'closed';
                                 default:
                                   return true;
                               }

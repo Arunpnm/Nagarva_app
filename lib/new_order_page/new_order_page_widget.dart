@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/customer_lookup.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
@@ -1716,6 +1717,19 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   );
                                 } else {
                                   final newOrderId = await _nextOrderId();
+                                  // Order Details Session 1: this is the one
+                                  // real place orders.customer_id should get
+                                  // set (find-or-create by phone) — payment
+                                  // time only re-resolves it defensively for
+                                  // orders created before this fix landed.
+                                  final customerId =
+                                      await CustomerLookup.findOrCreate(
+                                    orgId: OrgScope.currentOrgId!,
+                                    name: _model
+                                        .ordCustomerFieldTextController.text,
+                                    phone: _model
+                                        .ordPhoneFieldTextController.text,
+                                  );
                                   _model.createdOrder =
                                       await OrdersTable().insert({
                                     'id': newOrderId,
@@ -1725,6 +1739,8 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     // to be run first).
                                     ...OrgScope.stamp(),
                                     ...editablePayload,
+                                    if (customerId != null)
+                                      'customer_id': customerId,
                                     'status': 'booked',
                                     'payment_status':
                                         isPorterOrder && porterAdvance > 0

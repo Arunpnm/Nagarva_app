@@ -61,4 +61,12 @@ class OrganizationsRow extends SupabaseDataRow {
 
   DateTime? get createdAt => getField<DateTime>('created_at');
   set createdAt(DateTime? value) => setField<DateTime>('created_at', value);
+
+  // Added by nagarva_migration_006_compliance — missing from this generated
+  // class until Order Details Session 1's utility row needed it (Copy UPI).
+  String? get upiId => getField<String>('upi_id');
+  set upiId(String? value) => setField<String>('upi_id', value);
+
+  String? get address => getField<String>('address');
+  set address(String? value) => setField<String>('address', value);
 }

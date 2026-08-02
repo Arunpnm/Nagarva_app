@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
+import '/backend/audit_log_service.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/permissions.dart';
 
 /// Order crew management, embedded in Order Details (owner view).
 ///
@@ -21,9 +23,17 @@ import '/flutter_flow/flutter_flow_theme.dart';
 ///      supervisor picks their team in the field via SupervisorJobPage,
 ///      landing in the same table.
 class OrderCrewSection extends StatefulWidget {
-  const OrderCrewSection({super.key, required this.orderId});
+  const OrderCrewSection({super.key, required this.orderId, this.onCrewChanged});
 
   final String orderId;
+
+  /// Fired after labour is added or removed (crew salary changes) — this
+  /// section is embedded inline, not pushed as its own route, so
+  /// OrderDetailPage's onPageRefresh (route-pop only) can't catch it.
+  /// Order Details Session 1's P&L card needs this fan-out to stay
+  /// accurate; not fired for a supervisor reassignment, which doesn't
+  /// affect P&L.
+  final VoidCallback? onCrewChanged;
 
   @override
   State<OrderCrewSection> createState() => _OrderCrewSectionState();
@@ -78,6 +88,12 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
 
   double get _labourTotal =>
       _crew.fold(0.0, (sum, c) => sum + (c.salaryAmount ?? 0));
+
+  /// Order Details Session 1, item 5: once Mark Order Complete closes the
+  /// order, its P&L inputs stop accepting changes — this is the "lock"
+  /// half of "lock the P&L" (see _markComplete's doc comment for why
+  /// there's no DB-level lock flag).
+  bool get _locked => (_order?.status ?? '').toLowerCase() == 'closed';
 
   Future<void> _assignSupervisor(String staffId) async {
     setState(() => _busy = true);
@@ -209,6 +225,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
         'team_type': 'labour',
       });
       await _load();
+      widget.onCrewChanged?.call();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -226,6 +243,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
         matchingRows: (q) => OrgScope.write(q).eq('id', c.id!),
       );
       await _load();
+      widget.onCrewChanged?.call();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -301,7 +319,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                             DropdownMenuItem(
                                 value: s.id, child: Text(s.name)),
                         ],
-                        onChanged: _busy
+                        onChanged: _busy || _locked
                             ? null
                             : (v) {
                                 if (v != null) _assignSupervisor(v);
@@ -321,7 +339,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText)),
               TextButton.icon(
-                onPressed: _busy ? null : _addLabour,
+                onPressed: _busy || _locked ? null : _addLabour,
                 icon: const Icon(Icons.person_add, size: 17),
                 label: const Text('Add Labour'),
               ),
@@ -360,7 +378,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                       visualDensity: VisualDensity.compact,
                       icon: Icon(Icons.close,
                           size: 15, color: theme.error),
-                      onPressed: _busy ? null : () => _removeLabour(c),
+                      onPressed: _busy || _locked ? null : () => _removeLabour(c),
                       tooltip: 'Remove',
                     ),
                   ],
@@ -382,8 +400,169 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
               ],
             ),
           ],
+          // Order Details Session 1, item 5: Mark Order Complete — closes
+          // the order FINANCIALLY, distinct from the operations stepper's
+          // job-progress status. Placed below the labour list per the
+          // brief, but not conditioned on labour existing (a fully
+          // porter-handled order can have zero labour rows and still be
+          // ready to close).
+          if (StaffPermissions.canActive('orders', 'edit'))
+            _markCompleteSection(theme),
         ],
       ),
     );
+  }
+
+  bool _markingComplete = false;
+
+  Widget _markCompleteSection(FlutterFlowTheme theme) {
+    final status = (_order?.status ?? '').toLowerCase();
+    if (status == 'closed') {
+      return Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Row(
+          children: [
+            Icon(Icons.lock, size: 16, color: theme.secondaryText),
+            const SizedBox(width: 6),
+            Text('Order closed — P&L locked',
+                style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: theme.secondaryText)),
+          ],
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: SizedBox(
+        width: double.infinity,
+        height: 46,
+        child: FilledButton.icon(
+          onPressed: _markingComplete ? null : _markComplete,
+          style: FilledButton.styleFrom(backgroundColor: theme.success),
+          icon: const Icon(Icons.task_alt, size: 19),
+          label: Text(_markingComplete ? 'Closing…' : 'Mark Order Complete'),
+        ),
+      ),
+    );
+  }
+
+  /// Closes the order financially. Distinct from job/tracking status —
+  /// this never touches `status` for the transit/delivered vocabulary the
+  /// rest of the app uses; it's a new terminal value, 'closed'.
+  ///
+  /// Schema gap flagged rather than worked around: the brief calls for
+  /// "stamp closed_at" and "lock the P&L", but no `orders.closed_at`
+  /// column exists in any of the 6 migrations, and the brief's own
+  /// constraints say no new SQL this session. `status = 'closed'` is
+  /// real and is written; the timestamp is not. "Lock the P&L" is
+  /// implemented as a UI lock (this section's own Add/Remove Labour and
+  /// QuickPaymentSection both check `status == 'closed'` and stop
+  /// accepting writes) rather than a DB flag, for the same reason.
+  Future<void> _markComplete() async {
+    final o = _order;
+    if (o == null || widget.orderId.isEmpty) return;
+
+    double revenueFinal = o.quoteTotal ?? 0;
+    try {
+      final addonsRows = await OrgScope.read(
+              SupaFlow.client.from('addons').select('amount,status'))
+          .eq('order_id', widget.orderId)
+          .neq('status', 'cancelled');
+      revenueFinal += addonsRows.fold<double>(
+          0, (s, r) => s + (num.tryParse('${r['amount']}') ?? 0));
+    } catch (_) {}
+    final balance = revenueFinal - o.paidTotal;
+    final hasInvoice = (o.invoiceNo ?? '').isNotEmpty;
+
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        title: const Text('Mark Order Complete?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (balance != 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  balance > 0
+                      ? '⚠ Outstanding balance of ₹${balance.toStringAsFixed(0)} — closing this order will not collect it.'
+                      : '⚠ This order is over-collected by ₹${(-balance).toStringAsFixed(0)}.',
+                  style: TextStyle(
+                      color: FlutterFlowTheme.of(context).error,
+                      fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (!hasInvoice)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '⚠ No invoice has been issued for this order yet.',
+                  style: TextStyle(
+                      color: FlutterFlowTheme.of(context).warning,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+            const Text(
+              'This closes the order financially and locks its P&L. This '
+              'cannot be undone from here.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                  backgroundColor: FlutterFlowTheme.of(context).error),
+              child: const Text('Close Order')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _markingComplete = true);
+    try {
+      await OrdersTable().update(
+        data: {'status': 'closed'},
+        matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId),
+      );
+      await AuditLogService.log(
+        entityType: 'orders',
+        entityId: widget.orderId,
+        action: 'marked_complete',
+        oldValue: {'status': o.status},
+        newValue: {'status': 'closed', 'balance_at_close': balance},
+        changedFields: const ['status'],
+        reason: balance != 0
+            ? 'Closed with non-zero balance (₹${balance.toStringAsFixed(0)})'
+            : null,
+      );
+      await TrackingService.logStatus(
+        orderId: widget.orderId,
+        status: 'closed',
+        note: 'Order marked complete',
+      );
+      await _load();
+      widget.onCrewChanged?.call();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Order closed.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not close order: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _markingComplete = false);
+    }
   }
 }

@@ -419,6 +419,101 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **2 Aug 2026, Order Details Session 1 — Tier 2 kickoff, all 5 items**
+  (Claude Code session; migrations 001-006 confirmed live via the owner's
+  own `information_schema` query, files added to `supabase/`). Built
+  against the actual kickoff brief (`kickoff_tier2_s1_order_details.md`,
+  found in the repo root partway through — earlier items were built from
+  a conversation summary before that file was located, then reconciled
+  against it). New files: `lib/order_detail_page/order_pnl_section.dart`,
+  `quick_payment_section.dart`, `order_documents_section.dart`,
+  `lib/components/simple_document_pdf.dart`,
+  `lib/backend/customer_lookup.dart`, `lib/backend/audit_log_service.dart`.
+  - **Item 1, P&L card**: Quote + non-cancelled add-ons → Revenue (Final);
+    costs from staff salary, order expenses + `field_expenses` jsonb,
+    `vendor_bills`, `stock_movements` consumption; health dot at the
+    brief's thresholds. **Deliberate correction to the brief itself**: its
+    porter-commission formula assumes `orders.order_type` encodes
+    local/outstation (×16%/×19%) — this app has no such field; `order_type`
+    has only ever meant Direct/Porter here. Used the app's real,
+    already-established fields instead: `orders.is_porter` (gate) +
+    `orders.porter_commission_pct` (office-picked rate stored per order).
+    Gated `canActive('reports','view')`, absent not disabled.
+  - **Item 2, Quick Payment Update**: inserts `payment_entries`
+    (`orders.paid_total`/`payment_status` update via the existing DB
+    trigger, not written directly), mints a receipt number via
+    `next_doc_number(org,'receipt',branch,fy)` for the confirmation
+    toast/ledger narration, posts `ledger_entries` (party_type customer).
+    Over-collection requires explicit confirm. `ledger_entries.party_id`
+    is NOT NULL, so this needed `orders.customer_id` populated — added
+    `CustomerLookup.findOrCreate` (match-by-`norm_phone`, same algorithm
+    as migration 001's own backfill) and wired it into `new_order_page`'s
+    create path (the actual source of new unlinked orders — the
+    migration's own backfill had already linked every pre-existing order)
+    and, defensively, into Quick Payment itself.
+  - **Item 3, Duplicate Order**: clones shipment/pricing fields per the
+    brief's §3 list (plus `is_porter`/`porter_commission_pct`, not in the
+    brief's literal list but required for P&L consistency on a cloned
+    Porter order), resets to `status: 'pending'`, notes → `Copy of
+    {source_id}`, asks for move date inline. Lives in the Documents
+    section's utility row ("⧉ Copy") per the brief's placement, not as a
+    standalone button.
+  - **Item 4, Documents grid**: Tax Invoice reuses the existing
+    `InvoicePdf` (now numbered via `next_doc_number` instead of the old
+    `settings`-based counter — this starts a new series, does not
+    continue `inv_seq_<fy>`). The other 7 documents are generated through
+    one shared `SimpleDocumentPdf` builder on `PdfBranding`'s primitives.
+    Signature companion: in-app capture (`SignaturePad`, already existed)
+    held in section state, applied to every document generated until
+    explicitly cleared. **Schema gap, not worked around**:
+    `document_signatures.document_type` has a CHECK constraint limited to
+    `('quote','invoice')`; the brief wants the companion signed-persisted
+    for Invoice/Receipt/LR/Voucher. Only Invoice durably persists — the
+    other three carry the signature into that generation's PDF but can't
+    reload it after leaving the page. LR/Bilty numbering used a
+    read-then-write against `lr_series` (no atomic RPC exists for it —
+    `next_doc_number` doesn't list `lr` as a doc_type), same accepted
+    non-atomic pattern the old invoice counter used. Packing List/Loading
+    Slip items aren't persisted (no backing table). "Copy Track Link"
+    reuses the existing token-based `/track` link rather than the brief's
+    literal `?track={orderId}` shape — that would have exposed tracking
+    by guessable order id with no token check.
+  - **Item 5, Mark Order Complete**: in the Crew section below the labour
+    list, full-width green, gated `canActive('orders','edit')`. Hard
+    warning + explicit confirm on non-zero balance, warns if unbilled,
+    writes `status: 'closed'`. **Schema gap, not worked around**: the
+    brief calls for stamping `closed_at`, but no such column exists in
+    any of the 6 migrations, and the brief's own constraints say no new
+    SQL this session — status is written, the timestamp is not. "Lock the
+    P&L" implemented as a UI lock (Quick Payment hides, Add/Remove
+    Labour/reassign-supervisor disable) rather than a DB flag, same
+    reason. **Found and fixed a real bug while wiring this in**:
+    `OrdersPage`'s "Completed" tab filter didn't include `'closed'` at
+    all — a closed order would have silently landed in "Pending" instead
+    (the filter's own comment already anticipated `'closed'` in the
+    customer-privacy check two lines above, just not in the tab logic).
+  - **Audit logging added retroactively for items 2-3 too**: the brief's
+    constraints require every write to log to `audit_log` with
+    old_value/new_value/changed_fields (migration 005 columns) — missed
+    on the first pass through items 1-3 (built from a summary before the
+    brief file was found), added once caught. New `AuditLogService`
+    (parallel to `SoftDeleteService`'s existing private `_audit`, which
+    still only writes the pre-005 columns for delete/restore).
+  - **Stale generated Dart classes fixed along the way** (flagged by
+    Arun as "32 files for 131 database objects" — not regenerated
+    wholesale, fixed field-by-field as each was actually needed):
+    `orders.dart` (+`customerId`, `rateCardId`, `contractId`),
+    `payment_entries.dart` (+`accountId`, `reference`, `reconciled`,
+    `reconciledAt` — all real migration-001 columns), `organizations.dart`
+    (+`upiId`, `address`), `audit_log.dart` (+`oldValue`, `newValue`,
+    `changedFields`, `actorRole`).
+  - **Not done / flagged for the owner rather than guessed**: whether
+    `document_signatures`'s CHECK constraint should be widened (needs a
+    migration Arun runs); whether `lr_series` should get a real atomic
+    RPC like `next_doc_number` has; whether `orders` should get
+    `closed_at`/a `pnl_locked` flag. All three are additive, low-risk
+    migrations, not written per the brief's explicit "no new SQL, report
+    instead" instruction.
 - **1 Aug 2026, "Current login flow" + "Page inventory" rewritten
   (NG-002 remainder, consolidated module register).** Both sections were
   flagged as stale in the same-day RLS-correction entry below but

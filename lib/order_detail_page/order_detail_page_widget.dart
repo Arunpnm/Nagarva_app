@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 
 import '/app_session.dart';
 import '/permissions.dart';
+import '/backend/audit_log_service.dart';
 import '/backend/signature_service.dart';
 import '/backend/soft_delete.dart';
 import '/components/delete_action.dart';
@@ -17,6 +18,9 @@ import '/components/invoice_pdf.dart';
 import '/components/share_link_sheet.dart';
 import '/config/app_config.dart';
 import 'order_crew_section.dart';
+import 'order_documents_section.dart';
+import 'order_pnl_section.dart';
+import 'quick_payment_section.dart';
 import 'quotation_breakdown_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -175,6 +179,206 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     }
   }
 
+  // ---- Order Details Session 1, item 3: duplicate ------------------------
+  bool _duplicating = false;
+
+  /// Same convention as new_order_page's/lead_detail_page's own
+  /// `_nextOrderId` — orders.id is text with no default, must be supplied
+  /// on insert or NOT-NULL fires (23502).
+  Future<String> _nextOrderId() async {
+    final prefix = AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV';
+    const key = 'order_id_seq';
+    final rows = await SettingsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eq('key', key),
+    );
+    final current = rows.isNotEmpty
+        ? (int.tryParse(rows.first.value ?? '1000') ?? 1000)
+        : 1000;
+    final next = current + 1;
+    await SettingsTable().upsert(
+      {
+        'key': key,
+        ...OrgScope.stamp(),
+        'value': next.toString(),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      onConflict: 'org_id,key',
+    );
+    return '$prefix-$next';
+  }
+
+  /// Clones the shipment/pricing fields only — the same field set
+  /// new_order_page's own create-payload uses. Transactional/workflow
+  /// state (status, payment_status, tracking_status, advance_paid,
+  /// paid_total) always resets to fresh-order defaults, never carried
+  /// over, so a duplicate never inherits the source order's payment
+  /// history or job progress.
+  Future<void> _duplicateOrder() async {
+    if (widget.orderId == null) return;
+    final rows = await OrdersTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId!),
+    );
+    if (rows.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Order not found.')));
+      }
+      return;
+    }
+    final o = rows.first;
+
+    DateTime pickedDate = DateTime.now();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+          title: const Text('Duplicate Order'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Creates a new order for ${o.customer} with the same '
+                'shipment details. Payment and job status start fresh.',
+                style: GoogleFonts.inter(fontSize: 12.5),
+              ),
+              const SizedBox(height: 14),
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: dialogContext,
+                    initialDate: pickedDate,
+                    firstDate:
+                        DateTime.now().subtract(const Duration(days: 1)),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    setDialogState(() => pickedDate = picked);
+                  }
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Move Date'),
+                  child: Text(DateFormat('d MMM y').format(pickedDate)),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Duplicate')),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _duplicating = true);
+    try {
+      final orgId = OrgScope.currentOrgId!;
+      final newOrderId = await _nextOrderId();
+      final created = await OrdersTable().insert({
+        'id': newOrderId,
+        ...OrgScope.stamp(orgId: orgId),
+        'customer': o.customer,
+        'phone': o.phone,
+        if (o.customerId != null) 'customer_id': o.customerId,
+        'from_city': o.fromCity,
+        'to_city': o.toCity,
+        'from_address': o.fromAddress,
+        'to_address': o.toAddress,
+        'from_floor': o.fromFloor,
+        'to_floor': o.toFloor,
+        'move_date': supaSerialize<DateTime>(pickedDate),
+        'amount': o.amount,
+        'distance_km': o.distanceKm,
+        'service': o.service,
+        'branch': o.branch,
+        'order_type': o.orderType,
+        'order_source': o.orderSource,
+        if (o.rateCardId != null) 'rate_card_id': o.rateCardId,
+        if (o.contractId != null) 'contract_id': o.contractId,
+        // Not in the brief's literal §3 clone list, but necessary for
+        // consistency: this app's actual porter-commission mechanism is
+        // is_porter/porter_commission_pct (order_type is just a Direct/
+        // Porter label here, not the brief's assumed local/outstation
+        // split — see the P&L card's own doc comment). Cloning order_type
+        // without these would silently produce a "Porter" duplicate with
+        // no commission in its own P&L.
+        'is_porter': o.isPorter ?? false,
+        'porter_commission_pct': o.porterCommissionPct,
+        // Brief §3 "Set": notes -> "Copy of {source_id}", not the
+        // original notes.
+        'notes': 'Copy of ${o.id}',
+        // Brief §3 "Reset": pending, not new_order_page's usual 'booked' —
+        // a duplicate starts one stage earlier, before advance_paid/
+        // paid_total/payment_status all reset to their own zero/pending
+        // defaults below. vehicle_no/driver/supervisor_id/invoice_no/
+        // lr_id/job_otp/supervisor_status are satisfied by omission (a
+        // fresh insert starts every unlisted column at its own default).
+        'status': 'pending',
+        'payment_status': 'pending',
+        'tracking_status': 'Pending',
+        'advance_paid': 0.0,
+      });
+      await AuditLogService.log(
+        entityType: 'orders',
+        entityId: created.id!,
+        action: 'duplicated',
+        newValue: {'source_order_id': o.id, 'move_date': created.moveDateOrNull?.toString()},
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Duplicated as ${created.id}.')));
+      context.pushNamed(
+        OrderDetailPageWidget.routeName,
+        queryParameters: {
+          'orderId': serializeParam(created.id, ParamType.String),
+          'orderCustomer':
+              serializeParam(created.customer, ParamType.String),
+          'orderPhone': serializeParam(created.phone, ParamType.String),
+          'orderFromCity':
+              serializeParam(created.fromCity, ParamType.String),
+          'orderToCity': serializeParam(created.toCity, ParamType.String),
+          'orderFromAddress':
+              serializeParam(created.fromAddress, ParamType.String),
+          'orderToAddress':
+              serializeParam(created.toAddress, ParamType.String),
+          'orderFromFloor':
+              serializeParam(created.fromFloor?.toString(), ParamType.String),
+          'orderToFloor':
+              serializeParam(created.toFloor?.toString(), ParamType.String),
+          'orderMoveDate': serializeParam(
+              created.moveDateOrNull?.toString(), ParamType.String),
+          'orderAmount':
+              serializeParam(created.amount?.toString(), ParamType.String),
+          'orderAdvancePaid': serializeParam(
+              created.advancePaid?.toString(), ParamType.String),
+          'orderStatus': serializeParam(created.status, ParamType.String),
+          'orderPaymentStatus':
+              serializeParam(created.paymentStatus, ParamType.String),
+          'orderTrackingStatus':
+              serializeParam(created.trackingStatus, ParamType.String),
+          'orderService': serializeParam(created.service, ParamType.String),
+          'orderBranch': serializeParam(created.branch, ParamType.String),
+          'orderType': serializeParam(created.orderType, ParamType.String),
+          'orderNotes': serializeParam(created.notes, ParamType.String),
+        }.withoutNulls,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not duplicate: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _duplicating = false);
+    }
+  }
+
   /// Refresh-after-write: re-read the signature so the chip flips from
   /// "Awaiting" to "Signed" when returning to this page, without a
   /// restart. The customer signs on their own phone, so there is no
@@ -185,9 +389,15 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     // Item 2: re-pull the linked quote so an edited quote's lines,
     // charges and GST show without a restart.
     _breakdownKey.currentState?.reload();
+    // Order Details Session 1, item 1: keep the P&L card current after a
+    // payment update, an expense/vendor-bill write, etc. elsewhere.
+    _pnlKey.currentState?.reload();
+    _quickPaymentKey.currentState?.reload();
   }
 
   final _breakdownKey = GlobalKey<QuotationBreakdownSectionState>();
+  final _pnlKey = GlobalKey<OrderPnlSectionState>();
+  final _quickPaymentKey = GlobalKey<QuickPaymentSectionState>();
 
   Future<void> _loadSignature() async {
     if (widget.orderId == null) return;
@@ -319,49 +529,32 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   static final _currency =
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
-  /// Sequential invoice numbering — ported from apc_webapp App.jsx's
-  /// DB.getNextInvoiceNo (lines ~1139-1148). Financial year is Apr-Mar.
-  /// Same caveat as the reference app: this is read-then-upsert, not an
-  /// atomic DB sequence, so it's not safe under truly concurrent invoice
-  /// creation — acceptable for a single-office mobile app for now, flagged
-  /// here for whoever eventually hardens it.
-  Future<String> _nextInvoiceNo() async {
+  static String currentFy() {
     final now = DateTime.now();
-    final fy = now.month >= 4
+    return now.month >= 4
         ? '${(now.year % 100).toString().padLeft(2, '0')}${((now.year + 1) % 100).toString().padLeft(2, '0')}'
         : '${((now.year - 1) % 100).toString().padLeft(2, '0')}${(now.year % 100).toString().padLeft(2, '0')}';
+  }
+
+  /// Sequential invoice numbering. Order Details Session 1's brief is
+  /// explicit: "Use next_doc_number for every document number. Do not
+  /// roll your own counter" — migration 006's `number_series`/
+  /// `next_doc_number(org, doc_type, branch, fy)` is atomic (row-locked)
+  /// where the old mechanism this replaced was read-then-upsert against
+  /// `settings` (ported from apc_webapp's own non-atomic
+  /// DB.getNextInvoiceNo). Flagged for Arun: this starts a NEW series in
+  /// `number_series` — it does not continue the old `inv_seq_<fy>` counter
+  /// in `settings`, so the next invoice number restarts from 1 rather than
+  /// picking up after the last one issued under the old mechanism.
+  Future<String> _nextInvoiceNo({String? branch}) async {
+    final n = await SupaFlow.client.rpc('next_doc_number', params: {
+      'p_org': OrgScope.currentOrgId!,
+      'p_doc_type': 'invoice',
+      'p_branch': branch,
+      'p_fy': currentFy(),
+    }) as String;
     final prefix = AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'APC';
-    // LEAK_AUDIT.md leak #6 (Stage 1 fix): the key used to be
-    // 'inv_seq_<SLUG>_<FY>' — namespaced by string content instead of the
-    // org_id column, so two orgs with colliding slug prefixes would share a
-    // counter. Now that every read/write below filters on org_id, the key
-    // only needs to vary by financial year; the display-facing invoice
-    // number below still uses the org slug prefix for humans, that part is
-    // unaffected. See migration in supabase/phase1_rename_settings_keys.sql.
-    final key = 'inv_seq_$fy';
-
-    final rows = await SettingsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eq('key', key),
-    );
-    final current =
-        rows.isNotEmpty ? (int.tryParse(rows.first.value ?? '0') ?? 0) : 0;
-    final next = current + 1;
-
-    // `settings` now has a real composite PK on (org_id, key) (added
-    // 2026-07-14), so a single upsert replaces the old insert-if-empty /
-    // org-scoped-update-otherwise branch — and it's still org-scoped via
-    // OrgScope.stamp() (org_id is part of the payload the constraint
-    // matches on).
-    await SettingsTable().upsert(
-      {
-        'key': key,
-        ...OrgScope.stamp(),
-        'value': next.toString(),
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      onConflict: 'org_id,key',
-    );
-    return '$prefix/$fy/${next.toString().padLeft(3, '0')}';
+    return '$prefix/${currentFy()}/$n';
   }
 
   Future<void> _generateInvoice() async {
@@ -379,7 +572,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       if (existing.isNotEmpty && (existing.first.invoiceNo ?? '').isNotEmpty) {
         invoiceNo = existing.first.invoiceNo!;
       } else {
-        invoiceNo = await _nextInvoiceNo();
+        invoiceNo = await _nextInvoiceNo(
+            branch: existing.isNotEmpty ? existing.first.branch : null);
         // LEAK_AUDIT.md write-gap fix: matched only on id before.
         await OrdersTable().update(
           data: {'invoice_no': invoiceNo},
@@ -858,6 +1052,25 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         DetailNote(text: widget.orderNotes),
                       ],
                     ),
+                    // Order Details Session 1, item 2: Quick Payment
+                    // Update. Brief: gated on canActive('orders','edit')
+                    // (not a payments-module permission) — the "hidden
+                    // when already paid" half of the brief's gate is
+                    // enforced inside the section itself (balance <= 0).
+                    if (widget.orderId != null &&
+                        StaffPermissions.canActive('orders', 'edit'))
+                      QuickPaymentSection(
+                          key: _quickPaymentKey,
+                          orderId: widget.orderId!,
+                          onSaved: () => _pnlKey.currentState?.reload()),
+                    // Order Details Session 1, item 1: P&L card. Gated on
+                    // canActive('reports','view') — absent, not disabled,
+                    // for a session without reports access (matches the
+                    // OrderCrewSection gate immediately below).
+                    if (widget.orderId != null &&
+                        StaffPermissions.canActive('reports', 'view'))
+                      OrderPnlSection(
+                          key: _pnlKey, orderId: widget.orderId!),
                     // Parity brief Part 3e: itemized quotation breakdown,
                     // if this order has one linked — was previously just a
                     // bare total with no itemisation.
@@ -872,7 +1085,10 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                     // at all.
                     if (widget.orderId != null &&
                         StaffPermissions.canActive('salary', 'view'))
-                      OrderCrewSection(orderId: widget.orderId!),
+                      OrderCrewSection(
+                          orderId: widget.orderId!,
+                          onCrewChanged: () =>
+                              _pnlKey.currentState?.reload()),
                     // Items 3 + 6: signature status and the two customer
                     // share actions.
                     _signatureStatusChip(context),
@@ -1044,6 +1260,17 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         ),
                       ),
                     ),
+                    // Order Details Session 1, item 4: the 8-document grid
+                    // + 4-button utility row (incl. "⧉ Copy" = Duplicate
+                    // Order, per the brief's §3 placement) lives here.
+                    if (widget.orderId != null)
+                      OrderDocumentsSection(
+                        orderId: widget.orderId!,
+                        duplicating: _duplicating,
+                        onDuplicate: _duplicateOrder,
+                        onGenerateInvoice:
+                            _generatingInvoice ? () {} : _generateInvoice,
+                      ),
                     // Item 11: owner-only, destructive, at the very bottom.
                     // Staff don't see it at all rather than seeing a
                     // button that always refuses.

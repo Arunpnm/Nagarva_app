@@ -42,4 +42,20 @@ class PaymentEntriesRow extends SupabaseDataRow {
 
   DateTime? get createdAt => getField<DateTime>('created_at');
   set createdAt(DateTime? value) => setField<DateTime>('created_at', value);
+
+  // Added by nagarva_migration_001_foundations — missing from this
+  // generated class until Order Details Session 1 (this app's Dart table
+  // classes are badly stale relative to the live schema; see CLAUDE.md).
+  String? get accountId => getField<String>('account_id');
+  set accountId(String? value) => setField<String>('account_id', value);
+
+  String? get reference => getField<String>('reference');
+  set reference(String? value) => setField<String>('reference', value);
+
+  bool? get reconciled => getField<bool>('reconciled');
+  set reconciled(bool? value) => setField<bool>('reconciled', value);
+
+  DateTime? get reconciledAt => getField<DateTime>('reconciled_at');
+  set reconciledAt(DateTime? value) =>
+      setField<DateTime>('reconciled_at', value);
 }

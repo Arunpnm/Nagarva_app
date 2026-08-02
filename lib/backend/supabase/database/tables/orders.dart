@@ -28,6 +28,10 @@ class OrdersRow extends SupabaseDataRow {
   String? get quotationId => getField<String>('quotation_id');
   set quotationId(String? value) => setField<String>('quotation_id', value);
 
+  // Order Details Session 1 (migration 001): links to the customers master.
+  String? get customerId => getField<String>('customer_id');
+  set customerId(String? value) => setField<String>('customer_id', value);
+
   String get customer => getField<String>('customer')!;
   set customer(String value) => setField<String>('customer', value);
 
@@ -75,6 +79,14 @@ class OrdersRow extends SupabaseDataRow {
 
   double? get distanceKm => getField<double>('distance_km');
   set distanceKm(double? value) => setField<double>('distance_km', value);
+
+  // Added by nagarva_migration_003_industry / 004_crm — missing from this
+  // generated class until Order Details Session 1.
+  String? get rateCardId => getField<String>('rate_card_id');
+  set rateCardId(String? value) => setField<String>('rate_card_id', value);
+
+  String? get contractId => getField<String>('contract_id');
+  set contractId(String? value) => setField<String>('contract_id', value);
 
   String? get status => getField<String>('status');
   set status(String? value) => setField<String>('status', value);

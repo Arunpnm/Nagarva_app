@@ -45,4 +45,19 @@ class AuditLogRow extends SupabaseDataRow {
 
   DateTime? get createdAt => getField<DateTime>('created_at');
   set createdAt(DateTime? value) => setField<DateTime>('created_at', value);
+
+  // Added by nagarva_migration_005_accounting — missing from this generated
+  // class until Order Details Session 1 (see AuditLogService).
+  dynamic get oldValue => getField('old_value');
+  set oldValue(dynamic value) => setField('old_value', value);
+
+  dynamic get newValue => getField('new_value');
+  set newValue(dynamic value) => setField('new_value', value);
+
+  List<String>? get changedFields => getListField<String>('changed_fields');
+  set changedFields(List<String>? value) =>
+      setListField<String>('changed_fields', value);
+
+  String? get actorRole => getField<String>('actor_role');
+  set actorRole(String? value) => setField<String>('actor_role', value);
 }
