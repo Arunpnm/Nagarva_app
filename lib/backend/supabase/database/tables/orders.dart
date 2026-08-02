@@ -124,6 +124,12 @@ class OrdersRow extends SupabaseDataRow {
   bool? get orderComplete => getField<bool>('order_complete');
   set orderComplete(bool? value) => setField<bool>('order_complete', value);
 
+  // Pre-dates migrations 001-006 (confirmed live via migration 007's own
+  // header note + schema_snapshot_2026-08-01.csv) — missing from this
+  // generated class until Mark Order Complete needed it.
+  DateTime? get closedAt => getField<DateTime>('closed_at');
+  set closedAt(DateTime? value) => setField<DateTime>('closed_at', value);
+
   String? get invoiceNo => getField<String>('invoice_no');
   set invoiceNo(String? value) => setField<String>('invoice_no', value);
 

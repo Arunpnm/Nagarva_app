@@ -419,6 +419,37 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **2 Aug 2026 (later), migration 007 corrections applied — 3 of 4 Session
+  1 gaps closed** (`supabase/nagarva_migration_007_corrections.sql`,
+  applied live, file added to `supabase/`). Fixes the entry directly
+  below, which is now stale in three places:
+  1. **`orders.closed_at` was never actually missing.** It pre-dates
+     migrations 001-006 (that's why grepping those files found nothing) —
+     confirmed live with the full stage-timestamp set (`assigned_at`,
+     `accepted_at`, `loading_started_at`, `delivered_at`, `closed_at`,
+     `lr_issued_at`, `invoice_issued_at`). Mark Order Complete
+     (`order_crew_section.dart`) now stamps it. Lesson: this was reading
+     the migration files as the schema source of truth instead of
+     `supabase/schema_snapshot_2026-08-01.csv`, which would have shown it.
+  2. **`document_signatures.document_type` CHECK widened** to
+     `quote, invoice, proforma, receipt, lr, voucher, packing_list,
+     loading_slip, vehicle_condition, pod, contract, order`, plus new
+     `order_id`/`is_persistent` columns. `order_documents_section.dart`'s
+     signature companion now persists to all 4 companion types (invoice/
+     receipt/lr/voucher) at capture time and reloads on page load —
+     previously only Invoice could durably persist.
+  3. **`next_lr_number(org, branch, fy)`** — atomic, row-locked, same
+     contract as `next_doc_number`. LR generation now calls it instead of
+     the read-then-write `lr_series` update used before.
+  Also backfilled `porter_commission_pct` for existing porter orders
+  (16/19 seeded from `order_type`, but `is_porter`+`porter_commission_pct`
+  remain the source of truth going forward — the porter-commission
+  correction from the entry below stands), and pinned `field_expenses`'
+  jsonb shape (`[{"type","amount","note","at"}]`, default `'[]'`, existing
+  rows normalised) — `order_pnl_section.dart`'s parsing already assumed
+  this shape correctly, now confirmed rather than guessed. **Not fixed,
+  out of scope for 007**: Packing List/Loading Slip items still have no
+  backing table, still ephemeral per generation.
 - **2 Aug 2026, Order Details Session 1 — Tier 2 kickoff, all 5 items**
   (Claude Code session; migrations 001-006 confirmed live via the owner's
   own `information_schema` query, files added to `supabase/`). Built

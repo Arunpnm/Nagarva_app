@@ -82,14 +82,14 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
 
   num _asNum(dynamic v) => v is num ? v : (num.tryParse('$v') ?? 0);
 
-  /// `orders.field_expenses` predates all six migrations and was never
-  /// referenced anywhere in this codebase before now (grepped first,
-  /// zero hits) — its exact jsonb shape is unverified. Assumed to be a
-  /// list of {..., amount} objects, matching every other per-line jsonb
-  /// shape already used in this app (quote_charges, addons). Degrades to
-  /// 0 rather than throwing if the live shape turns out different —
-  /// flagged in the session report as needing confirmation, not guessed
-  /// silently.
+  /// `orders.field_expenses` shape is now pinned by migration 007:
+  /// `[{"type": text, "amount": numeric, "note": text, "at": date}]`,
+  /// default `'[]'`, every existing row normalised to an array. This was
+  /// written against the guessed shape before 007 landed and turned out
+  /// to match — kept defensive (`e is Map`/null-checked `amount`) rather
+  /// than trusting the DB-level normalisation alone, since a row written
+  /// by a future caller that doesn't follow the documented contract
+  /// should degrade to 0, not throw.
   double _sumFieldExpenses(dynamic raw) {
     if (raw is! List) return 0;
     var total = 0.0;

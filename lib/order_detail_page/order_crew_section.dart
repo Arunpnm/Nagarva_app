@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '/app_session.dart';
 import '/backend/audit_log_service.dart';
@@ -418,13 +419,17 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
   Widget _markCompleteSection(FlutterFlowTheme theme) {
     final status = (_order?.status ?? '').toLowerCase();
     if (status == 'closed') {
+      final closedAt = _order?.closedAt;
       return Padding(
         padding: const EdgeInsets.only(top: 14),
         child: Row(
           children: [
             Icon(Icons.lock, size: 16, color: theme.secondaryText),
             const SizedBox(width: 6),
-            Text('Order closed — P&L locked',
+            Text(
+                closedAt == null
+                    ? 'Order closed — P&L locked'
+                    : 'Order closed ${DateFormat('d MMM y').format(closedAt.toLocal())} — P&L locked',
                 style: GoogleFonts.inter(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
@@ -452,14 +457,13 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
   /// this never touches `status` for the transit/delivered vocabulary the
   /// rest of the app uses; it's a new terminal value, 'closed'.
   ///
-  /// Schema gap flagged rather than worked around: the brief calls for
-  /// "stamp closed_at" and "lock the P&L", but no `orders.closed_at`
-  /// column exists in any of the 6 migrations, and the brief's own
-  /// constraints say no new SQL this session. `status = 'closed'` is
-  /// real and is written; the timestamp is not. "Lock the P&L" is
-  /// implemented as a UI lock (this section's own Add/Remove Labour and
-  /// QuickPaymentSection both check `status == 'closed'` and stop
-  /// accepting writes) rather than a DB flag, for the same reason.
+  /// Stamps `closed_at` too — corrected per migration 007's header note:
+  /// the column pre-dates migrations 001-006 (that's why it was absent
+  /// from those files specifically), it was never actually missing from
+  /// the live schema. "Lock the P&L" is still a UI lock, not a DB flag
+  /// (this section's own Add/Remove Labour and QuickPaymentSection both
+  /// check `status == 'closed'` and stop accepting writes) — no
+  /// `pnl_locked`-style column exists or was asked for.
   Future<void> _markComplete() async {
     final o = _order;
     if (o == null || widget.orderId.isEmpty) return;
@@ -530,17 +534,25 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
 
     setState(() => _markingComplete = true);
     try {
+      final closedAt = DateTime.now();
       await OrdersTable().update(
-        data: {'status': 'closed'},
+        data: {
+          'status': 'closed',
+          'closed_at': closedAt.toIso8601String(),
+        },
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId),
       );
       await AuditLogService.log(
         entityType: 'orders',
         entityId: widget.orderId,
         action: 'marked_complete',
-        oldValue: {'status': o.status},
-        newValue: {'status': 'closed', 'balance_at_close': balance},
-        changedFields: const ['status'],
+        oldValue: {'status': o.status, 'closed_at': null},
+        newValue: {
+          'status': 'closed',
+          'closed_at': closedAt.toIso8601String(),
+          'balance_at_close': balance,
+        },
+        changedFields: const ['status', 'closed_at'],
         reason: balance != 0
             ? 'Closed with non-zero balance (₹${balance.toStringAsFixed(0)})'
             : null,

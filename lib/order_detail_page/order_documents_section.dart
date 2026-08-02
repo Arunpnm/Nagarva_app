@@ -27,26 +27,21 @@ import '/flutter_flow/flutter_flow_theme.dart';
 /// logic on the parent page; duplicating that here would fork behaviour
 /// two ways for one document. [onGenerateInvoice] delegates back to it.
 ///
-/// Schema realities that shaped this file, all flagged in the Session 1
-/// report rather than worked around silently:
-///   - `document_signatures.document_type` has a CHECK constraint limited
-///     to `('quote', 'invoice')`. The brief calls for a signature
-///     companion on 4 documents (Invoice, Receipt, LR, Voucher) that
-///     "persists... so every document for that order can carry it." Only
-///     Invoice fits that constraint today — Receipt/LR/Voucher get the
-///     in-session hold-and-apply behaviour (captured once, stamped on
-///     every document generated while held, cleared only on explicit
-///     action) but cannot durably reload after leaving the page. Widening
-///     the CHECK constraint is a migration; the brief says no new SQL
-///     this session.
-///   - `lr_series` (migration 003) has no atomic increment RPC — unlike
-///     `number_series`/`next_doc_number`, which does not list `lr` as a
-///     doc_type at all. LR numbering here is read-then-write against
-///     `lr_series` directly, same accepted non-atomic-counter pattern
-///     already used for the pre-Session-1 invoice counter.
-///   - Packing List / Loading Slip items have no backing table in any of
-///     the 6 migrations, so they're entered fresh each time via the shared
-///     item modal and are not persisted between generations.
+/// Schema realities that shaped this file:
+///   - Migration 007 widened `document_signatures.document_type`'s CHECK
+///     constraint (was `('quote','invoice')` only) and added `order_id` +
+///     `is_persistent`, specifically so the companion signature captured
+///     here durably persists for all 4 companion types (invoice, receipt,
+///     lr, voucher) — see [_persistToAllCompanionTypes]/
+///     [_loadHeldSignature]. Before 007 this only worked for Invoice.
+///   - Migration 007 also added `next_lr_number(org, branch, fy)` — an
+///     atomic, row-locked allocator for `lr_series`, same contract as
+///     `next_doc_number`. LR generation uses it instead of the
+///     read-then-write this file used before 007 landed.
+///   - Packing List / Loading Slip items still have no backing table in
+///     any migration, so they're entered fresh each time via the shared
+///     item modal and are not persisted between generations — not a gap
+///     007 addressed.
 class OrderDocumentsSection extends StatefulWidget {
   const OrderDocumentsSection({
     super.key,
@@ -76,10 +71,19 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   bool _busy = false;
   OrdersRow? _order;
 
+  /// Every document type whose PDF can carry the captured companion
+  /// signature. Kept as one list so capture/reload/clear all iterate the
+  /// same set — Tax Invoice's row is the same (org_id, 'invoice',
+  /// document_id=orderId) row the parent page's pre-existing Send-for-
+  /// Signature flow already reads, so persisting here makes that flow
+  /// pick it up too with no direct wiring between the two widgets.
+  static const _companionDocTypes = ['invoice', 'receipt', 'lr', 'voucher'];
+
   @override
   void initState() {
     super.initState();
     _loadOrder();
+    _loadHeldSignature();
   }
 
   Future<void> _loadOrder() async {
@@ -87,6 +91,36 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId),
     );
     if (mounted) setState(() => _order = rows.isNotEmpty ? rows.first : null);
+  }
+
+  /// Migration 007: document_signatures gained `order_id` + `is_persistent`
+  /// specifically so a captured companion signature reloads after leaving
+  /// and returning to the page, instead of only lasting the session.
+  Future<void> _loadHeldSignature() async {
+    final orgId = OrgScope.currentOrgId;
+    if (orgId == null) return;
+    try {
+      final rows = await SupaFlow.client
+          .from('document_signatures')
+          .select('signature_data,signed_at')
+          .eq('org_id', orgId)
+          .eq('order_id', widget.orderId)
+          .eq('is_persistent', true)
+          .eq('status', 'signed')
+          .order('signed_at', ascending: false)
+          .limit(1);
+      if (rows.isEmpty || !mounted) return;
+      final data = rows.first['signature_data'] as String?;
+      if (data == null) return;
+      final signedAt = rows.first['signed_at'] as String?;
+      setState(() {
+        _heldSignature = base64Decode(data);
+        _heldSignatureAt = signedAt == null ? null : DateTime.tryParse(signedAt);
+      });
+    } catch (_) {
+      // Best-effort — a reload failure just means the banner starts
+      // uncaptured, same as before 007; it doesn't block the page.
+    }
   }
 
   String _currentFy() {
@@ -194,34 +228,64 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       _heldSignature = base64Decode(b64);
       _heldSignatureAt = DateTime.now();
     });
+    await _persistToAllCompanionTypes();
   }
 
-  void _clearHeldSignature() => setState(() {
-        _heldSignature = null;
-        _heldSignatureAt = null;
-      });
+  /// Clears the in-memory hold AND turns off `is_persistent` on every
+  /// companion row for this order — "Clear only on explicit user action"
+  /// per the brief. Rows are updated, not deleted: the signed record
+  /// stays for whichever documents already went out with it, it just
+  /// stops being the thing new documents automatically carry.
+  Future<void> _clearHeldSignature() async {
+    setState(() {
+      _heldSignature = null;
+      _heldSignatureAt = null;
+    });
+    final orgId = OrgScope.currentOrgId;
+    if (orgId == null) return;
+    try {
+      await SupaFlow.client
+          .from('document_signatures')
+          .update({'is_persistent': false})
+          .eq('org_id', orgId)
+          .eq('order_id', widget.orderId)
+          .eq('is_persistent', true);
+    } catch (_) {}
+  }
 
-  /// Persists the held signature against `document_signatures` for
-  /// document_type 'invoice' only — the one type the CHECK constraint
-  /// allows (see file doc comment). Idempotent: re-generating the invoice
-  /// while the same signature is held just re-upserts the same bytes.
-  Future<void> _persistInvoiceSignature() async {
+  /// Persists the held signature against every companion document type at
+  /// once (migration 007 widened the CHECK constraint from `('quote',
+  /// 'invoice')` to include receipt/lr/voucher/etc, and added `order_id` +
+  /// `is_persistent` for exactly this). Captured once here, rather than
+  /// per-generation, so it's already reloadable the moment it's captured —
+  /// including by the parent page's pre-existing Tax Invoice signature
+  /// flow, which reads the same (org_id, 'invoice', document_id=orderId)
+  /// row independently.
+  Future<void> _persistToAllCompanionTypes() async {
     final sig = _heldSignature;
     if (sig == null) return;
-    try {
-      final orgId = OrgScope.currentOrgId!;
-      await SupaFlow.client.from('document_signatures').upsert({
-        'org_id': orgId,
-        'document_type': 'invoice',
-        'document_id': widget.orderId,
-        'customer_name': _order?.customer,
-        'signature_data': base64Encode(sig),
-        'signed_at': DateTime.now().toIso8601String(),
-        'status': 'signed',
-      }, onConflict: 'org_id,document_type,document_id');
-    } catch (_) {
-      // Best-effort — the PDF already carries the signature image either
-      // way; this only affects whether it's still there next visit.
+    final orgId = OrgScope.currentOrgId;
+    if (orgId == null) return;
+    final signedAt = (_heldSignatureAt ?? DateTime.now()).toIso8601String();
+    final encoded = base64Encode(sig);
+    for (final docType in _companionDocTypes) {
+      try {
+        await SupaFlow.client.from('document_signatures').upsert({
+          'org_id': orgId,
+          'document_type': docType,
+          'document_id': widget.orderId,
+          'order_id': widget.orderId,
+          'is_persistent': true,
+          'customer_name': _order?.customer,
+          'signature_data': encoded,
+          'signed_at': signedAt,
+          'status': 'signed',
+        }, onConflict: 'org_id,document_type,document_id');
+      } catch (_) {
+        // Best-effort per type — a PDF generated this session still
+        // carries the signature image from _heldSignature either way;
+        // this only affects whether that specific type reloads later.
+      }
     }
   }
 
@@ -318,7 +382,6 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final (profile, logoBytes) = await _loadBranding();
         await _showDocDialog('Money Receipt $docNo', 'Receipt_$docNo.pdf',
             () async {
-          await _persistInvoiceSignature();
           return SimpleDocumentPdf.generate(
             docLabel: 'MONEY RECEIPT',
             docNo: docNo,
@@ -408,38 +471,17 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final orgId = OrgScope.currentOrgId!;
         final fy = _currentFy();
 
-        // No atomic RPC exists for lr_series (see file doc comment) —
-        // read-then-write, same accepted non-atomic-counter pattern the
-        // old invoice numbering used before this session switched it to
-        // next_doc_number.
-        final seriesRows = await SupaFlow.client
-            .from('lr_series')
-            .select()
-            .eq('org_id', orgId)
-            .eq('fy', fy)
-            .eq('branch', o.branch ?? '')
-            .limit(1);
-        String prefix = 'LR';
-        int nextNo;
-        if (seriesRows.isEmpty) {
-          nextNo = 1;
-          await SupaFlow.client.from('lr_series').insert({
-            'org_id': orgId,
-            'branch': o.branch,
-            'fy': fy,
-            'prefix': prefix,
-            'last_number': nextNo,
-          });
-        } else {
-          final row = seriesRows.first;
-          prefix = (row['prefix'] as String?) ?? 'LR';
-          nextNo = ((row['last_number'] as int?) ?? 0) + 1;
-          await SupaFlow.client
-              .from('lr_series')
-              .update({'last_number': nextNo})
-              .eq('id', row['id']);
-        }
-        final lrNo = '$prefix/$fy/${nextNo.toString().padLeft(4, '0')}';
+        // Migration 007: next_lr_number(org, branch, fy) is the atomic,
+        // row-locked allocator — same contract as next_doc_number, just
+        // scoped to lr_series instead of number_series (the two aren't
+        // consolidated yet; 007 mirrors the counter into number_series
+        // under doc_type 'lr' so a future consolidation is a no-op).
+        // Replaces the read-then-write this used before 007 landed.
+        final lrNo = await SupaFlow.client.rpc('next_lr_number', params: {
+          'p_org': orgId,
+          'p_branch': o.branch,
+          'p_fy': fy,
+        }) as String;
 
         // Consignee from the linked customer record when available;
         // falls back to the order's own plain fields otherwise.
@@ -503,7 +545,6 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final (loadedProfile, logoBytes) = await _loadBranding();
         await _showDocDialog('LR $lrNo', 'LR_${lrNo.replaceAll('/', '-')}.pdf',
             () async {
-          await _persistInvoiceSignature();
           return SimpleDocumentPdf.generate(
             docLabel: 'LORRY RECEIPT',
             docNo: lrNo,
@@ -764,7 +805,6 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final (profile, logoBytes) = await _loadBranding();
         await _showDocDialog('Voucher $docNo', 'Voucher_$docNo.pdf',
             () async {
-          await _persistInvoiceSignature();
           return SimpleDocumentPdf.generate(
             docLabel: 'PAYMENT VOUCHER',
             docNo: docNo,
