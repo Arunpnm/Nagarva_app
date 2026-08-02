@@ -15,6 +15,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'supervisor_job_page_model.dart';
 export 'supervisor_job_page_model.dart';
 
+/// Expanded from 6 to 16 per Arun's master-brief §6.3 list (unavailable in
+/// this session when the field job screen was first rebuilt, so 6 more
+/// weren't invented to match a document not in hand — flagged then, filled
+/// in now). The original 6 are kept as-is per instruction; 'Food' and
+/// 'Packing Material' already covered two of the 12 he sent, so only the
+/// other 10 were appended.
 const List<String> kJobExpenseCategories = [
   'Fuel',
   'Toll',
@@ -22,6 +28,16 @@ const List<String> kJobExpenseCategories = [
   'Packing Material',
   'Food',
   'Miscellaneous',
+  '🚚 Extra vehicle',
+  '❄️ AC install/uninstall',
+  '📺 TV install/uninstall',
+  '🚿 Geyser install/uninstall',
+  '🔨 Carpenter',
+  '🪜 Crane/hydra',
+  '🅿️ Parking',
+  '🔧 Vehicle repair',
+  '🧹 Cleaning',
+  '💵 Other',
 ];
 
 /// On-site field job workflow for a single order — Session 2 rebuild.
@@ -810,9 +826,6 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                       font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
             ),
           const SizedBox(height: 8),
-          // 6 categories, not the master brief's referenced 12 — that
-          // document (§6.3) wasn't available in this session; flagged in
-          // the report rather than inventing 6 more.
           DropdownButtonFormField<String>(
             initialValue: _model.expenseType,
             items: kJobExpenseCategories

@@ -471,17 +471,31 @@ dsl/edit.dart are useful specs of intended behaviour.
   - **Gaps flagged, not silently worked around**: POD `photo_urls` and
     lat/lng are left empty/null — no confirmed Supabase Storage bucket
     for POD photos, and no location package in `pubspec.yaml` (this app's
-    pinned-SDK environment rules warn against casually adding one). Field
-    expense categories stayed at the existing 6 (Fuel/Toll/Loading-
-    Unloading/Packing Material/Food/Miscellaneous) — the master brief's
-    referenced "12 types per §6.3" wasn't available in this session to
-    read, so 6 more weren't invented to match a document not in hand.
-  - **`vehicle_trips` vs `trips` for odometer, long-term recommendation**:
-    `vehicle_trips` is correctly 1:1 with an order and is what this
-    session used — `trips` (migration 003) is many-orders-per-vehicle and
-    is the wrong shape for "this order's odometer reading." No migration
-    needed either way; flagged as the session's own answer to the brief's
-    report question, not acted on beyond that.
+    pinned-SDK environment rules warn against casually adding one).
+    Confirmed by Arun as deliberate, pairs with planned offline-queue
+    work — both need retry paths for supervisors working in basements
+    with no signal.
+  - **`vehicle_trips` vs `trips` for odometer — confirmed by Arun**:
+    `vehicle_trips` (1:1 with an order) is correct and stays; `trips`
+    stays for its own separate many-orders-per-vehicle part-load case.
+    Two tables, two purposes, no migration needed.
+  - **Follow-up same day: migration 008 caught in review before Arun ran
+    it.** The first draft applied TODAY's `staff.salary` to every
+    matching order regardless of age — for an order already
+    `delivered`/`closed`, that fabricates a crew cost that was never
+    actually recorded at the time, flowing straight into Session 1's P&L
+    card and silently changing a historical profit figure. Fixed: the
+    back-fill now excludes `delivered`/`closed`/`cancelled` orders
+    entirely — their crew stays unrecorded in `order_staff`, exactly as
+    before this migration. Only orders still open/in-progress get
+    back-filled.
+  - **Follow-up same day: field expense categories expanded 6 → 16.**
+    Arun's master brief §6.3 (unavailable when this page was rebuilt)
+    turned out to only overlap 2 of the original 6 (Food, Packing
+    Material) — instructed to keep all 6 and append the other 10
+    (Extra vehicle, AC/TV/Geyser install-uninstall, Carpenter, Crane/
+    hydra, Parking, Vehicle repair, Cleaning, Other), not consolidate
+    down to a clean 12.
 - **2 Aug 2026 (later), migration 007 corrections applied — 3 of 4 Session
   1 gaps closed** (`supabase/nagarva_migration_007_corrections.sql`,
   applied live, file added to `supabase/`). Fixes the entry directly
