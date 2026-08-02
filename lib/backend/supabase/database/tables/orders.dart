@@ -130,6 +130,9 @@ class OrdersRow extends SupabaseDataRow {
   DateTime? get closedAt => getField<DateTime>('closed_at');
   set closedAt(DateTime? value) => setField<DateTime>('closed_at', value);
 
+  DateTime? get deliveredAt => getField<DateTime>('delivered_at');
+  set deliveredAt(DateTime? value) => setField<DateTime>('delivered_at', value);
+
   String? get invoiceNo => getField<String>('invoice_no');
   set invoiceNo(String? value) => setField<String>('invoice_no', value);
 

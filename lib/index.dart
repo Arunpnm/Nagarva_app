@@ -38,6 +38,16 @@ export '/org_setup_page/org_setup_page_widget.dart' show OrgSetupPageWidget;
 export '/plan_page/plan_page_widget.dart' show PlanPageWidget;
 export '/supervisor_job_page/supervisor_job_page_widget.dart'
     show SupervisorJobPageWidget;
+export '/supervisor_jobs_page/supervisor_jobs_page_widget.dart'
+    show SupervisorJobsListPageWidget;
+export '/supervisor_entry_page/supervisor_entry_page_widget.dart'
+    show SupervisorEntryPageWidget;
+export '/supervisor_team_page/supervisor_team_page_widget.dart'
+    show SupervisorTeamPageWidget;
+export '/supervisor_earnings_page/supervisor_earnings_page_widget.dart'
+    show SupervisorEarningsPageWidget;
+export '/supervisor_attendance_page/supervisor_attendance_page_widget.dart'
+    show SupervisorAttendancePageWidget;
 export '/survey_page/survey_page_widget.dart' show SurveyPageWidget;
 export '/sign_page/sign_page_widget.dart' show SignPageWidget;
 export '/track_page/track_page_widget.dart' show TrackPageWidget;

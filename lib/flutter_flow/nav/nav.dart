@@ -598,11 +598,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           ('InboxComingSoon', '/inbox', 'Inbox'),
           ('SurveyComingSoon', '/survey-new', 'Survey'),
           ('ReviewsComingSoon', '/reviews', 'Reviews'),
-          ('SupEntryComingSoon', '/sup-entry', 'Job Entry'),
-          ('SupJobsComingSoon', '/sup-jobs', 'My Jobs'),
-          ('SupTeamComingSoon', '/sup-team', 'My Team'),
-          ('SupSalComingSoon', '/sup-sal', 'My Earnings'),
-          ('SupAttComingSoon', '/sup-att', 'My Attendance'),
           ('StaffTeamAttendance', '/team-attendance', 'Team Attendance'),
           ('MyAttComingSoon', '/my-att', 'My Attendance'),
           ('MySalComingSoon', '/my-sal', 'My Earnings'),
@@ -612,6 +607,36 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             path: entry.$2,
             builder: (context, params) => ComingSoonPage(title: entry.$3),
           ),
+        // Session 2, Part B1 + Part C: the 5 supervisor ComingSoon stubs
+        // (sup-jobs/sup-entry/sup-team/sup-sal/sup-att) are now real
+        // screens, under new route names — kSupervisorNavItems in
+        // nav_items.dart is updated to match (context.pushNamed(item.name)
+        // needs the two to agree exactly).
+        FFRoute(
+          name: SupervisorJobsListPageWidget.routeName,
+          path: SupervisorJobsListPageWidget.routePath,
+          builder: (context, params) => const SupervisorJobsListPageWidget(),
+        ),
+        FFRoute(
+          name: SupervisorEntryPageWidget.routeName,
+          path: SupervisorEntryPageWidget.routePath,
+          builder: (context, params) => const SupervisorEntryPageWidget(),
+        ),
+        FFRoute(
+          name: SupervisorTeamPageWidget.routeName,
+          path: SupervisorTeamPageWidget.routePath,
+          builder: (context, params) => const SupervisorTeamPageWidget(),
+        ),
+        FFRoute(
+          name: SupervisorEarningsPageWidget.routeName,
+          path: SupervisorEarningsPageWidget.routePath,
+          builder: (context, params) => const SupervisorEarningsPageWidget(),
+        ),
+        FFRoute(
+          name: SupervisorAttendancePageWidget.routeName,
+          path: SupervisorAttendancePageWidget.routePath,
+          builder: (context, params) => const SupervisorAttendancePageWidget(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

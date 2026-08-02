@@ -419,6 +419,69 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **2 Aug 2026 (still later), Order Details Tier 2 Session 2 — Supervisor
+  OTP Completion Flow** (Claude Code session; migrations 001-007 live).
+  Built against `kickoff_tier2_s2_supervisor_otp.md`'s corrections
+  to the master parity brief (odometer lives in `vehicle_trips`, not
+  `orders.start_km`, which doesn't exist; OTP completion should also
+  create a `pod_records` row). New pages: `supervisor_jobs_page` (My
+  Jobs list, the real `sup-jobs` nav destination — distinct from the
+  existing per-order `SupervisorJobPage`), `supervisor_entry_page`
+  (`sup-entry`), `supervisor_team_page` (`sup-team`),
+  `supervisor_earnings_page` (`sup-sal`), `supervisor_attendance_page`
+  (`sup-att`) — all 5 ComingSoon stubs in `kSupervisorNavItems` are now
+  real screens, registered under new route names in `nav.dart` (updated
+  in lockstep in `nav_items.dart`). New `lib/backend/crew_sync_service.dart`.
+  - **Part A — the `job_team` → `order_staff` propagation bug, fixed.**
+    `job_team`'s actual shape (found by reading the existing
+    `supervisor_job_page_widget.dart` before writing anything, per the
+    brief's own requirement): a jsonb array of plain `staff.id` strings,
+    e.g. `["uuid1","uuid2"]` — no nested shape. `CrewSyncService
+    .syncFromJobTeam` now runs on every `job_team` write (both in
+    `_startShifting` and the completion transaction): adds an
+    `order_staff` row per new id (salary defaulted to `staff.salary / 26`
+    rounded — matching `order_crew_section.dart`'s own existing "Add
+    Labour" day-rate convention, NOT the raw monthly salary), and removes
+    a row for an id dropped from `job_team` only when that row's
+    `salary_amount` still exactly equals that default — an edited salary
+    is never silently discarded. Back-fill migration handed over, not
+    run: `supabase/nagarva_migration_008_job_team_backfill.sql` — only
+    touches orders with zero existing `order_staff` rows, so it can't
+    clobber crew the owner already entered manually.
+  - **Part B, the field job screen rebuilt.** `supervisor_job_page_widget.dart`
+    (+ its model) rewritten: crew now displayed from `order_staff` (the
+    table Part A keeps in sync), field expenses moved from the old
+    `expenses` table to `orders.field_expenses` (migration 007's pinned
+    jsonb shape) per the brief's correction, a new odometer section reads/
+    writes `vehicle_trips.km_start`/`km_end` (not `orders`) and gates
+    "🏁 Shifting Completed — Get OTP" per the brief's corrected rule (never
+    blocks when no opening reading was ever captured — third-party
+    vehicle), OTP renders at 48px monospace with red/green/neutral entry-
+    field borders, and the verified-completion transaction now performs
+    all 9 of the brief's steps in one place — including the two the
+    original master brief never had: a `pod_records` insert (photo/GPS
+    capture skipped and flagged below — see gaps) and marking `attendance`
+    present for every crew member. `order_status_history` needed no new
+    code — `TrackingService.logStatus` already wrote it.
+  - **Part C, 4 thin screens.** Job Entry (minimal order creation via
+    `CustomerLookup.findOrCreate`), My Team (branch staff + mark-present),
+    My Earnings (this supervisor's own `order_staff` rows by month +
+    `staff_advances` balance), My Attendance (this month's own attendance,
+    simple date list not a calendar grid). All stayed thin as scoped.
+  - **Gaps flagged, not silently worked around**: POD `photo_urls` and
+    lat/lng are left empty/null — no confirmed Supabase Storage bucket
+    for POD photos, and no location package in `pubspec.yaml` (this app's
+    pinned-SDK environment rules warn against casually adding one). Field
+    expense categories stayed at the existing 6 (Fuel/Toll/Loading-
+    Unloading/Packing Material/Food/Miscellaneous) — the master brief's
+    referenced "12 types per §6.3" wasn't available in this session to
+    read, so 6 more weren't invented to match a document not in hand.
+  - **`vehicle_trips` vs `trips` for odometer, long-term recommendation**:
+    `vehicle_trips` is correctly 1:1 with an order and is what this
+    session used — `trips` (migration 003) is many-orders-per-vehicle and
+    is the wrong shape for "this order's odometer reading." No migration
+    needed either way; flagged as the session's own answer to the brief's
+    report question, not acted on beyond that.
 - **2 Aug 2026 (later), migration 007 corrections applied — 3 of 4 Session
   1 gaps closed** (`supabase/nagarva_migration_007_corrections.sql`,
   applied live, file added to `supabase/`). Fixes the entry directly

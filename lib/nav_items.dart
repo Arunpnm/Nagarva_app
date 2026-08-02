@@ -73,18 +73,19 @@ const kAllNavItems = kOwnerManagerNavItems;
 
 /// Supervisor nav (Users Kickoff Step 2.2): 5 job-focused destinations +
 /// "staff", fixed "Team Attendance" (never "Salary & Staff" — supervisors
-/// don't get salary.edit). None of the 5 have a real screen yet (Step 2's
-/// own instruction: wire the nav now, build the screens later) —
-/// `sup-jobs` is NOT the same thing as the existing `SupervisorJobPage`
-/// (that's the field-side of a specific job's OTP workflow, opened from
-/// an order; this is a "My Jobs" list view across all of a supervisor's
-/// assigned jobs, which doesn't exist).
+/// don't get salary.edit). All 5 got real screens in Session 2 (Part B1 +
+/// Part C) — `sup-jobs` (`SupervisorJobsListPage`) is NOT the same thing
+/// as the existing `SupervisorJobPage` (that's the field-side of a
+/// specific job's OTP workflow, opened from an order; this is the "My
+/// Jobs" list view across all of a supervisor's assigned jobs that opens
+/// it). "Team Attendance" (`StaffTeamAttendance`) is still a ComingSoon
+/// stub — out of Session 2's scope, not one of its 4 Part C screens.
 const kSupervisorNavItems = <NavItem>[
-  (name: 'SupEntryComingSoon', icon: Icons.edit_note, label: 'Job Entry'),
-  (name: 'SupJobsComingSoon', icon: Icons.work_outline, label: 'My Jobs'),
-  (name: 'SupTeamComingSoon', icon: Icons.groups_outlined, label: 'My Team'),
-  (name: 'SupSalComingSoon', icon: Icons.currency_rupee, label: 'My Earnings'),
-  (name: 'SupAttComingSoon', icon: Icons.event_available, label: 'My Attendance'),
+  (name: 'SupervisorEntryPage', icon: Icons.edit_note, label: 'Job Entry'),
+  (name: 'SupervisorJobsListPage', icon: Icons.work_outline, label: 'My Jobs'),
+  (name: 'SupervisorTeamPage', icon: Icons.groups_outlined, label: 'My Team'),
+  (name: 'SupervisorEarningsPage', icon: Icons.currency_rupee, label: 'My Earnings'),
+  (name: 'SupervisorAttendancePage', icon: Icons.event_available, label: 'My Attendance'),
   (name: 'StaffTeamAttendance', icon: Icons.groups, label: 'Team Attendance'),
 ];
 

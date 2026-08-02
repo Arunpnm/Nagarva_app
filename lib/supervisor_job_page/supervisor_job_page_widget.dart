@@ -1,4 +1,6 @@
 import '/app_session.dart';
+import '/backend/audit_log_service.dart';
+import '/backend/crew_sync_service.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -7,6 +9,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'supervisor_job_page_model.dart';
@@ -21,21 +24,22 @@ const List<String> kJobExpenseCategories = [
   'Miscellaneous',
 ];
 
-/// On-site field job workflow for a single order: accept the job, pick the
-/// labour team, work through shifting, generate a completion OTP, and hand
-/// off to the owner for approval.
+/// On-site field job workflow for a single order — Session 2 rebuild.
 ///
-/// Ported from apc_webapp App.jsx's SupervisorJobPage (lines ~10369-10597)
-/// — see supervisor_job_page_model.dart's SupervisorJobStep doc comment for
-/// how the step machine and DB writes were adapted to this app's actual
-/// schema (status vocabulary, job_start_time/job_end_time instead of
-/// odometer readings).
+/// Reached from the supervisor's My Jobs list (`sup-jobs`,
+/// `supervisor_jobs_page_widget.dart`), which is the actual `sup-jobs` nav
+/// destination; this page is opened per-order from there (or from Order
+/// Details' "Open Field Job").
 ///
-/// One deliberate fix vs. the reference app: OTP verification here
-/// re-fetches `orders.job_otp` from the DB and checks against that, not
-/// just the in-memory value — the reference app only checks in-memory
-/// state, which a previous CLAUDE.md pass flagged as a security gap worth
-/// not copying.
+/// Corrections vs. the master parity brief this session's kickoff caught:
+///   - The closing odometer reading lives in `vehicle_trips`
+///     (`km_start`/`km_end`, keyed by `order_id`), NOT `orders` — there is
+///     no `orders.start_km`.
+///   - Verified completion also creates a `pod_records` row and marks
+///     `attendance` for the crew — neither was in the original brief.
+///
+/// Security: OTP verification re-fetches `orders.job_otp` from the DB and
+/// checks against that, never trusting only the in-memory value.
 class SupervisorJobPageWidget extends StatefulWidget {
   const SupervisorJobPageWidget({super.key, this.orderId});
 
@@ -61,8 +65,16 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
 
     _model.notesController ??= TextEditingController();
     _model.expenseAmountController ??= TextEditingController();
-    _model.expenseDescController ??= TextEditingController();
-    _model.enteredOtpController ??= TextEditingController();
+    _model.expenseNoteController ??= TextEditingController();
+    _model.enteredOtpController ??= TextEditingController()
+      ..addListener(() => safeSetState(() {}));
+    _model.kmStartController ??= TextEditingController();
+    _model.kmEndController ??= TextEditingController();
+    _model.receivedByNameController ??= TextEditingController();
+    _model.receivedByPhoneController ??= TextEditingController();
+    _model.packagesDeliveredController ??= TextEditingController();
+    _model.packagesShortController ??= TextEditingController();
+    _model.damageDescriptionController ??= TextEditingController();
 
     SchedulerBinding.instance.addPostFrameCallback((_) => _loadData());
 
@@ -85,14 +97,16 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
     try {
       final results = await Future.wait([
-        // LEAK_AUDIT.md leak #7 (Stage 1 fix): matched only on id before.
         OrdersTable().queryRows(
           queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId!),
         ),
         StaffTable().queryRows(
           queryFn: (q) => OrgScope.read(q).eqOrNull('active', true),
         ),
-        ExpensesTable().queryRows(
+        OrderStaffTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
+        ),
+        VehicleTripsTable().queryRows(
           queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
         ),
       ]);
@@ -105,7 +119,17 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       }
       _model.order = orders.first;
       _model.staffList = results[1].cast<StaffRow>();
-      _model.jobExpenses = results[2].cast<ExpensesRow>();
+      // Session 2 Part A: crew now read from order_staff — the table
+      // CrewSyncService keeps in sync with job_team — not job_team itself.
+      _model.crew = results[2].cast<OrderStaffRow>();
+      final trips = results[3].cast<VehicleTripsRow>();
+      _model.vehicleTrip = trips.isNotEmpty ? trips.first : null;
+      _model.kmStartController!.text =
+          _model.vehicleTrip?.kmStart?.toStringAsFixed(0) ?? '';
+      _model.kmEndController!.text =
+          _model.vehicleTrip?.kmEnd?.toStringAsFixed(0) ?? '';
+
+      _model.fieldExpenses = _parseFieldExpenses(_model.order!.data['field_expenses']);
 
       final team = _model.order!.jobTeam;
       if (team is List) {
@@ -122,6 +146,11 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     safeSetState(() {});
   }
 
+  List<Map<String, dynamic>> _parseFieldExpenses(dynamic raw) {
+    if (raw is! List) return [];
+    return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
   SupervisorJobStep _inferStep(OrdersRow o) {
     if (o.status == 'delivered' ||
         o.status == 'closed' ||
@@ -135,9 +164,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   }
 
   /// Mirrors the reference app's central `changeOrderStatus` helper: writes
-  /// orders.status and logs an order_tracking row.
+  /// orders.status and logs the change. `TrackingService.logStatus` is what
+  /// writes `order_status_history` (Session 2 B5 step 5) — already existed,
+  /// nothing new needed there.
   Future<void> _changeStatus(String newStatus, String note) async {
-    // LEAK_AUDIT.md write-gap fix: matched only on id before.
     await OrdersTable().update(
       data: {'status': newStatus},
       matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
@@ -149,15 +179,6 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       'note': note,
       'tracked_by': AppSession.instance.currentStaffName ?? 'Supervisor',
     });
-    // Item 6: also feed the CUSTOMER-facing timeline. Two tables record
-    // this event today and that overlap is deliberate for now, not an
-    // oversight: `order_tracking` is the internal audit trail (tracked_by
-    // is a staff *name* string) and predates this work, while
-    // `order_status_history` is what the public get_order_tracking() RPC
-    // reads and carries a real changed_by uuid. Consolidating them means
-    // rewriting the RPC and backfilling, which is not worth doing in the
-    // same pass that introduces the feature. Logged from here so the two
-    // can't drift.
     await TrackingService.logStatus(
       orderId: widget.orderId!,
       status: newStatus,
@@ -168,7 +189,6 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   Future<void> _startJob() async {
     setState(() => _model.saving = true);
     try {
-      // LEAK_AUDIT.md write-gap fix: matched only on id before.
       await OrdersTable().update(
         data: {'supervisor_status': 'in_progress'},
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
@@ -189,16 +209,25 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
     setState(() => _model.saving = true);
     try {
-      // LEAK_AUDIT.md write-gap fix: matched only on id before.
+      final teamIds = _model.selectedTeamIds.toList();
       await OrdersTable().update(
         data: {
-          'job_team': _model.selectedTeamIds.toList(),
+          'job_team': teamIds,
           'job_start_time': DateTime.now().toIso8601String(),
         },
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
       );
+      // Session 2, Part A: propagate to order_staff on every job_team
+      // write — the fix for the P&L Staff Salary under-report.
+      await CrewSyncService.syncFromJobTeam(
+          orderId: widget.orderId!, teamIds: teamIds);
       await _changeStatus('transit', '📦 Shifting started — team assigned');
       _model.order!.status = 'transit';
+      // Refresh crew from order_staff now that the sync has run.
+      final crewRows = await OrderStaffTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
+      );
+      _model.crew = crewRows;
       _model.step = SupervisorJobStep.shifting;
     } catch (e) {
       _showError(e);
@@ -207,7 +236,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
   }
 
-  Future<void> _addExpense() async {
+  /// Session 2 B2 correction: field expenses append to
+  /// `orders.field_expenses` (migration 007 shape) instead of the
+  /// `expenses` table the previous build of this page used.
+  Future<void> _addFieldExpense() async {
     final amount = double.tryParse(_model.expenseAmountController!.text);
     if (amount == null || amount <= 0) {
       _showError('Enter a valid expense amount.');
@@ -215,19 +247,20 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
     setState(() => _model.saving = true);
     try {
-      final row = await ExpensesTable().insert({
-        ...OrgScope.stamp(),
-        'order_id': widget.orderId,
-        'category': _model.expenseCategory,
+      final entry = {
+        'type': _model.expenseType,
         'amount': amount,
-        'description': _model.expenseDescController!.text.isEmpty
-            ? _model.expenseCategory
-            : _model.expenseDescController!.text,
-        'expense_date': DateTime.now().toIso8601String().split('T').first,
-      });
-      _model.jobExpenses = [..._model.jobExpenses, row];
+        'note': _model.expenseNoteController!.text.trim(),
+        'at': DateTime.now().toIso8601String().split('T').first,
+      };
+      final updated = [..._model.fieldExpenses, entry];
+      await OrdersTable().update(
+        data: {'field_expenses': updated},
+        matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
+      );
+      _model.fieldExpenses = updated;
       _model.expenseAmountController!.clear();
-      _model.expenseDescController!.clear();
+      _model.expenseNoteController!.clear();
     } catch (e) {
       _showError(e);
     } finally {
@@ -235,15 +268,75 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
   }
 
+  /// Session 2 B3: reads/writes `vehicle_trips`, not `orders`. Creates the
+  /// row on first save (with whichever of km_start/km_end was entered);
+  /// updates it on subsequent saves.
+  Future<void> _saveOdometer() async {
+    final kmStart = double.tryParse(_model.kmStartController!.text.trim());
+    final kmEnd = double.tryParse(_model.kmEndController!.text.trim());
+    if (kmStart == null && kmEnd == null) return;
+    setState(() => _model.saving = true);
+    try {
+      final orgId = OrgScope.currentOrgId!;
+      final existing = _model.vehicleTrip;
+      final data = {
+        if (kmStart != null) 'km_start': kmStart,
+        if (kmEnd != null) 'km_end': kmEnd,
+      };
+      if (existing?.id != null) {
+        await SupaFlow.client
+            .from('vehicle_trips')
+            .update(data)
+            .eq('id', existing!.id!);
+      } else {
+        final o = _model.order!;
+        final inserted = await SupaFlow.client
+            .from('vehicle_trips')
+            .insert({
+              ...OrgScope.stamp(orgId: orgId),
+              'order_id': widget.orderId,
+              'vehicle_no': o.vehicleNo,
+              'driver_name': o.driverName,
+              'trip_date': DateTime.now().toIso8601String().split('T').first,
+              'trip_type': 'order',
+              ...data,
+            })
+            .select()
+            .single();
+        _model.vehicleTrip = VehicleTripsTable().createRow(inserted);
+      }
+      // Re-read so kmStart/kmEnd reflect exactly what's persisted.
+      final rows = await VehicleTripsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
+      );
+      if (rows.isNotEmpty) _model.vehicleTrip = rows.first;
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Odometer saved.')));
+      }
+    } catch (e) {
+      _showError(e);
+    } finally {
+      if (mounted) setState(() => _model.saving = false);
+    }
+  }
+
+  /// B3's gate: disabled while an opening reading exists but no closing
+  /// one does. Never blocks when no opening reading was ever captured —
+  /// the vehicle may be third-party.
+  bool get _shiftingCompletionBlocked {
+    final trip = _model.vehicleTrip;
+    if (trip == null) return false;
+    return trip.kmStart != null && trip.kmEnd == null;
+  }
+
   Future<void> _generateOtp() async {
     setState(() => _model.saving = true);
     try {
       final otp = (1000 + Random().nextInt(9000)).toString();
-      // LEAK_AUDIT.md write-gap fix: matched only on id before.
       await OrdersTable().update(
         data: {
           'job_otp': otp,
-          'job_end_time': DateTime.now().toIso8601String(),
           'supervisor_notes': _model.notesController!.text,
         },
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
@@ -258,38 +351,152 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
   }
 
+  /// Session 2 B5 — the full 9-step verified-completion transaction.
   Future<void> _verifyAndComplete() async {
     setState(() => _model.saving = true);
     try {
-      // Re-fetch from the DB rather than trusting only the in-memory OTP —
-      // see the class doc comment for why this differs from the reference
-      // app. LEAK_AUDIT.md leak #8 (Stage 1 fix): matched only on id before.
+      // Re-fetch from the DB rather than trusting only the in-memory OTP.
       final fresh = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId!),
       );
       final dbOtp = fresh.isNotEmpty ? fresh.first.jobOtp : null;
       if (dbOtp == null || _model.enteredOtpController!.text.trim() != dbOtp) {
+        // Step: wrong OTP writes nothing at all.
         setState(() => _model.otpError = true);
         return;
       }
 
-      // LEAK_AUDIT.md write-gap fix: matched only on id before.
+      final orgId = OrgScope.currentOrgId!;
+      final o = _model.order!;
+      final wasDelivered = o.status == 'delivered' || o.status == 'closed';
+      final now = DateTime.now();
+
+      // 1-3: supervisor_status, supervisor_notes, job_end_time.
+      final teamIds = _model.selectedTeamIds.toList();
+      final orderUpdate = <String, dynamic>{
+        'supervisor_status': 'completed_pending',
+        'supervisor_notes': _model.notesController!.text,
+        'job_end_time': now.toIso8601String(),
+        'job_team': teamIds,
+      };
+      // 4: advance to delivered + stamp delivered_at, if not already.
+      if (!wasDelivered) {
+        orderUpdate['status'] = 'delivered';
+        orderUpdate['delivered_at'] = now.toIso8601String();
+      }
       await OrdersTable().update(
-        data: {
-          'supervisor_status': 'completed_pending',
-          'supervisor_notes': _model.notesController!.text,
-          'job_team': _model.selectedTeamIds.toList(),
-        },
+        data: orderUpdate,
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
       );
-      if (_model.order!.status != 'delivered' &&
-          _model.order!.status != 'closed') {
+      await CrewSyncService.syncFromJobTeam(
+          orderId: widget.orderId!, teamIds: teamIds);
+
+      // 5: order_status_history (+ legacy order_tracking, same call site
+      // as the rest of the app) — only fire the status-change side once.
+      if (!wasDelivered) {
         await _changeStatus(
             'delivered', '🎉 Job completed by supervisor, OTP confirmed');
+      } else {
+        await TrackingService.logStatus(
+          orderId: widget.orderId!,
+          status: 'delivered',
+          note: 'Completed by supervisor, OTP verified',
+        );
       }
+
+      // 6: pod_records. Photo capture and GPS coordinates are left null —
+      // no Storage bucket is confirmed for POD photos and no location
+      // package is in pubspec.yaml (this app's environment rules warn
+      // against casually adding one — pinned Flutter SDK, real version
+      // risk elsewhere in the app). Flagged in the session report rather
+      // than guessed at.
+      String? lrId;
+      try {
+        final lr = await SupaFlow.client
+            .from('lr_register')
+            .select('id')
+            .eq('order_id', widget.orderId!)
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
+        lrId = lr?['id'] as String?;
+      } catch (_) {}
+      final packagesDelivered =
+          int.tryParse(_model.packagesDeliveredController!.text.trim()) ?? 0;
+      final packagesShort =
+          int.tryParse(_model.packagesShortController!.text.trim()) ?? 0;
+      await SupaFlow.client.from('pod_records').insert({
+        'org_id': orgId,
+        'order_id': widget.orderId,
+        if (lrId != null) 'lr_id': lrId,
+        'otp_verified': true,
+        'delivered_at': now.toIso8601String(),
+        'captured_by': AppSession.instance.currentStaffName ?? 'Supervisor',
+        if (_model.receivedByNameController!.text.trim().isNotEmpty)
+          'received_by_name': _model.receivedByNameController!.text.trim(),
+        if (_model.receivedByPhoneController!.text.trim().isNotEmpty)
+          'received_by_phone': _model.receivedByPhoneController!.text.trim(),
+        'relationship': _model.relationship,
+        'packages_delivered': packagesDelivered,
+        'packages_short': packagesShort,
+        'damage_noted': _model.damageNoted,
+        if (_model.damageNoted)
+          'damage_description': _model.damageDescriptionController!.text.trim(),
+      });
+
+      // 7: mark attendance present for each crew member for today, if not
+      // already marked.
+      final today = now.toIso8601String().split('T').first;
+      for (final c in _model.crew) {
+        if (c.staffId == null) continue;
+        try {
+          final already = await SupaFlow.client
+              .from('attendance')
+              .select('id')
+              .eq('org_id', orgId)
+              .eq('staff_id', c.staffId!)
+              .eq('attendance_date', today)
+              .maybeSingle();
+          if (already != null) continue;
+          await SupaFlow.client.from('attendance').insert({
+            'org_id': orgId,
+            'staff_id': c.staffId,
+            'attendance_date': today,
+            'status': 'present',
+            'marked_by': AppSession.instance.currentStaffName ?? 'Supervisor',
+          });
+        } catch (_) {
+          // One crew member's attendance failing to write must not abort
+          // the completion transaction for everyone else.
+        }
+      }
+
+      // 8: audit_log.
+      await AuditLogService.log(
+        entityType: 'orders',
+        entityId: widget.orderId!,
+        action: 'supervisor_completed',
+        oldValue: {'status': o.status, 'supervisor_status': o.supervisorStatus},
+        newValue: {
+          'status': orderUpdate['status'] ?? o.status,
+          'supervisor_status': 'completed_pending',
+        },
+        changedFields: [
+          'supervisor_status',
+          'supervisor_notes',
+          'job_end_time',
+          'job_team',
+          if (!wasDelivered) ...['status', 'delivered_at'],
+        ],
+      );
+
       _model.order!.supervisorStatus = 'completed_pending';
       _model.step = SupervisorJobStep.done;
       _model.otpError = false;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('🎉 Job complete! Awaiting owner approval.')));
+      }
     } catch (e) {
       _showError(e);
     } finally {
@@ -356,13 +563,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
 
   Widget _orderSummaryCard(BuildContext context) {
     final o = _model.order!;
-    // Privacy rule: once the job is completed, a supervisor no longer needs
-    // the customer's identity — mask the name (and never surface the phone
-    // here). Prevents post-job contact / lead poaching.
     final completed = o.status == 'delivered' ||
         o.status == 'closed' ||
         o.supervisorStatus == 'completed_pending' ||
-        o.supervisorStatus == 'settled';
+        o.supervisorStatus == 'approved';
     final hideCustomer =
         completed && AppSession.instance.isSupervisorSession;
     return Container(
@@ -384,6 +588,14 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               style: FlutterFlowTheme.of(context).bodySmall.override(
                   font: GoogleFonts.inter(),
                   color: FlutterFlowTheme.of(context).secondaryText)),
+          const SizedBox(height: 4),
+          if ((o.vehicleNo ?? '').isNotEmpty || (o.driverName ?? '').isNotEmpty)
+            Text(
+                'Vehicle: ${o.vehicleNo ?? '—'}'
+                '${(o.driverName ?? '').isEmpty ? '' : ' · ${o.driverName}'}',
+                style: FlutterFlowTheme.of(context).bodySmall.override(
+                    font: GoogleFonts.inter(),
+                    color: FlutterFlowTheme.of(context).secondaryText)),
           const SizedBox(height: 8),
           Text('Status: ${o.status ?? '—'} · Supervisor: ${o.supervisorStatus ?? 'not started'}',
               style: FlutterFlowTheme.of(context).bodySmall.override(
@@ -523,113 +735,224 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     );
   }
 
-  Widget _shiftingCard(BuildContext context) {
-    final totalExpenses =
-        _model.jobExpenses.fold(0.0, (s, e) => s + (e.amount ?? 0));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: FlutterFlowTheme.of(context).secondaryBackground,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Job Expenses', style: FlutterFlowTheme.of(context).titleSmall),
-              const SizedBox(height: 8),
-              ..._model.jobExpenses.map((e) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('${e.category} — ${e.description ?? ''}',
-                            style: FlutterFlowTheme.of(context).bodySmall),
-                        Text('₹${(e.amount ?? 0).toStringAsFixed(0)}',
-                            style: FlutterFlowTheme.of(context).bodySmall),
-                      ],
+  Widget _crewCard(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Crew', style: theme.titleSmall),
+          const SizedBox(height: 6),
+          if (_model.crew.isEmpty)
+            Text('No crew on record for this order yet.',
+                style: theme.bodySmall.override(
+                    font: GoogleFonts.inter(), color: theme.secondaryText))
+          else
+            ..._model.crew.map((c) {
+              final s = _model.staffList
+                  .where((s) => s.id == c.staffId)
+                  .firstOrNull;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text('• ${s?.name ?? 'Staff'}',
+                    style: theme.bodySmall
+                        .override(font: GoogleFonts.inter())),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Widget _fieldExpensesCard(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final total = _model.fieldExpenses.fold<double>(
+        0, (s, e) => s + (num.tryParse('${e['amount']}') ?? 0));
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Field Expenses', style: theme.titleSmall),
+          const SizedBox(height: 8),
+          ..._model.fieldExpenses.map((e) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                          '${e['type']}${(e['note'] ?? '').toString().isEmpty ? '' : ' — ${e['note']}'}',
+                          style: theme.bodySmall
+                              .override(font: GoogleFonts.inter())),
                     ),
-                  )),
-              if (_model.jobExpenses.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text('Total: ₹${totalExpenses.toStringAsFixed(0)}',
-                      style: FlutterFlowTheme.of(context).bodyMedium.override(
-                          font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+                    Text('₹${(num.tryParse('${e['amount']}') ?? 0).toStringAsFixed(0)}',
+                        style: theme.bodySmall),
+                  ],
                 ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _model.expenseCategory,
-                      items: kJobExpenseCategories
-                          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      onChanged: (v) =>
-                          setState(() => _model.expenseCategory = v ?? 'Fuel'),
-                      decoration: const InputDecoration(labelText: 'Category'),
-                    ),
-                  ),
-                ],
+              )),
+          if (_model.fieldExpenses.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text('Total: ₹${total.toStringAsFixed(0)}',
+                  style: theme.bodyMedium.override(
+                      font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+            ),
+          const SizedBox(height: 8),
+          // 6 categories, not the master brief's referenced 12 — that
+          // document (§6.3) wasn't available in this session; flagged in
+          // the report rather than inventing 6 more.
+          DropdownButtonFormField<String>(
+            initialValue: _model.expenseType,
+            items: kJobExpenseCategories
+                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                .toList(),
+            onChanged: (v) => setState(() => _model.expenseType = v ?? 'Fuel'),
+            decoration: const InputDecoration(labelText: 'Type'),
+          ),
+          TextField(
+            controller: _model.expenseAmountController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Amount (₹)'),
+          ),
+          TextField(
+            controller: _model.expenseNoteController,
+            decoration: const InputDecoration(labelText: 'Note (optional)'),
+          ),
+          const SizedBox(height: 8),
+          FFButtonWidget(
+            onPressed: _model.saving ? null : _addFieldExpense,
+            text: 'Add Expense',
+            options: FFButtonOptions(
+              width: double.infinity,
+              color: theme.secondaryBackground,
+              textStyle: TextStyle(color: theme.primary),
+              borderSide: BorderSide(color: theme.primary),
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _odometerCard(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Vehicle Odometer', style: theme.titleSmall),
+          const SizedBox(height: 4),
+          Text('Optional — leave blank for a third-party vehicle.',
+              style: theme.bodySmall.override(
+                  font: GoogleFonts.inter(), color: theme.secondaryText)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _model.kmStartController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Opening KM'),
+                ),
               ),
-              TextField(
-                controller: _model.expenseAmountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Amount (₹)'),
-              ),
-              TextField(
-                controller: _model.expenseDescController,
-                decoration: const InputDecoration(labelText: 'Note (optional)'),
-              ),
-              const SizedBox(height: 8),
-              FFButtonWidget(
-                onPressed: _model.saving ? null : _addExpense,
-                text: 'Add Expense',
-                options: FFButtonOptions(
-                  width: double.infinity,
-                  color: FlutterFlowTheme.of(context).secondaryBackground,
-                  textStyle:
-                      TextStyle(color: FlutterFlowTheme.of(context).primary),
-                  borderSide:
-                      BorderSide(color: FlutterFlowTheme.of(context).primary),
-                  borderRadius: BorderRadius.circular(8.0),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _model.kmEndController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Closing KM'),
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          FFButtonWidget(
+            onPressed: _model.saving ? null : _saveOdometer,
+            text: 'Save Odometer',
+            options: FFButtonOptions(
+              width: double.infinity,
+              color: theme.secondaryBackground,
+              textStyle: TextStyle(color: theme.primary),
+              borderSide: BorderSide(color: theme.primary),
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shiftingCard(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _crewCard(context),
+        const SizedBox(height: 16),
+        _fieldExpensesCard(context),
+        const SizedBox(height: 16),
+        _odometerCard(context),
         const SizedBox(height: 16),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: FlutterFlowTheme.of(context).secondaryBackground,
+            color: theme.secondaryBackground,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Notes', style: FlutterFlowTheme.of(context).titleSmall),
+              Text('Notes', style: theme.titleSmall),
               TextField(
                 controller: _model.notesController,
                 maxLines: 3,
                 decoration: const InputDecoration(hintText: 'Any notes for the office…'),
               ),
               const SizedBox(height: 8),
+              if (_shiftingCompletionBlocked)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '⚠ Closing KM is required before completion — an opening '
+                    'reading was recorded for this vehicle.',
+                    style: TextStyle(
+                        color: theme.error,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
               FFButtonWidget(
-                onPressed: () =>
-                    setState(() => _model.step = SupervisorJobStep.completing),
-                text: 'Ready to Complete',
+                onPressed: _shiftingCompletionBlocked
+                    ? null
+                    : () => setState(
+                        () => _model.step = SupervisorJobStep.completing),
+                text: '🏁 Shifting Completed — Get OTP',
                 options: FFButtonOptions(
                   width: double.infinity,
-                  color: FlutterFlowTheme.of(context).primary,
-                  textStyle: TextStyle(
-                      color: FlutterFlowTheme.of(context).primaryBackground),
+                  color: theme.primary,
+                  textStyle: TextStyle(color: theme.primaryBackground),
                   borderRadius: BorderRadius.circular(8.0),
+                  disabledColor: theme.alternate,
                 ),
               ),
             ],
@@ -639,32 +962,105 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     );
   }
 
+  Color _otpFieldColor(FlutterFlowTheme theme) {
+    if (_model.otpError) return theme.error;
+    if ((_model.enteredOtpController!.text).length == 4) return theme.success;
+    return theme.alternate;
+  }
+
+  Widget _podCaptureFields(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Text('Proof of Delivery', style: theme.titleSmall),
+        const SizedBox(height: 4),
+        Text('Optional, but recommended.',
+            style: theme.bodySmall.override(
+                font: GoogleFonts.inter(), color: theme.secondaryText)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _model.receivedByNameController,
+          decoration: const InputDecoration(labelText: 'Received by (name)'),
+        ),
+        TextField(
+          controller: _model.receivedByPhoneController,
+          keyboardType: TextInputType.phone,
+          decoration: const InputDecoration(labelText: 'Received by (phone)'),
+        ),
+        DropdownButtonFormField<String>(
+          initialValue: _model.relationship,
+          items: kRelationshipOptions
+              .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+              .toList(),
+          onChanged: (v) => setState(() => _model.relationship = v ?? 'self'),
+          decoration: const InputDecoration(labelText: 'Relationship to customer'),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _model.packagesDeliveredController,
+                keyboardType: TextInputType.number,
+                decoration:
+                    const InputDecoration(labelText: 'Packages delivered'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: _model.packagesShortController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Packages short'),
+              ),
+            ),
+          ],
+        ),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _model.damageNoted,
+          onChanged: (v) => setState(() => _model.damageNoted = v ?? false),
+          title: const Text('Damage noted'),
+        ),
+        if (_model.damageNoted)
+          TextField(
+            controller: _model.damageDescriptionController,
+            decoration: const InputDecoration(labelText: 'Damage description'),
+          ),
+      ],
+    );
+  }
+
   Widget _otpCard(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
+        color: theme.secondaryBackground,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Confirm with Customer', style: FlutterFlowTheme.of(context).titleSmall),
+          Text('Confirm with Customer', style: theme.titleSmall),
           const SizedBox(height: 4),
           Text(
             'Show this code to the customer and ask them to confirm the job is done, then type it back in below.',
-            style: FlutterFlowTheme.of(context).bodySmall.override(
-                font: GoogleFonts.inter(),
-                color: FlutterFlowTheme.of(context).secondaryText),
+            style: theme.bodySmall.override(
+                font: GoogleFonts.inter(), color: theme.secondaryText),
           ),
           const SizedBox(height: 12),
           Center(
             child: Text(
               _model.displayedOtp ?? '----',
-              style: FlutterFlowTheme.of(context).headlineMedium.override(
-                  font: GoogleFonts.interTight(
-                      fontWeight: FontWeight.w700, letterSpacing: 8.0)),
+              style: GoogleFonts.robotoMono(
+                fontSize: 48,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 8.0,
+                color: theme.primary,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -672,20 +1068,28 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
             controller: _model.enteredOtpController,
             keyboardType: TextInputType.number,
             maxLength: 4,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: GoogleFonts.robotoMono(fontSize: 20, letterSpacing: 4),
             decoration: InputDecoration(
               labelText: 'Enter code',
-              errorText: _model.otpError ? 'Code does not match' : null,
+              errorText: _model.otpError ? '❌ Wrong OTP. Try again.' : null,
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: _otpFieldColor(theme), width: 1.5),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: _otpFieldColor(theme), width: 2),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
+          _podCaptureFields(context),
+          const SizedBox(height: 12),
           FFButtonWidget(
             onPressed: _model.saving ? null : _verifyAndComplete,
             text: _model.saving ? 'Verifying…' : 'Verify & Complete',
             options: FFButtonOptions(
               width: double.infinity,
-              color: FlutterFlowTheme.of(context).primary,
-              textStyle:
-                  TextStyle(color: FlutterFlowTheme.of(context).primaryBackground),
+              color: theme.primary,
+              textStyle: TextStyle(color: theme.primaryBackground),
               borderRadius: BorderRadius.circular(8.0),
             ),
           ),
@@ -695,29 +1099,46 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   }
 
   Widget _doneCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.celebration, color: FlutterFlowTheme.of(context).primary, size: 40),
-          const SizedBox(height: 8),
-          Text('Job complete!', style: FlutterFlowTheme.of(context).titleMedium),
-          const SizedBox(height: 4),
-          Text(
-            _model.order?.supervisorStatus == 'approved'
-                ? 'Approved by the office.'
-                : 'Awaiting owner approval.',
-            style: FlutterFlowTheme.of(context).bodySmall.override(
-                font: GoogleFonts.inter(),
-                color: FlutterFlowTheme.of(context).secondaryText),
+    final theme = FlutterFlowTheme.of(context);
+    final ownerClosed = _model.order?.status == 'closed';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: theme.secondaryBackground,
+            borderRadius: BorderRadius.circular(12),
           ),
+          child: Column(
+            children: [
+              Icon(Icons.celebration, color: theme.primary, size: 40),
+              const SizedBox(height: 8),
+              Text(
+                  _model.order?.supervisorStatus == 'approved'
+                      ? 'Approved by the office.'
+                      : '⏳ Awaiting owner approval.',
+                  style: theme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                'Odometer and the completion code are locked now.'
+                '${ownerClosed ? '' : ' Field expenses stay open until the order is closed.'}',
+                textAlign: TextAlign.center,
+                style: theme.bodySmall.override(
+                    font: GoogleFonts.inter(), color: theme.secondaryText),
+              ),
+            ],
+          ),
+        ),
+        // B6: field expenses stay editable until the owner closes the
+        // order — everything else on this page (odometer, OTP) is
+        // implicitly locked simply by the step machine landing here.
+        if (!ownerClosed) ...[
+          const SizedBox(height: 16),
+          _fieldExpensesCard(context),
         ],
-      ),
+      ],
     );
   }
 }
