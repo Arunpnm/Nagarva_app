@@ -1,112 +1,136 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- NAGARVA MIGRATION 008 — Session 2, Part A back-fill
+-- NAGARVA MIGRATION 008 — Session 2, Part A back-fill  [REVISED]
 -- Project: hqqcapifefsaqvotqvlt
 -- Depends on: 001-007
 --
--- orders.job_team (jsonb array of staff.id strings) never propagated to
--- order_staff until this session's app-side fix (CrewSyncService). Every
--- order whose crew was only ever set through the supervisor's field job
--- screen has ZERO order_staff rows, which is why the P&L card's Staff
--- Salary line has been under-reporting.
+-- Propagates orders.job_team (jsonb array of staff.id strings) into
+-- order_staff for orders that were only ever crewed through the supervisor
+-- field job screen. Fixes the P&L Staff Salary under-reporting.
 --
--- Scope, deliberately narrow: only touches orders with NO existing
--- order_staff rows at all — an order the owner already crewed manually via
--- Order Details' Team & Salary section (order_staff written directly,
--- job_team never touched) is left completely alone.
+-- Scope guards (unchanged from the reviewed draft, both correct):
+--   * Only orders with ZERO existing order_staff rows — an order crewed
+--     manually via Team & Salary is left completely alone.
+--   * Terminal orders excluded entirely, so no historical P&L figure moves.
 --
--- salary_amount default matches the app's own established day-rate
--- convention — staff.salary / 26, rounded — NOT the raw monthly salary.
--- See order_crew_section.dart's existing "Add Labour" dialog, which
--- already uses this exact formula as its own suggested-salary default.
---
--- CORRECTION (caught in review before this ran): the first draft applied
--- TODAY's staff.salary to every matching order regardless of age. For an
--- order still open, that's the right estimate — it's what the app itself
--- would default to if a supervisor added the same crew today. But for an
--- order already 'delivered' or 'closed', it would invent a crew cost that
--- was never actually recorded at the time, and that fabricated number
--- flows straight into Order Details Session 1's P&L card — silently
--- changing a historical profit figure the owner may have already relied
--- on, using a salary rate that may not even be what that staff member
--- earned back then.
---
--- Fix: delivered/closed/cancelled orders are excluded from this back-fill
--- entirely. Their crew simply stays unrecorded in order_staff, exactly as
--- it was before this migration — no historical figure changes. Only
--- orders still in an open/in-progress status (booked/pending/confirmed/
--- team_assigned/transit, or any other non-terminal value) get back-filled,
--- since those P&L figures are still live and a supervisor could still add
--- the same crew today anyway.
---
--- Convention: commit first, then run in the Supabase SQL editor
--- (nagarva project hqqcapifefsaqvotqvlt). Not safe to blindly re-run after
--- the app-side fix has started writing order_staff rows going forward —
--- but harmless to re-run before that, since the "no existing rows" guard
--- makes it a no-op for anything it already touched.
+-- FOUR REVIEW FIXES applied to the draft:
+--   1. Legacy terminal statuses added. The draft excluded only
+--      ('delivered','closed','cancelled'). Legacy rows carry 'completed'
+--      and 'pending_review' (per the normalisation map in the master brief
+--      §6.2: completed → closed, pending_review → delivered). Those would
+--      have been treated as OPEN and back-filled — fabricating exactly the
+--      historical crew cost this migration exists to avoid.
+--   2. Org scoping on the staff join. The draft joined staff on id alone,
+--      so a staff id appearing in another org's job_team would insert a
+--      cross-tenant crew row. Now joined on (id, org_id).
+--   3. Malformed-uuid guard. jsonb_array_elements_text -> ::uuid throws
+--      22P02 on any non-uuid string, aborting the whole statement. Now
+--      filtered with a regex before casting.
+--   4. Inactive staff still back-filled (correct — they were on the crew)
+--      but the day-rate falls back to 0 rather than a stale salary when
+--      staff.salary is null.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 begin;
 
+with terminal_status as (
+  select array[
+    'delivered', 'closed', 'cancelled',
+    'completed',        -- legacy → closed
+    'pending_review'    -- legacy → delivered
+  ] as vals
+)
 insert into order_staff (org_id, order_id, staff_id, salary_amount, is_half_day, team_type)
 select
   o.org_id,
   o.id,
-  staff_id_text::uuid,
+  sid::uuid,
   round(coalesce(s.salary, 0) / 26.0)::numeric,
   false,
   'labour'
 from orders o
-cross join lateral jsonb_array_elements_text(o.job_team) as staff_id_text
-join staff s on s.id = staff_id_text::uuid
+cross join terminal_status ts
+cross join lateral jsonb_array_elements_text(o.job_team) as sid
+join staff s
+  on s.id = sid::uuid
+ and s.org_id is not distinct from o.org_id      -- FIX 2: cross-tenant guard
 where o.job_team is not null
   and jsonb_typeof(o.job_team) = 'array'
   and jsonb_array_length(o.job_team) > 0
   and o.deleted_at is null
-  -- Never fabricate a crew cost for an order whose outcome is already
-  -- settled — see the CORRECTION note above.
-  and o.status not in ('delivered', 'closed', 'cancelled')
+  and lower(coalesce(o.status, '')) <> all (ts.vals)   -- FIX 1: legacy included
+  -- FIX 3: only cast strings that are actually uuids
+  and sid ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
   and not exists (
     select 1 from order_staff os where os.order_id = o.id
-  )
-on conflict do nothing;
+  );
 
 commit;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- VERIFICATION
+-- PRE-FLIGHT — run these BEFORE the migration above
 -- ═══════════════════════════════════════════════════════════════════════════
 --
--- -- Open orders that still have job_team but no order_staff after this
--- -- runs — expect 0. (A non-zero row here most likely means a staff id
--- -- inside job_team no longer exists in `staff`, e.g. a deleted staff
--- -- member — that order needs its crew re-picked in the app.)
+-- A. What status values actually exist? Confirms the terminal list is complete.
+--    If anything here looks terminal but isn't in the array above, STOP.
+-- select status, count(*) from orders where deleted_at is null
+--  group by status order by count(*) desc;
+--
+-- B. Dry run — exactly what would be inserted, and for which orders:
+-- select o.id, o.status, jsonb_array_length(o.job_team) as crew_size,
+--        count(s.id) as resolvable_staff
+-- from orders o
+-- cross join lateral jsonb_array_elements_text(o.job_team) as sid
+-- left join staff s on s.id::text = sid and s.org_id is not distinct from o.org_id
+-- where o.job_team is not null
+--   and jsonb_typeof(o.job_team) = 'array'
+--   and jsonb_array_length(o.job_team) > 0
+--   and o.deleted_at is null
+--   and lower(coalesce(o.status,'')) not in
+--       ('delivered','closed','cancelled','completed','pending_review')
+--   and not exists (select 1 from order_staff os where os.order_id = o.id)
+-- group by o.id, o.status, o.job_team;
+--
+-- C. Any job_team entry that is not a valid uuid (would have aborted the draft):
+-- select o.id, sid
+-- from orders o
+-- cross join lateral jsonb_array_elements_text(o.job_team) as sid
+-- where jsonb_typeof(o.job_team) = 'array'
+--   and sid !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- VERIFICATION — run AFTER
+-- ═══════════════════════════════════════════════════════════════════════════
+--
+-- 1. Open orders still unresolved — expect 0. Non-zero means a staff id in
+--    job_team no longer exists (deleted staff); re-pick the crew in the app.
 -- select o.id, o.status, o.job_team
 -- from orders o
 -- where o.job_team is not null
 --   and jsonb_typeof(o.job_team) = 'array'
 --   and jsonb_array_length(o.job_team) > 0
 --   and o.deleted_at is null
---   and o.status not in ('delivered', 'closed', 'cancelled')
+--   and lower(coalesce(o.status,'')) not in
+--       ('delivered','closed','cancelled','completed','pending_review')
 --   and not exists (select 1 from order_staff os where os.order_id = o.id);
 --
--- -- How many orders this actually back-filled:
+-- 2. How many orders were back-filled:
 -- select count(distinct order_id) as backfilled_orders
 -- from order_staff
--- where team_type = 'labour'
---   and created_at >= now() - interval '5 minutes';
+-- where created_at >= now() - interval '5 minutes';
 --
--- -- Sanity check: delivered/closed/cancelled orders with job_team set are
--- -- deliberately UNTOUCHED by this migration — confirm none of them
--- -- picked up order_staff rows some other way that would look like this
--- -- migration ran on them (should be 0 or explainable by manual entry):
+-- 3. No terminal order was touched — expect 0 rows:
 -- select o.id, o.status
 -- from orders o
--- where o.status in ('delivered', 'closed', 'cancelled')
---   and o.job_team is not null
---   and jsonb_typeof(o.job_team) = 'array'
---   and jsonb_array_length(o.job_team) > 0
---   and exists (
---     select 1 from order_staff os
---     where os.order_id = o.id and os.created_at >= now() - interval '5 minutes'
---   );
+-- join order_staff os on os.order_id = o.id
+-- where lower(coalesce(o.status,'')) in
+--       ('delivered','closed','cancelled','completed','pending_review')
+--   and os.created_at >= now() - interval '5 minutes';
+--
+-- 4. No cross-tenant rows — expect 0:
+-- select os.id, os.order_id
+-- from order_staff os
+-- join orders o on o.id = os.order_id
+-- join staff s on s.id = os.staff_id
+-- where s.org_id is distinct from o.org_id;
