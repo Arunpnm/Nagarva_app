@@ -419,6 +419,45 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **2 Aug 2026 (last), Awaiting Approval queue — closes the supervisor
+  OTP workflow's dead-end.** Found while answering a status-vocabulary
+  question (see the entry below): the supervisor OTP flow set
+  `supervisor_status = 'completed_pending'`, but `'approved'` was read in
+  3 places and **written in 0**, and the owner had no screen listing
+  finished-but-unclosed jobs. Arun's call on shape: a **discovery list,
+  not a new workflow** — `🔒 Close Order` on Order Details (Session 1,
+  owner-only, stamps `closed_at`) already IS the approval action, so no
+  second approve button was built.
+  - **New 4th section on OperationsPage, above Active Shifting**:
+    "Awaiting Approval", `supervisor_status = 'completed_pending'` and
+    status not closed/cancelled. Card carries order id, customer, route,
+    supervisor name, `job_end_time` and **balance due**. Hidden entirely
+    when empty. Tapping opens Order Details, where the owner reviews the
+    P&L and closes. Placed on Operations rather than HomePage per Arun:
+    it's a work queue sitting next to the other order-state lists, and
+    the page is already owner/manager-gated; HomePage is for at-a-glance
+    numbers.
+  - **Balance due deliberately uses Close Order's own formula**
+    (`quote_total` + non-cancelled addons − `paid_total`), NOT
+    QuickPaymentSection's `amount`/`advance_paid` one. The point of
+    showing it in the queue is that it matches the number Close Order
+    hard-warns about, so the owner can chase payment first instead of
+    being surprised at the dialog. If those two formulas are ever
+    reconciled, reconcile this with `_markComplete`.
+  - **Close Order now also writes `supervisor_status = 'approved'`** in
+    the same update as `status`/`closed_at`. This is what actually closes
+    the loop — it gives `'approved'` its only writer in the app, so the
+    three existing read sites can finally be true. Also refreshes the
+    badge so the job drops out of the queue immediately.
+  - **Badge on the Operations nav item** (`lib/backend/approval_queue.dart`,
+    a `ValueNotifier<int>`; `lib/components/nav_badge.dart`, a generic
+    icon+count widget). Wired into both nav render sites — the sidebar
+    rail and `MobileBottomNav` — and seeded in `NavBarPage.initState` for
+    owner/manager sessions, so a waiting job is visible without opening
+    Operations. The "which nav item gets which count" decision lives at
+    the render sites; `NavBadgeIcon` stays generic. No logout hook needed
+    (see `refresh`'s doc comment for why, and for the circular-import
+    reason it isn't called from `AppSession.clear()`).
 - **2 Aug 2026 (last), OperationsPage status-vocabulary bug.** Arun asked
   for a `grep` of `'in_transit'` across `lib/` after spotting three live
   orders carrying `'transit'`. Found a real bug:
@@ -926,11 +965,10 @@ dsl/edit.dart are useful specs of intended behaviour.
     `orders`/`vehicle_trips` queries), not deliberately removed.
     **Consequence — a live workflow dead-end:** the supervisor OTP flow
     writes `supervisor_status = 'completed_pending'` and My Jobs shows
-    "⏳ Awaiting", but nothing anywhere in `lib/` ever writes `'approved'`
-    (grep: read in 3 places, written in 0). So a supervisor's completed
-    job waits forever for an approval the owner has no UI to give.
-    Rebuilding that section is a real gap, flagged for Arun — not
-    silently rebuilt in a doc-correction pass.
+    "⏳ Awaiting", but nothing anywhere in `lib/` ever wrote `'approved'`
+    (grep at the time: read in 3 places, written in 0). So a supervisor's
+    completed job waited forever for an approval the owner had no UI to
+    give. **Closed the same day — see the entry above.**
   - **OrderDetailPage**: added an "Open Field Job" button (next to
     "Generate Invoice") that navigates to SupervisorJobPage for that
     order.

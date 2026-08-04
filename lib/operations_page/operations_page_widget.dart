@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/approval_queue.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/keyboard_scroll_view.dart';
@@ -17,9 +18,12 @@ export 'operations_page_model.dart';
 /// The FlutterFlow version was pure decoration: hardcoded "TN-01-AB-1234
 /// Suresh (Driver) Chennai → Vellore" cards that never went away no matter
 /// what the real data was. Now driven from real orders and vehicle_trips:
-///   * "Active Shifting" = orders whose status is team_assigned /
-///     accepted / shifting_started / in_transit (the middle of the flow
-///     between booking and delivery)
+///   * "Awaiting Approval" = supervisor_status 'completed_pending', not
+///     yet closed/cancelled — jobs the field team finished that the owner
+///     hasn't closed out. A LIST, not a workflow: the approval action is
+///     `🔒 Close Order` on Order Details, already built in Session 1.
+///   * "Active Shifting" = orders mid-flow between booking and delivery
+///     (see _activeStatuses for which values are real vs. legacy)
 ///   * "Upcoming" = confirmed / booked orders with move_date >= today
 ///   * "Vehicle Trip Log" = last 25 vehicle_trips for the org
 /// Tap any card to open Order Details.
@@ -43,10 +47,16 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   @override
   void onPageRefresh() => _load();
 
+  List<OrdersRow> _awaiting = [];
   List<OrdersRow> _active = [];
   List<OrdersRow> _upcoming = [];
   List<VehicleTripsRow> _trips = [];
   bool _loading = true;
+
+  /// supervisor_id -> staff name, and order_id -> balance due, both only
+  /// populated for the (small) awaiting list.
+  Map<String, String> _supervisorNames = {};
+  Map<String, double> _awaitingBalances = {};
 
   // Statuses this app ACTUALLY writes today (grep the writers before
   // editing this set): 'booked'/'pending' (new_order_page + Duplicate),
@@ -97,6 +107,15 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
       final orders = (results[0] as List).cast<OrdersRow>();
       _trips = (results[1] as List).cast<VehicleTripsRow>();
       final today = DateTime.now();
+      // Filtered from the same already-fetched list rather than a second
+      // query — same filter as ApprovalQueue.awaitingFilter, applied
+      // client-side here because this page has the rows in hand already.
+      _awaiting = orders.where((o) {
+        final st = (o.status ?? '').toLowerCase();
+        return o.supervisorStatus == 'completed_pending' &&
+            st != 'closed' &&
+            st != 'cancelled';
+      }).toList();
       _active = orders
           .where(
               (o) => _activeStatuses.contains((o.status ?? '').toLowerCase()))
@@ -108,9 +127,62 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                       DateTime(today.year, today.month, today.day - 1)) ??
                   false))
           .toList();
+      await _loadAwaitingDetail();
+      ApprovalQueue.instance.pendingCount.value = _awaiting.length;
     } catch (_) {}
     _loading = false;
     if (mounted) setState(() {});
+  }
+
+  /// Supervisor names + balance due for the awaiting cards only. Two
+  /// bounded extra queries (the queue is a work list, not a full table),
+  /// both skipped entirely when nothing is awaiting.
+  Future<void> _loadAwaitingDetail() async {
+    _supervisorNames = {};
+    _awaitingBalances = {};
+    if (_awaiting.isEmpty) return;
+    final orderIds = _awaiting.map((o) => o.id).whereType<String>().toList();
+
+    // Balance due deliberately uses Close Order's OWN formula
+    // (quote_total + non-cancelled addons - paid_total), not the
+    // amount/advance_paid one QuickPaymentSection uses. The whole point of
+    // showing it here is that the owner sees the same number Close Order
+    // will hard-warn about, so the queue can't set up a surprise at the
+    // dialog. If those two formulas are ever reconciled, reconcile this
+    // with _markComplete, not with QuickPaymentSection.
+    final addonTotals = <String, double>{};
+    if (orderIds.isNotEmpty) {
+      try {
+        final addonRows = await OrgScope.read(
+                SupaFlow.client.from('addons').select('order_id,amount,status'))
+            .inFilter('order_id', orderIds)
+            .neq('status', 'cancelled');
+        for (final r in addonRows) {
+          final oid = r['order_id'] as String?;
+          if (oid == null) continue;
+          addonTotals[oid] =
+              (addonTotals[oid] ?? 0) + (num.tryParse('${r['amount']}') ?? 0);
+        }
+      } catch (_) {}
+    }
+    for (final o in _awaiting) {
+      if (o.id == null) continue;
+      final revenueFinal = (o.quoteTotal ?? 0) + (addonTotals[o.id!] ?? 0);
+      _awaitingBalances[o.id!] = revenueFinal - o.paidTotal;
+    }
+
+    final supIds =
+        _awaiting.map((o) => o.supervisorId).whereType<String>().toSet();
+    if (supIds.isNotEmpty) {
+      try {
+        final staffRows = await StaffTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).inFilter('id', supIds.toList()),
+        );
+        for (final s in staffRows) {
+          if (s.id != null) _supervisorNames[s.id!] = s.name;
+        }
+      } catch (_) {}
+    }
   }
 
   Color _statusColor(String st) {
@@ -229,6 +301,97 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     );
   }
 
+  /// Awaiting-approval card. Richer than _orderCard on purpose: this is a
+  /// decision queue, so it carries the three things the owner needs before
+  /// tapping through — who ran the job, when they finished, and what is
+  /// still owed.
+  Widget _approvalCard(OrdersRow o) {
+    final theme = FlutterFlowTheme.of(context);
+    const gold = Color(0xFFE0A82E);
+    final balance = _awaitingBalances[o.id] ?? 0;
+    final supervisor = o.supervisorId == null
+        ? null
+        : _supervisorNames[o.supervisorId!];
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _openOrder(o),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.secondaryBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: gold.withValues(alpha: 0.45)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text('${o.id} · ${o.customer}',
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.interTight(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: theme.primaryText)),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: gold.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('⏳ AWAITING',
+                      style: GoogleFonts.inter(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: gold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}',
+              style:
+                  GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              [
+                'Supervisor: ${supervisor ?? '—'}',
+                if (o.jobEndTime != null)
+                  'Finished ${dateTimeFormat('d MMM, h:mm a', o.jobEndTime)}',
+              ].join('  ·  '),
+              style:
+                  GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Balance due',
+                    style: GoogleFonts.inter(
+                        fontSize: 11.5, color: theme.secondaryText)),
+                Text(
+                  '₹${balance.toStringAsFixed(0)}',
+                  style: GoogleFonts.interTight(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    // Non-zero balance is the thing worth chasing before
+                    // closing — Close Order will hard-warn on exactly this.
+                    color: balance > 0 ? theme.error : theme.success,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _tripCard(VehicleTripsRow t) {
     final theme = FlutterFlowTheme.of(context);
     return Container(
@@ -307,6 +470,15 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Discovery-only queue, above Active Shifting: these
+                      // are finished jobs waiting on the owner. Hidden
+                      // entirely when empty — an always-visible "nothing
+                      // awaiting" header would be noise on the common day.
+                      if (_awaiting.isNotEmpty) ...[
+                        _sectionTitle(
+                            'Awaiting Approval (${_awaiting.length})'),
+                        ..._awaiting.map(_approvalCard),
+                      ],
                       _sectionTitle('Active Shifting (${_active.length})'),
                       if (_active.isEmpty)
                         Text('No jobs currently in progress.',

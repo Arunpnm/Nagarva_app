@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '/app_session.dart';
+import '/backend/approval_queue.dart';
 import '/backend/audit_log_service.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
@@ -535,10 +536,18 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     setState(() => _markingComplete = true);
     try {
       final closedAt = DateTime.now();
+      // Closing IS the approval — there is no separate approve action.
+      // Writing supervisor_status here is what gives 'approved' its only
+      // writer in the app: before this, the supervisor OTP flow set
+      // 'completed_pending' and nothing could ever move it on, so the
+      // three sites that read 'approved' (supervisor_job_page's step
+      // machine and its done-card copy) could never be true. Same update
+      // as status/closed_at so a job can't end up closed-but-unapproved.
       await OrdersTable().update(
         data: {
           'status': 'closed',
           'closed_at': closedAt.toIso8601String(),
+          'supervisor_status': 'approved',
         },
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId),
       );
@@ -546,17 +555,25 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
         entityType: 'orders',
         entityId: widget.orderId,
         action: 'marked_complete',
-        oldValue: {'status': o.status, 'closed_at': null},
+        oldValue: {
+          'status': o.status,
+          'closed_at': null,
+          'supervisor_status': o.supervisorStatus,
+        },
         newValue: {
           'status': 'closed',
           'closed_at': closedAt.toIso8601String(),
+          'supervisor_status': 'approved',
           'balance_at_close': balance,
         },
-        changedFields: const ['status', 'closed_at'],
+        changedFields: const ['status', 'closed_at', 'supervisor_status'],
         reason: balance != 0
             ? 'Closed with non-zero balance (₹${balance.toStringAsFixed(0)})'
             : null,
       );
+      // Drop this job out of the owner's Awaiting Approval queue/badge
+      // without waiting for a full OperationsPage reload.
+      await ApprovalQueue.instance.refresh();
       await TrackingService.logStatus(
         orderId: widget.orderId,
         status: 'closed',

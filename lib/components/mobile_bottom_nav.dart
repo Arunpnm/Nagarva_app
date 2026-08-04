@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '/backend/approval_queue.dart';
+import '/components/nav_badge.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 
 /// Mobile bottom navigation bar (parity brief Part 5a/5b, 27 Jul 2026).
@@ -128,11 +130,26 @@ class _NavItem extends StatelessWidget {
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(
-                item.icon,
-                size: 27,
-                color: selected ? theme.primary : theme.secondaryText,
-              ),
+              // Awaiting-approval count on the Operations destination only
+              // — the nav site owns the "which item gets which count"
+              // decision, NavBadgeIcon stays generic. Renders the plain
+              // icon unchanged for every other destination.
+              child: item.name == 'OperationsPage'
+                  ? ValueListenableBuilder<int>(
+                      valueListenable: ApprovalQueue.instance.pendingCount,
+                      builder: (context, count, _) => NavBadgeIcon(
+                        icon: item.icon,
+                        size: 27,
+                        color:
+                            selected ? theme.primary : theme.secondaryText,
+                        count: count,
+                      ),
+                    )
+                  : Icon(
+                      item.icon,
+                      size: 27,
+                      color: selected ? theme.primary : theme.secondaryText,
+                    ),
             ),
             const SizedBox(height: 2),
             Padding(

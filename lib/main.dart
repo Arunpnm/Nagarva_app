@@ -10,6 +10,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/backend/supabase/supabase.dart';
+import '/backend/approval_queue.dart';
 import '/backend/device_org_binding.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
@@ -18,6 +19,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
 import 'components/coming_soon_page.dart';
 import 'components/mobile_bottom_nav.dart';
+import 'components/nav_badge.dart';
 import 'components/notification_bell.dart';
 import 'nav_items.dart';
 import 'permissions.dart';
@@ -442,6 +444,13 @@ class _NavBarPageState extends State<NavBarPage> {
       final saved = prefs.getBool(_kRailExpandedKey);
       if (saved != null && mounted) safeSetState(() => _railExpanded = saved);
     });
+    // Seed the Operations badge so a job awaiting approval is visible
+    // without having to open Operations first — the whole point of the
+    // badge. Owner/manager only: no other session type has Operations in
+    // its nav set, so the count would render nowhere.
+    if (isOwnerOrManagerSession) {
+      ApprovalQueue.instance.refresh();
+    }
   }
 
   void _setRailExpanded(bool expanded) {
@@ -846,14 +855,30 @@ class _NavBarPageState extends State<NavBarPage> {
                                       ? MainAxisAlignment.start
                                       : MainAxisAlignment.center,
                                   children: [
-                                    Icon(
-                                      item.icon,
-                                      size: 22,
-                                      color: selected
-                                          ? primary
-                                          : FlutterFlowTheme.of(context)
-                                              .secondaryText,
-                                    ),
+                                    if (item.name == 'OperationsPage')
+                                      ValueListenableBuilder<int>(
+                                        valueListenable: ApprovalQueue
+                                            .instance.pendingCount,
+                                        builder: (context, count, _) =>
+                                            NavBadgeIcon(
+                                          icon: item.icon,
+                                          size: 22,
+                                          color: selected
+                                              ? primary
+                                              : FlutterFlowTheme.of(context)
+                                                  .secondaryText,
+                                          count: count,
+                                        ),
+                                      )
+                                    else
+                                      Icon(
+                                        item.icon,
+                                        size: 22,
+                                        color: selected
+                                            ? primary
+                                            : FlutterFlowTheme.of(context)
+                                                .secondaryText,
+                                      ),
                                     if (_railExpanded) ...[
                                       const SizedBox(width: 12),
                                       Expanded(
