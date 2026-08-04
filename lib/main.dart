@@ -461,13 +461,37 @@ class _NavBarPageState extends State<NavBarPage> {
 
   Map<String, Widget> get _tabs {
     if (!isOwnerOrManagerSession) {
-      // Supervisor/field-staff: every destination in their fixed nav set
-      // is a placeholder today except "Team Attendance" (shares copy
-      // with the owner/manager "staff" entry's non-money label, since
-      // neither has a real screen yet either).
+      // Supervisor/field-staff destinations.
+      //
+      // THIS MAP IS THE REAL ROUTER FOR BOTTOM-NAV TABS. NavBarPage renders
+      // `tabs[_currentPageName]` directly; tapping a nav item calls
+      // _selectTab, which only sets _currentPageName. It never goes through
+      // GoRouter, so registering an FFRoute in nav.dart is NOT enough to
+      // make a nav destination reachable — that only covers direct URLs and
+      // context.pushNamed. Session 2 built five real supervisor screens,
+      // registered their routes, and updated nav_items.dart, but left this
+      // map's blanket `for (item in _navItems) -> ComingSoonPage`, so every
+      // one of them still rendered a stub on a real supervisor session.
+      // `flutter analyze` cannot catch that: it's a runtime string-keyed
+      // map lookup, not a compile-time reference.
+      //
+      // Listed explicitly rather than looped, so adding a screen means
+      // editing one obvious line here and a stub is visibly a stub.
       return {
-        for (final item in _navItems)
-          item.name: ComingSoonPage(title: item.label),
+        'SupervisorEntryPage': const SupervisorEntryPageWidget(),
+        'SupervisorJobsListPage': const SupervisorJobsListPageWidget(),
+        'SupervisorTeamPage': const SupervisorTeamPageWidget(),
+        'SupervisorEarningsPage': const SupervisorEarningsPageWidget(),
+        'SupervisorAttendancePage': const SupervisorAttendancePageWidget(),
+        // Genuinely unbuilt — out of Session 2's scope, still a stub.
+        'StaffTeamAttendance': const ComingSoonPage(title: 'Team Attendance'),
+        // Field staff (driver/helper/packer) — their own two destinations
+        // are still unbuilt. Note the supervisor Earnings/Attendance
+        // screens above query by currentStaffId and would work for any
+        // role, but pointing field staff at them is a scope call for Arun,
+        // not something to do silently here.
+        'MyAttComingSoon': const ComingSoonPage(title: 'My Attendance'),
+        'MySalComingSoon': const ComingSoonPage(title: 'My Earnings'),
       };
     }
     return {

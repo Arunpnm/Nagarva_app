@@ -419,6 +419,43 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **2 Aug 2026 (device test), two bugs found on a real supervisor
+  session.** Both were invisible to `flutter analyze` — worth noting,
+  since this session repeatedly used "analyze clean" as the proxy for
+  correctness and it did not catch either.
+  1. **All six supervisor screens rendered ComingSoonPage — Session 2 was
+     entirely unreachable.** `main.dart`'s `_tabs` getter had a blanket
+     `for (item in _navItems) item.name: ComingSoonPage(...)` for any
+     non-owner/manager session. **`_tabs` is the real router for
+     bottom-nav tabs**: `NavBarPage` renders `tabs[_currentPageName]`
+     directly and `_selectTab` only sets that string — it never goes
+     through GoRouter, so the `FFRoute`s Session 2 registered in
+     `nav.dart` only ever covered direct URLs and `context.pushNamed`.
+     Session 2 updated `nav_items.dart`, `nav.dart` and `index.dart` but
+     not this map, so every screen it built still rendered a stub, taking
+     the OTP flow and the approval queue that depends on it with it.
+     Analyze can't catch this: it's a runtime string-keyed map lookup,
+     not a compile-time reference. Fixed by listing the five real
+     supervisor screens explicitly (looping is what hid it);
+     `StaffTeamAttendance` and the two field-staff destinations stay
+     stubs, and are now visibly stubs.
+  2. **P&L card read ₹0 on every directly-booked order.** `quote_total`
+     is only populated for orders created from a quote; an order booked
+     directly carries its value in `amount`. Revenue (Final), Net Profit
+     and the margin all read ₹0 with a red 0% dot while Quick Payment on
+     the same screen showed a real balance. Revenue base is now
+     `quote_total` when non-zero else `amount`. The Quote Amount row
+     still reads `quote_total` (honest ₹0 when there was no quote) with
+     an "Order Amount" row shown only on the fallback path, so the column
+     visibly adds up instead of a total appearing under a ₹0 line.
+     **The same assumption was in two more places and was fixed with
+     it** — `order_crew_section._markComplete` (Close Order's balance
+     warning, which therefore would NOT have warned about a real
+     outstanding balance on a directly-booked order — the one thing that
+     dialog exists to do) and OperationsPage's Awaiting Approval balance,
+     which mirrors it. All three now share the same fallback; if the
+     `quote_total`/`amount` split is ever reconciled properly, those are
+     the three sites.
 - **2 Aug 2026 (last), Awaiting Approval queue — closes the supervisor
   OTP workflow's dead-end.** Found while answering a status-vocabulary
   question (see the entry below): the supervisor OTP flow set

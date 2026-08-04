@@ -469,7 +469,14 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     final o = _order;
     if (o == null || widget.orderId.isEmpty) return;
 
-    double revenueFinal = o.quoteTotal ?? 0;
+    // Same quote_total-vs-amount fallback as the P&L card: quote_total is
+    // only populated for orders created from a quote, so reading it alone
+    // computed balance = -paid_total on every directly-booked order — i.e.
+    // Close Order would NOT hard-warn about a genuinely outstanding
+    // balance, which is the one thing this dialog exists to do.
+    double revenueFinal = (o.quoteTotal ?? 0) != 0
+        ? (o.quoteTotal ?? 0)
+        : (o.amount ?? 0);
     try {
       final addonsRows = await OrgScope.read(
               SupaFlow.client.from('addons').select('amount,status'))

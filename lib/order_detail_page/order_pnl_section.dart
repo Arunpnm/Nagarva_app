@@ -39,6 +39,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   bool _notFound = false;
 
   double _quoteTotal = 0;
+  double _amount = 0;
   double _addonsTotal = 0;
   int _addonsCount = 0;
   double _salaryTotal = 0;
@@ -53,7 +54,22 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   double _porterCommissionPct = 16;
   String? _status;
 
-  double get _revenueFinal => _quoteTotal + _addonsTotal;
+  /// The order's value before add-ons: `quote_total` when it came from a
+  /// quote, otherwise `amount`.
+  ///
+  /// `quote_total` is only populated for orders created from a quote — an
+  /// order booked directly carries its figure in `amount`. Reading
+  /// `quote_total` alone made Revenue (Final), Net Profit and the margin
+  /// all read ₹0 with a red 0% dot on every directly-booked order, while
+  /// Quick Payment on the same screen correctly showed a real balance from
+  /// `amount`. On a directly-booked order both now read `amount`, so that
+  /// contradiction is gone. (A quoted order still bases P&L on
+  /// `quote_total` while Quick Payment's balance uses `amount` — a
+  /// pre-existing divergence, deliberately left alone here since
+  /// `quote_total` is the right revenue basis when a quote exists.)
+  double get _revenueBase => _quoteTotal != 0 ? _quoteTotal : _amount;
+
+  double get _revenueFinal => _revenueBase + _addonsTotal;
 
   double get _porterCommission =>
       _isPorter ? _revenueFinal * (_porterCommissionPct / 100) : 0;
@@ -150,6 +166,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
       if (!mounted) return;
       setState(() {
         _quoteTotal = order.quoteTotal ?? 0;
+        _amount = order.amount ?? 0;
         _isPorter = order.isPorter ?? false;
         _porterCommissionPct = order.porterCommissionPct ?? 16;
         _status = order.status;
@@ -295,7 +312,14 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
             ],
           ),
           const SizedBox(height: 8),
+          // Stays honest at ₹0 when the order never came from a quote,
+          // rather than quietly relabelling `amount` as a quote.
           _row(theme, label: 'Quote Amount', amount: _quoteTotal),
+          // Shown only when falling back, so the column still visibly adds
+          // up to Revenue (Final) instead of a non-zero total appearing
+          // under a ₹0 line and reading like an arithmetic bug.
+          if (_quoteTotal == 0 && _amount != 0)
+            _row(theme, label: 'Order Amount', amount: _amount),
           if (_addonsCount > 0)
             _row(theme, label: 'Add-ons ($_addonsCount)', amount: _addonsTotal),
           const Divider(height: 16),

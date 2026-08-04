@@ -167,7 +167,13 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     }
     for (final o in _awaiting) {
       if (o.id == null) continue;
-      final revenueFinal = (o.quoteTotal ?? 0) + (addonTotals[o.id!] ?? 0);
+      // quote_total falls back to amount for directly-booked orders —
+      // must stay identical to _markComplete's own calculation, or this
+      // queue would show ₹0 due on exactly the orders Close Order is
+      // about to warn on. See order_pnl_section._revenueBase.
+      final base =
+          (o.quoteTotal ?? 0) != 0 ? (o.quoteTotal ?? 0) : (o.amount ?? 0);
+      final revenueFinal = base + (addonTotals[o.id!] ?? 0);
       _awaitingBalances[o.id!] = revenueFinal - o.paidTotal;
     }
 
