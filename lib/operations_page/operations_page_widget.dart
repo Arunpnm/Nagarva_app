@@ -48,8 +48,24 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   List<VehicleTripsRow> _trips = [];
   bool _loading = true;
 
+  // Statuses this app ACTUALLY writes today (grep the writers before
+  // editing this set): 'booked'/'pending' (new_order_page + Duplicate),
+  // 'team_assigned' (order_crew_section._assignSupervisor), 'transit'
+  // (supervisor_job_page._startShifting), 'delivered'
+  // (._verifyAndComplete), 'closed' (Mark Order Complete), 'cancelled'.
+  //
+  // 'transit' was missing here, which is a real bug, not a cosmetic one:
+  // it is the ONE value that means "crew is actively shifting right now",
+  // and it appears in neither this set nor _upcomingStatuses — so an
+  // in-progress job written by the supervisor flow was invisible on this
+  // board entirely, in both sections.
+  //
+  // 'accepted'/'shifting_started'/'in_transit' are reference-app names
+  // that nothing in this codebase writes. Kept (harmless, and they'd
+  // match if legacy rows carry them) but deliberately NOT relied on.
   static const _activeStatuses = {
     'team_assigned',
+    'transit',
     'accepted',
     'shifting_started',
     'in_transit',
@@ -99,6 +115,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
 
   Color _statusColor(String st) {
     switch (st.toLowerCase()) {
+      case 'transit':
       case 'in_transit':
         return const Color(0xFF1565C0);
       case 'shifting_started':

@@ -419,6 +419,37 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **2 Aug 2026 (last), OperationsPage status-vocabulary bug.** Arun asked
+  for a `grep` of `'in_transit'` across `lib/` after spotting three live
+  orders carrying `'transit'`. Found a real bug:
+  `operations_page_widget.dart`'s `_activeStatuses` set matched
+  `{team_assigned, accepted, shifting_started, in_transit}` — of those,
+  **only `team_assigned` is ever actually written by this app**; the other
+  three are reference-app names nothing here writes. The value that really
+  means "crew is shifting right now" is `'transit'`
+  (`supervisor_job_page._startShifting`), and it was in neither
+  `_activeStatuses` nor `_upcomingStatuses` — so an in-progress job was
+  invisible on the Operations board in **both** sections, not merely
+  mis-sorted. Added `'transit'` to the set and to `_statusColor`; left the
+  three dead names in place (harmless, would match legacy rows) but
+  commented as not-relied-upon, with the real writer list recorded inline
+  so the next editor doesn't re-add aspirational values.
+  - **Second half of that request could not be confirmed as asked**: the
+    "master brief §6.2 legacy status normalisation map"
+    (`accepted`→`assigned`, `pending_review`→`delivered`,
+    `completed`→`closed`, `unloading`→`in_transit`) **does not exist in
+    this repo or this codebase**. `nagarva_master_parity_brief.md` is not
+    in the repo at all, and neither `nagarva_parity_brief.md` nor
+    `nagarva_master_build_brief.md` contains such a map. The only status
+    normaliser in `lib/` is `canonicalOrderStage()`
+    (`lib/backend/order_stages.dart`), which is used by exactly ONE caller
+    (`track_page_widget.dart`, the public customer timeline), targets a
+    different 6-value presentation vocabulary, and disagrees with the
+    quoted map on 4 of its 5 pairs (`unloading`→`arrived` not
+    `in_transit`; `accepted` and `pending_review` unhandled→null;
+    `completed`→`completed` not `closed`). Applying that map app-wide is a
+    real architectural change, not a confirmation — flagged for Arun to
+    decide rather than invented from a document not in hand.
 - **2 Aug 2026 (still later), Order Details Tier 2 Session 2 — Supervisor
   OTP Completion Flow** (Claude Code session; migrations 001-007 live).
   Built against `kickoff_tier2_s2_supervisor_otp.md`'s corrections
