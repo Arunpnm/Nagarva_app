@@ -912,15 +912,25 @@ dsl/edit.dart are useful specs of intended behaviour.
     On verified match: `supervisor_status` → 'completed_pending', order
     → 'delivered' (if not already delivered/closed), an `order_tracking`
     row is logged.
-  - **Owner-side approval added to OperationsPage**: a new "Pending
-    Approvals" section at the top (only shown when non-empty) lists
-    orders with `supervisor_status == 'completed_pending'`, each with
-    Approve (→ 'approved' + tracking note) / Reopen (→ 'in_progress' +
-    tracking note, sends the supervisor back to fix entries) buttons —
-    ported from the reference app's Dashboard `pendingApprovals`/
-    `approveEntry`/`reopenEntry` (lines ~1394-1416). Put on OperationsPage
-    rather than HomePage since this app's "field ops" page was the more
-    natural fit and HomePage is already a large wired dashboard.
+  - **~~Owner-side approval added to OperationsPage~~ — NO LONGER TRUE,
+    corrected 2 Aug 2026.** This entry claimed a "Pending Approvals"
+    section listing `supervisor_status == 'completed_pending'` orders
+    with Approve/Reopen buttons. **It is not in the code today**:
+    `operations_page_widget.dart` renders exactly three sections (Active
+    Shifting / Upcoming / Vehicle Trip Log) and contains no reference to
+    `completed_pending` at all. The only trace left is
+    `OperationsPageModel.pendingApprovals` — a declared field the widget
+    never populates or reads, i.e. dead state from the rewrite that
+    dropped the section. Almost certainly lost in the later OperationsPage
+    rewrite (the one that replaced the FlutterFlow decoration with real
+    `orders`/`vehicle_trips` queries), not deliberately removed.
+    **Consequence — a live workflow dead-end:** the supervisor OTP flow
+    writes `supervisor_status = 'completed_pending'` and My Jobs shows
+    "⏳ Awaiting", but nothing anywhere in `lib/` ever writes `'approved'`
+    (grep: read in 3 places, written in 0). So a supervisor's completed
+    job waits forever for an approval the owner has no UI to give.
+    Rebuilding that section is a real gap, flagged for Arun — not
+    silently rebuilt in a doc-correction pass.
   - **OrderDetailPage**: added an "Open Field Job" button (next to
     "Generate Invoice") that navigates to SupervisorJobPage for that
     order.
