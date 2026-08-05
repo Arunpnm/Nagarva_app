@@ -71,22 +71,30 @@ const kOwnerManagerNavItems = <NavItem>[
 /// obvious thing to grep for. Same list.
 const kAllNavItems = kOwnerManagerNavItems;
 
-/// Supervisor nav (Users Kickoff Step 2.2): 5 job-focused destinations +
-/// "staff", fixed "Team Attendance" (never "Salary & Staff" — supervisors
-/// don't get salary.edit). All 5 got real screens in Session 2 (Part B1 +
-/// Part C) — `sup-jobs` (`SupervisorJobsListPage`) is NOT the same thing
-/// as the existing `SupervisorJobPage` (that's the field-side of a
-/// specific job's OTP workflow, opened from an order; this is the "My
-/// Jobs" list view across all of a supervisor's assigned jobs that opens
-/// it). "Team Attendance" (`StaffTeamAttendance`) is still a ComingSoon
-/// stub — out of Session 2's scope, not one of its 4 Part C screens.
+/// Supervisor nav (Users Kickoff Step 2.2, trimmed on device-test
+/// follow-up). 4 real screens, all built in Session 2 (Part B1 + Part C):
+/// `sup-jobs` (`SupervisorJobsListPage`) is NOT the same thing as the
+/// existing `SupervisorJobPage` (that's the field-side of a specific
+/// job's OTP workflow, opened from an order; this is the "My Jobs" list
+/// view across all of a supervisor's assigned jobs that opens it).
+///
+/// Two items dropped after real-device testing:
+///   - 'Job Entry' (`SupervisorEntryPage`) — supervisors work assigned
+///     jobs, they don't book new ones. The screen still exists
+///     (`lib/supervisor_entry_page/`) and its route is still registered,
+///     just no longer reachable from nav.
+///   - 'Team Attendance' (`StaffTeamAttendance`) — was a ComingSoon stub
+///     duplicating what `SupervisorTeamPage` ("My Team") already does in
+///     full: branch staff, today's attendance state, mark-present. Rather
+///     than build a second screen for the same job, dropped as redundant.
+/// Trimming both also fixed the 6-item bottom nav's horizontal-scroll
+/// cutoff (Team Attendance was getting clipped) — 4 items fit without
+/// scrolling on any phone width this app supports.
 const kSupervisorNavItems = <NavItem>[
-  (name: 'SupervisorEntryPage', icon: Icons.edit_note, label: 'Job Entry'),
   (name: 'SupervisorJobsListPage', icon: Icons.work_outline, label: 'My Jobs'),
   (name: 'SupervisorTeamPage', icon: Icons.groups_outlined, label: 'My Team'),
   (name: 'SupervisorEarningsPage', icon: Icons.currency_rupee, label: 'My Earnings'),
   (name: 'SupervisorAttendancePage', icon: Icons.event_available, label: 'My Attendance'),
-  (name: 'StaffTeamAttendance', icon: Icons.groups, label: 'Team Attendance'),
 ];
 
 /// Field staff nav (Users Kickoff Step 2.3): driver / helper / packer.
@@ -113,7 +121,13 @@ bool get isOwnerOrManagerSession {
 String homeNavNameForCurrentSession() {
   if (isOwnerOrManagerSession) return 'HomePage';
   if (AppSession.instance.currentStaffRole == 'supervisor') {
-    return 'SupJobsComingSoon';
+    // Same class of bug as the device-test _tabs miss: this was still the
+    // pre-rename ComingSoon name after Session 2 renamed the route to
+    // 'SupervisorJobsListPage'. Since nothing in _tabs recognises the old
+    // name, a supervisor's first login after this function ran would have
+    // landed on a blank body (tabs[_currentPageName] == null) until they
+    // tapped a bottom-nav item themselves.
+    return 'SupervisorJobsListPage';
   }
   return 'MySalComingSoon';
 }

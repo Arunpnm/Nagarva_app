@@ -4,6 +4,7 @@ import '/backend/crew_sync_service.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -550,6 +551,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           ),
           centerTitle: true,
           elevation: 0.0,
+          actions: const [SupervisorMenuButton()],
         ),
         body: SafeArea(
           top: true,
@@ -595,7 +597,15 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(hideCustomer ? 'Customer (hidden after completion)' : o.customer,
+          // Privacy hold (post-job contact / lead-poaching prevention,
+          // same rule as OrdersPage/OperationsPage) still hides the name,
+          // but keeps the order id visible — device-test follow-up: a
+          // supervisor with several completed jobs in a row had no way to
+          // tell which one they'd tapped into once the name disappeared.
+          Text(
+              hideCustomer
+                  ? '${o.id} · Customer (hidden)'
+                  : o.customer,
               style: FlutterFlowTheme.of(context)
                   .titleMedium
                   .override(font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),

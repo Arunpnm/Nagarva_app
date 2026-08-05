@@ -419,6 +419,51 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **2 Aug 2026 (later still), supervisor UX follow-up from device
+  testing.** Full OTP flow confirmed working end to end (OTP, POD
+  capture, lock-after-completion, Awaiting badge) — these are polish/gap
+  items found alongside that confirmation, not correctness bugs in the
+  flow itself.
+  1. **No logout reachable on a supervisor session — real blocker.**
+     Supervisors have no drawer and the bottom nav has no account item,
+     so there was no way to sign out at all. New `performLogout()`
+     (`lib/backend/session_logout.dart`) is now the one shared logout
+     sequence — `main.dart`'s `_NavBarPageState._logout` (owner path)
+     calls it too, so the two can't drift apart the way the old
+     HomePage-drawer Logout tile once did (13 Jul 2026 entry). New
+     `SupervisorMenuButton` (`lib/components/supervisor_menu_button.dart`)
+     — an AppBar overflow menu with the same Light/Dark/Midnight controls
+     as the owner sidebar (`MyApp.of(context).setThemeVariant`) plus
+     Logout — added to all 4 supervisor nav screens and the per-order
+     Field Job screen.
+  2. **Trimmed the supervisor nav from 6 items to 4** (`nav_items.dart`):
+     dropped 'Job Entry' (supervisors work assigned jobs, they don't book
+     new ones — the screen and its route are parked, not deleted) and
+     'Team Attendance' (a ComingSoon stub that turned out fully redundant
+     with 'My Team', which already does branch staff + today's
+     attendance + mark-present in full — building a second screen for
+     the same job made no sense). Also fixes the 6-item bottom nav's
+     horizontal-scroll cutoff that was clipping Team Attendance.
+  3. **Found and fixed the same class of bug as #1 below, while
+     touching this code**: `homeNavNameForCurrentSession()` still returned
+     `'SupJobsComingSoon'`, the pre-rename name from before Session 2
+     renamed the route to `'SupervisorJobsListPage'`. Since `_tabs`
+     doesn't recognise the old name, a supervisor's first login would
+     have landed on a blank body until they tapped a bottom-nav item
+     themselves. Same root cause as bug #1 (a string-keyed reference that
+     drifted after a rename, invisible to `flutter analyze`), caught by
+     re-checking rather than assuming the rename was complete everywhere.
+  4. **My Jobs now groups by state** (Active / Awaiting Approval /
+     collapsed Recently Delivered) instead of one flat list, so delivered
+     jobs don't bury active ones as volume grows — device-test
+     suggestion, not a defect (the un-grouped list was correct per spec,
+     just heading toward a UX problem).
+  5. **Field Job's "Customer (hidden after completion)" now shows the
+     order id too** (`{orderId} · Customer (hidden)`) — the privacy hold
+     itself is deliberate (post-job contact / lead-poaching prevention,
+     same rule as OrdersPage/OperationsPage) and stays; a supervisor with
+     several completed jobs just had no way to tell which one they'd
+     tapped into once the name disappeared.
 - **2 Aug 2026 (device test), two bugs found on a real supervisor
   session.** Both were invisible to `flutter analyze` — worth noting,
   since this session repeatedly used "analyze clean" as the proxy for

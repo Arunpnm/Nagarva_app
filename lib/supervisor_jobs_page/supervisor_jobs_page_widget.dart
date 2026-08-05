@@ -1,6 +1,7 @@
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/nav/nav.dart';
 import '/index.dart';
@@ -29,6 +30,27 @@ class _SupervisorJobsListPageWidgetState
     with RefreshOnPopMixin<SupervisorJobsListPageWidget> {
   bool _loading = true;
   List<OrdersRow> _jobs = [];
+
+  /// Collapsed by default — device-test follow-up: as volume grows,
+  /// delivered-but-not-yet-closed jobs would otherwise bury the active
+  /// ones a supervisor actually needs to act on today.
+  bool _showDelivered = false;
+
+  List<OrdersRow> get _awaiting =>
+      _jobs.where((o) => o.supervisorStatus == 'completed_pending').toList();
+
+  List<OrdersRow> get _active => _jobs
+      .where((o) =>
+          o.supervisorStatus != 'completed_pending' && o.status != 'delivered')
+      .toList();
+
+  /// Owner already approved (or the job reached 'delivered' some other
+  /// way) but the order isn't closed yet — a narrow but real state
+  /// distinct from "awaiting", since it's no longer waiting on the owner.
+  List<OrdersRow> get _recentlyDelivered => _jobs
+      .where((o) =>
+          o.supervisorStatus != 'completed_pending' && o.status == 'delivered')
+      .toList();
 
   @override
   void initState() {
@@ -84,6 +106,7 @@ class _SupervisorJobsListPageWidgetState
         title: Text('My Jobs',
             style: theme.titleLarge.override(
                 font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+        actions: const [SupervisorMenuButton()],
       ),
       body: SafeArea(
         child: _loading
@@ -94,16 +117,73 @@ class _SupervisorJobsListPageWidgetState
                         style: GoogleFonts.inter(color: theme.secondaryText)))
                 : RefreshIndicator(
                     onRefresh: _load,
-                    child: ListView.separated(
+                    child: ListView(
                       padding: const EdgeInsets.all(16),
-                      itemCount: _jobs.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, i) => _jobCard(context, _jobs[i]),
+                      children: [
+                        if (_active.isNotEmpty) ..._active.map(
+                            (o) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _jobCard(context, o))),
+                        if (_awaiting.isNotEmpty) ...[
+                          if (_active.isNotEmpty) const SizedBox(height: 8),
+                          _groupHeader(theme, 'Awaiting Approval',
+                              _awaiting.length),
+                          ..._awaiting.map((o) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _jobCard(context, o))),
+                        ],
+                        if (_recentlyDelivered.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () => setState(
+                                () => _showDelivered = !_showDelivered),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                    'Recently Delivered '
+                                    '(${_recentlyDelivered.length})',
+                                    style: GoogleFonts.interTight(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: theme.secondaryText)),
+                                Icon(
+                                    _showDelivered
+                                        ? Icons.expand_less
+                                        : Icons.expand_more,
+                                    color: theme.secondaryText),
+                              ],
+                            ),
+                          ),
+                          if (_showDelivered)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Column(
+                                children: _recentlyDelivered
+                                    .map((o) => Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 12),
+                                        child: _jobCard(context, o)))
+                                    .toList(),
+                              ),
+                            ),
+                        ],
+                      ],
                     ),
                   ),
       ),
     );
   }
+
+  Widget _groupHeader(FlutterFlowTheme theme, String label, int count) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text('$label ($count)',
+            style: GoogleFonts.interTight(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: theme.secondaryText)),
+      );
 
   Widget _jobCard(BuildContext context, OrdersRow o) {
     final theme = FlutterFlowTheme.of(context);

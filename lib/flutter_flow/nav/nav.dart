@@ -598,7 +598,10 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           ('InboxComingSoon', '/inbox', 'Inbox'),
           ('SurveyComingSoon', '/survey-new', 'Survey'),
           ('ReviewsComingSoon', '/reviews', 'Reviews'),
-          ('StaffTeamAttendance', '/team-attendance', 'Team Attendance'),
+          // 'StaffTeamAttendance' removed (device-test follow-up):
+          // dropped from kSupervisorNavItems as redundant with My Team,
+          // which already does everything it would have — see
+          // nav_items.dart.
           ('MyAttComingSoon', '/my-att', 'My Attendance'),
           ('MySalComingSoon', '/my-sal', 'My Earnings'),
         ])
@@ -607,11 +610,15 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             path: entry.$2,
             builder: (context, params) => ComingSoonPage(title: entry.$3),
           ),
-        // Session 2, Part B1 + Part C: the 5 supervisor ComingSoon stubs
-        // (sup-jobs/sup-entry/sup-team/sup-sal/sup-att) are now real
-        // screens, under new route names — kSupervisorNavItems in
+        // Session 2, Part B1 + Part C: the 4 remaining supervisor
+        // ComingSoon stubs (sup-jobs/sup-team/sup-sal/sup-att) are now
+        // real screens, under new route names — kSupervisorNavItems in
         // nav_items.dart is updated to match (context.pushNamed(item.name)
-        // needs the two to agree exactly).
+        // needs the two to agree exactly). 'Job Entry' (sup-entry) was
+        // built too but dropped from the nav (device-test follow-up:
+        // supervisors work assigned jobs, they don't book new ones) — its
+        // route stays registered (parked, not deleted) so the built page
+        // isn't lost, just unreachable from nav.
         FFRoute(
           name: SupervisorJobsListPageWidget.routeName,
           path: SupervisorJobsListPageWidget.routePath,

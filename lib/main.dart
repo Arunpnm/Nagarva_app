@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/approval_queue.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/session_logout.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/internationalization.dart';
@@ -477,14 +478,18 @@ class _NavBarPageState extends State<NavBarPage> {
       //
       // Listed explicitly rather than looped, so adding a screen means
       // editing one obvious line here and a stub is visibly a stub.
+      //
+      // 'SupervisorEntryPage' and 'StaffTeamAttendance' intentionally
+      // absent, in lockstep with their removal from kSupervisorNavItems
+      // (nav_items.dart) — Job Entry isn't needed (supervisors work
+      // assigned jobs), Team Attendance was redundant with My Team.
+      // Nothing in _navItems can produce those names anymore, so no
+      // ComingSoonPage fallback is needed for them either.
       return {
-        'SupervisorEntryPage': const SupervisorEntryPageWidget(),
         'SupervisorJobsListPage': const SupervisorJobsListPageWidget(),
         'SupervisorTeamPage': const SupervisorTeamPageWidget(),
         'SupervisorEarningsPage': const SupervisorEarningsPageWidget(),
         'SupervisorAttendancePage': const SupervisorAttendancePageWidget(),
-        // Genuinely unbuilt — out of Session 2's scope, still a stub.
-        'StaffTeamAttendance': const ComingSoonPage(title: 'Team Attendance'),
         // Field staff (driver/helper/packer) — their own two destinations
         // are still unbuilt. Note the supervisor Earnings/Attendance
         // screens above query by currentStaffId and would work for any
@@ -552,16 +557,9 @@ class _NavBarPageState extends State<NavBarPage> {
 
   /// Logout: full sign-out. Removes the Supabase Auth session AND the
   /// stored vendor refresh token, so the device needs a fresh vendor
-  /// login before staff PINs work again.
-  Future<void> _logout() async {
-    try {
-      await SupaFlow.client.auth.signOut();
-    } catch (_) {}
-    await StaffAuth.clearStoredVendorToken();
-    StaffPermissions.clearActive();
-    AppSession.instance.clear();
-    if (mounted) context.go('/login');
-  }
+  /// login before staff PINs work again. Shared with the supervisor
+  /// overflow menu via performLogout — one real logout sequence.
+  Future<void> _logout() => performLogout(context);
 
   /// Per-tenant logo in the sidebar header. Uses
   /// AppSession.currentOrgLogoUrl (organizations.logo_url) when set;
