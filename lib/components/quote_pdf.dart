@@ -5,12 +5,19 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '/backend/pricing_defaults.dart';
 import '/components/pdf_branding.dart';
+import '/components/survey_response_section.dart' show SurveyLine;
 
-/// Quotation PDF (Part 8 addendum, item 2 — quote half).
+/// Quotation PDF (Part 8 addendum, item 2 — quote half; rebuilt to the
+/// three-page APC reference shape in Session 3, task #44 — field spec §3).
 ///
-/// Deliberately separate from [SurveyPdf] (Rev B, Q2 decision: two
-/// documents, not one combined) — this one only makes sense once a quote
-/// exists, unlike the survey which goes out earlier in the pipeline.
+/// Page 1: identity/meta, consignment characteristics, Move From/To panels
+/// (with floor + lift), the charge table, GST totals, FOV/insurance line,
+/// total in words. Page 2: site-access answers, bank details, the
+/// invoice_note warning, signatures, and the Moving Items table (from
+/// `surveys.rooms` — field spec §3's own flag: "this is the piece most
+/// likely to be missing", now wired through via [surveyLines]). Page 3:
+/// tenant-editable Terms & Conditions from `app_settings` ([boilerplate]),
+/// never hardcoded.
 ///
 /// Renders `quote_charges`/`quotations.charges`: a flat key -> value map
 /// from `kDefaultChargeFields`, with a *per-key* included/additional
@@ -29,8 +36,11 @@ import '/components/pdf_branding.dart';
 class QuotePdf {
   static Future<Uint8List> generate({
     required String leadRef,
+    required OrgProfile org,
+    required DocumentBoilerplate boilerplate,
     required String customerName,
     String? customerPhone,
+    String? customerEmail,
     String? fromAddress,
     String? toAddress,
     String? fromCity,
@@ -41,14 +51,44 @@ class QuotePdf {
     required double gstAmount,
     required double total,
     required bool interstate,
-    required String orgName,
-    Map<String, dynamic> profile = const {},
     Uint8List? logoBytes,
     Uint8List? customerSignatureBytes,
     String? customerSignedByName,
     DateTime? customerSignedAt,
     DateTime? generatedAt,
     bool detailed = false,
+    // ---- Consignment characteristics (field spec §3, page 1) -----------
+    String? loadType, // full_load | part_load
+    String? vehicleType, // dedicated | shared
+    String? transportMode, // road | rail | air | ship
+    DateTime? quotationDate,
+    DateTime? packingDate,
+    DateTime? deliveryDate,
+    DateTime? movingDate,
+    int? fromFloor,
+    bool? fromHasLift,
+    int? toFloor,
+    bool? toHasLift,
+    // FOV / insurance — "@{fov_pct}% On Declaration Value Of Goods
+    // ({declared_value}/-)". A zero/null fovPct or declaredValue simply
+    // omits the line rather than printing a bogus "@0%".
+    num? declaredValue,
+    num? fovPct,
+    num? fovAmount,
+    // ---- Page 2 ----------------------------------------------------------
+    bool? easyAccess,
+    bool? accessRestrictions,
+    String? accessNotes,
+    // Moving Items — surveys.rooms via parseSurveyRooms(). Value INR has
+    // no backing data anywhere yet (SurveyLine only carries cft/qty, not a
+    // per-item price) — the column renders "—" rather than a guessed
+    // number; a real fix belongs in the survey capture flow, not here.
+    List<SurveyLine> surveyLines = const [],
+    // Total in words — via the DB's amount_in_words() RPC, never
+    // reimplemented in Dart (the old client-side lakh/crore converter this
+    // file used to carry is gone; see amount_in_words() in
+    // nagarva_migration_009_documents.sql).
+    String? amountInWords,
   }) async {
     final fonts = await PdfBranding.loadFonts();
     final now = generatedAt ?? DateTime.now();
@@ -126,7 +166,14 @@ class QuotePdf {
     final discount = amt('discount');
     final advance = amt('advanceOnQuote');
     final balanceDue = total - advance;
-    final amountWords = _amountInWords(total);
+
+    pw.Widget kv(String label, String value, {bool boldValue = false}) =>
+        PdfBranding.kv(label, value, fonts, boldValue: boldValue);
+
+    String yesNo(bool? v) => v == null ? '—' : (v ? 'Yes' : 'No');
+    String labelize(String? s) => (s ?? '').isEmpty
+        ? '—'
+        : s![0].toUpperCase() + s.substring(1).replaceAll('_', ' ');
 
     final doc = pw.Document();
     doc.addPage(
@@ -137,18 +184,31 @@ class QuotePdf {
         header: (ctx) => ctx.pageNumber == 1
             ? pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 14),
-                child: PdfBranding.headerBand(
-                  orgName: orgName,
+                child: PdfBranding.headerFull(
+                  org: org,
                   docLabel: 'QUOTATION',
                   fonts: fonts,
-                  profile: profile,
                   logoBytes: logoBytes,
                 ),
               )
             : pw.SizedBox(),
-        footer: (ctx) => PdfBranding.footer(fonts),
+        footer: (ctx) =>
+            PdfBranding.footerFull(fonts, org: org, boilerplate: boilerplate),
         build: (ctx) => [
-          // ---- Reference block ----
+          // ══════════════════════════════════════════════════════════════
+          // PAGE 1
+          // ══════════════════════════════════════════════════════════════
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfBranding.navy, width: 1),
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Text('Quotation No: $leadRef',
+                style: pw.TextStyle(
+                    font: fonts.bold, fontSize: 10, color: PdfBranding.navy)),
+          ),
+          pw.SizedBox(height: 8),
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
@@ -159,26 +219,102 @@ class QuotePdf {
                     pw.Text(customerName,
                         style: pw.TextStyle(font: fonts.bold, fontSize: 12)),
                     if ((customerPhone ?? '').isNotEmpty)
-                      PdfBranding.kv('Phone', customerPhone!, fonts),
-                    PdfBranding.kv(
-                        'Route',
-                        '${fromAddress ?? fromCity ?? '—'}  to  '
-                            '${toAddress ?? toCity ?? '—'}',
-                        fonts),
+                      kv('Phone', customerPhone!),
+                    if ((customerEmail ?? '').isNotEmpty)
+                      kv('Email', customerEmail!),
                   ],
                 ),
               ),
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  PdfBranding.kv('Reference', leadRef, fonts, boldValue: true),
-                  PdfBranding.kv('Date', PdfBranding.fmtDate(now), fonts),
-                  PdfBranding.kv('Valid Until', PdfBranding.fmtDate(validUntil), fonts),
+                  kv('Quotation Date', PdfBranding.fmtDate(quotationDate ?? now)),
+                  if (packingDate != null)
+                    kv('Packing Date', PdfBranding.fmtDate(packingDate)),
+                  if (deliveryDate != null)
+                    kv('Delivery Date', PdfBranding.fmtDate(deliveryDate)),
+                  if (movingDate != null)
+                    kv('Moving Date', PdfBranding.fmtDate(movingDate)),
+                  kv('Valid Until', PdfBranding.fmtDate(validUntil)),
                 ],
               ),
             ],
           ),
-          pw.SizedBox(height: 14),
+          pw.SizedBox(height: 6),
+          pw.Text(
+            'Dear ${customerName.isEmpty ? 'Customer' : customerName}, '
+            'thank you for the opportunity to quote for your move from '
+            '${fromCity ?? fromAddress ?? 'origin'} to '
+            '${toCity ?? toAddress ?? 'destination'}.',
+            style: pw.TextStyle(
+                font: fonts.regular, fontSize: 8.5, color: PdfBranding.grey),
+          ),
+          pw.SizedBox(height: 8),
+
+          // ---- Consignment characteristics ----------------------------
+          pw.Wrap(
+            spacing: 16,
+            runSpacing: 2,
+            children: [
+              kv('Moving Type', labelize(loadType)),
+              kv('Vehicle Type', labelize(vehicleType)),
+              kv('Transport Mode', labelize(transportMode ?? 'road')),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+
+          // ---- Move From / To panels ------------------------------------
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: pw.Container(
+                  padding: const pw.EdgeInsets.all(8),
+                  decoration: pw.BoxDecoration(
+                      border: pw.Border.all(color: PdfColors.grey400, width: .5)),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('MOVE FROM',
+                          style: pw.TextStyle(
+                              font: fonts.bold,
+                              fontSize: 8.5,
+                              color: PdfBranding.navy)),
+                      pw.SizedBox(height: 2),
+                      pw.Text(fromAddress ?? fromCity ?? '—',
+                          style: pw.TextStyle(font: fonts.regular, fontSize: 8.5)),
+                      if (fromFloor != null) kv('Floor', '$fromFloor'),
+                      kv('Is Lift Available', yesNo(fromHasLift)),
+                    ],
+                  ),
+                ),
+              ),
+              pw.SizedBox(width: 8),
+              pw.Expanded(
+                child: pw.Container(
+                  padding: const pw.EdgeInsets.all(8),
+                  decoration: pw.BoxDecoration(
+                      border: pw.Border.all(color: PdfColors.grey400, width: .5)),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('MOVE TO',
+                          style: pw.TextStyle(
+                              font: fonts.bold,
+                              fontSize: 8.5,
+                              color: PdfBranding.navy)),
+                      pw.SizedBox(height: 2),
+                      pw.Text(toAddress ?? toCity ?? '—',
+                          style: pw.TextStyle(font: fonts.regular, fontSize: 8.5)),
+                      if (toFloor != null) kv('Floor', '$toFloor'),
+                      kv('Is Lift Available', yesNo(toHasLift)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 12),
 
           // ---- Charge lines ----
           pw.Table(
@@ -221,17 +357,17 @@ class QuotePdf {
                   ),
                 ],
               ),
-              for (final f in lines)
+              for (var i = 0; i < lines.length; i++)
                 pw.TableRow(children: [
                   pw.Padding(
                     padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                    child: pw.Text(f.label,
+                    child: pw.Text('${i + 1}. ${lines[i].label}',
                         style: pw.TextStyle(font: fonts.regular, fontSize: 9)),
                   ),
                   if (detailed)
                     pw.Padding(
                       padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                      child: pw.Text(basisDescription(f.key) ?? '—',
+                      child: pw.Text(basisDescription(lines[i].key) ?? '—',
                           style: pw.TextStyle(
                               font: fonts.regular, fontSize: 8, color: PdfBranding.grey)),
                     ),
@@ -240,7 +376,7 @@ class QuotePdf {
                     // `lines` already excludes zero/null-amount fields
                     // (below) — Rev A's "never print ₹0" rule is met by
                     // omission, the rule's other allowed option.
-                    child: pw.Text(PdfBranding.rupees(amt(f.key)),
+                    child: pw.Text(PdfBranding.rupees(amt(lines[i].key)),
                         textAlign: pw.TextAlign.right,
                         style: pw.TextStyle(font: fonts.regular, fontSize: 9)),
                   ),
@@ -276,10 +412,10 @@ class QuotePdf {
           pw.Align(
             alignment: pw.Alignment.centerRight,
             child: pw.SizedBox(
-              width: 240,
+              width: 260,
               child: pw.Column(
                 children: [
-                  _totalRow('Subtotal', PdfBranding.rupees(subtotal), fonts),
+                  _totalRow('Sub Total', PdfBranding.rupees(subtotal), fonts),
                   if (interstate)
                     _totalRow('IGST @ ${gstPct.toStringAsFixed(0)}%',
                         PdfBranding.rupees(gstAmount), fonts)
@@ -289,6 +425,13 @@ class QuotePdf {
                     _totalRow('SGST @ ${(gstPct / 2).toStringAsFixed(1)}%',
                         PdfBranding.rupees(gstAmount / 2), fonts),
                   ],
+                  if ((fovPct ?? 0) > 0 && (declaredValue ?? 0) > 0)
+                    _totalRow(
+                        'FOV / Insurance Charge @${fovPct!.toStringAsFixed(1)}% '
+                        'On Declaration Value Of Goods '
+                        '(${PdfBranding.rupees(declaredValue!)}/-)',
+                        PdfBranding.rupees(fovAmount ?? 0),
+                        fonts),
                   pw.Container(
                     margin: const pw.EdgeInsets.only(top: 4),
                     padding:
@@ -300,7 +443,7 @@ class QuotePdf {
                     child: pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        pw.Text('GRAND TOTAL',
+                        pw.Text('TOTAL AMOUNT',
                             style: pw.TextStyle(
                                 font: fonts.bold, fontSize: 10, color: PdfColors.white)),
                         pw.Text(PdfBranding.rupees(total),
@@ -320,18 +463,12 @@ class QuotePdf {
             ),
           ),
           pw.SizedBox(height: 8),
-          pw.Text('Amount in words: $amountWords',
-              style: pw.TextStyle(
-                  font: fonts.regular, fontSize: 8.5, fontStyle: pw.FontStyle.italic)),
-          pw.SizedBox(height: 14),
+          if ((amountInWords ?? '').isNotEmpty)
+            pw.Text('Total Amount In Words: $amountInWords',
+                style: pw.TextStyle(
+                    font: fonts.regular, fontSize: 8.5, fontStyle: pw.FontStyle.italic)),
+          pw.SizedBox(height: 10),
 
-          // ---- Inclusions / Exclusions (Rev A brief, item 4 — detailed
-          // variant only). Content comes from the vendor's own Settings
-          // (quote_inclusions/quote_exclusions, same convention as
-          // invoice_terms) rather than invented generic business terms —
-          // "exclusions are where disputes come from" is exactly why this
-          // shouldn't be text this generator makes up on the vendor's
-          // behalf. Degrades to a hint, not fabricated content, when empty.
           if (detailed) ...[
             pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -341,8 +478,8 @@ class QuotePdf {
                     fonts,
                     title: 'INCLUSIONS',
                     color: PdfColors.green700,
-                    text: PdfBranding.p(profile, 'quote_inclusions'),
-                    hint: 'Add what\'s included in Settings to show it here.',
+                    items: includedLabels,
+                    hint: 'Nothing marked included yet.',
                   ),
                 ),
                 pw.SizedBox(width: 16),
@@ -351,47 +488,87 @@ class QuotePdf {
                     fonts,
                     title: 'EXCLUSIONS',
                     color: PdfColors.red700,
-                    text: PdfBranding.p(profile, 'quote_exclusions'),
-                    hint: 'Add what\'s excluded in Settings to show it here.',
+                    items: const [],
+                    hint: 'Add exclusions on the quote form to show them here.',
                   ),
                 ),
               ],
             ),
-            pw.SizedBox(height: 14),
           ],
 
-          // ---- Terms ----
-          if (PdfBranding.p(profile, 'quote_terms').isNotEmpty) ...[
-            pw.Text('TERMS & CONDITIONS',
-                style: pw.TextStyle(font: fonts.bold, fontSize: 8.5, color: PdfBranding.navy)),
-            pw.SizedBox(height: 3),
-            ...PdfBranding.p(profile, 'quote_terms')
-                .split('\n')
-                .where((l) => l.trim().isNotEmpty)
-                .toList()
-                .asMap()
-                .entries
-                .map((e) => pw.Padding(
-                      padding: const pw.EdgeInsets.only(bottom: 1.5),
-                      child: pw.Text(
-                        '${e.key + 1}. ${e.value.trim().replaceFirst(RegExp(r'^\d+[.)]\s*'), '')}',
-                        style: pw.TextStyle(
-                            font: fonts.regular, fontSize: 7.5, color: PdfBranding.grey),
-                      ),
-                    )),
-            pw.SizedBox(height: 14),
-          ],
+          // ══════════════════════════════════════════════════════════════
+          // PAGE 2
+          // ══════════════════════════════════════════════════════════════
+          pw.NewPage(),
 
-          // ---- Payment terms + signature block ----
+          // ---- Site access ------------------------------------------------
+          pw.Text('SITE ACCESS',
+              style:
+                  pw.TextStyle(font: fonts.bold, fontSize: 9.5, color: PdfBranding.navy)),
+          pw.SizedBox(height: 4),
+          kv('Easy Access For Vehicle', yesNo(easyAccess)),
+          kv('Any Access Restrictions', yesNo(accessRestrictions)),
+          if ((accessNotes ?? '').isNotEmpty) kv('Access Notes', accessNotes!),
+          pw.SizedBox(height: 14),
+
+          // ---- Bank details -------------------------------------------
+          pw.Container(
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: PdfBranding.lightRow,
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('BANK DETAILS',
+                    style: pw.TextStyle(
+                        font: fonts.bold, fontSize: 9, color: PdfBranding.navy)),
+                pw.SizedBox(height: 4),
+                if ((org.beneficiaryName ?? '').isNotEmpty)
+                  kv('Beneficiary', org.beneficiaryName!),
+                if ((org.bankName ?? '').isNotEmpty) kv('Bank', org.bankName!),
+                if ((org.bankAccountNo ?? '').isNotEmpty)
+                  kv('A/c No', org.bankAccountNo!),
+                if ((org.bankIfsc ?? '').isNotEmpty) kv('IFSC', org.bankIfsc!),
+                if ((org.upiId ?? '').isNotEmpty) kv('UPI', org.upiId!),
+                if ((org.upiDisplayNumber ?? '').isNotEmpty)
+                  kv('PhonePe/GPay', org.upiDisplayNumber!),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.red200, width: .8),
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Text(boilerplate.invoiceNote,
+                style: pw.TextStyle(
+                    font: fonts.regular, fontSize: 7.5, color: PdfColors.red900)),
+          ),
+          pw.SizedBox(height: 14),
+
+          // ---- Signatures -----------------------------------------------
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
               pw.Expanded(
-                child: pw.Text(
-                  'Payment terms: as agreed with $orgName. This quotation is '
-                  'valid until ${PdfBranding.fmtDate(validUntil)}.',
-                  style: pw.TextStyle(
-                      font: fonts.regular, fontSize: 8, color: PdfBranding.grey),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Container(width: 150, height: .8, color: PdfColors.grey600),
+                    pw.SizedBox(height: 3),
+                    pw.Text(
+                        (org.signatoryName ?? '').isNotEmpty
+                            ? org.signatoryName!
+                            : 'Authorized Signatory',
+                        style: pw.TextStyle(font: fonts.regular, fontSize: 8.5)),
+                    pw.Text('for ${org.name}',
+                        style: pw.TextStyle(
+                            font: fonts.regular, fontSize: 8, color: PdfBranding.grey)),
+                  ],
                 ),
               ),
               pw.SizedBox(width: 24),
@@ -412,16 +589,166 @@ class QuotePdf {
                       pw.Text(PdfBranding.fmtDate(customerSignedAt),
                           style: pw.TextStyle(
                               font: fonts.regular, fontSize: 8, color: PdfBranding.grey)),
-                  ] else
-                    pw.Text('Awaiting customer signature',
-                        style: pw.TextStyle(
-                            font: fonts.regular,
-                            fontSize: 9,
-                            fontStyle: pw.FontStyle.italic,
-                            color: PdfBranding.grey)),
+                  ] else ...[
+                    pw.SizedBox(height: 42),
+                    pw.Container(width: 150, height: .8, color: PdfColors.grey600),
+                    pw.SizedBox(height: 3),
+                    pw.Text("Receiver's Signature",
+                        style: pw.TextStyle(font: fonts.regular, fontSize: 8.5)),
+                  ],
                 ],
               ),
             ],
+          ),
+          pw.SizedBox(height: 16),
+
+          // ---- Moving Items list (field spec §3, page 2) -----------------
+          if (surveyLines.isNotEmpty) ...[
+            pw.Text('MOVING ITEMS',
+                style: pw.TextStyle(
+                    font: fonts.bold, fontSize: 9.5, color: PdfBranding.navy)),
+            pw.SizedBox(height: 4),
+            pw.Table(
+              columnWidths: const {
+                0: pw.FlexColumnWidth(1),
+                1: pw.FlexColumnWidth(6),
+                2: pw.FlexColumnWidth(2),
+                3: pw.FlexColumnWidth(2),
+                4: pw.FlexColumnWidth(2),
+              },
+              border: pw.TableBorder.all(color: PdfColors.grey400, width: .5),
+              children: [
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfBranding.navy),
+                  children: [
+                    for (final h in [
+                      'SR NO',
+                      'GOODS DESCRIPTION',
+                      'QTY',
+                      'VALUE INR',
+                      'REMARK'
+                    ])
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 5),
+                        child: pw.Text(h,
+                            style: pw.TextStyle(
+                                font: fonts.bold, fontSize: 8, color: PdfColors.white)),
+                      ),
+                  ],
+                ),
+                for (var i = 0; i < surveyLines.length; i++)
+                  pw.TableRow(
+                    decoration: pw.BoxDecoration(
+                        color: i.isOdd ? PdfBranding.lightRow : PdfColors.white),
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
+                        child: pw.Text('${i + 1}',
+                            style: pw.TextStyle(font: fonts.regular, fontSize: 8)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
+                        child: pw.Text(
+                            surveyLines[i].sub.isEmpty
+                                ? surveyLines[i].item
+                                : '${surveyLines[i].item} - ${surveyLines[i].sub}',
+                            style: pw.TextStyle(font: fonts.regular, fontSize: 8)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
+                        child: pw.Text('${surveyLines[i].qty}',
+                            style: pw.TextStyle(font: fonts.regular, fontSize: 8)),
+                      ),
+                      // No per-item price is captured anywhere in the survey
+                      // flow today (SurveyLine only carries cft/qty) — this
+                      // renders "—" rather than fabricate a number. A real
+                      // fix belongs in the survey capture flow.
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
+                        child: pw.Text('—',
+                            style: pw.TextStyle(font: fonts.regular, fontSize: 8)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 4),
+                        child: pw.Text('—',
+                            style: pw.TextStyle(font: fonts.regular, fontSize: 8)),
+                      ),
+                    ],
+                  ),
+                pw.TableRow(
+                  decoration: const pw.BoxDecoration(color: PdfBranding.lightRow),
+                  children: [
+                    pw.Padding(
+                      padding:
+                          const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                      child: pw.Text(''),
+                    ),
+                    pw.Padding(
+                      padding:
+                          const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                      child: pw.Text('Total Quantity',
+                          style: pw.TextStyle(font: fonts.bold, fontSize: 8)),
+                    ),
+                    pw.Padding(
+                      padding:
+                          const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                      child: pw.Text(
+                          '${surveyLines.fold<int>(0, (s, l) => s + l.qty)}',
+                          style: pw.TextStyle(font: fonts.bold, fontSize: 8)),
+                    ),
+                    pw.Padding(
+                      padding:
+                          const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                      child: pw.Text(''),
+                    ),
+                    pw.Padding(
+                      padding:
+                          const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                      child: pw.Text(''),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+
+          // ══════════════════════════════════════════════════════════════
+          // PAGE 3 — Terms & Conditions (tenant-editable, never hardcoded)
+          // ══════════════════════════════════════════════════════════════
+          pw.NewPage(),
+          pw.Text('TERMS & CONDITIONS',
+              style:
+                  pw.TextStyle(font: fonts.bold, fontSize: 10, color: PdfBranding.navy)),
+          pw.SizedBox(height: 6),
+          if (boilerplate.quotationTerms.isEmpty)
+            pw.Text(
+                'Add your terms & conditions in Settings to show them here.',
+                style: pw.TextStyle(
+                    font: fonts.regular,
+                    fontSize: 8.5,
+                    fontStyle: pw.FontStyle.italic,
+                    color: PdfBranding.grey))
+          else
+            for (var i = 0; i < boilerplate.quotationTerms.length; i++)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 3),
+                child: pw.Text(
+                  '${i + 1}. ${boilerplate.quotationTerms[i]}',
+                  style: pw.TextStyle(font: fonts.regular, fontSize: 8.5),
+                ),
+              ),
+          pw.SizedBox(height: 14),
+          pw.Text(
+            'Payment terms: as agreed with ${org.name}. This quotation is '
+            'valid until ${PdfBranding.fmtDate(validUntil)}.',
+            style: pw.TextStyle(
+                font: fonts.regular, fontSize: 8, color: PdfBranding.grey),
           ),
         ],
       ),
@@ -436,11 +763,12 @@ class QuotePdf {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(label,
-              style: pw.TextStyle(
-                  font: bold ? fonts.bold : fonts.regular, fontSize: 9)),
-          pw.Text(value,
-              style: pw.TextStyle(font: fonts.bold, fontSize: 9)),
+          pw.Expanded(
+            child: pw.Text(label,
+                style: pw.TextStyle(
+                    font: bold ? fonts.bold : fonts.regular, fontSize: 9)),
+          ),
+          pw.Text(value, style: pw.TextStyle(font: fonts.bold, fontSize: 9)),
         ],
       ),
     );
@@ -450,10 +778,9 @@ class QuotePdf {
     PdfFonts fonts, {
     required String title,
     required PdfColor color,
-    required String text,
+    required List<String> items,
     required String hint,
   }) {
-    final items = text.split('\n').where((l) => l.trim().isNotEmpty).toList();
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(
@@ -478,60 +805,13 @@ class QuotePdf {
             for (final line in items)
               pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 1.5),
-                child: pw.Text('• ${line.trim()}',
+                child: pw.Text('• $line',
                     style: pw.TextStyle(
                         font: fonts.regular, fontSize: 8, color: PdfBranding.grey)),
               ),
         ],
       ),
     );
-  }
-
-  /// Indian numbering (lakh/crore) amount-to-words, rupees only (no PDF
-  /// document here needs paise precision — quotes/invoices round to the
-  /// rupee already via the existing rupees() formatter's inputs).
-  static String _amountInWords(num amount) {
-    final rupeesPart = amount.floor();
-    if (rupeesPart == 0) return 'Rupees Zero Only';
-    return 'Rupees ${_numToWords(rupeesPart)} Only';
-  }
-
-  static const _ones = [
-    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-    'Seventeen', 'Eighteen', 'Nineteen',
-  ];
-  static const _tens = [
-    '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety',
-  ];
-
-  static String _twoDigits(int n) {
-    if (n < 20) return _ones[n];
-    return '${_tens[n ~/ 10]}${n % 10 == 0 ? '' : ' ${_ones[n % 10]}'}';
-  }
-
-  static String _threeDigits(int n) {
-    final h = n ~/ 100;
-    final rest = n % 100;
-    if (h == 0) return _twoDigits(rest);
-    return '${_ones[h]} Hundred${rest == 0 ? '' : ' ${_twoDigits(rest)}'}';
-  }
-
-  static String _numToWords(int n) {
-    if (n == 0) return 'Zero';
-    final parts = <String>[];
-    final crore = n ~/ 10000000;
-    n %= 10000000;
-    final lakh = n ~/ 100000;
-    n %= 100000;
-    final thousand = n ~/ 1000;
-    n %= 1000;
-    final hundred = n;
-    if (crore > 0) parts.add('${_threeDigits(crore)} Crore');
-    if (lakh > 0) parts.add('${_threeDigits(lakh)} Lakh');
-    if (thousand > 0) parts.add('${_threeDigits(thousand)} Thousand');
-    if (hundred > 0) parts.add(_threeDigits(hundred));
-    return parts.join(' ');
   }
 
   /// `Nagarva_Quote_<lead_ref>_<yyyyMMdd>.pdf`

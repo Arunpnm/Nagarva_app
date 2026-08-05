@@ -136,6 +136,16 @@ class OrdersRow extends SupabaseDataRow {
   String? get invoiceNo => getField<String>('invoice_no');
   set invoiceNo(String? value) => setField<String>('invoice_no', value);
 
+  // Real column (reference schema + migration 002's gstr1_b2b_view already
+  // read it), just never had a Dart getter — Session 1's kickoff brief
+  // even said to write it ("Write invoice_no, invoice_issued_at") but
+  // nothing ever did. This is the Money Receipt's "Dated {invoice_date}"
+  // source (Session 3 follow-up fix) — stamped once, at first invoice
+  // generation, alongside invoice_no.
+  DateTime? get invoiceIssuedAt => getField<DateTime>('invoice_issued_at');
+  set invoiceIssuedAt(DateTime? value) =>
+      setField<DateTime>('invoice_issued_at', value);
+
   String? get supervisorStatus => getField<String>('supervisor_status');
   set supervisorStatus(String? value) =>
       setField<String>('supervisor_status', value);
@@ -203,4 +213,69 @@ class OrdersRow extends SupabaseDataRow {
   double? get quoteTotalCft => getField<double>('quote_total_cft');
   int? get quoteVersion => getField<int>('quote_version');
   DateTime? get quoteSnapshotAt => getField<DateTime>('quote_snapshot_at');
+
+  // migration 003/004 — the LR this order links to. Never had a getter.
+  String? get lrId => getField<String>('lr_id');
+  set lrId(String? value) => setField<String>('lr_id', value);
+
+  // Added by nagarva_migration_009_documents (Session 3).
+  DateTime? get packingDate => getField<DateTime>('packing_date');
+  set packingDate(DateTime? value) =>
+      setField<DateTime>('packing_date', value);
+
+  DateTime? get deliveryDate => getField<DateTime>('delivery_date');
+  set deliveryDate(DateTime? value) =>
+      setField<DateTime>('delivery_date', value);
+
+  /// 'full_load' | 'part_load'
+  String? get loadType => getField<String>('load_type');
+  set loadType(String? value) => setField<String>('load_type', value);
+
+  /// 'dedicated' | 'shared'
+  String? get vehicleType => getField<String>('vehicle_type');
+  set vehicleType(String? value) => setField<String>('vehicle_type', value);
+
+  /// 'road' | 'rail' | 'air' | 'ship'
+  String? get transportMode => getField<String>('transport_mode');
+  set transportMode(String? value) =>
+      setField<String>('transport_mode', value);
+
+  bool? get fromHasLift => getField<bool>('from_has_lift');
+  set fromHasLift(bool? value) => setField<bool>('from_has_lift', value);
+
+  bool? get toHasLift => getField<bool>('to_has_lift');
+  set toHasLift(bool? value) => setField<bool>('to_has_lift', value);
+
+  /// Billing party can differ from the consignor (corporate relocation
+  /// billed to the employer). Null means "bill the customer" — the
+  /// invoice's Bill To block falls back to `customer`/`phone` when this
+  /// is unset, per the Session 3 brief.
+  String? get billingPartyName => getField<String>('billing_party_name');
+  set billingPartyName(String? value) =>
+      setField<String>('billing_party_name', value);
+
+  String? get billingPartyGstin => getField<String>('billing_party_gstin');
+  set billingPartyGstin(String? value) =>
+      setField<String>('billing_party_gstin', value);
+
+  String? get billingPartyAddress =>
+      getField<String>('billing_party_address');
+  set billingPartyAddress(String? value) =>
+      setField<String>('billing_party_address', value);
+
+  String? get billingPartyPhone => getField<String>('billing_party_phone');
+  set billingPartyPhone(String? value) =>
+      setField<String>('billing_party_phone', value);
+
+  /// SAC 996719 = goods transport / packers and movers. Tenant-overridable,
+  /// but the DB default already covers every order that never sets it.
+  String? get hsnSacCode => getField<String>('hsn_sac_code');
+  set hsnSacCode(String? value) => setField<String>('hsn_sac_code', value);
+
+  bool? get reverseCharge => getField<bool>('reverse_charge');
+  set reverseCharge(bool? value) => setField<bool>('reverse_charge', value);
+
+  String? get paymentRemark => getField<String>('payment_remark');
+  set paymentRemark(String? value) =>
+      setField<String>('payment_remark', value);
 }

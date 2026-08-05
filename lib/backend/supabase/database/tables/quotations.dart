@@ -89,4 +89,54 @@ class QuotationsRow extends SupabaseDataRow {
   /// capturing real version numbers with no further change here. Reading
   /// an absent column through getField is null-safe, not an error.
   int? get version => getField<int>('version');
+
+  // Added by nagarva_migration_009_documents (Session 3) — consignment
+  // characteristics and survey-derived answers printed on the quotation.
+  DateTime? get packingDate => getField<DateTime>('packing_date');
+  set packingDate(DateTime? value) =>
+      setField<DateTime>('packing_date', value);
+
+  DateTime? get deliveryDate => getField<DateTime>('delivery_date');
+  set deliveryDate(DateTime? value) =>
+      setField<DateTime>('delivery_date', value);
+
+  DateTime? get movingDate => getField<DateTime>('moving_date');
+  set movingDate(DateTime? value) => setField<DateTime>('moving_date', value);
+
+  String? get loadType => getField<String>('load_type');
+  set loadType(String? value) => setField<String>('load_type', value);
+
+  String? get vehicleType => getField<String>('vehicle_type');
+  set vehicleType(String? value) => setField<String>('vehicle_type', value);
+
+  String? get transportMode => getField<String>('transport_mode');
+  set transportMode(String? value) =>
+      setField<String>('transport_mode', value);
+
+  bool? get fromHasLift => getField<bool>('from_has_lift');
+  set fromHasLift(bool? value) => setField<bool>('from_has_lift', value);
+
+  bool? get toHasLift => getField<bool>('to_has_lift');
+  set toHasLift(bool? value) => setField<bool>('to_has_lift', value);
+
+  /// "@{fov_pct}% On Declaration Value Of Goods ({declared_value}/-)"
+  double? get declaredValue => getField<double>('declared_value');
+  set declaredValue(double? value) =>
+      setField<double>('declared_value', value);
+
+  double? get fovPct => getField<double>('fov_pct');
+  set fovPct(double? value) => setField<double>('fov_pct', value);
+
+  double? get fovAmount => getField<double>('fov_amount');
+  set fovAmount(double? value) => setField<double>('fov_amount', value);
+
+  bool? get easyAccess => getField<bool>('easy_access');
+  set easyAccess(bool? value) => setField<bool>('easy_access', value);
+
+  bool? get accessRestrictions => getField<bool>('access_restrictions');
+  set accessRestrictions(bool? value) =>
+      setField<bool>('access_restrictions', value);
+
+  String? get accessNotes => getField<String>('access_notes');
+  set accessNotes(String? value) => setField<String>('access_notes', value);
 }

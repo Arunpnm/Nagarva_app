@@ -38,3 +38,6 @@ export 'tables/org_members.dart';
 export 'tables/subscription_plans.dart';
 export 'tables/surveys.dart';
 export 'tables/platform_admins.dart';
+export 'tables/receipts.dart';
+export 'tables/lr_copies.dart';
+export 'tables/app_settings.dart';

@@ -14,7 +14,9 @@ import '/backend/soft_delete.dart';
 import '/components/delete_action.dart';
 import '/components/detail_row.dart';
 import '/backend/tracking_service.dart';
+import '/backend/pricing_defaults.dart';
 import '/components/invoice_pdf.dart';
+import '/components/pdf_branding.dart';
 import '/components/share_link_sheet.dart';
 import '/config/app_config.dart';
 import 'order_crew_section.dart';
@@ -546,15 +548,24 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   /// `number_series` — it does not continue the old `inv_seq_<fy>` counter
   /// in `settings`, so the next invoice number restarts from 1 rather than
   /// picking up after the last one issued under the old mechanism.
+  ///
+  /// Session 3, task #46: `next_doc_number`'s return value already IS the
+  /// full formatted number — `coalesce(prefix,'') || padded_n ||
+  /// coalesce(suffix,'')` (migration 006's own function body). Migration
+  /// 009 rewrote every org's `number_series.prefix` for these doc_types
+  /// from the old `'INV-'`-style to a calendar-year `'2026/'`-style, to
+  /// match APC's real `2026/0013` format — so the RPC alone now returns
+  /// e.g. `'2026/0013'`. This method used to ALSO prepend
+  /// `'$orgSlug/${currentFy()}/'` on top of that, which after 009 would
+  /// have doubled up into `'APC/2526/2026/0013'`. Fixed: return the RPC's
+  /// result as-is.
   Future<String> _nextInvoiceNo({String? branch}) async {
-    final n = await SupaFlow.client.rpc('next_doc_number', params: {
+    return await SupaFlow.client.rpc('next_doc_number', params: {
       'p_org': OrgScope.currentOrgId!,
       'p_doc_type': 'invoice',
       'p_branch': branch,
       'p_fy': currentFy(),
     }) as String;
-    final prefix = AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'APC';
-    return '$prefix/${currentFy()}/$n';
   }
 
   Future<void> _generateInvoice() async {
@@ -575,8 +586,15 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
         invoiceNo = await _nextInvoiceNo(
             branch: existing.isNotEmpty ? existing.first.branch : null);
         // LEAK_AUDIT.md write-gap fix: matched only on id before.
+        // invoice_issued_at stamped alongside invoice_no — same "once, at
+        // first generation" convention as the number itself; a re-open of
+        // an already-invoiced order reuses both rather than overwriting
+        // the original date (see the `if` branch above).
         await OrdersTable().update(
-          data: {'invoice_no': invoiceNo},
+          data: {
+            'invoice_no': invoiceNo,
+            'invoice_issued_at': DateTime.now().toIso8601String(),
+          },
           matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
         );
       }
@@ -655,9 +673,104 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
         if (r.key == 'signature_url') signatureUrl = r.value;
       }
     } catch (_) {}
-    final logoBytes =
-        await _fetchBytes(AppSession.instance.currentOrgLogoUrl);
-    final signatureBytes = await _fetchBytes(signatureUrl);
+
+    // Dual-source branding (Session 3, task #41): organizations columns
+    // first, that same org's business_profile jsonb as fallback — see
+    // OrgProfile.resolve's own doc comment.
+    OrganizationsRow? orgRow;
+    try {
+      final orgRows = await OrganizationsTable().queryRows(
+        queryFn: (q) => q.eq('id', OrgScope.currentOrgId!),
+      );
+      if (orgRows.isNotEmpty) orgRow = orgRows.first;
+    } catch (_) {}
+    final org = OrgProfile.resolve(orgRow,
+        businessProfile: profile, legacyESignUrl: signatureUrl);
+
+    DocumentBoilerplate boilerplate = const DocumentBoilerplate();
+    try {
+      final docRows = await AppSettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('category', 'documents'),
+      );
+      boilerplate = DocumentBoilerplate.resolve(docRows);
+    } catch (_) {}
+
+    final logoBytes = await _fetchBytes(AppSession.instance.currentOrgLogoUrl);
+    final signatureBytes = await _fetchBytes(org.signatoryImageUrl);
+
+    // Tier A fields (field spec §3): Bill No/LR ref/Delivery Date/Vehicle
+    // No/billing party/HSN/package+weight/payment remark/remark all live on
+    // the order row itself (migration 009) — not carried in the page's nav
+    // params, so re-queried here same as _generateInvoice already does for
+    // invoice_no/quotation_id.
+    OrdersRow? order;
+    try {
+      final rows = await OrdersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId!),
+      );
+      if (rows.isNotEmpty) order = rows.first;
+    } catch (_) {}
+
+    String? lrNo;
+    int? packageCount;
+    num? actualWeightKg;
+    num? chargedWeightKg;
+    String? gstPayableBy;
+    if ((order?.lrId ?? '').isNotEmpty) {
+      try {
+        final lr = await SupaFlow.client
+            .from('lr_register')
+            .select('lr_no,package_count,actual_weight_kg,charged_weight_kg,'
+                'gst_payable_by')
+            .eq('id', order!.lrId!)
+            .maybeSingle();
+        if (lr != null) {
+          lrNo = lr['lr_no'] as String?;
+          packageCount = lr['package_count'] as int?;
+          actualWeightKg = lr['actual_weight_kg'] as num?;
+          chargedWeightKg = lr['charged_weight_kg'] as num?;
+          final gpb = lr['gst_payable_by'] as String?;
+          gstPayableBy = (gpb == null || gpb.isEmpty)
+              ? null
+              : gpb[0].toUpperCase() + gpb.substring(1);
+        }
+      } catch (_) {}
+    }
+
+    // Same charge heads the quotation shows (field spec §3: "Particulars
+    // column same heads as quote") — only when this order has a linked
+    // quote with a saved charges breakdown; otherwise InvoicePdf falls
+    // back to a single freight line built from baseAmount.
+    final particulars = <MapEntry<String, num>>[];
+    if ((quotationId ?? '').isNotEmpty) {
+      try {
+        final qRows = await QuotationsTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).eq('id', quotationId!),
+        );
+        final charges = qRows.isNotEmpty ? qRows.first.charges : null;
+        if (charges is Map) {
+          final chargesMap = Map<String, dynamic>.from(charges);
+          num amt(String key) {
+            final v = chargesMap[key];
+            if (v is num) return v;
+            if (v is Map && v['amount'] is num) return v['amount'] as num;
+            return num.tryParse('$v') ?? 0;
+          }
+
+          for (final f in kDefaultChargeFields) {
+            if (f.key == 'discount' || f.key == 'advanceOnQuote') continue;
+            final a = amt(f.key);
+            if (a != 0) particulars.add(MapEntry(f.label, a));
+          }
+        }
+      } catch (_) {}
+    }
+
+    String? amountInWords;
+    try {
+      amountInWords = await SupaFlow.client
+          .rpc('amount_in_words', params: {'amt': total}) as String?;
+    } catch (_) {}
 
     // Item 3: embed the customer's e-signature once they've signed via
     // the public /sign link. Re-read rather than trusting the cached
@@ -698,26 +811,48 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       customerSignatureBytes:
           (sig?.isSigned ?? false) ? sig!.signatureBytes : null,
       customerSignedByName: (sig?.isSigned ?? false) ? sig!.customerName : null,
+      customerSignedByPhone:
+          (sig?.isSigned ?? false) ? (_hideCustomer ? null : widget.orderPhone) : null,
       customerSignedAt: (sig?.isSigned ?? false) ? sig!.signedAt : null,
       signatureInherited: inherited,
       inheritedFromQuoteRef: inherited ? quoteRef : null,
       invoiceNo: invoiceNo,
+      org: org,
+      boilerplate: boilerplate,
       customerName: _hideCustomer
           ? 'Customer (hidden)'
           : (widget.orderCustomer ?? '—'),
       customerPhone: _hideCustomer ? null : widget.orderPhone,
       fromCity: widget.orderFromCity,
       toCity: widget.orderToCity,
+      fromAddress: order?.fromAddress,
+      toAddress: order?.toAddress,
       baseAmount: baseAmount,
       interstate: interstate,
       igst: igst,
       cgst: cgst,
       sgst: sgst,
       total: total,
-      orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
-      profile: profile,
       logoBytes: logoBytes,
       signatureBytes: signatureBytes,
+      lrNo: lrNo,
+      deliveryDate: order?.deliveryDate,
+      vehicleNo: order?.vehicleNo,
+      billingPartyName: order?.billingPartyName,
+      billingPartyGstin: order?.billingPartyGstin,
+      billingPartyAddress: order?.billingPartyAddress,
+      billingPartyPhone: order?.billingPartyPhone,
+      packageCount: packageCount,
+      actualWeightKg: actualWeightKg,
+      chargedWeightKg: chargedWeightKg,
+      hsnSacCode: (order?.hsnSacCode ?? '').isEmpty ? '996719' : order!.hsnSacCode!,
+      paymentRemark: order?.paymentRemark,
+      remark: order?.notes,
+      particulars: particulars,
+      gstPayableBy: gstPayableBy,
+      reverseCharge: order?.reverseCharge ?? false,
+      amountInWords: amountInWords,
+      isPaid: order?.paymentStatus == 'paid',
     );
   }
 

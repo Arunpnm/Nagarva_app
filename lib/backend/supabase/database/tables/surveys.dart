@@ -59,4 +59,30 @@ class SurveysRow extends SupabaseDataRow {
 
   DateTime? get createdAt => getField<DateTime>('created_at');
   set createdAt(DateTime? value) => setField<DateTime>('created_at', value);
+
+  // Added by nagarva_migration_009_documents (Session 3) — same
+  // access/floor/lift/declared-value answers as quotations, captured here
+  // first since the survey is where the customer actually answers them.
+  bool? get easyAccess => getField<bool>('easy_access');
+  set easyAccess(bool? value) => setField<bool>('easy_access', value);
+
+  bool? get accessRestrictions => getField<bool>('access_restrictions');
+  set accessRestrictions(bool? value) =>
+      setField<bool>('access_restrictions', value);
+
+  int? get fromFloor => getField<int>('from_floor');
+  set fromFloor(int? value) => setField<int>('from_floor', value);
+
+  int? get toFloor => getField<int>('to_floor');
+  set toFloor(int? value) => setField<int>('to_floor', value);
+
+  bool? get fromHasLift => getField<bool>('from_has_lift');
+  set fromHasLift(bool? value) => setField<bool>('from_has_lift', value);
+
+  bool? get toHasLift => getField<bool>('to_has_lift');
+  set toHasLift(bool? value) => setField<bool>('to_has_lift', value);
+
+  double? get declaredValue => getField<double>('declared_value');
+  set declaredValue(double? value) =>
+      setField<double>('declared_value', value);
 }

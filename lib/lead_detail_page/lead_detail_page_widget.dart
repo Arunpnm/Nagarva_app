@@ -1099,10 +1099,56 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             ) ??
             sig;
       } catch (_) {}
+
+      // Dual-source branding (Session 3, task #41) + document boilerplate.
+      String? signatureUrl;
+      try {
+        final rows = await SettingsTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).eq('key', 'signature_url'),
+        );
+        if (rows.isNotEmpty) signatureUrl = rows.first.value;
+      } catch (_) {}
+      OrganizationsRow? orgRow;
+      try {
+        final orgId = OrgScope.currentOrgId;
+        if (orgId != null) {
+          final rows = await OrganizationsTable()
+              .queryRows(queryFn: (q) => q.eq('id', orgId));
+          if (rows.isNotEmpty) orgRow = rows.first;
+        }
+      } catch (_) {}
+      final org = OrgProfile.resolve(orgRow,
+          businessProfile: profile, legacyESignUrl: signatureUrl);
+
+      DocumentBoilerplate boilerplate = const DocumentBoilerplate();
+      try {
+        final docRows = await AppSettingsTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).eq('category', 'documents'),
+        );
+        boilerplate = DocumentBoilerplate.resolve(docRows);
+      } catch (_) {}
+
+      String? amountInWords;
+      try {
+        amountInWords = await SupaFlow.client.rpc('amount_in_words',
+            params: {'amt': quotation.total ?? 0}) as String?;
+      } catch (_) {}
+
+      // Moving Items table (field spec §3, page 2) — the survey linked to
+      // this lead, same rooms data _downloadSurveyPdf already renders.
+      final surveyLines =
+          _survey != null ? parseSurveyRooms(_survey!.rooms) : <SurveyLine>[];
+
       final bytes = await QuotePdf.generate(
         leadRef: _leadRef,
+        org: org,
+        boilerplate: boilerplate,
         customerName: quotation.customer ?? widget.leadCustomer ?? 'Customer',
         customerPhone: quotation.phone ?? widget.leadPhone,
+        // No email column exists anywhere in the survey/quotation/lead
+        // schema today — omitted rather than guessed; the PDF already
+        // renders cleanly without it (see the isNotEmpty guard on this
+        // field in QuotePdf.generate).
         fromAddress: quotation.fromAddress,
         toAddress: quotation.toAddress,
         fromCity: widget.leadFromCity,
@@ -1113,14 +1159,30 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         gstAmount: quotation.gstAmount ?? 0,
         total: quotation.total ?? 0,
         interstate: interstate,
-        orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
-        profile: profile,
         logoBytes: logoBytes,
         customerSignatureBytes:
             (sig?.isSigned ?? false) ? sig!.signatureBytes : null,
         customerSignedByName: (sig?.isSigned ?? false) ? sig!.customerName : null,
         customerSignedAt: (sig?.isSigned ?? false) ? sig!.signedAt : null,
         detailed: detailed,
+        loadType: quotation.loadType,
+        vehicleType: quotation.vehicleType,
+        transportMode: quotation.transportMode,
+        packingDate: quotation.packingDate,
+        deliveryDate: quotation.deliveryDate,
+        movingDate: quotation.movingDate,
+        fromFloor: quotation.fromFloor,
+        fromHasLift: quotation.fromHasLift,
+        toFloor: quotation.toFloor,
+        toHasLift: quotation.toHasLift,
+        declaredValue: quotation.declaredValue,
+        fovPct: quotation.fovPct,
+        fovAmount: quotation.fovAmount,
+        easyAccess: quotation.easyAccess,
+        accessRestrictions: quotation.accessRestrictions,
+        accessNotes: quotation.accessNotes,
+        surveyLines: surveyLines,
+        amountInWords: amountInWords,
       );
       await Printing.sharePdf(
         bytes: bytes,

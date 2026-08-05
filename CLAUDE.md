@@ -419,6 +419,179 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **5 Aug 2026 (latest), Order Details Tier 2 Session 3 — Document
+  Generation, all 4 documents rebuilt** (Claude Code session; migrations
+  001-009 live, built against `nagarva_document_field_spec.md` and
+  `kickoff_tier2_s3_documents.md`).
+  - **Item 1, shared header/footer**: `PdfBranding` gained `OrgProfile`
+    (resolved branding — `organizations` columns first, that same org's
+    `settings.business_profile` jsonb as fallback only where the
+    `organizations` column is null; never a different org's data, never a
+    hardcoded default) and `DocumentBoilerplate` (`app_settings` category
+    'documents' — `doc_footer_text`, `quotation_terms`,
+    `goods_description_default`, `demurrage_text`, `invoice_note`,
+    `lr_notice_text`), plus `headerFull`/`footerFull` widgets implementing
+    the full field spec §1 layout (affiliation/Udyam top strip, phones/
+    landline/website/email, branch list for Money Receipt, "For Any Query
+    contact us" footer line). New generated class `app_settings.dart`.
+    **Handed over, not run**: `supabase/nagarva_migration_010_org_profile_backfill.sql`
+    — copies each org's `business_profile` jsonb values into the matching
+    `organizations` columns where those columns are currently null (safe
+    by construction via `coalesce`), so the fallback eventually becomes
+    dead code. Deliberately does NOT touch `invoice_terms` (no matching
+    `organizations` column — conceptually a different document's terms
+    than `quotation_terms`) or `signatory_name` (no existing source
+    anywhere — only the drawn signature *image* is captured today).
+  - **Item 2, Tax Invoice (`invoice_pdf.dart`) — Tier A fields added**:
+    Bill No/Billing Date/LR No cross-reference (via `orders.lr_id` →
+    `lr_register.lr_no`)/Delivery Date/Vehicle No; a Bill To block
+    separate from Move From, falling back to the consignor/customer when
+    `billing_party_name` is null; Move From/To side by side; package
+    count + actual/charged weight (from the linked `lr_register` row);
+    HSN/SAC 996719; Payment Remark/Remark; GST Paid By (from the linked
+    LR's `gst_payable_by`) + Reverse Charge YES/NO; a Particulars table
+    using the SAME charge heads the quotation shows (`quotations.charges`
+    when this order has a linked quote, else one fallback freight line);
+    Total Freight In Words via the DB's `amount_in_words()` RPC; customer
+    signature now prints phone + date/time, not just name; a diagonal
+    green "PAID" watermark when `payment_status = 'paid'`. Folded onto the
+    new shared `OrgProfile`/`DocumentBoilerplate` header/footer, closing
+    the "follow-up can fold it in later" note this file's header code used
+    to carry.
+  - **Item 3, LR / Consignment Note — full rebuild** (new
+    `lib/components/lr_pdf.dart`; `order_documents_section.dart`'s
+    `_genLr` rewritten). Bespoke layout per field spec §2: Consignor/
+    Consignee blocks (Name·Mobile·GST No "N/A" when empty·address·city,
+    state (code) - pincode); a three-column band (NOTICE / AT OWNER'S-
+    CARRIER'S RISK with insurance+distance+driver / LR meta panel with a
+    copy-type box); Paid/To Pay/To Be Billed columns (amount under the
+    active `freight_mode` only, "--" elsewhere); goods description
+    (default from boilerplate) + packages + actual-vs-charged weight +
+    the demurrage sentence; a full freight breakdown (Basic/Loading/
+    Unloading/S.T./Other/LR-CN Charge → Subtotal → GST → Total, blanks
+    print "--" not "₹0.00") with the invoice cross-reference on the
+    right; a declaration paragraph + signatures. **"Generate all four"
+    is one action**: `LrPdf.generate` takes `copyTypes: List<String>` and
+    builds one combined multi-page PDF (Driver/Consignor/Consignee/
+    Transporter, in that order) off a single `pw.Document`, not four
+    separate files. Each copy type is recorded in `lr_copies`
+    (`copy_type`, `generated_by`, `generated_at`) — `pdf_url` stays null,
+    matching this app's existing convention that no generated document is
+    ever uploaded to storage (regenerate-on-demand, not persisted files);
+    flagged as a deliberate scope call, not an oversight.
+  - **Item 4, Quotation — 3-page rebuild** (`quote_pdf.dart` rewritten;
+    call site in `lead_detail_page_widget.dart` updated). Page 1: boxed
+    Quotation No, customer block, 4 dates (Quotation/Packing/Delivery/
+    Moving), a greeting line, Moving Type/Vehicle Type/Transport Mode,
+    Move From/To panels with Floor + Is Lift Available, the existing
+    charge table/GST totals (unchanged logic), a new FOV/Insurance line
+    ("@{fov_pct}% On Declaration Value Of Goods ({declared_value}/-)")
+    when both are set, Total Amount In Words via `amount_in_words()`.
+    Page 2: two site-access Yes/No questions, a bank details block (from
+    `OrgProfile`), the `invoice_note` warning, signatory + receiver's-
+    signature box, and the Moving Items table — **`surveys.rooms` turned
+    out fully usable as-is** via the existing `SurveyLine`/
+    `parseSurveyRooms()` utilities, no transform needed; wired in as
+    `surveyLines`, reusing the same survey the page's own Survey PDF
+    button already renders. Page 3: `quotation_terms` from
+    `app_settings` (boilerplate), replacing the old hardcoded
+    `business_profile['quote_terms']` jsonb read — tenant-editable per
+    the spec's own requirement. Local Dart lakh/crore word-converter
+    (`_amountInWords`/`_numToWords`/...) deleted; every amount-in-words
+    call now goes through the DB's `amount_in_words()` RPC (migration
+    009), per the kickoff brief's explicit constraint. Page 2/3 breaks
+    use `pw.NewPage()` inside one `pw.MultiPage` (not three separate
+    `pw.Page`s), so a long Moving Items table auto-flows across extra
+    pages instead of clipping — see item 6 below.
+  - **Item 5, Money Receipt — rebuild with consolidation support** (new
+    `lib/components/money_receipt_pdf.dart`; `order_documents_section.dart`'s
+    `_genMoneyReceipt` rewritten). Title/Receipt No/Date, "Received with
+    thanks from M/s. {name}", Phone; "Towards Final/Part Payment of Bill
+    No. {invoice_no} Dated {invoice_date}" (Part Payment when not the
+    order's final payment); From/To; "as per details by {MODE} No.
+    {reference_nos}"; Amount in Words (RPC); Amount in figures large;
+    signature. **Consolidated by design**: every `payment_entries` row
+    for the order with `receipt_id is null` is folded into ONE new
+    `receipts` row (`payment_mode` becomes 'multiple' when the consolidated
+    entries used different modes; `reference_nos` is the non-empty
+    references comma-joined — matches APC's own receipts showing up to
+    three UPI transaction ids on one document) rather than one receipt
+    per payment entry. `is_final` is set by comparing `orders.paid_total`
+    against the same `quote_total`-else-`amount` revenue-base fallback
+    the P&L card/Close Order/Awaiting Approval queue already use. If an
+    order has nothing new to receipt (all payments already consolidated),
+    the button reprints the most recent existing `receipts` row instead
+    of erroring.
+  - **Item 6, numbering format — real bug found and fixed.** Migration
+    009 rewrote every org's `number_series.prefix` for invoice/proforma/
+    receipt/quotation/voucher/etc from the old `'INV-'`-style to a
+    calendar-year `'2026/'`-style (padding 4), matching APC's real
+    `2026/0013` format — meaning `next_doc_number()`'s return value
+    ALREADY is the fully-formatted number (`prefix || padded_n ||
+    suffix`, straight from migration 006's own function body). Order
+    Detail's `_nextInvoiceNo()` was still additionally prepending
+    `'$orgSlug/${currentFy()}/'` on top of that — after 009 this would
+    have produced `'APC/2526/2026/0013'` instead of `'2026/0013'` on the
+    very next invoice generated. Fixed to return the RPC's result as-is.
+    Every other numbering call site in the app (Money Receipt, Proforma,
+    Payment Voucher, LR) already used the RPC's return value directly —
+    grepped all of them to confirm this was the one and only offender.
+  - **Field with no data source, flagged rather than invented**: the
+    quotation's Moving Items "Value INR" column — `SurveyLine` (the
+    parsed shape of `surveys.rooms`) only carries `cft`/`qty`, no per-item
+    price, anywhere in the schema. Renders "—". A real fix belongs in the
+    survey capture flow (an optional price-per-item field on the public
+    survey page), not fabricated at PDF generation time.
+  - **CORRECTED (same-day follow-up)**: the Money Receipt's "Dated
+    {invoice_date}" was first reported here as having no data source —
+    wrong. `orders.invoice_issued_at` is a real, pre-existing column
+    (reference schema + migration 002's `gstr1_b2b_view` already select
+    it; Order Details Session 1's own kickoff brief said to write it
+    alongside `invoice_no`) that simply never had a Dart getter and was
+    never actually written anywhere. Fixed: `orders.dart` gained
+    `invoiceIssuedAt`; `_generateInvoice()` now stamps it once, at first
+    invoice-number generation (same "once, reused thereafter" convention
+    `invoice_no` itself already follows); `_genMoneyReceipt` reads it onto
+    the new `receipts`/`payment_entries` rows' own `invoice_date` columns
+    (migration 009) and the PDF now prints "Dated {date}" for any order
+    that's been invoiced. An order invoiced before this fix landed has no
+    `invoice_issued_at` — the line stays correctly blank for those until
+    the invoice is regenerated (which reuses the cached `invoice_no` but
+    would need a manual backfill to also get a date; not done, low
+    stakes for a pre-launch app).
+  - **PDF page-break handling for a long item list — confirmed to hold.**
+    The Quotation is the one document with a variable-length table (the
+    Moving Items list, up to ~34 rows on a real APC quote). It uses
+    `pw.MultiPage` for the whole document with `pw.NewPage()` markers
+    forcing the page-2/page-3 boundaries — `pw.MultiPage` auto-flows
+    table rows that don't fit onto additional pages by design, so a long
+    item list adds pages rather than clipping. The LR (fixed 4-page
+    document, one page per copy type) and Tax Invoice/Money Receipt
+    (single fixed-content pages) use plain `pw.Page` — deliberate, since
+    none of their content is open-ended the way a customer-submitted
+    survey is.
+  - **Not done this session, explicitly deferred per the owner's own
+    instruction** ("Report it as a follow-up rather than building it this
+    session"): a Settings UI for the new `organizations` columns
+    (`phone_secondary`/`tertiary`/`quaternary`, `landline`, `udyam_no`,
+    `affiliation_text`, `branch_list_text`, `signatory_name`,
+    `signatory_image_url`, and the bank block —
+    `beneficiary_name`/`bank_name`/`bank_account_no`/`bank_ifsc`/
+    `upi_display_number`). Without it these columns stay null forever for
+    any org that doesn't have them pre-seeded, and the `OrgProfile`
+    fallback to `business_profile`/nothing never retires. `BusinessSettingsSection`
+    (`lib/settings_page/business_settings_section.dart`) is the natural
+    place — same `_fields`-list pattern it already uses for the existing
+    business_profile keys.
+  - **Also not done, out of scope for this session**: `lr_register`'s
+    insurance fields (`material_insured`/`insurer_name`/`policy_no`/
+    `insurance_date`/`insured_amount`/`distance_km`) and freight-breakdown
+    fields (`basic_freight`/`loading_charge`/etc, beyond the single
+    freight-amount-as-basic-freight this session wires) have no data-entry
+    UI anywhere either — the LR PDF renders them correctly when present
+    (defaults/`--` otherwise) but nothing in the app currently captures
+    per-shipment insurance details or itemizes the freight breakdown
+    beyond one lump amount.
 - **2 Aug 2026 (latest), five more device-test findings — P&L data
   bugs, missing owner notification, decision change on lock timing.**
   1. **Owner got no notification on job completion.** The Awaiting

@@ -14,6 +14,8 @@ import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/pdf_branding.dart';
+import '/components/lr_pdf.dart';
+import '/components/money_receipt_pdf.dart';
 import '/components/signature_pad.dart';
 import '/components/simple_document_pdf.dart';
 import '/config/app_config.dart';
@@ -160,6 +162,42 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     } catch (_) {}
     final logoBytes = await _fetchBytes(AppSession.instance.currentOrgLogoUrl);
     return (profile, logoBytes);
+  }
+
+  /// Dual-source branding (Session 3, task #41) + document boilerplate —
+  /// the resolved form the rebuilt LR/Money Receipt/Quotation generators
+  /// use, as opposed to [_loadBranding]'s raw jsonb map (kept for the
+  /// SimpleDocumentPdf-based documents this session didn't rebuild).
+  Future<(OrgProfile, DocumentBoilerplate, Uint8List?)> _loadOrgProfile() async {
+    final (profile, logoBytes) = await _loadBranding();
+    String? signatureUrl;
+    try {
+      final rows = await SettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('key', 'signature_url'),
+      );
+      if (rows.isNotEmpty) signatureUrl = rows.first.value;
+    } catch (_) {}
+    OrganizationsRow? orgRow;
+    try {
+      final orgId = OrgScope.currentOrgId;
+      if (orgId != null) {
+        final rows =
+            await OrganizationsTable().queryRows(queryFn: (q) => q.eq('id', orgId));
+        if (rows.isNotEmpty) orgRow = rows.first;
+      }
+    } catch (_) {}
+    final org = OrgProfile.resolve(orgRow,
+        businessProfile: profile, legacyESignUrl: signatureUrl);
+
+    DocumentBoilerplate boilerplate = const DocumentBoilerplate();
+    try {
+      final docRows = await AppSettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('category', 'documents'),
+      );
+      boilerplate = DocumentBoilerplate.resolve(docRows);
+    } catch (_) {}
+
+    return (org, boilerplate, logoBytes);
   }
 
   // ---- Signature companion -------------------------------------------
@@ -355,61 +393,176 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     }
   }
 
-  // ---- Money Receipt (doc_type: receipt) -------------------------------
+  // ---- Money Receipt (field spec §4 — rebuild, task #45) -----------------
+  //
+  // Consolidated by design: every payment_entries row for this order that
+  // hasn't been receipted yet (receipt_id null) is folded into ONE new
+  // receipt, matching APC's own receipts showing up to three UPI
+  // transaction ids on one document rather than one receipt per payment.
 
   Future<void> _genMoneyReceipt() => _run(() async {
         final o = _order;
         if (o == null) return;
-        final payments = await PaymentEntriesTable().queryRows(
+        final orgId = OrgScope.currentOrgId!;
+
+        final unreceipted = await PaymentEntriesTable().queryRows(
           queryFn: (q) => OrgScope.read(q)
               .eq('order_id', o.id!)
-              .order('created_at', ascending: false),
+              .isFilter('receipt_id', null)
+              .order('created_at', ascending: true),
         );
-        if (payments.isEmpty) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('No payments recorded for this order yet.')));
-          return;
+
+        List<PaymentEntriesRow> toReceipt = unreceipted;
+        ReceiptsRow? existingReceipt;
+        if (unreceipted.isEmpty) {
+          // Nothing new to receipt — reprint the most recent existing one
+          // instead of erroring, so the button still does something useful
+          // on an order that's already fully receipted.
+          final rows = await ReceiptsTable().queryRows(
+            queryFn: (q) => OrgScope.read(q)
+                .eq('order_id', o.id!)
+                .order('created_at', ascending: false),
+          );
+          if (rows.isEmpty) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('No payments recorded for this order yet.')));
+            return;
+          }
+          existingReceipt = rows.first;
         }
-        final latest = payments.first;
-        final orgId = OrgScope.currentOrgId!;
-        final docNo = await SupaFlow.client.rpc('next_doc_number', params: {
-          'p_org': orgId,
-          'p_doc_type': 'receipt',
-          'p_branch': o.branch,
-          'p_fy': _currentFy(),
-        }) as String;
-        final (profile, logoBytes) = await _loadBranding();
-        await _showDocDialog('Money Receipt $docNo', 'Receipt_$docNo.pdf',
-            () async {
-          return SimpleDocumentPdf.generate(
-            docLabel: 'MONEY RECEIPT',
-            docNo: docNo,
-            orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
-            profile: profile,
+
+        final (org, boilerplate, logoBytes) = await _loadOrgProfile();
+
+        String receiptNo;
+        DateTime receiptDate;
+        num amount;
+        String paymentMode;
+        String? referenceNos;
+        bool isFinal;
+        String receiptId;
+        DateTime? invoiceDate;
+
+        if (existingReceipt != null) {
+          receiptNo = existingReceipt.receiptNo;
+          receiptDate = existingReceipt.receiptDate ?? DateTime.now();
+          amount = existingReceipt.totalAmount ?? 0;
+          paymentMode = existingReceipt.paymentMode ?? 'cash';
+          referenceNos = existingReceipt.referenceNos;
+          isFinal = existingReceipt.isFinal;
+          receiptId = existingReceipt.id!;
+          invoiceDate = existingReceipt.invoiceDate;
+        } else {
+          receiptNo = await SupaFlow.client.rpc('next_doc_number', params: {
+            'p_org': orgId,
+            'p_doc_type': 'receipt',
+            'p_branch': o.branch,
+            'p_fy': _currentFy(),
+          }) as String;
+          receiptDate = DateTime.now();
+          amount = toReceipt.fold<num>(0, (s, p) => s + p.amount);
+          final modes = toReceipt.map((p) => p.mode).toSet();
+          paymentMode = modes.length == 1 ? modes.first : 'multiple';
+          referenceNos = toReceipt
+              .map((p) => p.reference ?? '')
+              .where((r) => r.isNotEmpty)
+              .join(', ');
+          // orders.quote_total/amount fallback — same convention as the P&L
+          // card, Close Order's balance warning, and the Awaiting Approval
+          // queue (see CLAUDE.md's changelog on the quote_total/amount
+          // split): a directly-booked order has no quote_total.
+          final revenueBase =
+              (o.quoteTotal ?? 0) != 0 ? o.quoteTotal! : (o.amount ?? 0);
+          isFinal = o.paidTotal >= revenueBase && revenueBase > 0;
+
+          String? amountInWords;
+          try {
+            amountInWords = await SupaFlow.client.rpc('amount_in_words',
+                params: {'amt': amount}) as String?;
+          } catch (_) {}
+
+          // orders.invoice_issued_at (stamped once, at first Tax Invoice
+          // generation — see order_detail_page_widget.dart._generateInvoice)
+          // is the real source for "Dated {invoice_date}"; null on an
+          // order that hasn't been invoiced yet, which the PDF already
+          // omits cleanly rather than guessing.
+          invoiceDate = o.invoiceIssuedAt;
+
+          final inserted = await ReceiptsTable().insert({
+            'org_id': orgId,
+            'receipt_no': receiptNo,
+            'receipt_date': receiptDate.toIso8601String(),
+            'order_id': o.id,
+            'customer_id': o.customerId,
+            'invoice_no': o.invoiceNo,
+            'invoice_date': invoiceDate?.toIso8601String(),
+            'total_amount': amount,
+            'amount_in_words': amountInWords,
+            'payment_mode': paymentMode,
+            'reference_nos': referenceNos,
+            'is_final': isFinal,
+            'created_by': AppSession.instance.currentStaffId,
+          });
+          receiptId = inserted.id!;
+
+          for (final p in toReceipt) {
+            await PaymentEntriesTable().update(
+              data: {
+                'receipt_id': receiptId,
+                'receipt_no': receiptNo,
+                'is_final_payment': isFinal,
+                if (o.invoiceNo != null) 'invoice_no': o.invoiceNo,
+                if (invoiceDate != null)
+                  'invoice_date': invoiceDate.toIso8601String(),
+              },
+              matchingRows: (q) => OrgScope.write(q).eq('id', p.id),
+            );
+          }
+        }
+
+        // Reused from insert above for a new receipt; re-read for a reprint
+        // of an existing one.
+        final amountInWords = existingReceipt?.amountInWords ??
+            await () async {
+              try {
+                return await SupaFlow.client.rpc('amount_in_words',
+                    params: {'amt': amount}) as String?;
+              } catch (_) {
+                return null;
+              }
+            }();
+
+        await _showDocDialog(
+            'Money Receipt $receiptNo', 'Receipt_$receiptNo.pdf', () async {
+          return MoneyReceiptPdf.generate(
+            org: org,
+            boilerplate: boilerplate,
+            receiptNo: receiptNo,
+            receiptDate: receiptDate,
             logoBytes: logoBytes,
-            metaLeft: [
-              MapEntry('Received From', o.customer),
-              if ((o.phone ?? '').isNotEmpty) MapEntry('Phone', o.phone!),
-              MapEntry('Order Ref', o.id!),
-            ],
-            metaRight: [
-              MapEntry('No', docNo),
-              MapEntry('Date', PdfBranding.fmtDate(DateTime.now())),
-              MapEntry('Mode', latest.mode.toUpperCase()),
-            ],
-            totalLabel: 'AMOUNT RECEIVED',
-            totalValue: _rupees(latest.amount),
-            notesBlock: (latest.note ?? '').isEmpty ? null : latest.note,
-            signatureBytes: _heldSignature,
-            signatureLabel: 'Received by',
+            signatureBytes: await _fetchBytes(org.signatoryImageUrl),
+            receivedFrom: o.customer,
+            phone: o.phone,
+            invoiceNo: o.invoiceNo,
+            invoiceDate: invoiceDate,
+            isFinalPayment: isFinal,
+            fromPlace: o.fromCity,
+            toPlace: o.toCity,
+            paymentMode: paymentMode,
+            referenceNos: referenceNos,
+            amount: amount,
+            amountInWords: amountInWords,
           );
         });
         await AuditLogService.log(
           entityType: 'orders',
           entityId: o.id!,
           action: 'document_generated',
-          newValue: {'doc_type': 'receipt', 'doc_no': docNo},
+          newValue: {
+            'doc_type': 'receipt',
+            'doc_no': receiptNo,
+            'consolidated_entries': toReceipt.map((p) => p.id).toList(),
+          },
         );
       });
 
@@ -463,7 +616,9 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         );
       });
 
-  // ---- LR / Bilty --------------------------------------------------------
+  // ---- LR / Bilty (field spec §2 — full rebuild, task #43) --------------
+
+  static const _lrCopyTypes = ['driver', 'consignor', 'consignee', 'transporter'];
 
   Future<void> _genLr() => _run(() async {
         final o = _order;
@@ -476,7 +631,6 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         // scoped to lr_series instead of number_series (the two aren't
         // consolidated yet; 007 mirrors the counter into number_series
         // under doc_type 'lr' so a future consolidation is a no-op).
-        // Replaces the read-then-write this used before 007 landed.
         final lrNo = await SupaFlow.client.rpc('next_lr_number', params: {
           'p_org': orgId,
           'p_branch': o.branch,
@@ -516,8 +670,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           ewayId = eway?['id'] as String?;
         } catch (_) {}
 
-        final profile = (await _loadBranding()).$1;
-        final orgName = AppSession.instance.currentOrgName ?? 'Nagarva';
+        final (org, boilerplate, logoBytes) = await _loadOrgProfile();
         final freight = o.amount ?? 0;
 
         final inserted = await SupaFlow.client
@@ -527,62 +680,94 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               'lr_no': lrNo,
               'order_id': o.id,
               if (ewayId != null) 'eway_bill_id': ewayId,
-              'consignor_name': orgName,
-              'consignor_address': profile['address'] ?? '',
+              'consignor_name': org.name,
+              'consignor_gstin': org.gstin,
+              'consignor_address': org.address ?? '',
               'consignee_name': consigneeName,
               'consignee_gstin': consigneeGstin,
               'consignee_address': consigneeAddress,
               'consignee_phone': o.phone,
               'from_place': o.fromCity,
               'to_place': o.toCity,
+              'vehicle_no': o.vehicleNo,
+              'driver_name': o.driverName,
               'freight_amount': freight,
+              'basic_freight': freight,
               'total_amount': freight,
+              'invoice_no': o.invoiceNo,
               'branch': o.branch,
             })
             .select()
             .single();
 
-        final (loadedProfile, logoBytes) = await _loadBranding();
-        await _showDocDialog('LR $lrNo', 'LR_${lrNo.replaceAll('/', '-')}.pdf',
-            () async {
-          return SimpleDocumentPdf.generate(
-            docLabel: 'LORRY RECEIPT',
-            docNo: lrNo,
-            orgName: orgName,
-            profile: loadedProfile,
+        final lrId = inserted['id'] as String;
+        final gstPayableBy = (inserted['gst_payable_by'] as String?) ?? 'consignor';
+
+        await _showDocDialog(
+            'LR $lrNo', 'LR_${lrNo.replaceAll('/', '-')}.pdf', () async {
+          return LrPdf.generate(
+            org: org,
+            boilerplate: boilerplate,
+            copyTypes: _lrCopyTypes,
+            lrNo: lrNo,
+            lrDate: DateTime.now(),
             logoBytes: logoBytes,
-            metaLeft: [
-              MapEntry('Consignor', orgName),
-              MapEntry('Consignee', consigneeName ?? '—'),
-              if ((consigneeGstin ?? '').isNotEmpty)
-                MapEntry('Consignee GSTIN', consigneeGstin!),
-              MapEntry('Delivery Address', consigneeAddress ?? '—'),
-            ],
-            metaRight: [
-              MapEntry('No', lrNo),
-              MapEntry('Date', PdfBranding.fmtDate(DateTime.now())),
-              MapEntry('From', o.fromCity ?? '—'),
-              MapEntry('To', o.toCity ?? '—'),
-            ],
-            tableHeaders: const ['DESCRIPTION', 'PACKAGES', 'FREIGHT'],
-            tableRows: [
-              [
-                (inserted['description'] as String?) ?? 'Household Goods',
-                '${inserted['package_count'] ?? 0}',
-                _rupees(freight),
-              ],
-            ],
-            totalLabel: 'FREIGHT TOTAL',
-            totalValue: _rupees(freight),
-            signatureBytes: _heldSignature,
-            signatureLabel: 'Consignee Signature',
+            signatureBytes: await _fetchBytes(org.signatoryImageUrl),
+            consignorName: org.name,
+            consignorGstin: org.gstin,
+            consignorAddress: org.address,
+            consignorPhone: org.phones.isNotEmpty ? org.phones.first : null,
+            consigneeName: consigneeName,
+            consigneeGstin: consigneeGstin,
+            consigneeAddress: consigneeAddress,
+            consigneePhone: o.phone,
+            fromPlace: o.fromCity,
+            toPlace: o.toCity,
+            vehicleNo: o.vehicleNo,
+            driverName: o.driverName,
+            description: (inserted['description'] as String?),
+            packageCount: (inserted['package_count'] as int?) ?? 0,
+            actualWeightKg: (inserted['actual_weight_kg'] as num?) ?? 0,
+            chargedWeightKg: (inserted['charged_weight_kg'] as num?) ?? 0,
+            freightMode: (inserted['freight_mode'] as String?) ?? 'paid',
+            freightAmount: freight,
+            basicFreight: freight,
+            gstPct: 0,
+            gstAmount: 0,
+            totalAmount: freight,
+            invoiceNo: o.invoiceNo,
+            gstPayableBy:
+                gstPayableBy[0].toUpperCase() + gstPayableBy.substring(1),
           );
         });
+
+        // field spec §2.1: "generate all four ... record each in lr_copies
+        // with copy_type/pdf_url." pdf_url stays null — this app never
+        // uploads generated PDFs to storage for any document (Invoice/
+        // Receipt/etc. are all regenerate-on-demand, not persisted files)
+        // and this LR doesn't start that pattern; the row still records
+        // that each copy type was generated, which is what the queue/audit
+        // trail actually needs.
+        try {
+          await SupaFlow.client.from('lr_copies').insert(_lrCopyTypes
+              .map((ct) => {
+                    'org_id': orgId,
+                    'lr_id': lrId,
+                    'copy_type': ct,
+                    'generated_by': AppSession.instance.currentStaffId,
+                  })
+              .toList());
+        } catch (_) {
+          // Best-effort tracking row — the PDF itself already generated
+          // successfully above; a tracking-insert failure shouldn't be
+          // reported as the LR generation having failed.
+        }
+
         await AuditLogService.log(
           entityType: 'orders',
           entityId: o.id!,
           action: 'document_generated',
-          newValue: {'doc_type': 'lr', 'lr_no': lrNo},
+          newValue: {'doc_type': 'lr', 'lr_no': lrNo, 'copies': _lrCopyTypes},
         );
       });
 

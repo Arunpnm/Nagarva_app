@@ -69,4 +69,86 @@ class OrganizationsRow extends SupabaseDataRow {
 
   String? get address => getField<String>('address');
   set address(String? value) => setField<String>('address', value);
+
+  // Rest of migration 006 — never had getters at all until Session 3's
+  // document work needed them for the shared PDF header.
+  String? get city => getField<String>('city');
+  set city(String? value) => setField<String>('city', value);
+
+  String? get state => getField<String>('state');
+  set state(String? value) => setField<String>('state', value);
+
+  int? get stateCode => getField<int>('state_code');
+  set stateCode(int? value) => setField<int>('state_code', value);
+
+  String? get pincode => getField<String>('pincode');
+  set pincode(String? value) => setField<String>('pincode', value);
+
+  String? get pan => getField<String>('pan');
+  set pan(String? value) => setField<String>('pan', value);
+
+  String? get website => getField<String>('website');
+  set website(String? value) => setField<String>('website', value);
+
+  String? get supportEmail => getField<String>('support_email');
+  set supportEmail(String? value) => setField<String>('support_email', value);
+
+  String? get tagline => getField<String>('tagline');
+  set tagline(String? value) => setField<String>('tagline', value);
+
+  // Added by nagarva_migration_009_documents — the shared document header
+  // block (Session 3). All nullable; the header degrades gracefully when
+  // a tenant hasn't filled these in yet, same convention as the rest of
+  // this class.
+  String? get phoneSecondary => getField<String>('phone_secondary');
+  set phoneSecondary(String? value) =>
+      setField<String>('phone_secondary', value);
+
+  String? get phoneTertiary => getField<String>('phone_tertiary');
+  set phoneTertiary(String? value) =>
+      setField<String>('phone_tertiary', value);
+
+  String? get phoneQuaternary => getField<String>('phone_quaternary');
+  set phoneQuaternary(String? value) =>
+      setField<String>('phone_quaternary', value);
+
+  String? get landline => getField<String>('landline');
+  set landline(String? value) => setField<String>('landline', value);
+
+  String? get udyamNo => getField<String>('udyam_no');
+  set udyamNo(String? value) => setField<String>('udyam_no', value);
+
+  String? get affiliationText => getField<String>('affiliation_text');
+  set affiliationText(String? value) =>
+      setField<String>('affiliation_text', value);
+
+  String? get branchListText => getField<String>('branch_list_text');
+  set branchListText(String? value) =>
+      setField<String>('branch_list_text', value);
+
+  String? get signatoryImageUrl => getField<String>('signatory_image_url');
+  set signatoryImageUrl(String? value) =>
+      setField<String>('signatory_image_url', value);
+
+  String? get signatoryName => getField<String>('signatory_name');
+  set signatoryName(String? value) =>
+      setField<String>('signatory_name', value);
+
+  String? get beneficiaryName => getField<String>('beneficiary_name');
+  set beneficiaryName(String? value) =>
+      setField<String>('beneficiary_name', value);
+
+  String? get bankName => getField<String>('bank_name');
+  set bankName(String? value) => setField<String>('bank_name', value);
+
+  String? get bankAccountNo => getField<String>('bank_account_no');
+  set bankAccountNo(String? value) =>
+      setField<String>('bank_account_no', value);
+
+  String? get bankIfsc => getField<String>('bank_ifsc');
+  set bankIfsc(String? value) => setField<String>('bank_ifsc', value);
+
+  String? get upiDisplayNumber => getField<String>('upi_display_number');
+  set upiDisplayNumber(String? value) =>
+      setField<String>('upi_display_number', value);
 }

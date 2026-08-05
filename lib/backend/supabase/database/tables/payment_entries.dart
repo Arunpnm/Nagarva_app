@@ -58,4 +58,23 @@ class PaymentEntriesRow extends SupabaseDataRow {
   DateTime? get reconciledAt => getField<DateTime>('reconciled_at');
   set reconciledAt(DateTime? value) =>
       setField<DateTime>('reconciled_at', value);
+
+  // Added by nagarva_migration_009_documents (Session 3) — money receipt
+  // invoice cross-reference and consolidated-receipt linkage.
+  String? get invoiceNo => getField<String>('invoice_no');
+  set invoiceNo(String? value) => setField<String>('invoice_no', value);
+
+  DateTime? get invoiceDate => getField<DateTime>('invoice_date');
+  set invoiceDate(DateTime? value) =>
+      setField<DateTime>('invoice_date', value);
+
+  String? get receiptNo => getField<String>('receipt_no');
+  set receiptNo(String? value) => setField<String>('receipt_no', value);
+
+  bool? get isFinalPayment => getField<bool>('is_final_payment');
+  set isFinalPayment(bool? value) =>
+      setField<bool>('is_final_payment', value);
+
+  String? get receiptId => getField<String>('receipt_id');
+  set receiptId(String? value) => setField<String>('receipt_id', value);
 }
