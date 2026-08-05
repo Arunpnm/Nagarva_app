@@ -507,6 +507,51 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         ],
       );
 
+      // 9: notify the owner. Device-test finding: nothing reached the
+      // owner on completion at all — the Awaiting Approval badge/queue
+      // (OperationsPage) exists, but only if the owner happens to be
+      // looking at it. Two tables, deliberately both:
+      //   - `notification_log` (migration 006) is the multi-channel
+      //     dispatch ledger — channel/status columns exist for an
+      //     eventual push/WhatsApp pipeline this app doesn't have yet.
+      //     `event_type: 'otp_completed'` is one of the values the
+      //     migration's own comment already lists as expected.
+      //   - `notifications` is what `NotificationBell` actually
+      //     subscribes to (Supabase Realtime) and renders today. Writing
+      //     only the ledger would satisfy the schema but not the actual
+      //     complaint — nothing would reach the owner until a future push
+      //     pipeline reads it; writing only the bell table would lose the
+      //     audit trail the ledger exists for.
+      // recipient_staff_id / staff_id both null — same convention the
+      // existing new-lead trigger uses for "addressed to the owner", not
+      // a specific staff row.
+      // Best-effort: a failed notification must never fail the
+      // completion transaction the supervisor is waiting on.
+      final notifTitle = 'Job completed — ${o.id}';
+      final notifBody = '${o.customer} · completed by '
+          '${AppSession.instance.currentStaffName ?? 'supervisor'}';
+      try {
+        await SupaFlow.client.from('notification_log').insert({
+          'org_id': orgId,
+          'channel': 'in_app',
+          'event_type': 'otp_completed',
+          'title': notifTitle,
+          'body': notifBody,
+          'entity_type': 'orders',
+          'entity_id': o.id,
+          'status': 'sent',
+        });
+      } catch (_) {}
+      try {
+        await SupaFlow.client.from('notifications').insert({
+          'org_id': orgId,
+          'type': 'otp_completed',
+          'title': notifTitle,
+          'body': '$notifBody · awaiting your approval',
+          'ref_order_id': o.id,
+        });
+      } catch (_) {}
+
       _model.order!.supervisorStatus = 'completed_pending';
       _model.step = SupervisorJobStep.done;
       _model.otpError = false;
@@ -796,7 +841,14 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     );
   }
 
-  Widget _fieldExpensesCard(BuildContext context) {
+  /// [editable] false once `supervisor_status == 'completed_pending'` —
+  /// device-test decision change: field expenses (and the crew, which was
+  /// already implicitly locked by the step machine simply not showing
+  /// `_teamSelectionCard` again) used to stay editable until the OWNER
+  /// closed the order. Now everything locks the moment OTP verification
+  /// succeeds, not at Close Order — the owner is approving a fixed set of
+  /// numbers, and they must not be able to move after the code is entered.
+  Widget _fieldExpensesCard(BuildContext context, {bool editable = true}) {
     final theme = FlutterFlowTheme.of(context);
     final total = _model.fieldExpenses.fold<double>(
         0, (s, e) => s + (num.tryParse('${e['amount']}') ?? 0));
@@ -810,8 +862,19 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Field Expenses', style: theme.titleSmall),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Field Expenses', style: theme.titleSmall),
+              if (!editable)
+                Icon(Icons.lock, size: 15, color: theme.secondaryText),
+            ],
+          ),
           const SizedBox(height: 8),
+          if (_model.fieldExpenses.isEmpty && !editable)
+            Text('No field expenses were logged.',
+                style: theme.bodySmall.override(
+                    font: GoogleFonts.inter(), color: theme.secondaryText)),
           ..._model.fieldExpenses.map((e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
@@ -835,36 +898,39 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                   style: theme.bodyMedium.override(
                       font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
             ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            initialValue: _model.expenseType,
-            items: kJobExpenseCategories
-                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                .toList(),
-            onChanged: (v) => setState(() => _model.expenseType = v ?? 'Fuel'),
-            decoration: const InputDecoration(labelText: 'Type'),
-          ),
-          TextField(
-            controller: _model.expenseAmountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Amount (₹)'),
-          ),
-          TextField(
-            controller: _model.expenseNoteController,
-            decoration: const InputDecoration(labelText: 'Note (optional)'),
-          ),
-          const SizedBox(height: 8),
-          FFButtonWidget(
-            onPressed: _model.saving ? null : _addFieldExpense,
-            text: 'Add Expense',
-            options: FFButtonOptions(
-              width: double.infinity,
-              color: theme.secondaryBackground,
-              textStyle: TextStyle(color: theme.primary),
-              borderSide: BorderSide(color: theme.primary),
-              borderRadius: BorderRadius.circular(8.0),
+          if (editable) ...[
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: _model.expenseType,
+              items: kJobExpenseCategories
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (v) =>
+                  setState(() => _model.expenseType = v ?? 'Fuel'),
+              decoration: const InputDecoration(labelText: 'Type'),
             ),
-          ),
+            TextField(
+              controller: _model.expenseAmountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Amount (₹)'),
+            ),
+            TextField(
+              controller: _model.expenseNoteController,
+              decoration: const InputDecoration(labelText: 'Note (optional)'),
+            ),
+            const SizedBox(height: 8),
+            FFButtonWidget(
+              onPressed: _model.saving ? null : _addFieldExpense,
+              text: 'Add Expense',
+              options: FFButtonOptions(
+                width: double.infinity,
+                color: theme.secondaryBackground,
+                textStyle: TextStyle(color: theme.primary),
+                borderSide: BorderSide(color: theme.primary),
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1123,7 +1189,6 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
 
   Widget _doneCard(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    final ownerClosed = _model.order?.status == 'closed';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1144,9 +1209,12 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                       : '⏳ Awaiting owner approval.',
                   style: theme.titleMedium),
               const SizedBox(height: 4),
+              // Device-test decision change: everything locks at OTP
+              // success now, not at Close Order — the owner is approving a
+              // fixed set of numbers, so field expenses and the crew must
+              // not be able to move after the code is entered.
               Text(
-                'Odometer and the completion code are locked now.'
-                '${ownerClosed ? '' : ' Field expenses stay open until the order is closed.'}',
+                'Odometer, field expenses and the crew are locked now.',
                 textAlign: TextAlign.center,
                 style: theme.bodySmall.override(
                     font: GoogleFonts.inter(), color: theme.secondaryText),
@@ -1154,13 +1222,12 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
             ],
           ),
         ),
-        // B6: field expenses stay editable until the owner closes the
-        // order — everything else on this page (odometer, OTP) is
-        // implicitly locked simply by the step machine landing here.
-        if (!ownerClosed) ...[
-          const SizedBox(height: 16),
-          _fieldExpensesCard(context),
-        ],
+        // Read-only from here on — see _fieldExpensesCard's own doc
+        // comment. Crew has no card here at all (never did): the step
+        // machine simply doesn't render _teamSelectionCard again once
+        // `done`, which is a real lock, not a UI oversight.
+        const SizedBox(height: 16),
+        _fieldExpensesCard(context, editable: false),
       ],
     );
   }

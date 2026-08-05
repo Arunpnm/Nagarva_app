@@ -256,6 +256,63 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     }
   }
 
+  /// Device-test bug: `order_staff.salary_amount` exists and the P&L card
+  /// reads it, but nothing wrote it after the initial "Add Labour" entry —
+  /// there was no way to correct or set it afterward, which is the actual
+  /// reason Staff Salary always read ₹0 (a supervisor's field job screen
+  /// adds crew via CrewSyncService with a day-rate default and headcount
+  /// only; it never sets an amount — that's deliberately the owner's to
+  /// set, see this file's own doc comment on crew responsibilities).
+  Future<void> _editSalary(OrderStaffRow c) async {
+    final s = _staffById(c.staffId);
+    final theme = FlutterFlowTheme.of(context);
+    final ctrl = TextEditingController(
+        text: (c.salaryAmount ?? 0) == 0
+            ? ''
+            : (c.salaryAmount ?? 0).toStringAsFixed(0));
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: theme.secondaryBackground,
+        title: Text('Salary — ${s?.name ?? 'Staff'}'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration:
+              const InputDecoration(labelText: 'Salary for this job (₹)'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (saved != true) return;
+    final amount = double.tryParse(ctrl.text.trim()) ?? 0;
+    setState(() => _busy = true);
+    try {
+      await OrderStaffTable().update(
+        data: {'salary_amount': amount},
+        matchingRows: (q) => OrgScope.write(q).eq('id', c.id!),
+      );
+      await _load();
+      widget.onCrewChanged?.call();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
@@ -371,11 +428,30 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                             fontSize: 12.5, color: theme.primaryText),
                       ),
                     ),
-                    Text('₹${(c.salaryAmount ?? 0).toStringAsFixed(0)}',
-                        style: GoogleFonts.interTight(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: theme.primary)),
+                    InkWell(
+                      onTap: _busy || _locked ? null : () => _editSalary(c),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('₹${(c.salaryAmount ?? 0).toStringAsFixed(0)}',
+                                style: GoogleFonts.interTight(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.primary)),
+                            if (!_locked) ...[
+                              const SizedBox(width: 3),
+                              Icon(Icons.edit,
+                                  size: 12,
+                                  color: theme.primary.withValues(alpha: 0.6)),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       icon: Icon(Icons.close,

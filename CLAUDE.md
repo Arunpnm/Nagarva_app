@@ -419,6 +419,52 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
+- **2 Aug 2026 (latest), five more device-test findings — P&L data
+  bugs, missing owner notification, decision change on lock timing.**
+  1. **Owner got no notification on job completion.** The Awaiting
+     Approval badge/queue (added earlier the same day) is pull, not
+     push — it only helps if the owner is already looking at Operations.
+     `_verifyAndComplete` now writes to two tables on success:
+     `notification_log` (migration 006's multi-channel dispatch ledger —
+     `event_type: 'otp_completed'` is one of the values its own column
+     comment already lists) and `notifications` (what `NotificationBell`
+     actually subscribes to via Realtime and renders today). Both,
+     deliberately — the ledger alone wouldn't reach the owner until a
+     future push pipeline reads it; the bell table alone would lose the
+     audit trail the ledger exists for. Both writes are best-effort, so a
+     notification failure can't fail the completion transaction itself.
+  2. **P&L "Order Expenses" count bug**: `_sumFieldExpenses` returned only
+     a running total, never a count, so an order whose costs came
+     entirely from `field_expenses` (not the `expenses` table) showed
+     "(0 items)" next to a correct non-zero ₹ total. Now returns
+     `(total, count)`.
+  3. **P&L cost rows at exactly ₹0 read as a red "₹0"**, indistinguishable
+     from a real zero cost. `_row` now shows "—" (matching the existing
+     null case) for any `negative: true` row whose amount is exactly
+     zero. Caught and removed two stale conditions on the way: Staff
+     Salary's `_staffCount == 0 ? null : ...` only handled zero
+     *headcount*, not zero *salary* (the actual bug — 3 staff, ₹0 total);
+     Order Expenses compared `_salaryTotal == _expensesTotal`, two
+     unrelated totals, almost certainly a copy-paste leftover.
+  4. **Owner had no way to set labour salary at all.** `order_staff
+     .salary_amount` existed and the P&L read it, but nothing wrote it
+     after the initial "Add Labour" entry — which is the actual reason
+     Staff Salary was always ₹0. The amount in `OrderCrewSection`'s
+     labour row is now tappable (pencil icon, disabled once the order is
+     closed) and opens an edit dialog writing `salary_amount` directly.
+  5. **Decision change: lock supervisor edits at OTP success, not at
+     Close Order.** Previously field expenses stayed editable until the
+     owner closed the order (crew was already effectively locked — the
+     step machine simply never re-renders the team picker after
+     `done`). `_fieldExpensesCard` now takes an `editable` flag;
+     `_doneCard` always renders it read-only (with a lock icon),
+     regardless of whether the owner has closed the order yet.
+  6. **Confirmed, not changed**: no salary/wage figure is visible
+     anywhere in the 5 supervisor screens or the field job page —
+     grepped for `salary`/`₹` across all of them. The one screen that
+     does show ₹ figures to a supervisor is My Earnings, and only their
+     own `order_staff` rows (`staff_id = currentStaffId`), which is the
+     point of that screen, not a leak.
 - **2 Aug 2026 (later still), supervisor UX follow-up from device
   testing.** Full OTP flow confirmed working end to end (OTP, POD
   capture, lock-after-completion, Awaiting badge) — these are polish/gap

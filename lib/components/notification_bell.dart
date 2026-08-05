@@ -206,9 +206,11 @@ class _NotificationBellState extends State<NotificationBell> {
                               dense: true,
                               contentPadding: EdgeInsets.zero,
                               leading: Icon(
-                                n.type == 'order_assigned'
-                                    ? Icons.assignment_ind
-                                    : Icons.person_add_alt_1,
+                                switch (n.type) {
+                                  'order_assigned' => Icons.assignment_ind,
+                                  'otp_completed' => Icons.task_alt,
+                                  _ => Icons.person_add_alt_1,
+                                },
                                 color: n.read
                                     ? theme.secondaryText
                                     : theme.primary,

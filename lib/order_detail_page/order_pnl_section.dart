@@ -106,13 +106,23 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   /// than trusting the DB-level normalisation alone, since a row written
   /// by a future caller that doesn't follow the documented contract
   /// should degrade to 0, not throw.
-  double _sumFieldExpenses(dynamic raw) {
-    if (raw is! List) return 0;
+  ///
+  /// Returns (total, count). Device-test bug: the first version only
+  /// tracked the total, so "Order Expenses (0 items)" showed ₹5,650 next
+  /// to a count of 0 for an order whose costs came entirely from field
+  /// expenses — the `expenses` table's row count was being shown as if it
+  /// were the count of everything in `_expensesTotal`.
+  (double, int) _sumFieldExpenses(dynamic raw) {
+    if (raw is! List) return (0, 0);
     var total = 0.0;
+    var count = 0;
     for (final e in raw) {
-      if (e is Map && e['amount'] != null) total += _asNum(e['amount']).toDouble();
+      if (e is Map && e['amount'] != null) {
+        total += _asNum(e['amount']).toDouble();
+        count++;
+      }
     }
-    return total;
+    return (total, count);
   }
 
   Future<void> _load() async {
@@ -130,7 +140,8 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
         return;
       }
       final order = orderRows.first;
-      final fieldExpenses = _sumFieldExpenses(order.data['field_expenses']);
+      final (fieldExpensesTotal, fieldExpensesCount) =
+          _sumFieldExpenses(order.data['field_expenses']);
 
       final results = await Future.wait<List<dynamic>>([
         OrgScope.read(SupaFlow.client.from('addons').select('amount,status'))
@@ -181,8 +192,8 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
 
         _expensesTotal =
             expenseRows.fold(0.0, (s, e) => s + (e.amount ?? 0)) +
-                fieldExpenses;
-        _expensesCount = expenseRows.length;
+                fieldExpensesTotal;
+        _expensesCount = expenseRows.length + fieldExpensesCount;
 
         _vendorCostTotal = vendorBillRows.fold(
             0.0, (s, r) => s + _asNum(r['total_amount']));
@@ -221,11 +232,17 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
     Color? color,
     bool large = false,
   }) {
-    final display = amount == null
+    // A cost row (negative: true) at exactly ₹0 reads as "—", not "₹0" in
+    // red — device-test finding: Staff Salary showing a red ₹0 when no
+    // salary had been entered yet read like a real zero cost rather than
+    // "nothing entered". Revenue/Net Profit are unaffected (negative is
+    // never true for those) — their own sign-based colour still applies
+    // even at exactly ₹0.
+    final isEmptyCost = negative && (amount == null || amount == 0);
+    final display = (amount == null || isEmptyCost)
         ? '—'
-        : (negative && amount != 0
-            ? '- ${_rupees(amount)}'
-            : _rupees(amount));
+        : (negative ? '- ${_rupees(amount)}' : _rupees(amount));
+    final resolvedColor = isEmptyCost ? theme.secondaryText : color;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -240,7 +257,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
               style: GoogleFonts.interTight(
                   fontSize: large ? 17 : 13,
                   fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                  color: color ?? theme.primaryText)),
+                  color: resolvedColor ?? theme.primaryText)),
         ],
       ),
     );
@@ -331,14 +348,21 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           const SizedBox(height: 6),
           _row(theme,
               label: 'Staff Salary ($_staffCount staff)',
-              amount: _staffCount == 0 ? null : _salaryTotal,
+              // No count-based null check needed — _row already renders
+              // "—" for a negative row at exactly ₹0. The old
+              // `_staffCount == 0 ? null : ...` masked the real device-test
+              // bug (3 staff, ₹0 total, shown as a red ₹0) instead of
+              // fixing it, since it only special-cased zero *staff*, not
+              // zero *salary*.
+              amount: _salaryTotal,
               negative: true,
               color: theme.error),
           _row(theme,
               label: 'Order Expenses ($_expensesCount items)',
-              amount: _expensesCount == 0 && _salaryTotal == _expensesTotal
-                  ? null
-                  : _expensesTotal,
+              // Previous condition compared _salaryTotal to _expensesTotal
+              // — two unrelated totals — which is almost certainly a
+              // copy-paste leftover, not intentional logic; removed.
+              amount: _expensesTotal,
               negative: true,
               color: theme.error),
           if (_vendorCount > 0)
