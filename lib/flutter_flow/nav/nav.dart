@@ -636,6 +636,19 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: CustomerSurveysPageWidget.routePath,
           builder: (context, params) => const CustomerSurveysPageWidget(),
         ),
+        // Session 4, Part C-2.
+        FFRoute(
+          name: RateCardsPageWidget.routeName,
+          path: RateCardsPageWidget.routePath,
+          builder: (context, params) => const RateCardsPageWidget(),
+        ),
+        FFRoute(
+          name: RateCardDetailPageWidget.routeName,
+          path: RateCardDetailPageWidget.routePath,
+          builder: (context, params) => RateCardDetailPageWidget(
+            cardId: params.getParam('cardId', ParamType.String),
+          ),
+        ),
         // Session 2, Part B1 + Part C: the 4 remaining supervisor
         // ComingSoon stubs (sup-jobs/sup-team/sup-sal/sup-att) are now
         // real screens, under new route names — kSupervisorNavItems in
