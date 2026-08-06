@@ -595,7 +595,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         // other destination.
         for (final entry in <(String name, String path, String title)>[
           ('SurveysComingSoon', '/surveys', 'Surveys'),
-          ('SurveyComingSoon', '/survey-new', 'Survey'),
           // 'StaffTeamAttendance' removed (device-test follow-up):
           // dropped from kSupervisorNavItems as redundant with My Team,
           // which already does everything it would have — see
@@ -622,6 +621,15 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: WaInboxPageWidget.routeName,
           path: WaInboxPageWidget.routePath,
           builder: (context, params) => const WaInboxPageWidget(),
+        ),
+        // Session 4, Part B4. Accepts navLead for deep-linking from the
+        // lead screen, per the brief's own wording.
+        FFRoute(
+          name: SurveyQuoteHubPageWidget.routeName,
+          path: SurveyQuoteHubPageWidget.routePath,
+          builder: (context, params) => SurveyQuoteHubPageWidget(
+            navLead: params.getParam('navLead', ParamType.String),
+          ),
         ),
         // Session 2, Part B1 + Part C: the 4 remaining supervisor
         // ComingSoon stubs (sup-jobs/sup-team/sup-sal/sup-att) are now

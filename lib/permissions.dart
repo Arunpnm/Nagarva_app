@@ -69,6 +69,8 @@ const kPermModules = <PermModule>[
   // absent from that role's presetFor() list.
   PermModule('reviews', 'Reviews', 'ReviewsPage'),
   PermModule('inbox', 'WA Inbox', 'WaInboxPage'),
+  // Session 4, Part B4.
+  PermModule('survey_quote', 'Survey & Quote', 'SurveyQuoteHubPage'),
 ];
 
 /// Helpers for reading/writing the jsonb payload.

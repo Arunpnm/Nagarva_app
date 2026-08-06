@@ -50,7 +50,7 @@ const kOwnerManagerNavItems = <NavItem>[
   (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM'),
   (name: 'SurveysComingSoon', icon: Icons.fact_check, label: 'Surveys'),
   (name: 'WaInboxPage', icon: Icons.inbox, label: 'Inbox'),
-  (name: 'SurveyComingSoon', icon: Icons.add_task, label: 'Survey'),
+  (name: 'SurveyQuoteHubPage', icon: Icons.add_task, label: 'Survey'),
   (name: 'CalendarPage', icon: Icons.calendar_month, label: 'Calendar'),
   (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders'),
   (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations'),
