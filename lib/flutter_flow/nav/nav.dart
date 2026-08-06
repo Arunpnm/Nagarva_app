@@ -649,6 +649,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             cardId: params.getParam('cardId', ParamType.String),
           ),
         ),
+        // Session 4, Part C-3.
+        FFRoute(
+          name: LrRegisterPageWidget.routeName,
+          path: LrRegisterPageWidget.routePath,
+          builder: (context, params) => const LrRegisterPageWidget(),
+        ),
         // Session 2, Part B1 + Part C: the 4 remaining supervisor
         // ComingSoon stubs (sup-jobs/sup-team/sup-sal/sup-att) are now
         // real screens, under new route names — kSupervisorNavItems in

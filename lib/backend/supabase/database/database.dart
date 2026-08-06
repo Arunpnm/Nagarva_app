@@ -51,3 +51,5 @@ export 'tables/rate_card_charges.dart';
 export 'tables/rate_card_rules.dart';
 export 'tables/rate_card_floor_charges.dart';
 export 'tables/rate_card_multipliers.dart';
+export 'tables/lr_register.dart';
+export 'tables/pod_records.dart';

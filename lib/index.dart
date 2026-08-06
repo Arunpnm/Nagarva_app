@@ -28,6 +28,8 @@ export '/customer_surveys_page/customer_surveys_page_widget.dart'
 export '/rate_cards_page/rate_cards_page_widget.dart' show RateCardsPageWidget;
 export '/rate_cards_page/rate_card_detail_page_widget.dart'
     show RateCardDetailPageWidget;
+export '/lr_register_page/lr_register_page_widget.dart'
+    show LrRegisterPageWidget;
 export '/reports_page/reports_page_widget.dart' show ReportsPageWidget;
 export '/users_page/users_page_widget.dart' show UsersPageWidget;
 export '/record_payment_page/record_payment_page_widget.dart'
