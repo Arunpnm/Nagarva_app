@@ -13,20 +13,27 @@ import '/flutter_flow/flutter_flow_theme.dart';
 
 /// Vendor self-service branding & business identity (Settings page).
 ///
-/// Three cards, mirroring the APC reference app's Settings:
-///   1. Business Details — tagline, GSTIN, PAN, address, phones, email,
-///      website, bank, UPI. Saved as one JSON blob in the org-scoped
-///      settings table under key 'business_profile'.
-///   2. Company Logo — picked via file_picker, stored in the org-logos
+/// Cards, mirroring the APC reference app's Settings:
+///   1. Business Identity & Letterhead — tagline, GSTIN, PAN, Udyam No,
+///      affiliation text, every phone/landline/email/website, address/
+///      city/state/pincode, bank & UPI details, branch list. Written
+///      **directly to `organizations` columns** (migration 009/010) —
+///      the canonical, multi-tenant-correct source every rebuilt document
+///      this session reads via `OrgProfile` (organizations-first,
+///      `settings.business_profile` fallback only for a column still
+///      null). This card is the retirement path for that fallback: fill
+///      it in and the blob stops being read for that org.
+///   2. Invoice Terms & Conditions — the one field with no `organizations`
+///      column equivalent; stays in the `settings.business_profile` blob
+///      under key 'invoice_terms' (unrelated to `app_settings.
+///      documents.quotation_terms`, a different document's terms).
+///   3. Company Logo — picked via file_picker, stored in the org-logos
 ///      bucket at <org_id>/logo.png, organizations.logo_url updated, and
 ///      the in-memory session refreshed so the sidebar updates instantly.
-///   3. Authorized Signatory — draw once in a dialog, saved as a PNG to
+///   4. Authorized Signatory — draw once in a dialog, saved as a PNG to
 ///      <org_id>/signature.png with the public URL in settings key
-///      'signature_url'.
-///
-/// All three feed the invoice PDF (see components/invoice_pdf.dart), which
-/// is why they live together: fill this page once and every invoice comes
-/// out branded.
+///      'signature_url' (also read by `OrgProfile` as the
+///      `signatory_image_url` fallback).
 class BusinessSettingsSection extends StatefulWidget {
   const BusinessSettingsSection({super.key});
 
@@ -36,29 +43,82 @@ class BusinessSettingsSection extends StatefulWidget {
 }
 
 class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
+  // The one field with nowhere else to live — see the class doc comment.
   static const _fields = <(String key, String label, String hint)>[
-    ('tagline', 'Tagline', 'e.g. Moving You Towards Your Future'),
-    ('gstin', 'GST No.', '15-char GSTIN'),
-    ('pan', 'PAN No.', ''),
-    ('address', 'Address', 'Registered office address'),
-    ('phone1', 'Phone 1', ''),
-    ('phone2', 'Phone 2', ''),
-    ('email', 'Email', ''),
-    ('website', 'Website', 'https://…'),
-    ('bank_name', 'Bank Name', ''),
-    ('account_no', 'Bank A/c No.', ''),
-    ('ifsc', 'IFSC Code', ''),
-    ('upi_id', 'UPI ID', 'name@bank'),
-    // Multiline: one line = one numbered point on the invoice PDF.
     ('invoice_terms', 'Terms & Conditions (one per line)',
         'e.g. Claims for loss or damage must be lodged within 48 hours of delivery.'),
   ];
 
+  /// `organizations` columns, grouped for display. Field keys match
+  /// `OrganizationsRow`'s getters (see lib/backend/supabase/database/
+  /// tables/organizations.dart) so `_saveOrgProfile` can build its update
+  /// payload mechanically off this list — a new column only needs adding
+  /// here, not a second time in the save method.
+  static const _orgFieldGroups = <(String, List<(String, String, String)>)>[
+    (
+      'Identity',
+      [
+        ('tagline', 'Tagline', 'e.g. Moving You Towards Your Future'),
+        ('gstin', 'GST No.', '15-char GSTIN'),
+        ('pan', 'PAN No.', ''),
+        ('udyam_no', 'Udyam No.', ''),
+        ('affiliation_text', 'Affiliation',
+            'e.g. Affiliated By: Govt Of Karnataka'),
+      ],
+    ),
+    (
+      'Contact',
+      [
+        ('phone', 'Phone 1', ''),
+        ('phone_secondary', 'Phone 2', ''),
+        ('phone_tertiary', 'Phone 3', ''),
+        ('phone_quaternary', 'Phone 4', ''),
+        ('landline', 'Landline', ''),
+        ('support_email', 'Email', ''),
+        ('website', 'Website', 'https://…'),
+      ],
+    ),
+    (
+      'Address',
+      [
+        ('address', 'Address', 'Registered office address'),
+        ('city', 'City', ''),
+        ('state', 'State', ''),
+        ('pincode', 'Pincode', ''),
+      ],
+    ),
+    (
+      'Bank & UPI',
+      [
+        ('beneficiary_name', 'Beneficiary Name', ''),
+        ('bank_name', 'Bank Name', ''),
+        ('bank_account_no', 'Bank A/c No.', ''),
+        ('bank_ifsc', 'IFSC Code', ''),
+        ('upi_id', 'UPI ID', 'name@bank'),
+        ('upi_display_number', 'PhonePe/GPay Number', ''),
+      ],
+    ),
+    (
+      'Branches',
+      [
+        ('branch_list_text', 'Branch List',
+            'e.g. Branch: Chennai, Bengaluru, Coimbatore & Hyderabad'),
+      ],
+    ),
+  ];
+
+  static List<(String, String, String)> get _allOrgFields =>
+      [for (final g in _orgFieldGroups) ...g.$2];
+
   final Map<String, TextEditingController> _ctrl = {
     for (final f in _fields) f.$1: TextEditingController(),
   };
+  final Map<String, TextEditingController> _orgCtrl = {
+    for (final f in _allOrgFields) f.$1: TextEditingController(),
+  };
   bool _loading = true;
   bool _saving = false;
+  bool _savingOrgProfile = false;
   bool _uploadingLogo = false;
   bool _savingSignature = false;
   String? _signatureUrl;
@@ -72,6 +132,9 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
   @override
   void dispose() {
     for (final c in _ctrl.values) {
+      c.dispose();
+    }
+    for (final c in _orgCtrl.values) {
       c.dispose();
     }
     super.dispose();
@@ -95,7 +158,47 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
         if (r.key == 'signature_url') _signatureUrl = r.value;
       }
     } catch (_) {}
+    await _loadOrgProfile();
     if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _loadOrgProfile() async {
+    final orgId = AppSession.instance.currentOrgId;
+    if (orgId == null) return;
+    try {
+      final rows = await OrganizationsTable()
+          .queryRows(queryFn: (q) => q.eq('id', orgId));
+      if (rows.isEmpty) return;
+      final o = rows.first;
+      final values = <String, String?>{
+        'tagline': o.tagline,
+        'gstin': o.gstin,
+        'pan': o.pan,
+        'udyam_no': o.udyamNo,
+        'affiliation_text': o.affiliationText,
+        'phone': o.phone,
+        'phone_secondary': o.phoneSecondary,
+        'phone_tertiary': o.phoneTertiary,
+        'phone_quaternary': o.phoneQuaternary,
+        'landline': o.landline,
+        'support_email': o.supportEmail,
+        'website': o.website,
+        'address': o.address,
+        'city': o.city,
+        'state': o.state,
+        'pincode': o.pincode,
+        'beneficiary_name': o.beneficiaryName,
+        'bank_name': o.bankName,
+        'bank_account_no': o.bankAccountNo,
+        'bank_ifsc': o.bankIfsc,
+        'upi_id': o.upiId,
+        'upi_display_number': o.upiDisplayNumber,
+        'branch_list_text': o.branchListText,
+      };
+      values.forEach((k, v) {
+        if (_orgCtrl.containsKey(k)) _orgCtrl[k]!.text = v ?? '';
+      });
+    } catch (_) {}
   }
 
   Future<void> _saveSetting(String key, String value) =>
@@ -118,8 +221,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
       await _saveSetting('business_profile', jsonEncode(profile));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text(
-                'Business details saved. They will appear on every invoice.')));
+            content: Text('Terms saved. They will appear on every invoice.')));
       }
     } catch (e) {
       if (mounted) {
@@ -128,6 +230,42 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
       }
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// Writes every field in `_orgFieldGroups` straight to its
+  /// `organizations` column — never `settings.business_profile`, which
+  /// this card exists specifically to retire. An emptied field is saved
+  /// as `null` (not `''`), so clearing a value here actually clears the
+  /// column rather than leaving a blank string that would still win over
+  /// a future data source in `OrgProfile`'s `?? '').isEmpty` checks.
+  Future<void> _saveOrgProfile() async {
+    final orgId = AppSession.instance.currentOrgId;
+    if (orgId == null) return;
+    setState(() => _savingOrgProfile = true);
+    try {
+      final data = <String, dynamic>{
+        for (final f in _allOrgFields)
+          f.$1: _orgCtrl[f.$1]!.text.trim().isEmpty
+              ? null
+              : _orgCtrl[f.$1]!.text.trim(),
+      };
+      await OrganizationsTable().update(
+        data: data,
+        matchingRows: (q) => q.eq('id', orgId),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Letterhead saved. It will appear on every document.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _savingOrgProfile = false);
     }
   }
 
@@ -278,31 +416,83 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
     final textStyle = GoogleFonts.inter(color: theme.primaryText, fontSize: 13.5);
     return Column(
       children: [
-        // ---- 1. Business details ----------------------------------------
+        // ---- 1. Business identity & letterhead (writes to organizations) --
         _card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _cardTitle('Business Details',
-                  'These details print on every invoice — fill once, no developer needed.'),
-              LayoutBuilder(builder: (context, constraints) {
-                final twoCol = constraints.maxWidth > 560;
-                final children = [
-                  for (final f in _fields)
-                    SizedBox(
-                      width: twoCol && f.$1 != 'invoice_terms' && f.$1 != 'address'
-                          ? (constraints.maxWidth - 12) / 2
-                          : constraints.maxWidth,
-                      child: TextField(
-                        controller: _ctrl[f.$1],
-                        style: textStyle,
-                        maxLines: f.$1 == 'invoice_terms' ? 5 : 1,
-                        decoration: _dec(f.$2, f.$3),
+              _cardTitle('Business Identity & Letterhead',
+                  'These details print on every document\'s header, footer and bank '
+                  'block — fill once, no developer needed.'),
+              for (final group in _orgFieldGroups) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8, top: 4),
+                  child: Text(group.$1,
+                      style: GoogleFonts.interTight(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: theme.secondaryText)),
+                ),
+                LayoutBuilder(builder: (context, constraints) {
+                  final twoCol = constraints.maxWidth > 560;
+                  final wideKeys = {'address', 'branch_list_text'};
+                  final children = [
+                    for (final f in group.$2)
+                      SizedBox(
+                        width: twoCol && !wideKeys.contains(f.$1)
+                            ? (constraints.maxWidth - 12) / 2
+                            : constraints.maxWidth,
+                        child: TextField(
+                          controller: _orgCtrl[f.$1],
+                          style: textStyle,
+                          decoration: _dec(f.$2, f.$3),
+                        ),
                       ),
-                    ),
-                ];
-                return Wrap(spacing: 12, runSpacing: 12, children: children);
-              }),
+                  ];
+                  return Wrap(spacing: 12, runSpacing: 12, children: children);
+                }),
+                const SizedBox(height: 12),
+              ],
+              const SizedBox(height: 2),
+              SizedBox(
+                height: 42,
+                child: ElevatedButton.icon(
+                  onPressed: _savingOrgProfile ? null : _saveOrgProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9)),
+                  ),
+                  icon: _savingOrgProfile
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.save, size: 18),
+                  label: const Text('Save Letterhead'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // ---- 2. Invoice terms (no organizations column — stays in the
+        //         business_profile blob) --------------------------------
+        _card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _cardTitle('Invoice Terms & Conditions',
+                  'Printed as numbered points at the bottom of the tax invoice.'),
+              for (final f in _fields)
+                TextField(
+                  controller: _ctrl[f.$1],
+                  style: textStyle,
+                  maxLines: 5,
+                  decoration: _dec(f.$2, f.$3),
+                ),
               const SizedBox(height: 14),
               SizedBox(
                 height: 42,
@@ -321,14 +511,14 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.save, size: 18),
-                  label: const Text('Save Business Details'),
+                  label: const Text('Save Terms'),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 16),
-        // ---- 2. Logo ----------------------------------------------------
+        // ---- 3. Logo ----------------------------------------------------
         _card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,7 +574,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
           ),
         ),
         const SizedBox(height: 16),
-        // ---- 3. Signature -----------------------------------------------
+        // ---- 4. Signature -----------------------------------------------
         _card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

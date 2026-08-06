@@ -14,16 +14,32 @@
 -- so a column that already holds a value is left alone. Only genuinely-null
 -- columns receive the jsonb value. Re-running is a no-op.
 --
--- ── CORRECTION vs the first draft ──────────────────────────────────────────
--- `settings.value` is **jsonb**, not text (confirmed against
--- schema_snapshot_2026-08-01.csv). The draft failed with
---   42883: function pg_catalog.btrim(jsonb) does not exist
--- Three consequences, all fixed below:
---   1. `s.value::jsonb` was a redundant cast — value is already jsonb.
---   2. `trim(s.value)` is invalid on jsonb. The signature URL must be
---      extracted with `#>> '{}'` (jsonb scalar -> text) before trimming.
---   3. `signatory_image_url = sig.url` would have assigned jsonb to a text
---      column. Now extracts to text first.
+-- ── THREE CORRECTIONS, all found before/while this ran ─────────────────────
+--
+-- (a) `settings.value` is **jsonb**, not text. The first draft failed with
+--     42883: function pg_catalog.btrim(jsonb) does not exist.
+--       1. `s.value::jsonb` was a redundant cast.
+--       2. `trim(s.value)` is invalid on jsonb — extract with `#>> '{}'`
+--          (jsonb scalar -> text) before trimming.
+--       3. `signatory_image_url = sig.url` would assign jsonb to a text
+--          column.
+--
+-- (b) business_profile is **double-encoded**. The second draft guarded on
+--     `jsonb_typeof(value) = 'object'`, which matches nothing: the app writes
+--     `jsonEncode(profile)` through SettingsRow's `String?` setter, so the
+--     column holds a jsonb SCALAR STRING containing JSON text. Verified live:
+--       jsonb_typeof(value) -> 'string'
+--       value #>> '{}'      -> {"tagline":"Moving You Towards Your Future",...}
+--     That guard would have skipped every row and reported success having
+--     done nothing. Now unwrapped with `(s.value #>> '{}')::jsonb`.
+--
+-- (c) `phone1` was missing from the mapping — only `phone2` (->
+--     phone_secondary) was backfilled. `organizations.phone` is the primary-
+--     phone column (pre-existing, not added by migration 009) and business_
+--     profile's `phone1` key is its counterpart, same as `phone2`/
+--     `phone_secondary`. Added below. Harmless to re-run against a tenant
+--     that already has `phone` set (e.g. APC, set at signup, independent of
+--     this backfill) — coalesce leaves it untouched.
 --
 -- NOT backfilled, deliberately (reasoning from the original draft stands):
 --   * business_profile.invoice_terms — no matching organizations column;
@@ -41,11 +57,18 @@ begin;
 -- ───────────────────────────────────────────────────────────────────────────
 
 with profile as (
-  select s.org_id, s.value as bp          -- already jsonb, no cast needed
+  -- business_profile is DOUBLE-ENCODED: jsonEncode(profile) is written through
+  -- SettingsRow's String? setter, so the column holds a jsonb *scalar string*
+  -- containing JSON text, not a jsonb object. Verified on the live row:
+  --   jsonb_typeof(value) = 'string'
+  -- So it must be unwrapped to text with #>> '{}' and re-parsed as jsonb
+  -- before any key can be read. Keying straight into the scalar returns null.
+  select s.org_id, (s.value #>> '{}')::jsonb as bp
   from settings s
   where s.key = 'business_profile'
     and s.value is not null
-    and jsonb_typeof(s.value) = 'object'  -- guard against a scalar/array
+    and jsonb_typeof(s.value) = 'string'
+    and coalesce(s.value #>> '{}', '') like '{%'   -- guard: parseable object
 )
 update organizations o
 set
@@ -53,6 +76,7 @@ set
   gstin             = coalesce(o.gstin,             nullif(trim(p.bp ->> 'gstin'), '')),
   pan               = coalesce(o.pan,               nullif(trim(p.bp ->> 'pan'), '')),
   address           = coalesce(o.address,           nullif(trim(p.bp ->> 'address'), '')),
+  phone             = coalesce(o.phone,             nullif(trim(p.bp ->> 'phone1'), '')),
   phone_secondary   = coalesce(o.phone_secondary,   nullif(trim(p.bp ->> 'phone2'), '')),
   support_email     = coalesce(o.support_email,     nullif(trim(p.bp ->> 'email'), '')),
   website           = coalesce(o.website,           nullif(trim(p.bp ->> 'website'), '')),
@@ -92,11 +116,15 @@ commit;
 -- PRE-FLIGHT — run BEFORE the migration to see what will be read
 -- ═══════════════════════════════════════════════════════════════════════════
 --
--- -- What keys does each org's business_profile actually contain?
--- select s.org_id, jsonb_object_keys(s.value) as key
+-- -- What keys does the profile actually contain? (unwraps the double encoding)
+-- select s.org_id, jsonb_object_keys((s.value #>> '{}')::jsonb) as key
 -- from settings s
--- where s.key = 'business_profile' and jsonb_typeof(s.value) = 'object'
+-- where s.key = 'business_profile' and jsonb_typeof(s.value) = 'string'
 -- order by s.org_id, key;
+--
+-- -- Full profile, readable:
+-- select org_id, jsonb_pretty((value #>> '{}')::jsonb)
+-- from settings where key = 'business_profile';
 --
 -- -- How signature_url is stored (expect a jsonb string):
 -- select org_id, jsonb_typeof(value) as type, value #>> '{}' as url
@@ -107,7 +135,7 @@ commit;
 -- VERIFICATION — run AFTER
 -- ═══════════════════════════════════════════════════════════════════════════
 --
--- select id, name, tagline, gstin, pan, address, phone_secondary,
+-- select id, name, tagline, gstin, pan, address, phone, phone_secondary,
 --        support_email, website, bank_name, bank_account_no, bank_ifsc,
 --        upi_id, beneficiary_name, signatory_image_url
 -- from organizations
