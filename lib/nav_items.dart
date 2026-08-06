@@ -63,6 +63,7 @@ const kOwnerManagerNavItems = <NavItem>[
   // Session 4, Part C-2 — new module, not a former ComingSoon stub.
   (name: 'RateCardsPage', icon: Icons.price_change, label: 'Rate Cards'),
   (name: 'LrRegisterPage', icon: Icons.receipt_long_outlined, label: 'LR Register'),
+  (name: 'OperationsStandalonePage', icon: Icons.support_agent, label: 'Ops Log'),
   (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts'),
   (name: 'PLReportPage', icon: Icons.assessment, label: 'P & L'),
   (name: 'ReportsPage', icon: Icons.bar_chart, label: 'Reports'),

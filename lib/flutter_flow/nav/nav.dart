@@ -655,6 +655,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: LrRegisterPageWidget.routePath,
           builder: (context, params) => const LrRegisterPageWidget(),
         ),
+        // Session 4, Part C-4.
+        FFRoute(
+          name: OperationsStandalonePageWidget.routeName,
+          path: OperationsStandalonePageWidget.routePath,
+          builder: (context, params) => const OperationsStandalonePageWidget(),
+        ),
         // Session 2, Part B1 + Part C: the 4 remaining supervisor
         // ComingSoon stubs (sup-jobs/sup-team/sup-sal/sup-att) are now
         // real screens, under new route names — kSupervisorNavItems in

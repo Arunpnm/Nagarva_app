@@ -17,7 +17,6 @@ class ComplaintsRow extends SupabaseDataRow {
   String? get id => getField<String>('id');
   set id(String? value) => setField<String>('id', value);
 
-  // Added Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
   String? get orgId => getField<String>('org_id');
   set orgId(String? value) => setField<String>('org_id', value);
 
@@ -30,12 +29,17 @@ class ComplaintsRow extends SupabaseDataRow {
   String? get description => getField<String>('description');
   set description(String? value) => setField<String>('description', value);
 
-  String? get status => getField<String>('status');
-  set status(String? value) => setField<String>('status', value);
+  /// open | in_progress | resolved | closed (free text, no live
+  /// catalogue verified).
+  String get status => getField<String>('status') ?? 'open';
+  set status(String value) => setField<String>('status', value);
 
   String? get resolution => getField<String>('resolution');
   set resolution(String? value) => setField<String>('resolution', value);
 
   DateTime? get reportedAt => getField<DateTime>('reported_at');
   set reportedAt(DateTime? value) => setField<DateTime>('reported_at', value);
+
+  String? get claimId => getField<String>('claim_id');
+  set claimId(String? value) => setField<String>('claim_id', value);
 }

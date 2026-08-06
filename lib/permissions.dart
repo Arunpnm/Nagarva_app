@@ -77,6 +77,8 @@ const kPermModules = <PermModule>[
   PermModule('rate_cards', 'Rate Cards', 'RateCardsPage'),
   // Session 4, Part C-3.
   PermModule('lr_register', 'LR Register', 'LrRegisterPage'),
+  // Session 4, Part C-4.
+  PermModule('ops_log', 'Ops Log', 'OperationsStandalonePage'),
 ];
 
 /// Helpers for reading/writing the jsonb payload.
