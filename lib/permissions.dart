@@ -62,6 +62,13 @@ const kPermModules = <PermModule>[
   PermModule('quotations', 'Quotations', 'QuotationPage'),
   PermModule('materials', 'Materials', 'MaterialsPage'),
   PermModule('reports', 'Reports', 'ReportsPage'),
+  // Session 4, Part B2/B3: Reviews and WA Inbox were ComingSoon stubs with
+  // no permission module at all — owner/manager get them automatically
+  // via fullAccess() (iterates kPermModules), every other role simply
+  // doesn't see them unless granted per person, same as any other module
+  // absent from that role's presetFor() list.
+  PermModule('reviews', 'Reviews', 'ReviewsPage'),
+  PermModule('inbox', 'WA Inbox', 'WaInboxPage'),
 ];
 
 /// Helpers for reading/writing the jsonb payload.

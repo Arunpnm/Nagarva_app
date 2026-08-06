@@ -595,9 +595,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         // other destination.
         for (final entry in <(String name, String path, String title)>[
           ('SurveysComingSoon', '/surveys', 'Surveys'),
-          ('InboxComingSoon', '/inbox', 'Inbox'),
           ('SurveyComingSoon', '/survey-new', 'Survey'),
-          ('ReviewsComingSoon', '/reviews', 'Reviews'),
           // 'StaffTeamAttendance' removed (device-test follow-up):
           // dropped from kSupervisorNavItems as redundant with My Team,
           // which already does everything it would have — see
@@ -610,6 +608,21 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             path: entry.$2,
             builder: (context, params) => ComingSoonPage(title: entry.$3),
           ),
+        // Session 4, Part B2: real screen — see nav_items.dart/main.dart's
+        // matching updates (same "route + _tabs map must both change"
+        // lesson Session 2's supervisor-screens bug already taught this
+        // codebase).
+        FFRoute(
+          name: ReviewsPageWidget.routeName,
+          path: ReviewsPageWidget.routePath,
+          builder: (context, params) => const ReviewsPageWidget(),
+        ),
+        // Session 4, Part B3.
+        FFRoute(
+          name: WaInboxPageWidget.routeName,
+          path: WaInboxPageWidget.routePath,
+          builder: (context, params) => const WaInboxPageWidget(),
+        ),
         // Session 2, Part B1 + Part C: the 4 remaining supervisor
         // ComingSoon stubs (sup-jobs/sup-team/sup-sal/sup-att) are now
         // real screens, under new route names — kSupervisorNavItems in

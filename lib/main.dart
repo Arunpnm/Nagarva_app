@@ -521,9 +521,14 @@ class _NavBarPageState extends State<NavBarPage> {
       'ReportsPage': const ReportsPageWidget(),
       // Genuinely unbuilt (Step 2.1: "route to a Coming soon placeholder").
       'SurveysComingSoon': const ComingSoonPage(title: 'Surveys'),
-      'InboxComingSoon': const ComingSoonPage(title: 'Inbox'),
       'SurveyComingSoon': const ComingSoonPage(title: 'Survey'),
-      'ReviewsComingSoon': const ComingSoonPage(title: 'Reviews'),
+      // Session 4, Part B2/B3: real screens now — see nav_items.dart's
+      // matching name changes (both must agree; _tabs is the actual router
+      // for bottom-nav/drawer taps, nav.dart's FFRoute only covers direct
+      // URLs — the exact gap that left all 6 supervisor screens
+      // unreachable in an earlier session, see that changelog entry).
+      'ReviewsPage': const ReviewsPageWidget(),
+      'WaInboxPage': const WaInboxPageWidget(),
     };
   }
 

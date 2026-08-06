@@ -19,6 +19,8 @@ export '/settings_page/recycle_bin_page.dart' show RecycleBinPage;
 export '/settings_page/settings_page_widget.dart' show SettingsPageWidget;
 export '/calendar_page/calendar_page_widget.dart' show CalendarPageWidget;
 export '/materials_page/materials_page_widget.dart' show MaterialsPageWidget;
+export '/reviews_page/reviews_page_widget.dart' show ReviewsPageWidget;
+export '/wa_inbox_page/wa_inbox_page_widget.dart' show WaInboxPageWidget;
 export '/reports_page/reports_page_widget.dart' show ReportsPageWidget;
 export '/users_page/users_page_widget.dart' show UsersPageWidget;
 export '/record_payment_page/record_payment_page_widget.dart'
