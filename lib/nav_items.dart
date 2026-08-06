@@ -48,7 +48,7 @@ typedef NavItem = ({String name, IconData icon, String label});
 const kOwnerManagerNavItems = <NavItem>[
   (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard'),
   (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM'),
-  (name: 'SurveysComingSoon', icon: Icons.fact_check, label: 'Surveys'),
+  (name: 'CustomerSurveysPage', icon: Icons.fact_check, label: 'Surveys'),
   (name: 'WaInboxPage', icon: Icons.inbox, label: 'Inbox'),
   (name: 'SurveyQuoteHubPage', icon: Icons.add_task, label: 'Survey'),
   (name: 'CalendarPage', icon: Icons.calendar_month, label: 'Calendar'),

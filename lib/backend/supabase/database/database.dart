@@ -45,3 +45,4 @@ export 'tables/stock_movements.dart';
 export 'tables/low_stock_view.dart';
 export 'tables/wa_contacts.dart';
 export 'tables/wa_messages.dart';
+export 'tables/customer_surveys.dart';

@@ -594,7 +594,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         // direct deep link to one of these the same way it does for every
         // other destination.
         for (final entry in <(String name, String path, String title)>[
-          ('SurveysComingSoon', '/surveys', 'Surveys'),
           // 'StaffTeamAttendance' removed (device-test follow-up):
           // dropped from kSupervisorNavItems as redundant with My Team,
           // which already does everything it would have — see
@@ -630,6 +629,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => SurveyQuoteHubPageWidget(
             navLead: params.getParam('navLead', ParamType.String),
           ),
+        ),
+        // Session 4, Part B1.
+        FFRoute(
+          name: CustomerSurveysPageWidget.routeName,
+          path: CustomerSurveysPageWidget.routePath,
+          builder: (context, params) => const CustomerSurveysPageWidget(),
         ),
         // Session 2, Part B1 + Part C: the 4 remaining supervisor
         // ComingSoon stubs (sup-jobs/sup-team/sup-sal/sup-att) are now

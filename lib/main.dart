@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/approval_queue.dart';
+import '/backend/survey_queue.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/session_logout.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -451,6 +452,10 @@ class _NavBarPageState extends State<NavBarPage> {
     // its nav set, so the count would render nowhere.
     if (isOwnerOrManagerSession) {
       ApprovalQueue.instance.refresh();
+      // Session 4, Part B1: same reasoning as ApprovalQueue — a submitted
+      // survey waiting for review should be visible without opening
+      // Surveys first.
+      SurveyQueue.instance.refresh();
     }
   }
 
@@ -520,8 +525,7 @@ class _NavBarPageState extends State<NavBarPage> {
       'MaterialsPage': const MaterialsPageWidget(),
       'ReportsPage': const ReportsPageWidget(),
       // Genuinely unbuilt (Step 2.1: "route to a Coming soon placeholder").
-      'SurveysComingSoon': const ComingSoonPage(title: 'Surveys'),
-      // Session 4, Part B2/B3/B4: real screens now — see nav_items.dart's
+      // Session 4, Part B1/B2/B3/B4: real screens now — see nav_items.dart's
       // matching name changes (both must agree; _tabs is the actual router
       // for bottom-nav/drawer taps, nav.dart's FFRoute only covers direct
       // URLs — the exact gap that left all 6 supervisor screens
@@ -529,6 +533,7 @@ class _NavBarPageState extends State<NavBarPage> {
       'ReviewsPage': const ReviewsPageWidget(),
       'WaInboxPage': const WaInboxPageWidget(),
       'SurveyQuoteHubPage': const SurveyQuoteHubPageWidget(),
+      'CustomerSurveysPage': const CustomerSurveysPageWidget(),
     };
   }
 
@@ -886,6 +891,21 @@ class _NavBarPageState extends State<NavBarPage> {
                                       ValueListenableBuilder<int>(
                                         valueListenable: ApprovalQueue
                                             .instance.pendingCount,
+                                        builder: (context, count, _) =>
+                                            NavBadgeIcon(
+                                          icon: item.icon,
+                                          size: 22,
+                                          color: selected
+                                              ? primary
+                                              : FlutterFlowTheme.of(context)
+                                                  .secondaryText,
+                                          count: count,
+                                        ),
+                                      )
+                                    else if (item.name == 'CustomerSurveysPage')
+                                      ValueListenableBuilder<int>(
+                                        valueListenable: SurveyQueue
+                                            .instance.unreviewedCount,
                                         builder: (context, count, _) =>
                                             NavBadgeIcon(
                                           icon: item.icon,

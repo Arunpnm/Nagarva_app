@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '/backend/approval_queue.dart';
+import '/backend/survey_queue.dart';
 import '/components/nav_badge.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 
@@ -145,7 +146,19 @@ class _NavItem extends StatelessWidget {
                         count: count,
                       ),
                     )
-                  : Icon(
+                  : item.name == 'CustomerSurveysPage'
+                      ? ValueListenableBuilder<int>(
+                          valueListenable: SurveyQueue.instance.unreviewedCount,
+                          builder: (context, count, _) => NavBadgeIcon(
+                            icon: item.icon,
+                            size: 27,
+                            color: selected
+                                ? theme.primary
+                                : theme.secondaryText,
+                            count: count,
+                          ),
+                        )
+                      : Icon(
                       item.icon,
                       size: 27,
                       color: selected ? theme.primary : theme.secondaryText,
