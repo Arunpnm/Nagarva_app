@@ -38,4 +38,37 @@ class MaterialsRow extends SupabaseDataRow {
 
   DateTime? get lastUpdated => getField<DateTime>('last_updated');
   set lastUpdated(DateTime? value) => setField<DateTime>('last_updated', value);
+
+  // Added by nagarva_migration_003_industry (Session 4) — never had getters.
+  double? get sellingPrice => getField<double>('selling_price');
+  set sellingPrice(double? value) => setField<double>('selling_price', value);
+
+  String? get hsnCode => getField<String>('hsn_code');
+  set hsnCode(String? value) => setField<String>('hsn_code', value);
+
+  // Added by nagarva_migration_005_accounting (Session 4) — never had
+  // getters. `quantity` above is now maintained ENTIRELY by the
+  // apply_stock_movement() trigger on `stock_movements` — never set it
+  // directly from app code; write a stock_movements row instead (see
+  // material_detail_sheet.dart).
+  String? get category => getField<String>('category');
+  set category(String? value) => setField<String>('category', value);
+
+  String? get sku => getField<String>('sku');
+  set sku(String? value) => setField<String>('sku', value);
+
+  String? get branch => getField<String>('branch');
+  set branch(String? value) => setField<String>('branch', value);
+
+  String? get warehouseId => getField<String>('warehouse_id');
+  set warehouseId(String? value) => setField<String>('warehouse_id', value);
+
+  double? get reorderQty => getField<double>('reorder_qty');
+  set reorderQty(double? value) => setField<double>('reorder_qty', value);
+
+  bool? get isReturnable => getField<bool>('is_returnable');
+  set isReturnable(bool? value) => setField<bool>('is_returnable', value);
+
+  DateTime? get updatedAt => getField<DateTime>('updated_at');
+  set updatedAt(DateTime? value) => setField<DateTime>('updated_at', value);
 }

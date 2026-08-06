@@ -41,3 +41,5 @@ export 'tables/platform_admins.dart';
 export 'tables/receipts.dart';
 export 'tables/lr_copies.dart';
 export 'tables/app_settings.dart';
+export 'tables/stock_movements.dart';
+export 'tables/low_stock_view.dart';
