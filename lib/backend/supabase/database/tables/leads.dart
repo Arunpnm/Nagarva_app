@@ -81,4 +81,9 @@ class LeadsRow extends SupabaseDataRow {
 
   DateTime? get createdAt => getField<DateTime>('created_at');
   set createdAt(DateTime? value) => setField<DateTime>('created_at', value);
+
+  // Added by nagarva_migration_011_leads_order_id (Session 4, handed over,
+  // not run) — see that file's header comment. Null until it runs.
+  String? get orderId => getField<String>('order_id');
+  set orderId(String? value) => setField<String>('order_id', value);
 }

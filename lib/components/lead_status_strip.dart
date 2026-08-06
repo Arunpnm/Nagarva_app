@@ -76,10 +76,14 @@ class LeadStatusStrip extends StatelessWidget {
           if (isLost)
             _LostBanner(onReopen: () => onStageTap?.call(kLeadStatusFollowUp))
           else
-            _ProgressRow(
-              currentIdx: currentIdx,
-              onStageTap: busy ? null : onStageTap,
-            ),
+            // Session 4, A3: the freely-tappable status chips above this
+            // strip are now the one interactive control for lead status —
+            // the strip itself is a read-only mirror of that state, so
+            // there's no longer a second, independent way to change it
+            // from the same screen. onStageTap is still accepted (and
+            // still used by the Lost banner's Reopen button above) but no
+            // longer wired to per-stage taps here.
+            _ProgressRow(currentIdx: currentIdx, onStageTap: null),
           if (!isLost && onMarkLost != null) ...[
             const SizedBox(height: 6),
             Align(

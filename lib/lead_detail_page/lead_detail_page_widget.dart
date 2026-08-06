@@ -2,6 +2,8 @@ import 'dart:math';
 
 import '/app_session.dart';
 import '/config/app_config.dart';
+import '/permissions.dart';
+import '/backend/customer_lookup.dart';
 import '/backend/gst_state_codes.dart';
 import '/backend/lead_status.dart';
 import '/components/detail_row.dart';
@@ -28,6 +30,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:printing/printing.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import 'lead_detail_page_model.dart';
 export 'lead_detail_page_model.dart';
@@ -119,6 +122,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   // line-item builder), share it, convert once accepted.
   SurveysRow? _survey;
   QuotationsRow? _quotation;
+  // Session 4, A1/A2: the constructor's leadXxx params are a nav-time
+  // snapshot and don't carry every column the field table/auto-creation
+  // note need (from_floor/to_floor/package_type/packing_type/notes aren't
+  // nav params at all) — this is the live row, re-read alongside
+  // surveys/quotations below. Every A1/A2 read prefers `_lead?.x` and
+  // falls back to the matching `widget.x` so the page still renders
+  // something sensible if this fetch fails.
+  LeadsRow? _lead;
   bool _loadingLinked = true;
   bool _requestingSurvey = false;
   bool _creatingQuote = false;
@@ -236,14 +247,54 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     required QuotationsRow? quote,
     required String successMessage,
     required String errorPrefix,
+    // Session 4, A5: the Confirm Order sheet lets the office edit these
+    // before creating the order (pre-filled from the lead, but the lead
+    // may be stale or missing fields the office knows at booking time).
+    // Every override defaults to the same widget.*/quote fallback this
+    // method already used, so the existing quote-based conversion paths
+    // (_convertToOrder / _convertQuoteToOrder) are unaffected.
+    String? overrideCustomer,
+    String? overridePhone,
+    String? overrideFromCity,
+    String? overrideToCity,
+    DateTime? overrideMoveDate,
+    double? overrideAmount,
+    String? overrideService,
   }) async {
     if (widget.leadId == null) return;
     try {
-      DateTime moveDate;
-      try {
-        moveDate = DateTime.parse(widget.leadApproxDate ?? '');
-      } catch (_) {
-        moveDate = DateTime.now();
+      DateTime moveDate = overrideMoveDate ??
+          (() {
+            try {
+              return DateTime.parse(widget.leadApproxDate ?? '');
+            } catch (_) {
+              return DateTime.now();
+            }
+          })();
+
+      final customerName =
+          overrideCustomer ?? quote?.customer ?? widget.leadCustomer ?? '';
+      final phone = overridePhone ?? quote?.phone ?? widget.leadPhone;
+
+      // A5: "Call findOrCreateCustomer so orders.customer_id is set at
+      // creation — same helper Quick Payment uses. Do not leave it null."
+      // This insert never set customer_id before — every order created
+      // from a lead has had a null customer_id until now.
+      String? customerId;
+      final orgId = OrgScope.currentOrgId;
+      if (orgId != null) {
+        try {
+          customerId = await CustomerLookup.findOrCreate(
+            orgId: orgId,
+            name: customerName,
+            phone: phone,
+          );
+        } catch (_) {
+          // A missing/malformed phone already makes findOrCreate return
+          // null by design (see its own doc comment) — any other failure
+          // here must not block order creation, just leave customer_id
+          // unset same as before this fix.
+        }
       }
 
       final newOrderId = await _nextOrderId();
@@ -251,14 +302,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         ...OrgScope.stamp(),
         'id': newOrderId,
         'lead_id': widget.leadId,
+        if (customerId != null) 'customer_id': customerId,
         // Link back to the quote so Order Details can render its item
         // lines, and so the invoice can later be generated from the same
         // lines rather than a bare total.
         if (quote != null) 'quotation_id': quote.id,
-        'customer': quote?.customer ?? widget.leadCustomer ?? '',
-        'phone': quote?.phone ?? widget.leadPhone,
-        'from_city': widget.leadFromCity,
-        'to_city': widget.leadToCity,
+        'customer': customerName,
+        'phone': phone,
+        'from_city': overrideFromCity ?? widget.leadFromCity,
+        'to_city': overrideToCity ?? widget.leadToCity,
         // Survey/quote captures the full street address and floor; a lead
         // only ever has the city. Prefer the richer values when present.
         if (quote?.fromAddress != null) 'from_address': quote!.fromAddress,
@@ -266,8 +318,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         if (quote?.fromFloor != null) 'from_floor': quote!.fromFloor,
         if (quote?.toFloor != null) 'to_floor': quote!.toFloor,
         'move_date': supaSerialize<DateTime>(moveDate),
-        'amount': quote?.total ?? 0.0,
-        'service': widget.leadService,
+        'amount': overrideAmount ?? quote?.total ?? 0.0,
+        'service': overrideService ?? widget.leadService,
         'branch': widget.leadBranch,
         'notes': widget.leadNotes,
         'status': 'booked',
@@ -295,6 +347,20 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         data: {'status': kLeadStatusConfirmed},
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
       );
+
+      // A5: "link lead.order_id" — SCHEMA GAP, flagged rather than
+      // patched: no `leads.order_id` column exists in any migration
+      // (grepped 001-010). Best-effort, same pattern as
+      // _writeQuoteSnapshot below — never blocks the conversion, which
+      // has already committed by this point. Migration handed over
+      // separately for Arun to run; the write starts working with no
+      // code change once it has.
+      try {
+        await LeadsTable().update(
+          data: {'order_id': newOrderId},
+          matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
+        );
+      } catch (_) {}
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -412,14 +478,20 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     );
   }
 
-  Future<void> _convertToOrder() async {
+  /// Session 4, A5 — "Confirm Order (Skip Survey)": must succeed from any
+  /// status, with no survey and no quote present. Replaces the old plain
+  /// "Convert to Order" button, which created the order silently at
+  /// amount 0 with no review step. Opens the minimal order sheet
+  /// pre-filled from the lead (and the best available quote, if one
+  /// exists — its presence is never required).
+  Future<void> _confirmOrder() async {
     if (widget.leadId == null) return;
     setState(() => _converting = true);
     try {
-      // Even the plain "Convert to Order" button now picks up a quote if
-      // the lead has one. Re-read rather than trusting the cached
-      // `_quotation`, so a quote built moments ago in another route is
-      // still caught if the refresh hasn't landed yet.
+      // Picks up a quote if the lead has one, same re-query as before (a
+      // quote built moments ago in another route may not have landed in
+      // `_quotation` yet) — purely to pre-fill the sheet's amount field
+      // and to link quotation_id; the sheet must still work with none.
       var quote = _quotation;
       try {
         final rows = await QuotationsTable().queryRows(
@@ -429,16 +501,45 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               .order('created_at', ascending: false),
         );
         quote = _pickBestQuote(rows) ?? quote;
-      } catch (_) {
-        // Fall back to whatever was already loaded; a lookup failure
-        // shouldn't block converting the lead.
-      }
+      } catch (_) {}
+
+      if (!mounted) return;
+      final lead = _lead;
+      final result = await showDialog<_ConfirmOrderResult>(
+        context: context,
+        builder: (_) => _ConfirmOrderSheet(
+          initialCustomer:
+              lead?.customer ?? widget.leadCustomer ?? '',
+          initialPhone: lead?.phone ?? widget.leadPhone ?? '',
+          initialFromCity: lead?.fromCity ?? widget.leadFromCity ?? '',
+          initialToCity: lead?.toCity ?? widget.leadToCity ?? '',
+          initialService: lead?.service ?? widget.leadService ?? '',
+          initialAmount: quote?.total ?? 0,
+          initialMoveDate: () {
+            try {
+              return DateTime.parse(
+                  lead?.approxDate ?? widget.leadApproxDate ?? '');
+            } catch (_) {
+              return DateTime.now();
+            }
+          }(),
+        ),
+      );
+      if (result == null) return;
+
       await _createOrderFromLead(
         quote: quote,
         successMessage: quote == null
-            ? 'Lead converted to order'
-            : 'Lead converted to order (quote attached)',
-        errorPrefix: 'Could not convert lead',
+            ? 'Order confirmed'
+            : 'Order confirmed (quote attached)',
+        errorPrefix: 'Could not confirm order',
+        overrideCustomer: result.customer,
+        overridePhone: result.phone,
+        overrideFromCity: result.fromCity,
+        overrideToCity: result.toCity,
+        overrideMoveDate: result.moveDate,
+        overrideAmount: result.amount,
+        overrideService: result.service,
       );
     } finally {
       if (mounted) setState(() => _converting = false);
@@ -490,7 +591,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       setState(() {
         _survey = surveys.isNotEmpty ? surveys.first : null;
         _quotation = _pickBestQuote(quotations);
-        if (leads.isNotEmpty) _status = leads.first.status;
+        if (leads.isNotEmpty) {
+          _lead = leads.first;
+          _status = leads.first.status;
+        }
         _loadingLinked = false;
       });
 
@@ -678,74 +782,47 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     }
   }
 
-  /// Same shape as _convertToOrder above, but seeded from the accepted
-  /// quotation's real pricing instead of amount 0 — the whole point of
-  /// routing a lead through Survey -> Quote first.
-  /// Item 5.3: `lost` requires a confirm dialog + optional reason.
+  /// Item 5.3 / Session 4 A3: `lost` requires a confirm dialog + optional
+  /// reason. The reason now goes into `quote_outcomes` (migration 004 —
+  /// outcome/reason_code/reason_note/competitor_name/competitor_price),
+  /// not appended to the lead's notes as free text — that table exists
+  /// specifically for this ("won/lost outcome with competitor
+  /// intelligence") and was never written to from anywhere in the app.
+  /// No generated Dart class exists for it (same as lr_register/receipts
+  /// before their own Session 3 classes) — raw client insert, same
+  /// established pattern.
   Future<void> _confirmMarkLost() async {
-    final reasonController = TextEditingController();
-    final confirmed = await showDialog<bool>(
+    final result = await showDialog<_LostReasonResult>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Mark lead as lost?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'The lead stays in the list under "Lost" and can be reopened '
-              'later.',
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Reason (optional)',
-                hintText: 'e.g. went with a cheaper vendor',
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(
-                foregroundColor: leadStatusColor(kLeadStatusLost)),
-            child: const Text('Mark lost'),
-          ),
-        ],
-      ),
+      builder: (_) => const _LostReasonDialog(),
     );
-    final reason = reasonController.text.trim();
-    reasonController.dispose();
-    if (confirmed != true) return;
+    if (result == null) return;
 
     await _setLeadStatus(kLeadStatusLost, force: true);
+    if (!mounted || _canonicalStatus != kLeadStatusLost) return;
 
-    // Append the reason to the lead's notes rather than adding a column —
-    // `leads` has no lost_reason field and inventing one would mean a
-    // migration for a free-text note. Only written when the status change
-    // itself succeeded.
-    if (reason.isEmpty || !mounted) return;
-    if (_canonicalStatus != kLeadStatusLost) return;
+    // Only written once the status change itself has landed — same
+    // "don't record intent that never happened" rule the old notes-append
+    // version followed.
     try {
-      final stamp = DateFormat('dd MMM yyyy').format(DateTime.now());
-      final existing = (widget.leadNotes ?? '').trim();
-      final appended = existing.isEmpty
-          ? 'Lost ($stamp): $reason'
-          : '$existing\n\nLost ($stamp): $reason';
-      await LeadsTable().update(
-        data: {'notes': appended},
-        matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
-      );
+      final orgId = OrgScope.currentOrgId;
+      await SupaFlow.client.from('quote_outcomes').insert({
+        'org_id': orgId,
+        'quote_id': _quotation?.id,
+        'lead_id': widget.leadId,
+        'outcome': 'lost',
+        if (result.reasonCode != null) 'reason_code': result.reasonCode,
+        if (result.reasonNote != null) 'reason_note': result.reasonNote,
+        if (result.competitorName != null)
+          'competitor_name': result.competitorName,
+        if (result.competitorPrice != null)
+          'competitor_price': result.competitorPrice,
+        if (_quotation?.total != null) 'our_price': _quotation!.total,
+        'recorded_by': AppSession.instance.currentStaffName ?? 'Owner',
+      });
     } catch (_) {
       // The status change is the important part and already landed;
-      // failing to record the note shouldn't surface as an error.
+      // failing to record the outcome shouldn't surface as an error.
     }
   }
 
@@ -768,6 +845,222 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     _model.dispose();
 
     super.dispose();
+  }
+
+  // ---- Session 4, A3: freely-tappable status chips -----------------------
+  // Brief-specified colours, distinct from lead_status.dart's own
+  // leadStatusColor() (used elsewhere — the LeadsPage list badges, the
+  // pipeline strip below) — scoped to just this row rather than changing
+  // that shared function and rippling into screens this brief didn't ask
+  // to touch.
+  static const _chipColors = <String, Color>{
+    kLeadStatusNew: Color(0xFF95A5A6),
+    kLeadStatusFollowUp: Color(0xFF3498DB),
+    kLeadStatusSurveyDone: Color(0xFF9B59B6),
+    kLeadStatusQuoted: Color(0xFFE67E22),
+    kLeadStatusConfirmed: Color(0xFF2ECC71),
+    kLeadStatusLost: Color(0xFFE74C3C),
+  };
+  static const _chipLabels = <String, String>{
+    kLeadStatusNew: 'New Lead',
+    kLeadStatusFollowUp: 'Follow Up',
+    kLeadStatusSurveyDone: 'Survey Done',
+    kLeadStatusQuoted: 'Quoted',
+    kLeadStatusConfirmed: 'Confirmed',
+    kLeadStatusLost: 'Lost',
+  };
+  static const _chipOrder = [
+    kLeadStatusNew,
+    kLeadStatusFollowUp,
+    kLeadStatusSurveyDone,
+    kLeadStatusQuoted,
+    kLeadStatusConfirmed,
+    kLeadStatusLost,
+  ];
+
+  Widget _statusChipsRow(BuildContext context) {
+    final canEdit = StaffPermissions.canActive('leads', 'edit');
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final key in _chipOrder)
+          _statusChip(context, key, canEdit: canEdit && !_savingStatus),
+      ],
+    );
+  }
+
+  Widget _statusChip(BuildContext context, String key, {required bool canEdit}) {
+    final current = key == _canonicalStatus;
+    final color = _chipColors[key]!;
+    final tappable = canEdit && !current;
+    return InkWell(
+      onTap: !tappable
+          ? null
+          : () {
+              // Immediate write, no dialog — except Lost, which confirms
+              // and captures an optional reason (A3). Backward movement
+              // is allowed (force: true bypasses advanceLeadStatus's
+              // never-downgrade rule, same as the old pipeline strip's
+              // manual taps already did).
+              if (key == kLeadStatusLost) {
+                _confirmMarkLost();
+              } else {
+                _setLeadStatus(key, force: true);
+              }
+            },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: current ? color : color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: current ? null : Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Text(
+          _chipLabels[key]!,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: current ? Colors.white : color,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---- Session 4, A4: quick contact row -----------------------------------
+  bool get _hasUsablePhone =>
+      (widget.leadPhone ?? '').replaceAll(RegExp(r'\D'), '').length >= 10;
+
+  Future<String> _leadOpeningMessage() async {
+    final customer = widget.leadCustomer ?? 'there';
+    final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+    // Tenant-editable template (app_settings, category 'whatsapp') with a
+    // sensible default when unset — same fallback-default pattern as
+    // DocumentBoilerplate (Session 3), never a hardcoded-only string.
+    String template =
+        'Hello {customer}, this is {org}. Thank you for your interest in '
+        'our packing & moving services. How can we help you today?';
+    try {
+      final rows = await AppSettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q)
+            .eq('category', 'whatsapp')
+            .eq('key', 'lead_opening_template'),
+      );
+      if (rows.isNotEmpty && rows.first.value != null) {
+        final v = rows.first.value.toString().trim();
+        if (v.isNotEmpty) template = v;
+      }
+    } catch (_) {}
+    return template.replaceAll('{customer}', customer).replaceAll('{org}', org);
+  }
+
+  Future<void> _openWhatsApp() async {
+    if (!_hasUsablePhone) return;
+    final message = await _leadOpeningMessage();
+    final uri =
+        Uri.parse(buildWhatsAppLink(phone: widget.leadPhone, message: message));
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open WhatsApp.')));
+    }
+  }
+
+  Future<void> _callLead() async {
+    if (!_hasUsablePhone) return;
+    final uri = Uri(scheme: 'tel', path: widget.leadPhone);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Could not start call.')));
+    }
+  }
+
+  Widget _quickContactRow(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: _hasUsablePhone ? _openWhatsApp : null,
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
+            icon: const Icon(Icons.chat, size: 18),
+            label: const Text('WhatsApp'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _hasUsablePhone ? _callLead : null,
+            style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF3498DB),
+                side: const BorderSide(color: Color(0xFF3498DB))),
+            icon: const Icon(Icons.call, size: 18),
+            label: const Text('Call'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---- Session 4, A1/A2: detail field table + auto-creation note --------
+  Widget _leadDetailTable(BuildContext context) {
+    final lead = _lead;
+    final fromFloor = lead?.fromFloor;
+    final toFloor = lead?.toFloor;
+    return DetailCard(
+      title: 'Lead Details',
+      children: [
+        DetailRow(
+          label: 'Route',
+          value: [
+            lead?.fromCity ?? widget.leadFromCity,
+            lead?.toCity ?? widget.leadToCity,
+          ].whereType<String>().where((s) => s.isNotEmpty).join(' → '),
+        ),
+        DetailRow(label: 'From', value: lead?.fromAddress ?? widget.leadFromCity),
+        DetailRow(label: 'To', value: lead?.toAddress ?? widget.leadToCity),
+        DetailRow(
+          label: 'Floor',
+          value: (fromFloor == null && toFloor == null)
+              ? null
+              : '${fromFloor ?? '—'}F → ${toFloor ?? '—'}F',
+        ),
+        DetailRow(label: 'Date', value: lead?.approxDate ?? widget.leadApproxDate),
+        DetailRow(label: 'Service', value: lead?.service ?? widget.leadService),
+        DetailRow(label: 'Package', value: lead?.packageType),
+        DetailRow(label: 'Packing', value: lead?.packingType),
+        DetailRow(label: 'Source', value: lead?.source ?? widget.leadSource),
+        DetailRow(label: 'Branch', value: lead?.branch ?? widget.leadBranch),
+      ],
+    );
+  }
+
+  /// Nothing when null — no empty container, no placeholder (A2).
+  Widget? _autoCreationNote(BuildContext context) {
+    final note = (_lead?.notes ?? widget.leadNotes ?? '').trim();
+    if (note.isEmpty) return null;
+    final theme = FlutterFlowTheme.of(context);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(8),
+        border: Border(left: BorderSide(color: theme.primary, width: 3)),
+      ),
+      child: Text(
+        note,
+        style: GoogleFonts.inter(
+          fontSize: 12.5,
+          fontStyle: FontStyle.italic,
+          height: 1.4,
+          color: theme.secondaryText,
+        ),
+      ),
+    );
   }
 
   Widget _surveyQuoteSection(BuildContext context) {
@@ -1258,107 +1551,80 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
-                              widget.leadCustomer!,
-                              style: FlutterFlowTheme.of(context)
-                                  .titleMedium
-                                  .override(
-                                    font: GoogleFonts.interTight(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleMedium
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleMedium
-                                          .fontStyle,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.leadCustomer ?? 'Lead',
+                                    style: FlutterFlowTheme.of(context)
+                                        .titleMedium
+                                        .override(
+                                          font: GoogleFonts.interTight(
+                                            fontWeight: FlutterFlowTheme.of(
+                                                    context)
+                                                .titleMedium
+                                                .fontWeight,
+                                            fontStyle: FlutterFlowTheme.of(
+                                                    context)
+                                                .titleMedium
+                                                .fontStyle,
+                                          ),
+                                          color: FlutterFlowTheme.of(context)
+                                              .primaryText,
+                                          letterSpacing: 0.0,
+                                          fontWeight: FlutterFlowTheme.of(
+                                                  context)
+                                              .titleMedium
+                                              .fontWeight,
+                                          fontStyle: FlutterFlowTheme.of(
+                                                  context)
+                                              .titleMedium
+                                              .fontStyle,
+                                        ),
+                                  ),
+                                  // A4: "the phone number in the lead
+                                  // header is also tappable" — dials it.
+                                  if (_hasUsablePhone)
+                                    InkWell(
+                                      onTap: _callLead,
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          widget.leadPhone!,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            color: FlutterFlowTheme.of(
+                                                    context)
+                                                .primary,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    color: FlutterFlowTheme.of(context)
-                                        .primaryText,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .fontStyle,
-                                  ),
-                            ),
-                            // Item 5: was a static `widget.leadStatus!` —
-                            // which also crashed outright on any lead
-                            // opened without that nav param. Now driven by
-                            // live state, canonicalised, and colour-coded
-                            // per stage.
-                            Container(
-                              decoration: BoxDecoration(
-                                color: leadStatusColor(_status)
-                                    .withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(16.0),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    12.0, 6.0, 12.0, 6.0),
-                                child: Text(
-                                  leadStatusLabel(_status),
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12.0,
-                                    fontWeight: FontWeight.w700,
-                                    color: leadStatusColor(_status),
-                                  ),
-                                ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    // Item 4.1/4.3: the Contact and Move Details cards
-                    // each hand-rolled their rows as
-                    // Row(spaceBetween, [Text(label), Text(value)]) with
-                    // two unconstrained Texts, so a long value (a full
-                    // address, a long service name) overflowed instead of
-                    // wrapping, and vertical padding drifted between
-                    // cards. Every row now goes through the shared
-                    // DetailRow so labels and values sit on one grid.
-                    // Email uses hideWhenEmpty (item 4.3) rather than
-                    // showing an orphan empty row.
-                    DetailCard(
-                      title: 'Contact',
-                      children: [
-                        DetailRow(label: 'Phone', value: widget.leadPhone),
-                        DetailRow(
-                          label: 'Email',
-                          value: widget.leadEmail,
-                          hideWhenEmpty: true,
-                        ),
-                        DetailRow(label: 'Source', value: widget.leadSource),
-                        DetailRow(label: 'Branch', value: widget.leadBranch),
-                      ],
-                    ),
-                    DetailCard(
-                      title: 'Move Details',
-                      children: [
-                        DetailRow(label: 'From', value: widget.leadFromCity),
-                        DetailRow(label: 'To', value: widget.leadToCity),
-                        DetailRow(
-                          label: 'Approx. Date',
-                          value: widget.leadApproxDate,
-                        ),
-                        DetailRow(label: 'Service', value: widget.leadService),
-                      ],
-                    ),
-                    // Item 4.3: this card rendered a "Notes" section
-                    // header wrapping a row whose label was also "Notes"
-                    // (the reported "Notes / Notes" duplicate), squeezed
-                    // the note text into a right-aligned column where a
-                    // paragraph cannot wrap sensibly, and read
-                    // `widget.leadNotes!` - crashing outright on any lead
-                    // with no notes. Now one DetailCard + DetailNote with
-                    // a real empty state.
-                    DetailCard(
-                      title: 'Notes',
-                      children: [
-                        DetailNote(text: widget.leadNotes),
-                      ],
-                    ),
+                    // Session 4, A3: freely-tappable status chips — the
+                    // one interactive control for lead status now (the
+                    // pipeline strip below mirrors it, read-only).
+                    _statusChipsRow(context),
+                    // Session 4, A4.
+                    _quickContactRow(context),
+                    // Session 4, A1: one detail table, every row rendered
+                    // even when empty (— for null) — replaces the old
+                    // Contact/Move Details split, which didn't cover
+                    // Floor/Package/Packing at all and hid Email instead
+                    // of showing its dash.
+                    _leadDetailTable(context),
+                    // Session 4, A2: nothing rendered when there's no note
+                    // — no empty container, no placeholder.
+                    if (_autoCreationNote(context) != null)
+                      _autoCreationNote(context)!,
                     // Item 10: REMINDERS, above Survey & Quote as specified.
                     if (widget.leadId != null)
                       RemindersSection(
@@ -1369,23 +1635,24 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                         customerPhone: widget.leadPhone,
                       ),
                     // Item 5.4: pipeline progress strip, APC parity.
+                    // Session 4, A3: now a read-only mirror of the chips
+                    // above — onStageTap is only used by the Lost banner's
+                    // Reopen button (lead_status_strip.dart no longer
+                    // wires it to per-stage taps). onMarkLost removed
+                    // entirely per A3's "remove any separate 'Mark as
+                    // lost' link" — Lost is one of the six chips now.
                     LeadStatusStrip(
                       status: _status,
                       busy: _savingStatus,
                       onStageTap: (stage) => _setLeadStatus(stage, force: true),
-                      onMarkLost: _confirmMarkLost,
                     ),
                     if (!_loadingLinked) _surveyQuoteSection(context),
                     Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(
                           0.0, 14.0, 0.0, 14.0),
                       child: FFButtonWidget(
-                        onPressed: _converting ? null : _convertToOrder,
-                        text: _converting
-                            ? 'Converting…'
-                            : FFLocalizations.of(context).getText(
-                                'se81on2i' /* Convert to Order */,
-                              ),
+                        onPressed: _converting ? null : _confirmOrder,
+                        text: _converting ? 'Confirming…' : 'Confirm Order',
                         icon: const Icon(
                           Icons.assignment_turned_in,
                           size: 20.0,
@@ -1489,6 +1756,311 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } finally {
       if (mounted) setState(() => _deleting = false);
     }
+  }
+}
+
+/// Session 4, A3: what the Lost-reason dialog hands back to the page.
+class _LostReasonResult {
+  const _LostReasonResult({
+    this.reasonCode,
+    this.reasonNote,
+    this.competitorName,
+    this.competitorPrice,
+  });
+  final String? reasonCode;
+  final String? reasonNote;
+  final String? competitorName;
+  final double? competitorPrice;
+}
+
+/// quote_outcomes.reason_code's documented values (migration 004's own
+/// column comment) — not invented here.
+const _kLostReasonCodes = <String, String>{
+  'price': 'Price',
+  'timing': 'Timing',
+  'trust': 'Trust',
+  'service_scope': 'Service scope',
+  'competitor': 'Went with a competitor',
+  'customer_cancelled': 'Customer cancelled the move',
+  'unreachable': 'Unreachable',
+  'other': 'Other',
+};
+
+class _LostReasonDialog extends StatefulWidget {
+  const _LostReasonDialog();
+  @override
+  State<_LostReasonDialog> createState() => _LostReasonDialogState();
+}
+
+class _LostReasonDialogState extends State<_LostReasonDialog> {
+  String? _reasonCode;
+  final _noteCtrl = TextEditingController();
+  final _competitorNameCtrl = TextEditingController();
+  final _competitorPriceCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _noteCtrl.dispose();
+    _competitorNameCtrl.dispose();
+    _competitorPriceCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompetitor = _reasonCode == 'competitor';
+    return AlertDialog(
+      title: const Text('Mark lead as lost?'),
+      content: SizedBox(
+        width: 380,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'The lead stays in the list under "Lost" and can be reopened '
+                'later.',
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _reasonCode,
+                decoration: const InputDecoration(labelText: 'Reason (optional)'),
+                items: [
+                  for (final e in _kLostReasonCodes.entries)
+                    DropdownMenuItem(value: e.key, child: Text(e.value)),
+                ],
+                onChanged: (v) => setState(() => _reasonCode = v),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _noteCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Note (optional)',
+                  hintText: 'e.g. went with a cheaper vendor',
+                ),
+                maxLines: 2,
+              ),
+              if (isCompetitor) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _competitorNameCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Competitor name'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _competitorPriceCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                      labelText: 'Competitor price (₹)'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_LostReasonResult(
+            reasonCode: _reasonCode,
+            reasonNote:
+                _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+            competitorName: isCompetitor && _competitorNameCtrl.text.trim().isNotEmpty
+                ? _competitorNameCtrl.text.trim()
+                : null,
+            competitorPrice: isCompetitor
+                ? double.tryParse(_competitorPriceCtrl.text.trim())
+                : null,
+          )),
+          style: TextButton.styleFrom(foregroundColor: leadStatusColor(kLeadStatusLost)),
+          child: const Text('Mark lost'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Session 4, A5: what the Confirm Order sheet hands back to the page.
+class _ConfirmOrderResult {
+  const _ConfirmOrderResult({
+    required this.customer,
+    required this.phone,
+    required this.fromCity,
+    required this.toCity,
+    required this.moveDate,
+    required this.amount,
+    required this.service,
+  });
+  final String customer;
+  final String? phone;
+  final String? fromCity;
+  final String? toCity;
+  final DateTime moveDate;
+  final double amount;
+  final String? service;
+}
+
+/// The "minimal order sheet" A5 asks for — review/edit the handful of
+/// fields an order actually needs before it's created, pre-filled from
+/// the lead (and the best available quote's amount, if any). Deliberately
+/// not a full NewOrderPage-style form: this exists specifically for the
+/// "skip survey, confirm now" path, where speed matters more than
+/// capturing every order field up front — the rest can be filled in via
+/// Edit Order afterward, same as the plain lead-to-order conversion this
+/// replaces already assumed.
+class _ConfirmOrderSheet extends StatefulWidget {
+  const _ConfirmOrderSheet({
+    required this.initialCustomer,
+    required this.initialPhone,
+    required this.initialFromCity,
+    required this.initialToCity,
+    required this.initialService,
+    required this.initialAmount,
+    required this.initialMoveDate,
+  });
+
+  final String initialCustomer;
+  final String initialPhone;
+  final String initialFromCity;
+  final String initialToCity;
+  final String initialService;
+  final double initialAmount;
+  final DateTime initialMoveDate;
+
+  @override
+  State<_ConfirmOrderSheet> createState() => _ConfirmOrderSheetState();
+}
+
+class _ConfirmOrderSheetState extends State<_ConfirmOrderSheet> {
+  late final _customerCtrl = TextEditingController(text: widget.initialCustomer);
+  late final _phoneCtrl = TextEditingController(text: widget.initialPhone);
+  late final _fromCtrl = TextEditingController(text: widget.initialFromCity);
+  late final _toCtrl = TextEditingController(text: widget.initialToCity);
+  late final _serviceCtrl = TextEditingController(text: widget.initialService);
+  late final _amountCtrl =
+      TextEditingController(text: widget.initialAmount == 0 ? '' : widget.initialAmount.toStringAsFixed(0));
+  late DateTime _moveDate = widget.initialMoveDate;
+
+  @override
+  void dispose() {
+    _customerCtrl.dispose();
+    _phoneCtrl.dispose();
+    _fromCtrl.dispose();
+    _toCtrl.dispose();
+    _serviceCtrl.dispose();
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _moveDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 730)),
+    );
+    if (picked != null) setState(() => _moveDate = picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Confirm Order'),
+      content: SizedBox(
+        width: 380,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _customerCtrl,
+                decoration: const InputDecoration(labelText: 'Customer'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _phoneCtrl,
+                decoration: const InputDecoration(labelText: 'Phone'),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _fromCtrl,
+                      decoration: const InputDecoration(labelText: 'From'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _toCtrl,
+                      decoration: const InputDecoration(labelText: 'To'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: _pickDate,
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Move Date'),
+                  child: Text(DateFormat('d MMM yyyy').format(_moveDate)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _serviceCtrl,
+                decoration: const InputDecoration(labelText: 'Service'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _amountCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                    labelText: 'Amount (₹)',
+                    hintText: '0 if not yet quoted — edit later'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_customerCtrl.text.trim().isEmpty) return;
+            Navigator.of(context).pop(_ConfirmOrderResult(
+              customer: _customerCtrl.text.trim(),
+              phone: _phoneCtrl.text.trim().isEmpty
+                  ? null
+                  : _phoneCtrl.text.trim(),
+              fromCity:
+                  _fromCtrl.text.trim().isEmpty ? null : _fromCtrl.text.trim(),
+              toCity: _toCtrl.text.trim().isEmpty ? null : _toCtrl.text.trim(),
+              moveDate: _moveDate,
+              amount: double.tryParse(_amountCtrl.text.trim()) ?? 0,
+              service: _serviceCtrl.text.trim().isEmpty
+                  ? null
+                  : _serviceCtrl.text.trim(),
+            ));
+          },
+          child: const Text('Confirm Order'),
+        ),
+      ],
+    );
   }
 }
 
