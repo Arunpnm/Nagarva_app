@@ -26,6 +26,9 @@ const Set<String> kSoftDeleteTables = {
   'expenses',
   'materials',
   'vehicles',
+  'vendors',
+  'vendor_bills',
+  'vendor_payments',
 };
 
 /// Outcome of a delete guard — mirrors `can_delete_order()`'s return shape.

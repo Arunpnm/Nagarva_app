@@ -32,6 +32,9 @@ export '/lr_register_page/lr_register_page_widget.dart'
     show LrRegisterPageWidget;
 export '/operations_standalone_page/operations_standalone_page_widget.dart'
     show OperationsStandalonePageWidget;
+export '/vendors_page/vendors_page_widget.dart' show VendorsPageWidget;
+export '/vendors_page/vendor_detail_page_widget.dart'
+    show VendorDetailPageWidget;
 export '/reports_page/reports_page_widget.dart' show ReportsPageWidget;
 export '/users_page/users_page_widget.dart' show UsersPageWidget;
 export '/record_payment_page/record_payment_page_widget.dart'

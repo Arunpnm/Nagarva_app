@@ -64,6 +64,7 @@ const kOwnerManagerNavItems = <NavItem>[
   (name: 'RateCardsPage', icon: Icons.price_change, label: 'Rate Cards'),
   (name: 'LrRegisterPage', icon: Icons.receipt_long_outlined, label: 'LR Register'),
   (name: 'OperationsStandalonePage', icon: Icons.support_agent, label: 'Ops Log'),
+  (name: 'VendorsPage', icon: Icons.local_shipping_outlined, label: 'Vendors'),
   (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts'),
   (name: 'PLReportPage', icon: Icons.assessment, label: 'P & L'),
   (name: 'ReportsPage', icon: Icons.bar_chart, label: 'Reports'),

@@ -53,3 +53,7 @@ export 'tables/rate_card_floor_charges.dart';
 export 'tables/rate_card_multipliers.dart';
 export 'tables/lr_register.dart';
 export 'tables/pod_records.dart';
+export 'tables/vendors.dart';
+export 'tables/order_vendors.dart';
+export 'tables/vendor_bills.dart';
+export 'tables/vendor_payments.dart';

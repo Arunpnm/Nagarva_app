@@ -537,6 +537,7 @@ class _NavBarPageState extends State<NavBarPage> {
       'RateCardsPage': const RateCardsPageWidget(),
       'LrRegisterPage': const LrRegisterPageWidget(),
       'OperationsStandalonePage': const OperationsStandalonePageWidget(),
+      'VendorsPage': const VendorsPageWidget(),
     };
   }
 
