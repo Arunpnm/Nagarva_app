@@ -81,6 +81,8 @@ const kPermModules = <PermModule>[
   PermModule('ops_log', 'Ops Log', 'OperationsStandalonePage'),
   // Session 4, Part C-6.
   PermModule('vendors', 'Vendors', 'VendorsPage'),
+  // Session 4, Part C-7.
+  PermModule('customers', 'Customers', 'CustomersPage'),
 ];
 
 /// Helpers for reading/writing the jsonb payload.

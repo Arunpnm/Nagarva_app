@@ -57,3 +57,7 @@ export 'tables/vendors.dart';
 export 'tables/order_vendors.dart';
 export 'tables/vendor_bills.dart';
 export 'tables/vendor_payments.dart';
+export 'tables/customers.dart';
+export 'tables/customer_addresses.dart';
+export 'tables/customer_contacts.dart';
+export 'tables/customer_360_view.dart';
