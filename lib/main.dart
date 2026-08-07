@@ -39,7 +39,17 @@ import 'index.dart';
 void _installErrorHandlers() {
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    debugPrint('FlutterError: ${details.exceptionAsString()}');
+    // Was exceptionAsString() only — the message, never the stack. That's
+    // the "error boundary swallowing the stack trace" gap: a widget that
+    // throws during build reaches this handler (Element.performRebuild
+    // calls FlutterError.reportError before ErrorWidget.builder renders
+    // the same `details` as the on-screen fallback), so this one line
+    // covers every build/layout/paint error that produces "Something went
+    // wrong loading this screen" — no separate logging needed inside
+    // ErrorWidget.builder itself, since it never sees anything this
+    // handler didn't already receive first. debugPrint no-ops in release
+    // builds, so nothing extra reaches a shipped APK's logcat.
+    debugPrint('FlutterError: ${details.exceptionAsString()}\n${details.stack}');
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     debugPrint('Uncaught async error: $error\n$stack');
