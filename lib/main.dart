@@ -540,6 +540,7 @@ class _NavBarPageState extends State<NavBarPage> {
       'VendorsPage': const VendorsPageWidget(),
       'CustomersPage': const CustomersPageWidget(),
       'InsuranceClaimsPage': const InsuranceClaimsPageWidget(),
+      'TripsPage': const TripsPageWidget(),
     };
   }
 

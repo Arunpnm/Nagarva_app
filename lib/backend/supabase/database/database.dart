@@ -64,3 +64,7 @@ export 'tables/customer_360_view.dart';
 export 'tables/insurance_policies.dart';
 export 'tables/claims.dart';
 export 'tables/claim_items.dart';
+export 'tables/trips.dart';
+export 'tables/trip_orders.dart';
+export 'tables/trip_expenses.dart';
+export 'tables/trip_pnl_view.dart';

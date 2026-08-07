@@ -67,6 +67,7 @@ const kOwnerManagerNavItems = <NavItem>[
   (name: 'VendorsPage', icon: Icons.local_shipping_outlined, label: 'Vendors'),
   (name: 'CustomersPage', icon: Icons.people_outline, label: 'Customers'),
   (name: 'InsuranceClaimsPage', icon: Icons.shield_outlined, label: 'Insurance'),
+  (name: 'TripsPage', icon: Icons.alt_route, label: 'Trips'),
   (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts'),
   (name: 'PLReportPage', icon: Icons.assessment, label: 'P & L'),
   (name: 'ReportsPage', icon: Icons.bar_chart, label: 'Reports'),

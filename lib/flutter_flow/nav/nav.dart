@@ -693,6 +693,19 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: InsuranceClaimsPageWidget.routePath,
           builder: (context, params) => const InsuranceClaimsPageWidget(),
         ),
+        // Session 4, Part C-9.
+        FFRoute(
+          name: TripsPageWidget.routeName,
+          path: TripsPageWidget.routePath,
+          builder: (context, params) => const TripsPageWidget(),
+        ),
+        FFRoute(
+          name: TripDetailPageWidget.routeName,
+          path: TripDetailPageWidget.routePath,
+          builder: (context, params) => TripDetailPageWidget(
+            tripId: params.getParam('tripId', ParamType.String),
+          ),
+        ),
         // Session 2, Part B1 + Part C: the 4 remaining supervisor
         // ComingSoon stubs (sup-jobs/sup-team/sup-sal/sup-att) are now
         // real screens, under new route names — kSupervisorNavItems in
