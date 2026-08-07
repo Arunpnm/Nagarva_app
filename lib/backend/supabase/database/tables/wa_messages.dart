@@ -21,8 +21,13 @@ class WaMessagesRow extends SupabaseDataRow {
   String? get orgId => getField<String>('org_id');
   set orgId(String? value) => setField<String>('org_id', value);
 
-  String get contactId => getField<String>('contact_id')!;
-  set contactId(String value) => setField<String>('contact_id', value);
+  // Corrections session, B4 (7 Aug 2026): was a force-unwrap on a column
+  // that's genuinely nullable in the live schema (contact_id uuid,
+  // is_nullable = YES) — harmless only because nothing read .contactId
+  // (grepped app-wide, zero hits, still zero as of this fix). Widened
+  // rather than left as a trap for whatever the first real reader is.
+  String? get contactId => getField<String>('contact_id');
+  set contactId(String? value) => setField<String>('contact_id', value);
 
   String? get waMessageId => getField<String>('wa_message_id');
   set waMessageId(String? value) => setField<String>('wa_message_id', value);
