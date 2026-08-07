@@ -396,7 +396,8 @@ class NavBarPage extends StatefulWidget {
 /// desktop (>1024dp) share the same rail; nothing distinguishes them
 /// beyond how much horizontal space happens to be available. Narrow
 /// screens (<600dp): the custom MobileBottomNav (Part 5a/5b).
-class _NavBarPageState extends State<NavBarPage> {
+class _NavBarPageState extends State<NavBarPage>
+    with TickerProviderStateMixin {
   String _currentPageName = 'HomePage';
   late Widget? _currentPage;
 
@@ -410,7 +411,25 @@ class _NavBarPageState extends State<NavBarPage> {
   /// user scrolls down, revealed while scrolling up. Deliberately driven
   /// only by UserScrollNotification.direction — no idle timer anywhere,
   /// so the nav can never vanish while the user is simply stationary.
+  ///
+  /// NG-FIX brief, bug 2a (7 Aug 2026): this used to be a plain bool
+  /// (`_navVisible`) driving `MobileBottomNav`'s own internal
+  /// `AnimatedSlide`, which only moved the bar's paint offset — the
+  /// `Scaffold` kept reserving its full layout height regardless, so
+  /// hiding the bar left a dead band at the bottom instead of returning
+  /// that space to the body. `_navAnimController` now drives a
+  /// `SizeTransition` around `MobileBottomNav` at the `bottomNavigationBar`
+  /// call site instead (1.0 = full height/shown, 0.0 = zero height/
+  /// hidden), so `Scaffold` actually reclaims the space. `_navVisible`
+  /// stays as the cheap "which way are we already animating" guard so a
+  /// stream of scroll notifications during one gesture doesn't restart
+  /// forward()/reverse() every frame.
   bool _navVisible = true;
+  late final AnimationController _navAnimController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 220),
+    value: 1.0,
+  );
 
   /// Users Kickoff Step 2: three genuinely different destination sets,
   /// not one list filtered three ways — see nav_items.dart's own header
@@ -457,6 +476,12 @@ class _NavBarPageState extends State<NavBarPage> {
       // Surveys first.
       SurveyQueue.instance.refresh();
     }
+  }
+
+  @override
+  void dispose() {
+    _navAnimController.dispose();
+    super.dispose();
   }
 
   void _setRailExpanded(bool expanded) {
@@ -765,19 +790,34 @@ class _NavBarPageState extends State<NavBarPage> {
             // Scroll-aware only — no idle timer anywhere, so the nav can
             // never disappear while the user is simply stationary.
             if (notification.direction == ScrollDirection.reverse) {
-              if (_navVisible) safeSetState(() => _navVisible = false);
+              if (_navVisible) {
+                _navVisible = false;
+                _navAnimController.reverse();
+              }
             } else if (notification.direction == ScrollDirection.forward) {
-              if (!_navVisible) safeSetState(() => _navVisible = true);
+              if (!_navVisible) {
+                _navVisible = true;
+                _navAnimController.forward();
+              }
             }
             return false;
           },
           child: body ?? const SizedBox.shrink(),
         ),
-        bottomNavigationBar: MobileBottomNav(
-          items: _navItems,
-          currentIndex: currentIndex < 0 ? 0 : currentIndex,
-          onTap: _selectTab,
-          visible: _navVisible,
+        // NG-FIX brief, bug 2a: SizeTransition around the bar (not an
+        // internal AnimatedSlide inside MobileBottomNav) so the Scaffold's
+        // reserved bottomNavigationBar height actually shrinks to zero
+        // when hidden, instead of leaving a dead band the same height as
+        // the bar. extendBody stays false (default) — the bar keeps
+        // participating in layout, it just animates to zero height.
+        bottomNavigationBar: SizeTransition(
+          sizeFactor: _navAnimController,
+          axisAlignment: -1,
+          child: MobileBottomNav(
+            items: _navItems,
+            currentIndex: currentIndex < 0 ? 0 : currentIndex,
+            onTap: _selectTab,
+          ),
         ),
       );
     }

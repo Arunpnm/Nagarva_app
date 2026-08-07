@@ -22,21 +22,26 @@ import '/flutter_flow/flutter_flow_theme.dart';
 ///  - always shows the label under the icon, never icon-only
 ///  - marks the active destination with a filled gold pill behind the
 ///    icon plus bold gold label — not just a colour shift
-///  - the whole bar can be slid off-screen (hide-on-scroll-down, see
-///    [visible]) but the bar's own tap targets are otherwise unaffected
+///
+/// Hide-on-scroll-down is owned by the caller now (NG-FIX brief, bug 2a,
+/// 7 Aug 2026) — this widget used to wrap itself in an `AnimatedSlide`
+/// driven by a `visible` bool, which only moved the bar's paint offset and
+/// left its full `barHeight` reserved in the `Scaffold`'s layout the whole
+/// time, producing a dead band at the bottom whenever the bar was hidden.
+/// `main.dart`'s `NavBarPage` now wraps this widget in a `SizeTransition`
+/// instead, so the reserved layout height itself shrinks to zero — this
+/// widget no longer animates its own visibility at all.
 class MobileBottomNav extends StatelessWidget {
   const MobileBottomNav({
     super.key,
     required this.items,
     required this.currentIndex,
     required this.onTap,
-    this.visible = true,
   });
 
   final List<({String name, IconData icon, String label})> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
-  final bool visible;
 
   static const double barHeight = 68.0;
   // Widened from an earlier 64dp — at 64dp "Dashboard"/"Leads / CRM" (the
@@ -49,45 +54,72 @@ class MobileBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    return AnimatedSlide(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-      offset: Offset(0, visible ? 0 : 1),
-      child: Material(
-        color: theme.secondaryBackground,
-        elevation: 8,
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: barHeight,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final fits =
-                    _itemWidth * items.length <= constraints.maxWidth;
-                final row = Row(
-                  mainAxisAlignment: fits
-                      ? MainAxisAlignment.spaceEvenly
-                      : MainAxisAlignment.start,
-                  children: [
-                    for (var i = 0; i < items.length; i++)
-                      _NavItem(
-                        item: items[i],
-                        selected: i == currentIndex,
-                        width: fits
-                            ? constraints.maxWidth / items.length
-                            : _itemWidth,
-                        onTap: () => onTap(i),
+    return Material(
+      color: theme.secondaryBackground,
+      elevation: 8,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: barHeight,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final fits = _itemWidth * items.length <= constraints.maxWidth;
+              final row = Row(
+                mainAxisAlignment:
+                    fits ? MainAxisAlignment.spaceEvenly : MainAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < items.length; i++)
+                    _NavItem(
+                      item: items[i],
+                      selected: i == currentIndex,
+                      width: fits
+                          ? constraints.maxWidth / items.length
+                          : _itemWidth,
+                      onTap: () => onTap(i),
+                    ),
+                ],
+              );
+              if (fits) return row;
+              // NG-FIX brief, bug 2b: this app's owner/manager nav has far
+              // more destinations than fit a phone-width bar (27 today,
+              // growing) — reducing the destination count isn't on the
+              // table, and this row already scrolls horizontally to reach
+              // all of them (Row's own mainAxisSize shrink-wraps under the
+              // unbounded width a horizontal SingleChildScrollView gives
+              // it). The actual device complaint ("Calendar clipped at the
+              // edge") is a scroll-discoverability gap, not an
+              // unreachable destination — this trailing fade is the
+              // low-risk fix for that: a visual cue that there's more to
+              // scroll to, without restructuring a nav this app relies on.
+              return Stack(
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: row,
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 20,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              theme.secondaryBackground.withValues(alpha: 0),
+                              theme.secondaryBackground.withValues(alpha: 0.9),
+                            ],
+                          ),
+                        ),
                       ),
-                  ],
-                );
-                return fits
-                    ? row
-                    : SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: row,
-                      );
-              },
-            ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

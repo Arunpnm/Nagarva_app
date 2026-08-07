@@ -48,9 +48,18 @@ typedef NavItem = ({String name, IconData icon, String label});
 const kOwnerManagerNavItems = <NavItem>[
   (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard'),
   (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM'),
-  (name: 'CustomerSurveysPage', icon: Icons.fact_check, label: 'Surveys'),
+  // NG-FIX brief, bug 2c (7 Aug 2026): 'Surveys' and 'Survey' were one
+  // character apart with no way to tell them apart at a glance —
+  // CustomerSurveysPage is the review queue for surveys customers already
+  // submitted (public /survey link, see customer_surveys_page_widget.dart);
+  // SurveyQuoteHubPage is the staff-side hub for starting/building a new
+  // survey+quote (see survey_quote_hub_page_widget.dart's own doc
+  // comment). Renamed to describe what each actually does instead of the
+  // brief's guessed 'New Survey', which undersells the hub (it's also the
+  // cross-lead quote list and CFT catalogue admin, not just "new").
+  (name: 'CustomerSurveysPage', icon: Icons.fact_check, label: 'Customer Surveys'),
   (name: 'WaInboxPage', icon: Icons.inbox, label: 'Inbox'),
-  (name: 'SurveyQuoteHubPage', icon: Icons.add_task, label: 'Survey'),
+  (name: 'SurveyQuoteHubPage', icon: Icons.add_task, label: 'Survey & Quote'),
   (name: 'CalendarPage', icon: Icons.calendar_month, label: 'Calendar'),
   (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders'),
   (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations'),
