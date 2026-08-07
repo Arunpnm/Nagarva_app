@@ -1016,6 +1016,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
 
   /// Fixed-width so every row's controls align on one vertical grid.
   /// 40x40 tap targets (parity brief Part 5e).
+  // Corrections session, B5 (7 Aug 2026): both buttons were 40x40, below
+  // the 48x48 Material minimum touch target — outstanding since before
+  // the last APK build per the brief. This is the one shared stepper
+  // both the custom-item rows and the catalogue sub-item rows call, so
+  // fixing it here covers every CFT +/- control in the survey builder,
+  // not just one spot.
   Widget _stepper(
     FlutterFlowTheme theme, {
     required int qty,
@@ -1023,13 +1029,13 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     required VoidCallback onPlus,
   }) {
     return SizedBox(
-      width: 102,
+      width: 118,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           SizedBox(
-            width: 40,
-            height: 40,
+            width: 48,
+            height: 48,
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: const Icon(Icons.remove_circle_outline, size: 20),
@@ -1044,8 +1050,8 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                     fontWeight: FontWeight.w700, color: theme.primaryText)),
           ),
           SizedBox(
-            width: 40,
-            height: 40,
+            width: 48,
+            height: 48,
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: const Icon(Icons.add_circle_outline, size: 20),
