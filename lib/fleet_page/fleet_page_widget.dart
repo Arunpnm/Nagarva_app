@@ -106,8 +106,65 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
     );
   }
 
+  /// Corrections session, B3 (7 Aug 2026): was a bare hardcoded stat
+  /// value/label pair — see the class doc comment for the fake-numbers
+  /// history this replaces.
+  Widget _statTile(BuildContext context, String value, String label) {
+    return Flexible(
+      flex: 1,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: FlutterFlowTheme.of(context).secondaryBackground,
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(0.0, 10.0, 0.0, 10.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                value,
+                style: FlutterFlowTheme.of(context).titleMedium.override(
+                      font: GoogleFonts.interTight(),
+                      color: FlutterFlowTheme.of(context).primary,
+                      letterSpacing: 0.0,
+                    ),
+              ),
+              Text(
+                label,
+                style: FlutterFlowTheme.of(context).labelSmall.override(
+                      font: GoogleFonts.inter(),
+                      color: FlutterFlowTheme.of(context).secondaryText,
+                      letterSpacing: 0.0,
+                    ),
+              ),
+            ].divide(const SizedBox(height: 2.0)),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Corrections session, B3: computed from the same status vocabulary
+    // vehicle_detail_sheet.dart's edit form actually writes
+    // (_statuses = ['active', 'maintenance', 'inactive']) — NOT the
+    // "Active/Idle/Service" labels the old hardcoded cards used, which
+    // don't match any status this app's own UI can set (grepped: the only
+    // place vehicles.status is written is that form). One live row still
+    // holds 'idle' from data that predates the current vocabulary; it
+    // shows up in none of these three counts rather than being force-fit
+    // into one, since counting it as "Active" or "Maintenance" would be a
+    // guess this app's own code doesn't support.
+    final vehicles = _model.vehiclesList;
+    final activeCount = vehicles.where((v) => v.status == 'active').length;
+    final maintenanceCount =
+        vehicles.where((v) => v.status == 'maintenance').length;
+    final inactiveCount = vehicles.where((v) => v.status == 'inactive').length;
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -168,252 +225,9 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Flexible(
-                          flex: 1,
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: FlutterFlowTheme.of(context)
-                                  .secondaryBackground,
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 10.0, 0.0, 10.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    FFLocalizations.of(context).getText(
-                                      'uymbqs34' /* 4 */,
-                                    ),
-                                    style: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .override(
-                                          font: GoogleFonts.interTight(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .primary,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    FFLocalizations.of(context).getText(
-                                      'effvxq3g' /* Active */,
-                                    ),
-                                    style: FlutterFlowTheme.of(context)
-                                        .labelSmall
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelSmall
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelSmall
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelSmall
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ].divide(const SizedBox(height: 2.0)),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Flexible(
-                          flex: 1,
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: FlutterFlowTheme.of(context)
-                                  .secondaryBackground,
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 10.0, 0.0, 10.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    FFLocalizations.of(context).getText(
-                                      'q4vrtda8' /* 2 */,
-                                    ),
-                                    style: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .override(
-                                          font: GoogleFonts.interTight(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .primary,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    FFLocalizations.of(context).getText(
-                                      '8i9lfouo' /* Idle */,
-                                    ),
-                                    style: FlutterFlowTheme.of(context)
-                                        .labelSmall
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelSmall
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelSmall
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelSmall
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ].divide(const SizedBox(height: 2.0)),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Flexible(
-                          flex: 1,
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: FlutterFlowTheme.of(context)
-                                  .secondaryBackground,
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 10.0, 0.0, 10.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    FFLocalizations.of(context).getText(
-                                      '86etrs8i' /* 1 */,
-                                    ),
-                                    style: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .override(
-                                          font: GoogleFonts.interTight(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .primary,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    FFLocalizations.of(context).getText(
-                                      '0hhivc3k' /* Service */,
-                                    ),
-                                    style: FlutterFlowTheme.of(context)
-                                        .labelSmall
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelSmall
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelSmall
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelSmall
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ].divide(const SizedBox(height: 2.0)),
-                              ),
-                            ),
-                          ),
-                        ),
+                        _statTile(context, '$activeCount', 'Active'),
+                        _statTile(context, '$maintenanceCount', 'Maintenance'),
+                        _statTile(context, '$inactiveCount', 'Inactive'),
                       ].divide(const SizedBox(width: 10.0)),
                     ),
                     Column(
