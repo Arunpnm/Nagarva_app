@@ -3,6 +3,7 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/keyboard_scroll_view.dart';
+import '/components/load_error_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,6 +27,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
   late FleetPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  String? _loadError;
 
   @override
   void initState() {
@@ -45,11 +47,20 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
 
   Future<void> _loadVehicles() async {
     // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
-    _model.vehiclesOut = await VehiclesTable().queryRows(
-      queryFn: (q) => OrgScope.read(q),
-    );
-    _model.vehiclesList =
-        (_model.vehiclesOut ?? []).toList().cast<VehiclesRow>();
+    // Hang follow-up (7 Aug 2026): was unguarded — a failure here used to
+    // leave the page permanently blank (no "Loading…" text even existed
+    // for this list) with no way to tell it apart from a freeze. See
+    // table.dart's new query timeout for the other half of this fix.
+    try {
+      _model.vehiclesOut = await VehiclesTable().queryRows(
+        queryFn: (q) => OrgScope.read(q),
+      );
+      _model.vehiclesList =
+          (_model.vehiclesOut ?? []).toList().cast<VehiclesRow>();
+      _loadError = null;
+    } catch (e) {
+      _loadError = 'Could not load vehicles: $e';
+    }
     safeSetState(() {});
   }
 
@@ -436,6 +447,12 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                         ),
                         Builder(
                           builder: (context) {
+                            if (_loadError != null &&
+                                _model.vehiclesOut == null) {
+                              return LoadErrorState(
+                                  message: _loadError!,
+                                  onRetry: _loadVehicles);
+                            }
                             final vehiclesListItem =
                                 _model.vehiclesList.toList();
 

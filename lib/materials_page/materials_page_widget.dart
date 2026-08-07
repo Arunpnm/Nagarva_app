@@ -1,5 +1,6 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/load_error_state.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -35,6 +36,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
   final scaffoldKey = GlobalKey<ScaffoldState>();
   List<LowStockViewRow> _lowStock = [];
   bool _showLowStockOnly = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -54,11 +56,23 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
   void onPageRefresh() => _loadMaterials();
 
   Future<void> _loadMaterials() async {
-    _model.materialsOut = await MaterialsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).order('name'),
-    );
-    _model.materialsList =
-        (_model.materialsOut ?? []).toList().cast<MaterialsRow>();
+    // Hang follow-up (7 Aug 2026): this query used to be unguarded — if it
+    // threw or (before table.dart's new query timeout) simply never
+    // resolved, safeSetState below was never reached and the page stayed
+    // on "Loading…" forever with nothing to say why. Now a failure is a
+    // real, retryable error state instead of a silent freeze.
+    try {
+      _model.materialsOut = await MaterialsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).order('name'),
+      );
+      _model.materialsList =
+          (_model.materialsOut ?? []).toList().cast<MaterialsRow>();
+      _loadError = null;
+    } catch (e) {
+      _loadError = 'Could not load materials: $e';
+      safeSetState(() {});
+      return;
+    }
     try {
       _lowStock = await LowStockViewTable().queryRows(
         queryFn: (q) => OrgScope.read(q).order('name'),
@@ -354,7 +368,10 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                           ),
                       ],
                     ),
-                    if (materials.isEmpty)
+                    if (_loadError != null && _model.materialsOut == null)
+                      LoadErrorState(
+                          message: _loadError!, onRetry: _loadMaterials)
+                    else if (materials.isEmpty)
                       Text(
                         _model.materialsOut == null
                             ? 'Loading…'

@@ -1,6 +1,7 @@
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/load_error_state.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -40,6 +41,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
   late UsersPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  String? _loadError;
 
   @override
   void initState() {
@@ -57,10 +59,19 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
   void onPageRefresh() => _reload();
 
   Future<void> _reload() async {
-    _model.staffOut = await StaffTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).order('name'),
-    );
-    _model.staffList = (_model.staffOut ?? []).toList().cast<StaffRow>();
+    // Hang follow-up (7 Aug 2026): was unguarded — a failure here used to
+    // leave the page on "Loading…" forever with no way to tell whether it
+    // was still working or stuck. See table.dart's new query timeout for
+    // the other half of this fix.
+    try {
+      _model.staffOut = await StaffTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).order('name'),
+      );
+      _model.staffList = (_model.staffOut ?? []).toList().cast<StaffRow>();
+      _loadError = null;
+    } catch (e) {
+      _loadError = 'Could not load staff: $e';
+    }
     safeSetState(() {});
   }
 
@@ -375,6 +386,9 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                         ].divide(const SizedBox(width: 8.0)),
                       ),
                     ),
+                    if (_loadError != null && _model.staffOut == null)
+                      LoadErrorState(message: _loadError!, onRetry: _reload)
+                    else ...[
                     Text(
                       'Active Staff (${activeStaff.length})',
                       style: FlutterFlowTheme.of(context).titleMedium.override(
@@ -413,6 +427,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                       )
                     else
                       ...inactiveStaff.map((s) => _staffCard(context, s)),
+                    ],
                   ].divide(const SizedBox(height: 16.0)),
                 ),
               ),

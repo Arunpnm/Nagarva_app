@@ -1,9 +1,23 @@
+import 'dart:async';
+
 import '/backend/soft_delete.dart';
 import 'database.dart';
 
 abstract class SupabaseTable<T extends SupabaseDataRow> {
   String get tableName;
   T createRow(Map<String, dynamic> data);
+
+  /// Materials/Staff/Fleet hang investigation (7 Aug 2026): none of
+  /// `queryRows`'s callers ever bounded the wait — a request that never
+  /// gets a server response (dropped connection, an auth-token-refresh
+  /// collision, anything) just sits on `await` forever, with nothing to
+  /// surface. Every page built on this helper was one bad network moment
+  /// away from the same silent freeze; this isn't a fix for whatever is
+  /// actually causing that (still being tracked down against a live
+  /// repro), it just guarantees a stuck request eventually fails loudly
+  /// instead of hanging indefinitely. 15s is generous for a handful-of-
+  /// rows list query on a normal connection.
+  static const _queryTimeout = Duration(seconds: 15);
 
   /// Soft delete (fix brief #2, item 11) — the read-side half.
   ///
@@ -39,7 +53,13 @@ abstract class SupabaseTable<T extends SupabaseDataRow> {
     final select = _select();
     var query = queryFn(select);
     query = limit != null ? query.limit(limit) : query;
-    return query.select().then((rows) => rows.map(createRow).toList());
+    return query
+        .select()
+        .timeout(_queryTimeout,
+            onTimeout: () => throw TimeoutException(
+                'Query on "$tableName" took longer than '
+                '${_queryTimeout.inSeconds}s — check your connection.'))
+        .then((rows) => rows.map(createRow).toList());
   }
 
   Future<List<T>> querySingleRow({
