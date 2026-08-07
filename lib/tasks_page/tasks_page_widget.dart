@@ -4,19 +4,19 @@ import 'package:google_fonts/google_fonts.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/components/order_picker_dialog.dart';
+import '/components/entity_picker_dialog.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
-/// Tasks & Activities (Session 4, Part C-12). Live schema confirmed
-/// directly against the DB: tasks + activities, both polymorphic via
+/// Tasks & Activities (Session 4, Part C-12; entity picker generalized in
+/// the corrections session, 7 Aug 2026). Live schema confirmed directly
+/// against the DB: tasks + activities, both polymorphic via
 /// entity_type/entity_id.
 ///
-/// Scope note: only entity_type 'order' gets a real picker (reusing
-/// OrderPickerDialog from Part C-8/C-9) — lead/customer/vendor pickers
-/// were not built this pass to keep scope contained; those entity types
-/// can still be selected but leave entity_id blank (flagged in the type
-/// dropdown itself, not silently dropped).
+/// All four entity types (order/lead/customer/vendor) now get a real
+/// picker via [EntityPickerDialog] — previously only 'order' did, so
+/// picking a lead/customer/vendor selected the type but left entity_id
+/// blank, producing rows that could never be joined or filtered.
 class TasksPageWidget extends StatefulWidget {
   const TasksPageWidget({super.key});
 
@@ -96,7 +96,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     final descCtrl = TextEditingController();
     String taskType = 'follow_up';
     String entityType = 'general';
-    OrdersRow? linkedOrder;
+    EntityPickedResult? linkedEntity;
     String priority = 'medium';
     String? assignedTo;
     DateTime? dueAt;
@@ -137,20 +137,32 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
                     decoration: const InputDecoration(labelText: 'Linked To'),
                     items: const [
                       DropdownMenuItem(value: 'general', child: Text('Nothing (general)')),
-                      DropdownMenuItem(value: 'order', child: Text('Order (pick below)')),
-                      DropdownMenuItem(value: 'lead', child: Text('Lead (no picker yet)')),
-                      DropdownMenuItem(value: 'customer', child: Text('Customer (no picker yet)')),
-                      DropdownMenuItem(value: 'vendor', child: Text('Vendor (no picker yet)')),
+                      DropdownMenuItem(value: 'order', child: Text('Order')),
+                      DropdownMenuItem(value: 'lead', child: Text('Lead')),
+                      DropdownMenuItem(value: 'customer', child: Text('Customer')),
+                      DropdownMenuItem(value: 'vendor', child: Text('Vendor')),
                     ],
-                    onChanged: (v) => setDialogState(() => entityType = v ?? 'general'),
+                    // Clears any previously-picked entity when the type
+                    // changes — otherwise switching from Lead to Vendor
+                    // after already picking a lead would silently keep
+                    // that lead's id and write it under entity_type
+                    // 'vendor'.
+                    onChanged: (v) => setDialogState(() {
+                      entityType = v ?? 'general';
+                      linkedEntity = null;
+                    }),
                   ),
-                  if (entityType == 'order')
+                  if (entityType != 'general')
                     OutlinedButton.icon(
                       icon: const Icon(Icons.search, size: 16),
-                      label: Text(linkedOrder == null ? 'Pick Order' : linkedOrder!.id ?? ''),
+                      label: Text(linkedEntity?.label ??
+                          'Pick ${kEntityPickerConfigs[entityType]?.label ?? ''}'),
                       onPressed: () async {
-                        final o = await OrderPickerDialog.show(dialogCtx);
-                        if (o != null) setDialogState(() => linkedOrder = o);
+                        final picked =
+                            await EntityPickerDialog.show(dialogCtx, entityType);
+                        if (picked != null) {
+                          setDialogState(() => linkedEntity = picked);
+                        }
                       },
                     ),
                   DropdownButtonFormField<String>(
@@ -218,7 +230,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
         if (descCtrl.text.trim().isNotEmpty) 'description': descCtrl.text.trim(),
         'task_type': taskType,
         'entity_type': entityType,
-        'entity_id': entityType == 'order' ? linkedOrder?.id : null,
+        'entity_id': entityType == 'general' ? null : linkedEntity?.id,
         'assigned_to': assignedTo,
         'assigned_by': SupaFlow.client.auth.currentUser?.id,
         'priority': priority,
@@ -299,7 +311,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
   Future<void> _newActivity() async {
     String activityType = 'call';
     String entityType = 'general';
-    OrdersRow? linkedOrder;
+    EntityPickedResult? linkedEntity;
     String direction = 'outbound';
     final subjectCtrl = TextEditingController();
     final bodyCtrl = TextEditingController();
@@ -342,19 +354,27 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
                     decoration: const InputDecoration(labelText: 'Linked To'),
                     items: const [
                       DropdownMenuItem(value: 'general', child: Text('Nothing (general)')),
-                      DropdownMenuItem(value: 'order', child: Text('Order (pick below)')),
-                      DropdownMenuItem(value: 'lead', child: Text('Lead (no picker yet)')),
-                      DropdownMenuItem(value: 'customer', child: Text('Customer (no picker yet)')),
+                      DropdownMenuItem(value: 'order', child: Text('Order')),
+                      DropdownMenuItem(value: 'lead', child: Text('Lead')),
+                      DropdownMenuItem(value: 'customer', child: Text('Customer')),
+                      DropdownMenuItem(value: 'vendor', child: Text('Vendor')),
                     ],
-                    onChanged: (v) => setDialogState(() => entityType = v ?? 'general'),
+                    onChanged: (v) => setDialogState(() {
+                      entityType = v ?? 'general';
+                      linkedEntity = null;
+                    }),
                   ),
-                  if (entityType == 'order')
+                  if (entityType != 'general')
                     OutlinedButton.icon(
                       icon: const Icon(Icons.search, size: 16),
-                      label: Text(linkedOrder == null ? 'Pick Order' : linkedOrder!.id ?? ''),
+                      label: Text(linkedEntity?.label ??
+                          'Pick ${kEntityPickerConfigs[entityType]?.label ?? ''}'),
                       onPressed: () async {
-                        final o = await OrderPickerDialog.show(dialogCtx);
-                        if (o != null) setDialogState(() => linkedOrder = o);
+                        final picked =
+                            await EntityPickerDialog.show(dialogCtx, entityType);
+                        if (picked != null) {
+                          setDialogState(() => linkedEntity = picked);
+                        }
                       },
                     ),
                   TextField(
@@ -390,7 +410,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
         ...OrgScope.stamp(),
         'activity_type': activityType,
         'entity_type': entityType,
-        'entity_id': entityType == 'order' ? linkedOrder?.id : null,
+        'entity_id': entityType == 'general' ? null : linkedEntity?.id,
         if (subjectCtrl.text.trim().isNotEmpty) 'subject': subjectCtrl.text.trim(),
         if (bodyCtrl.text.trim().isNotEmpty) 'body': bodyCtrl.text.trim(),
         if (activityType == 'call') 'direction': direction,
