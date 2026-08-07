@@ -419,7 +419,24 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
-- **5 Aug 2026 (latest), Order Details Tier 2 Session 3 — Document
+- **7 Aug 2026 (latest), WA Inbox crash fix + a flagged-not-fixed
+  correction.** `wa_inbox_page_widget.dart`'s `build()` called
+  `_threadView(theme)` unconditionally — `_threadView` reads `_selected!`
+  on its first line, and `_selected` is null until a contact is tapped, so
+  the page crashed on its own first build, before the query even
+  resolved. Not data-dependent (reproduced with `wa_contacts` at 0 live
+  rows). Fixed lazily: `build()` now only calls `_threadView` when
+  `_selected != null`; `_threadView` itself untouched. Wide-screen empty
+  state upgraded from a bare `Text('Select a conversation')` to the same
+  icon+text pattern `_contactList`'s own empty state already uses.
+  **Correction, not fixed this pass**: `WaMessagesRow.contactId`
+  (`wa_messages.dart`) force-unwraps `contact_id`, which is nullable in
+  the live schema — a real mismatch, but harmless today since nothing in
+  `lib/` reads `.contactId` (grepped, zero hits). Flagged here rather than
+  fixed blind; worth widening to `String?` (or confirming the column
+  should really be `NOT NULL` and fixing the schema instead) next time
+  this file is touched.
+- **5 Aug 2026, Order Details Tier 2 Session 3 — Document
   Generation, all 4 documents rebuilt** (Claude Code session; migrations
   001-009 live, built against `nagarva_document_field_spec.md` and
   `kickoff_tier2_s3_documents.md`).

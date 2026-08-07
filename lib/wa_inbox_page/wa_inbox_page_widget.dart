@@ -177,7 +177,14 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
     final wide = MediaQuery.of(context).size.width > 760;
 
     final list = _contactList(theme);
-    final thread = _threadView(theme);
+    // NG-FIX follow-up (7 Aug 2026): _threadView() reads `_selected!` on
+    // its very first line, so it must never be called while `_selected`
+    // is null — which it always is until a contact is tapped. This used
+    // to be called unconditionally here, crashing the page on its very
+    // first build (before the query even resolved, let alone before any
+    // row existed to look at). Lazy fix: only build it when there's a
+    // selection to build it from; `_threadView` itself is untouched.
+    final thread = _selected != null ? _threadView(theme) : null;
 
     return Scaffold(
       backgroundColor: theme.primaryBackground,
@@ -209,16 +216,37 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
                   children: [
                     SizedBox(width: 320, child: list),
                     const VerticalDivider(width: 1),
-                    Expanded(child: _selected == null
-                        ? Center(
-                            child: Text('Select a conversation',
-                                style: GoogleFonts.inter(color: theme.secondaryText)))
-                        : thread),
+                    Expanded(child: thread ?? _threadPlaceholder(theme)),
                   ],
                 )
-              : (_selected == null ? list : thread),
+              // Narrow layout is unchanged: thread is only ever non-null
+              // here when _selected is non-null (same condition drove
+              // both), so falling back to `list` reproduces the original
+              // `_selected == null ? list : thread` exactly.
+              : (thread ?? list),
     );
   }
+
+  /// Wide-screen right pane when no conversation is selected yet — was a
+  /// bare `Text('Select a conversation')` with no visual weight; matches
+  /// the icon-plus-message empty-state pattern already used in
+  /// [_contactList] instead of reading as an accidentally-blank panel.
+  Widget _threadPlaceholder(FlutterFlowTheme theme) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.forum_outlined, size: 40, color: theme.secondaryText),
+              const SizedBox(height: 12),
+              Text(
+                'Select a conversation',
+                style: GoogleFonts.inter(color: theme.secondaryText, fontSize: 13.5),
+              ),
+            ],
+          ),
+        ),
+      );
 
   Widget _contactList(FlutterFlowTheme theme) {
     if (_contacts.isEmpty) {
