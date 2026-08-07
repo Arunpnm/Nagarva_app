@@ -129,11 +129,18 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
     }
   }
 
+  // Hang follow-up (7 Aug 2026): used to return a bare Flexible, which is
+  // only valid as a DIRECT child of a Row/Column — one of the two call
+  // sites below wraps it in an InkWell first, which orphans the Flexible
+  // one level too deep and produces exactly the "RenderBox was not laid
+  // out" / RenderFlex._computeSizes freeze from the device log (the
+  // assertion's RenderSemanticsAnnotations is what InkWell produces
+  // internally). Returning the bare Container instead removes the trap
+  // permanently — flex placement is now each call site's own
+  // responsibility, where it's visibly a direct Row child or not.
   Widget _statCard(BuildContext context, String label, String value,
       {bool danger = false}) {
-    return Flexible(
-      flex: 1,
-      child: Container(
+    return Container(
         width: double.infinity,
         decoration: BoxDecoration(
           color: FlutterFlowTheme.of(context).secondaryBackground,
@@ -166,8 +173,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
             ].divide(const SizedBox(height: 4.0)),
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _materialRow(BuildContext context, MaterialsRow m) {
@@ -298,15 +304,23 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                     Row(
                       mainAxisSize: MainAxisSize.max,
                       children: [
-                        _statCard(context, 'Total SKUs', '${allMaterials.length}'),
-                        InkWell(
-                          onTap: lowStockCount == 0
-                              ? null
-                              : () => setState(
-                                  () => _showLowStockOnly = !_showLowStockOnly),
-                          borderRadius: BorderRadius.circular(12),
-                          child: _statCard(context, 'Low Stock', '$lowStockCount',
-                              danger: lowStockCount > 0),
+                        Flexible(
+                          flex: 1,
+                          child: _statCard(
+                              context, 'Total SKUs', '${allMaterials.length}'),
+                        ),
+                        Flexible(
+                          flex: 1,
+                          child: InkWell(
+                            onTap: lowStockCount == 0
+                                ? null
+                                : () => setState(() =>
+                                    _showLowStockOnly = !_showLowStockOnly),
+                            borderRadius: BorderRadius.circular(12),
+                            child: _statCard(
+                                context, 'Low Stock', '$lowStockCount',
+                                danger: lowStockCount > 0),
+                          ),
                         ),
                       ].divide(const SizedBox(width: 12.0)),
                     ),
