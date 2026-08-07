@@ -42,6 +42,7 @@ export '/insurance_claims_page/insurance_claims_page_widget.dart'
     show InsuranceClaimsPageWidget;
 export '/trips_page/trips_page_widget.dart' show TripsPageWidget;
 export '/trips_page/trip_detail_page_widget.dart' show TripDetailPageWidget;
+export '/tasks_page/tasks_page_widget.dart' show TasksPageWidget;
 export '/reports_page/reports_page_widget.dart' show ReportsPageWidget;
 export '/users_page/users_page_widget.dart' show UsersPageWidget;
 export '/record_payment_page/record_payment_page_widget.dart'

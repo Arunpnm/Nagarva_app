@@ -541,6 +541,7 @@ class _NavBarPageState extends State<NavBarPage> {
       'CustomersPage': const CustomersPageWidget(),
       'InsuranceClaimsPage': const InsuranceClaimsPageWidget(),
       'TripsPage': const TripsPageWidget(),
+      'TasksPage': const TasksPageWidget(),
     };
   }
 

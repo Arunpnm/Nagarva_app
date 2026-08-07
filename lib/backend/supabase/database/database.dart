@@ -68,3 +68,5 @@ export 'tables/trips.dart';
 export 'tables/trip_orders.dart';
 export 'tables/trip_expenses.dart';
 export 'tables/trip_pnl_view.dart';
+export 'tables/tasks.dart';
+export 'tables/activities.dart';

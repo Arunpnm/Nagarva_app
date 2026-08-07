@@ -706,6 +706,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             tripId: params.getParam('tripId', ParamType.String),
           ),
         ),
+        // Session 4, Part C-12.
+        FFRoute(
+          name: TasksPageWidget.routeName,
+          path: TasksPageWidget.routePath,
+          builder: (context, params) => const TasksPageWidget(),
+        ),
         // Session 2, Part B1 + Part C: the 4 remaining supervisor
         // ComingSoon stubs (sup-jobs/sup-team/sup-sal/sup-att) are now
         // real screens, under new route names — kSupervisorNavItems in
