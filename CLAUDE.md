@@ -419,7 +419,39 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
-- **7 Aug 2026 (latest), WA Inbox crash fix + a flagged-not-fixed
+- **7 Aug 2026 (latest), Materials/Staff/Fleet hang follow-up — reliability
+  fixes + a corrections-list sweep, nothing else touched.** Two changes
+  that make a stuck query recoverable instead of a silent freeze, neither
+  of which is the confirmed root cause (still pending a live `flutter run`
+  repro from Arun): (1) `SupabaseTable.queryRows` (`table.dart`) now wraps
+  its request in `.timeout(15s)` — app-wide, since every page built on
+  this shared helper (Orders included) was one bad network moment from
+  the same hang, not just these three; (2) Materials/`_loadMaterials`,
+  Users("Salary & Staff")/`_reload`, and Fleet/`_loadVehicles` all had
+  their primary list query completely unguarded (no try/catch) — a throw
+  meant `safeSetState` was never reached and the page sat on "Loading…"
+  (Fleet didn't even have that much) forever. All three now render a new
+  shared `LoadErrorState` (`lib/components/load_error_state.dart` — icon +
+  message + Retry button) instead.
+  **Corrections-list item, not fixed this pass** (per instruction —
+  logged for a later sweep, no code changed): Fleet's summary cards
+  (`fleet_page_widget.dart:177-401`, "4 Active / 2 Idle / 1 Service") are
+  hardcoded FlutterFlow placeholder strings, never wired to
+  `_model.vehiclesList` — confirmed by checking the live `vehicles` table
+  directly (3 rows for this org, matching the 3 cards the *list* correctly
+  renders below the fake counts). Swept the rest of `lib/` for the same
+  signature (`getText(key /* <bare number> */)`, the literal marker
+  FlutterFlow leaves on an untouched design-time mockup value) and found
+  one more real hit: **`leads_page_widget.dart`'s pipeline funnel cards
+  (New=8, Contacted=5, Qualified=3, Won=2, around lines 288-566) are the
+  identical bug** — same structure, same never-wired-to-`_model.leadsList`
+  shape. (The sweep's other hit, `new_order_page_widget.dart`'s `16`/`19`
+  dropdown options, is not this bug — those are the real Porter Commission
+  % choices, not a stat card.) Both Fleet's and Leads' cards need the same
+  treatment Materials/Users/Fleet's *lists* already got in earlier
+  sessions: replace the hardcoded text with real counts computed from the
+  page's own already-loaded model data.
+- **7 Aug 2026, WA Inbox crash fix + a flagged-not-fixed
   correction.** `wa_inbox_page_widget.dart`'s `build()` called
   `_threadView(theme)` unconditionally — `_threadView` reads `_selected!`
   on its first line, and `_selected` is null until a contact is tapped, so
