@@ -85,10 +85,29 @@ class _NotificationBellState extends State<NotificationBell> {
   }
 
   Future<void> _load() async {
+    // Corrections session, B2 (7 Aug 2026): this used to fetch the last 30
+    // notifications for the WHOLE org and only filter to "is this mine"
+    // client-side afterward — every colleague's row was already on the
+    // wire by the time _forMe ran. Staff PIN sessions each have their own
+    // Supabase auth user (see staff-login Edge Function), so that was a
+    // real exposure, not just noise: any staff session could read
+    // colleagues' notification rows directly off the network response.
+    // Filtering server-side closes that, and the matching RLS policy
+    // (notifications_select, see the corrections-session migration) makes
+    // it enforced rather than just app-well-behaved — a request that
+    // skips this app code entirely still can't pull rows it shouldn't.
+    // _forMe stays as a second, redundant guard below rather than being
+    // removed — cheap, and it's what already renders the Realtime
+    // channel's live inserts, which RLS now also scopes the same way.
     final rows = await NotificationsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q)
-          .order('created_at')
-          .limit(30),
+      queryFn: (q) {
+        final scoped = OrgScope.read(q);
+        final filtered = _isStaffSession
+            ? scoped.eq(
+                'recipient_staff_id', AppSession.instance.currentStaffId!)
+            : scoped.isFilter('recipient_staff_id', null);
+        return filtered.order('created_at').limit(30);
+      },
     );
     if (!mounted) return;
     setState(() {
