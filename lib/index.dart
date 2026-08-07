@@ -38,6 +38,8 @@ export '/vendors_page/vendor_detail_page_widget.dart'
 export '/customers_page/customers_page_widget.dart' show CustomersPageWidget;
 export '/customers_page/customer_detail_page_widget.dart'
     show CustomerDetailPageWidget;
+export '/insurance_claims_page/insurance_claims_page_widget.dart'
+    show InsuranceClaimsPageWidget;
 export '/reports_page/reports_page_widget.dart' show ReportsPageWidget;
 export '/users_page/users_page_widget.dart' show UsersPageWidget;
 export '/record_payment_page/record_payment_page_widget.dart'

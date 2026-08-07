@@ -61,3 +61,6 @@ export 'tables/customers.dart';
 export 'tables/customer_addresses.dart';
 export 'tables/customer_contacts.dart';
 export 'tables/customer_360_view.dart';
+export 'tables/insurance_policies.dart';
+export 'tables/claims.dart';
+export 'tables/claim_items.dart';
