@@ -8,6 +8,7 @@ import '/backend/supabase/org_session_loader.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import '/permissions.dart';
 import '/staff_auth.dart';
 
 /// Unified PIN login (parity brief Part 7). Ported from reference/APC Web
@@ -142,6 +143,14 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
           staffName: (staff['name'] as String?) ?? 'Staff',
           role: staff['role'] as String?,
         );
+        // Was missing — the only one of the three setStaff() call sites
+        // that didn't also load the permission matrix (main.dart's
+        // session-restore and the legacy login_page_widget.dart both
+        // already do this). Without it, StaffPermissions.activeStaffPages
+        // stays null for the rest of the session, and main.dart's nav
+        // filter used to silently substitute a hardcoded 3-item guess
+        // instead of the real permission-driven set.
+        await StaffPermissions.loadForStaff(staff['id'] as String);
       } else {
         // Owner: resolve org/plan exactly like the vendor email/password
         // path already does (login_page_widget.dart's _handleVendorLogin).

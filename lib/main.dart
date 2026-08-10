@@ -20,6 +20,7 @@ import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
 import 'components/coming_soon_page.dart';
+import 'components/load_error_state.dart';
 import 'components/mobile_bottom_nav.dart';
 import 'components/nav_badge.dart';
 import 'components/notification_bell.dart';
@@ -453,12 +454,65 @@ class _NavBarPageState extends State<NavBarPage>
     final base = navItemsForCurrentSession();
     if (AppSession.instance.currentStaffId == null) return base; // owner/vendor: no filter at all
     if (!isOwnerOrManagerSession) return base; // supervisor/field-staff: fixed set
-    // Manager: permission-driven subset of the 19, same mechanism as
-    // before Step 2. Falls back to a conservative default if permissions
-    // could not be loaded for this session yet.
-    final allowed = StaffPermissions.activeStaffPages ??
-        const {'HomePage', 'OrdersPage', 'OperationsPage'};
+    // Manager: permission-driven subset of the 19/27, same mechanism as
+    // before Step 2. activeStaffPages must already be loaded by the time
+    // this is read — build()'s _needsStaffPermissions guard shows a
+    // loading/error screen instead of reaching here while it's null, so
+    // there is no fallback guess left to make (see the 8 Aug 2026 fix
+    // below: the old hardcoded {Dashboard, Orders, Operations} default
+    // silently substituted a wrong-in-both-directions permission set
+    // instead of surfacing the failure).
+    final allowed = StaffPermissions.activeStaffPages ?? const <String>{};
     return base.where((e) => allowed.contains(e.name)).toList();
+  }
+
+  // ----------------------------------------------------------------------
+  // NG-FIX (8 Aug 2026): a manager session's nav set depends on
+  // StaffPermissions.activeStaffPages having been populated by
+  // StaffPermissions.loadForStaff() at login. One of the three places that
+  // establish a staff session (pin_login_page_widget.dart) was missing
+  // that call entirely — fixed alongside this — but the load itself can
+  // still fail (network hiccup, RLS issue) or this page could in principle
+  // build before a session-restore's own load finishes. Previously
+  // _navItems just guessed {Dashboard, Orders, Operations} in that case,
+  // silently and wrong in both directions. Now: log it, and gate the
+  // whole page behind an explicit loading/error state — never render
+  // _navItems/_tabs while activeStaffPages is null for a manager session.
+  // ----------------------------------------------------------------------
+  bool _permissionsLoadFailed = false;
+
+  bool get _needsStaffPermissions =>
+      isOwnerOrManagerSession &&
+      AppSession.instance.currentStaffId != null &&
+      StaffPermissions.activeStaffPages == null;
+
+  Future<void> _loadStaffPermissions() async {
+    if (!_needsStaffPermissions) return;
+    final staffId = AppSession.instance.currentStaffId!;
+    debugPrint('Staff permissions not loaded for manager session '
+        '$staffId — loading now.');
+    if (_permissionsLoadFailed) safeSetState(() => _permissionsLoadFailed = false);
+    await StaffPermissions.loadForStaff(staffId);
+    if (!mounted) return;
+    final failed = StaffPermissions.activeStaffPages == null;
+    if (failed) {
+      debugPrint('Staff permissions load failed for manager session $staffId.');
+    }
+    safeSetState(() => _permissionsLoadFailed = failed);
+  }
+
+  Widget _buildPermissionsGate(BuildContext context) {
+    return Scaffold(
+      backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+      body: Center(
+        child: _permissionsLoadFailed
+            ? LoadErrorState(
+                message: 'Could not load your permissions.',
+                onRetry: _loadStaffPermissions,
+              )
+            : const CircularProgressIndicator(),
+      ),
+    );
   }
 
   @override
@@ -486,6 +540,10 @@ class _NavBarPageState extends State<NavBarPage>
       // Surveys first.
       SurveyQueue.instance.refresh();
     }
+    // Fire-and-forget, same style as the SharedPreferences load above —
+    // no-ops immediately if activeStaffPages is already populated (the
+    // normal case now that every setStaff() call site also loads it).
+    _loadStaffPermissions();
   }
 
   @override
@@ -773,6 +831,9 @@ class _NavBarPageState extends State<NavBarPage>
     }
     if (AppSession.instance.isTrialExpired) {
       return _buildLockScreen(context, suspended: false);
+    }
+    if (_needsStaffPermissions) {
+      return _buildPermissionsGate(context);
     }
     final tabs = _tabs;
     // Direct-URL guard: a staff session typing /payments etc. into the
