@@ -123,6 +123,19 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
   bool _savingSignature = false;
   String? _signatureUrl;
 
+  // RLS remediation Tier B (supabase/20260808_tierB_org_billing_rls.sql,
+  // not yet run — same ordering rule as Tier A's staff gate in
+  // users_page_widget.dart: this ships in the APK and is confirmed live on
+  // devices before that SQL runs). UPDATE on `organizations` becomes
+  // owner-only at the database via is_org_owner(id) — a genuine
+  // vendor/Auth session, never a staff PIN session regardless of its own
+  // staff.role. AppSession.instance.currentStaffId == null is the exact
+  // client-side mirror of that check (same gate settings_page_widget.dart
+  // already uses for its PIN card / Recycle Bin). Only _saveOrgProfile and
+  // _pickLogo need this — _saveProfile (invoice terms) and _drawSignature
+  // write to `settings`, not `organizations`, and are unaffected by Tier B.
+  bool get _isOwnerSession => AppSession.instance.currentStaffId == null;
+
   @override
   void initState() {
     super.initState();
@@ -240,6 +253,14 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
   /// column rather than leaving a blank string that would still win over
   /// a future data source in `OrgProfile`'s `?? '').isEmpty` checks.
   Future<void> _saveOrgProfile() async {
+    if (!_isOwnerSession) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only the owner can edit business details.'),
+        ),
+      );
+      return;
+    }
     final orgId = AppSession.instance.currentOrgId;
     if (orgId == null) return;
     setState(() => _savingOrgProfile = true);
@@ -282,6 +303,12 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
   }
 
   Future<void> _pickLogo() async {
+    if (!_isOwnerSession) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only the owner can change the logo.')),
+      );
+      return;
+    }
     final orgId = AppSession.instance.currentOrgId;
     if (orgId == null) return;
     final picked = await FilePicker.platform.pickFiles(
@@ -457,7 +484,9 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
               SizedBox(
                 height: 42,
                 child: ElevatedButton.icon(
-                  onPressed: _savingOrgProfile ? null : _saveOrgProfile,
+                  onPressed: (_savingOrgProfile || !_isOwnerSession)
+                      ? null
+                      : _saveOrgProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.primary,
                     foregroundColor: Colors.white,
@@ -470,8 +499,11 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                           height: 16,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.save, size: 18),
-                  label: const Text('Save Letterhead'),
+                      : Icon(
+                          _isOwnerSession ? Icons.save : Icons.lock_outline,
+                          size: 18),
+                  label: Text(
+                      _isOwnerSession ? 'Save Letterhead' : 'Owner only'),
                 ),
               ),
             ],
@@ -549,7 +581,9 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                   ),
                   const SizedBox(width: 14),
                   ElevatedButton.icon(
-                    onPressed: _uploadingLogo ? null : _pickLogo,
+                    onPressed: (_uploadingLogo || !_isOwnerSession)
+                        ? null
+                        : _pickLogo,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.primary,
                       foregroundColor: Colors.white,
@@ -562,9 +596,15 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                             height: 16,
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.upload, size: 18),
-                    label: Text(
-                        (AppSession.instance.currentOrgLogoUrl ?? '').isEmpty
+                        : Icon(
+                            _isOwnerSession
+                                ? Icons.upload
+                                : Icons.lock_outline,
+                            size: 18),
+                    label: Text(!_isOwnerSession
+                        ? 'Owner only'
+                        : (AppSession.instance.currentOrgLogoUrl ?? '')
+                                .isEmpty
                             ? 'Upload Logo'
                             : 'Change Logo'),
                   ),
