@@ -6,6 +6,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'material_form_sheet.dart';
 import 'materials_page_model.dart';
 export 'materials_page_model.dart';
 
@@ -14,6 +15,10 @@ export 'materials_page_model.dart';
 /// Was an empty shell with 8 hardcoded fake SKUs (CLAUDE.md "Empty shells" /
 /// Phase 2 roadmap item). Now backed by the `materials` table, org-scoped
 /// (requires supabase/phase1_add_org_id.sql to be run first).
+///
+/// Add/Restock: was a snackbar stub ("not built yet") — now opens
+/// MaterialFormSheet (see material_form_sheet.dart) to add a new SKU or,
+/// tapping an existing row, edit/restock it.
 class MaterialsPageWidget extends StatefulWidget {
   const MaterialsPageWidget({super.key});
 
@@ -35,14 +40,28 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
     _model = createModel(context, () => MaterialsPageModel());
 
     SchedulerBinding.instance.addPostFrameCallback((_) async {
-      _model.materialsOut = await MaterialsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).order('name'),
-      );
-      _model.materialsList = (_model.materialsOut ?? []).toList().cast<MaterialsRow>();
-      safeSetState(() {});
+      await _reload();
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  Future<void> _reload() async {
+    _model.materialsOut = await MaterialsTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).order('name'),
+    );
+    _model.materialsList = (_model.materialsOut ?? []).toList().cast<MaterialsRow>();
+    safeSetState(() {});
+  }
+
+  Future<void> _addMaterial() async {
+    final saved = await MaterialFormSheet.show(context);
+    if (saved) await _reload();
+  }
+
+  Future<void> _editMaterial(MaterialsRow m) async {
+    final saved = await MaterialFormSheet.show(context, existing: m);
+    if (saved) await _reload();
   }
 
   @override
@@ -104,7 +123,10 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
     final qtyLabel =
         '${(m.quantity ?? 0).toStringAsFixed(m.quantity == m.quantity?.roundToDouble() ? 0 : 1)} ${m.unit ?? ''}'
             .trim();
-    return Container(
+    return InkWell(
+      onTap: () => _editMaterial(m),
+      borderRadius: BorderRadius.circular(10.0),
+      child: Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
@@ -164,6 +186,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -248,19 +271,10 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget> {
                       padding:
                           const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
-                        onPressed: () {
-                          // Add/restock form is still Phase 2 remainder —
-                          // needs quantity/unit/cost inputs, not a stub.
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Add/Restock form not built yet — edit '
-                                'materials directly in Supabase for now.',
-                              ),
-                              duration: Duration(milliseconds: 3000),
-                            ),
-                          );
-                        },
+                        // Was a snackbar stub ("not built yet"); now opens
+                        // MaterialFormSheet to add a new SKU. Tap an
+                        // existing row above to edit/restock it instead.
+                        onPressed: _addMaterial,
                         text: FFLocalizations.of(context).getText(
                           'lnbmsxqs' /* Add / Restock Item */,
                         ),
