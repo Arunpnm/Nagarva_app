@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import '/app_session.dart';
 import '/config/app_config.dart';
 import '/permissions.dart';
@@ -31,28 +29,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:uuid/uuid.dart';
 import 'lead_detail_page_model.dart';
 export 'lead_detail_page_model.dart';
-
-/// 24 random bytes, hex-encoded — same scheme
-/// supabase/20260725_survey_quote_flow.sql documents for the DB-generated
-/// survey token default. Generated client-side for quotations because,
-/// found live-testing this flow: quotations.token's DB default
-/// (`encode(extensions.gen_random_bytes(24), 'hex')`, added by that same
-/// migration) isn't coming back populated on insert — the exact same
-/// symptom that made quotations.id need a client-generated uuid (see
-/// _createQuote below). surveys.token, from the same migration, works
-/// fine, so this is isolated to the pre-existing quotations table, not a
-/// pgcrypto/extension problem. Not fully root-caused (would need DB
-/// introspection this session doesn't have access to) — this sidesteps
-/// it the same safe way as the id fix, rather than leaving the flow
-/// broken pending a DB investigation.
-String _generateHexToken() {
-  final random = Random.secure();
-  final bytes = List<int>.generate(24, (_) => random.nextInt(256));
-  return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-}
 
 /// Read-only view of a single lead with convert-to-order action.
 class LeadDetailPageWidget extends StatefulWidget {
@@ -132,7 +110,6 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   LeadsRow? _lead;
   bool _loadingLinked = true;
   bool _requestingSurvey = false;
-  bool _creatingQuote = false;
   bool _convertingQuote = false;
 
   // ---- Item 5: lead status pipeline ------------------------------------
@@ -721,67 +698,6 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     }
   }
 
-  Future<void> _createQuote() async {
-    if (widget.leadId == null) return;
-    final result = await showDialog<({double subtotal, double gstPct})>(
-      context: context,
-      builder: (_) => _QuoteAmountDialog(
-        initialNotes: _survey?.specialInstructions,
-      ),
-    );
-    if (result == null) return;
-    setState(() => _creatingQuote = true);
-    try {
-      final gstAmount = (result.subtotal * result.gstPct / 100).roundToDouble();
-      final row = await QuotationsTable().insert({
-        // quotations.id has no DB-generated default (unlike surveys.id,
-        // which does) — found live-testing this flow: the insert failed
-        // with Postgres 23502 "null value in column id" every time.
-        // quotation_page_widget.dart's ad-hoc quote form has the exact
-        // same gap (never live-tested either) — flagged in
-        // NAGARVA_STATUS.md, not fixed here since it's a separate feature.
-        'id': const Uuid().v4(),
-        // token's DB default doesn't come back populated either — see
-        // _generateHexToken's doc comment above.
-        'token': _generateHexToken(),
-        ...OrgScope.stamp(),
-        'lead_id': widget.leadId,
-        'customer': widget.leadCustomer,
-        'phone': widget.leadPhone,
-        'from_address': _survey?.fromAddress ?? widget.leadFromCity,
-        'to_address': _survey?.toAddress ?? widget.leadToCity,
-        'items': const [],
-        'charges': const [],
-        'subtotal': result.subtotal,
-        'gst_pct': result.gstPct,
-        'gst_amount': gstAmount,
-        'total': result.subtotal + gstAmount,
-        'status': 'sent',
-      });
-      setState(() => _quotation = row);
-      // Item 5.2: a quote existing means the lead is at least 'quoted'.
-      await _setLeadStatus(kLeadStatusQuoted);
-      // Item 10.4: "a quote sitting without chase is dead revenue".
-      await RemindersService.autoCreate(
-        entityType: kEntityLead,
-        entityId: widget.leadId!,
-        title: 'Quote follow-up: ${widget.leadCustomer ?? 'customer'}',
-        days: kDefaultQuoteFollowUpDays,
-      );
-      _remindersKey.currentState?.reload();
-      if (!mounted) return;
-      _showLinkDialog('Quote link — share with the customer',
-          _shareLink('/quote', row.token!));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not create quote: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _creatingQuote = false);
-    }
-  }
-
   /// Item 5.3 / Session 4 A3: `lost` requires a confirm dialog + optional
   /// reason. The reason now goes into `quote_outcomes` (migration 004 —
   /// outcome/reason_code/reason_note/competitor_name/competitor_price),
@@ -1166,14 +1082,13 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               spacing: 8,
               runSpacing: 8,
               children: [
-                OutlinedButton.icon(
-                  onPressed: _creatingQuote ? null : _createQuote,
-                  icon: const Icon(Icons.request_quote_outlined, size: 18),
-                  label: Text(_creatingQuote ? 'Creating…' : 'Create Quote'),
-                ),
-                // Parity brief Part 3: the fuller itemized CFT survey +
-                // charges/GST builder, as an alternative to the quick
-                // subtotal-only dialog above.
+                // Parity brief Part 3: the itemized CFT survey +
+                // charges/GST builder. Was one of two options here — the
+                // "Create Quote" quick subtotal-only dialog was removed
+                // (12 Aug 2026) as a strict subset of this: no line items,
+                // no CFT breakdown, and quote_pdf.dart already renders the
+                // items-empty case for the rows it already produced, so
+                // nothing existing was orphaned.
                 OutlinedButton.icon(
                   onPressed: () => context.pushNamed(
                     SurveyQuotePageWidget.routeName,
@@ -2058,78 +1973,6 @@ class _ConfirmOrderSheetState extends State<_ConfirmOrderSheet> {
             ));
           },
           child: const Text('Confirm Order'),
-        ),
-      ],
-    );
-  }
-}
-
-/// Minimal quote-amount dialog for the lead-linked quote flow — a single
-/// total + GST%, not a line-item builder (that already exists as its own
-/// standalone form in quotation_page_widget.dart; this is deliberately
-/// simpler since it's meant to be fast to fire off after a survey comes
-/// back).
-class _QuoteAmountDialog extends StatefulWidget {
-  const _QuoteAmountDialog({this.initialNotes});
-
-  final String? initialNotes;
-
-  @override
-  State<_QuoteAmountDialog> createState() => _QuoteAmountDialogState();
-}
-
-class _QuoteAmountDialogState extends State<_QuoteAmountDialog> {
-  final _amountCtrl = TextEditingController();
-  final _gstCtrl = TextEditingController(text: '5');
-
-  @override
-  void dispose() {
-    _amountCtrl.dispose();
-    _gstCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Create Quote'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.initialNotes != null &&
-              widget.initialNotes!.isNotEmpty) ...[
-            Text('From the survey: ${widget.initialNotes}',
-                style: Theme.of(context).textTheme.bodySmall),
-            const SizedBox(height: 12),
-          ],
-          TextField(
-            controller: _amountCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Quote amount (₹)'),
-            autofocus: true,
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _gstCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'GST %'),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () {
-            final amount = double.tryParse(_amountCtrl.text.trim());
-            if (amount == null || amount <= 0) return;
-            final gst = double.tryParse(_gstCtrl.text.trim()) ?? 0;
-            Navigator.of(context).pop((subtotal: amount, gstPct: gst));
-          },
-          child: const Text('Create'),
         ),
       ],
     );
