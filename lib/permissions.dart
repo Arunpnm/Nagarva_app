@@ -59,7 +59,6 @@ const kPermModules = <PermModule>[
   // above (flagged back rather than duplicated) - these three are the
   // genuinely new ones. Keys are cheap now, expensive to retrofit once
   // real staff.permissions rows exist with a fixed module set.
-  PermModule('quotations', 'Quotations', 'QuotationPage'),
   PermModule('materials', 'Materials', 'MaterialsPage'),
   PermModule('reports', 'Reports', 'ReportsPage'),
   // Session 4, Part B2/B3: Reviews and WA Inbox were ComingSoon stubs with

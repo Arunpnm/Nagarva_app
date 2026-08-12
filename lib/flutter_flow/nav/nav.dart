@@ -298,11 +298,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               : const FleetPageWidget(),
         ),
         FFRoute(
-          name: QuotationPageWidget.routeName,
-          path: QuotationPageWidget.routePath,
-          builder: (context, params) => const QuotationPageWidget(),
-        ),
-        FFRoute(
           name: SurveyQuotePageWidget.routeName,
           path: SurveyQuotePageWidget.routePath,
           builder: (context, params) => SurveyQuotePageWidget(
