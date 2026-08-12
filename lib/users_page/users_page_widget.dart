@@ -123,7 +123,28 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
     if (saved) _reload();
   }
 
+  // RLS remediation Tier A (supabase/20260808_tierA_staff_credentials_rls.sql,
+  // not yet run — this gate ships in the APK first, same ordering rule as
+  // Phase 0's set_staff_pin() rollout): UPDATE/DELETE on `staff` becomes
+  // owner-only at the database, via is_org_owner(org_id), which checks
+  // org_members.role = 'owner' — a genuine vendor/Auth session, never a
+  // staff PIN session, not even one whose own staff.role is 'manager' or
+  // 'admin'. AppSession.instance.currentStaffId == null is the exact
+  // client-side mirror of that same check (same gate SettingsPage already
+  // uses for its owner-only PIN card and Recycle Bin). Add Staff is
+  // untouched — Tier A leaves INSERT at org-scope, so a manager creating a
+  // new staff member still works both before and after that migration runs.
+  bool get _isOwnerSession => AppSession.instance.currentStaffId == null;
+
   Future<void> _editStaff(StaffRow s) async {
+    if (!_isOwnerSession) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only the owner can edit staff details.'),
+        ),
+      );
+      return;
+    }
     final saved = await StaffFormSheet.show(context, existing: s);
     if (saved) _reload();
   }
@@ -261,8 +282,14 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                     ),
                   ),
                   const SizedBox(width: 6.0),
-                  Icon(Icons.edit_outlined,
-                      color: theme.secondaryText, size: 18.0),
+                  // Owner-only edit, see _editStaff's gate above — the icon
+                  // itself signals view-only for a manager instead of every
+                  // tap ending in the same SnackBar.
+                  Icon(
+                    _isOwnerSession ? Icons.edit_outlined : Icons.lock_outline,
+                    color: theme.secondaryText,
+                    size: 18.0,
+                  ),
                 ],
               ),
             ],

@@ -102,10 +102,22 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
     if (confirmed != true) return;
     setState(() => _togglingActive = true);
     try {
-      await OrganizationsTable().update(
-        data: {'active': goingActive},
-        matchingRows: (q) => q.eq('id', _org.id!),
+      // RLS remediation Tier B: organizations.active is no longer
+      // app-writable at all (column GRANT revoked) — routed through
+      // admin-update-org, which re-checks platform_admins membership
+      // under the service role and logs a billing_events row. See
+      // supabase/functions/admin-update-org/index.ts.
+      final res = await SupaFlow.client.functions.invoke(
+        'admin-update-org',
+        body: {'org_id': _org.id, 'active': goingActive},
       );
+      final body = res.data;
+      if (body is! Map || body['ok'] != true) {
+        throw Exception(
+          (body is Map ? body['error'] as String? : null) ??
+              'Could not update organization.',
+        );
+      }
       setState(() => _org.active = goingActive);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

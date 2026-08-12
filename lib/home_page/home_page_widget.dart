@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/session_logout.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -467,26 +468,18 @@ class _HomePageWidgetState extends State<HomePageWidget>
                 hoverColor: Colors.transparent,
                 highlightColor: Colors.transparent,
                 onTap: () async {
-                  // This drawer duplicates a Logout tile that (unlike
-                  // SettingsPage's, fixed per CLAUDE.md's 13 Jul 2026
-                  // changelog) never called signOut()/AppSession.clear() —
-                  // it just navigated to LoginPage while leaving the
-                  // session fully intact. Harmless-looking on its own, but
-                  // combined with LoginPage's new "already restored? skip
-                  // straight to Home" redirect it made Logout appear to do
-                  // nothing at all. Now matches settings_page_widget.dart's
-                  // real logout sequence.
+                  // Was a second, independently-drifted logout sequence
+                  // (missing StaffAuth.clearStoredVendorToken()/
+                  // StaffPermissions.clearActive(), and — the live bug —
+                  // hardcoded context.go(LoginPageWidget.routePath)
+                  // regardless of device binding, stranding a PIN-only
+                  // staff member on a screen he has no credentials for).
+                  // Now calls the one shared sequence directly instead of
+                  // re-duplicating it a second time.
                   if (Navigator.of(context).canPop()) {
                     context.pop();
                   }
-                  try {
-                    await SupaFlow.client.auth.signOut();
-                  } catch (_) {
-                    // Staff (PIN) sessions have no Supabase Auth session
-                    // of their own to sign out of — ignore.
-                  }
-                  AppSession.instance.clear();
-                  if (context.mounted) context.go(LoginPageWidget.routePath);
+                  await performLogout(context);
                 },
                 child: Material(
                   color: Colors.transparent,

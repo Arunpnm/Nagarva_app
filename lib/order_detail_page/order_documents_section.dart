@@ -125,11 +125,15 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     }
   }
 
+  // Fixed alongside OrderDetailPage.currentFy() (RLS/numbering audit, 12
+  // Aug 2026) — was emitting '2627', which never matched number_series'
+  // hyphenated 'YYYY-YY' seed values, so LR/proforma/voucher numbering
+  // silently drew from an auto-created unprefixed series instead of the
+  // intended one.
   String _currentFy() {
     final now = DateTime.now();
-    return now.month >= 4
-        ? '${(now.year % 100).toString().padLeft(2, '0')}${((now.year + 1) % 100).toString().padLeft(2, '0')}'
-        : '${((now.year - 1) % 100).toString().padLeft(2, '0')}${(now.year % 100).toString().padLeft(2, '0')}';
+    final startYear = now.month >= 4 ? now.year : now.year - 1;
+    return '$startYear-${((startYear + 1) % 100).toString().padLeft(2, '0')}';
   }
 
   String _rupees(num v) => '₹${v.toStringAsFixed(2).replaceAllMapped(
@@ -453,10 +457,13 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           receiptId = existingReceipt.id!;
           invoiceDate = existingReceipt.invoiceDate;
         } else {
+          // One org-wide series per doc type per FY, not per-branch (12
+          // Aug 2026 numbering-scheme decision — see
+          // order_detail_page_widget.dart's _nextInvoiceNo).
           receiptNo = await SupaFlow.client.rpc('next_doc_number', params: {
             'p_org': orgId,
             'p_doc_type': 'receipt',
-            'p_branch': o.branch,
+            'p_branch': null,
             'p_fy': _currentFy(),
           }) as String;
           receiptDate = DateTime.now();
@@ -572,10 +579,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final o = _order;
         if (o == null) return;
         final orgId = OrgScope.currentOrgId!;
+        // One org-wide series per doc type per FY, not per-branch (12 Aug
+        // 2026 numbering-scheme decision).
         final docNo = await SupaFlow.client.rpc('next_doc_number', params: {
           'p_org': orgId,
           'p_doc_type': 'proforma',
-          'p_branch': o.branch,
+          'p_branch': null,
           'p_fy': _currentFy(),
         }) as String;
         final amount = o.quoteTotal ?? o.amount ?? 0;
@@ -630,10 +639,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         // row-locked allocator — same contract as next_doc_number, just
         // scoped to lr_series instead of number_series (the two aren't
         // consolidated yet; 007 mirrors the counter into number_series
-        // under doc_type 'lr' so a future consolidation is a no-op).
+        // under doc_type 'lr' so a future consolidation is a no-op). One
+        // org-wide series per FY, not per-branch — same 12 Aug 2026
+        // numbering-scheme decision as every other doc type here.
         final lrNo = await SupaFlow.client.rpc('next_lr_number', params: {
           'p_org': orgId,
-          'p_branch': o.branch,
+          'p_branch': null,
           'p_fy': fy,
         }) as String;
 
@@ -981,10 +992,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         if (amount <= 0 || paidToCtrl.text.trim().isEmpty) return;
 
         final orgId = OrgScope.currentOrgId!;
+        // One org-wide series per doc type per FY, not per-branch (12 Aug
+        // 2026 numbering-scheme decision).
         final docNo = await SupaFlow.client.rpc('next_doc_number', params: {
           'p_org': orgId,
           'p_doc_type': 'voucher',
-          'p_branch': o.branch,
+          'p_branch': null,
           'p_fy': _currentFy(),
         }) as String;
         final (profile, logoBytes) = await _loadBranding();

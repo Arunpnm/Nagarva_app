@@ -126,10 +126,22 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
     );
     if (chosen == null || chosen == org.planId) return;
     try {
-      await OrganizationsTable().update(
-        data: {'plan_id': chosen},
-        matchingRows: (q) => q.eq('id', org.id!),
+      // RLS remediation Tier B: organizations.plan_id is no longer
+      // app-writable at all (column GRANT revoked) — routed through
+      // admin-update-org, which re-checks platform_admins membership
+      // under the service role and logs a billing_events row. See
+      // supabase/functions/admin-update-org/index.ts.
+      final res = await SupaFlow.client.functions.invoke(
+        'admin-update-org',
+        body: {'org_id': org.id, 'plan_id': chosen},
       );
+      final body = res.data;
+      if (body is! Map || body['ok'] != true) {
+        throw Exception(
+          (body is Map ? body['error'] as String? : null) ??
+              'Could not change plan.',
+        );
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('${org.name}\'s plan updated.')));

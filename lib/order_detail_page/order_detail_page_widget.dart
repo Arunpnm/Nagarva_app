@@ -531,11 +531,21 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   static final _currency =
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
+  // Fixed (RLS/numbering audit, 12 Aug 2026): used to emit '2627' —
+  // concatenated 2-digit years, no hyphen — which never matched the
+  // hyphenated 'YYYY-YY' fy values migration 009 actually seeded into
+  // number_series (e.g. '2026-27'). next_doc_number() doesn't error on a
+  // miss (see the migration handed back alongside this fix, which closes
+  // that), it silently INSERTs a brand-new unprefixed series row — so
+  // every real invoice went out on a bare, prefix-less number
+  // (confirmed live: APC-1006's invoice_no is '0001', not '2026/0001')
+  // instead of the intended series. This format is now the single source
+  // of truth every doc-type's fy must agree on — see the identical fix in
+  // quick_payment_section.dart and order_documents_section.dart.
   static String currentFy() {
     final now = DateTime.now();
-    return now.month >= 4
-        ? '${(now.year % 100).toString().padLeft(2, '0')}${((now.year + 1) % 100).toString().padLeft(2, '0')}'
-        : '${((now.year - 1) % 100).toString().padLeft(2, '0')}${(now.year % 100).toString().padLeft(2, '0')}';
+    final startYear = now.month >= 4 ? now.year : now.year - 1;
+    return '$startYear-${((startYear + 1) % 100).toString().padLeft(2, '0')}';
   }
 
   /// Sequential invoice numbering. Order Details Session 1's brief is
@@ -583,8 +593,15 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       if (existing.isNotEmpty && (existing.first.invoiceNo ?? '').isNotEmpty) {
         invoiceNo = existing.first.invoiceNo!;
       } else {
-        invoiceNo = await _nextInvoiceNo(
-            branch: existing.isNotEmpty ? existing.first.branch : null);
+        // Numbering-scheme decision (12 Aug 2026): one org-wide series per
+        // doc type per FY, not per-branch. Under GST the invoice series
+        // must be unique and gapless per registered person per FY —
+        // per-branch series are for genuinely separate registrations, not
+        // two branches under one GSTIN. branch: null always, now and
+        // going forward; _nextInvoiceNo still accepts the parameter (kept
+        // for a future tenant with real separate registrations), it's
+        // just never passed a real value from here anymore.
+        invoiceNo = await _nextInvoiceNo();
         // LEAK_AUDIT.md write-gap fix: matched only on id before.
         // invoice_issued_at stamped alongside invoice_no — same "once, at
         // first generation" convention as the number itself; a re-open of
@@ -600,8 +617,14 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       }
 
       final amount = double.tryParse(widget.orderAmount ?? '') ?? 0.0;
-      const gstPct = 5.0; // no per-order gst_pct column yet — flat default,
-      // same as the reference app's default.
+      // Fixed (RLS/numbering audit, 12 Aug 2026): was a hardcoded 5.0
+      // unconditionally, ignoring orders.quote_gst_pct even when it held
+      // the real quoted rate — confirmed live to have wrongly invoiced at
+      // least one order (18% quoted, 5% billed). quote_gst_pct falls back
+      // to 5% only when the order genuinely has no stored rate (24 of 25
+      // live orders today, since this column is rarely populated), never
+      // as a silent override of a real one.
+      final gstPct = existing.isNotEmpty ? (existing.first.quoteGstPct ?? 5.0) : 5.0;
       final interstate =
           isInterState(widget.orderFromCity, widget.orderToCity);
       final igst = interstate ? (amount * gstPct / 100).roundToDouble() : 0.0;

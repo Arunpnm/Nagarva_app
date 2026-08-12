@@ -68,6 +68,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
     _model.ordNotesFieldTextController ??= TextEditingController();
     _model.ordNotesFieldFocusNode ??= FocusNode();
 
+    _model.ordGstinFieldTextController ??= TextEditingController();
+    _model.ordGstinFieldFocusNode ??= FocusNode();
+
     _model.ordPorterCashCollectFieldTextController ??= TextEditingController();
     _model.ordPorterCashCollectFieldFocusNode ??= FocusNode();
 
@@ -133,6 +136,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
     _model.ordAmountFieldTextController!.text =
         order.amount?.toString() ?? '';
     _model.ordNotesFieldTextController!.text = order.notes ?? '';
+    _model.ordGstinFieldTextController!.text = order.billingPartyGstin ?? '';
     _model.ordPorterCashCollectFieldTextController!.text =
         order.porterCashCollect?.toString() ?? '';
 
@@ -1619,6 +1623,29 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       .ordNotesFieldTextControllerValidator
                                       .asValidator(context),
                                 ),
+                                // RLS/GST audit, 12 Aug 2026: needed on a
+                                // B2B tax invoice for the customer's input
+                                // credit. Pre-filled from the matched
+                                // customer's own gstin at save time when
+                                // left blank (see the Save button below) —
+                                // this field is for correcting or manually
+                                // supplying it per order, not the only path
+                                // it can come from.
+                                TextFormField(
+                                  controller: _model.ordGstinFieldTextController,
+                                  focusNode: _model.ordGstinFieldFocusNode,
+                                  textCapitalization: TextCapitalization.characters,
+                                  obscureText: false,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Customer GSTIN (optional)',
+                                    hintText: '15-character GSTIN, for a B2B tax invoice',
+                                    filled: true,
+                                  ),
+                                  style: const TextStyle(),
+                                  validator: _model
+                                      .ordGstinFieldTextControllerValidator
+                                      .asValidator(context),
+                                ),
                               ].divide(const SizedBox(height: 14.0)),
                             ),
                           ),
@@ -1633,6 +1660,13 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
 
                               final isEditing = widget.orderId != null;
                               final isPorterOrder = _model.ordType == 'Porter';
+                              // RLS/GST audit, 12 Aug 2026 — non-empty means
+                              // a manual entry/correction on this form, which
+                              // always wins. Empty on a NEW order triggers
+                              // the copy-through from the matched customer's
+                              // own gstin, below, once customer_id is known.
+                              final gstinFieldText =
+                                  _model.ordGstinFieldTextController.text.trim();
                               final amt = double.tryParse(
                                       _model.ordAmountFieldTextController.text) ??
                                   0.0;
@@ -1696,6 +1730,14 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     isPorterOrder ? cashCollect : null,
                                 'notes':
                                     _model.ordNotesFieldTextController.text,
+                                // RLS/GST audit, 12 Aug 2026: a B2B tax
+                                // invoice needs this for the customer's
+                                // input credit. Manual entry here always
+                                // wins; an empty field on a NEW order gets
+                                // the copy-through fill below instead of
+                                // staying null.
+                                'billing_party_gstin':
+                                    gstinFieldText.isEmpty ? null : gstinFieldText,
                               };
 
                               try {
@@ -1730,6 +1772,16 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     phone: _model
                                         .ordPhoneFieldTextController.text,
                                   );
+                                  // RLS/GST audit, 12 Aug 2026: only look up
+                                  // the matched customer's own GSTIN when
+                                  // the form field was left blank — a
+                                  // manual entry above already won and this
+                                  // must not overwrite it. Null for a
+                                  // brand-new customer (nothing to copy)
+                                  // stays null, same as before this fix.
+                                  final copiedGstin = gstinFieldText.isEmpty
+                                      ? await CustomerLookup.gstinFor(customerId)
+                                      : null;
                                   _model.createdOrder =
                                       await OrdersTable().insert({
                                     'id': newOrderId,
@@ -1741,6 +1793,8 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     ...editablePayload,
                                     if (customerId != null)
                                       'customer_id': customerId,
+                                    if (copiedGstin != null)
+                                      'billing_party_gstin': copiedGstin,
                                     'status': 'booked',
                                     'payment_status':
                                         isPorterOrder && porterAdvance > 0

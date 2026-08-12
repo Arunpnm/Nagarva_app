@@ -127,12 +127,21 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
     });
     try {
       final settingNewPin = _pin.text.trim().isNotEmpty;
+      // Phase 0 credential lockdown (7 Aug 2026,
+      // supabase/20260807_phase0_staff_credential_lockdown.sql):
+      // pin/failed_pin_attempts/pin_locked_until are no longer in
+      // `authenticated`'s UPDATE column grant on staff. PostgREST rejects
+      // the whole request if any referenced column lacks grant, even ones
+      // whose value isn't changing - so those three are kept out of this
+      // shared map entirely. The edit path below sets a new PIN through
+      // set_staff_pin() instead; the insert path (brand-new staff, no
+      // prior session to protect) still writes `pin` directly further
+      // down, since that migration only revoked UPDATE, not INSERT.
       final data = <String, dynamic>{
         'name': _name.text.trim(),
         'phone': _phone.text.trim().isEmpty ? null : _phone.text.trim(),
         'role': _role,
         'branch': _branch.text.trim().isEmpty ? null : _branch.text.trim(),
-        'pin': _pin.text.trim().isEmpty ? null : _pin.text.trim(),
         'salary': _salary.text.trim().isEmpty
             ? null
             : double.tryParse(_salary.text.trim()),
@@ -146,16 +155,6 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
             StaffPermissions.isOwnerRole(_role)
                 ? StaffPermissions.presetFor(_role)
                 : _perms),
-        // Users Kickoff Step 3.4 ("PIN reset... clears failed_pin_attempts
-        // and pin_locked_until"): verify_staff_pin only clears these on a
-        // SUCCESSFUL login (20260725_staff_pin_rate_limit.sql:84) - never
-        // when an owner/manager sets a brand new PIN here. Without this, a
-        // currently-locked-out staff member given a fresh PIN would stay
-        // locked until the timer expires despite now holding a valid PIN.
-        // No migration needed - both columns already exist and are plain
-        // writes in the same update.
-        if (settingNewPin) 'failed_pin_attempts': 0,
-        if (settingNewPin) 'pin_locked_until': null,
       };
 
       if (isEdit) {
@@ -204,16 +203,38 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
             );
           }
         }
+        if (settingNewPin) {
+          // set_staff_pin() (SECURITY DEFINER) replaces the old direct
+          // write to pin/failed_pin_attempts/pin_locked_until now that
+          // those columns aren't in `authenticated`'s UPDATE grant. It
+          // still clears the lockout on a fresh PIN (Users Kickoff Step
+          // 3.4: verify_staff_pin only clears these on a SUCCESSFUL login,
+          // never when an owner/self sets a brand new PIN here - without
+          // that, someone currently locked out would stay locked despite
+          // now holding a valid PIN) and is itself owner-or-self gated, so
+          // it can't be used to set a colleague's PIN from a non-owner
+          // session either.
+          await SupaFlow.client.rpc('set_staff_pin', params: {
+            'p_staff_id': widget.existing!.id,
+            'p_new_pin': _pin.text.trim(),
+          });
+        }
         await StaffTable().update(
           data: data,
           matchingRows: (q) =>
               OrgScope.write(q).eq('id', widget.existing!.id!),
         );
       } else {
-        // New staff: no session can exist yet, so the flag goes in
-        // directly.
-        await StaffTable().insert(
-            {...OrgScope.stamp(), ...data, 'active': _active});
+        // New staff: no session can exist yet, so the flag - and the
+        // initial PIN - go in directly. INSERT privilege on staff wasn't
+        // touched by the Phase 0 column GRANT (that migration only
+        // revokes UPDATE), so this still works unchanged.
+        await StaffTable().insert({
+          ...OrgScope.stamp(),
+          ...data,
+          'active': _active,
+          'pin': _pin.text.trim().isEmpty ? null : _pin.text.trim(),
+        });
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {

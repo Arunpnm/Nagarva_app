@@ -54,9 +54,19 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       // it moved server-side into create-org / create_org_with_owner(),
       // which is atomic, idempotent, and is the only thing allowed to
       // write organizations/org_members now.
+      //
+      // NG-BRIEF-vendor-auth-flow.md §2b: org_name/phone go into `data`
+      // (auth.users.raw_user_meta_data) so they survive the confirmation
+      // gap — the user may confirm hours later, on another device, with
+      // this screen long gone. login_page_widget.dart's recovery path
+      // reads them back out of user.userMetadata.
       final authResponse = await SupaFlow.client.auth.signUp(
         email: email,
         password: password,
+        data: {
+          'org_name': company,
+          if (phone.isNotEmpty) 'phone': phone,
+        },
       );
 
       final user = authResponse.user;
@@ -69,13 +79,34 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
         return;
       }
 
-      // "Confirm email" is currently OFF, so signUp() returns a session
-      // directly and SupaFlow.client's auth state now holds it — that's
-      // what functions.invoke() below authenticates with. If confirm-email
-      // is ever turned on (a separate, not-yet-done step), session will be
-      // null here until the user clicks the emailed link; create-org can't
-      // be called without a JWT, so stop and tell them to confirm instead
-      // of throwing on a 401.
+      // §2c: Supabase's anti-enumeration behaviour for signUp() against an
+      // ALREADY-registered email also returns 200 with session == null —
+      // indistinguishable from a genuine brand-new signup by that alone,
+      // which is why this used to tell a returning user to "confirm your
+      // email" for a confirmation that will never arrive (they're already
+      // confirmed). The one field that tells the two apart: a real new
+      // signup gets a real new identity (non-empty `identities`); the
+      // anti-enumeration response mirrors the existing user back with an
+      // EMPTY identities list, since nothing was actually created.
+      if ((user.identities ?? const []).isEmpty) {
+        safeSetState(() {
+          _model.errorMessage =
+              'You already have an account with this email — log in instead.';
+          _model.isLoading = false;
+        });
+        return;
+      }
+
+      // "Confirm email" is ON as of this pass (confirmed live, turned on
+      // between 15 Jul and 1 Aug) — session is null here until the user
+      // clicks the emailed link. Previously this was also the terminal
+      // state: create-org was never called again for anyone. It's not
+      // anymore — login_page_widget.dart's _handleVendorLogin now creates
+      // the org itself on first post-confirmation login, reading org_name/
+      // phone back from the metadata stashed above. This branch still
+      // exists (and still shows the same message) for the OFF case never
+      // fully going away, and so this screen behaves correctly either way
+      // without needing to know which mode the project is in.
       if (authResponse.session == null) {
         safeSetState(() {
           _model.errorMessage =

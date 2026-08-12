@@ -85,6 +85,13 @@ class NewOrderPageModel extends FlutterFlowModel<NewOrderPageWidget> {
   FocusNode? ordNotesFieldFocusNode;
   TextEditingController? ordNotesFieldTextController;
   String? Function(BuildContext, String?)? ordNotesFieldTextControllerValidator;
+  // State field(s) for OrdGstinField widget (RLS/GST audit, 12 Aug 2026) —
+  // customer's GSTIN, needed on a B2B tax invoice for their input credit.
+  // Pre-filled from customers.gstin when an existing customer is matched
+  // by phone at save time; editable so it can be corrected per order.
+  FocusNode? ordGstinFieldFocusNode;
+  TextEditingController? ordGstinFieldTextController;
+  String? Function(BuildContext, String?)? ordGstinFieldTextControllerValidator;
   // Porter settlement fields — only relevant when ordType == 'Porter'.
   // Ported from apc_webapp App.jsx's order-form settlement preview
   // (lines ~3656-3736): cash the porter/driver collects from the customer
@@ -134,5 +141,8 @@ class NewOrderPageModel extends FlutterFlowModel<NewOrderPageWidget> {
 
     ordNotesFieldFocusNode?.dispose();
     ordNotesFieldTextController?.dispose();
+
+    ordGstinFieldFocusNode?.dispose();
+    ordGstinFieldTextController?.dispose();
   }
 }

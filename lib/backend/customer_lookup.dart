@@ -83,4 +83,28 @@ class CustomerLookup {
       rethrow;
     }
   }
+
+  /// The customer's GSTIN, if any — RLS/GST audit, 12 Aug 2026. Used to
+  /// copy an existing customer's GSTIN forward onto a new order's
+  /// `billing_party_gstin` at the same point [findOrCreate] resolves
+  /// `customer_id`, so a B2B tax invoice has what the customer needs to
+  /// claim input credit without making them re-supply it every order.
+  /// Returns null for a brand-new customer (nothing to copy) as much as
+  /// for a lookup failure — callers already treat a null GSTIN as "leave
+  /// whatever the order form has," so the two cases don't need telling
+  /// apart here.
+  static Future<String?> gstinFor(String? customerId) async {
+    if (customerId == null) return null;
+    try {
+      final row = await SupaFlow.client
+          .from('customers')
+          .select('gstin')
+          .eq('id', customerId)
+          .maybeSingle();
+      final gstin = row?['gstin'] as String?;
+      return (gstin == null || gstin.trim().isEmpty) ? null : gstin.trim();
+    } catch (_) {
+      return null;
+    }
+  }
 }

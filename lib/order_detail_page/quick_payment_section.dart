@@ -109,13 +109,14 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
     }
   }
 
+  // Fixed alongside OrderDetailPage.currentFy() (RLS/numbering audit, 12
+  // Aug 2026) — was emitting '2627', which never matched number_series'
+  // hyphenated 'YYYY-YY' seed values, so every receipt silently drew from
+  // an auto-created unprefixed series instead of the intended one.
   String _currentFy() {
     final now = DateTime.now();
-    // Same Apr-Mar convention as OrderDetailPage's _nextInvoiceNo, so every
-    // document series (invoice, receipt, ...) agrees on what "this FY" means.
-    return now.month >= 4
-        ? '${(now.year % 100).toString().padLeft(2, '0')}${((now.year + 1) % 100).toString().padLeft(2, '0')}'
-        : '${((now.year - 1) % 100).toString().padLeft(2, '0')}${(now.year % 100).toString().padLeft(2, '0')}';
+    final startYear = now.month >= 4 ? now.year : now.year - 1;
+    return '$startYear-${((startYear + 1) % 100).toString().padLeft(2, '0')}';
   }
 
   Future<String?> _defaultAccountId(String orgId) async {
@@ -176,10 +177,13 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
 
       String? receiptNo;
       try {
+        // One org-wide series per doc type per FY, not per-branch — see
+        // order_detail_page_widget.dart's _nextInvoiceNo for the reasoning
+        // (12 Aug 2026 numbering-scheme decision).
         receiptNo = await SupaFlow.client.rpc('next_doc_number', params: {
           'p_org': orgId,
           'p_doc_type': 'receipt',
-          'p_branch': o.branch,
+          'p_branch': null,
           'p_fy': _currentFy(),
         }) as String?;
       } catch (_) {

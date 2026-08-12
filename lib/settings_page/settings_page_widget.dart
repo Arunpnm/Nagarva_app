@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/session_logout.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/org_session_loader.dart';
@@ -985,21 +986,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                       padding:
                           const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
-                        onPressed: () async {
-                          // Was previously just context.pop() (CLAUDE.md known
-                          // bug #4 follow-up) — logout never cleared
-                          // AppSession or signed out of Supabase Auth, so the
-                          // next login could silently reuse stale org/staff
-                          // state. Sign out, wipe session, and go to login.
-                          try {
-                            await SupaFlow.client.auth.signOut();
-                          } catch (_) {
-                            // Staff (PIN) sessions have no Supabase Auth
-                            // session to sign out of — ignore.
-                          }
-                          AppSession.instance.clear();
-                          if (mounted) context.go(LoginPageWidget.routePath);
-                        },
+                        onPressed: () => performLogout(context),
                         text: FFLocalizations.of(context).getText(
                           'fk4gq2pn' /* Logout */,
                         ),

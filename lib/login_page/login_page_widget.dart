@@ -130,12 +130,78 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       // or owner can be linked to more than one, and used to silently pick
       // members.first, ignoring the rest. See app_session.dart's
       // OrgMembershipInfo / availableOrgs.
-      final members = await OrgMembersTable().queryRows(
+      var members = await OrgMembersTable().queryRows(
         queryFn: (q) => q.eq('user_id', user.id),
       );
-      final orgIds = members.map((m) => m.orgId).whereType<String>().toList();
+      var orgIds = members.map((m) => m.orgId).whereType<String>().toList();
+
       if (orgIds.isEmpty) {
-        throw Exception('This account is not linked to any organization.');
+        // NG-BRIEF-vendor-auth-flow.md §2a — recovery, not an error.
+        // "Confirm email" now being ON means create-org never ran at
+        // signup (signup_page_widget.dart stops at session == null and
+        // never reaches its create-org call). A confirmed, correctly-
+        // authenticated user with zero org_members rows is exactly what
+        // that leaves behind — this is that user's first chance to ever
+        // get one, not a hostile account. create_org_with_owner() is
+        // idempotent, so this is also the one-time repair for anyone
+        // already stuck this way (krish8464@gmail.com and any other
+        // pre-existing orphan) — no separate data-repair script needed.
+        final meta = user.userMetadata ?? const <String, dynamic>{};
+        var orgName = (meta['org_name'] as String?)?.trim();
+        final metaPhone = (meta['phone'] as String?)?.trim();
+
+        if (orgName == null || orgName.isEmpty) {
+          // §2b: no stashed metadata means this account signed up before
+          // this fix existed (or via some other path) — there's no
+          // company name anywhere to fall back to, and the brief is
+          // explicit: never silently default it to the email address.
+          // Ask, once, right here.
+          if (!mounted) return;
+          orgName = await _promptForBusinessName(context);
+          if (orgName == null || orgName.trim().isEmpty) {
+            safeSetState(() {
+              _model.errorMessage =
+                  'A business name is required to finish setting up your account.';
+              _model.isLoading = false;
+            });
+            return;
+          }
+          orgName = orgName.trim();
+        }
+
+        final res = await SupaFlow.client.functions.invoke(
+          'create-org',
+          body: {
+            'org_name': orgName,
+            if (metaPhone != null && metaPhone.isNotEmpty) 'phone': metaPhone,
+          },
+        );
+        final data = res.data;
+        if (data is! Map || data['ok'] != true) {
+          final serverError = (data is Map && data['error'] is String)
+              ? data['error'] as String
+              : null;
+          throw Exception(
+              serverError ?? 'Could not set up your organization. Please try again.');
+        }
+        // caller_role is the one field allowed to gate a vendor session
+        // out of this recovery path too — same rule signup_page_widget.dart
+        // uses, never combined with any other flag.
+        if (data['caller_role'] != 'owner') {
+          throw Exception('This account is not linked to any organization.');
+        }
+
+        members = await OrgMembersTable().queryRows(
+          queryFn: (q) => q.eq('user_id', user.id),
+        );
+        orgIds = members.map((m) => m.orgId).whereType<String>().toList();
+        if (orgIds.isEmpty) {
+          // create-org just reported ok:true — this would mean the
+          // immediately-following read raced or failed independently.
+          // Never trust a round-trip blindly; fail loudly instead of
+          // silently re-entering the same dead end.
+          throw Exception('Could not set up your organization. Please try again.');
+        }
       }
 
       final orgRows = await OrganizationsTable().queryRows(
@@ -193,6 +259,53 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         _model.isLoading = false;
       });
     }
+  }
+
+  /// NG-BRIEF-vendor-auth-flow.md §2b's "re-prompt at first login if
+  /// absent" option — used only when an org-less authenticated user has
+  /// no org_name stashed in their auth metadata (an account that signed
+  /// up before this recovery path existed). Returns null on cancel.
+  Future<String?> _promptForBusinessName(BuildContext context) async {
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('One more thing'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "We need your business name to finish setting up your account.",
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Business name',
+                hintText: 'e.g. Arun Packers and Couriers',
+              ),
+              onSubmitted: (v) => Navigator.of(dialogContext).pop(v),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(ctrl.text),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    return result;
   }
 
   /// Turns raw Supabase/auth exceptions into human messages. The raw
