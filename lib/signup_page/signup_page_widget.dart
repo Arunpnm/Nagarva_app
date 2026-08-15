@@ -327,12 +327,12 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               focusNode: _model.passwordFocusNode!,
                               obscureText: !_model.passwordVisible,
                               style: GoogleFonts.inter(color: Colors.white),
-                              validator: (v) => (v == null || v.length < 6)
-                                  ? 'Password must be at least 6 characters'
+                              validator: (v) => (v == null || v.length < 8)
+                                  ? 'Password must be at least 8 characters'
                                   : null,
                               decoration: _inputDecoration(
                                 label: 'Password',
-                                hint: 'Min. 6 characters',
+                                hint: 'Min. 8 characters',
                                 icon: Icons.lock_outline,
                               ).copyWith(
                                 suffixIcon: IconButton(
