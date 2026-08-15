@@ -25,6 +25,21 @@
 // verify the JWT, validate input shape, call the RPC, shape the HTTP
 // response.
 //
+// ============================================================
+// DEPLOY ORDER — owner_name (12 Aug 2026, NG-BRIEF-vendor-auth-flow.md §3
+// follow-up). This file now sends a 5th RPC argument, p_owner_name.
+// DO NOT DEPLOY THIS until 20260812_owner_name_persistence.sql has been
+// run and confirmed live (see that migration's own header for the
+// verification query). If this deploys first, every signup breaks
+// immediately: the live create_org_with_owner() would still only have
+// the 4-argument signature, Postgres has no matching overload for a
+// 5-argument call, and the RPC fails outright — not a graceful
+// degradation, a hard error on every single signup until the migration
+// catches up. Order: migration first, THEN
+// `supabase functions deploy create-org`, THEN confirm with a real
+// signup (see the migration's own verify section).
+// ============================================================
+//
 // Deploy:  supabase functions deploy create-org
 // ============================================================
 
@@ -88,6 +103,13 @@ Deno.serve(async (req: Request) => {
     }
     const phone = typeof body.phone === "string" ? body.phone.trim() : null;
     const gstin = typeof body.gstin === "string" ? body.gstin.trim() : null;
+    // owner_name: optional here at the HTTP layer even though
+    // signup_page_widget.dart's form requires it — this endpoint is also
+    // hit by login_page_widget.dart's §2 recovery path, where an
+    // old-format account may have no owner_name in its auth metadata at
+    // all (see that file's own comment on metaOwnerName). null is a valid,
+    // expected input, not a validation failure.
+    const ownerName = typeof body.owner_name === "string" ? body.owner_name.trim() : null;
 
     // ---- The atomic write. ----
     const { data: rows, error: rpcErr } = await admin.rpc(
@@ -97,6 +119,7 @@ Deno.serve(async (req: Request) => {
         p_org_name: orgName,
         p_phone: phone,
         p_gstin: gstin,
+        p_owner_name: ownerName,
       },
     );
     if (rpcErr) {
