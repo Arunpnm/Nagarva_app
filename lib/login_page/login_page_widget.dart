@@ -149,6 +149,11 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         final meta = user.userMetadata ?? const <String, dynamic>{};
         var orgName = (meta['org_name'] as String?)?.trim();
         final metaPhone = (meta['phone'] as String?)?.trim();
+        // §3: forwarded for consistency with signup_page_widget.dart's own
+        // create-org call — not yet read server-side either (see that
+        // file's comment on the same field), safe/forward-compatible
+        // either way. Absent for anyone who signed up before this pass.
+        final metaOwnerName = (meta['owner_name'] as String?)?.trim();
 
         if (orgName == null || orgName.isEmpty) {
           // §2b: no stashed metadata means this account signed up before
@@ -174,6 +179,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           body: {
             'org_name': orgName,
             if (metaPhone != null && metaPhone.isNotEmpty) 'phone': metaPhone,
+            if (metaOwnerName != null && metaOwnerName.isNotEmpty)
+              'owner_name': metaOwnerName,
           },
         );
         final data = res.data;

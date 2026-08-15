@@ -4,10 +4,21 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'signup_page_model.dart';
 export 'signup_page_model.dart';
+
+// NG-BRIEF-vendor-auth-flow.md §3: "link to the hosted terms." No terms
+// page is confirmed live anywhere yet — docs/privacy-policy.html exists
+// as a static file but has no published URL, and there's no terms
+// counterpart at all. This follows the same nagarva.in convention
+// app_config.dart's kPublicBaseUrl doc comment describes for the privacy
+// policy, as a best guess — NOT confirmed live. Flagged for Arun: replace
+// with the real hosted URL once one exists, or tell me what it is.
+const String kSignupTermsUrl = 'https://nagarva.in/terms';
 
 class SignupPageWidget extends StatefulWidget {
   const SignupPageWidget({super.key});
@@ -37,7 +48,14 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
 
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_model.agreedToTerms) {
+      safeSetState(() {
+        _model.errorMessage = 'Please agree to the Terms & Conditions to continue.';
+      });
+      return;
+    }
 
+    final ownerName = _model.ownerNameController!.text.trim();
     final company = _model.companyController!.text.trim();
     final email = _model.emailController!.text.trim();
     final password = _model.passwordController!.text;
@@ -65,6 +83,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
         password: password,
         data: {
           'org_name': company,
+          'owner_name': ownerName,
           if (phone.isNotEmpty) 'phone': phone,
         },
       );
@@ -121,10 +140,18 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       // organizations/org_members directly — that RPC is atomic, retry-safe,
       // and is the only thing with a service-role grant to write those
       // tables now.
+      // owner_name is sent but NOT yet read by create-org/index.ts or
+      // create_org_with_owner() — neither has been updated to accept or
+      // persist it (would need a migration for the RPC's signature, which
+      // this pass deliberately doesn't ship — see the report). Sending it
+      // now is forward-compatible and harmless either way: an unread JSON
+      // field the server ignores today, ready the moment that migration
+      // lands with no further client change needed.
       final res = await SupaFlow.client.functions.invoke(
         'create-org',
         body: {
           'org_name': company,
+          'owner_name': ownerName,
           if (phone.isNotEmpty) 'phone': phone,
         },
       );
@@ -258,6 +285,17 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _buildField(
+                              controller: _model.ownerNameController!,
+                              focusNode: _model.ownerNameFocusNode!,
+                              label: 'Owner Name',
+                              hint: 'Your full name',
+                              icon: Icons.person_outline,
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Owner name is required'
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildField(
                               controller: _model.companyController!,
                               focusNode: _model.companyFocusNode!,
                               label: 'Company Name',
@@ -309,6 +347,38 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               ),
                             ),
                             const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _model.confirmPasswordController!,
+                              focusNode: _model.confirmPasswordFocusNode!,
+                              obscureText: !_model.confirmPasswordVisible,
+                              style: GoogleFonts.inter(color: Colors.white),
+                              // §3: validated client-side before submit via
+                              // the Form's own validate() — an inline error
+                              // right at this field, never a network round
+                              // trip just to discover the mismatch.
+                              validator: (v) => (v != _model.passwordController!.text)
+                                  ? 'Passwords do not match'
+                                  : null,
+                              decoration: _inputDecoration(
+                                label: 'Confirm Password',
+                                hint: 'Re-enter your password',
+                                icon: Icons.lock_outline,
+                              ).copyWith(
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _model.confirmPasswordVisible
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: Colors.white38,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => safeSetState(() =>
+                                      _model.confirmPasswordVisible =
+                                          !_model.confirmPasswordVisible),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                             _buildField(
                               controller: _model.phoneController!,
                               focusNode: _model.phoneFocusNode!,
@@ -316,6 +386,50 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               hint: '+91 98765 43210',
                               icon: Icons.phone_outlined,
                               keyboardType: TextInputType.phone,
+                            ),
+                            const SizedBox(height: 12),
+                            // §3: required, disables the submit button
+                            // until ticked — not a validate-on-submit
+                            // error, an actually-disabled button.
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Checkbox(
+                                  value: _model.agreedToTerms,
+                                  activeColor: kBrandGold,
+                                  onChanged: (v) => safeSetState(
+                                      () => _model.agreedToTerms = v ?? false),
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(top: 12),
+                                    child: RichText(
+                                      text: TextSpan(
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white54,
+                                          fontSize: 13,
+                                        ),
+                                        children: [
+                                          const TextSpan(text: 'I agree to the '),
+                                          TextSpan(
+                                            text: 'Terms & Conditions',
+                                            style: GoogleFonts.inter(
+                                              color: kBrandGold,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () => launchUrl(
+                                                  Uri.parse(kSignupTermsUrl),
+                                                  mode: LaunchMode
+                                                      .externalApplication),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             if (_model.errorMessage != null) ...[
                               const SizedBox(height: 14),
@@ -337,7 +451,9 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             const SizedBox(height: 20),
                             FFButtonWidget(
                               text: 'Create Account',
-                              onPressed: _model.isLoading ? null : _handleSignup,
+                              onPressed: (_model.isLoading || !_model.agreedToTerms)
+                                  ? null
+                                  : _handleSignup,
                               options: FFButtonOptions(
                                 height: 52,
                                 color: kBrandGold,

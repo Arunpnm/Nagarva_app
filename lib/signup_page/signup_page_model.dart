@@ -4,6 +4,14 @@ import 'package:flutter/material.dart';
 import 'signup_page_widget.dart' show SignupPageWidget;
 
 class SignupPageModel extends FlutterFlowModel<SignupPageWidget> {
+  // NG-BRIEF-vendor-auth-flow.md §3 — owner name, new: not captured
+  // anywhere today, but it's the dashboard greeting and appears on
+  // documents. Field order below matches the brief's: owner name,
+  // business name, email, password, confirm password, then the
+  // pre-existing optional phone field, then the terms checkbox.
+  FocusNode? ownerNameFocusNode;
+  TextEditingController? ownerNameController;
+
   FocusNode? companyFocusNode;
   TextEditingController? companyController;
 
@@ -14,32 +22,46 @@ class SignupPageModel extends FlutterFlowModel<SignupPageWidget> {
   TextEditingController? passwordController;
   bool passwordVisible = false;
 
+  FocusNode? confirmPasswordFocusNode;
+  TextEditingController? confirmPasswordController;
+  bool confirmPasswordVisible = false;
+
   FocusNode? phoneFocusNode;
   TextEditingController? phoneController;
+
+  bool agreedToTerms = false;
 
   bool isLoading = false;
   String? errorMessage;
 
   @override
   void initState(BuildContext context) {
+    ownerNameController ??= TextEditingController();
+    ownerNameFocusNode ??= FocusNode();
     companyController ??= TextEditingController();
     companyFocusNode ??= FocusNode();
     emailController ??= TextEditingController();
     emailFocusNode ??= FocusNode();
     passwordController ??= TextEditingController();
     passwordFocusNode ??= FocusNode();
+    confirmPasswordController ??= TextEditingController();
+    confirmPasswordFocusNode ??= FocusNode();
     phoneController ??= TextEditingController();
     phoneFocusNode ??= FocusNode();
   }
 
   @override
   void dispose() {
+    ownerNameFocusNode?.dispose();
+    ownerNameController?.dispose();
     companyFocusNode?.dispose();
     companyController?.dispose();
     emailFocusNode?.dispose();
     emailController?.dispose();
     passwordFocusNode?.dispose();
     passwordController?.dispose();
+    confirmPasswordFocusNode?.dispose();
+    confirmPasswordController?.dispose();
     phoneFocusNode?.dispose();
     phoneController?.dispose();
   }
