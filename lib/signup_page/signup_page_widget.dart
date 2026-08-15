@@ -11,14 +11,17 @@ import 'package:url_launcher/url_launcher.dart';
 import 'signup_page_model.dart';
 export 'signup_page_model.dart';
 
-// NG-BRIEF-vendor-auth-flow.md §3: "link to the hosted terms." No terms
-// page is confirmed live anywhere yet — docs/privacy-policy.html exists
-// as a static file but has no published URL, and there's no terms
-// counterpart at all. This follows the same nagarva.in convention
-// app_config.dart's kPublicBaseUrl doc comment describes for the privacy
-// policy, as a best guess — NOT confirmed live. Flagged for Arun: replace
-// with the real hosted URL once one exists, or tell me what it is.
-const String kSignupTermsUrl = 'https://nagarva.in/terms';
+// NG-BRIEF-vendor-auth-flow.md §3 — confirmed live (12 Aug 2026): a plain
+// `curl -sI https://nagarva.in/terms` returns a 301 to
+// `https://www.nagarva.in/terms` (Netlify). The redirect works, but Arun
+// gave the `www` URLs directly as the canonical ones, so both constants
+// point straight at them rather than relying on the extra hop.
+const String kSignupTermsUrl = 'https://www.nagarva.in/terms';
+
+// Play Store requires the privacy policy be reachable in-app, not just
+// linked from the store listing — this is that link, alongside the T&C
+// one, both from the registration screen's agreement checkbox.
+const String kSignupPrivacyUrl = 'https://www.nagarva.in/privacy-policy';
 
 class SignupPageWidget extends StatefulWidget {
   const SignupPageWidget({super.key});
@@ -421,6 +424,20 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                             recognizer: TapGestureRecognizer()
                                               ..onTap = () => launchUrl(
                                                   Uri.parse(kSignupTermsUrl),
+                                                  mode: LaunchMode
+                                                      .externalApplication),
+                                          ),
+                                          const TextSpan(text: ' and '),
+                                          TextSpan(
+                                            text: 'Privacy Policy',
+                                            style: GoogleFonts.inter(
+                                              color: kBrandGold,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () => launchUrl(
+                                                  Uri.parse(kSignupPrivacyUrl),
                                                   mode: LaunchMode
                                                       .externalApplication),
                                           ),
