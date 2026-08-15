@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/backend/device_org_binding.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/components/org_switcher_sheet.dart';
@@ -669,7 +670,50 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                             : _buildStaffForm(),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+                      // NG-BRIEF-vendor-auth-flow.md §4: this screen is now
+                      // the landing page for an unbound device (nav.dart's
+                      // _initialize), so the org/invite-code path — for a
+                      // staff member who installed the app manually
+                      // instead of arriving via an invite link — needs its
+                      // own way back to OrgBindingPageWidget from here.
+                      // Page-level (not inside either tab), same as
+                      // PinLoginPageWidget's own "Switch device" link, and
+                      // unbinds first for the same reason that one does:
+                      // this page is also still reachable from a BOUND
+                      // device via "Use email login instead," so a stale
+                      // binding shouldn't survive tapping this.
+                      Center(
+                        child: GestureDetector(
+                          onTap: () async {
+                            await DeviceOrgBinding.unbind();
+                            if (mounted) {
+                              context.pushNamed(OrgBindingPageWidget.routeName);
+                            }
+                          },
+                          child: RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.inter(
+                                color: Colors.white54,
+                                fontSize: 13,
+                              ),
+                              children: [
+                                const TextSpan(text: 'Joining a team? '),
+                                TextSpan(
+                                  text: 'Use an org or invite code',
+                                  style: GoogleFonts.inter(
+                                    color: kBrandGold,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

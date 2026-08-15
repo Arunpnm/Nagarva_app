@@ -217,14 +217,22 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: '_initialize',
           path: '/',
-          // Parity brief Part 7: PIN-first entry. A device with no org
-          // bound yet sees the one-time binding screen; a bound device
-          // goes straight to the PIN screen. The old email/password +
-          // phone/PIN LoginPageWidget is still reachable (both new
-          // screens link to it) but is no longer the default landing page.
+          // NG-BRIEF-vendor-auth-flow.md §4 (12 Aug 2026), superseding
+          // Part 7's original shape: a bound device still goes straight to
+          // the PIN screen, but an UNBOUND device now lands on
+          // LoginPageWidget (vendor email/password + its own "Create an
+          // account" link to SignupPageWidget) instead of
+          // OrgBindingPageWidget — asking a brand-new vendor for an
+          // organization code they cannot possibly have was the actual
+          // signup-funnel bug this brief exists to close. Staff normally
+          // arrive via an invite link and never hit this route at all;
+          // OrgBindingPageWidget is still reachable, unchanged, via
+          // LoginPageWidget's new "Joining a team? Use an org or invite
+          // code" link, for the fallback case of a staff member who
+          // installed the app manually.
           builder: (context, _) => DeviceOrgBinding.isBound
               ? const PinLoginPageWidget()
-              : const OrgBindingPageWidget(),
+              : const LoginPageWidget(),
         ),
         FFRoute(
           name: LoginPageWidget.routeName,
