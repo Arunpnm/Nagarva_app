@@ -15,9 +15,13 @@ import 'tenant_detail_page.dart';
 /// Access denial is intentional, not a bug: the owner needs a row in that
 /// table for whichever account should be able to reach this page.
 ///
-/// Not linked from the bottom nav / drawer on purpose — reachable only by
-/// direct URL (`/super-admin`) for whoever actually is a platform admin, so
-/// regular vendor/staff sessions never see it as an option.
+/// Not in kOwnerManagerNavItems (nav_items.dart) — every owner/manager
+/// session would see it there, defeating the point of gating it at all.
+/// Since 16 Aug 2026, `navItemsForCurrentSession()` appends a "Platform
+/// Admin" nav entry conditionally, only when `AppSession.isPlatformAdmin`
+/// is already true — that was the fix for Android having no address bar
+/// and therefore no way to reach `/super-admin` by typing it. Direct URL
+/// still works too (unaffected, still how web access works day to day).
 ///
 /// This file (and the other files in lib/super_admin_page/) is the ONE
 /// documented exception to the OrgScope convention — every query here is
@@ -102,8 +106,8 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load tenants: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not load tenants: $e')));
       }
     } finally {
       if (mounted) setState(() => _loadingOrgs = false);
@@ -282,8 +286,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                                 Text(
                                   '${usage['orders'] ?? 0} orders · ${usage['leads'] ?? 0} leads · ${usage['staff'] ?? 0} staff',
                                   style: GoogleFonts.inter(
-                                      color: theme.primaryText,
-                                      fontSize: 12.5),
+                                      color: theme.primaryText, fontSize: 12.5),
                                 ),
                                 const SizedBox(height: 8),
                                 Align(

@@ -13,6 +13,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/approval_queue.dart';
 import '/backend/survey_queue.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/platform_admin_status.dart';
 import '/backend/session_logout.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
@@ -50,7 +51,8 @@ void _installErrorHandlers() {
     // ErrorWidget.builder itself, since it never sees anything this
     // handler didn't already receive first. debugPrint no-ops in release
     // builds, so nothing extra reaches a shipped APK's logcat.
-    debugPrint('FlutterError: ${details.exceptionAsString()}\n${details.stack}');
+    debugPrint(
+        'FlutterError: ${details.exceptionAsString()}\n${details.stack}');
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     debugPrint('Uncaught async error: $error\n$stack');
@@ -247,6 +249,7 @@ void main() async {
             orgActive: org == null ? true : (org['active'] as bool? ?? true),
             availableOrgs: availableOrgs,
           );
+          await refreshPlatformAdminStatus();
         }
       }
     } catch (e) {
@@ -407,8 +410,7 @@ class NavBarPage extends StatefulWidget {
 /// desktop (>1024dp) share the same rail; nothing distinguishes them
 /// beyond how much horizontal space happens to be available. Narrow
 /// screens (<600dp): the custom MobileBottomNav (Part 5a/5b).
-class _NavBarPageState extends State<NavBarPage>
-    with TickerProviderStateMixin {
+class _NavBarPageState extends State<NavBarPage> with TickerProviderStateMixin {
   String _currentPageName = 'HomePage';
   late Widget? _currentPage;
 
@@ -452,8 +454,10 @@ class _NavBarPageState extends State<NavBarPage>
   /// by role and were never permission-matrix-driven in the first place.
   List<NavItem> get _navItems {
     final base = navItemsForCurrentSession();
-    if (AppSession.instance.currentStaffId == null) return base; // owner/vendor: no filter at all
-    if (!isOwnerOrManagerSession) return base; // supervisor/field-staff: fixed set
+    if (AppSession.instance.currentStaffId == null)
+      return base; // owner/vendor: no filter at all
+    if (!isOwnerOrManagerSession)
+      return base; // supervisor/field-staff: fixed set
     // Manager: permission-driven subset of the 19/27, same mechanism as
     // before Step 2. activeStaffPages must already be loaded by the time
     // this is read — build()'s _needsStaffPermissions guard shows a
@@ -491,7 +495,8 @@ class _NavBarPageState extends State<NavBarPage>
     final staffId = AppSession.instance.currentStaffId!;
     debugPrint('Staff permissions not loaded for manager session '
         '$staffId — loading now.');
-    if (_permissionsLoadFailed) safeSetState(() => _permissionsLoadFailed = false);
+    if (_permissionsLoadFailed)
+      safeSetState(() => _permissionsLoadFailed = false);
     await StaffPermissions.loadForStaff(staffId);
     if (!mounted) return;
     final failed = StaffPermissions.activeStaffPages == null;
@@ -638,10 +643,24 @@ class _NavBarPageState extends State<NavBarPage>
     };
   }
 
-  void _selectTab(int i) => safeSetState(() {
-        _currentPage = null;
-        _currentPageName = _navItems[i].name;
-      });
+  // Platform Admin is the one nav entry with no matching key in `_tabs` —
+  // it's SuperAdminPageWidget, a real full-screen GoRouter route already
+  // proven working at direct-URL access, not a page meant to be embedded
+  // as one more swapped tab body inside this Scaffold's own chrome (it
+  // has its own AppBar/tabs already). Routed via pushNamed instead of the
+  // tab-swap so the same onTap(index) callback both the rail (line ~1000)
+  // and MobileBottomNav funnel through can stay a single, ungated handler.
+  void _selectTab(int i) {
+    final item = _navItems[i];
+    if (item.name == SuperAdminPageWidget.routeName) {
+      context.pushNamed(SuperAdminPageWidget.routeName);
+      return;
+    }
+    safeSetState(() {
+      _currentPage = null;
+      _currentPageName = item.name;
+    });
+  }
 
   /// Lock behaviour under the session-swap model:
   /// - STAFF session active: restore the saved vendor session first
@@ -1008,8 +1027,8 @@ class _NavBarPageState extends State<NavBarPage>
                                   children: [
                                     if (item.name == 'OperationsPage')
                                       ValueListenableBuilder<int>(
-                                        valueListenable: ApprovalQueue
-                                            .instance.pendingCount,
+                                        valueListenable:
+                                            ApprovalQueue.instance.pendingCount,
                                         builder: (context, count, _) =>
                                             NavBadgeIcon(
                                           icon: item.icon,

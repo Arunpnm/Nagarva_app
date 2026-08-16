@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/components/org_switcher_sheet.dart';
@@ -225,6 +226,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       // Remember this vendor session so a later staff PIN unlock can be
       // Locked back to it without re-entering email/password (Option A).
       await StaffAuth.saveVendorRefreshToken();
+      await refreshPlatformAdminStatus();
 
       if (mounted) context.go(HomePageWidget.routePath);
     } catch (e) {

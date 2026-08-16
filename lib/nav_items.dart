@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '/app_session.dart';
+import '/index.dart';
 import '/permissions.dart';
 
 /// Navigation model — Users Kickoff Step 2 (1 Aug 2026).
@@ -57,7 +58,11 @@ const kOwnerManagerNavItems = <NavItem>[
   // comment). Renamed to describe what each actually does instead of the
   // brief's guessed 'New Survey', which undersells the hub (it's also the
   // cross-lead quote list and CFT catalogue admin, not just "new").
-  (name: 'CustomerSurveysPage', icon: Icons.fact_check, label: 'Customer Surveys'),
+  (
+    name: 'CustomerSurveysPage',
+    icon: Icons.fact_check,
+    label: 'Customer Surveys'
+  ),
   (name: 'WaInboxPage', icon: Icons.inbox, label: 'Inbox'),
   (name: 'SurveyQuoteHubPage', icon: Icons.add_task, label: 'Survey & Quote'),
   (name: 'CalendarPage', icon: Icons.calendar_month, label: 'Calendar'),
@@ -66,16 +71,32 @@ const kOwnerManagerNavItems = <NavItem>[
   (name: 'ReviewsPage', icon: Icons.star_outline, label: 'Reviews'),
   (name: 'PaymentsPage', icon: Icons.payments, label: 'Payments'),
   (name: 'ExpensePage', icon: Icons.receipt_long, label: 'Expenses'),
-  (name: 'UsersPage', icon: Icons.groups, label: 'Staff'), // label overridden dynamically
+  (
+    name: 'UsersPage',
+    icon: Icons.groups,
+    label: 'Staff'
+  ), // label overridden dynamically
   (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet'),
   (name: 'MaterialsPage', icon: Icons.inventory_2, label: 'Materials'),
   // Session 4, Part C-2 — new module, not a former ComingSoon stub.
   (name: 'RateCardsPage', icon: Icons.price_change, label: 'Rate Cards'),
-  (name: 'LrRegisterPage', icon: Icons.receipt_long_outlined, label: 'LR Register'),
-  (name: 'OperationsStandalonePage', icon: Icons.support_agent, label: 'Ops Log'),
+  (
+    name: 'LrRegisterPage',
+    icon: Icons.receipt_long_outlined,
+    label: 'LR Register'
+  ),
+  (
+    name: 'OperationsStandalonePage',
+    icon: Icons.support_agent,
+    label: 'Ops Log'
+  ),
   (name: 'VendorsPage', icon: Icons.local_shipping_outlined, label: 'Vendors'),
   (name: 'CustomersPage', icon: Icons.people_outline, label: 'Customers'),
-  (name: 'InsuranceClaimsPage', icon: Icons.shield_outlined, label: 'Insurance'),
+  (
+    name: 'InsuranceClaimsPage',
+    icon: Icons.shield_outlined,
+    label: 'Insurance'
+  ),
   (name: 'TripsPage', icon: Icons.alt_route, label: 'Trips'),
   (name: 'TasksPage', icon: Icons.task_alt, label: 'Tasks'),
   (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts'),
@@ -111,14 +132,26 @@ const kAllNavItems = kOwnerManagerNavItems;
 const kSupervisorNavItems = <NavItem>[
   (name: 'SupervisorJobsListPage', icon: Icons.work_outline, label: 'My Jobs'),
   (name: 'SupervisorTeamPage', icon: Icons.groups_outlined, label: 'My Team'),
-  (name: 'SupervisorEarningsPage', icon: Icons.currency_rupee, label: 'My Earnings'),
-  (name: 'SupervisorAttendancePage', icon: Icons.event_available, label: 'My Attendance'),
+  (
+    name: 'SupervisorEarningsPage',
+    icon: Icons.currency_rupee,
+    label: 'My Earnings'
+  ),
+  (
+    name: 'SupervisorAttendancePage',
+    icon: Icons.event_available,
+    label: 'My Attendance'
+  ),
 ];
 
 /// Field staff nav (Users Kickoff Step 2.3): driver / helper / packer.
 /// Neither screen exists yet.
 const kFieldStaffNavItems = <NavItem>[
-  (name: 'MyAttComingSoon', icon: Icons.event_available, label: 'My Attendance'),
+  (
+    name: 'MyAttComingSoon',
+    icon: Icons.event_available,
+    label: 'My Attendance'
+  ),
   (name: 'MySalComingSoon', icon: Icons.currency_rupee, label: 'My Earnings'),
 ];
 
@@ -164,7 +197,7 @@ List<NavItem> navItemsForCurrentSession() {
     return role == 'supervisor' ? kSupervisorNavItems : kFieldStaffNavItems;
   }
   final canEditSalary = StaffPermissions.canActive('salary', 'edit');
-  return [
+  final items = [
     for (final item in kOwnerManagerNavItems)
       if (item.name == 'UsersPage')
         (
@@ -175,4 +208,20 @@ List<NavItem> navItemsForCurrentSession() {
       else
         item,
   ];
+  // Platform Admin (16 Aug 2026): /super-admin had no in-app path on
+  // Android — no nav link anywhere, and typing a URL isn't something a
+  // phone can do. AppSession.isPlatformAdmin is resolved once at login
+  // (see /backend/platform_admin_status.dart) and read synchronously
+  // here, same contract as canEditSalary above. Appended rather than
+  // spliced into kOwnerManagerNavItems itself, since that const list has
+  // no way to express "only for the ~1 account that's a platform admin" —
+  // every other entry there is visible to every owner/manager.
+  if (AppSession.instance.isPlatformAdmin) {
+    items.add((
+      name: SuperAdminPageWidget.routeName,
+      icon: Icons.admin_panel_settings,
+      label: 'Platform Admin',
+    ));
+  }
+  return items;
 }

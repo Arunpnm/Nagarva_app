@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -53,7 +54,8 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     if (!_formKey.currentState!.validate()) return;
     if (!_model.agreedToTerms) {
       safeSetState(() {
-        _model.errorMessage = 'Please agree to the Terms & Conditions to continue.';
+        _model.errorMessage =
+            'Please agree to the Terms & Conditions to continue.';
       });
       return;
     }
@@ -161,8 +163,9 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
 
       final data = res.data;
       if (data is! Map || data['ok'] != true) {
-        final serverError =
-            (data is Map && data['error'] is String) ? data['error'] as String : null;
+        final serverError = (data is Map && data['error'] is String)
+            ? data['error'] as String
+            : null;
         throw Exception(serverError ?? 'Could not create organisation.');
       }
 
@@ -202,6 +205,11 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
             : null,
         orgActive: data['org_active'] as bool? ?? true,
       );
+      // A fresh signup's auth user is brand new by construction — checking
+      // anyway rather than assuming, same "confirm, don't guess" rule this
+      // pass followed for platform_admins' own live schema (see
+      // platform_admin_status.dart) — cheap, single-row lookup.
+      await refreshPlatformAdminStatus();
 
       // 5. Go to org setup
       if (mounted) {
@@ -316,10 +324,9 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               hint: 'owner@company.com',
                               icon: Icons.email_outlined,
                               keyboardType: TextInputType.emailAddress,
-                              validator: (v) =>
-                                  (v == null || !v.contains('@'))
-                                      ? 'Enter a valid email'
-                                      : null,
+                              validator: (v) => (v == null || !v.contains('@'))
+                                  ? 'Enter a valid email'
+                                  : null,
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
@@ -359,9 +366,10 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               // the Form's own validate() — an inline error
                               // right at this field, never a network round
                               // trip just to discover the mismatch.
-                              validator: (v) => (v != _model.passwordController!.text)
-                                  ? 'Passwords do not match'
-                                  : null,
+                              validator: (v) =>
+                                  (v != _model.passwordController!.text)
+                                      ? 'Passwords do not match'
+                                      : null,
                               decoration: _inputDecoration(
                                 label: 'Confirm Password',
                                 hint: 'Re-enter your password',
@@ -413,7 +421,8 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                           fontSize: 13,
                                         ),
                                         children: [
-                                          const TextSpan(text: 'I agree to the '),
+                                          const TextSpan(
+                                              text: 'I agree to the '),
                                           TextSpan(
                                             text: 'Terms & Conditions',
                                             style: GoogleFonts.inter(
@@ -468,9 +477,10 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             const SizedBox(height: 20),
                             FFButtonWidget(
                               text: 'Create Account',
-                              onPressed: (_model.isLoading || !_model.agreedToTerms)
-                                  ? null
-                                  : _handleSignup,
+                              onPressed:
+                                  (_model.isLoading || !_model.agreedToTerms)
+                                      ? null
+                                      : _handleSignup,
                               options: FFButtonOptions(
                                 height: 52,
                                 color: kBrandGold,

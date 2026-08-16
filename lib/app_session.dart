@@ -46,6 +46,15 @@ class AppSession extends ChangeNotifier {
   /// org-switch, session-restore).
   bool orgActive = true;
 
+  /// Whether this session's Supabase Auth user has a `platform_admins`
+  /// row — the same check `is_platform_admin()` makes at the DB level
+  /// (see `/backend/platform_admin_status.dart`'s own doc comment for why
+  /// this is cached rather than checked live at nav build time). Gates
+  /// the Platform Admin nav entry (nav_items.dart). Vendor sessions only
+  /// — never populated for a staff PIN session, since a platform admin is
+  /// always Nagarva's own operator account, not a per-org staff identity.
+  bool isPlatformAdmin = false;
+
   // A session is "in" once we know which org we're scoped to, and either
   // a Supabase Auth user (vendor login) or a staff row (PIN login) has
   // been established.
@@ -180,6 +189,7 @@ class AppSession extends ChangeNotifier {
     planStatus = null;
     trialEndsAt = null;
     orgActive = true;
+    isPlatformAdmin = false;
     availableOrgs = [];
     notifyListeners();
   }

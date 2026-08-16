@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -158,8 +159,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
         final members = await OrgMembersTable().queryRows(
           queryFn: (q) => q.eq('user_id', user.id),
         );
-        final orgIds =
-            members.map((m) => m.orgId).whereType<String>().toList();
+        final orgIds = members.map((m) => m.orgId).whereType<String>().toList();
         if (orgIds.isEmpty) {
           throw Exception('This account is not linked to any organization.');
         }
@@ -178,6 +178,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
           orgActive: sessionData.orgActive,
         );
         await StaffAuth.saveVendorRefreshToken();
+        await refreshPlatformAdminStatus();
       }
 
       if (!mounted) return;
@@ -214,7 +215,9 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
       child: Text(
         filled ? '•' : '',
         style: GoogleFonts.jetBrainsMono(
-            fontSize: 26, fontWeight: FontWeight.w700, color: theme.primaryText),
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            color: theme.primaryText),
       ),
     );
   }
@@ -279,15 +282,17 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                 LayoutBuilder(
                   builder: (context, constraints) {
                     const gap = 12.0;
-                    final boxWidth =
-                        ((constraints.maxWidth - 3 * gap) / 4).clamp(44.0, 58.0);
+                    final boxWidth = ((constraints.maxWidth - 3 * gap) / 4)
+                        .clamp(44.0, 58.0);
                     return AnimatedBuilder(
                       animation: _shakeCtrl,
                       builder: (context, child) {
                         final t = _shakeCtrl.value;
                         final dx = (t == 0 || t == 1)
                             ? 0.0
-                            : 10 * (t < 0.5 ? 1 : -1) * (1 - (t - 0.5).abs() * 2);
+                            : 10 *
+                                (t < 0.5 ? 1 : -1) *
+                                (1 - (t - 0.5).abs() * 2);
                         return Transform.translate(
                             offset: Offset(dx, 0), child: child);
                       },
@@ -334,8 +339,8 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                 LayoutBuilder(
                   builder: (context, constraints) {
                     const gap = 10.0;
-                    final keyWidth =
-                        ((constraints.maxWidth - 2 * gap) / 3).clamp(48.0, 72.0);
+                    final keyWidth = ((constraints.maxWidth - 2 * gap) / 3)
+                        .clamp(48.0, 72.0);
                     return Column(
                       children: [
                         for (final row in [
@@ -348,10 +353,8 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                             children: [
                               for (final d in row) ...[
                                 _numKey(d,
-                                    width: keyWidth,
-                                    onTap: () => _tapDigit(d)),
-                                if (d != row.last)
-                                  const SizedBox(width: gap),
+                                    width: keyWidth, onTap: () => _tapDigit(d)),
+                                if (d != row.last) const SizedBox(width: gap),
                               ],
                             ],
                           ),
@@ -378,8 +381,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                 ),
                 const SizedBox(height: 24),
                 TextButton(
-                  onPressed: () =>
-                      context.pushNamed(LoginPageWidget.routeName),
+                  onPressed: () => context.pushNamed(LoginPageWidget.routeName),
                   child: const Text('Use email login instead'),
                 ),
                 TextButton(
