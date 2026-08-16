@@ -3,14 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/device_org_binding.dart';
-import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
+import '/backend/vendor_org_resolver.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import '/permissions.dart';
-import '/staff_auth.dart';
 
 /// Unified PIN login (parity brief Part 7). Ported from reference/APC Web
 /// App JSX/App.jsx's LoginScreen (~line 1341): four single-digit boxes,
@@ -153,32 +152,20 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
         // instead of the real permission-driven set.
         await StaffPermissions.loadForStaff(staff['id'] as String);
       } else {
-        // Owner: resolve org/plan exactly like the vendor email/password
-        // path already does (login_page_widget.dart's _handleVendorLogin).
+        // Owner: resolve org/plan through the same create-org recovery
+        // path login_page_widget.dart's _handleVendorLogin and the
+        // email-confirmation deep-link handler both use — this branch
+        // used to just throw "not linked to any organization" on an
+        // empty org_members, the same dead end §2a's recovery exists to
+        // close everywhere else. No promptForOrgName here: a PIN-login
+        // device implies the org already exists (that's what the PIN was
+        // verified against), so org_name metadata being missing on this
+        // path would mean something is genuinely wrong, not a legitimate
+        // "ask the user" case.
         final user = SupaFlow.client.auth.currentUser!;
-        final members = await OrgMembersTable().queryRows(
-          queryFn: (q) => q.eq('user_id', user.id),
-        );
-        final orgIds = members.map((m) => m.orgId).whereType<String>().toList();
-        if (orgIds.isEmpty) {
-          throw Exception('This account is not linked to any organization.');
-        }
-        final sessionData = await loadOrgSessionData(orgIds.first);
-        AppSession.instance.setVendorSession(
-          authUserId: user.id,
-          orgId: sessionData.orgId,
-          orgName: sessionData.orgName,
-          orgSlug: sessionData.orgSlug,
-          logoUrl: sessionData.logoUrl,
-          limits: sessionData.limits,
-          features: sessionData.features,
-          planName: sessionData.planName,
-          planStatus: sessionData.planStatus,
-          trialEndsAt: sessionData.trialEndsAt,
-          orgActive: sessionData.orgActive,
-        );
-        await StaffAuth.saveVendorRefreshToken();
-        await refreshPlatformAdminStatus();
+        final availableOrgs = await resolveVendorOrgs(user);
+        final orgId = availableOrgs.first.orgId;
+        await establishVendorSession(user, orgId, availableOrgs);
       }
 
       if (!mounted) return;
