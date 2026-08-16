@@ -1,6 +1,7 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
+import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
@@ -86,6 +87,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       final authResponse = await SupaFlow.client.auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: kAuthRedirectUrl,
         data: {
           'org_name': company,
           'owner_name': ownerName,

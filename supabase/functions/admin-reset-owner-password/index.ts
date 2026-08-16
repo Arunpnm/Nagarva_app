@@ -58,6 +58,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// Keep in sync with lib/config/app_config.dart's kAuthRedirectUrl —
+// can't share the literal across Dart/Deno, same value by convention.
 const RESET_REDIRECT_TO = "https://nagarva.netlify.app";
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, {

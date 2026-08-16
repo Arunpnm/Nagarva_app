@@ -3,6 +3,7 @@ import '/backend/device_org_binding.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
+import '/config/app_config.dart';
 import '/components/org_switcher_sheet.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -324,7 +325,12 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       _model.errorMessage = null;
     });
     try {
-      await SupaFlow.client.auth.resetPasswordForEmail(email);
+      // Explicit redirectTo, not the Auth dashboard's Site URL default —
+      // same reasoning as signup_page_widget.dart's emailRedirectTo, and
+      // this call had the identical gap: kAuthRedirectUrl's own doc
+      // comment has the full story (16 Aug 2026 redirect-issue report).
+      await SupaFlow.client.auth
+          .resetPasswordForEmail(email, redirectTo: kAuthRedirectUrl);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

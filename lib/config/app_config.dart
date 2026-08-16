@@ -26,6 +26,19 @@ const String kPublicBaseUrl = String.fromEnvironment(
   defaultValue: 'https://link.nagarva.in',
 );
 
+/// Web origin Supabase Auth should redirect to after a confirmation or
+/// password-reset email — the actual Flutter web build, deliberately NOT
+/// [kPublicBaseUrl]. Confirmed live 16 Aug 2026: `link.nagarva.in` is a
+/// separate static site with no Supabase client and no root page at all
+/// — every auth email that fell through to the project's Auth dashboard
+/// Site URL default landed there and 404d, successful confirmation or
+/// not. Pass this explicitly on every client-side auth call that sends
+/// an email (`signUp()`'s `emailRedirectTo`, `resetPasswordForEmail()`'s
+/// `redirectTo`) rather than relying on that default. Requires this exact
+/// URL to be present in Supabase's Redirect URLs allow-list, or GoTrue
+/// silently falls back to Site URL instead of rejecting the call.
+const String kAuthRedirectUrl = 'https://nagarva.netlify.app';
+
 /// Builds a customer-facing shareable link.
 ///
 /// [path] is a route path with a leading slash (e.g. `/survey`), matching
