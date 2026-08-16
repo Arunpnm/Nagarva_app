@@ -1,7 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '/backend/supabase/supabase.dart' show AuthApiException;
 import '/flutter_flow/flutter_flow_theme.dart' show kBrandGold;
+
+/// Supabase's own minimum gap between two emails to the same address —
+/// confirmed via a live 429 (over_email_send_rate_limit) response, which
+/// is stricter than this dialog's own first-draft 30s cooldown, so that
+/// cooldown let the button re-enable ~30s before the server would
+/// actually accept a retry. 60s matches the server's real limit instead
+/// of guessing at a shorter one.
+const Duration _kResendCooldown = Duration(seconds: 60);
 
 // Not centrally named beyond kBrandGold (flutter_flow_theme.dart) —
 // these match signup_page_widget.dart's own dark navy palette exactly
@@ -67,6 +78,40 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
   bool _resending = false;
   String? _resendMessage;
 
+  // Signup's own signUp() call already sent one confirmation email before
+  // this dialog ever opens, so Supabase's 60s window is already running
+  // the moment this screen appears — starting the cooldown here (not only
+  // after a tap) is what stops the button from showing enabled while a
+  // tap would still 429.
+  late DateTime _cooldownUntil = DateTime.now().add(_kResendCooldown);
+  Timer? _ticker;
+
+  int get _secondsRemaining {
+    final remaining = _cooldownUntil.difference(DateTime.now()).inSeconds;
+    return remaining > 0 ? remaining : 0;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _startTicker();
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _startTicker() {
+    _ticker?.cancel();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {}); // Just to re-read _secondsRemaining each tick.
+      if (_secondsRemaining == 0) _ticker?.cancel();
+    });
+  }
+
   Future<void> _handleResend() async {
     setState(() {
       _resending = true;
@@ -75,9 +120,19 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
     try {
       await widget.onResend();
       if (mounted) {
-        setState(() => _resendMessage = 'Sent — check your inbox.');
+        setState(() {
+          _resendMessage = 'Sent — check your inbox.';
+          _cooldownUntil = DateTime.now().add(_kResendCooldown);
+        });
+        _startTicker();
       }
+    } on AuthApiException catch (e) {
+      // Supabase's own message on a 429 (over_email_send_rate_limit) says
+      // exactly how many seconds remain — more useful than a generic
+      // retry line, and true for other API errors too (bad email, etc.).
+      if (mounted) setState(() => _resendMessage = e.message);
     } catch (_) {
+      // Network/unknown errors only — no server message to show.
       if (mounted) {
         setState(() => _resendMessage = 'Could not resend. Try again shortly.');
       }
@@ -188,11 +243,15 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                           strokeWidth: 2, color: kBrandGold),
                     )
                   : GestureDetector(
-                      onTap: _handleResend,
+                      onTap: _secondsRemaining == 0 ? _handleResend : null,
                       child: Text(
-                        "Didn't get it? Resend email",
+                        _secondsRemaining == 0
+                            ? "Didn't get it? Resend email"
+                            : 'Resend email in ${_secondsRemaining}s',
                         style: GoogleFonts.inter(
-                          color: kBrandGold,
+                          color: _secondsRemaining == 0
+                              ? kBrandGold
+                              : Colors.white38,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
