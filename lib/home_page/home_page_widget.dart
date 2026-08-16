@@ -184,6 +184,47 @@ class _HomePageWidgetState extends State<HomePageWidget>
     }
   }
 
+  /// Shared empty-state card for the dashboard's "titled section, zero
+  /// rows" spots — Upcoming Moves / Hot Leads. A brand-new trial org's
+  /// very first screen used to show these section headers with nothing
+  /// rendered under them (17 Aug 2026 finding); this gives that org
+  /// somewhere to go instead of a blank gap.
+  Widget _dashboardEmptyState(
+    BuildContext context, {
+    required IconData icon,
+    required String message,
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    final theme = FlutterFlowTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 32, color: theme.secondaryText),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            style: GoogleFonts.inter(color: theme.secondaryText, fontSize: 13),
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: onAction,
+            child: Text(
+              actionLabel,
+              style: GoogleFonts.interTight(
+                color: theme.primary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool _inRange(DateTime date, DateTime? start, DateTime? end) {
     if (start == null || end == null) return true;
     return !date.isBefore(start) && date.isBefore(end);
@@ -398,11 +439,11 @@ class _HomePageWidgetState extends State<HomePageWidget>
     // old owner-vs-any-staff branch here would have filtered a
     // supervisor/field-staff drawer down to nothing, since none of their
     // items could ever match activeStaffPages.
-    final allowedDrawerPages = isOwnerOrManagerSession &&
-            AppSession.instance.currentStaffId != null
-        ? (StaffPermissions.activeStaffPages ??
-            const {'HomePage', 'OrdersPage', 'OperationsPage'})
-        : null; // owner, and supervisor/field-staff: unfiltered (fixed) set
+    final allowedDrawerPages =
+        isOwnerOrManagerSession && AppSession.instance.currentStaffId != null
+            ? (StaffPermissions.activeStaffPages ??
+                const {'HomePage', 'OrdersPage', 'OperationsPage'})
+            : null; // owner, and supervisor/field-staff: unfiltered (fixed) set
     bool showDrawerPage(String pageName) =>
         allowedDrawerPages == null || allowedDrawerPages.contains(pageName);
     return GestureDetector(
@@ -462,44 +503,44 @@ class _HomePageWidgetState extends State<HomePageWidget>
                         ),
                       ),
                     ),
-              InkWell(
-                splashColor: Colors.transparent,
-                focusColor: Colors.transparent,
-                hoverColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-                onTap: () async {
-                  // Was a second, independently-drifted logout sequence
-                  // (missing StaffAuth.clearStoredVendorToken()/
-                  // StaffPermissions.clearActive(), and — the live bug —
-                  // hardcoded context.go(LoginPageWidget.routePath)
-                  // regardless of device binding, stranding a PIN-only
-                  // staff member on a screen he has no credentials for).
-                  // Now calls the one shared sequence directly instead of
-                  // re-duplicating it a second time.
-                  if (Navigator.of(context).canPop()) {
-                    context.pop();
-                  }
-                  await performLogout(context);
-                },
-                child: Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    leading: const Icon(
-                      Icons.logout,
-                    ),
-                    title: Text(
-                      FFLocalizations.of(context).getText(
-                        'qnj2ddkf' /* Logout */,
+                InkWell(
+                  splashColor: Colors.transparent,
+                  focusColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  onTap: () async {
+                    // Was a second, independently-drifted logout sequence
+                    // (missing StaffAuth.clearStoredVendorToken()/
+                    // StaffPermissions.clearActive(), and — the live bug —
+                    // hardcoded context.go(LoginPageWidget.routePath)
+                    // regardless of device binding, stranding a PIN-only
+                    // staff member on a screen he has no credentials for).
+                    // Now calls the one shared sequence directly instead of
+                    // re-duplicating it a second time.
+                    if (Navigator.of(context).canPop()) {
+                      context.pop();
+                    }
+                    await performLogout(context);
+                  },
+                  child: Material(
+                    color: Colors.transparent,
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.logout,
                       ),
-                      style: const TextStyle(),
+                      title: Text(
+                        FFLocalizations.of(context).getText(
+                          'qnj2ddkf' /* Logout */,
+                        ),
+                        style: const TextStyle(),
+                      ),
+                      dense: false,
                     ),
-                    dense: false,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         ),
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
@@ -540,8 +581,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
             IconButton(
               tooltip: 'Search orders & leads',
               icon: const Icon(Icons.search),
-              onPressed: () =>
-                  showSearch(context: context, delegate: GlobalSearchDelegate()),
+              onPressed: () => showSearch(
+                  context: context, delegate: GlobalSearchDelegate()),
             ),
           ],
           centerTitle: true,
@@ -2337,6 +2378,17 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                     final upcomingOrder =
                                         _model.upcomingOrders.toList();
 
+                                    if (upcomingOrder.isEmpty) {
+                                      return _dashboardEmptyState(
+                                        context,
+                                        icon: Icons.event_available_outlined,
+                                        message: 'No moves scheduled yet',
+                                        actionLabel: 'Create your first order',
+                                        onAction: () => context.pushNamed(
+                                            NewOrderPageWidget.routeName),
+                                      );
+                                    }
+
                                     return ListView.separated(
                                       padding: EdgeInsets.zero,
                                       primary: false,
@@ -2644,6 +2696,17 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                   builder: (context) {
                                     final hotLead = _model.hotLeads.toList();
 
+                                    if (hotLead.isEmpty) {
+                                      return _dashboardEmptyState(
+                                        context,
+                                        icon: Icons.person_add_alt_outlined,
+                                        message: 'No leads yet',
+                                        actionLabel: 'Add a lead',
+                                        onAction: () => context.pushNamed(
+                                            NewLeadPageWidget.routeName),
+                                      );
+                                    }
+
                                     return ListView.separated(
                                       padding: EdgeInsets.zero,
                                       primary: false,
@@ -2819,23 +2882,41 @@ class _HomePageWidgetState extends State<HomePageWidget>
                             ),
                           ),
                         ),
-                        Container(
-                          child: Padding(
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                                16.0, 0.0, 16.0, 0.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  FFLocalizations.of(context).getText(
-                                    'i093rsaw' /* BRANCH PERFORMANCE */,
-                                  ),
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        font: GoogleFonts.interTight(
+                        // Hidden entirely (not just an empty list under the
+                        // header) until at least one branch exists — a
+                        // brand-new org has none yet, and a "Branch
+                        // Performance" title over nothing reads worse than
+                        // no section at all (17 Aug 2026 finding).
+                        if (_model.branchStats.isNotEmpty)
+                          Container(
+                            child: Padding(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
+                                  16.0, 0.0, 16.0, 0.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    FFLocalizations.of(context).getText(
+                                      'i093rsaw' /* BRANCH PERFORMANCE */,
+                                    ),
+                                    style: FlutterFlowTheme.of(context)
+                                        .titleSmall
+                                        .override(
+                                          font: GoogleFonts.interTight(
+                                            fontWeight:
+                                                FlutterFlowTheme.of(context)
+                                                    .titleSmall
+                                                    .fontWeight,
+                                            fontStyle:
+                                                FlutterFlowTheme.of(context)
+                                                    .titleSmall
+                                                    .fontStyle,
+                                          ),
+                                          color: FlutterFlowTheme.of(context)
+                                              .primaryText,
+                                          letterSpacing: 0.0,
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleSmall
@@ -2845,226 +2926,220 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                   .titleSmall
                                                   .fontStyle,
                                         ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primaryText,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
-                                ),
-                                Builder(
-                                  builder: (context) {
-                                    final branchStat =
-                                        _model.branchStats.toList();
+                                  ),
+                                  Builder(
+                                    builder: (context) {
+                                      final branchStat =
+                                          _model.branchStats.toList();
 
-                                    return ListView.separated(
-                                      padding: EdgeInsets.zero,
-                                      primary: false,
-                                      shrinkWrap: true,
-                                      scrollDirection: Axis.vertical,
-                                      itemCount: branchStat.length,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(height: 8.0),
-                                      itemBuilder: (context, branchStatIndex) {
-                                        final branchStatItem =
-                                            branchStat[branchStatIndex];
-                                        return Container(
-                                          decoration: BoxDecoration(
-                                            color: FlutterFlowTheme.of(context)
-                                                .secondaryBackground,
-                                            borderRadius:
-                                                BorderRadius.circular(10.0),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(12.0),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.max,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      branchStatItem.branch!,
-                                                      style:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .override(
-                                                                font: GoogleFonts
-                                                                    .interTight(
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontStyle,
-                                                                ),
-                                                                color: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .primaryText,
-                                                                letterSpacing:
-                                                                    0.0,
-                                                                fontWeight: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontWeight,
-                                                                fontStyle: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontStyle,
-                                                              ),
-                                                    ),
-                                                    Text(
-                                                      functions.numStr(
-                                                          branchStatItem
-                                                              .orderCount)!,
-                                                      style:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .override(
-                                                                font:
-                                                                    GoogleFonts
-                                                                        .inter(
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodySmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodySmall
-                                                                      .fontStyle,
-                                                                ),
-                                                                color: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .secondaryText,
-                                                                letterSpacing:
-                                                                    0.0,
-                                                                fontWeight: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodySmall
-                                                                    .fontWeight,
-                                                                fontStyle: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodySmall
-                                                                    .fontStyle,
-                                                              ),
-                                                    ),
-                                                  ].divide(const SizedBox(
-                                                      height: 4.0)),
-                                                ),
-                                                Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.end,
-                                                  children: [
-                                                    Text(
-                                                      functions.inrFormat(
-                                                          branchStatItem
-                                                              .revenue)!,
-                                                      style:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .override(
-                                                                font: GoogleFonts
-                                                                    .interTight(
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontStyle,
-                                                                ),
-                                                                color: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .primary,
-                                                                letterSpacing:
-                                                                    0.0,
-                                                                fontWeight: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontWeight,
-                                                                fontStyle: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontStyle,
-                                                              ),
-                                                    ),
-                                                    Text(
-                                                      functions.marginPct(
-                                                          branchStatItem
-                                                              .netProfit,
-                                                          branchStatItem
-                                                              .revenue)!,
-                                                      style:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .override(
-                                                                font:
-                                                                    GoogleFonts
-                                                                        .inter(
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodySmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodySmall
-                                                                      .fontStyle,
-                                                                ),
-                                                                color: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .secondaryText,
-                                                                letterSpacing:
-                                                                    0.0,
-                                                                fontWeight: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodySmall
-                                                                    .fontWeight,
-                                                                fontStyle: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodySmall
-                                                                    .fontStyle,
-                                                              ),
-                                                    ),
-                                                  ].divide(const SizedBox(
-                                                      height: 4.0)),
-                                                ),
-                                              ],
+                                      return ListView.separated(
+                                        padding: EdgeInsets.zero,
+                                        primary: false,
+                                        shrinkWrap: true,
+                                        scrollDirection: Axis.vertical,
+                                        itemCount: branchStat.length,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(height: 8.0),
+                                        itemBuilder:
+                                            (context, branchStatIndex) {
+                                          final branchStatItem =
+                                              branchStat[branchStatIndex];
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  FlutterFlowTheme.of(context)
+                                                      .secondaryBackground,
+                                              borderRadius:
+                                                  BorderRadius.circular(10.0),
                                             ),
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                              ].divide(const SizedBox(height: 10.0)),
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.all(12.0),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.max,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.center,
+                                                children: [
+                                                  Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        branchStatItem.branch!,
+                                                        style:
+                                                            FlutterFlowTheme.of(
+                                                                    context)
+                                                                .titleSmall
+                                                                .override(
+                                                                  font: GoogleFonts
+                                                                      .interTight(
+                                                                    fontWeight: FlutterFlowTheme.of(
+                                                                            context)
+                                                                        .titleSmall
+                                                                        .fontWeight,
+                                                                    fontStyle: FlutterFlowTheme.of(
+                                                                            context)
+                                                                        .titleSmall
+                                                                        .fontStyle,
+                                                                  ),
+                                                                  color: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .primaryText,
+                                                                  letterSpacing:
+                                                                      0.0,
+                                                                  fontWeight: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .titleSmall
+                                                                      .fontWeight,
+                                                                  fontStyle: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .titleSmall
+                                                                      .fontStyle,
+                                                                ),
+                                                      ),
+                                                      Text(
+                                                        functions.numStr(
+                                                            branchStatItem
+                                                                .orderCount)!,
+                                                        style:
+                                                            FlutterFlowTheme.of(
+                                                                    context)
+                                                                .bodySmall
+                                                                .override(
+                                                                  font:
+                                                                      GoogleFonts
+                                                                          .inter(
+                                                                    fontWeight: FlutterFlowTheme.of(
+                                                                            context)
+                                                                        .bodySmall
+                                                                        .fontWeight,
+                                                                    fontStyle: FlutterFlowTheme.of(
+                                                                            context)
+                                                                        .bodySmall
+                                                                        .fontStyle,
+                                                                  ),
+                                                                  color: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .secondaryText,
+                                                                  letterSpacing:
+                                                                      0.0,
+                                                                  fontWeight: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .bodySmall
+                                                                      .fontWeight,
+                                                                  fontStyle: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .bodySmall
+                                                                      .fontStyle,
+                                                                ),
+                                                      ),
+                                                    ].divide(const SizedBox(
+                                                        height: 4.0)),
+                                                  ),
+                                                  Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.end,
+                                                    children: [
+                                                      Text(
+                                                        functions.inrFormat(
+                                                            branchStatItem
+                                                                .revenue)!,
+                                                        style:
+                                                            FlutterFlowTheme.of(
+                                                                    context)
+                                                                .titleSmall
+                                                                .override(
+                                                                  font: GoogleFonts
+                                                                      .interTight(
+                                                                    fontWeight: FlutterFlowTheme.of(
+                                                                            context)
+                                                                        .titleSmall
+                                                                        .fontWeight,
+                                                                    fontStyle: FlutterFlowTheme.of(
+                                                                            context)
+                                                                        .titleSmall
+                                                                        .fontStyle,
+                                                                  ),
+                                                                  color: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .primary,
+                                                                  letterSpacing:
+                                                                      0.0,
+                                                                  fontWeight: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .titleSmall
+                                                                      .fontWeight,
+                                                                  fontStyle: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .titleSmall
+                                                                      .fontStyle,
+                                                                ),
+                                                      ),
+                                                      Text(
+                                                        functions.marginPct(
+                                                            branchStatItem
+                                                                .netProfit,
+                                                            branchStatItem
+                                                                .revenue)!,
+                                                        style:
+                                                            FlutterFlowTheme.of(
+                                                                    context)
+                                                                .bodySmall
+                                                                .override(
+                                                                  font:
+                                                                      GoogleFonts
+                                                                          .inter(
+                                                                    fontWeight: FlutterFlowTheme.of(
+                                                                            context)
+                                                                        .bodySmall
+                                                                        .fontWeight,
+                                                                    fontStyle: FlutterFlowTheme.of(
+                                                                            context)
+                                                                        .bodySmall
+                                                                        .fontStyle,
+                                                                  ),
+                                                                  color: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .secondaryText,
+                                                                  letterSpacing:
+                                                                      0.0,
+                                                                  fontWeight: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .bodySmall
+                                                                      .fontWeight,
+                                                                  fontStyle: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .bodySmall
+                                                                      .fontStyle,
+                                                                ),
+                                                      ),
+                                                    ].divide(const SizedBox(
+                                                        height: 4.0)),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ].divide(const SizedBox(height: 10.0)),
+                              ),
                             ),
                           ),
-                        ),
                         Container(
                           height: 100.0,
                         ),
