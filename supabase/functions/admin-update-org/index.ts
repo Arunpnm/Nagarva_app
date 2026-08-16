@@ -30,10 +30,14 @@
 // own header comment documents this as the one deliberate cross-tenant
 // read path in the app).
 //
-// trial_ends_at and plan_status are NOT exposed here — no live Dart call
-// site writes either today (grepped before writing this), so there is
-// nothing to replace. If a "extend trial" or manual plan_status override
-// UI is ever built, extend this function's body then, not preemptively.
+// trial_ends_at and plan_status (16 Aug 2026): the note that used to be
+// here said not to expose these preemptively — overtaken now that
+// tenant_detail_page.dart has a real trial-day control (a date picker
+// plus a "+14 days" quick action) and needs somewhere to write it. Same
+// shape as plan_id/active: optional, independent, only the fields
+// actually sent get written, each diffed against the prior row for its
+// own billing_events entry. No UI writes plan_status yet — accepted here
+// per instruction, for whatever manual override control gets built next.
 //
 // Deploy:  supabase functions deploy admin-update-org
 // ============================================================
@@ -66,20 +70,35 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { org_id, plan_id, active } = await req.json();
+    const { org_id, plan_id, active, trial_ends_at, plan_status } =
+      await req.json();
     if (!org_id) {
       return json({ error: "org_id is required" }, 400);
     }
     const hasPlanChange = plan_id !== undefined;
     const hasActiveChange = active !== undefined;
-    if (!hasPlanChange && !hasActiveChange) {
-      return json({ error: "plan_id and/or active is required" }, 400);
+    const hasTrialChange = trial_ends_at !== undefined;
+    const hasPlanStatusChange = plan_status !== undefined;
+    if (!hasPlanChange && !hasActiveChange && !hasTrialChange && !hasPlanStatusChange) {
+      return json(
+        { error: "plan_id, active, trial_ends_at and/or plan_status is required" },
+        400,
+      );
     }
     if (hasPlanChange && typeof plan_id !== "string") {
       return json({ error: "plan_id must be a string" }, 400);
     }
     if (hasActiveChange && typeof active !== "boolean") {
       return json({ error: "active must be a boolean" }, 400);
+    }
+    if (
+      hasTrialChange &&
+      (typeof trial_ends_at !== "string" || isNaN(Date.parse(trial_ends_at)))
+    ) {
+      return json({ error: "trial_ends_at must be a valid ISO date string" }, 400);
+    }
+    if (hasPlanStatusChange && typeof plan_status !== "string") {
+      return json({ error: "plan_status must be a string" }, 400);
     }
 
     // ---- Caller must be a real, signed-in platform admin. Service role
@@ -105,17 +124,19 @@ Deno.serve(async (req: Request) => {
 
     const { data: orgRow, error: orgErr } = await admin
       .from("organizations")
-      .select("id, name, plan_id, active")
+      .select("id, name, plan_id, active, trial_ends_at, plan_status")
       .eq("id", org_id)
       .maybeSingle();
     if (orgErr) return json({ error: "Lookup failed" }, 500);
     if (!orgRow) return json({ error: "Organization not found" }, 404);
 
-    // ---- The write. Only the two fields the caller actually asked to
+    // ---- The write. Only the fields the caller actually asked to
     // change go in the payload — never a full-row send.
     const updatePayload: Record<string, unknown> = {};
     if (hasPlanChange) updatePayload.plan_id = plan_id;
     if (hasActiveChange) updatePayload.active = active;
+    if (hasTrialChange) updatePayload.trial_ends_at = trial_ends_at;
+    if (hasPlanStatusChange) updatePayload.plan_status = plan_status;
 
     const { error: updErr } = await admin
       .from("organizations")
@@ -146,6 +167,28 @@ Deno.serve(async (req: Request) => {
         detail: { from: orgRow.active, to: active, changed_by: caller.user.id },
       });
     }
+    if (hasTrialChange && trial_ends_at !== orgRow.trial_ends_at) {
+      events.push({
+        org_id,
+        event_type: "trial_extended",
+        detail: {
+          from: orgRow.trial_ends_at,
+          to: trial_ends_at,
+          changed_by: caller.user.id,
+        },
+      });
+    }
+    if (hasPlanStatusChange && plan_status !== orgRow.plan_status) {
+      events.push({
+        org_id,
+        event_type: "plan_status_changed",
+        detail: {
+          from: orgRow.plan_status,
+          to: plan_status,
+          changed_by: caller.user.id,
+        },
+      });
+    }
     if (events.length > 0) {
       const { error: evErr } = await admin.from("billing_events").insert(events);
       if (evErr) console.error("billing_events insert:", evErr.message);
@@ -156,6 +199,8 @@ Deno.serve(async (req: Request) => {
       org_id,
       plan_id: hasPlanChange ? plan_id : orgRow.plan_id,
       active: hasActiveChange ? active : orgRow.active,
+      trial_ends_at: hasTrialChange ? trial_ends_at : orgRow.trial_ends_at,
+      plan_status: hasPlanStatusChange ? plan_status : orgRow.plan_status,
     });
   } catch (e) {
     console.error("admin-update-org:", e);

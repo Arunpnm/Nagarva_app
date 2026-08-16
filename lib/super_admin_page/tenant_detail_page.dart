@@ -26,6 +26,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
   late OrganizationsRow _org;
   bool _loading = true;
   bool _togglingActive = false;
+  bool _updatingTrial = false;
   String? _ownerEmail;
   bool _ownerEmailUnavailable = false;
   int _orders = 0;
@@ -49,7 +50,8 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
     }
     try {
       final results = await Future.wait([
-        OrdersTable().queryRows(queryFn: (q) => q.eq('org_id', id), limit: 2000),
+        OrdersTable()
+            .queryRows(queryFn: (q) => q.eq('org_id', id), limit: 2000),
         LeadsTable().queryRows(queryFn: (q) => q.eq('org_id', id), limit: 2000),
         StaffTable().queryRows(queryFn: (q) => q.eq('org_id', id), limit: 2000),
       ]);
@@ -135,6 +137,69 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
     }
   }
 
+  /// Shared write for both trial controls below — a specific date from
+  /// the picker, or "+14 days" doing the arithmetic itself before calling
+  /// this. RLS remediation Tier B revokes organizations.trial_ends_at
+  /// from `authenticated` the same way it does plan_id/active, so this
+  /// goes through admin-update-org, not a direct table write — see that
+  /// function's own header comment.
+  Future<void> _setTrialDate(DateTime newDate) async {
+    setState(() => _updatingTrial = true);
+    try {
+      final res = await SupaFlow.client.functions.invoke(
+        'admin-update-org',
+        body: {
+          'org_id': _org.id,
+          'trial_ends_at': newDate.toUtc().toIso8601String(),
+        },
+      );
+      final body = res.data;
+      if (body is! Map || body['ok'] != true) {
+        throw Exception(
+          (body is Map ? body['error'] as String? : null) ??
+              'Could not update trial date.',
+        );
+      }
+      setState(() => _org.trialEndsAt = newDate);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Trial now ends '
+                '${newDate.toLocal().toString().split('.').first}.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not update trial date: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _updatingTrial = false);
+    }
+  }
+
+  Future<void> _pickTrialDate() async {
+    final now = DateTime.now();
+    final current = _org.trialEndsAt;
+    final initial = (current != null && current.isAfter(now)) ? current : now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 365 * 3)),
+    );
+    if (picked != null) await _setTrialDate(picked);
+  }
+
+  /// Extends from the CURRENT trial_ends_at when it's still in the future
+  /// (an org with 5 days left gets 19, not "14 from today, losing the
+  /// remaining 5"); extends from now otherwise, so a lapsed trial gets a
+  /// full 14 real days rather than a date that's still in the past.
+  Future<void> _extendTrialByDays(int days) async {
+    final now = DateTime.now();
+    final current = _org.trialEndsAt;
+    final base = (current != null && current.isAfter(now)) ? current : now;
+    await _setTrialDate(base.add(Duration(days: days)));
+  }
+
   Widget _row(FlutterFlowTheme theme, String label, String value) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
@@ -143,8 +208,8 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
             SizedBox(
               width: 120,
               child: Text(label,
-                  style:
-                      GoogleFonts.inter(color: theme.secondaryText, fontSize: 13)),
+                  style: GoogleFonts.inter(
+                      color: theme.secondaryText, fontSize: 13)),
             ),
             Expanded(
               child: Text(value,
@@ -224,6 +289,29 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                                   .split('.')
                                   .first
                               : '—'),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed:
+                                    _updatingTrial ? null : _pickTrialDate,
+                                child: const Text('Set date'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _updatingTrial
+                                    ? null
+                                    : () => _extendTrialByDays(14),
+                                child: const Text('+14 days'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       _row(
                           theme,
                           'Owner email',
@@ -268,7 +356,8 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     icon: Icon(_org.active ? Icons.block : Icons.check_circle),
-                    label: Text(_org.active ? 'Suspend Tenant' : 'Reactivate Tenant'),
+                    label: Text(
+                        _org.active ? 'Suspend Tenant' : 'Reactivate Tenant'),
                   ),
                 ),
               ],
