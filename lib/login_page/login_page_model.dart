@@ -3,10 +3,11 @@ import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'login_page_widget.dart' show LoginPageWidget;
 
-/// Two-path login: 0 = vendor (Supabase Auth), 1 = staff (phone + PIN).
+/// Vendor login only (Supabase Auth, email + password). Staff login is
+/// PinLoginPageWidget's own model now — this page's old in-tab Staff Login
+/// form (phone/name + PIN) was removed 16 Aug 2026; see login_page_widget.dart's
+/// class doc comment for why.
 class LoginPageModel extends FlutterFlowModel<LoginPageWidget> {
-  int activeTab = 0;
-
   bool isLoading = false;
   String? errorMessage;
 
@@ -18,28 +19,12 @@ class LoginPageModel extends FlutterFlowModel<LoginPageWidget> {
   TextEditingController? vendorPasswordController;
   bool vendorPasswordVisible = false;
 
-  // --- Staff login (phone/name + PIN) ---
-  FocusNode? namePhoneFieldFocusNode;
-  TextEditingController? namePhoneFieldTextController;
-  String? Function(BuildContext, String?)?
-      namePhoneFieldTextControllerValidator;
-
-  FocusNode? pinFieldFocusNode;
-  TextEditingController? pinFieldTextController;
-  bool pinFieldVisibility = false;
-  String? Function(BuildContext, String?)? pinFieldTextControllerValidator;
-
   @override
   void initState(BuildContext context) {
     vendorEmailController ??= TextEditingController();
     vendorEmailFocusNode ??= FocusNode();
     vendorPasswordController ??= TextEditingController();
     vendorPasswordFocusNode ??= FocusNode();
-
-    namePhoneFieldTextController ??= TextEditingController();
-    namePhoneFieldFocusNode ??= FocusNode();
-    pinFieldTextController ??= TextEditingController();
-    pinFieldFocusNode ??= FocusNode();
   }
 
   @override
@@ -48,10 +33,5 @@ class LoginPageModel extends FlutterFlowModel<LoginPageWidget> {
     vendorEmailController?.dispose();
     vendorPasswordFocusNode?.dispose();
     vendorPasswordController?.dispose();
-
-    namePhoneFieldFocusNode?.dispose();
-    namePhoneFieldTextController?.dispose();
-    pinFieldFocusNode?.dispose();
-    pinFieldTextController?.dispose();
   }
 }

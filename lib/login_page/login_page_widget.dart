@@ -7,26 +7,27 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
-import '/permissions.dart';
 import '/staff_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login_page_model.dart';
 export 'login_page_model.dart';
 
-/// Two-path login:
-/// - Vendor tab: Supabase Auth (email + password) — the org owner/admin.
-/// - Staff tab: device-unlock model (the "Slack model"). The device must
-///   have been signed in with the vendor account at least once; the staff
-///   row is looked up INSIDE that authenticated, RLS-scoped session (so
-///   only this org's staff are visible). The PIN itself is then verified
-///   SERVER-SIDE by the `staff-login` Edge Function (bcrypt in Postgres),
-///   which mints a REAL Supabase session for the staff member. The app
-///   swaps to that session, so staff carry their own auth.uid() and every
-///   RLS policy applies to them exactly as it does to vendors. The
-///   vendor's refresh token is saved first so the sidebar Lock button can
-///   silently restore the vendor session (see /staff_auth.dart).
-///   No plaintext PIN is ever read or compared on the client.
+/// Vendor login only: Supabase Auth (email + password) for the org
+/// owner/admin. This is also the landing page for an unbound device
+/// (nav.dart's _initialize), per NG-BRIEF-vendor-auth-flow.md §4.
+///
+/// Staff login (name/phone + PIN) lives entirely on PinLoginPageWidget now
+/// — this page used to also carry its own in-tab Staff Login form, removed
+/// 16 Aug 2026. That form duplicated PinLoginPageWidget's staff-login path
+/// (same `staff-login` Edge Function, same session swap via
+/// /staff_auth.dart) but was gated on an incidental precondition — a live
+/// Supabase Auth session already cached on the device — rather than
+/// `DeviceOrgBinding`, the concept the rest of the app actually uses for
+/// device setup. Any real logout clears that session first
+/// (session_logout.dart), so the tab always failed afterward with a
+/// misleading "device not set up" message about a state this page doesn't
+/// track.
 class LoginPageWidget extends StatefulWidget {
   const LoginPageWidget({super.key});
 
@@ -41,12 +42,6 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   late LoginPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
-
-  /// Org this device is set up for (vendor session present), else null.
-  /// Shown as a banner on the Staff tab so the device state is always
-  /// visible instead of guessed.
-  String? _deviceOrgName;
-  bool _deviceChecked = false;
 
   @override
   void initState() {
@@ -64,36 +59,6 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         if (mounted) context.go(HomePageWidget.routePath);
       });
       return;
-    }
-    _checkDeviceSetup();
-  }
-
-  Future<void> _checkDeviceSetup() async {
-    final user = SupaFlow.client.auth.currentUser;
-    if (user == null) {
-      safeSetState(() => _deviceChecked = true);
-      return;
-    }
-    try {
-      final members = await OrgMembersTable().queryRows(
-        queryFn: (q) => q.eq('user_id', user.id).limit(1),
-      );
-      String? orgName;
-      if (members.isNotEmpty && members.first.orgId != null) {
-        final orgs = await OrganizationsTable().queryRows(
-          queryFn: (q) => q.eq('id', members.first.orgId!).limit(1),
-        );
-        orgName = orgs.isNotEmpty ? orgs.first.name : null;
-      }
-      safeSetState(() {
-        _deviceOrgName = orgName ?? 'your organization';
-        _deviceChecked = true;
-      });
-    } catch (_) {
-      safeSetState(() {
-        _deviceOrgName = 'your organization';
-        _deviceChecked = true;
-      });
     }
   }
 
@@ -189,8 +154,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           final serverError = (data is Map && data['error'] is String)
               ? data['error'] as String
               : null;
-          throw Exception(
-              serverError ?? 'Could not set up your organization. Please try again.');
+          throw Exception(serverError ??
+              'Could not set up your organization. Please try again.');
         }
         // caller_role is the one field allowed to gate a vendor session
         // out of this recovery path too — same rule signup_page_widget.dart
@@ -208,7 +173,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           // immediately-following read raced or failed independently.
           // Never trust a round-trip blindly; fail loudly instead of
           // silently re-entering the same dead end.
-          throw Exception('Could not set up your organization. Please try again.');
+          throw Exception(
+              'Could not set up your organization. Please try again.');
         }
       }
 
@@ -344,185 +310,6 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     return e.toString().replaceFirst('Exception: ', '');
   }
 
-  Future<void> _handleStaffLogin() async {
-    final input = _model.namePhoneFieldTextController!.text.trim();
-    final pin = _model.pinFieldTextController!.text.trim();
-
-    if (input.isEmpty || pin.isEmpty) {
-      safeSetState(
-          () => _model.errorMessage = 'Enter your name/phone and PIN.');
-      return;
-    }
-
-    // Device-unlock model: staff PIN login rides on top of the vendor's
-    // Supabase Auth session. Without it, RLS (org_isolation on `staff`)
-    // correctly returns zero rows — so fail with a clear setup message
-    // instead of a misleading "invalid PIN".
-    final authUser = SupaFlow.client.auth.currentUser;
-    if (authUser == null) {
-      safeSetState(() => _model.errorMessage =
-          'This device is not set up for staff login yet. '
-          'Ask the owner to log in once with the vendor account first.');
-      return;
-    }
-
-    safeSetState(() {
-      _model.isLoading = true;
-      _model.errorMessage = null;
-    });
-
-    try {
-      // Authenticated + RLS-scoped: only this org's staff are visible.
-      // Phone matches exactly; name matches case-insensitively so
-      // "rajesh kumar" finds "Rajesh Kumar".
-      var rows = await StaffTable().queryRows(
-        queryFn: (q) => q.eq('phone', input),
-      );
-      if (rows.isEmpty) {
-        rows = await StaffTable().queryRows(
-          queryFn: (q) => q.ilike('name', input),
-        );
-      }
-      // NOTE: no PIN comparison here anymore — the PIN never touches the
-      // client. We only narrow down WHICH staff row the person means; the
-      // PIN is verified server-side (bcrypt) by the staff-login function.
-      final candidates = rows.where((r) => (r.active ?? true)).toList();
-      if (candidates.isEmpty) {
-        throw Exception('Invalid name/phone or PIN.');
-      }
-
-      // Save the vendor's refresh token BEFORE swapping sessions, so the
-      // sidebar Lock button can silently restore the vendor later.
-      await StaffAuth.saveVendorRefreshToken();
-
-      // Ask the Edge Function to verify the PIN and mint a real session.
-      // If two staff share a name, try each candidate; the wrong ones
-      // simply come back 401 and we move on.
-      Map<String, dynamic>? result;
-      for (final s in candidates) {
-        if (s.id == null) continue;
-        try {
-          final res = await SupaFlow.client.functions.invoke(
-            'staff-login',
-            body: {'staff_id': s.id, 'pin': pin},
-          );
-          final data = res.data;
-          if (data is Map && data['access_token'] != null) {
-            result = Map<String, dynamic>.from(data);
-            break;
-          }
-        } on FunctionException catch (e) {
-          // Rate limiting (20260725_staff_pin_rate_limit.sql): the Edge
-          // Function returns 429 with a specific "try again after HH:MM"
-          // message when this staff member is locked out. That message
-          // must reach the user directly — the old blanket catch here
-          // treated every error (including this one) as "wrong PIN, try
-          // the next same-name candidate," which silently discarded it
-          // and fell through to the generic "Invalid name/phone or PIN."
-          if (e.status == 429) {
-            final msg = (e.details is Map ? e.details['error'] : null)
-                    as String? ??
-                'Too many failed attempts. Try again later.';
-            throw Exception(msg);
-          }
-          // 401 Invalid PIN (or other transient error) for this
-          // candidate — try the next one.
-          continue;
-        } catch (_) {
-          continue;
-        }
-      }
-      if (result == null) {
-        throw Exception('Invalid name/phone or PIN.');
-      }
-
-      final staffInfo = Map<String, dynamic>.from(result['staff'] as Map);
-      final staffRefreshToken = result['refresh_token'] as String?;
-      if (staffRefreshToken == null || staffRefreshToken.isEmpty) {
-        throw Exception('Could not start staff session. Try again.');
-      }
-
-      // Swap this device to the staff member's OWN session. From here on
-      // every query runs with the staff's real auth.uid(), so RLS scopes
-      // them to the org via their org_members row automatically.
-      final swap =
-          await SupaFlow.client.auth.setSession(staffRefreshToken);
-      if (swap.session == null) {
-        throw Exception('Could not start staff session. Try again.');
-      }
-
-      AppSession.instance.setStaff(
-        staffId: staffInfo['id'] as String,
-        staffName: (staffInfo['name'] as String?) ?? '',
-        role: staffInfo['role'] as String?,
-      );
-
-      // Cache this staff member's permission matrix for the sidebar
-      // (runs under the freshly-swapped staff session).
-      await StaffPermissions.loadForStaff(staffInfo['id'] as String);
-
-      // Org context normally comes from the vendor session restore in
-      // main.dart; fill it from the function's response only if it is
-      // still empty. (This lookup now runs under the STAFF session — it
-      // works because the Edge Function inserted the staff member's
-      // org_members row before returning.)
-      final orgId = staffInfo['org_id'] as String?;
-      if (AppSession.instance.currentOrgId == null && orgId != null) {
-        try {
-          final orgs = await OrganizationsTable().queryRows(
-            queryFn: (q) => q.eq('id', orgId).limit(1),
-          );
-          final org = orgs.isNotEmpty ? orgs.first : null;
-
-          Map<String, dynamic> limits = {};
-          Map<String, dynamic> features = {};
-          String? planName;
-          try {
-            final planId = org?.planId;
-            final plans = planId != null
-                ? await SubscriptionPlansTable()
-                    .queryRows(queryFn: (q) => q.eq('id', planId).limit(1))
-                : await SubscriptionPlansTable().queryRows(
-                    queryFn: (q) => q.eq('is_default_trial', true).limit(1),
-                  );
-            if (plans.isNotEmpty) {
-              final plan = plans.first;
-              limits = (plan.limits is Map)
-                  ? Map<String, dynamic>.from(plan.limits as Map)
-                  : {};
-              features = (plan.features is Map)
-                  ? Map<String, dynamic>.from(plan.features as Map)
-                  : {};
-              planName = plan.name;
-            }
-          } catch (_) {
-            // Plan lookup is best-effort — don't block login on it.
-          }
-
-          AppSession.instance.setOrgOnly(
-            orgId: orgId,
-            orgName: org?.name,
-            orgSlug: org?.slug,
-            logoUrl: org?.logoUrl,
-            limits: limits,
-            features: features,
-            planName: planName,
-            trialEndsAt: org?.trialEndsAt,
-          );
-        } catch (_) {
-          AppSession.instance.setOrgOnly(orgId: orgId);
-        }
-      }
-
-      if (mounted) context.go(HomePageWidget.routePath);
-    } catch (e) {
-      safeSetState(() {
-        _model.errorMessage = _friendlyAuthError(e);
-        _model.isLoading = false;
-      });
-    }
-  }
-
   Future<void> _handleForgotPassword() async {
     final email = _model.vendorEmailController!.text.trim();
     if (email.isEmpty || !email.contains('@')) {
@@ -643,75 +430,47 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                       ),
                       const SizedBox(height: 28),
 
-                      // Vendor / Staff tab switcher
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E2035),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          children: [
-                            _tabButton(label: 'Vendor Login', index: 0),
-                            _tabButton(label: 'Staff Login', index: 1),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
                       Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E2035),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         padding: const EdgeInsets.all(20),
-                        child: _model.activeTab == 0
-                            ? _buildVendorForm()
-                            : _buildStaffForm(),
+                        child: _buildVendorForm(),
                       ),
 
                       const SizedBox(height: 16),
-                      // NG-BRIEF-vendor-auth-flow.md §4: this screen is now
-                      // the landing page for an unbound device (nav.dart's
-                      // _initialize), so the org/invite-code path — for a
-                      // staff member who installed the app manually
-                      // instead of arriving via an invite link — needs its
-                      // own way back to OrgBindingPageWidget from here.
-                      // Page-level (not inside either tab), same as
-                      // PinLoginPageWidget's own "Switch device" link, and
-                      // unbinds first for the same reason that one does:
-                      // this page is also still reachable from a BOUND
-                      // device via "Use email login instead," so a stale
-                      // binding shouldn't survive tapping this.
-                      Center(
-                        child: GestureDetector(
-                          onTap: () async {
-                            await DeviceOrgBinding.unbind();
-                            if (mounted) {
-                              context.pushNamed(OrgBindingPageWidget.routeName);
-                            }
-                          },
-                          child: RichText(
-                            text: TextSpan(
-                              style: GoogleFonts.inter(
-                                color: Colors.white54,
-                                fontSize: 13,
-                              ),
-                              children: [
-                                const TextSpan(text: 'Joining a team? '),
-                                TextSpan(
-                                  text: 'Use an org or invite code',
-                                  style: GoogleFonts.inter(
-                                    color: kBrandGold,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                      // Bound vs. unbound device get different footer links,
+                      // never both. A BOUND device only ever reaches this
+                      // page via PinLoginPageWidget's "Use email login
+                      // instead" (owner setting up a PIN for the first
+                      // time, or an existing staff member without one) — for
+                      // that visitor, "Joining a team?" would unbind an
+                      // already-correct device just to get back to the PIN
+                      // screen, which is destructive, not a way back. An
+                      // UNBOUND device is this page's own default landing
+                      // spot (nav.dart's _initialize, NG-BRIEF-vendor-auth-
+                      // flow.md §4) — for a staff member who installed the
+                      // app manually instead of arriving via an invite link,
+                      // the org/invite-code path is the one they need.
+                      DeviceOrgBinding.isBound
+                          ? _bottomLink(
+                              prefix: '',
+                              action: 'Back to PIN login',
+                              onTap: () =>
+                                  context.go(PinLoginPageWidget.routePath),
+                            )
+                          : _bottomLink(
+                              prefix: 'Joining a team? ',
+                              action: 'Use an org or invite code',
+                              onTap: () async {
+                                await DeviceOrgBinding.unbind();
+                                if (mounted) {
+                                  context.pushNamed(
+                                      OrgBindingPageWidget.routeName);
+                                }
+                              },
                             ),
-                          ),
-                        ),
-                      ),
 
                       const SizedBox(height: 16),
                       Row(
@@ -740,29 +499,31 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     );
   }
 
-  Widget _tabButton({required String label, required int index}) {
-    final selected = _model.activeTab == index;
-    return Expanded(
+  /// Shared shape for the page's single footer link — extracted since two
+  /// mutually-exclusive variants render here depending on
+  /// `DeviceOrgBinding.isBound` (see the call site).
+  Widget _bottomLink({
+    required String prefix,
+    required String action,
+    required VoidCallback onTap,
+  }) {
+    return Center(
       child: GestureDetector(
-        onTap: () => safeSetState(() {
-          _model.activeTab = index;
-          _model.errorMessage = null;
-        }),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? kBrandGold : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: GoogleFonts.interTight(
-              color: selected ? Colors.white : Colors.white54,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
+        onTap: onTap,
+        child: RichText(
+          text: TextSpan(
+            style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+            children: [
+              if (prefix.isNotEmpty) TextSpan(text: prefix),
+              TextSpan(
+                text: action,
+                style: GoogleFonts.inter(
+                  color: kBrandGold,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -798,8 +559,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
               size: 20,
             ),
             onPressed: () => safeSetState(
-              () => _model.vendorPasswordVisible =
-                  !_model.vendorPasswordVisible,
+              () =>
+                  _model.vendorPasswordVisible = !_model.vendorPasswordVisible,
             ),
           ),
         ),
@@ -860,104 +621,6 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStaffForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_deviceChecked) ...[
-          Container(
-            padding: const EdgeInsets.all(10),
-            margin: const EdgeInsets.only(bottom: 14),
-            decoration: BoxDecoration(
-              color: _deviceOrgName != null
-                  ? const Color(0xFF15321B)
-                  : const Color(0xFF33270F),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _deviceOrgName != null
-                      ? Icons.verified_user
-                      : Icons.info_outline,
-                  size: 16,
-                  color: _deviceOrgName != null
-                      ? const Color(0xFF66BB6A)
-                      : const Color(0xFFFFB74D),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _deviceOrgName != null
-                        ? 'Device ready — $_deviceOrgName. Enter your PIN.'
-                        : 'Device not set up. Owner must log in once first.',
-                    style: GoogleFonts.inter(
-                      color: _deviceOrgName != null
-                          ? const Color(0xFF9CDFA3)
-                          : const Color(0xFFFFCC80),
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        _textField(
-          controller: _model.namePhoneFieldTextController!,
-          focusNode: _model.namePhoneFieldFocusNode!,
-          label: 'Name or Phone',
-          hint: 'Enter your name or phone',
-          icon: Icons.person_outline,
-        ),
-        const SizedBox(height: 14),
-        _textField(
-          controller: _model.pinFieldTextController!,
-          focusNode: _model.pinFieldFocusNode!,
-          label: 'PIN',
-          hint: '4-digit PIN',
-          icon: Icons.pin_outlined,
-          keyboardType: TextInputType.number,
-          obscureText: !_model.pinFieldVisibility,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _model.pinFieldVisibility
-                  ? Icons.visibility_off
-                  : Icons.visibility,
-              color: Colors.white38,
-              size: 20,
-            ),
-            onPressed: () => safeSetState(
-              () => _model.pinFieldVisibility = !_model.pinFieldVisibility,
-            ),
-          ),
-        ),
-        if (_model.errorMessage != null) ...[
-          const SizedBox(height: 14),
-          _errorBox(_model.errorMessage!),
-        ],
-        const SizedBox(height: 18),
-        FFButtonWidget(
-          text: 'Log In',
-          onPressed: _model.isLoading ? null : _handleStaffLogin,
-          options: FFButtonOptions(
-            width: double.infinity,
-            height: 52,
-            color: kBrandGold,
-            textStyle: GoogleFonts.interTight(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            elevation: 0,
-          ),
-          showLoadingIndicator: _model.isLoading,
         ),
       ],
     );
