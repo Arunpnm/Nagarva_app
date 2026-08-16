@@ -33,18 +33,15 @@
 // that one call, after the service-role client has done the
 // authorization check and the org_id -> email resolution.
 //
-// REDIRECT: explicitly nagarva.netlify.app, NOT the project's configured
-// Site URL default. Confirmed live (16 Aug 2026 redirect-issue report)
-// that Site URL / the app's own emailRedirectTo-less signUp() calls
-// currently resolve to link.nagarva.in, a static site with no root page
-// that 404s on every link. Hardcoding the known-working Flutter web
-// build here avoids inheriting that same break for this specific flow.
-// Requires https://nagarva.netlify.app to be present in Supabase's
-// Redirect URLs allow-list — if it is not, GoTrue silently falls back to
-// Site URL instead of rejecting the call, so this will look like it
-// worked but still land the owner on the same broken page. Not
-// independently verified from this session (no Dashboard access) — check
-// this before relying on the reset link working end to end.
+// REDIRECT: explicitly link.nagarva.in, NOT the project's configured Site
+// URL default. Updated 17 Aug 2026 to match kAuthRedirectUrl — its own
+// relay page is confirmed live (renders "Email confirmed", forwards the
+// full URL fragment to nagarva://auth-callback), which is what actually
+// triggers this app's native auto-login path (backend/auth_deep_link.dart)
+// on Android. Requires https://link.nagarva.in to be present in
+// Supabase's Redirect URLs allow-list — if it is not, GoTrue silently
+// falls back to Site URL instead of rejecting the call, so this will look
+// like it worked but land the owner somewhere else entirely.
 //
 // AUTHORISATION: platform_admins membership, checked here under the
 // service role — same pattern as admin-update-org.
@@ -60,7 +57,7 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Keep in sync with lib/config/app_config.dart's kAuthRedirectUrl —
 // can't share the literal across Dart/Deno, same value by convention.
-const RESET_REDIRECT_TO = "https://nagarva.netlify.app";
+const RESET_REDIRECT_TO = "https://link.nagarva.in";
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },

@@ -27,17 +27,29 @@ const String kPublicBaseUrl = String.fromEnvironment(
 );
 
 /// Web origin Supabase Auth should redirect to after a confirmation or
-/// password-reset email — the actual Flutter web build, deliberately NOT
-/// [kPublicBaseUrl]. Confirmed live 16 Aug 2026: `link.nagarva.in` is a
-/// separate static site with no Supabase client and no root page at all
-/// — every auth email that fell through to the project's Auth dashboard
-/// Site URL default landed there and 404d, successful confirmation or
-/// not. Pass this explicitly on every client-side auth call that sends
-/// an email (`signUp()`'s `emailRedirectTo`, `resetPasswordForEmail()`'s
-/// `redirectTo`) rather than relying on that default. Requires this exact
-/// URL to be present in Supabase's Redirect URLs allow-list, or GoTrue
-/// silently falls back to Site URL instead of rejecting the call.
-const String kAuthRedirectUrl = 'https://nagarva.netlify.app';
+/// password-reset email. Pass this explicitly on every client-side auth
+/// call that sends an email (`signUp()`'s `emailRedirectTo`,
+/// `resetPasswordForEmail()`'s `redirectTo`) rather than relying on the
+/// Auth dashboard's Site URL default — see the 16 Aug 2026 redirect-issue
+/// report for why that default can't be trusted blindly. Requires this
+/// exact URL to be present in Supabase's Redirect URLs allow-list, or
+/// GoTrue silently falls back to Site URL instead of rejecting the call.
+///
+/// 17 Aug 2026: changed from the Flutter web build (nagarva.netlify.app,
+/// set 16 Aug 2026 when this session's own read of link.nagarva.in found
+/// a 404 at root — that read was of a pre-deploy state) to link.nagarva.in
+/// now that its relay page is confirmed live: renders "Email confirmed"
+/// and forwards the full URL fragment to `nagarva://auth-callback`
+/// (AndroidManifest.xml's intent-filter, handled by
+/// backend/auth_deep_link.dart) — the actual trigger for this app's
+/// native auto-login path. Not [kPublicBaseUrl] — that constant is for
+/// customer-facing shareable links (survey/quote/track), a separate
+/// concern that happens to be hosted on the same domain.
+///
+/// Keep supabase/functions/admin-reset-owner-password/index.ts's
+/// RESET_REDIRECT_TO in sync — same value by convention, can't share the
+/// literal across Dart/Deno.
+const String kAuthRedirectUrl = 'https://link.nagarva.in';
 
 /// Builds a customer-facing shareable link.
 ///
