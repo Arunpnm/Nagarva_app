@@ -27,6 +27,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
   bool _loading = true;
   bool _togglingActive = false;
   bool _updatingTrial = false;
+  bool _resettingPassword = false;
   String? _ownerEmail;
   bool _ownerEmailUnavailable = false;
   int _orders = 0;
@@ -200,6 +201,63 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
     await _setTrialDate(base.add(Duration(days: days)));
   }
 
+  /// Vendor management, reset-password only (16 Aug 2026) — routed through
+  /// admin-reset-owner-password, which resolves this org's owner and
+  /// triggers Supabase's own recovery email; nothing here ever sees a
+  /// password. See that function's own header for why it exists as an
+  /// Edge Function rather than a plain client-side
+  /// resetPasswordForEmail() call (org_id -> owner email resolution needs
+  /// the service role; this org may not even have get_org_owner_email's
+  /// migration run yet, same gap _load() already works around above).
+  Future<void> _resetOwnerPassword() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Send password reset?'),
+        content: Text(
+            'A password-reset email will be sent to ${_org.name}\'s owner. '
+            'They\'ll need to open it and follow the link to set a new '
+            'password.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Send reset email'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _resettingPassword = true);
+    try {
+      final res = await SupaFlow.client.functions.invoke(
+        'admin-reset-owner-password',
+        body: {'org_id': _org.id},
+      );
+      final body = res.data;
+      if (body is! Map || body['ok'] != true) {
+        throw Exception(
+          (body is Map ? body['error'] as String? : null) ??
+              'Could not send reset email.',
+        );
+      }
+      final email = body['email'] as String? ?? 'the owner';
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Password reset email sent to $email.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not send reset email: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _resettingPassword = false);
+    }
+  }
+
   Widget _row(FlutterFlowTheme theme, String label, String value) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
@@ -358,6 +416,18 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                     icon: Icon(_org.active ? Icons.block : Icons.check_circle),
                     label: Text(
                         _org.active ? 'Suspend Tenant' : 'Reactivate Tenant'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _resettingPassword ? null : _resetOwnerPassword,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.lock_reset),
+                    label: const Text('Send Password Reset'),
                   ),
                 ),
               ],
