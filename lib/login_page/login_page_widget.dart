@@ -1,15 +1,14 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/device_org_binding.dart';
-import '/backend/platform_admin_status.dart';
+import '/backend/pending_auth_message.dart';
 import '/backend/supabase/supabase.dart';
-import '/backend/supabase/org_session_loader.dart';
+import '/backend/vendor_org_resolver.dart';
 import '/config/app_config.dart';
 import '/components/org_switcher_sheet.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
-import '/staff_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login_page_model.dart';
@@ -49,6 +48,13 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => LoginPageModel());
+    // Email-confirmation deep link handler (main.dart) routes here on
+    // failure with a message stashed for exactly this screen — see
+    // PendingAuthMessage's own doc comment for why this bridge exists.
+    final pendingError = PendingAuthMessage.takeAndClear();
+    if (pendingError != null) {
+      _model.errorMessage = pendingError;
+    }
     // main.dart restores AppSession from a persisted Supabase session
     // before runApp() runs, but nothing ever acted on that — this page
     // rendered the login form unconditionally regardless, so a browser
@@ -94,109 +100,20 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         throw Exception('Invalid email or password.');
       }
 
+      // NG-BRIEF-vendor-auth-flow.md §2a/§2b recovery path (org_members
+      // empty -> read org_name/phone/owner_name back out of auth metadata
+      // -> create-org) now lives in vendor_org_resolver.dart, shared with
+      // the email-confirmation deep-link auto-login path (main.dart) —
+      // extracted 17 Aug 2026 rather than duplicated a second time.
+      final availableOrgs = await resolveVendorOrgs(
+        user,
+        promptForOrgName: () => _promptForBusinessName(context),
+      );
+
       // Every org this user belongs to (not just the first) — a consultant
       // or owner can be linked to more than one, and used to silently pick
-      // members.first, ignoring the rest. See app_session.dart's
-      // OrgMembershipInfo / availableOrgs.
-      var members = await OrgMembersTable().queryRows(
-        queryFn: (q) => q.eq('user_id', user.id),
-      );
-      var orgIds = members.map((m) => m.orgId).whereType<String>().toList();
-
-      if (orgIds.isEmpty) {
-        // NG-BRIEF-vendor-auth-flow.md §2a — recovery, not an error.
-        // "Confirm email" now being ON means create-org never ran at
-        // signup (signup_page_widget.dart stops at session == null and
-        // never reaches its create-org call). A confirmed, correctly-
-        // authenticated user with zero org_members rows is exactly what
-        // that leaves behind — this is that user's first chance to ever
-        // get one, not a hostile account. create_org_with_owner() is
-        // idempotent, so this is also the one-time repair for anyone
-        // already stuck this way (krish8464@gmail.com and any other
-        // pre-existing orphan) — no separate data-repair script needed.
-        final meta = user.userMetadata ?? const <String, dynamic>{};
-        var orgName = (meta['org_name'] as String?)?.trim();
-        final metaPhone = (meta['phone'] as String?)?.trim();
-        // §3: forwarded for consistency with signup_page_widget.dart's own
-        // create-org call — not yet read server-side either (see that
-        // file's comment on the same field), safe/forward-compatible
-        // either way. Absent for anyone who signed up before this pass.
-        final metaOwnerName = (meta['owner_name'] as String?)?.trim();
-
-        if (orgName == null || orgName.isEmpty) {
-          // §2b: no stashed metadata means this account signed up before
-          // this fix existed (or via some other path) — there's no
-          // company name anywhere to fall back to, and the brief is
-          // explicit: never silently default it to the email address.
-          // Ask, once, right here.
-          if (!mounted) return;
-          orgName = await _promptForBusinessName(context);
-          if (orgName == null || orgName.trim().isEmpty) {
-            safeSetState(() {
-              _model.errorMessage =
-                  'A business name is required to finish setting up your account.';
-              _model.isLoading = false;
-            });
-            return;
-          }
-          orgName = orgName.trim();
-        }
-
-        final res = await SupaFlow.client.functions.invoke(
-          'create-org',
-          body: {
-            'org_name': orgName,
-            if (metaPhone != null && metaPhone.isNotEmpty) 'phone': metaPhone,
-            if (metaOwnerName != null && metaOwnerName.isNotEmpty)
-              'owner_name': metaOwnerName,
-          },
-        );
-        final data = res.data;
-        if (data is! Map || data['ok'] != true) {
-          final serverError = (data is Map && data['error'] is String)
-              ? data['error'] as String
-              : null;
-          throw Exception(serverError ??
-              'Could not set up your organization. Please try again.');
-        }
-        // caller_role is the one field allowed to gate a vendor session
-        // out of this recovery path too — same rule signup_page_widget.dart
-        // uses, never combined with any other flag.
-        if (data['caller_role'] != 'owner') {
-          throw Exception('This account is not linked to any organization.');
-        }
-
-        members = await OrgMembersTable().queryRows(
-          queryFn: (q) => q.eq('user_id', user.id),
-        );
-        orgIds = members.map((m) => m.orgId).whereType<String>().toList();
-        if (orgIds.isEmpty) {
-          // create-org just reported ok:true — this would mean the
-          // immediately-following read raced or failed independently.
-          // Never trust a round-trip blindly; fail loudly instead of
-          // silently re-entering the same dead end.
-          throw Exception(
-              'Could not set up your organization. Please try again.');
-        }
-      }
-
-      final orgRows = await OrganizationsTable().queryRows(
-        queryFn: (q) => q.inFilter('id', orgIds),
-      );
-      final orgNameById = {for (final o in orgRows) o.id!: o.name};
-      final roleByOrgId = {
-        for (final m in members)
-          if (m.orgId != null) m.orgId!: m.role,
-      };
-      final availableOrgs = orgIds
-          .map((id) => OrgMembershipInfo(
-                orgId: id,
-                orgName: orgNameById[id] ?? '(unnamed org)',
-                role: roleByOrgId[id],
-              ))
-          .toList();
-
-      String orgId = orgIds.first;
+      // availableOrgs.first, ignoring the rest.
+      String orgId = availableOrgs.first.orgId;
       if (availableOrgs.length > 1) {
         if (!mounted) return;
         // Stash the list before the picker needs it (showOrgSwitcherSheet
@@ -208,26 +125,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         if (chosen != null) orgId = chosen;
       }
 
-      final sessionData = await loadOrgSessionData(orgId);
-      AppSession.instance.setVendorSession(
-        authUserId: user.id,
-        orgId: sessionData.orgId,
-        orgName: sessionData.orgName,
-        orgSlug: sessionData.orgSlug,
-        logoUrl: sessionData.logoUrl,
-        limits: sessionData.limits,
-        features: sessionData.features,
-        planName: sessionData.planName,
-        planStatus: sessionData.planStatus,
-        trialEndsAt: sessionData.trialEndsAt,
-        orgActive: sessionData.orgActive,
-        availableOrgs: availableOrgs,
-      );
-
-      // Remember this vendor session so a later staff PIN unlock can be
-      // Locked back to it without re-entering email/password (Option A).
-      await StaffAuth.saveVendorRefreshToken();
-      await refreshPlatformAdminStatus();
+      await establishVendorSession(user, orgId, availableOrgs);
 
       if (mounted) context.go(HomePageWidget.routePath);
     } catch (e) {

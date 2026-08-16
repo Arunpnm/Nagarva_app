@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/approval_queue.dart';
 import '/backend/survey_queue.dart';
+import '/backend/auth_deep_link.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/session_logout.dart';
@@ -96,6 +97,15 @@ void main() async {
   GoogleFonts.config.allowRuntimeFetching = true;
 
   await SupaFlow.initialize();
+
+  // Email-confirmation deep link, cold start — checked first, before the
+  // ordinary session-recovery wait below, since a fresh confirmation is a
+  // brand-new device/install with no persisted session to wait for at
+  // all. On success this populates AppSession the same way the "restore
+  // full session" block further down does, so that block's own
+  // `AppSession.instance.currentOrgId == null` guard naturally skips —
+  // no double-work, no conflict. See auth_deep_link.dart's own header.
+  await AuthDeepLinkHandler.handleInitialLink();
 
   // supabase_flutter's local-storage session recovery (recoverSession())
   // runs in the background and is NOT awaited by Supabase.initialize() —
@@ -317,6 +327,10 @@ class _MyAppState extends State<MyApp> {
 
     _appStateNotifier = AppStateNotifier.instance;
     _router = createRouter(_appStateNotifier);
+    // Email-confirmation deep link, warm resume (the app was already
+    // running when the link arrived) — cold start is handled separately,
+    // before runApp(), in main(). See auth_deep_link.dart's own header.
+    AuthDeepLinkHandler.startListening(_router);
   }
 
   void setLocale(String language) {

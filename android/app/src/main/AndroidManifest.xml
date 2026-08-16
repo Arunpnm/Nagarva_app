@@ -41,11 +41,29 @@
             </intent-filter>
             <!-- Deep linking -->
             <meta-data android:name="flutter_deeplinking_enabled" android:value="true" />
+            <!-- Stale, pre-rename leftover (still literally "arunpkrs") and never
+                 wired to any Dart code — left as-is per instruction, flagged here
+                 for a rename to something Nagarva-branded next time this file is
+                 touched. Not the scheme email confirmation now uses; see below. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="arunpkrs" android:host="arunpkrs.com" />
+            </intent-filter>
+            <!-- Email confirmation deep link (16 Aug 2026). The
+                 link.nagarva.in confirmation landing page forwards to
+                 nagarva://auth-callback#access_token=...&refresh_token=...&type=signup
+                 — caught here and handled in main.dart via the app_links
+                 package (getInitialLink for cold start, uriLinkStream for warm
+                 resume). No autoVerify: that flag is for Android App Links
+                 (Digital Asset Links over https), meaningless for a custom
+                 scheme like this one. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="nagarva" android:host="auth-callback" />
             </intent-filter>
 
         </activity>
@@ -60,4 +78,17 @@
 
 
     </application>
+
+    <!-- Android 11+ (API 30, this app's targetSdkVersion is 36) filters
+         package-visibility queries by default — without this, AndroidIntent's
+         canResolveActivity()/launch() (signup_success_dialog.dart's "Open
+         Email App" button) would see no matching activity even when a real
+         email app is installed, since the OS hides other apps' components
+         from a query unless explicitly declared here. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_EMAIL" />
+        </intent>
+    </queries>
 </manifest>

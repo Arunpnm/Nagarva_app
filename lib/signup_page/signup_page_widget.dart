@@ -6,6 +6,8 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
+import '/widgets/signup_success_dialog.dart';
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -97,11 +99,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
 
       final user = authResponse.user;
       if (user == null) {
-        safeSetState(() {
-          _model.errorMessage =
-              'Account created — please confirm your email, then log in.';
-          _model.isLoading = false;
-        });
+        await _presentSignupSuccess(email: email, orgName: company);
         return;
       }
 
@@ -134,11 +132,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       // fully going away, and so this screen behaves correctly either way
       // without needing to know which mode the project is in.
       if (authResponse.session == null) {
-        safeSetState(() {
-          _model.errorMessage =
-              'Account created — please confirm your email, then log in.';
-          _model.isLoading = false;
-        });
+        await _presentSignupSuccess(email: email, orgName: company);
         return;
       }
 
@@ -222,6 +216,61 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
         _model.errorMessage = e.toString().replaceFirst('Exception: ', '');
         _model.isLoading = false;
       });
+    }
+  }
+
+  /// Success path for "Confirm email" being on — replaces the old inline
+  /// "Account created — please confirm your email" banner, which rendered
+  /// in this page's error-red styling despite being a success (16 Aug
+  /// 2026 finding). The inline banner (_model.errorMessage) stays for
+  /// actual signup FAILURES only; this is the only success path now.
+  Future<void> _presentSignupSuccess({
+    required String email,
+    required String orgName,
+  }) async {
+    final onOpenEmail = await _resolveOpenEmailAction();
+    if (!mounted) return;
+    await showSignupSuccess(
+      context,
+      email: email,
+      orgName: orgName,
+      onLogin: () {
+        if (mounted) context.go(LoginPageWidget.routePath);
+      },
+      onResend: () => SupaFlow.client.auth.resend(
+        type: OtpType.signup,
+        email: email,
+        emailRedirectTo: kAuthRedirectUrl,
+      ),
+      onOpenEmail: onOpenEmail,
+    );
+    if (mounted) safeSetState(() => _model.isLoading = false);
+  }
+
+  /// android_intent_plus's canResolveActivity() needs the matching
+  /// `<queries>` declaration in AndroidManifest.xml (Android 11+ package
+  /// visibility filtering) — added alongside this. Resolved BEFORE the
+  /// dialog is shown, not at tap-time: if this throws, isn't Android
+  /// (canResolveActivity() itself returns false off-Android), or finds no
+  /// matching app, the dialog's "Open Email App" button doesn't render at
+  /// all rather than showing a control that would silently do nothing.
+  Future<VoidCallback?> _resolveOpenEmailAction() async {
+    try {
+      const intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        category: 'android.intent.category.APP_EMAIL',
+      );
+      final canResolve = await intent.canResolveActivity();
+      if (canResolve != true) return null;
+      return () {
+        // Already resolvability-checked above; a failure here would be a
+        // rare race (app uninstalled between check and tap) — swallow
+        // rather than surface, same as this dialog's own "silent no-op
+        // instead of a dead control" rule.
+        intent.launch().catchError((_) {});
+      };
+    } catch (_) {
+      return null;
     }
   }
 
