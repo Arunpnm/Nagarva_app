@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '/main.dart';
 import '/app_session.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/pending_password_reset.dart';
 import '/components/coming_soon_page.dart';
 import '/nav_items.dart';
 import '/permissions.dart';
@@ -101,7 +102,8 @@ bool _isTopLevelNavRoute(String routeName) =>
     kFieldStaffNavItems.any((i) => i.name == routeName);
 
 bool _routeAllowedForCurrentSession(String routeName) {
-  if (AppSession.instance.currentStaffId == null) return true; // owner/vendor: never filtered
+  if (AppSession.instance.currentStaffId == null)
+    return true; // owner/vendor: never filtered
   if (isOwnerOrManagerSession) {
     // Manager: same permission-driven set main.dart's _navItems computes.
     // Null (not loaded yet) fails open rather than bouncing a fresh
@@ -230,9 +232,18 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           // LoginPageWidget's new "Joining a team? Use an org or invite
           // code" link, for the fallback case of a staff member who
           // installed the app manually.
-          builder: (context, _) => DeviceOrgBinding.isBound
-              ? const PinLoginPageWidget()
-              : const LoginPageWidget(),
+          // 17 Aug 2026: a type=recovery deep link processed before
+          // runApp() (main()'s AuthDeepLinkHandler.handleInitialLink(),
+          // cold start — there is no live GoRouter yet at that point for
+          // an explicit router.go()) sets PendingPasswordReset.active as
+          // a side effect. Checked first, ahead of the ordinary bound/
+          // unbound branch, so that flag is the one thing that can
+          // override where a cold start lands.
+          builder: (context, _) => PendingPasswordReset.active
+              ? const SetNewPasswordPageWidget()
+              : (DeviceOrgBinding.isBound
+                  ? const PinLoginPageWidget()
+                  : const LoginPageWidget()),
         ),
         FFRoute(
           name: LoginPageWidget.routeName,
@@ -243,6 +254,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: PinLoginPageWidget.routeName,
           path: PinLoginPageWidget.routePath,
           builder: (context, params) => const PinLoginPageWidget(),
+        ),
+        FFRoute(
+          name: SetNewPasswordPageWidget.routeName,
+          path: SetNewPasswordPageWidget.routePath,
+          builder: (context, params) => const SetNewPasswordPageWidget(),
         ),
         FFRoute(
           name: OrgBindingPageWidget.routeName,
