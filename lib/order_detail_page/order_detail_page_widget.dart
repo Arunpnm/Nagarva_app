@@ -1306,6 +1306,11 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         ),
                       ),
                     ),
+                    // Hidden until /track is actually hosted. The page and
+                    // the token plumbing both work; the path has simply
+                    // never been deployed, so this could only hand a
+                    // customer a dead link. See kTrackLinkHosted.
+                    if (kTrackLinkHosted)
                     Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(
                           0.0, 14.0, 0.0, 0.0),

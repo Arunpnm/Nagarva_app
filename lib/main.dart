@@ -15,6 +15,7 @@ import '/backend/approval_queue.dart';
 import '/backend/survey_queue.dart';
 import '/backend/auth_deep_link.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/crash_reporting.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/session_logout.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -83,6 +84,16 @@ void _installErrorHandlers() {
 }
 
 void main() async {
+  // Crash reporting wraps the ENTIRE startup, including
+  // WidgetsFlutterBinding and every await below, so a crash during
+  // Supabase init or session restore is captured too — those are exactly
+  // the failures a tester cannot describe usefully over WhatsApp.
+  // No DSN configured -> this runs _startApp directly and changes
+  // nothing.
+  await initCrashReporting(_startApp);
+}
+
+Future<void> _startApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   _installErrorHandlers();
   GoRouter.optionURLReflectsImperativeAPIs = true;

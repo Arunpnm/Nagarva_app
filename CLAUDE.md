@@ -816,6 +816,75 @@ decision rather than falling out of a build.**
    considered were deriving from the customer's `from_city` and
    round-robin assignment.
 
+### Public link paths — which are hosted, and what "unhosted" means
+(19 Aug 2026. Read this before deleting SurveyPage/QuotePage/SignPage/
+TrackPage — they are BUILT AND CORRECT, just not hosted anywhere.)
+
+The app mints token links for four customer-facing paths. Only some are
+served. `kSurveyLinkHosted` / `kSignLinkHosted` / `kQuoteLinkHosted` /
+`kTrackLinkHosted` in `lib/config/app_config.dart` gate the SHARE
+AFFORDANCE only — never the page code, never the token plumbing.
+
+| Path | Minted by | Hosted? |
+|---|---|---|
+| `/survey` | `leads_page_widget.dart` | yes (hand-written static site) |
+| `/sign` | `backend/signature_service.dart` | yes (same site) |
+| `/quote` | `survey_quote_hub_page_widget.dart` | **never, by anything** |
+| `/track` | `order_detail_page_widget.dart`, `order_documents_section.dart` | **never deployed** |
+
+`/quote` needs a page AND an RPC — there is no `public_*` function for
+quotations, unlike survey and signature which have two each. `/track`
+needs only hosting; the Flutter TrackPage works.
+
+Quote and Track share buttons are HIDDEN as of 19 Aug 2026. A button
+that hands a customer a dead link is the same class of trust damage as
+the invented demo data was: the vendor looks incompetent in front of
+their own customer and cannot tell it was our fault. Flip the flag when
+the page is live, and verify by opening a real token link in a browser
+— not by reading a deploy log.
+
+**Live state, 19 Aug 2026 — worse than a 404.** After the drag-drop
+incident, EVERY path on link.nagarva.in serves the `/auth` relay page:
+`/survey`, `/sign`, `/quote`, `/track` all return "Email confirmed —
+Your Nagarva account is ready." Verified by fetching both paths. A
+customer following a survey link is told their Nagarva account is
+ready, which reads as a broken or phishing link from their mover. A
+plain 404 would be less damaging, because it reads as "link expired".
+Restoring the pre-drag-drop deploy is what fixes this; the recovered
+files must then go into git alongside `web/auth/index.html` and
+`web/_redirects` so the site is never unversioned again.
+
+### Crash reporting — Sentry (19 Aug 2026)
+`lib/backend/crash_reporting.dart`. DSN and environment come from
+`--dart-define` (`NAGARVA_SENTRY_DSN`, `NAGARVA_SENTRY_ENV`) — no DSN
+means reporting is silently off, so a forgotten flag is silence, not a
+crash. `dev` is the default; use `tester` for shared builds.
+
+**The scrubbing is access control, not hygiene.** A signature token in
+Sentry is a LIVE CREDENTIAL — anyone holding it can sign as that
+customer. `sendDefaultPii: false`, request bodies dropped entirely,
+screenshots and view-hierarchy capture off (they would photograph
+customer data), tracing off. On top of that, regex redaction of token
+query params, bare JWTs, Indian mobile numbers and GSTINs across
+messages, exception values, URLs and breadcrumbs.
+
+`test/crash_redaction_test.dart` (12 tests) exists because the first
+version of the phone pattern used `\b`, which cannot match between two
+digits — so `+919845011001`, the most common pasted format, sailed
+straight through. Digit-run boundaries now use lookaround. Do not
+"simplify" those patterns without running that test.
+
+### `isOwnerOrManagerSession` included 'admin' as of 19 Aug 2026
+It previously matched only the literal strings `'owner'` and
+`'manager'` — but **no `staff` row has ever had role `'owner'`**. The
+role dropdown offers **admin**, manager, supervisor, driver, helper,
+packer, and `permissions.dart` treats `admin` as owner-equivalent. So
+an admin-role staff session was denied owner-level navigation
+everywhere: drawer, bottom nav, home redirect, approval badge. SQL had
+it right the whole time (`is_org_manager()` matches
+`role in ('owner','admin','manager')`), so the app and the database
+disagreed about who an admin was. Keep the two definitions in step.
+
 ## Device binding — two paths, and they are NOT equivalent
 (New section, 19 Aug 2026. Written because the difference cost real
 time during the 19 Aug emulator pass, and because it will confuse a

@@ -195,3 +195,35 @@ String buildWhatsAppLink({String? phone, required String message}) {
   final withCode = digits.length == 10 ? '91$digits' : digits;
   return 'https://wa.me/$withCode?text=$encoded';
 }
+
+// ---------------------------------------------------------------------------
+// Which public pages are ACTUALLY HOSTED on kPublicBaseUrl
+// ---------------------------------------------------------------------------
+//
+// The app can mint a token link for four customer-facing paths, but
+// link.nagarva.in only serves some of them. A button that hands a
+// customer a dead link is the same class of trust damage as the invented
+// demo data was — the vendor looks incompetent in front of their own
+// customer, and they cannot tell it was our fault.
+//
+// So these flags gate the SHARE AFFORDANCE, not the code behind it. The
+// pages and token plumbing are built and correct; they are simply not
+// hosted yet. Nobody should delete SurveyPage/QuotePage/SignPage/
+// TrackPage on the strength of these being false.
+//
+// Flip to true the moment the corresponding page is live, and verify by
+// opening a real token link in a browser first — not by reading the
+// deploy log.
+//
+// Status, 19 Aug 2026:
+//   survey  — hosted (hand-written static site; restored after the
+//             drag-drop incident)
+//   sign    — hosted (same site)
+//   quote   — NEVER hosted by anything, at any point. No public_* RPC for
+//             quotations exists either, so this needs a page AND an RPC.
+//   track   — not deployed yet. This repo has a working TrackPage widget;
+//             it has simply never been hosted anywhere.
+const bool kSurveyLinkHosted = true;
+const bool kSignLinkHosted = true;
+const bool kQuoteLinkHosted = false;
+const bool kTrackLinkHosted = false;

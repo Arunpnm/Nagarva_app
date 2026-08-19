@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -42,17 +41,15 @@ class ArrivalCodeCardState extends State<ArrivalCodeCard> {
   String? _status;
   String? _supervisorStatus;
 
-  /// Owner, manager or admin. `isOwnerOrManagerSession` alone is not
-  /// enough: it tests for the literal roles 'owner'/'manager', while the
-  /// staff form actually offers 'admin' as the owner-equivalent role (see
-  /// permissions.dart, and is_org_manager() in SQL, which includes all
-  /// three). An admin-role session would otherwise be locked out of a
-  /// screen they administer.
-  bool get _canSee {
-    if (AppSession.instance.currentStaffId == null) return true; // vendor
-    final role = AppSession.instance.currentStaffRole;
-    return role == 'owner' || role == 'manager' || role == 'admin';
-  }
+  /// Owner, manager or admin — the same set `is_org_manager()` uses in
+  /// SQL.
+  ///
+  /// This originally carried its own role check because
+  /// `isOwnerOrManagerSession` omitted 'admin', which is the role the
+  /// staff form actually offers. That getter was fixed on 19 Aug 2026,
+  /// so this now defers to it: one definition of "owner-level session",
+  /// not two that can drift apart.
+  bool get _canSee => isOwnerOrManagerSession;
 
   @override
   void initState() {

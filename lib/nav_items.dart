@@ -157,13 +157,27 @@ const kFieldStaffNavItems = <NavItem>[
 
 /// Canonical "is this session owner-or-manager" check for nav purposes —
 /// a vendor session (no staff identity) or a staff session whose role is
-/// `owner`/`manager`. Mirrors the permission-model decision's answer to
+/// owner-equivalent. Mirrors the permission-model decision's answer to
 /// the "manager nav gate" question: checks `staff.role`, never
 /// `org_members.role`.
+///
+/// **`admin` is included, and its absence was a live bug** (found 19 Aug
+/// 2026, fixed same day). This checked only the literal strings 'owner'
+/// and 'manager', but no `staff` row has ever had role 'owner' — the
+/// role dropdown in `staff_form_sheet.dart` offers **admin**, manager,
+/// supervisor, driver, helper, packer, and `permissions.dart` treats
+/// `admin` as the owner-equivalent role. So an admin-role staff session
+/// was denied owner-level navigation everywhere this getter is used:
+/// the drawer, the bottom nav, the home redirect and the Operations
+/// approval badge.
+///
+/// The SQL side already had this right — `is_org_manager()` matches
+/// `role in ('owner','admin','manager')` — so the database and the app
+/// disagreed about who an admin was. Keep these two definitions in step.
 bool get isOwnerOrManagerSession {
   if (AppSession.instance.currentStaffId == null) return true;
   final role = AppSession.instance.currentStaffRole;
-  return role == 'owner' || role == 'manager';
+  return role == 'owner' || role == 'admin' || role == 'manager';
 }
 
 /// The role-appropriate home destination (Users Kickoff Step 2.2/2.3

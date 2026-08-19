@@ -206,7 +206,10 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
                 }.withoutNulls,
               ),
             ),
-          if ((q.token ?? '').isNotEmpty)
+          // Hidden until /quote is actually hosted — it never has been,
+          // by anything, so this button could only ever hand a customer a
+          // dead link. See kQuoteLinkHosted in app_config.dart.
+          if (kQuoteLinkHosted && (q.token ?? '').isNotEmpty)
             IconButton(
               tooltip: 'Share quote link',
               icon: const Icon(Icons.share, size: 18),

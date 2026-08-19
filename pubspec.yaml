@@ -100,6 +100,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.0
   android_intent_plus: 6.1.0
+  sentry_flutter: 9.27.0
 
 dependency_overrides:
   http: 1.4.0

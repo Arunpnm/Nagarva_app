@@ -1318,7 +1318,9 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               if (!paid)
                 _utilityButton(
                     'Send Pay Link', Icons.send, _sendPayLink),
-              _utilityButton('Copy Track Link', Icons.link, _copyTrackLink),
+              // See kTrackLinkHosted — /track is built but unhosted.
+              if (kTrackLinkHosted)
+                _utilityButton('Copy Track Link', Icons.link, _copyTrackLink),
               _utilityButton(
                   '⧉ Copy',
                   Icons.copy_all,
