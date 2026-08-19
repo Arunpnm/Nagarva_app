@@ -1,5 +1,7 @@
+import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/keyboard_scroll_view.dart';
@@ -69,6 +71,20 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
     _model.dispose();
 
     super.dispose();
+  }
+
+  // Item 11 sweep (16 Aug 2026): vehicles had soft-delete columns and a
+  // working recycle-bin entry but no delete UI anywhere to reach it from.
+  Future<void> _deleteVehicle(VehiclesRow v) async {
+    final deleted = await DeleteAction.run(
+      context,
+      table: 'vehicles',
+      id: v.id!,
+      entityLabel: 'vehicle',
+      check: () async => DeleteCheck.allow,
+      onDeleted: _loadVehicles,
+    );
+    if (deleted) await _loadVehicles();
   }
 
   /// Insurance/permit expiry chip: red when expired, amber when due within
@@ -499,40 +515,22 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                                                                 .fontStyle,
                                                       ),
                                             ),
-                                            Text(
-                                              '',
-                                              style:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .override(
-                                                        font: GoogleFonts.inter(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
+                                            IconButton(
+                                              tooltip: 'Delete vehicle',
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              icon: Icon(
+                                                  Icons.delete_outline,
+                                                  size: 18,
+                                                  color: FlutterFlowTheme.of(
+                                                          context)
+                                                      .error),
+                                              onPressed: vehiclesListItemItem
+                                                          .id ==
+                                                      null
+                                                  ? null
+                                                  : () => _deleteVehicle(
+                                                      vehiclesListItemItem),
                                             ),
                                           ],
                                         ),

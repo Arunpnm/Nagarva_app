@@ -1,5 +1,7 @@
+import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/delete_action.dart';
 import '/components/load_error_state.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -102,6 +104,20 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
   Future<void> _openMaterial(String id) async {
     await showMaterialDetailSheet(context, id);
     if (mounted) _loadMaterials();
+  }
+
+  // Item 11 sweep (16 Aug 2026): materials had soft-delete columns and a
+  // working recycle-bin entry but no delete UI anywhere to reach it from.
+  Future<void> _deleteMaterial(MaterialsRow m) async {
+    final deleted = await DeleteAction.run(
+      context,
+      table: 'materials',
+      id: m.id!,
+      entityLabel: 'material',
+      check: () => SoftDeleteService.canDeleteMaterial(m),
+      onDeleted: _loadMaterials,
+    );
+    if (deleted) await _loadMaterials();
   }
 
   Future<void> _newMaterial() async {
@@ -247,6 +263,13 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                         ),
                   ),
                 ),
+              ),
+              IconButton(
+                tooltip: 'Delete material',
+                visualDensity: VisualDensity.compact,
+                icon: Icon(Icons.delete_outline,
+                    size: 18, color: FlutterFlowTheme.of(context).error),
+                onPressed: m.id == null ? null : () => _deleteMaterial(m),
               ),
             ],
           ),
