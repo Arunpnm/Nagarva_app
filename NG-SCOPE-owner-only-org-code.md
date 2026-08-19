@@ -1,7 +1,27 @@
-# Scope — org code becomes owner-only; staff bind by invite
+# Scope — org code becomes owner + manager; other staff bind by invite
 
 Decision taken by Arun, 19 Aug 2026. **Nothing built.** This is the plan
 and the numbers behind it.
+
+**Scope of the org-code path after this change: owner + managers.** Not
+owner-only. Arun, 19 Aug 2026: *"The person onboarding four packers at
+6am in a warehouse is the branch manager. A rule that forces me
+personally into every onboarding gets worked around by sharing my
+password, which is worse than what we're fixing."*
+
+That is the right call and it barely costs anything: the searched pool
+goes from 9 to **2 or 3**, not to 1. The security benefit was never
+linear in pool size — it came from removing the long tail of packers,
+drivers and helpers whose PINs are the ones most likely to be weak,
+shared, or still active after someone leaves.
+
+**Implementation note for Phase C:** Pool 2 does not disappear, it
+narrows. The filter becomes `s.role in ('admin', 'manager')` — using
+the vocabulary `permissions.dart` actually uses, where `'admin'` is the
+owner-equivalent role the staff form offers, not a literal `'owner'`
+row. `is_org_manager()` already encodes exactly this set
+(`role in ('owner','admin','manager')`), so reuse it rather than
+writing the list a second time.
 
 Live figures used throughout, read 19 Aug 2026:
 
@@ -76,10 +96,12 @@ hit *some* account ≈ 10,000 / 9 ≈ 1,111 → roughly **2.3 days** of
 unattended traffic to compromise an account on a tenant whose slug is
 public. That is a real number, not a hypothetical.
 
-This is also the strongest technical argument for the decision Arun has
-already taken: **owner-only collapses that pool from 9 to 1**, moving
-expected time to ~21 days and removing every staff PIN from the
-reachable set entirely. The binding change *is* a rate-limiting fix.
+The binding change is therefore also a rate-limiting fix: restricting
+the org-code path to owner + managers collapses that pool from **9 to 2
+or 3**, moving expected time from ~2.3 days to roughly a week and, more
+importantly, removing the long tail of packer/driver/helper PINs from
+the reachable set. But it is not a substitute for the fixes below, and
+it ships second.
 
 **3. Neither limiter has a source dimension.** Both key on the target
 (org row / staff row), never on IP or device, so an attacker is never
@@ -90,18 +112,37 @@ the one throttled. The codebase already has the pattern to fix this —
 **4. No visibility.** Nothing records or surfaces that an org was locked
 out, so a sustained attack is invisible to the owner and to us.
 
-### Proposed changes (point 4 only, shippable on its own)
+### BUILT — `supabase/20260819_pin_rate_limit_hardening.sql`
 
-- Add a **per-IP + per-org** counter alongside the per-org one and lock
-  the *source* first; only fall back to locking the org if a single org
-  is being hit from many IPs. Reuse `invite_code_rate_limit`'s GUC read.
-- **Escalating backoff instead of reset-to-zero**: 5 fails → 15 min,
-  next 5 → 1 hour, next 5 → 24 hours, decaying after a clean day. Turns
-  480 guesses/day into a few dozen.
-- Count the **owner pool and the staff pool separately**, so staff
-  fat-fingering cannot lock the owner out of their own tenant.
-- Write a row on every lockout and surface it to the owner (ties into
-  the device register in point 2).
+Written and handed over unrun, 19 Aug 2026. Ships on its own, before
+any binding work.
+
+- **`pin_ip_attempts` (org_id, client_ip)** is now the primary limiter,
+  at **10 failures** per step. Deliberately more forgiving than the old
+  per-org 5, because a whole crew on one warehouse hotspot shares a
+  public IP — and any single success from that IP clears the bucket,
+  which is what makes the shared-NAT case self-healing.
+- **Escalating backoff** via one shared `pin_lock_duration(level)`:
+  15 min → 1 hour → 24 hours, decaying after a clean 24 hours. Replaces
+  reset-to-zero on both the org path and the staff path.
+- **`org_pin_attempts` split by pool** (`owner` / `staff`, new composite
+  PK) and re-tuned to **50 failures** — a distributed-attack backstop
+  only. A packer mistyping five times now trips nothing org-wide, so it
+  can no longer lock the owner out. Each pool gets its own lock
+  duration; an owner-pool trip must never extend the staff lock.
+- **`pin_lockout_events`** records every lockout, readable by owner and
+  managers under RLS.
+
+**One finding that would have made this useless.** The GUC pattern from
+`invite_code_rate_limit` works there because Dart calls that RPC
+directly over PostgREST. `verify_org_pin` is called by the `pin-login`
+Edge Function under service_role, so the GUC carries the EDGE
+FUNCTION's IP — every vendor would share one bucket and the limiter
+would look like it worked while enforcing nothing. So the function
+takes `p_client_ip` and the Edge Function must forward it. The
+parameter defaults to null, so the migration is safe to run before the
+function is redeployed; the exact Edge Function diff is at the bottom
+of the migration file.
 
 ---
 
@@ -134,10 +175,9 @@ Grace length: **30 days**, and the date is stored per-org so Arun can
 extend a specific tenant rather than delaying everyone.
 
 **Phase C — enforce, per-org flag.**
-`verify_org_pin` stops iterating the staff pool; Pool 2 disappears and
-the function becomes genuinely owner-only, matching what
-`device_org_binding.dart`'s comment claimed all along. Flip APC first,
-watch it, then tenants.
+`verify_org_pin`'s Pool 2 stops iterating *all* active staff and
+narrows to `role in ('admin','manager')`. Everyone else must be on an
+invite-bound device by then. Flip APC first, watch it, then tenants.
 
 **Escape hatches that must exist before Phase C:**
 - The **owner** can always bind by org code — that path is unchanged and
@@ -147,10 +187,10 @@ watch it, then tenants.
 - Email/password login remains for the owner as the last resort.
 - An owner with no working device can still get in via password reset.
 
-**Open question for Arun:** should a *manager* keep org-code access, or
-is the boundary strictly owner? Managers are the people most likely to
-onboard crew on site. Strict owner-only is the cleaner rule; manager
-inclusion is the kinder one. Not assumed either way.
+**Settled 19 Aug 2026: managers keep org-code access.** See the top of
+this document for the reasoning. The rule to implement is "owner and
+managers may sign in on an org-bound device; everyone else must bind by
+invite".
 
 ---
 
@@ -192,12 +232,27 @@ the building. With the register, both verify functions refuse a revoked
 label, last seen, and Revoke. Plus the lockout events from point 4, so
 "someone is guessing PINs against your company" is visible.
 
-**State the limitation honestly in the UI copy:** `device_id` is
-client-generated and not attested. Reinstalling the app yields a new
-id, so revoke stops *that install*, not that person. The person-level
-boundary is still `staff.active`. The register is an operational tool
-and an audit trail — it is not a security boundary, and nobody should
-be led to believe it is.
+**The limitation goes in the UI, not only in this document.** Arun,
+19 Aug 2026: *"an owner who thinks it removes the person will make a
+bad assumption at exactly the wrong moment."*
+
+`device_id` is client-generated and not attested, so reinstalling the
+app yields a new id. Revoke stops *that install*; it does not stop that
+person. Required copy, at the point of action rather than buried in
+help:
+
+- The confirm dialog reads **"Revoke removes this install"**, and says
+  in the body that the person can sign in again on a new install unless
+  their account is deactivated.
+- That dialog offers **Offboard instead** as a direct action, so the
+  owner reaching for the wrong control lands on the right one.
+- The Devices screen carries a one-line footer: *"Revoking a device
+  signs out that install. To stop someone working entirely, offboard
+  them."*
+
+The person-level boundary is still `staff.active`. The register is an
+operational tool and an audit trail — it is not a security boundary,
+and the interface must not imply otherwise.
 
 ---
 
