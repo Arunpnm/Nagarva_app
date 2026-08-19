@@ -4,6 +4,9 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+// kNotAvailableReasons — the same labels the supervisor chose from, so
+// the owner reads exactly what the supervisor selected.
+import '/supervisor_job_page/supervisor_job_page_model.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
@@ -57,6 +60,12 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   /// populated for the (small) awaiting list.
   Map<String, String> _supervisorNames = {};
   Map<String, double> _awaitingBalances = {};
+
+  /// How each awaiting job was completed, from `pod_records` — so an
+  /// unsigned completion is visible IN THE ROW, not behind a tap. Arun,
+  /// 18 Aug 2026: "The owner approving twenty jobs won't open each one."
+  /// Maps order_id -> (completion_method, not_available_reason).
+  Map<String, (String?, String?)> _awaitingPod = {};
 
   // Statuses this app ACTUALLY writes today (grep the writers before
   // editing this set): 'booked'/'pending' (new_order_page + Duplicate),
@@ -140,6 +149,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   Future<void> _loadAwaitingDetail() async {
     _supervisorNames = {};
     _awaitingBalances = {};
+    _awaitingPod = {};
     if (_awaiting.isEmpty) return;
     final orderIds = _awaiting.map((o) => o.id).whereType<String>().toList();
 
@@ -165,6 +175,24 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
         }
       } catch (_) {}
     }
+    // One bounded query for the whole queue — the completion method is
+    // the difference between "done, signed" and "done, nobody signed",
+    // which are different risks and must not look identical here.
+    try {
+      final podRows = await OrgScope.read(SupaFlow.client
+              .from('pod_records')
+              .select('order_id,completion_method,not_available_reason'))
+          .inFilter('order_id', orderIds);
+      for (final r in podRows) {
+        final oid = r['order_id'] as String?;
+        if (oid == null) continue;
+        _awaitingPod[oid] = (
+          r['completion_method'] as String?,
+          r['not_available_reason'] as String?,
+        );
+      }
+    } catch (_) {}
+
     for (final o in _awaiting) {
       if (o.id == null) continue;
       // quote_total falls back to amount for directly-booked orders —
@@ -357,6 +385,42 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                 ),
               ],
             ),
+            // Unsigned completions are called out IN THE ROW, with the
+            // reason, so an owner working through twenty jobs can triage
+            // without opening each one. A signed job gets a quiet tick;
+            // an unsigned one gets an amber line naming why.
+            if (_awaitingPod[o.id] != null) ...[
+              const SizedBox(height: 6),
+              Builder(builder: (context) {
+                final (method, reason) = _awaitingPod[o.id]!;
+                final unsigned = method == 'not_available';
+                final colour = unsigned ? Colors.orange.shade800 : theme.success;
+                return Row(
+                  children: [
+                    Icon(
+                        unsigned
+                            ? Icons.person_off_outlined
+                            : Icons.draw_outlined,
+                        size: 13,
+                        color: colour),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        unsigned
+                            ? 'Completed — ${kNotAvailableReasons[reason] ?? 'no signature'}'
+                            : 'Completed — signed by customer',
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            fontWeight:
+                                unsigned ? FontWeight.w700 : FontWeight.w500,
+                            color: colour),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            ],
             const SizedBox(height: 4),
             Text(
               '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}',

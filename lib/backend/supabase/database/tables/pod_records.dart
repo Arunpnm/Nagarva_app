@@ -65,8 +65,24 @@ class PodRecordsRow extends SupabaseDataRow {
   set damageDescription(String? value) =>
       setField<String>('damage_description', value);
 
+  // LEGACY: describes historical rows honestly and is no longer written.
+  // Superseded by completionMethod — a boolean whose name would lie
+  // ("otp_verified = false" reading as "the OTP check failed", when no
+  // OTP was ever involved) is worse than an extra column.
   bool? get otpVerified => getField<bool>('otp_verified');
   set otpVerified(bool? value) => setField<bool>('otp_verified', value);
+
+  /// signature | otp | not_available — see the column comment in
+  /// 20260818_arrival_code_and_signature_completion.sql.
+  String? get completionMethod => getField<String>('completion_method');
+  set completionMethod(String? value) =>
+      setField<String>('completion_method', value);
+
+  /// Set only when completionMethod == 'not_available'. One of
+  /// kNotAvailableReasons' keys; free text lives alongside in [remarks].
+  String? get notAvailableReason => getField<String>('not_available_reason');
+  set notAvailableReason(String? value) =>
+      setField<String>('not_available_reason', value);
 
   String? get remarks => getField<String>('remarks');
   set remarks(String? value) => setField<String>('remarks', value);

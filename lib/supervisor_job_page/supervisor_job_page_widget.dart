@@ -4,6 +4,7 @@ import '/backend/crew_sync_service.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/signature_pad.dart';
 import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -55,8 +56,24 @@ const List<String> kJobExpenseCategories = [
 ///   - Verified completion also creates a `pod_records` row and marks
 ///     `attendance` for the crew — neither was in the original brief.
 ///
-/// Security: OTP verification re-fetches `orders.job_otp` from the DB and
-/// checks against that, never trusting only the in-memory value.
+/// COMPLETION FLOW CHANGED 18 Aug 2026. The two-OTP model is gone.
+///   Arrival    -> the supervisor enters `orders.arrival_code`, which the
+///                 customer was given at confirmation. It is never shown
+///                 on the supervisor's screen — that was the flaw in the
+///                 old completion OTP, where `_generateOtp()` displayed
+///                 the code and `_verifyAndComplete()` then checked what
+///                 the supervisor typed back. The supervisor held both
+///                 halves, so it proved nothing about the customer.
+///   Completion -> the customer signs on the supervisor's phone. That
+///                 signature IS the completion event and the POD, stored
+///                 as base64 in `pod_records.signature_data`.
+///   Escape     -> "Customer not available" with a structured reason,
+///                 flagged distinctly to the owner. A flow with no
+///                 escape hatch gets worked around in the field, and the
+///                 worst workaround here is the supervisor signing it.
+///
+/// The nine completion writes are unchanged — only the gate in front of
+/// them moved.
 class SupervisorJobPageWidget extends StatefulWidget {
   const SupervisorJobPageWidget({super.key, this.orderId});
 
@@ -83,8 +100,8 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     _model.notesController ??= TextEditingController();
     _model.expenseAmountController ??= TextEditingController();
     _model.expenseNoteController ??= TextEditingController();
-    _model.enteredOtpController ??= TextEditingController()
-      ..addListener(() => safeSetState(() {}));
+    _model.arrivalCodeController ??= TextEditingController();
+    _model.notAvailableNoteController ??= TextEditingController();
     _model.kmStartController ??= TextEditingController();
     _model.kmEndController ??= TextEditingController();
     _model.receivedByNameController ??= TextEditingController();
@@ -176,7 +193,12 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       return SupervisorJobStep.done;
     }
     if (o.status == 'transit') return SupervisorJobStep.shifting;
-    if (o.supervisorStatus == 'in_progress') return SupervisorJobStep.team;
+    // in_progress means the job was accepted but shifting hasn't started,
+    // so the arrival code hasn't been entered yet — resume there rather
+    // than skipping the gate on a reopened screen.
+    if (o.supervisorStatus == 'in_progress') {
+      return SupervisorJobStep.arrivalCode;
+    }
     return SupervisorJobStep.start;
   }
 
@@ -211,7 +233,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
       );
       _model.order!.supervisorStatus = 'in_progress';
-      _model.step = SupervisorJobStep.team;
+      // Arrival code first (18 Aug 2026) — accepting the job no longer
+      // goes straight to team selection. The code is what evidences the
+      // supervisor is actually on site with the customer.
+      _model.step = SupervisorJobStep.arrivalCode;
     } catch (e) {
       _showError(e);
     } finally {
@@ -347,20 +372,34 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     return trip.kmStart != null && trip.kmEnd == null;
   }
 
-  Future<void> _generateOtp() async {
+  /// The status-history note. Says how the job was proven complete, so
+  /// the timeline itself records the difference rather than requiring a
+  /// join to pod_records.
+  String _completionNote(String method) => method == kCompletionSignature
+      ? '🎉 Job completed — signed by '
+          '${_model.receivedByNameController!.text.trim()}'
+      : '⚠️ Job completed WITHOUT signature — '
+          '${kNotAvailableReasons[_model.notAvailableReason] ?? 'reason not given'}';
+
+  /// Arrival gate (18 Aug 2026). The supervisor enters the code the
+  /// customer was given at confirmation. Compared against the DB, not an
+  /// in-memory copy — and unlike the old completion OTP, this value is
+  /// never displayed on the supervisor's own screen, which is the whole
+  /// point: it can only come from the customer.
+  Future<void> _verifyArrival() async {
     setState(() => _model.saving = true);
     try {
-      final otp = (1000 + Random().nextInt(9000)).toString();
-      await OrdersTable().update(
-        data: {
-          'job_otp': otp,
-          'supervisor_notes': _model.notesController!.text,
-        },
-        matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
+      final fresh = await OrdersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId!),
       );
-      _model.displayedOtp = otp;
-      _model.otpError = false;
-      _model.step = SupervisorJobStep.otpEntry;
+      final code = fresh.isNotEmpty ? fresh.first.arrivalCode : null;
+      final entered = _model.arrivalCodeController!.text.trim();
+      if (code == null || code.isEmpty || entered != code) {
+        setState(() => _model.arrivalCodeError = true);
+        return;
+      }
+      _model.arrivalCodeError = false;
+      _model.step = SupervisorJobStep.team;
     } catch (e) {
       _showError(e);
     } finally {
@@ -368,21 +407,41 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
   }
 
-  /// Session 2 B5 — the full 9-step verified-completion transaction.
-  Future<void> _verifyAndComplete() async {
-    setState(() => _model.saving = true);
-    try {
-      // Re-fetch from the DB rather than trusting only the in-memory OTP.
-      final fresh = await OrdersTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId!),
-      );
-      final dbOtp = fresh.isNotEmpty ? fresh.first.jobOtp : null;
-      if (dbOtp == null || _model.enteredOtpController!.text.trim() != dbOtp) {
-        // Step: wrong OTP writes nothing at all.
-        setState(() => _model.otpError = true);
+  /// Session 2 B5's nine-write completion transaction, unchanged — only
+  /// the GATE in front of it changed (18 Aug 2026). Where an OTP the
+  /// supervisor could read off their own screen used to stand, there is
+  /// now either the customer's signature or an explicit, reasoned
+  /// "customer not available".
+  ///
+  /// [_model.signatureBase64] is already populated before this runs: the
+  /// pad writes to model state the moment the customer lifts their
+  /// finger. A failed write here therefore costs a retry, never a second
+  /// signature from the customer.
+  Future<void> _completeJob() async {
+    final method = _model.completionMethod;
+    if (method == null) {
+      _showError('Choose how the job was completed first.');
+      return;
+    }
+    if (method == kCompletionSignature) {
+      if ((_model.signatureBase64 ?? '').isEmpty) {
+        _showError('Ask the customer to sign, then tap Complete.');
         return;
       }
+      // Required for a signature completion, per Arun (18 Aug 2026): a
+      // signature with no name attached is weak evidence.
+      if (_model.receivedByNameController!.text.trim().isEmpty) {
+        _showError('Enter the name of the person who signed.');
+        return;
+      }
+    } else if (method == kCompletionNotAvailable &&
+        _model.notAvailableReason == null) {
+      _showError('Select a reason why the customer could not sign.');
+      return;
+    }
 
+    setState(() => _model.saving = true);
+    try {
       final orgId = OrgScope.currentOrgId!;
       final o = _model.order!;
       final wasDelivered = o.status == 'delivered' || o.status == 'closed';
@@ -412,12 +471,12 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       // as the rest of the app) — only fire the status-change side once.
       if (!wasDelivered) {
         await _changeStatus(
-            'delivered', '🎉 Job completed by supervisor, OTP confirmed');
+            'delivered', _completionNote(method));
       } else {
         await TrackingService.logStatus(
           orderId: widget.orderId!,
           status: 'delivered',
-          note: 'Completed by supervisor, OTP verified',
+          note: _completionNote(method),
         );
       }
 
@@ -446,14 +505,32 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         'org_id': orgId,
         'order_id': widget.orderId,
         if (lrId != null) 'lr_id': lrId,
-        'otp_verified': true,
+        // otp_verified is deliberately NOT written — it describes the
+        // removed OTP flow and writing false would read as "the OTP
+        // check failed". completion_method carries the truth instead.
+        'completion_method': method,
+        if (method == kCompletionSignature)
+          'signature_data': _model.signatureBase64,
+        if (method == kCompletionNotAvailable)
+          'not_available_reason': _model.notAvailableReason,
+        if (method == kCompletionNotAvailable &&
+            _model.notAvailableNoteController!.text.trim().isNotEmpty)
+          'remarks': _model.notAvailableNoteController!.text.trim(),
         'delivered_at': now.toIso8601String(),
         'captured_by': AppSession.instance.currentStaffName ?? 'Supervisor',
         if (_model.receivedByNameController!.text.trim().isNotEmpty)
           'received_by_name': _model.receivedByNameController!.text.trim(),
         if (_model.receivedByPhoneController!.text.trim().isNotEmpty)
           'received_by_phone': _model.receivedByPhoneController!.text.trim(),
-        'relationship': _model.relationship,
+        // Only written when somebody actually received the goods. The
+        // picker defaults to 'self' and this used to be unconditional, so
+        // an unsigned POD stored relationship='self' with a null
+        // received_by_name — and printed "Relationship: self" directly
+        // opposite "Received by: —". Found on APC-1002 in the 19 Aug 2026
+        // emulator pass. A self-contradiction on the face of the one
+        // document that settles a damage dispute months later.
+        if (method == kCompletionSignature)
+          'relationship': _model.relationship,
         'packages_delivered': packagesDelivered,
         'packages_short': packagesShort,
         'damage_noted': _model.damageNoted,
@@ -553,8 +630,16 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       } catch (_) {}
 
       _model.order!.supervisorStatus = 'completed_pending';
+      // Mirror the status change locally too (19 Aug 2026 emulator pass):
+      // the DB was correctly set to 'delivered' by orderUpdate above, but
+      // only supervisorStatus was copied back into the in-memory row, so
+      // the done card kept reporting "Status: transit" after a successful
+      // completion — the record was right and the screen was wrong.
+      if (!wasDelivered) {
+        _model.order!.status = 'delivered';
+      }
       _model.step = SupervisorJobStep.done;
-      _model.otpError = false;
+      _model.arrivalCodeError = false;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('🎉 Job complete! Awaiting owner approval.')));
@@ -687,20 +772,14 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           buttonLabel: 'Accept Job',
           onPressed: _startJob,
         );
+      case SupervisorJobStep.arrivalCode:
+        return _arrivalCodeCard(context);
       case SupervisorJobStep.team:
         return _teamSelectionCard(context);
       case SupervisorJobStep.shifting:
         return _shiftingCard(context);
       case SupervisorJobStep.completing:
-        return _actionCard(
-          context,
-          title: 'Ready to complete?',
-          body: 'This will generate a one-time code to confirm the job with the customer.',
-          buttonLabel: 'Generate Completion Code',
-          onPressed: _generateOtp,
-        );
-      case SupervisorJobStep.otpEntry:
-        return _otpCard(context);
+        return _completionCard(context);
       case SupervisorJobStep.done:
         return _doneCard(context);
     }
@@ -1035,7 +1114,12 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                     ? null
                     : () => setState(
                         () => _model.step = SupervisorJobStep.completing),
-                text: '🏁 Shifting Completed — Get OTP',
+                // Was "🏁 Shifting Completed — Get OTP" until the 19 Aug
+                // 2026 emulator pass caught it: the completion OTP was
+                // removed the day before, but this label on the SHIFTING
+                // step still promised one. It now leads to the handover
+                // card (signature or "customer not available").
+                text: '🏁 Shifting Completed — Handover',
                 options: FFButtonOptions(
                   width: double.infinity,
                   color: theme.primary,
@@ -1051,27 +1135,35 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     );
   }
 
-  Color _otpFieldColor(FlutterFlowTheme theme) {
-    if (_model.otpError) return theme.error;
-    if ((_model.enteredOtpController!.text).length == 4) return theme.success;
-    return theme.alternate;
-  }
-
+  /// Proof-of-delivery detail. Shared by both completion paths.
+  ///
+  /// Name and relationship stopped being optional for a signature
+  /// completion on 18 Aug 2026 (Arun): "a signature with no name
+  /// attached is weak evidence." Enforced in [_completeJob] rather than
+  /// by the field itself, because they remain genuinely optional on the
+  /// not-available path.
   Widget _podCaptureFields(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
+    final needsName = (_model.completionMethod ?? kCompletionSignature) ==
+        kCompletionSignature;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
         Text('Proof of Delivery', style: theme.titleSmall),
         const SizedBox(height: 4),
-        Text('Optional, but recommended.',
+        Text(
+            needsName
+                ? 'Name and relationship are required when the customer signs.'
+                : 'Optional, but recommended.',
             style: theme.bodySmall.override(
                 font: GoogleFonts.inter(), color: theme.secondaryText)),
         const SizedBox(height: 8),
         TextField(
           controller: _model.receivedByNameController,
-          decoration: const InputDecoration(labelText: 'Received by (name)'),
+          decoration: InputDecoration(
+              labelText:
+                  needsName ? 'Received by (name) *' : 'Received by (name)'),
         ),
         TextField(
           controller: _model.receivedByPhoneController,
@@ -1084,7 +1176,8 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               .map((r) => DropdownMenuItem(value: r, child: Text(r)))
               .toList(),
           onChanged: (v) => setState(() => _model.relationship = v ?? 'self'),
-          decoration: const InputDecoration(labelText: 'Relationship to customer'),
+          decoration:
+              const InputDecoration(labelText: 'Relationship to customer'),
         ),
         Row(
           children: [
@@ -1121,7 +1214,12 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     );
   }
 
-  Widget _otpCard(BuildContext context) {
+  final GlobalKey<SignaturePadState> _sigKey = GlobalKey<SignaturePadState>();
+
+  /// Arrival gate. Deliberately does NOT display the expected code —
+  /// that was the flaw in the old completion OTP, where the supervisor's
+  /// own screen showed them the answer before they typed it back.
+  Widget _arrivalCodeCard(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     return Container(
       width: double.infinity,
@@ -1133,59 +1231,193 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Confirm with Customer', style: theme.titleSmall),
-          const SizedBox(height: 4),
+          Text('Confirm you have arrived',
+              style: GoogleFonts.interTight(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: theme.primaryText)),
+          const SizedBox(height: 6),
           Text(
-            'Show this code to the customer and ask them to confirm the job is done, then type it back in below.',
-            style: theme.bodySmall.override(
-                font: GoogleFonts.inter(), color: theme.secondaryText),
+            'Ask the customer for the 4-digit arrival code from their '
+            'booking confirmation.',
+            style: GoogleFonts.inter(
+                fontSize: 12.5, height: 1.4, color: theme.secondaryText),
           ),
-          const SizedBox(height: 12),
-          Center(
-            child: Text(
-              _model.displayedOtp ?? '----',
-              style: GoogleFonts.robotoMono(
-                fontSize: 48,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 8.0,
-                color: theme.primary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           TextField(
-            controller: _model.enteredOtpController,
+            controller: _model.arrivalCodeController,
             keyboardType: TextInputType.number,
             maxLength: 4,
+            style: GoogleFonts.robotoMono(
+                fontSize: 32, letterSpacing: 10, fontWeight: FontWeight.w700),
+            textAlign: TextAlign.center,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: GoogleFonts.robotoMono(fontSize: 20, letterSpacing: 4),
+            onChanged: (_) {
+              if (_model.arrivalCodeError) {
+                setState(() => _model.arrivalCodeError = false);
+              }
+            },
             decoration: InputDecoration(
-              labelText: 'Enter code',
-              errorText: _model.otpError ? '❌ Wrong OTP. Try again.' : null,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: _otpFieldColor(theme), width: 1.5),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: _otpFieldColor(theme), width: 2),
-              ),
+              counterText: '',
+              hintText: '----',
+              errorText: _model.arrivalCodeError
+                  ? 'That code does not match. Check with the customer.'
+                  : null,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             ),
           ),
-          _podCaptureFields(context),
           const SizedBox(height: 12),
-          FFButtonWidget(
-            onPressed: _model.saving ? null : _verifyAndComplete,
-            text: _model.saving ? 'Verifying…' : 'Verify & Complete',
-            options: FFButtonOptions(
-              width: double.infinity,
-              color: theme.primary,
-              textStyle: TextStyle(color: theme.primaryBackground),
-              borderRadius: BorderRadius.circular(8.0),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: FilledButton.icon(
+              onPressed: _model.saving ? null : _verifyArrival,
+              icon: const Icon(Icons.login, size: 18),
+              label: const Text('Confirm arrival'),
             ),
           ),
         ],
       ),
     );
   }
+
+  /// Completion. Two paths, both explicit: the customer signs, or the
+  /// supervisor records why they could not. There is no third path that
+  /// silently closes the job, and no code the supervisor could enter
+  /// from the office.
+  Widget _completionCard(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final method = _model.completionMethod ?? kCompletionSignature;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Handover',
+              style: GoogleFonts.interTight(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: theme.primaryText)),
+          const SizedBox(height: 10),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(
+                  value: kCompletionSignature,
+                  icon: Icon(Icons.draw, size: 16),
+                  label: Text('Customer signs')),
+              ButtonSegment(
+                  value: kCompletionNotAvailable,
+                  icon: Icon(Icons.person_off_outlined, size: 16),
+                  label: Text('Not available')),
+            ],
+            selected: {method},
+            onSelectionChanged: (s) =>
+                setState(() => _model.completionMethod = s.first),
+          ),
+          const SizedBox(height: 14),
+          if (method == kCompletionSignature) ...[
+            Text('Ask the customer to sign below',
+                style: GoogleFonts.inter(
+                    fontSize: 12.5, color: theme.secondaryText)),
+            const SizedBox(height: 8),
+            SignaturePad(
+              key: _sigKey,
+              // Captured to model state the instant the customer lifts
+              // their finger — BEFORE any network call. A failed write
+              // must never mean asking them to sign again.
+              onChanged: (_) async {
+                final png = await _sigKey.currentState?.toPngBase64();
+                if (png != null && mounted) {
+                  setState(() {
+                    _model.signatureBase64 = png;
+                    _model.completionMethod = kCompletionSignature;
+                  });
+                }
+              },
+            ),
+            Row(
+              children: [
+                if ((_model.signatureBase64 ?? '').isNotEmpty)
+                  Row(children: [
+                    Icon(Icons.check_circle, size: 15, color: theme.success),
+                    const SizedBox(width: 4),
+                    Text('Signature captured',
+                        style: GoogleFonts.inter(
+                            fontSize: 11.5, color: theme.success)),
+                  ]),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => setState(() {
+                    _sigKey.currentState?.clear();
+                    _model.signatureBase64 = null;
+                  }),
+                  child: const Text('Clear'),
+                ),
+              ],
+            ),
+          ] else ...[
+            Text('Why could the customer not sign?',
+                style: GoogleFonts.inter(
+                    fontSize: 12.5, color: theme.secondaryText)),
+            const SizedBox(height: 8),
+            for (final e in kNotAvailableReasons.entries)
+              RadioListTile<String>(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                value: e.key,
+                groupValue: _model.notAvailableReason,
+                title: Text(e.value, style: GoogleFonts.inter(fontSize: 13)),
+                onChanged: (v) =>
+                    setState(() => _model.notAvailableReason = v),
+              ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _model.notAvailableNoteController,
+              maxLines: 2,
+              decoration: InputDecoration(
+                labelText: 'Add detail (optional)',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade800.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'The owner will see this job as completed without a '
+                'signature, and why.',
+                style: GoogleFonts.inter(
+                    fontSize: 11.5, height: 1.35, color: theme.primaryText),
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+          _podCaptureFields(context),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton.icon(
+              onPressed: _model.saving ? null : _completeJob,
+              icon: const Icon(Icons.check_circle_outline, size: 18),
+              label: const Text('Complete job'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _doneCard(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);

@@ -16,7 +16,12 @@ import 'package:flutter/material.dart';
 /// notes on one screen, matching the brief's "Job detail" framing rather
 /// than a forced multi-step wizard for what's really one page's worth of
 /// pre-completion actions.
-enum SupervisorJobStep { start, team, shifting, completing, otpEntry, done }
+/// `arrivalCode` replaced the old `start` step's plain "Accept Job"
+/// button (18 Aug 2026): the supervisor now enters the code the customer
+/// was given at confirmation, which is what proves they are actually on
+/// site. `otpEntry` is gone — completion is a signature now, captured on
+/// the `completing` step itself. See the widget's header for why.
+enum SupervisorJobStep { start, arrivalCode, team, shifting, completing, done }
 
 const List<String> kRelationshipOptions = [
   'self',
@@ -24,6 +29,25 @@ const List<String> kRelationshipOptions = [
   'neighbour',
   'security',
 ];
+
+/// How a job was completed. Mirrors `pod_records.completion_method`'s
+/// CHECK constraint — keep the two in step.
+const String kCompletionSignature = 'signature';
+const String kCompletionNotAvailable = 'not_available';
+
+/// Structured reasons for an unsigned completion, mirroring
+/// `pod_records.not_available_reason`'s CHECK constraint.
+///
+/// A flow with no escape hatch gets worked around in the field, and the
+/// worst workaround here is the supervisor signing it themselves — so
+/// this path exists deliberately, is cheap to use, and is visibly
+/// flagged to the owner rather than hidden.
+const Map<String, String> kNotAvailableReasons = {
+  'customer_absent': 'Customer not present at handover',
+  'refused_to_sign': 'Customer refused to sign',
+  'representative_took_delivery': 'A representative took delivery',
+  'device_or_app_failure': 'Device or app problem',
+};
 
 class SupervisorJobPageModel extends FlutterFlowModel<SupervisorJobPageWidget> {
   bool isLoading = true;
@@ -69,11 +93,26 @@ class SupervisorJobPageModel extends FlutterFlowModel<SupervisorJobPageWidget> {
 
   String expenseType = 'Fuel';
 
-  /// The OTP the supervisor's screen is currently showing (also persisted
-  /// to orders.job_otp so verification can be re-checked server-side
-  /// instead of trusting only this in-memory copy).
-  String? displayedOtp;
-  bool otpError = false;
+  // ---- Arrival (18 Aug 2026) --------------------------------------
+  TextEditingController? arrivalCodeController;
+  bool arrivalCodeError = false;
+
+  // ---- Completion by signature (18 Aug 2026) ----------------------
+  //
+  // The captured signature as a base64 PNG. Held HERE, in model state,
+  // the moment the customer lifts their finger — before any network
+  // call. That ordering is deliberate and load-bearing: a failed write
+  // must never mean asking a customer to sign a second time.
+  String? signatureBase64;
+
+  /// null until the supervisor picks a path on the completing step.
+  /// [kCompletionSignature] or [kCompletionNotAvailable].
+  String? completionMethod;
+
+  /// One of [kNotAvailableReasons]' keys, when completionMethod is
+  /// [kCompletionNotAvailable].
+  String? notAvailableReason;
+  TextEditingController? notAvailableNoteController;
 
   @override
   void initState(BuildContext context) {}
@@ -84,6 +123,8 @@ class SupervisorJobPageModel extends FlutterFlowModel<SupervisorJobPageWidget> {
     expenseAmountController?.dispose();
     expenseNoteController?.dispose();
     enteredOtpController?.dispose();
+    arrivalCodeController?.dispose();
+    notAvailableNoteController?.dispose();
     kmStartController?.dispose();
     kmEndController?.dispose();
     receivedByNameController?.dispose();
