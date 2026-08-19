@@ -555,6 +555,29 @@ silently doesn't is the same class of trust damage.
   out — the format that is *most common in the wild*, not the format
   that is easiest to write a pattern for. Redaction, token scrubbing,
   SQL/HTML escaping and permission-string matching all qualify.
+- **Any server-side time rendered for a user names its `timeZone`
+  explicitly.** (19 Aug 2026.) `toLocaleTimeString("en-IN", {hour, minute})`
+  in an Edge Function told a locked-out vendor *"try again after 06:27
+  pm"* when the lock actually expired at **11:57 pm IST**. A locale
+  argument controls **format**, not **instant**: it produced a correct
+  12-hour Indian-style clock reading, of the wrong moment, because Deno
+  Deploy runs UTC and `toLocale*` renders in the *runtime's* zone.
+  **Looking correctly localised is exactly what stops it being
+  reviewed** — a visibly wrong string gets caught; this one reads as
+  finished work and is off by the runtime's offset.
+  The damage is not cosmetic: that string is the ONLY instruction a
+  locked-out user gets, so acting on it means retrying early, failing,
+  escalating their own lock from 15 minutes to an hour under the new
+  ladder, and concluding the app is broken.
+  Rule: every `toLocaleTimeString` / `toLocaleDateString` /
+  `toLocaleString` / `Intl.DateTimeFormat` in `supabase/functions/`
+  passes `timeZone: "Asia/Kolkata"`. The 19 Aug sweep found exactly two
+  sites, both the same lockout message (`pin-login`, `staff-login`),
+  both fixed. **Dart is not affected** — the app formats on-device in
+  the device's own zone, which is correct; this is a server-runtime
+  defect only. Prefer sending a raw ISO timestamp and letting the client
+  format it; name the zone only where the server must produce the
+  finished string itself.
 - **`permissions.dart` is the source of truth for role equivalence, and
   SQL must agree with it.** (19 Aug 2026.) `isOwnerOrManagerSession`
   matched only the literal strings `'owner'` and `'manager'` — but no
