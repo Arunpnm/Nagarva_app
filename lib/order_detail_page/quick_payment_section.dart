@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/audit_log_service.dart';
 import '/backend/customer_lookup.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/upi_payment.dart';
+import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/index.dart';
 
 /// Quick Payment Update — Order Details Session 1, item 2.
 ///
@@ -58,6 +63,7 @@ class QuickPaymentSection extends StatefulWidget {
 class QuickPaymentSectionState extends State<QuickPaymentSection> {
   bool _loading = true;
   bool _saving = false;
+  bool _requesting = false;
   bool _notFound = false;
   OrdersRow? _order;
   String _mode = 'cash';
@@ -305,6 +311,216 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
     );
   }
 
+  // ---- Item 19 Phase 1: request payment by UPI --------------------------
+
+  /// Builds a `upi://pay` link for this order's outstanding balance and
+  /// hands it to the vendor to send on.
+  ///
+  /// This records NOTHING. A customer paying through the link is invisible
+  /// to the app until somebody enters it above — same as cash. Phase 1 is
+  /// a faster way to ask for money, not a collection pipeline, and the
+  /// sheet says so rather than implying the payment will appear by itself.
+  Future<void> _requestByUpi() async {
+    final o = _order;
+    if (o == null) return;
+    setState(() => _requesting = true);
+    UpiPayee? payee;
+    String? error;
+    try {
+      payee = await resolveOrgUpiPayee();
+    } catch (e) {
+      error = '$e';
+    }
+    if (!mounted) return;
+    setState(() => _requesting = false);
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not read your UPI ID: $error')));
+      return;
+    }
+    if (payee == null || !isPlausibleVpa(payee.vpa)) {
+      await _promptForUpiId(missing: payee == null);
+      return;
+    }
+    await _showUpiRequestSheet(payee);
+  }
+
+  /// Shown when the org has no usable UPI ID. Arun's call (Item 19): the
+  /// empty state is "Set your UPI ID" and it must go somewhere — a dead
+  /// message telling a vendor to find a setting themselves is the same
+  /// dead end as a button that does nothing.
+  Future<void> _promptForUpiId({required bool missing}) async {
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Set your UPI ID'),
+        content: Text(missing
+            ? 'You have not added a UPI ID yet, so there is nothing for a '
+                'customer to pay to. Add it in Settings → Business Profile '
+                'and it will also appear on your invoices and quotations.'
+            : 'Your saved UPI ID does not look like a valid address '
+                '(it should look like name@bank). Fix it in Settings → '
+                'Business Profile.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Not now')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Open Settings')),
+        ],
+      ),
+    );
+    if (go == true && mounted) {
+      context.pushNamed(SettingsPageWidget.routeName);
+    }
+  }
+
+  Future<void> _showUpiRequestSheet(UpiPayee payee) async {
+    final o = _order!;
+    // Defaults to the outstanding balance and stays editable — a customer
+    // paying a part amount is normal, and forcing the full balance would
+    // just push the vendor back to typing the number by hand.
+    final amountCtrl =
+        TextEditingController(text: _balance.toStringAsFixed(0));
+
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final theme = FlutterFlowTheme.of(ctx);
+        return Padding(
+          padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16),
+          child: StatefulBuilder(
+            builder: (ctx, setSheet) {
+              final amount = double.tryParse(amountCtrl.text.trim()) ?? 0;
+              final uri = buildUpiUri(
+                vpa: payee.vpa,
+                payeeName: payee.name,
+                amount: amount,
+                note: 'Order ${o.id}',
+              );
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Request payment by UPI',
+                      style: GoogleFonts.interTight(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: theme.primaryText)),
+                  const SizedBox(height: 4),
+                  Text('Paid to ${payee.vpa}',
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: theme.secondaryText)),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (_) => setSheet(() {}),
+                    style: GoogleFonts.inter(
+                        color: theme.primaryText, fontSize: 14),
+                    decoration: InputDecoration(
+                      labelText: 'Amount to request (₹)',
+                      helperText: 'Balance due ₹${_balance.toStringAsFixed(0)}',
+                      labelStyle: GoogleFonts.inter(
+                          color: theme.secondaryText, fontSize: 12),
+                      isDense: true,
+                      filled: true,
+                      fillColor: theme.primaryBackground,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  FFButtonWidget(
+                    onPressed: amount <= 0
+                        ? null
+                        : () async {
+                            Navigator.pop(ctx);
+                            await _sendUpiOnWhatsApp(payee, amount, uri);
+                          },
+                    text: 'Send on WhatsApp',
+                    icon: const Icon(Icons.send, size: 18),
+                    options: FFButtonOptions(
+                      width: double.infinity,
+                      height: 44,
+                      iconColor: theme.primaryBackground,
+                      color: theme.primary,
+                      textStyle: TextStyle(color: theme.primaryBackground),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: amount <= 0
+                        ? null
+                        : () async {
+                            await Clipboard.setData(ClipboardData(text: uri));
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('UPI link copied.')));
+                          },
+                    icon: const Icon(Icons.content_copy, size: 18),
+                    label: const Text('Copy UPI link'),
+                  ),
+                  const SizedBox(height: 10),
+                  // Says plainly what this does not do. A vendor who
+                  // believes a sent link auto-reconciles will stop
+                  // recording payments, and their books go wrong quietly.
+                  Text(
+                    'Opens in the customer\'s UPI app. Payments are not '
+                    'detected automatically — record it above once you '
+                    'receive it.',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: theme.secondaryText),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+    amountCtrl.dispose();
+  }
+
+  Future<void> _sendUpiOnWhatsApp(
+      UpiPayee payee, double amount, String uri) async {
+    final o = _order!;
+    final message = buildUpiRequestMessage(
+      orgName: payee.name,
+      customerName: o.customer.trim().isEmpty ? 'there' : o.customer,
+      orderId: o.id ?? '',
+      amount: amount,
+      vpa: payee.vpa,
+      upiUri: uri,
+    );
+    try {
+      final ok = await launchUrl(
+        Uri.parse(buildWhatsAppLink(phone: o.phone, message: message)),
+        mode: LaunchMode.externalApplication,
+      );
+      if (ok) return;
+    } catch (_) {
+      // Fall through to the clipboard path below.
+    }
+    await Clipboard.setData(ClipboardData(text: message));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Could not open WhatsApp — message copied instead.')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
@@ -430,6 +646,20 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
               color: theme.primary,
               textStyle: TextStyle(color: theme.primaryBackground),
               borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          // Item 19 Phase 1. Sits UNDER Record Payment deliberately:
+          // recording money already received is the more common action
+          // and stays the primary one. Asking for money is the secondary
+          // affordance, not the headline.
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: _requesting ? null : _requestByUpi,
+            icon: Icon(Icons.qr_code_2, size: 18, color: theme.primary),
+            label: Text(
+              _requesting ? 'Preparing…' : 'Request payment by UPI',
+              style: GoogleFonts.interTight(
+                  fontSize: 13, fontWeight: FontWeight.w600, color: theme.primary),
             ),
           ),
         ],

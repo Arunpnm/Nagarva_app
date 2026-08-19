@@ -15,6 +15,8 @@ export '/quotation_page/survey_quote_page_widget.dart'
 export '/accounts_page/accounts_page_widget.dart' show AccountsPageWidget;
 export '/p_l_report_page/p_l_report_page_widget.dart' show PLReportPageWidget;
 export '/settings_page/recycle_bin_page.dart' show RecycleBinPage;
+export '/settings_page/help_about_page.dart' show HelpAboutPage;
+export '/settings_page/survey_pricing_page.dart' show SurveyPricingPage;
 export '/settings_page/settings_page_widget.dart' show SettingsPageWidget;
 export '/calendar_page/calendar_page_widget.dart' show CalendarPageWidget;
 export '/materials_page/materials_page_widget.dart' show MaterialsPageWidget;

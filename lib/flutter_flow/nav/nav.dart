@@ -564,6 +564,21 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: RecycleBinPage.routePath,
           builder: (context, params) => const RecycleBinPage(),
         ),
+        // Item 12: slabs + CFT catalogue editors, reached from Settings.
+        FFRoute(
+          name: SurveyPricingPage.routeName,
+          path: SurveyPricingPage.routePath,
+          builder: (context, params) => const SurveyPricingPage(),
+        ),
+        // Help & About — carries the in-app privacy policy link Play
+        // Store review requires and the support contact Meta's WhatsApp
+        // Business review asks for. Not owner-gated: every staff session
+        // needs to reach support and the legal links too.
+        FFRoute(
+          name: HelpAboutPage.routeName,
+          path: HelpAboutPage.routePath,
+          builder: (context, params) => const HelpAboutPage(),
+        ),
         FFRoute(
           name: SupervisorJobPageWidget.routeName,
           path: SupervisorJobPageWidget.routePath,

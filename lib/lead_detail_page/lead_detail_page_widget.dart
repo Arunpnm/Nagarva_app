@@ -421,6 +421,20 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           'quote_gst_mode': resolvedMode,
           'quote_packing_type': charges['_suggestedPackage'],
           'quote_total_cft': asNum(charges['_totalCft']),
+          // Item 12C: carry the frozen suggestion AND the surveyor's
+          // choice onto the order, so a dispatched job holds its own copy
+          // rather than joining back to a quotation that may since have
+          // been superseded — and so a later slab edit in Settings can
+          // never rewrite what this job was actually quoted with.
+          // Falls back to the jsonb key for quotes created before the
+          // 12C columns existed (those have no vehicle/crew at all).
+          'suggested_package': quote.suggestedPackage,
+          'suggested_vehicle': quote.suggestedVehicle,
+          'suggested_crew': quote.suggestedCrew,
+          'chosen_package':
+              quote.chosenPackage ?? charges['_suggestedPackage'],
+          'chosen_vehicle': quote.chosenVehicle,
+          'chosen_crew': quote.chosenCrew,
           // Versioning isn't built yet (no quotations.version column), so
           // this is 1 — which is correct, not a placeholder: the first
           // quote IS v1.

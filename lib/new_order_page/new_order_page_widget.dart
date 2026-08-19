@@ -1,5 +1,6 @@
 import '/app_session.dart';
 import '/backend/customer_lookup.dart';
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
@@ -1740,6 +1741,14 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     gstinFieldText.isEmpty ? null : gstinFieldText,
                               };
 
+                              // Item 32: the insert below can be refused
+                              // by the monthly-order-limit trigger or the
+                              // expired-trial read-only guard, both of
+                              // which raise P0001 with a sentence written
+                              // for the vendor. Captured here so the
+                              // failure branch can show it instead of the
+                              // generic "Failed to save order".
+                              String? saveError;
                               try {
                                 if (isEditing) {
                                   // Editing an existing order: only touch
@@ -1806,8 +1815,10 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   });
                                 }
                                 _model.ordSaveSuccess = true;
-                              } catch (_) {
+                              } catch (e) {
                                 _model.ordSaveSuccess = false;
+                                saveError = extractDbErrorMessage(e,
+                                    fallback: '');
                               }
                               safeSetState(() {});
                               if (_model.ordSaveSuccess!) {
@@ -1835,12 +1846,16 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                 }
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                     content: Text(
-                                      'Failed to save order. Please try again.',
-                                      style: TextStyle(),
+                                      (saveError != null &&
+                                              saveError.isNotEmpty)
+                                          ? saveError
+                                          : 'Failed to save order. Please try again.',
+                                      style: const TextStyle(),
                                     ),
-                                    duration: Duration(milliseconds: 4000),
+                                    duration:
+                                        const Duration(milliseconds: 5000),
                                   ),
                                 );
                               }

@@ -13,10 +13,12 @@ import '/backend/audit_log_service.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/upi_payment.dart';
 import '/components/pdf_branding.dart';
 import '/components/lr_pdf.dart';
 import '/components/money_receipt_pdf.dart';
 import '/components/signature_pad.dart';
+import '/components/pod_pdf.dart';
 import '/components/simple_document_pdf.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -947,6 +949,28 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
   // ---- Payment Voucher (doc_type: voucher) ------------------------------
 
+  /// Proof of Delivery. Generated on demand from `pod_records` — never
+  /// stored, so it cannot drift from the record it renders (Arun, 18 Aug
+  /// 2026). Lives here with the other seven rather than beside the
+  /// delivery data: one place for documents, because "a special location
+  /// is how a feature gets built and never found."
+  Future<void> _genPod() => _run(() async {
+        final o = _order;
+        if (o == null) return;
+        final bytes = await PodPdf.generateForOrder(o.id!);
+        if (bytes == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text(
+                    'No delivery record yet — the supervisor completes the '
+                    'job to create one.')));
+          }
+          return;
+        }
+        await _showDocDialog(
+            'Proof of Delivery', 'POD-${o.id}.pdf', () async => bytes);
+      });
+
   Future<void> _genVoucher() => _run(() async {
         final o = _order;
         if (o == null) return;
@@ -1041,24 +1065,24 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
   // ---- Utility row ------------------------------------------------------
 
+  // Item 19 Phase 1 (19 Aug 2026): both of these predate the item and
+  // each rolled their own `organizations.upi_id` read. They now go
+  // through `lib/backend/upi_payment.dart` — one resolver, one link
+  // format, one place where the per-tenant VPA rule lives. Extending
+  // these was Arun's explicit call over adding a parallel path.
   Future<void> _copyUpi() async {
-    final orgId = OrgScope.currentOrgId;
-    if (orgId == null) return;
     try {
-      final rows = await OrganizationsTable().queryRows(
-        queryFn: (q) => q.eq('id', orgId),
-      );
-      final upi = rows.isNotEmpty ? rows.first.upiId : null;
-      if (upi == null || upi.isEmpty) {
+      final payee = await resolveOrgUpiPayee();
+      if (payee == null || !isPlausibleVpa(payee.vpa)) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('No UPI ID set — add one in Settings.')));
+            content: Text('Set your UPI ID in Settings → Business Profile.')));
         return;
       }
-      await Clipboard.setData(ClipboardData(text: upi));
+      await Clipboard.setData(ClipboardData(text: payee.vpa));
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('UPI ID copied: $upi')));
+          .showSnackBar(SnackBar(content: Text('UPI ID copied: ${payee.vpa}')));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -1067,30 +1091,59 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     }
   }
 
+  /// Sends the customer a real `upi://pay` link for the outstanding
+  /// balance, not just the VPA as text.
+  ///
+  /// Before Item 19 this appended "Pay via UPI: <id>" and left the
+  /// customer to open their app, pick the payee and type the amount —
+  /// three chances to send the wrong sum to the wrong address. The
+  /// amount and payee now travel in the link itself.
   Future<void> _sendPayLink() async {
     final o = _order;
     if (o == null) return;
-    final orgId = OrgScope.currentOrgId;
-    String? upi;
-    if (orgId != null) {
-      try {
-        final rows = await OrganizationsTable().queryRows(
-          queryFn: (q) => q.eq('id', orgId),
-        );
-        upi = rows.isNotEmpty ? rows.first.upiId : null;
-      } catch (_) {}
-    }
+    UpiPayee? payee;
+    try {
+      payee = await resolveOrgUpiPayee();
+    } catch (_) {}
+
     final balance = (o.amount ?? 0) - (o.advancePaid ?? 0) - o.paidTotal;
-    final message = 'Hello ${o.customer}, your balance due for order '
-        '${o.id} is ${_rupees(balance)}.'
-        '${(upi ?? '').isEmpty ? '' : ' Pay via UPI: $upi'}';
-    final uri = Uri.parse(buildWhatsAppLink(phone: o.phone, message: message));
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && mounted) {
-      await Clipboard.setData(ClipboardData(text: message));
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Could not open WhatsApp — message copied instead.')));
+    final String message;
+    if (payee != null && isPlausibleVpa(payee.vpa) && balance > 0) {
+      message = buildUpiRequestMessage(
+        orgName: payee.name,
+        customerName: o.customer.trim().isEmpty ? 'there' : o.customer,
+        orderId: o.id ?? '',
+        amount: balance,
+        vpa: payee.vpa,
+        upiUri: buildUpiUri(
+          vpa: payee.vpa,
+          payeeName: payee.name,
+          amount: balance,
+          note: 'Order ${o.id}',
+        ),
+      );
+    } else {
+      // No usable UPI ID (or nothing outstanding) — still send the
+      // reminder rather than blocking on a setting the vendor may not
+      // have filled in yet.
+      message = 'Hello ${o.customer}, your balance due for order '
+          '${o.id} is ${_rupees(balance)}.';
     }
+
+    try {
+      final ok = await launchUrl(
+        Uri.parse(buildWhatsAppLink(phone: o.phone, message: message)),
+        mode: LaunchMode.externalApplication,
+      );
+      if (ok) return;
+    } catch (_) {
+      // Fall through to the clipboard path.
+    }
+    if (!mounted) return;
+    await Clipboard.setData(ClipboardData(text: message));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Could not open WhatsApp — message copied instead.')));
   }
 
   Future<void> _copyTrackLink() async {
@@ -1249,6 +1302,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                   _genVehicleCondition),
               _docButton(
                   'Payment Voucher', Icons.payments, _genVoucher),
+              _docButton(
+                  'Proof of Delivery', Icons.assignment_turned_in, _genPod),
             ],
           ),
           const SizedBox(height: 14),
