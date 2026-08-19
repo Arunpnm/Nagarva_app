@@ -35,6 +35,7 @@ import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
+import 'arrival_code_card.dart';
 import 'order_detail_page_model.dart';
 export 'order_detail_page_model.dart';
 
@@ -1203,6 +1204,15 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         ),
                       ],
                     ),
+                    // Arrival code (19 Aug 2026). Placed high on the page
+                    // on purpose: the office reads this out when a crew
+                    // phones from the doorstep, so it must not be
+                    // something you scroll for. Owner/manager/admin only —
+                    // the widget enforces that itself too, because
+                    // showing it to the supervisor would make the gate
+                    // decorative (see its doc comment).
+                    if (widget.orderId != null)
+                      ArrivalCodeCard(orderId: widget.orderId!),
                     // Item 4.3: this had the same "Notes / Notes" duplicate
                     // as Lead Details — a section header wrapping a row
                     // whose label was also "Notes".
