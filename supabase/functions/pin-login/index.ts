@@ -104,15 +104,10 @@ Deno.serve(async (req: Request) => {
     // sharing a single bucket, a limiter that reports success while
     // enforcing nothing.
     //
-    // NOTE on trust: x-forwarded-for is a client-settable header, and we
-    // take the first entry (the conventional "original client" position).
-    // If Supabase's edge proxy appends rather than replaces, a caller can
-    // put any value in front of the real one and get a fresh bucket per
-    // request. That does not reopen the tenant-wide lockout that this
-    // work closed — the per-pool backstop is set at 50 and is the only
-    // org-wide lock left — but it does weaken the per-IP limiter. Being
-    // verified empirically before this is relied on; see
-    // supabase/20260819_pin_rate_limit_hardening.sql.
+    // Trust, VERIFIED 19 Aug 2026: a probe sending
+    // `x-forwarded-for: 203.0.113.99` recorded the real egress IP, not
+    // the spoofed one, so Supabase's edge proxy does not honour a
+    // client-supplied value in first position. Taking [0] is correct.
     const clientIp =
       (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || null;
 
@@ -130,9 +125,17 @@ Deno.serve(async (req: Request) => {
     if (!v || !v.ok) {
       if (v?.locked) {
         const until = v.locked_until
+          // timeZone is REQUIRED, not cosmetic. Deno Deploy runs UTC, so
+          // toLocaleTimeString without it renders a UTC clock time in an
+          // Indian locale format — 5.5 hours early. A locked-out vendor
+          // reads "try again after 06:27 pm" when the lock actually ends
+          // at 11:57 pm, retries immediately, escalates their own lock
+          // from 15 minutes to an hour, and concludes the app is broken.
+          // This string is the ONLY instruction a locked-out user gets.
           ? new Date(v.locked_until).toLocaleTimeString("en-IN", {
               hour: "2-digit",
               minute: "2-digit",
+              timeZone: "Asia/Kolkata",
             })
           : null;
         return json({

@@ -85,14 +85,23 @@ Deno.serve(async (req: Request) => {
     const v = rows?.[0];
     if (!v) return json({ error: "Staff not found or inactive" }, 401);
     if (!v.ok) {
-      // 20260725_staff_pin_rate_limit.sql: verify_staff_pin now tracks
-      // failed attempts and locks out after 5 (15 min), atomically in
-      // Postgres so concurrent requests can't race the counter.
+      // 20260725_staff_pin_rate_limit.sql: verify_staff_pin tracks failed
+      // attempts and locks out after 5, atomically in Postgres so
+      // concurrent requests can't race the counter. Since 20260819 the
+      // lock escalates 15 min -> 1 hour -> 24 hours instead of resetting.
       if (v.locked) {
         const until = v.locked_until
+          // timeZone is REQUIRED, not cosmetic. Deno Deploy runs UTC, so
+          // toLocaleTimeString without it renders a UTC clock time in an
+          // Indian locale format — 5.5 hours early. A locked-out vendor
+          // reads "try again after 06:27 pm" when the lock actually ends
+          // at 11:57 pm, retries immediately, escalates their own lock
+          // from 15 minutes to an hour, and concludes the app is broken.
+          // This string is the ONLY instruction a locked-out user gets.
           ? new Date(v.locked_until).toLocaleTimeString("en-IN", {
               hour: "2-digit",
               minute: "2-digit",
+              timeZone: "Asia/Kolkata",
             })
           : null;
         return json({
