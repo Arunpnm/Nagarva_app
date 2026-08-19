@@ -542,6 +542,33 @@ silently doesn't is the same class of trust damage.
   you — and that bet loses quietly, showing the user stale data with no
   error anywhere. Cheapest correct form: `.select()` on the update, or a
   small `_reload()` the success path calls.
+- **Security-critical string handling gets tests. Always.** (19 Aug 2026,
+  after a leak found only because the redaction was tested rather than
+  trusted.) The Sentry phone-number pattern used `\b` at the digit
+  boundary — and `\b` cannot match between two digits, so
+  `+919845011001`, the single most common format an Indian phone number
+  is pasted in, was **not redacted at all**. It would have shipped
+  customer mobile numbers to a third-party service on the first crash.
+  Reading that regex looks correct; only `test/crash_redaction_test.dart`
+  exposed it. So: any code whose job is to hide, escape, mask, sign or
+  validate a string gets a test file with the adversarial cases spelled
+  out — the format that is *most common in the wild*, not the format
+  that is easiest to write a pattern for. Redaction, token scrubbing,
+  SQL/HTML escaping and permission-string matching all qualify.
+- **`permissions.dart` is the source of truth for role equivalence, and
+  SQL must agree with it.** (19 Aug 2026.) `isOwnerOrManagerSession`
+  matched only the literal strings `'owner'` and `'manager'` — but no
+  `staff` row has ever carried role `'owner'`. The role dropdown offers
+  **`admin`**, and `permissions.dart` treats `admin` as the
+  owner-equivalent role. So an admin-role session lost owner-level
+  navigation everywhere the getter is used, and had done since it was
+  written. **The database was right and the Dart was wrong**:
+  `is_org_manager()` has always matched
+  `role in ('owner','admin','manager')`. The two had silently disagreed
+  about who an admin was. When adding a role check anywhere, take the
+  vocabulary from `permissions.dart`/`staff_form_sheet.dart`'s actual
+  dropdown values, never from intuition about what a role "should" be
+  called, and keep the SQL helper and the Dart getter in step.
 - Work in small verifiable steps: one page or one migration per commit-sized change.
 - After DB changes, paste SQL for the owner to run in the Supabase SQL editor
   (he runs it manually) unless told otherwise.

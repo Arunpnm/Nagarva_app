@@ -1,0 +1,15 @@
+# Deploy settings for the link.nagarva.in project (Netlify site
+# "nagarva-link", id fa1c88c1-9d35-4bc7-b94e-1c962b6efdac).
+#
+# `publish` is the load-bearing line. Without it a deploy run from this
+# repo root would publish the ENTIRE repository — source, migrations,
+# briefs, CLAUDE.md — to a public domain. It constrains any deploy from
+# here to the one directory that is meant to be public.
+#
+# This repo is the Flutter app; public_site/ is the separate static site
+# that answers customer links. They share a repo so the site can never
+# again exist only as an unversioned drag-drop upload, which is how
+# /survey and /sign were lost on 17 Aug 2026.
+[build]
+  publish = "public_site"
+  command = ""

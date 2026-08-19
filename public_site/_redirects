@@ -1,0 +1,18 @@
+# link.nagarva.in
+#
+# THERE IS DELIBERATELY NO CATCH-ALL HERE.
+#
+# The 17 Aug 2026 incident was caused by exactly one line:
+#     /*    /index.html   200
+# combined with the /auth relay page sitting at the site root. That made
+# EVERY path — /survey, /sign, /quote, /track — serve "Email confirmed —
+# your Nagarva account is ready" to customers who had clicked a survey or
+# signature link. Worse than a 404: it reads as a broken or phishing link
+# sent by their own mover.
+#
+# Every path here is a real directory with a real index.html, so Netlify
+# serves the file directly and never consults this file. Unknown paths
+# fall through to 404.html, which is the honest answer.
+#
+# If you add an SPA later, scope its rewrite to that app's own prefix.
+# Never re-add a site-wide /* rule.

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Nagarva — Email confirmed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1020;
+    --panel:#1B2039;
+    --line:#2C3354;
+    --gold:#E5B948;
+    --gold-ink:#2A1F00;
+    --text:#F2F3F8;
+    --muted:#98A0BC;
+    --alert:#E97A5A;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--text);
+    font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .card{
+    width:100%;
+    max-width:420px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:36px 28px 30px;
+    text-align:center;
+  }
+  .mark{width:64px;height:64px;margin:0 auto 22px;display:block}
+  .mark circle{fill:none;stroke:var(--line);stroke-width:3}
+  .mark path{
+    fill:none;stroke:var(--gold);stroke-width:4;
+    stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:40;stroke-dashoffset:40;
+    animation:draw .5s .15s ease-out forwards;
+  }
+  @keyframes draw{to{stroke-dashoffset:0}}
+  h1{
+    font-size:26px;line-height:1.2;font-weight:700;
+    margin:0 0 10px;letter-spacing:-0.02em;
+  }
+  p{margin:0 0 24px;color:var(--muted);font-size:15px;line-height:1.55}
+  .btn{
+    display:block;width:100%;
+    background:var(--gold);color:var(--gold-ink);
+    font-family:inherit;font-size:16px;font-weight:700;
+    border:0;border-radius:12px;padding:16px;
+    cursor:pointer;text-decoration:none;
+  }
+  .btn:focus-visible{outline:3px solid #fff;outline-offset:2px}
+  .hint{font-size:13px;color:var(--muted);margin:16px 0 0}
+  .brand{
+    margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);
+  }
+  .is-error .mark path{stroke:var(--alert)}
+  .is-error .btn{background:transparent;color:var(--text);border:1px solid var(--line)}
+  @media (prefers-reduced-motion:reduce){
+    .mark path{animation:none;stroke-dashoffset:0}
+  }
+</style>
+</head>
+<body>
+  <main class="card" id="card">
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="29"/>
+      <path id="glyph" d="M20 33 L28 41 L44 24"/>
+    </svg>
+    <h1 id="title">Email confirmed</h1>
+    <p id="body">Your Nagarva account is ready. Open the app and log in with your email and password.</p>
+    <button class="btn" id="action">Open Nagarva</button>
+    <p class="hint" id="hint">If the app doesn't open, launch Nagarva from your home screen.</p>
+    <div class="brand">Nagarva</div>
+  </main>
+
+<script>
+(function () {
+  var hash = window.location.hash.slice(1);
+  var query = window.location.search.slice(1);
+  var params = new URLSearchParams(hash || query);
+  var err = params.get('error_description') || params.get('error');
+
+  if (err) {
+    document.getElementById('card').classList.add('is-error');
+    document.getElementById('glyph').setAttribute('d', 'M23 23 L41 41 M41 23 L23 41');
+    document.getElementById('title').textContent = 'This link expired';
+    document.getElementById('body').textContent =
+      decodeURIComponent(err).replace(/\+/g, ' ') +
+      '. Open Nagarva and request a new confirmation email.';
+    document.getElementById('action').textContent = 'Open Nagarva';
+    document.getElementById('hint').textContent = '';
+  }
+
+  document.getElementById('action').addEventListener('click', function () {
+    window.location.href = 'nagarva://auth-callback' + (hash ? '#' + hash : '');
+  });
+})();
+</script>
+</body>
+</html>
