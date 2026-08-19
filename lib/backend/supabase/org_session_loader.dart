@@ -14,6 +14,7 @@ class OrgSessionData {
     this.planName,
     this.planStatus,
     this.trialEndsAt,
+    this.graceDays = 7,
     this.orgActive = true,
   });
 
@@ -26,6 +27,14 @@ class OrgSessionData {
   final String? planName;
   final String? planStatus;
   final DateTime? trialEndsAt;
+
+  /// `subscription_plans.grace_days` — how long after `trialEndsAt`
+  /// before the account goes read-only (Item 32). Defaults to 7 only
+  /// when the plan lookup below fails; the DB is the real authority
+  /// (`assert_org_writable()`), so this value drives banner timing, not
+  /// the block itself.
+  final int graceDays;
+
   final bool orgActive;
 }
 
@@ -38,6 +47,11 @@ Future<OrgSessionData> loadOrgSessionData(String orgId) async {
   Map<String, dynamic> limits = {};
   Map<String, dynamic> features = {};
   String? planName;
+  // Item 32: only overwritten if the plan lookup succeeds AND the column
+  // has a value, so an org on a plan predating grace_days still gets a
+  // sane window rather than 0 (which would skip grace entirely and lock
+  // the moment the trial ends).
+  int graceDays = 7;
   try {
     final planId = org?.planId;
     final plans = planId != null
@@ -55,6 +69,7 @@ Future<OrgSessionData> loadOrgSessionData(String orgId) async {
           ? Map<String, dynamic>.from(plan.features as Map)
           : {};
       planName = plan.name;
+      graceDays = plan.graceDays ?? graceDays;
     }
   } catch (_) {
     // Plan lookup is best-effort — don't block login/switch on it.
@@ -70,6 +85,7 @@ Future<OrgSessionData> loadOrgSessionData(String orgId) async {
     planName: planName,
     planStatus: org?.planStatus,
     trialEndsAt: org?.trialEndsAt,
+    graceDays: graceDays,
     orgActive: org?.active ?? true,
   );
 }

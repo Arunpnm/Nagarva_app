@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'package:flutter/material.dart';
@@ -152,9 +153,12 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
       }
       await _loadOrgs();
     } catch (e) {
+      // `invoke` throws on any admin-update-org non-2xx response (17 Aug
+      // 2026 finding) — was showing a raw exception string.
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not change plan: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(extractFunctionErrorMessage(e,
+                fallback: 'Could not change plan.'))));
       }
     }
   }

@@ -1,6 +1,8 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
+// flutter_flow_widgets.dart (FFButtonWidget) dropped 18 Aug 2026 with the
+// dead "Upgrade Plan" button — re-add it when the WhatsApp support CTA
+// is wired.
 import '/app_session.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -145,11 +147,21 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                   ),
                   child: Column(
                     children: [
+                      // Item 32 key fix (18 Aug 2026): this read
+                      // `max_orders`, but the live data has always used
+                      // `max_orders_per_month` — so the orders limit
+                      // rendered "—" on every plan while being the limit
+                      // that actually matters. `max_leads` was read here
+                      // and written by the Super Admin editor, but exists
+                      // on no plan and is enforced nowhere; dropped
+                      // rather than left showing a permanent dash.
                       _limitRow(theme, 'Users', limits['max_users']),
                       _divider(theme),
-                      _limitRow(theme, 'Orders / month', limits['max_orders']),
+                      _limitRow(
+                          theme, 'Orders / month', limits['max_orders_per_month']),
                       _divider(theme),
-                      _limitRow(theme, 'Leads', limits['max_leads']),
+                      _limitRow(theme, 'WhatsApp msgs / month',
+                          limits['max_whatsapp_per_month']),
                     ],
                   ),
                 ),
@@ -171,39 +183,50 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                 const SizedBox(height: 32),
               ],
 
-              // Upgrade CTA
-              FFButtonWidget(
-                text: 'Upgrade Plan',
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Upgrade flow coming soon — Razorpay integration in Phase 3.',
-                      style: GoogleFonts.inter(fontSize: 13),
-                    ),
-                    backgroundColor: theme.primary,
-                    duration: const Duration(seconds: 3),
-                  ),
-                ),
-                options: FFButtonOptions(
-                  height: 52,
-                  color: theme.primary,
-                  textStyle: GoogleFonts.interTight(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+              // Activation CTA.
+              //
+              // 18 Aug 2026: the "Upgrade Plan" button and its "Razorpay
+              // payment integration · Phase 3" subtitle were REMOVED, not
+              // disabled. There is no payment rail yet (Item 31 is on
+              // hold pending Arun's CA settling which entity bills), so a
+              // confident-looking Upgrade button that answered with
+              // "coming soon" was a dead end shown to exactly the vendor
+              // least willing to tolerate one — someone whose trial just
+              // ended. Plain text with no affordance is more honest than
+              // a button that does nothing.
+              //
+              // WIRE THE WHATSAPP CTA HERE once the dedicated Nagarva
+              // support line is live — Arun is setting one up on WhatsApp
+              // Business, deliberately separate from APC's customer line
+              // (pan-India means lapsed-trial contact at any hour). Use
+              // kNagarvaSupportPhone from /config/app_config.dart and
+              // buildWhatsAppLink() from the same file; see that const's
+              // doc comment for every other place the number is needed.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.secondaryBackground,
                   borderRadius: BorderRadius.circular(12),
-                  elevation: 0,
                 ),
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: Text(
-                  'Razorpay payment integration · Phase 3',
-                  style: GoogleFonts.inter(
-                    color: theme.secondaryText,
-                    fontSize: 12,
-                  ),
+                child: Column(
+                  children: [
+                    Icon(Icons.support_agent,
+                        size: 26, color: theme.secondaryText),
+                    const SizedBox(height: 10),
+                    Text(
+                      AppSession.instance.isTrialExpired
+                          ? 'Your trial has ended. Contact Nagarva support '
+                              'to activate your plan.'
+                          : 'Contact Nagarva support to change your plan.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        color: theme.primaryText,
+                        fontSize: 13.5,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),

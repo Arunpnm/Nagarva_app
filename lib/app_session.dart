@@ -73,6 +73,48 @@ class AppSession extends ChangeNotifier {
       trialEndsAt != null &&
       trialEndsAt!.isBefore(DateTime.now());
 
+  /// Grace window between trial expiry and the write-lock, in days.
+  /// Comes from `subscription_plans.grace_days` (Item 32) — NOT a
+  /// constant, per the no-hardcoded-plan-values rule. Falls back to 7
+  /// only when a session hasn't loaded plan data yet; the DB is the
+  /// authority either way (see `assert_org_writable()`), so a stale
+  /// client value can only make the UI more permissive than the server,
+  /// never less — the write still fails server-side with a clear message.
+  int graceDays = 7;
+
+  /// Item 32 / Arun's decision 18 Aug 2026: read-only, not a hard lock.
+  /// An expired trial keeps full read access — a business locked out of
+  /// its own live job data doesn't become a customer, it becomes a
+  /// complaint — and loses the ability to CREATE records once grace has
+  /// also passed.
+  ///
+  /// Ladder: banner while the trial runs down -> [isInTrialGrace] (full
+  /// access, escalating banner) -> [isReadOnly] (view and export only).
+  bool get isInTrialGrace {
+    if (!isTrialExpired) return false;
+    return DateTime.now()
+        .isBefore(trialEndsAt!.add(Duration(days: graceDays)));
+  }
+
+  /// True once the trial AND its grace window have both passed. Mirrors
+  /// `org_effective_plan().is_locked`; the server enforces it for real.
+  bool get isReadOnly => isTrialExpired && !isInTrialGrace;
+
+  /// Days left before writes stop. Negative once read-only.
+  int get daysUntilReadOnly {
+    if (trialEndsAt == null || planStatus != 'trial') return 9999;
+    return trialEndsAt!
+        .add(Duration(days: graceDays))
+        .difference(DateTime.now())
+        .inDays;
+  }
+
+  /// Days left in the trial proper (before grace starts).
+  int get trialDaysRemaining {
+    if (trialEndsAt == null || planStatus != 'trial') return 9999;
+    return trialEndsAt!.difference(DateTime.now()).inDays;
+  }
+
   /// Super-admin console, Step 3 (NAGARVA_STATUS.md) — a platform admin
   /// suspended this tenant via organizations.active. Deliberately a
   /// separate getter from isTrialExpired (different cause, different
@@ -109,9 +151,11 @@ class AppSession extends ChangeNotifier {
     String? planName,
     String? planStatus,
     DateTime? trialEndsAt,
+    int? graceDays,
     bool orgActive = true,
     List<OrgMembershipInfo>? availableOrgs,
   }) {
+    if (graceDays != null) this.graceDays = graceDays;
     this.authUserId = authUserId;
     currentOrgId = orgId;
     currentOrgName = orgName;
@@ -157,8 +201,10 @@ class AppSession extends ChangeNotifier {
     String? planName,
     String? planStatus,
     DateTime? trialEndsAt,
+    int? graceDays,
     bool? orgActive,
   }) {
+    if (graceDays != null) this.graceDays = graceDays;
     currentOrgId = orgId;
     if (orgName != null) currentOrgName = orgName;
     if (orgSlug != null) currentOrgSlug = orgSlug;
@@ -188,6 +234,7 @@ class AppSession extends ChangeNotifier {
     planName = null;
     planStatus = null;
     trialEndsAt = null;
+    graceDays = 7;
     orgActive = true;
     isPlatformAdmin = false;
     availableOrgs = [];

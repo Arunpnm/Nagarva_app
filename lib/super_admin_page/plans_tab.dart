@@ -123,9 +123,12 @@ class _PlansTabState extends State<PlansTab> {
                 ),
                 const SizedBox(height: 6),
                 Text(
+                  // Item 32 key fix — was reading `max_orders`, which no
+                  // plan has ever carried (the real key is
+                  // max_orders_per_month).
                   'Limits: max_users=${limits['max_users'] ?? '—'}, '
-                  'max_orders=${limits['max_orders'] ?? '—'}, '
-                  'max_leads=${limits['max_leads'] ?? '—'}',
+                  'max_orders_per_month=${limits['max_orders_per_month'] ?? '—'}, '
+                  'max_whatsapp_per_month=${limits['max_whatsapp_per_month'] ?? '—'}',
                   style: GoogleFonts.inter(
                       color: theme.primaryText, fontSize: 12),
                 ),

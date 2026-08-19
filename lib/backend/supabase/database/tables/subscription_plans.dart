@@ -41,6 +41,16 @@ class SubscriptionPlansRow extends SupabaseDataRow {
   double? get priceInr => getField<double>('price_inr');
   set priceInr(double? value) => setField<double>('price_inr', value);
 
+  // Item 32 (20260818_item32_plan_enforcement.sql). Trial length moved
+  // out of create_org_with_owner(), where it was a hardcoded
+  // `interval '7 days'`, so it's editable in Super Admin. grace_days is
+  // the window between trial expiry and the read-only lock.
+  int? get trialDays => getField<int>('trial_days');
+  set trialDays(int? value) => setField<int>('trial_days', value);
+
+  int? get graceDays => getField<int>('grace_days');
+  set graceDays(int? value) => setField<int>('grace_days', value);
+
   String? get billingPeriod => getField<String>('billing_period');
   set billingPeriod(String? value) =>
       setField<String>('billing_period', value);

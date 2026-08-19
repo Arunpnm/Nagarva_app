@@ -10,6 +10,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/backend/supabase/supabase.dart';
+import '/backend/supabase/org_session_loader.dart';
 import '/backend/approval_queue.dart';
 import '/backend/survey_queue.dart';
 import '/backend/auth_deep_link.dart';
@@ -203,14 +204,24 @@ void main() async {
         Map<String, dynamic> limits = {};
         Map<String, dynamic> features = {};
         String? planName;
+        // Item 32: grace_days drives the trial banner's read-only
+        // timing. Defaults to 7 for an org whose plan predates the
+        // column — never 0, which would skip grace entirely and lock the
+        // moment the trial ended. Same fallback as
+        // org_session_loader.dart, which is the equivalent path for
+        // login and org-switch (this one is session RESTORE).
+        int graceDays = 7;
         final planId = org == null ? null : org['plan_id'];
         if (planId != null) {
           final plan = await SupaFlow.client
               .from('subscription_plans')
-              .select('name, limits, features')
+              .select('name, limits, features, grace_days')
               .eq('id', planId)
               .maybeSingle();
           if (plan != null) {
+            if (plan['grace_days'] is int) {
+              graceDays = plan['grace_days'] as int;
+            }
             if (plan['limits'] is Map) {
               limits = Map<String, dynamic>.from(plan['limits'] as Map);
             }
@@ -224,10 +235,15 @@ void main() async {
         final trialRaw = org == null ? null : org['trial_ends_at'];
         if (restoredStaffId != null && restoredStaffId.isNotEmpty) {
           // Staff session restore: staff identity + org context only.
+          // role reads from appMetadata, not userMetadata (17 Aug 2026)
+          // — see staff-login/index.ts's header comment for why:
+          // userMetadata is client-writable via updateUser(), appMetadata
+          // is not. This is a display/UI-preset convenience read only —
+          // real authorization is Item 30's live RLS lookups, not this.
           AppSession.instance.setStaff(
             staffId: restoredStaffId,
             staffName: (meta['name'] as String?) ?? '',
-            role: meta['staff_role'] as String?,
+            role: restoredUser.appMetadata['staff_role'] as String?,
           );
           await StaffPermissions.loadForStaff(restoredStaffId);
           AppSession.instance.setOrgOnly(
@@ -241,6 +257,7 @@ void main() async {
             planStatus: org == null ? null : org['plan_status'] as String?,
             trialEndsAt:
                 trialRaw is String ? DateTime.tryParse(trialRaw) : null,
+            graceDays: graceDays,
             orgActive: org == null ? true : (org['active'] as bool? ?? true),
           );
         } else {
@@ -256,6 +273,7 @@ void main() async {
             planStatus: org == null ? null : org['plan_status'] as String?,
             trialEndsAt:
                 trialRaw is String ? DateTime.tryParse(trialRaw) : null,
+            graceDays: graceDays,
             orgActive: org == null ? true : (org['active'] as bool? ?? true),
             availableOrgs: availableOrgs,
           );
@@ -424,7 +442,8 @@ class NavBarPage extends StatefulWidget {
 /// desktop (>1024dp) share the same rail; nothing distinguishes them
 /// beyond how much horizontal space happens to be available. Narrow
 /// screens (<600dp): the custom MobileBottomNav (Part 5a/5b).
-class _NavBarPageState extends State<NavBarPage> with TickerProviderStateMixin {
+class _NavBarPageState extends State<NavBarPage>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   String _currentPageName = 'HomePage';
   late Widget? _currentPage;
 
@@ -537,6 +556,7 @@ class _NavBarPageState extends State<NavBarPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Users Kickoff Step 2.2/2.3 "Home redirect": only applied when the
     // caller didn't already ask for a specific landing page (e.g. a deep
     // link) — a fresh login/session-restore has no widget.initialPage,
@@ -567,8 +587,51 @@ class _NavBarPageState extends State<NavBarPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _navAnimController.dispose();
     super.dispose();
+  }
+
+  /// Item 32 follow-up (18 Aug 2026): re-read the org's plan and trial
+  /// state whenever the app comes back to the foreground.
+  ///
+  /// `AppSession` was previously populated once — at login, org switch or
+  /// session restore — and never refreshed. So a trial that lapsed
+  /// overnight, or a plan changed in Super Admin, didn't take effect until
+  /// the vendor happened to log out and back in. That was already wrong
+  /// (the DB enforces the real limits either way, so the app could show a
+  /// vendor a banner contradicting what the server would actually do), and
+  /// it becomes a money problem once Item 31 lands and plan state decides
+  /// what someone has paid for.
+  ///
+  /// Deliberately cheap and best-effort: one row from `organizations`
+  /// plus its plan, on resume only. A failure here leaves the previous
+  /// values in place rather than clearing them — a network blip must not
+  /// make a paying vendor look unpaid.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed) return;
+    final orgId = AppSession.instance.currentOrgId;
+    if (orgId == null) return;
+    () async {
+      try {
+        final data = await loadOrgSessionData(orgId);
+        if (!mounted) return;
+        AppSession.instance.setOrgOnly(
+          orgId: data.orgId,
+          limits: data.limits,
+          features: data.features,
+          planName: data.planName,
+          planStatus: data.planStatus,
+          trialEndsAt: data.trialEndsAt,
+          graceDays: data.graceDays,
+          orgActive: data.orgActive,
+        );
+      } catch (_) {
+        // Keep whatever we had — see doc comment.
+      }
+    }();
   }
 
   void _setRailExpanded(bool expanded) {
@@ -797,6 +860,94 @@ class _NavBarPageState extends State<NavBarPage> with TickerProviderStateMixin {
   /// nothing org-scoped (money figures, customer data) renders while
   /// locked out. Settings and Logout aren't reachable as normal nav tabs
   /// in this state, so Logout gets its own button here.
+  /// Item 32's trial ladder (Arun's decision, 18 Aug 2026 — read-only
+  /// over hard lock, 7-day grace):
+  ///   - last 7 days of the trial  -> informational banner, full access
+  ///   - trial ended, in grace     -> warning banner, still full access
+  ///   - grace also passed         -> read-only banner, creates blocked
+  ///
+  /// The block itself is server-side (`assert_org_writable()`, called by
+  /// every enforcement trigger). This banner exists so the vendor knows
+  /// WHY a save is about to fail, rather than meeting a raw error — the
+  /// same reasoning as the FY-rollover prompt. Never hides the page.
+  Widget? _withTrialBanner(BuildContext context, Widget? body) {
+    if (body == null) return body;
+    final s = AppSession.instance;
+    if (s.planStatus != 'trial' || s.trialEndsAt == null) return body;
+
+    final readOnly = s.isReadOnly;
+    final inGrace = s.isInTrialGrace;
+    final daysLeft = s.trialDaysRemaining;
+    // Stay quiet until the last week — a banner from day 1 of a 30-day
+    // trial is just noise the vendor learns to ignore.
+    if (!readOnly && !inGrace && daysLeft > 7) return body;
+
+    final theme = FlutterFlowTheme.of(context);
+    final Color bg;
+    final IconData icon;
+    final String message;
+    if (readOnly) {
+      bg = theme.error;
+      icon = Icons.lock_outline;
+      message = 'Your trial has ended. You can still view and export '
+          'everything — upgrade to add new records.';
+    } else if (inGrace) {
+      final left = s.daysUntilReadOnly;
+      bg = Colors.orange.shade800;
+      icon = Icons.warning_amber_rounded;
+      message = left <= 0
+          ? 'Your trial has ended. Upgrade today to keep adding records.'
+          : 'Trial ended — $left day${left == 1 ? '' : 's'} left before '
+              'your account becomes read-only.';
+    } else {
+      bg = theme.primary;
+      icon = Icons.schedule;
+      message = daysLeft <= 0
+          ? 'Your trial ends today.'
+          : '$daysLeft day${daysLeft == 1 ? '' : 's'} left in your trial.';
+    }
+
+    return Column(
+      children: [
+        Material(
+          color: bg,
+          child: InkWell(
+            onTap: () => context.push(PlanPageWidget.routePath),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                child: Row(
+                  children: [
+                    Icon(icon, size: 17, color: Colors.white),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(message,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              height: 1.3,
+                              fontWeight: FontWeight.w500)),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('View Plans',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.underline)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Expanded(child: body),
+      ],
+    );
+  }
+
   Widget _buildLockScreen(BuildContext context, {required bool suspended}) {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
@@ -859,12 +1010,19 @@ class _NavBarPageState extends State<NavBarPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // Suspension is still a hard lock — a suspended tenant is a platform
+    // decision, not a self-serve billing state.
     if (AppSession.instance.isSuspended) {
       return _buildLockScreen(context, suspended: true);
     }
-    if (AppSession.instance.isTrialExpired) {
-      return _buildLockScreen(context, suspended: false);
-    }
+    // Item 32 / Arun's decision 18 Aug 2026: an expired trial is NO LONGER
+    // a hard lock. It used to replace the whole shell with the lock
+    // screen, which meant a vendor lost access to their own live job data
+    // the morning their trial ran out. Now they keep full read access
+    // (and export) forever, and lose the ability to CREATE records once
+    // the grace window has also passed — enforced server-side by
+    // assert_org_writable(), so this is presentation, not the gate.
+    // See _trialBanner below for what they actually see.
     if (_needsStaffPermissions) {
       return _buildPermissionsGate(context);
     }
@@ -878,7 +1036,30 @@ class _NavBarPageState extends State<NavBarPage> with TickerProviderStateMixin {
     }
     final currentIndex =
         _navItems.indexWhere((e) => e.name == _currentPageName);
-    final body = _currentPage ?? tabs[_currentPageName];
+    // Item 32: the trial ladder is a banner above whatever page is
+    // showing, in both layouts — never a replacement for the page.
+    //
+    // KeyedSubtree keyed on the active org (18 Aug 2026): every entry in
+    // `_tabs` is an unkeyed `const` widget, so Flutter matches them by
+    // runtimeType and REUSES their State — including each page's
+    // `_model`, which holds the last list it fetched. Switching org
+    // therefore left the previous org's rows on screen until something
+    // else forced a rebuild. SettingsPage's switcher tried to solve this
+    // with `context.go(HomePageWidget.routePath)` under a comment
+    // claiming a "full route rebuild", but tab switching never changes
+    // the URL (see _selectTab — it only setStates `_currentPageName`),
+    // so from the Settings TAB that call navigates to the location the
+    // user is already on and GoRouter does nothing. Keying the subtree
+    // by org id makes the stale case structurally impossible: the org
+    // changes, the key changes, the State is disposed and initState
+    // re-runs against the new org.
+    final body = _withTrialBanner(
+      context,
+      KeyedSubtree(
+        key: ValueKey('org:${AppSession.instance.currentOrgId}'),
+        child: _currentPage ?? tabs[_currentPageName] ?? const SizedBox.shrink(),
+      ),
+    );
     // Parity brief Part 5c: tablet (600-1024dp) gets the same collapsible
     // rail as desktop (>1024dp, Part 5d — "existing sidebar unchanged")
     // rather than the cramped bottom nav a 768dp cutoff used to force on

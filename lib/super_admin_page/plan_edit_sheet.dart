@@ -47,7 +47,17 @@ class PlanEditSheet extends StatefulWidget {
 }
 
 class _PlanEditSheetState extends State<PlanEditSheet> {
-  static const _limitKeys = ['max_users', 'max_orders', 'max_leads'];
+  // Item 32 key fix (18 Aug 2026). This list used to be
+  // ['max_users', 'max_orders', 'max_leads'] — but the live plan data has
+  // always used `max_orders_per_month`, and `max_leads` exists on no plan
+  // and is read by nothing. So editing a plan here wrote two keys nothing
+  // consumed while leaving the real orders limit untouched and invisible.
+  // The accompanying migration cleans up whatever this already wrote.
+  static const _limitKeys = [
+    'max_users',
+    'max_orders_per_month',
+    'max_whatsapp_per_month',
+  ];
 
   // Toggles shown for these specific keys. Corrected 27 Jul 2026 after
   // live-testing this editor against nagarva-demo's real plans: the
@@ -68,6 +78,15 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
   late final TextEditingController _code;
   late final TextEditingController _name;
   late final TextEditingController _price;
+
+  /// Item 32: trial length and grace window are plan data, not constants
+  /// — trial_days used to be `interval '7 days'` hardcoded inside
+  /// create_org_with_owner(). Editing trial_days affects NEW SIGNUPS
+  /// ONLY: an org's trial_ends_at is stamped once at signup and never
+  /// recalculated, so changing this can't retroactively shorten a live
+  /// trial. To change one org, use the tenant view's trial-date control.
+  late final TextEditingController _trialDays;
+  late final TextEditingController _graceDays;
   late String _billingPeriod;
   late bool _isDefaultTrial;
   late final Map<String, TextEditingController> _limitCtrls;
@@ -96,6 +115,8 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
         text: p?.priceInr != null ? p!.priceInr!.toStringAsFixed(0) : '');
     _billingPeriod = p?.billingPeriod ?? 'monthly';
     _isDefaultTrial = p?.isDefaultTrial ?? false;
+    _trialDays = TextEditingController(text: '${p?.trialDays ?? 30}');
+    _graceDays = TextEditingController(text: '${p?.graceDays ?? 7}');
 
     _originalLimits =
         (p?.limits is Map) ? Map<String, dynamic>.from(p!.limits as Map) : {};
@@ -120,6 +141,8 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
     _code.dispose();
     _name.dispose();
     _price.dispose();
+    _trialDays.dispose();
+    _graceDays.dispose();
     for (final c in _limitCtrls.values) {
       c.dispose();
     }
@@ -170,6 +193,8 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
         'price_inr': double.tryParse(_price.text.trim()),
         'billing_period': _billingPeriod,
         'is_default_trial': _isDefaultTrial,
+        'trial_days': int.tryParse(_trialDays.text.trim()) ?? 30,
+        'grace_days': int.tryParse(_graceDays.text.trim()) ?? 7,
         'limits': limits,
         'features': features,
       };
@@ -312,6 +337,42 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                         'New signups get this plan automatically'),
                     value: _isDefaultTrial,
                     onChanged: (v) => setState(() => _isDefaultTrial = v),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _trialDays,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                              labelText: 'Trial days'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _graceDays,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                              labelText: 'Grace days'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      'Trial days applies to NEW signups only — an existing '
+                      'org\'s end date is never recalculated. To change one '
+                      'org, use the tenant\'s trial-date control. Grace days '
+                      'is how long after the trial ends before the account '
+                      'becomes read-only.',
+                      style: GoogleFonts.inter(
+                          color: theme.secondaryText,
+                          fontSize: 11.5,
+                          height: 1.35),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text('Limits',

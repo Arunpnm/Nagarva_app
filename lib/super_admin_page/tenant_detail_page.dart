@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 
@@ -129,9 +130,12 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                 : '${_org.name} suspended.')));
       }
     } catch (e) {
+      // `invoke` throws on any admin-update-org non-2xx response (17 Aug
+      // 2026 finding) — was showing a raw exception string.
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not update: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(extractFunctionErrorMessage(e,
+                fallback: 'Could not update organization.'))));
       }
     } finally {
       if (mounted) setState(() => _togglingActive = false);
@@ -169,8 +173,9 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not update trial date: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(extractFunctionErrorMessage(e,
+                fallback: 'Could not update trial date.'))));
       }
     } finally {
       if (mounted) setState(() => _updatingTrial = false);
@@ -250,8 +255,9 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not send reset email: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(extractFunctionErrorMessage(e,
+                fallback: 'Could not send reset email.'))));
       }
     } finally {
       if (mounted) setState(() => _resettingPassword = false);
