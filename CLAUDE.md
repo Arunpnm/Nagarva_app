@@ -157,10 +157,81 @@ was not reconstructed, see the Changelog for that)
 - **Public, no auth, token-keyed** (customer-facing, built since the 13 Jul
   snapshot this section replaces): SurveyPage (`/survey`), QuotePage
   (`/quote`), SignPage (`/sign`, signature capture via
-  `lib/components/signature_pad.dart`), TrackPage (`/track`).
+  `lib/components/signature_pad.dart`), TrackPage (`/track`). **17 Aug
+  2026: SurveyPage/QuotePage/SignPage are dead code** — see "Public web
+  surface" below, this is a real correction, not a formality.
 - **Platform**: SuperAdminPage (`/super-admin`, direct-URL only, not linked
   from any nav, gated on a `platform_admins` row).
 No empty shells remain anywhere in this list as of today.
+
+## Public web surface — link.nagarva.in is NOT served by this repo
+(New section, 17 Aug 2026 — this was never written down anywhere before;
+`lib/flutter_flow/nav/nav.dart`'s "WHERE CUSTOMER LINKS ACTUALLY RESOLVE"
+comment, dated 29 Jul 2026, is the only prior record and this section is
+that comment made durable.)
+
+`kPublicBaseUrl` (`lib/config/app_config.dart`) points customer-facing
+share links (survey/quote/sign/track) at `https://link.nagarva.in`. That
+domain has **never** run this repo's Flutter web build. Confirmed twice:
+by nav.dart's contemporaneous comment on 29 Jul 2026, and again 17 Aug
+2026 when Arun proved it directly — the domain's root returned a bare
+Netlify 404 before an unrelated incident replaced the site, and a Flutter
+web build always emits `index.html` at root, so it was never there.
+
+What actually serves each path, as of 17 Aug 2026:
+- **`/survey`, `/sign`** — a separate, hand-written static site, built per
+  its own handoff brief (not in this repo). Calls a **different RPC
+  pair** than this repo's Flutter pages: `public_get_survey`/
+  `public_submit_survey` and `public_get_signature_request`/
+  `public_submit_signature` — all four anon-callable directly, no Edge
+  Function layer. This is the thing customers actually use.
+- **`/quote`** — nothing. Never served by anything, static or Flutter, at
+  any point — confirmed by the absence of any `public_*` RPC for
+  quotations (survey and signature each got one; quotation never did).
+- **`/track`** — also nothing, until this repo's Flutter TrackPage is
+  actually deployed there (not done as of 17 Aug 2026 — the incident
+  below interrupted an attempt to do exactly that).
+- **`/auth`** (was root until 17 Aug 2026) — a small static relay page
+  (`web/auth/index.html` in this repo, recovered byte-for-byte from the
+  live site and checked in 17 Aug 2026) that renders "Email confirmed"
+  and forwards the URL fragment to `nagarva://auth-callback`, the trigger
+  for `lib/backend/auth_deep_link.dart`'s native auto-login. This one IS
+  real, current, and belongs to this repo's auth flow — `kAuthRedirectUrl`
+  points at it. Unrelated to the survey/sign/quote/track question above;
+  it just happens to share the domain.
+
+**This repo's own `SurveyPage`/`QuotePage`/`SignPage`/`TrackPage` Flutter
+widgets are consequently dead code** (not broken — never reached by live
+traffic). Their headers are marked accordingly as of 17 Aug 2026. Kept,
+not deleted, in case this build is ever hosted on a domain that owns
+these paths for real.
+
+**The 17 Aug 2026 incident**: a drag-drop deploy of just the `/auth`
+relay page to link.nagarva.in's root replaced the entire site, taking the
+real, live `/survey` and `/sign` pages down along with it (their source
+was never in git — a Netlify drag-drop deploy, not a repo-tracked
+pipeline). `flutter build web` was run and `web/auth/index.html` +
+`web/_redirects` were added to this repo assuming link.nagarva.in was
+this Flutter build — **that assumption was wrong**, caught before
+deploying. Arun is recovering the original `/survey`/`/sign` files from
+Netlify's deploy history. **Nothing gets deployed to link.nagarva.in
+until that recovery is confirmed** — the prepared Flutter web build
+(`build/web/`, plus `web/auth/index.html`/`web/_redirects` in source) is
+held, not shipped. `kAuthRedirectUrl` was changed to
+`https://link.nagarva.in/auth` (from the bare domain) as part of this —
+that part stands regardless of how the survey/sign recovery resolves,
+since the `/auth` relay page needs to move off root either way once
+anything else is deployed there again.
+
+Two RPC families do overlapping jobs (survey get/submit, signature
+get/submit) with real security-posture differences neither side
+strictly wins on — full comparison given to Arun 17 Aug 2026, not
+reproduced here since it's a live discussion, not a settled fact; ask
+him or re-derive from `pg_get_functiondef()` on `get_survey_by_token`/
+`submit_survey`/`public_get_survey`/`public_submit_survey`/
+`get_signature_request`/`submit_signature`/`public_get_signature_request`/
+`public_submit_signature` if this note has gone stale. Consolidating to
+one family is a stated future goal, not scheduled.
 
 ## Known bugs / immediate issues
 1. **~~dashboard_kpis_view (and likely all 6 views) missing in Nagarva project~~
@@ -392,6 +463,46 @@ Backup of the previous working build: `C:\Android project\nagarva_app_old`
 docs only, do not edit): `C:\Users\Arun\ArunPKRS2` — its context/pages.md and
 dsl/edit.dart are useful specs of intended behaviour.
 
+## Hardcoded demo data — how to sweep for it properly
+(18 Aug 2026. Recorded here rather than in the changelog because the
+lesson is about METHOD, and the method was wrong twice.)
+
+This is a FlutterFlow export. Every untouched design-time value survives
+as `getText('key' /* literal */)`. Real vendors see these as invented
+customers and invented money, which is fatal to trust on day one — Arun
+found four fake leads and a fake ₹68,450 expense breakdown on a
+brand-new org's first screens.
+
+**The 7 Aug sweep missed both, and the reason matters.** It searched only
+for bare NUMBERS (`getText(key /* 8 */)`), because the two known cases at
+the time were stat cards. So it found Fleet's "4 Active / 2 Idle" and
+Leads' funnel counts — and was blind to hardcoded *rows*: a person's
+name, a phone number, a city, a category label. Same disease, different
+shape, invisible to that regex.
+
+**When sweeping, search for DATA-SHAPED literals, not one syntax:**
+- currency and percentages (`₹`, `%`)
+- person-like names (two capitalised words)
+- phone numbers, order/vehicle ids (`ORD-047`, `TN-01-AB-1234`)
+- month-year strings (`May 2025`)
+- bare integers
+
+Then classify each hit **label vs data**. `REVENUE`, `Move Details`,
+`Amount (₹)` are labels over real values and are fine.
+`+91 XXXXX XXXXX` and `e.g. 200000` are input hints, also fine. A
+literal is a bug when it *is* the content.
+
+**Also check the widget is actually reached.** Leads' four fake cards sat
+in 588 lines of leftover mockup markup directly BELOW a real, working
+list — the list had been wired long before, nobody deleted what was
+underneath. A page can be simultaneously correct and fake. Grep is not
+enough; look at what renders.
+
+**And check buttons while you're there.** The same pass found Expenses'
+"Add Expense" still on FlutterFlow's stub — `print('AddExpenseBtn
+pressed ...')` and nothing else. A button that looks like it works and
+silently doesn't is the same class of trust damage.
+
 ## Conventions for Claude Code sessions
 - **Changing a function's return type or a view's column type needs an
   explicit `DROP` first — `CREATE OR REPLACE` will not do it.** Postgres
@@ -407,6 +518,30 @@ dsl/edit.dart are useful specs of intended behaviour.
   rather than finding out from a live 42P13/42P16.
 - **Every org-scoped query goes through `OrgScope` (`lib/backend/supabase/org_scope.dart`)** —
   see "Org scoping convention" above. Do not hand-write `.eq('org_id', ...)`.
+- **After a successful mutation, refresh the whole row — never hand-patch
+  the one field you just wrote.** (Arun, 19 Aug 2026: "third time this
+  week the DB was right and the screen was wrong — receipt number,
+  `quote_items`, now `supervisorStatus`. Different causes, same shape.")
+  Each instance had its own root cause, which is exactly why the
+  convention has to be structural rather than three separate fixes:
+  - **receipt number** — the number rendered to the user disagreed with
+    the number the allocator had actually stored.
+  - **`quote_items`** — an order's line items were sent under a key the
+    renderer never read, so a document showed zero items while the rows
+    sat there in the database (17 Aug 2026, signature allow-list).
+  - **`supervisorStatus`** — the completion transaction wrote
+    `supervisor_status`/`status` to Postgres correctly, then updated only
+    `supervisorStatus` in local model state. The row was right; the
+    screen kept showing the job as un-delivered until a reload (19 Aug
+    2026 emulator pass).
+  The rule: when a write succeeds, **re-read the row** (or apply the
+  server's returned representation) into model state and `setState` on
+  that, rather than assigning the fields you happen to remember changing.
+  Patching by hand is a running bet that you can list every field the
+  write touched — including the ones a trigger or a default touched for
+  you — and that bet loses quietly, showing the user stale data with no
+  error anywhere. Cheapest correct form: `.select()` on the update, or a
+  small `_reload()` the success path calls.
 - Work in small verifiable steps: one page or one migration per commit-sized change.
 - After DB changes, paste SQL for the owner to run in the Supabase SQL editor
   (he runs it manually) unless told otherwise.
@@ -418,7 +553,995 @@ dsl/edit.dart are useful specs of intended behaviour.
   whenever you land a fix or discover the doc is wrong, not just at the end
   of a big session.
 
+## Item 32 — plan enforcement (built 18 Aug 2026)
+Plans now mean something. Before this, the audit found (verified against
+live Postgres, not assumed): `max_users` checked in ONE client-side
+place, `max_orders_per_month` read nowhere, every feature flag
+display-only, and **zero** server-side enforcement — Trial and Pro were
+the same product, and the one check that existed was bypassable by
+anyone with the APK or curl.
+
+- **`org_effective_plan(org)` / `org_limit()` / `org_has_feature()` /
+  `assert_org_writable()`** are the primitives — same Option B shape as
+  Item 30 (lookup functions reading live state, no JWT claims).
+- **Triggers, not RLS, for counted limits.** An RLS denial reads as "new
+  row violates row-level security policy"; a trigger raises a real
+  sentence, and `extractDbErrorMessage()` (P0001 only, deliberately
+  narrow so Postgres internals never leak to a vendor) surfaces it.
+- **Trial expiry is enforced server-side now.** It used to be a client
+  getter — an expired tenant could still read AND write over PostgREST.
+- **Read-only, not hard lock** (Arun, 18 Aug): the old behaviour replaced
+  the whole shell with a lock screen, so a vendor lost access to their
+  own live job data the morning the trial ran out. Ladder is banner ->
+  7-day grace -> read-only (creates blocked, reads and export forever).
+  `main.dart`'s `_withTrialBanner` is presentation; the DB is the gate.
+- **No hardcoded plan values.** `trial_days` (30) and `grace_days` (7)
+  moved out of `create_org_with_owner` into `subscription_plans`, both
+  editable in Super Admin. **Editing `trial_days` affects NEW SIGNUPS
+  ONLY** — `trial_ends_at` is stamped once and never recalculated, or
+  editing the setting would retroactively shorten a live trial. Per-org
+  changes go through the tenant view's trial-date control, which already
+  existed (`_pickTrialDate`/`_extendTrialByDays` via `admin-update-org`).
+- **Key mismatch fixed across 3 Dart files.** The Super Admin editor
+  wrote `max_orders`/`max_leads`; live data uses `max_orders_per_month`;
+  PlanPage displayed `max_orders`. So the orders limit was unenforced,
+  invisible AND uneditable, and every save through that editor grew two
+  dead keys. `max_leads` dropped (on no plan, read by nothing).
+- **Plans restructured**: Basic ₹799 / Growth ₹1,499 / Pro ₹2,999
+  monthly (annual = 10x, decided but NOT built — needs its own rows with
+  `billing_period='annual'`, do it with Item 31). `starter` updated in
+  place to Basic rather than replaced, since `organizations.plan_id`
+  references it. **WhatsApp sits in Growth, not Pro** — Arun: "it's the
+  feature that closes small operators" — with per-message cost handled
+  by capping volume (`max_whatsapp_per_month`) rather than withholding.
+  **`gst_invoice` is never gated**: table stakes for an Indian business.
+- **Trial mirrors GROWTH, not a cut-down tier** (Arun, 18 Aug 2026,
+  correcting what the migration first seeded). The migration seeded
+  Trial at 5 users / 50 orders / no multi_branch — which made Trial
+  *more generous than Basic on some axes and less on others*, so a
+  vendor who evaluated free and then paid ₹799 got LESS than they'd had
+  for nothing. "That reads as a downgrade at exactly the moment they're
+  deciding to pay." Trial is now 10 users / 400 orders / 500 WhatsApp
+  with multi_branch + reports on — identical to Growth — so vendors
+  evaluate the tier we most want them buying and Basic is a visible
+  step down they *choose*, not a penalty for paying. Note this makes
+  the trial→Basic downgrade-over-limit path real: a trial org with 8
+  staff picking Basic keeps all 8 and is simply blocked from adding a
+  9th, which is exactly what the INSERT-only triggers already do.
+- **Not enforced yet, by decision not oversight**: the `whatsapp` gate
+  belongs at the send Edge Function (its real chokepoint) and lands with
+  the AiSensy work; `reports`/`gst_invoice` have no server chokepoint and
+  neither costs money nor leaks data, so they stay UI-only.
+
+### Item 32b — read-only means read-only
+`supabase/20260818_item32b_readonly_writes.sql` extends the guard from
+orders+staff to **leads, quotations, customers, vendors, materials,
+trips, tasks, vendor_bills, expenses** via one shared
+`enforce_org_writable()` BEFORE INSERT trigger. Without it the banner's
+"you can still view and export everything — upgrade to add new records"
+was false: a locked org could still create most record types.
+
+**Never block these, and the reasons are load-bearing:**
+- **`payment_entries` / `receipts`** — Arun, 18 Aug 2026: blocking these
+  stops a vendor recording money they have ALREADY BEEN PAID. That
+  corrupts their books to apply commercial pressure and punishes them
+  for their customer's payment. Money already received must always be
+  recordable.
+- **Reads, always.** A BEFORE INSERT trigger cannot fire on SELECT, so
+  exports work forever by construction. This is a guarantee, not an
+  accident — a vendor must always be able to get their own data out.
+  If a read ever fails under lock, that's a release blocker.
+- **System/audit** (audit_log, notification_log, order_tracking,
+  order_status_history) and **config** (settings, app_settings,
+  pricing_config, number_series) — blocking audit breaks the trail
+  exactly when it's wanted; blocking config is friction with no upside.
+- **UPDATEs generally** — only INSERT is guarded (bar staff.branch).
+  A locked vendor can still fix a typo and close out jobs that were
+  already running when the trial lapsed. The lever is "no new work",
+  not "your data is frozen".
+
+### Settings → Help & About (built 18 Aug 2026) — LAUNCH BLOCKER
+`lib/settings_page/help_about_page.dart`, route `/help-about`. Arun
+caught this as a missed launch blocker: **it gates two external
+approvals**, not just cosmetics.
+- **Play Store** requires the privacy policy reachable IN-APP, not only
+  from the store listing.
+- **Meta's WhatsApp Business API review** asks for support contact
+  details discoverable in the product.
+
+Contents: branding + `kNagarvaTagline`, `Version $kAppVersion`, support
+rows (**gated on `hasNagarvaSupportPhone`** — the whole section doesn't
+render until the number exists), Privacy Policy and Terms.
+
+**Not owner-gated**, unlike the PIN and Recycle Bin cards next to it — a
+staff session needs support and legal links too, and review expects the
+privacy policy reachable from a normal session.
+
+Two decisions worth not undoing:
+- **No new dependencies.** `url_launcher` was already present; the
+  version string comes from `--dart-define=NAGARVA_APP_VERSION` rather
+  than `package_info_plus`, following the same pattern `kPublicBaseUrl`
+  already uses. **`kAppVersion`'s default tracks `pubspec.yaml`'s
+  `version:` and must be bumped with it** — a build without the define
+  shows the default, so a stale default is a wrong version in front of a
+  vendor, not a crash.
+- **Legal URLs consolidated** into `kTermsUrl`/`kPrivacyPolicyUrl` in
+  `app_config.dart`. They were top-level consts in
+  `signup_page_widget.dart`; duplicating them into a second screen would
+  have meant two places to update. `kSignupTermsUrl`/`kSignupPrivacyUrl`
+  remain as aliases so signup reads unchanged.
+
+### Nagarva support number — one const, several destinations
+`kNagarvaSupportPhone` in `lib/config/app_config.dart` is **empty on
+purpose** until Arun's dedicated WhatsApp Business line is live
+(deliberately separate from APC's customer line — pan-India means
+lapsed-trial contact at any hour). Guard every use with
+`hasNagarvaSupportPhone`; **never ship a contact affordance that goes
+nowhere**. That const's own doc comment is the authoritative list of
+destinations — PlanPage's CTA (built, waiting), a Settings → Help/About
+section that **does not exist yet** and needs building, and the Supabase
+Auth confirmation email template (Dashboard, not this repo — the easiest
+to forget precisely because it isn't a file).
+
+PlanPage's "Upgrade Plan" button and its "Razorpay · Phase 3" subtitle
+were **removed, not disabled** (18 Aug 2026) — a confident button
+answering "coming soon" was a dead end shown to the one vendor least
+willing to tolerate one.
+
+## Item 31 — subscription billing: ON HOLD (18 Aug 2026)
+Held by Arun pending **his CA settling which entity bills for
+subscriptions** — Nagarva-the-platform is a different business from
+APC-the-mover and may need its own GSTIN. No gateway work starts before
+that. Scoped conclusions worth keeping:
+- **UPI Autopay is the instrument that matters** for this customer base
+  (zero MDR by regulation, no card needed, auto-debit under the RBI
+  e-mandate threshold needs no per-transaction auth). eNACH only for
+  annual/large. Gateway choice (Razorpay vs Cashfree) is close to a
+  coin-flip on features; lean Razorpay for Subscriptions API maturity.
+  **Verify current pricing, mandate thresholds and licence status at
+  signing** — that analysis was written against a May 2026 knowledge
+  cutoff.
+- **Price changes must grandfather existing subscribers** (Arun's rule):
+  a new price applies to new subscriptions only until he deliberately
+  migrates someone. Nothing in Item 32 reads `price_inr`, so this is
+  still open ground.
+- Upgrade = immediate + prorated difference; downgrade = at period end,
+  no refund; downgrade over-limit keeps existing rows and only blocks new
+  creates (which Item 32's INSERT-only triggers already do naturally).
+
+## ⏳ DEADLINE: MARCH 2027 — financial-year numbering rollover
+(New section, 18 Aug 2026. Scoped, NOT built, per Arun. This is a dated
+time bomb, not a backlog item — if it isn't shipped before 1 April 2027,
+every numbered document in the product breaks for every tenant on the
+same morning, APC included.)
+
+**The failure.** `number_series` rows are FY-scoped, and every org today
+has `2026-27` rows only. `next_doc_number()` RAISES (P0001) when no row
+matches the requested fy. `OrderDetailPage.currentFy()` flips to
+`'2027-28'` at **00:00 IST on 1 April 2027** — so the first document
+anyone issues that morning fails. Not 2 April, not gradually: instantly,
+at the year boundary, for all 14 doc types at once.
+
+**It does NOT fail uniformly, and that's the important part.** Of the 6
+allocator call sites (all pass `p_branch: null` — one org-wide series per
+doc type per FY, per the 12 Aug 2026 numbering decision):
+- **5 hard-fail**: invoice (`order_detail_page_widget._nextInvoiceNo`),
+  proforma, voucher, money receipt (`order_documents_section`), and LR
+  (`next_lr_number`, same contract, same FY scoping). The exception
+  propagates; the document doesn't generate.
+- **1 fails SILENTLY**: `quick_payment_section.dart`'s
+  `catch (_) { receiptNo = null; }` swallows it and records the payment
+  with **no receipt number at all**. That's the worse half — it's the
+  same shape as the bare-`0001` bug: a real financial record created
+  with a missing number, quietly, for as long as nobody notices.
+
+**So: no, the Settings button is not sufficient on its own.** A button
+that must be remembered *before* the first document of the year, where
+forgetting means a raw Postgres exception mid-invoice (or a silently
+unnumbered payment), is the same dead-end shape as the Ponci
+no-number_series bug. Arun's question was the right one to ask.
+
+**Agreed design — button + catch, and no cron.** Three pieces:
+1. **`roll_over_number_series(p_org_id, p_from_fy, p_to_fy)`** — clones
+   the org's ACTIVE rows into the new FY: same doc types, same padding
+   and suffix, calendar-year prefix advanced (`2026/` -> `2027/`),
+   `last_number` reset to 0, `ON CONFLICT DO NOTHING`. **Derived from
+   the org's existing configuration, never invented** — this is the
+   whole distinction from the auto-insert that `next_doc_number()` used
+   to do and that produced the bare `0001` invoices (that one INSERTed a
+   default row with an EMPTY prefix, inventing a new wrong series;
+   this carries the configured one forward). Do not reintroduce
+   allocation-time auto-insert.
+2. **Settings card, owner-only** — "Financial year & numbering": current
+   FY, whether the next one has been started, and a preview of the first
+   number per doc type ("Invoice -> 2027/0001") before confirming. This
+   is the deliberate, visible path Arun wants and should stay the
+   primary one.
+3. **The catch that makes the button sufficient** — one shared Dart
+   helper wrapping all 6 allocator call sites, intercepting P0001 and
+   turning the dead-end into a prompt: "2027-28 numbering hasn't been
+   started yet. [Start it now]" -> runs the same RPC -> retries the
+   allocation. Nothing silent, nothing invented, the owner still
+   explicitly consents — they just consent at the moment they need it
+   instead of having to remember in March. **Fix
+   `quick_payment_section`'s blanket `catch (_)` as part of this**; it
+   should surface the same prompt, not drop the receipt number.
+
+With (3) in place a scheduled job adds nothing but an invisible moving
+part — Arun's instinct to reject the cron holds.
+
+**Ship before 1 April 2027; target March 2027** to leave room to test a
+rollover against a real org before the boundary.
+
+## Item 13 (public enquiry link) — BLOCKED, do not start
+(New section, 18 Aug 2026. Item 13 was sequenced right after Item 12
+because it needs the org's own CFT catalogue. Item 12 landed, but 13 is
+still blocked on four things — three pre-existing, one created by the
+branch-scoping work that shipped the same week.)
+
+**Arun's decision, 18 Aug 2026: on hold until the new-org seeding fix
+lands, and the OTP channel gets chosen deliberately as its own
+decision rather than falling out of a build.**
+
+1. **It isn't this repo.** `/enquiry/<slug>` would live on
+   link.nagarva.in — the separate hand-written static site (see "Public
+   web surface" above). This repo's SurveyPage/QuotePage/SignPage are
+   dead code. Most of Item 13 is therefore not Flutter work, and the
+   first decision is *where it runs*.
+2. **No anon-callable path to a catalogue.**
+   `PricingConfig.loadForCurrentOrg()` goes through `OrgScope` and needs
+   a session. Item 13 needs a new `public_get_org_catalogue(p_slug)`
+   RPC returning ACTIVE items only — the `activeSurveyCats` filter
+   enforced server-side, not trusted from the client.
+   `resolve_org_by_slug()` exists but returns only `id/name/slug`;
+   §13A wants logo + phone for vendor branding, so it needs widening or
+   a companion RPC.
+3. **The master brief's OTP claim is wrong.** §13B says "OTP
+   infrastructure already exists for supervisor job completion — reuse
+   it." It doesn't. That OTP is a 4-digit code generated in-app and read
+   aloud to the customer at delivery; there is **no SMS or WhatsApp send
+   path anywhere in this project** (AiSensy is Phase 4, unbuilt). Phone
+   OTP as the anti-spam gate means adding a real send channel, and that
+   cost dominates the whole item. The per-IP rate limit IS reusable —
+   `invite_code_rate_limit`'s `request.headers` GUC pattern.
+4. **Which branch owns a public lead?** (New as of the 17 Aug
+   branch-scoping migration.) `leads` is now branch-scoped with
+   fail-closed semantics, so a NULL-branch lead is visible to the
+   **owner only** — invisible to every branch manager. A public
+   lead-capture channel that lands NULL-branch rows would quietly
+   deliver leads to the owner's screen and nobody else's. Needs a rule
+   before 13 ships. **Arun's instinct, 18 Aug 2026: a per-org
+   `default_branch` column — "simplest and predictable" — but NOT built
+   yet and not to be built ahead of the decision.** The alternatives
+   considered were deriving from the customer's `from_city` and
+   round-robin assignment.
+
+## Device binding — two paths, and they are NOT equivalent
+(New section, 19 Aug 2026. Written because the difference cost real
+time during the 19 Aug emulator pass, and because it will confuse a
+vendor onboarding a crew. `lib/backend/device_org_binding.dart`'s own
+doc comment is also WRONG on one point — see the correction below.)
+
+A device must be bound before anyone can PIN-login. There are two ways
+to bind, they produce different device states, and they route to
+different Edge Functions with different security properties.
+
+**1. Staff invite code** (e.g. `Z3UNPP9H`) — `staff-invite-redeem`
+sets `boundStaffId` via `DeviceOrgBinding.bindStaff()`. The device now
+belongs to ONE PERSON. PIN login calls **`staff-login`** with that
+`staff_id` alone, so it never searches an org-wide pool and cannot
+reach the owner's credentials at all. **Consequence that surprises
+people: no other employee's PIN works on that device, however correct
+it is.** Codes are single-use, hashed (only `code_hint` is stored),
+expiring, one live unused invite per staff member, and redemption is
+rate-limited per `device_id`.
+
+**2. Org code** (the org's slug, e.g. `apc`) — `resolve_org_by_slug`
+then `DeviceOrgBinding.bind()`, which explicitly CLEARS any previous
+`boundStaffId`. PIN login calls **`pin-login`**, which runs
+`verify_org_pin()` — and that checks the owner pool **and every active
+staff member's PIN**. So any active person in the org can sign in on
+this device by typing their own PIN.
+
+**CORRECTION to `device_org_binding.dart`'s doc comment**: it says the
+org path is "OWNER — bound by org slug only … Uses `pin-login`, which
+is now effectively owner-only." That is not true and never was.
+`verify_org_pin`'s Pool 2 iterates every `staff` row with
+`coalesce(active, true)` and a `pin_hash`. Verified empirically on 19
+Aug 2026 — Rajesh Kumar, a `staff` row with role `manager`, logged in
+through the org-code path. Read the SQL, not that comment.
+
+**Which to use when.** Invite code is the intended path for a staff
+member's own phone: it is the thing that structurally removes the
+PIN-collision escalation route. Org code is the right binding for the
+owner's own device, and it is the binding to use for a QA/device pass
+that needs to switch between people — an invite-bound device cannot.
+
+**Security note, unresolved — see "Ex-employee re-entry" below.** The
+org code is not a secret (it is the vendor's public slug, and
+`resolve_org_by_slug` is anon-callable), so binding is free to anyone.
+Binding alone grants nothing; the PIN is the gate. The single control
+that actually stops a departed employee is `staff.active = false`, set
+via the `staff-deactivate` Edge Function, which also revokes their
+live Supabase sessions. `verify_org_pin`, `staff-login` and
+`staff-invite-redeem` all refuse an inactive row. **That control is a
+manual step nothing prompts for**, and re-binding a fresh device is
+unlimited and invisible to the owner — so an employee who leaves
+without being deactivated keeps working access indefinitely, and
+wiping or returning their old phone does not change that.
+
+### Ex-employee re-entry — the gap, as of 19 Aug 2026 (nothing built)
+Asked by Arun before Item 19. Answering what IS, not proposing a fix.
+
+**How a five-person onboarding works today.** Both paths work, and
+nothing in the product steers the vendor to either one:
+- *Five staff-specific invite codes* — the designed path. Owner opens
+  each staff member's row and generates a code (`staff-invite`,
+  `action: 'generate'`), one live unused invite per person, default
+  expiry in days, single-use. Each phone binds to its own person.
+- *Share the org code* — "type `apc`, then your PIN" told to all five.
+  Works immediately for every active staff member, because `pin-login`
+  searches the whole active staff pool. It is less work for the owner,
+  needs no per-person step, and is what a busy operator will actually
+  do. **Nothing warns them what they gave up.**
+
+**What stops an ex-employee: exactly one thing, `staff.active`.**
+Deactivating through `staff-deactivate` sets `active = false` AND calls
+`auth.admin.signOut()` on their shadow user, so live sessions die too
+(the function exists precisely because the older client-side
+`active: false` write could never revoke a session). Every entry point
+then refuses them: `verify_org_pin` filters `coalesce(s.active, true)`,
+`staff-login` returns "Staff not found or inactive", and
+`staff-invite-redeem` refuses an inactive staff row. Deactivation, done,
+is a complete boundary.
+
+**The gap is that nothing makes it happen, and nothing notices.**
+1. **Deactivation is manual and unprompted.** No offboarding flow, no
+   reminder, no "this person hasn't logged in for 60 days" signal. The
+   whole security boundary rests on a small operator remembering an
+   admin step during a week when someone just quit.
+2. **Re-binding is free, unlimited, and invisible.** The org code is
+   the vendor's public slug and `resolve_org_by_slug` is anon-callable,
+   so an undeactivated ex-employee binds ANY new device — their own new
+   phone — and is back in with their old PIN. Collecting their work
+   phone accomplishes nothing: binding is local `SharedPreferences`
+   state, not a server-side registration.
+3. **The invite system does not constrain this.** `boundStaffId`
+   prevents *escalation* (an invite-bound device can never reach the
+   owner pool) and that protection is real. It does not prevent
+   *re-entry*, because the org-code path runs in parallel and needs no
+   invite at all.
+4. **No device register.** `staff_invites.used_by_device` is recorded
+   at redemption and never consulted again; `device_id` exists only as
+   a rate-limit counter and `unbind()` deliberately preserves it. So no
+   screen anywhere tells an owner which devices are bound to their org,
+   and a new binding raises nothing.
+
+**Blast radius if it happens**: a returning ex-supervisor gets their
+own branch-scoped view — orders, leads, customers, tasks for their
+branch (Item 30's policies still apply, so not the whole tenant). For a
+salesperson who left for a competitor, the branch's customer list and
+lead pipeline is the sensitive part.
+
+**Not proposing an implementation here.** The design question to settle
+first is whether the org code should remain a *staff* login path at all,
+or become owner-only with staff required to bind by invite — which is
+what `device_org_binding.dart`'s comment already wrongly assumes is the
+case, and would make deactivation-forgetting far less dangerous.
+
+## Item 30 — branch scoping is FIELD-verified, not just DB-verified
+(New section, 19 Aug 2026. Recorded because "the migration is live and
+the policies test correctly in SQL" is a weaker claim than it sounds:
+it says nothing about whether the app's own queries — which run as a
+real staff session over PostgREST, through `OrgScope` and the generated
+table classes — actually see the right rows.)
+
+`supabase/20260817_branch_scoping_ops.sql`'s RESTRICTIVE
+`branch_isolation` policies (orders, leads, customers, tasks, trips,
+attendance, reviews) are now confirmed **on a real Android device,
+through a real PIN-minted staff session**, in the 19 Aug 2026 emulator
+pass — not only by `SET LOCAL` role/claim simulation at the DB.
+
+**What the field pass proved, and why it counts: it was an accident.**
+Two Bengaluru orders (NGV-1011, APC-1005) were assigned to **Vignesh M,
+a Chennai supervisor**, by mistake while setting the run up. They never
+appeared in his My Jobs list. Nothing errored and nothing half-rendered
+— the rows were simply absent, which is exactly the fail-closed
+behaviour the NULL/other-branch rule is supposed to produce. The run
+was redone against Chennai orders (NGV-1012, APC-1002) and both showed
+up immediately. A test written to pass proves less than a mistake the
+policy silently caught.
+
+**Manager scoping field-verified the same day**: Rajesh Kumar, a
+Chennai *manager*, signed in on the same emulator and saw Chennai rows
+only. The policy grants an **owner** bypass and deliberately no manager
+bypass — that distinction now has device evidence behind it, not just
+the migration's stated intent.
+
+Note for whoever runs the next device pass: a device bound with a staff
+**invite code** is bound to that one person (`DeviceOrgBinding
+.boundStaffId`) and calls `staff-login` with their `staff_id` alone, so
+another employee's PIN cannot work on it no matter how correct the PIN
+is. Binding with the **org code** (the slug, e.g. `apc`) instead routes
+to `pin-login`, which searches the owner and staff pools — that is the
+binding to use when a pass needs to switch between people.
+
+## Item 12 — pricing config stays jsonb, NOT the brief's tables
+(New section, 17 Aug 2026. Written because the master build brief
+specifies relational tables here and a future session WILL try to
+"fix" this deviation without knowing it was a decision.)
+
+`nagarva_master_build_brief.md` §12A/§12B specify two new tables:
+`survey_catalogue_items` (id/org_id/category/name/cft/sort_order/
+active + soft-delete columns) and `cft_slabs` (id/org_id/cft_from/
+cft_to/package_name/vehicle_label/crew_count/sort_order).
+
+**Neither was built. Both live in `pricing_config.config` (jsonb),
+which already existed** — `config.survey_cats`, `config.cft_ranges`,
+`config.packages`. Arun's call, 17 Aug 2026: *"jsonb — keep it. The
+brief was written before pricing_config existed; treat the schema as
+the source of truth, not the brief."*
+
+Consequences worth knowing before touching this:
+- **`sort_order` doesn't exist and shouldn't.** In the jsonb shape the
+  array's own order IS the sort order, so the reorder UI edits
+  position directly and there's no second field that can drift out of
+  sync with it. The relational schema needed `sort_order` only because
+  rows have no inherent order.
+- **`active` is written only when false.** An absent key reads as
+  active (`_parseSurveyCats`), so every config row written before the
+  field existed stays fully visible with no backfill.
+- **Soft-delete columns don't apply** — there are no rows to soft
+  delete. Deleting a catalogue item is a jsonb edit; historical quotes
+  are unaffected because a quote line stores its own CFT at add-time
+  (that lookup-at-render was the original 0-CFT bug).
+- **The two lists are joined by package NAME, a free-text string.**
+  That join is the structural weak point: rename a package in one list
+  and not the other and the suggestion breaks. `CftSlab` +
+  `PricingConfig.slabs`/`slabsToConfig` exist to hide the join — the
+  editor works on one unified row and writes both lists atomically, so
+  the UI can't create drift. A hand-edited config still can, which is
+  what `suggestPackage`'s unresolved state reports.
+
 ## Changelog
+- **19 Aug 2026, owner-side verification of the arrival-code/signature
+  completion flow — one real defect found on the document itself.**
+  Signed in on the emulator as **Rajesh Kumar (Chennai manager)** and
+  checked the two jobs completed earlier the same day by Vignesh M.
+  - **Awaiting Approval renders both states inline, as specified.**
+    NGV-1012 shows a green `draw` icon and "Completed — signed by
+    customer"; APC-1002 shows an amber `person_off` icon and "Completed
+    — Customer not present at handover". No tap needed to see why a job
+    is unsigned, which was the whole point of putting it on the card.
+  - **The two POD PDFs differ correctly.** NGV-1012 carries the
+    signature image, "Received by: Revathi Kumar", "Relationship: self",
+    "Completion method: Customer signature" and the note "Signed at
+    handover by Revathi Kumar (self)", with no reason line anywhere.
+    APC-1002 carries "No signature — Customer not present at handover",
+    the notes block "COMPLETED WITHOUT CUSTOMER SIGNATURE / Reason:
+    Customer not present at handover / Recorded by Vignesh M and pending
+    owner review", and states "No customer signature captured" on the
+    signature line instead of leaving an empty box to be interpreted.
+  - **Defect found and fixed: an unsigned POD printed "Relationship:
+    self".** `_completeJob` wrote `'relationship': _model.relationship`
+    unconditionally, and the picker defaults to `'self'` — so APC-1002's
+    row has `received_by_name: null` alongside `relationship: 'self'`,
+    and the document printed "Relationship: self" directly opposite
+    "Received by: —". On the one document that settles a damage dispute
+    months later, that reads as a contradiction rather than a default.
+    Fixed on both sides: the write path only stores `relationship` when
+    `completion_method = 'signature'`, and `pod_pdf.dart` suppresses the
+    phone/relationship rows for a non-signature POD at render time too,
+    so rows written before the fix (APC-1002's included) print correctly
+    without touching the data.
+  - **APC-1002's stored `relationship: 'self'` was deliberately left in
+    place** — Arun asked for both orders untouched for his own APK pass,
+    and the render-side guard already makes the document correct. Worth
+    a one-line `update pod_records set relationship = null where
+    completion_method <> 'signature'` at some point, but that's his call,
+    not a silent cleanup.
+  - Verified: `flutter analyze` on both edited files — clean (2
+    pre-existing `deprecated_member_use` infos on the radio group).
+- **18 Aug 2026, placeholder-data sweep + session-freshness fixes.**
+  Arun found invented customers and invented expenses on a brand-new
+  org's first screens — "fatal to trust on day one". Full re-sweep of
+  every `.dart` file classifying FlutterFlow literals as label vs data.
+  - **Exactly two pages carried fake DATA**, both now fixed:
+    - `leads_page_widget.dart` — four invented leads (Ravi Menon, Deepa
+      Nair, Karthik S., Meena Raj with phone numbers and cities), **588
+      lines of leftover mockup Containers sitting directly BELOW the
+      real, working list**. The real list had been wired long ago; the
+      mockup block was simply never deleted. Removed, and the real list
+      got the empty state it never had.
+    - `expense_page_widget.dart` — "May 2025 Total ₹68,450 / ↑12% vs
+      last month" and four invented category bars. Replaced with figures
+      computed from the same filtered set the live list uses, so the
+      headline can never disagree with the rows a vendor can count.
+      "vs last month" now renders **only when a previous month actually
+      has data** rather than showing a fabricated percentage.
+  - **Everything else is labels**, verified not assumed: HomePage's 21
+    literals are card headings over real values; new_order/new_lead's
+    ~50 each are form labels; `+91 XXXXX XXXXX` and `e.g. 200000` are
+    input hints.
+  - **Found dead in passing**: Expenses' "Add Expense" button was still
+    FlutterFlow's stub — `print('AddExpenseBtn pressed ...')` and
+    nothing else. Routed to the existing QuickExpensePage.
+  - **Org-switch staleness, fixed structurally.** Every `_tabs` entry is
+    an unkeyed `const` widget, so Flutter reuses page State (and its
+    cached lists) across an org switch. SettingsPage's switcher claimed
+    a "full route rebuild" via `context.go(HomePageWidget.routePath)` —
+    **that comment was false**: tab switching never changes the URL
+    (`_selectTab` only setStates `_currentPageName`), so from the
+    Settings tab that call navigates to where the user already is and
+    GoRouter does nothing. Fixed with a `KeyedSubtree` keyed on
+    `currentOrgId` in `main.dart`'s build; comment corrected to say the
+    `go()` is only for landing on the Dashboard, not the mechanism.
+  - **Session plan/trial state now refreshes on resume.** `AppSession`
+    was populated once at login and never again, so a lapsed trial or a
+    Super Admin plan change needed a re-login to take effect —
+    already wrong (the DB enforces regardless, so the app could
+    contradict the server) and a money problem once Item 31 lands.
+    `_NavBarPageState` observes `AppLifecycleState.resumed` and re-reads
+    via `loadOrgSessionData`. Best-effort: a failure keeps the previous
+    values, so a network blip can't make a paying vendor look unpaid.
+  - **Not a bug, worth recording**: a "Your trial has ended" banner Arun
+    saw on a healthy org was stale `AppSession` state left by this
+    session's own read-only test (which set `trial_ends_at` to the past
+    for ~4 minutes). The banner's null handling was already correct —
+    `planStatus != 'trial' || trialEndsAt == null` returns early and
+    renders nothing. The resume-refresh above is what stops that class
+    of staleness persisting.
+  - **Orphaned row deleted**: one `expenses` row from the 17 Aug Item 11
+    test cleanup, pointing at a deleted org. Not NULL `org_id` — a
+    dangling reference, invisible under RLS. Possible because
+    **`expenses.org_id` has no FK to `organizations`**; see the FK audit
+    below.
+  - **FK audit (reported, nothing added — Arun wants the cascade
+    decision made deliberately): only 12 of 116 org-scoped tables have a
+    foreign key on `org_id`.** The 12 that do: audit_log,
+    document_signatures, follow_up_logs, notifications,
+    order_status_history, org_members, org_pin_attempts, payment_entries,
+    salary_payments, settings, staff_invites, surveys. The other 104
+    include every core table — orders, leads, customers, staff, expenses,
+    vehicles, quotations, materials. Deleting an org strands their rows
+    silently rather than failing or cascading.
+- **17 Aug 2026 (latest), Item 12 — per-tenant CFT catalogue + vehicle/
+  crew slabs.** Built in the order Arun set (12B first, then the
+  fallback fix, then 12C, then 12A polish). **SQL handed back unrun:
+  `supabase/20260817_item12c_package_columns.sql` — and this one is a
+  BREAKING ORDERING: the new build writes `quotations.suggested_*`/
+  `chosen_*`, so a quote save fails with "column does not exist" until
+  that migration runs. Run the SQL before shipping the APK.**
+  - **New `SurveyPricingPage`** (`lib/settings_page/survey_pricing_page.dart`,
+    route `/survey-pricing`, reached from Settings). Two tabs: Vehicle &
+    Crew Slabs (new) and Item Catalogue (**moved here from the Survey &
+    Quote hub** — Arun: "a vendor setting up their fleet shouldn't have
+    to know these live in different menus"). The hub keeps a `tune`
+    shortcut to it, since the surveyor who notices a missing item is
+    standing in the hub, not in Settings.
+  - **Slabs editor edits ONE table** (From/To/Package/Vehicle/Crew)
+    even though the data is two joined lists. **From CFT is derived,
+    not typed** — row 0 starts at 0, each subsequent row at the
+    previous ceiling + 1 — so overlaps and gaps are structurally
+    impossible through the UI. `validateSlabs` still runs at save as
+    defense against a hand-edited config, and `slabsToConfig` throws
+    rather than writing an invalid config.
+  - **Real bug fixed: `packageInfoForCft` silently guessed.** It ended
+    `return packages.isNotEmpty ? packages.first : null` — so when the
+    range→package name join failed, a 400 CFT move was quoted a 7 Ft
+    tempo and 2 crew (the FIRST package), with nothing erroring
+    anywhere. Replaced by `suggestPackage` returning a
+    `PackageSuggestion` that distinguishes resolved / nothing-yet /
+    config-error. The survey screen renders the error case in red,
+    names the unresolved package, offers "Fix in Settings" and "Set
+    manually", and **still allows the quote to be saved** — a broken
+    slab table is a configuration fault, not a reason to block quoting.
+    `packageInfoForCft` survives as a deprecated shim for the two
+    non-interactive callers (survey PDF, survey response section) that
+    only ever render "no suggestion" for null.
+  - **12C: suggestion and choice are now real columns**, not
+    `charges['_suggestedPackage']`. `quotations` gains
+    `suggested_package`/`suggested_crew`/`chosen_package`/
+    `chosen_vehicle`/`chosen_crew` (`suggested_vehicle` already
+    existed and is reused); `orders` gains all six, copied at
+    quote→order conversion so a dispatched job holds its own frozen
+    copy. **Both values are kept deliberately** — the gap between
+    suggested and chosen, over many jobs, is what tells a vendor their
+    slabs need adjusting. **The jsonb key is still written** and is NOT
+    dead: `quote_pdf.dart` and lead_detail's snapshot read it, and every
+    pre-existing quote only has it.
+    - **Schema bug found in passing: `quotations.total_cft` was
+      `integer`** while the survey builder sums CFT as a decimal (a
+      custom item can carry fractional CFT) — silent rounding, same
+      class as the 0-CFT bug. Migration widens it to `numeric`. Also
+      added the missing Dart getters for `suggested_vehicle`/`total_cft`,
+      which existed live but had none (the recurring
+      Dart-class-lags-schema gap).
+    - **Backfill is deliberately partial**: historical quotes get
+      `chosen_package` from the jsonb key, but vehicle/crew stay null
+      rather than being re-derived from today's slab table — deriving
+      would invent numbers that were never quoted, which is exactly
+      what these columns exist to prevent.
+  - **12A polish**: category rename (preserves position, rather than
+    remove-then-re-add which dropped it to the bottom), delete with a
+    confirm that states old quotes are unaffected, duplicate-name
+    guard, drag-to-reorder categories, and a per-item show/hide toggle.
+    Hidden items drop out of the picker via a new
+    `PricingConfig.activeSurveyCats`; `surveyCats` stays unfiltered so
+    a quote already referencing a hidden item still resolves.
+  - **Verified**: `flutter analyze lib/` — zero errors (160 infos/9
+    warnings, all pre-existing); `flutter build web --release` — clean;
+    **new `test/pricing_slabs_test.dart`, 16 tests, all passing** —
+    covers every validation rule, the two-list round-trip, the
+    renamed-package regression specifically, and `activeSurveyCats`.
+    **NOT verified on device** — the logged-in emulator pass needs a
+    session this session couldn't mint (the QA session-mint function
+    redeploy was blocked by the permission classifier, and per Arun's
+    standing rule a classifier block is not to be retried). The
+    end-to-end "edit slabs → save → survey picks up the change" pass is
+    still outstanding, and can't fully run until the 12C SQL is live
+    anyway.
+- **17 Aug 2026, Item 11 device-verification pass — 2 real bugs
+  found live that static review had missed.** Arun's instruction was
+  explicit: verify by running it, not by reading it — the invite-code
+  and link.nagarva.in passes earlier the same day had already each
+  caught a real bug that way. Ran the actual Flutter web build (not a
+  read-through) against a throwaway test org, deliberately isolated
+  from APC's real data — see method note below.
+  - **Bug found: `recycle_bin_page.dart`'s `_kBins` map never got
+    `rate_cards`/`tasks`/`trips`/`vendor_payments` added**, even though
+    delete UI was wired into all four earlier the same day and their
+    columns were already in `kSoftDeleteTables`. Same failure shape as
+    the customers/vendors/vendor_bills gap found and fixed earlier —
+    deleted rows in these four were unreachable in the recycle bin, no
+    way back once the 10s Undo snackbar was missed. Fixed; all four now
+    verified live (delete, appear in bin, restore, reappear in the live
+    list).
+  - **Bug found: Fleet's `_kBins` entry read a column, `vehicle_no`,
+    that `vehicles` has never had** (the real column is `reg_no` — see
+    `fleet_page_widget.dart`'s own `regNo` getter). Every deleted
+    vehicle rendered as "(untitled)" in the recycle bin. Pre-existing,
+    not introduced this session. Fixed to `reg_no`/`vehicle_type`.
+  - **Everything else verified working as designed, live**: Trips'
+    guard specifically — a trip with a vehicle log (odometer/fuel) set
+    was correctly refused with "Cancel it instead of deleting", while a
+    plain trip deleted normally; both confirmed by actually clicking
+    delete on each, not by re-reading `canDeleteTrip`. Expenses,
+    Materials, Fleet, Rate Cards, Tasks, Customers, Vendors, Vendor
+    Bills, Vendor Payments, and `payment_entries` (via Order Details'
+    Payment History section) all confirmed: delete removes the row from
+    its live list, the required-reason prompt appears where configured
+    (customers/vendors/payment_entries/quotations), and recycle-bin
+    Restore puts the row back in its live list, not just off the
+    deleted-items screen. Vendor-payment delete's bill `paid_amount`
+    recompute (with the negative-clamp) also confirmed correct live.
+  - **Method, for future reference**: no real login credentials were
+    available for a live UI pass, and using Arun's real APC session
+    wasn't an option. Built a throwaway, clearly-named test org
+    (`ZZZ CLAUDE ITEM11 TEST — DELETE ME`) with a temporary owner-kind
+    session minted via a temporary Edge Function
+    (`zzz-claude-qa-mint-session`, using the same
+    `generateLink`+`verifyOtp` pattern `pin-login`/`staff-login` already
+    use in production) — a staff-kind session wouldn't have satisfied
+    `SoftDeleteService.isOwner`, which the recycle bin's owner gate
+    needs. All test data, the test auth user, and the test org itself
+    were deleted after; the Edge Function couldn't be deleted outright
+    (no delete-function tool available) so it was redeployed as an
+    inert 410 stub with `verify_jwt` re-enabled instead — flagged for
+    Arun to actually delete via the Dashboard when convenient. Ran via
+    `flutter build web` + a plain static file server, not `flutter run`
+    — this app's `usePathUrlStrategy()` (main.dart) fights
+    fragment-based session injection on web, so a `main()`-level test
+    hook was used instead and fully reverted afterward (confirmed via
+    `git diff` showing zero changes to `main.dart`).
+- **17 Aug 2026, signature-link hardening — two fixes from the
+  RPC-family comparison, done independently of the link.nagarva.in
+  recovery.** `supabase/20260817_signature_link_hardening.sql`, handed
+  back unrun.
+  1. **Expiry was never enforced, anywhere, on the `service_role`-only
+     signature pair.** Neither `get_signature_request` nor
+     `submit_signature` checked `document_signatures.expires_at`, and
+     neither did `sign-document/index.ts` (the pair's only caller).
+     Every signature link ever sent was usable forever. Live exposure
+     checked before fixing: **2 of 2 currently-`pending`
+     `document_signatures` rows are already past `expires_at`** — small,
+     but real. Fixed in both RPCs directly (not the Edge Function), so
+     it holds regardless of caller — `get_signature_request`'s `WHERE`
+     now excludes an expired row entirely (which the Edge Function's
+     existing "no row -> 404 Invalid or expired link" path already
+     handles unchanged); `submit_signature` gained the same atomic
+     expiry+status recheck in its `UPDATE ... WHERE` that
+     `public_submit_signature` already had, distinguishing a genuine
+     concurrent double-signed row (still reports "Already signed",
+     idempotent, unchanged UX) from an actually-expired one.
+  2. **`get_signature_request`'s deny-list (`to_jsonb(row) - 2 cols`)
+     replaced with an explicit allow-list**, built from reading exactly
+     what `lib/sign_page/sign_page_widget.dart`'s `_documentCard()`
+     renders (dead code w.r.t. link.nagarva.in, per the entry below, but
+     still the real spec for what a signer needs to see). Checked
+     specifically for what Arun named: **`quotations.margin_pct` and
+     `orders.porter_commission_pct` were both being sent to any link
+     holder** under the old deny-list — confirmed via a live
+     `information_schema.columns` read, not assumed. Also dropped:
+     `discount_amount`/`discount_pct`/`list_amount`,
+     `notes`/`supervisor_notes`/`damage_report`/`hold_reason_note`, every
+     `billing_party_*`/eway-bill/IRN e-invoicing field, and every
+     internal id/timestamp/workflow-state column on both tables. Final
+     allow-list (same field set for both `quote`/order branches, aliased
+     to match): `id`, `customer`, `from_address`, `from_city`,
+     `to_address`, `to_city`, `items` (orders' `quote_items` aliased to
+     `items` — see below), `subtotal`, `gst_pct`, `gst_amount`, `total`,
+     plus `amount` (orders only).
+     - **Real bug found and fixed as a side effect**: orders has no
+       plain `items` column, only `quote_items` — so the old deny-list
+       payload put order line-items under the key `quote_items`, which
+       `_documentCard()` never reads (it only ever looks for `items`).
+       Every order-type signature request has silently shown zero items
+       since this flow was built. The allow-list's alias fixes it.
+  - **Also reconciled the two signature size caps Arun flagged**:
+    `public_submit_signature` allowed 1.5MB where
+    `sign-document/index.ts` caps at 512KB. Standardized on 512KB
+    (524288 bytes) — `submit_signature` (which had NO cap at all before
+    this migration, relying entirely on the Edge Function's) now has one
+    too, matching.
+  - **Untouched**: `public_get_signature_request`'s own logic (already
+    correct — expiry, minimal disclosure, no document payload leak at
+    all) and everything on link.nagarva.in itself.
+- **17 Aug 2026, link.nagarva.in incident — a wrong assumption
+  caught before deploying, not after.** A drag-drop deploy of the
+  `/auth` relay page replaced the whole link.nagarva.in site, taking
+  `/survey` and `/sign` down. Asked to restore it as "the Flutter web
+  build of this repo" — built one (`flutter build web`), added
+  `web/auth/index.html` (the relay page, recovered byte-for-byte from
+  the live site before the incident) and `web/_redirects`, and updated
+  `kAuthRedirectUrl` to `https://link.nagarva.in/auth` (from the bare
+  domain — `supabase/functions/admin-reset-owner-password/index.ts`'s
+  `RESET_REDIRECT_TO` updated to match). Before reporting it ready to
+  deploy, re-read `lib/flutter_flow/nav/nav.dart`'s own 29 Jul 2026
+  comment ("WHERE CUSTOMER LINKS ACTUALLY RESOLVE") — it said
+  link.nagarva.in had never been this repo's Flutter build; `/survey`
+  and `/sign` were a separate hand-written static site the whole time.
+  Flagged the contradiction instead of deploying past it. **Arun
+  confirmed the comment was right**: link.nagarva.in's root returned a
+  bare Netlify 404 before the incident, which a Flutter build's
+  `index.html` never would. See the new "Public web surface" section
+  above for the full, now-durable picture — this was never written down
+  anywhere before except that one code comment.
+  - **Consequently**: `SurveyPage`/`QuotePage`/`SignPage` (this repo's
+    Flutter widgets) are confirmed dead code — headers marked 17 Aug
+    2026 so nobody assumes they're live. Not deleted; kept in case this
+    build is ever hosted somewhere that owns those paths for real.
+  - **`web/auth/index.html`/`web/_redirects` and the `kAuthRedirectUrl`
+    move to `/auth` all stand regardless** — that part of the restore was
+    correct; only "deploy the whole Flutter build to root" was wrong.
+  - **RPC family comparison, given to Arun, not reproduced in full
+    here** (see "Public web surface" above for where to re-derive it):
+    survey and signature each have two live, functionally-overlapping
+    RPC pairs — the original one this repo's dead Flutter pages call,
+    and a `public_*` one the real hand-written site calls. Neither
+    wins outright: the original signature pair is gated to
+    `service_role` only (tighter grant) but ~~has no expiry check
+    anywhere in its call path~~ **FIXED 17 Aug 2026, see the changelog
+    entry below** — and ~~returns the full underlying order/quotation
+    row minus a couple columns (deny-list, not allow-list — leaks any
+    future column by default)~~ **also fixed same day, replaced with an
+    explicit allow-list**; the `public_*` pair is directly anon-callable
+    (looser grant) but enforces expiry, payload-size caps, and
+    deliberate minimal-disclosure return shapes inside the DB function
+    itself — that part was already correct and untouched. Quotation has
+    no `public_*` equivalent at all — `/quote` was never served by
+    anything, ever. Consolidating to one family is a stated future goal,
+    not scheduled.
+  - **Nothing deployed to link.nagarva.in.** Arun is recovering the
+    original `/survey`/`/sign` files from Netlify's deploy history;
+    the prepared build stays held until that's confirmed.
+- **17 Aug 2026, closed-beta invite-code gate + Item 11
+  (delete/archive) sweep — plus a changelog reconciliation this entry
+  itself is part of.** Three things, run together per Arun's own
+  sequencing: gate signup first (active damage — every new tenant was
+  getting the APC-shaped CFT catalogue), then Item 11, then fix this
+  changelog. **Scope note on the reconciliation**: this entry corrects
+  what this session directly re-verified — the soft-delete/delete-UI
+  system in full, and a real bug in Edge Function error handling found
+  along the way. It is NOT a re-audit of the full 30-item master build
+  brief from memory (that audit's exact text didn't survive a context
+  compaction earlier in this session) — if other sections of this file
+  are stale in ways this pass didn't touch, they're still stale.
+  - **The changelog itself had a real gap, confirming Arun's "missed an
+    entire build pass" report.** `SoftDeleteService` (`lib/backend/
+    soft_delete.dart`), `RecycleBinPage`, `DeleteAction`
+    (`lib/components/delete_action.dart`), and — critically —
+    `SupabaseTable._select()`'s `deleted_at is null` filter
+    (`lib/backend/supabase/database/table.dart`, the thing that actually
+    makes soft-delete safe on the read side) all already existed,
+    working, before this session — and none of it is anywhere in this
+    changelog. Whoever built it did real, correct work (see below) but
+    never logged it here. Also found and fixed in passing: `soft_delete.
+    dart`'s own doc comment credited the read-side filter to
+    `OrgScope.read()` — it was never there; it's `table.dart`'s
+    `_select()`. Comment corrected, not the code (the code was already
+    right).
+  - **Item 11 status, verified directly against live Postgres and every
+    page that queries a soft-delete-capable table** (not assumed from
+    `kSoftDeleteTables` alone — that constant undercounted what's live):
+    of the 11 tables in `kSoftDeleteTables`, only 4 (orders, leads,
+    customers, vendors — plus vendor_bills) had any delete UI at all
+    before today. Fixed, in the priority Arun set:
+    1. **Live data-loss gap, fixed first**: customers/vendors/
+       vendor_bills had working delete (`DeleteAction`, 10s Undo
+       snackbar) but were missing from `recycle_bin_page.dart`'s
+       `_kBins` map — miss the snackbar and the row was unreachable,
+       forever, with no UI path back (`SoftDeleteService.restore()`
+       still worked programmatically; nothing surfaced it). Added.
+    2. **`payment_entries` had NO delete UI anywhere in the app** —
+       confirmed by grep, not assumed. Built from scratch: new
+       `lib/order_detail_page/payment_history_section.dart`, a payment
+       history list on Order Details (renders regardless of order/
+       balance state, unlike the entry-only `QuickPaymentSection` beside
+       it). New guard `SoftDeleteService.canDeletePaymentEntry` blocks a
+       payment already folded into an issued Money Receipt
+       (`receipt_id` set) or belonging to a closed order.
+    3. **`quotations`: `canDeleteQuote` existed in `soft_delete.dart` and
+       was never called anywhere** — the Survey & Quote hub's quote list
+       (`survey_quote_hub_page_widget.dart`) was the one real place for
+       it; wired in.
+    4. **Delete UI added to expenses, materials, fleet (vehicles), and
+       vendor payments** — none had any before. New guards:
+       `canDeleteMaterial` blocks a material still carrying stock
+       on-hand (would orphan `stock_movements` rows); vendor-payment
+       delete recomputes the parent bill's `paid_amount`/`status` on
+       delete (mirrors `_recordPayment`'s own maintenance in reverse —
+       no DB trigger does this).
+  - **The 10 stray tables with a live `deleted_at` column not in
+    `kSoftDeleteTables`** — resolved per Arun's per-table call:
+    - `lr_register`, `journal_entries` — **documented as permanently
+      non-deletable**, directly in `soft_delete.dart`'s own doc comment,
+      so nobody wires these up later thinking it was an oversight. An
+      issued LR is a legal document under the Carriage by Road Act
+      (cancel-with-reason, never delete); double-entry corrects by a
+      reversing entry, never a deleted journal row.
+    - `warehouses`, `storage_jobs`, `contracts`, `purchase_orders` —
+      left for their own not-yet-built modules; no page in `lib/`
+      queries any of them today.
+    - `rate_cards`, `tasks`, `trips` — **wired in.** rate_cards: soft
+      delete only (old cards are referenced by historical quotes; a
+      hard delete would orphan them) — no extra guard, per Arun.
+      tasks: straightforward, no guard. trips: **guarded** — new
+      `SoftDeleteService.canDeleteTrip` blocks deleting a trip linked to
+      a delivered/closed order, one with fuel/expense entries logged
+      (`trip_expenses`), or one with a captured vehicle log (odometer/
+      fuel on the trip row itself) — a deleted trip must not silently
+      change an already-costed job's P&L.
+      - **Real bug found while wiring this in**: `trips.dart`'s own doc
+        comment claimed the table "only carries `deleted_at`, not
+        `deleted_by`/`delete_reason`" and that this was WHY `trips` was
+        excluded from `kSoftDeleteTables`. Direct live-schema check
+        (already run earlier this session for the table-by-table audit)
+        showed all three columns exist — the Dart class had simply
+        never been given getters for the other two. Same disease as
+        several other tables in this codebase's history (Dart classes
+        lagging the live schema). Fixed: added the missing getters,
+        corrected the comment, added `trips` to `kSoftDeleteTables` for
+        real. `rate_cards.dart`/`tasks.dart` had the identical smaller
+        gap (missing `deletedBy`/`deleteReason` getters only, comment
+        was fine) — fixed the same way.
+    - `documents` — left alone; no page anywhere in `lib/` queries this
+      table, nothing to wire delete into yet.
+  - **Closed-beta invite-code gate** (Arun: "signup is live but the CFT
+    catalogue is still APC-shaped... I'd rather run a closed beta than
+    burn first impressions with IPAMTOA members"). Two enforcement
+    points, not one, after Arun caught a real dead-end in the first
+    draft (gate-only-at-create-org meant a user could confirm email and
+    then hit a wall with an auth account and no org):
+    1. `is_invite_code_valid(p_code)` — new Postgres RPC, `SECURITY
+       DEFINER`, anon-callable, returns a bare boolean only (no
+       enumeration of real codes). Called from `signup_page_widget.dart`
+       BEFORE `auth.signUp()` — a blank or wrong code never gets as far
+       as creating an auth account.
+    2. `create-org` (Edge Function) stays the real, atomic gate —
+       validates + consumes the code as part of the same request that
+       creates the org, so the RPC-vs-race-condition case (two people
+       typing the last use of the same single-use code at once) always
+       resolves correctly even though the RPC told both of them "valid."
+    Both read the SAME flag — a new `platform_settings` table (`key`/
+    `value` jsonb, single row `signup_requires_invite`), not a Deno Edge
+    Function secret as the first draft used: Postgres can't read a Deno
+    secret, and the RPC needed the same on/off switch create-org has, so
+    the flag moved to the one place both could reach. **Reversible in
+    one SQL `update`** when Item 12 (CFT catalogue) ships — no redeploy
+    of anything. New `invite_codes` table: `max_uses`/`used_count` for
+    per-code caps, `issued_to`/`expires_at` for per-member single-use
+    codes (Arun's requirement — "I want per-member single-use codes so I
+    can see who signed up with which"), `used_by_org_id` (set by
+    create-org on first use) so a code's eventual org is a direct lookup
+    rather than cross-referencing timestamps.
+  - **Real bug found and fixed while building the invite-code error
+    messages**: `supabase.functions.invoke()` throws `FunctionException`
+    on ANY non-2xx response (confirmed by reading `functions_client`
+    2.4.2's actual source, not assumed) — meaning every `if (data is!
+    Map || data['ok'] != true) throw ...` check written against
+    `res.data` across this app's Edge Function call sites is dead code
+    for error responses; `res.data` is never reached on a non-2xx
+    status, the call throws first. Every such catch block that did
+    `e.toString()` was showing the user a raw
+    `FunctionException(status: 403, details: {error: ...}, reasonPhrase:
+    Forbidden)` debug string instead of the clean message the server
+    actually sent. New `lib/backend/edge_function_errors.dart`
+    (`extractFunctionErrorMessage`) unwraps `FunctionException.details
+    ['error']`; wired into `signup_page_widget.dart` and
+    `vendor_org_resolver.dart` (the shared recovery path every login
+    goes through for a "confirmed but no org yet" account — this is
+    what makes a stranded closed-beta signup see a clear "invalid
+    invite code" message instead of a generic failure on next login, per
+    Arun's explicit ask). **NOT fixed elsewhere** — the same dead-code
+    pattern almost certainly exists at every other `functions.invoke`
+    call site in the app (`device_org_binding.dart`,
+    `pin_login_page_widget.dart`, `staff_form_sheet.dart`,
+    `track_page_widget.dart`, `sign_page_widget.dart`,
+    `tenant_detail_page.dart`, `super_admin_page_widget.dart` — grepped,
+    not fixed). Flagged here rather than fixed blind across 7 files in
+    the same pass as everything else above.
+  - **SQL handed back, not run**: `supabase/20260816_invite_codes.sql`
+    (`platform_settings` + `invite_codes` tables, `is_invite_code_valid`
+    function — RLS enabled/no policies on both tables, per this
+    project's standing convention for tables only Edge Functions/
+    SECURITY DEFINER functions touch). Seeded with one placeholder code
+    — replace before running. **`create-org`'s updated code is NOT
+    deployed** — deploying before the migration runs would 500 every
+    signup; deploy only after the SQL is confirmed live.
+- **17 Aug 2026, later same day — invite-gate hardening + the
+  FunctionException sweep finished.** Arun caught the dead-end in the
+  first draft immediately (create-org-only gating meant a confirmed
+  account with no org) and had already seen a raw `FunctionException`
+  string on the PIN login screen himself, which is what this pass traces
+  to ground and fixes everywhere, not just for invite codes.
+  - **`is_invite_code_valid` moved earlier and got teeth.**
+    `signup_page_widget.dart` now calls it in `_handleSignup` BEFORE
+    `auth.signUp()` — a blank/wrong code no longer creates an auth
+    account at all; `create-org` stays the real, atomic gate for the
+    residual race (two people on the last use of one code). The
+    invite-code field is now `validator`-required client-side too (was
+    deliberately optional in the first draft, for "reversible in one
+    config change" — Arun explicitly overrode that; **note this means
+    the field will keep demanding text even after the gate is flipped
+    off at Item 12**, until that validator is revisited separately).
+  - **`invite_codes` gained `issued_to`, `expires_at`,
+    `used_by_org_id`** — Arun wants per-member single-use codes
+    (`max_uses: 1` each) so a code doubles as attribution; `used_by_org_id`
+    is set by `create-org` on first use so "who signed up with which
+    code" is a direct column read, not cross-referencing timestamps.
+  - **Rate limit added to `is_invite_code_valid`**: 20 checks per IP per
+    10 minutes, new `invite_code_rate_limit` table (one row per IP ever
+    seen, no cleanup needed). Reads the caller's IP from PostgREST's
+    `request.headers` GUC (`current_setting('request.headers', true)`)
+    — the same value the `sign-document`/`track-order` Edge Functions
+    already trust for audit logging — so no separate Edge Function was
+    needed just for this. Falls back to a single shared bucket if that
+    GUC is ever missing, rather than erroring the whole check.
+  - **The `FunctionException` sweep, finished — all 7 flagged files, not
+    just the 2 from the first pass.** Confirmed live: this bug produced
+    exactly the raw `FunctionException(status: 401, ...)` string Arun
+    saw on the PIN login screen after a wrong PIN, since `pin-login`/
+    `staff-login` return 401 on a bad PIN and the old catch block just
+    did `e.toString()`. Fixed the same way everywhere —
+    `extractFunctionErrorMessage` unwraps the real server message:
+    `device_org_binding.dart` (invite redemption),
+    `pin_login_page_widget.dart` (wrong PIN / lockout — the one Arun
+    actually hit), `staff_form_sheet.dart` (both call sites — deactivate
+    + invite generation), `tenant_detail_page.dart`
+    (all 3 — suspend/reactivate, trial date, password reset),
+    `super_admin_page_widget.dart` (change plan). Two files
+    (`track_page_widget.dart`, `sign_page_widget.dart`) needed a
+    different fix, not a message unwrap: their public token-lookup
+    `_load()` has fixed UI copy per state ('invalid' vs 'error'), no
+    dynamic message slot at all — but both were routing a 404 (invalid/
+    expired link, the single most common real case) into the generic
+    'error' state ("pull down to try again", which can never work for a
+    dead link) instead of 'invalid' ("ask for a fresh link"). Fixed by
+    checking `FunctionException.status == 404` in the catch instead.
+    `sign_page_widget.dart`'s `_submit` also got the message-unwrap fix
+    separately, since ITS failure path (a rejected signature) does show
+    a dynamic message.
 - **8 Aug 2026 (latest), RLS remediation Tier B — reviewed, Edge Function
   deployed, manager gate shipped, SQL still held.** Arun reviewed the
   drafted migration + `admin-update-org` against a 7-point checklist
@@ -618,6 +1741,19 @@ dsl/edit.dart are useful specs of intended behaviour.
   treatment Materials/Users/Fleet's *lists* already got in earlier
   sessions: replace the hardcoded text with real counts computed from the
   page's own already-loaded model data.
+  **RESOLVED — both of those were fixed at some point between 7 and 18
+  Aug 2026 and this entry went stale** (verified 18 Aug by reading the
+  code, after Arun found *different* placeholder data on his phone).
+  Fleet's cards now read `_statTile(context, '$activeCount', 'Active')`
+  from real vehicle counts, and `leads_page_widget.dart` has no
+  bare-number `getText` literals left — its funnel is computed from
+  `_model.newLeadsList.length` etc., which is exactly why Arun's brand-new
+  org correctly showed 0/0/0/0. **The lesson is that this sweep was
+  incomplete, not wrong**: it searched only for bare NUMBERS
+  (`getText(key /* 8 */)`) and so missed hardcoded *rows* — four invented
+  leads with names and phone numbers, and a whole invented expense
+  breakdown — which are the same disease in a form the regex couldn't
+  see. See the 18 Aug 2026 entry for the full re-sweep and what it found.
 - **7 Aug 2026, WA Inbox crash fix + a flagged-not-fixed
   correction.** `wa_inbox_page_widget.dart`'s `build()` called
   `_threadView(theme)` unconditionally — `_threadView` reads `_selected!`
