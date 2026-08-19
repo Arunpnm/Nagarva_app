@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 
 const _kBoundOrgIdKey = '__bound_org_id__';
@@ -31,9 +32,25 @@ const _kDeviceIdKey = '__device_id__';
 ///
 /// Two kinds of bound device:
 ///   * STAFF — bound via an invite code, has [boundStaffId]. Uses
-///     `staff-login`.
-///   * OWNER — bound by org slug only, no staff id. Uses `pin-login`,
-///     which is now effectively owner-only.
+///     `staff-login` with that one `staff_id`, so no other employee's
+///     PIN works on the device however correct it is.
+///   * ORG — bound by org slug only, no staff id. Uses `pin-login`.
+///
+/// CORRECTION (19 Aug 2026): this comment used to claim the org path was
+/// "the OWNER path" and that `pin-login` is "effectively owner-only".
+/// That is false and always was. `pin-login` calls `verify_org_pin()`,
+/// whose Pool 2 iterates EVERY `staff` row with `coalesce(active, true)`
+/// and a `pin_hash` — so any active staff member can sign in on an
+/// org-bound device by typing their own PIN. Verified on a real device
+/// (19 Aug 2026 emulator pass: Rajesh Kumar, a `staff` row with role
+/// `manager`, logged in through the org-code path). Read
+/// `supabase/20260729_verify_org_pin_collision_guard.sql`, not this
+/// comment, if the two ever disagree again.
+///
+/// The distinction that IS real: an invite-bound device cannot reach the
+/// owner PIN pool at all, which is what structurally removes the
+/// PIN-collision escalation route. An org-bound device can. See
+/// CLAUDE.md, "Device binding — two paths, and they are NOT equivalent".
 class DeviceOrgBinding {
   static SharedPreferences? _prefs;
 
@@ -168,8 +185,12 @@ class DeviceOrgBinding {
         staffRole: data['staff_role'] as String?,
       );
       return null;
-    } catch (_) {
-      return 'Could not reach the server. Check your connection.';
+    } catch (e) {
+      // `invoke` throws FunctionException on any non-2xx response (17 Aug
+      // 2026 finding — see edge_function_errors.dart), so a wrong/expired
+      // code lands here, not in the `data['ok'] != true` branch above.
+      return extractFunctionErrorMessage(e,
+          fallback: 'Could not reach the server. Check your connection.');
     }
   }
 }

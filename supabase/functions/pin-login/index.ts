@@ -22,6 +22,14 @@
 // function so the new org-wide PIN pool (no staff_id known up front)
 // can't affect that already-working, already-tested path.
 //
+// 17 Aug 2026: staff_role moved from user_metadata to app_metadata on
+// the staff branch — same fix, same reasoning as staff-login/index.ts's
+// own header comment (user_metadata is client-writable via
+// supabase.auth.updateUser(), so anything an authorization decision
+// might read must not live there). The owner branch is untouched — it
+// mints a session for the owner's own pre-existing account and never
+// carries a staff_role claim at all.
+//
 // Deploy:  supabase functions deploy pin-login
 // ============================================================
 
@@ -141,11 +149,12 @@ Deno.serve(async (req: Request) => {
         .createUser({
           email,
           email_confirm: true,
+          // staff_role is NOT here — see the header comment. Set via
+          // app_metadata below instead, unconditionally.
           user_metadata: {
             kind: "staff",
             staff_id: staffId,
             org_id,
-            staff_role: v.staff_role,
             name: v.staff_name,
           },
         });
@@ -176,6 +185,16 @@ Deno.serve(async (req: Request) => {
         });
         if (memErr) return json({ error: memErr.message }, 500);
       }
+    }
+
+    // Refresh app_metadata.staff_role, every login — see header comment.
+    // Best-effort: must not block login.
+    const { error: metaErr } = await admin.auth.admin.updateUserById(
+      authUserId,
+      { app_metadata: { staff_role: v.staff_role } },
+    );
+    if (metaErr) {
+      console.error("app_metadata refresh failed:", metaErr.message);
     }
 
     const minted = await mintSession(email);

@@ -6,13 +6,25 @@
 //   1. Verify PIN via verify_staff_pin() RPC (bcrypt, in Postgres)
 //   2. First login: create shadow auth user for the staff member,
 //      link staff.auth_user_id, insert org_members row (RLS anchor)
-//   3. Mint a REAL Supabase session (access + refresh token) via
-//      admin.generateLink(magiclink) -> verifyOtp(token_hash)
+//   3. Refresh app_metadata.staff_role (every login, not just first —
+//      see the comment further down) then mint a REAL Supabase session
+//      via admin.generateLink(magiclink) -> verifyOtp(token_hash)
 //   4. Return tokens; Flutter calls supabase.auth.setSession()
 //
 // Result: staff sessions carry a genuine auth.uid(), so
 // current_org_ids() and every org_isolation RLS policy work
 // for staff exactly like they do for vendors.
+//
+// 17 Aug 2026: staff_role moved from user_metadata to app_metadata (was
+// never actually read for an authorization decision, but user_metadata
+// is client-writable via supabase.auth.updateUser() — a staff member
+// could otherwise self-escalate by just setting it themselves. Item 30's
+// branch-scoping RLS reads role/branch live from `staff` on every check
+// (current_staff_role()/current_staff_branch()), not from this claim —
+// app_metadata.staff_role exists only for the client's own UI-preset
+// convenience, so it doesn't need to be perfectly fresh; it's refreshed
+// on every login regardless (cheap, and self-heals the 3 shadow users
+// that already existed before this change with no app_metadata at all).
 //
 // Deploy:  supabase functions deploy staff-login
 // (or paste into Dashboard > Edge Functions > New Function)
@@ -101,11 +113,13 @@ Deno.serve(async (req: Request) => {
         {
           email,
           email_confirm: true,
+          // staff_role is NOT here — see the header comment. It's set
+          // via app_metadata below, unconditionally, for both a
+          // brand-new shadow user and one that already existed.
           user_metadata: {
             kind: "staff",
             staff_id,
             org_id: v.org_id,
-            staff_role: v.role,
             name: v.name,
           },
         },
@@ -146,6 +160,18 @@ Deno.serve(async (req: Request) => {
         });
         if (memErr) return json({ error: memErr.message }, 500);
       }
+    }
+
+    // ---- Refresh app_metadata.staff_role, every login (not just the
+    // first) — see header comment. Best-effort: a failure here must not
+    // block login, since nothing security-relevant depends on this
+    // value being fresh.
+    const { error: metaErr } = await admin.auth.admin.updateUserById(
+      authUserId,
+      { app_metadata: { staff_role: v.role } },
+    );
+    if (metaErr) {
+      console.error("app_metadata refresh failed:", metaErr.message);
     }
 
     // ---- 3. Mint a real session for the shadow user ----
