@@ -5,10 +5,14 @@ import '../database.dart';
 /// CLAUDE.md's "vehicle_trips vs trips" note). Session 4, Part C-9. Live
 /// schema confirmed directly against the DB.
 ///
-/// Only carries `deleted_at`, not `deleted_by`/`delete_reason` — NOT added
-/// to kSoftDeleteTables (SoftDeleteService.softDelete writes all three
-/// columns and would fail against this table's actual shape). No delete UI
-/// offered here; status ('cancelled') is the intended way to retire a trip.
+/// CORRECTED 17 Aug 2026: this comment previously claimed the table only
+/// carries `deleted_at`, not `deleted_by`/`delete_reason`, and that
+/// `trips` was deliberately excluded from `kSoftDeleteTables` for that
+/// reason. Re-checked directly against live Postgres — all three columns
+/// exist; this class was just never given getters for the other two
+/// (now added below). `trips` IS in `kSoftDeleteTables` — delete UI lives
+/// on `trips_page_widget.dart`, guarded by
+/// `SoftDeleteService.canDeleteTrip`.
 class TripsTable extends SupabaseTable<TripsRow> {
   @override
   String get tableName => 'trips';
@@ -101,4 +105,10 @@ class TripsRow extends SupabaseDataRow {
 
   DateTime? get deletedAt => getField<DateTime>('deleted_at');
   set deletedAt(DateTime? value) => setField<DateTime>('deleted_at', value);
+
+  String? get deletedBy => getField<String>('deleted_by');
+  set deletedBy(String? value) => setField<String>('deleted_by', value);
+
+  String? get deleteReason => getField<String>('delete_reason');
+  set deleteReason(String? value) => setField<String>('delete_reason', value);
 }

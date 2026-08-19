@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'trip_detail_page_widget.dart';
@@ -225,6 +227,22 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
     );
   }
 
+  // Item 11 sweep (17 Aug 2026): trips had a live column but no delete
+  // UI. Guarded — a deleted trip must not silently change P&L for a
+  // completed order or an already-costed job (see canDeleteTrip).
+  Future<void> _deleteTrip(TripsRow t) async {
+    if (t.id == null) return;
+    final deleted = await DeleteAction.run(
+      context,
+      table: 'trips',
+      id: t.id!,
+      entityLabel: 'trip',
+      check: () => SoftDeleteService.canDeleteTrip(t),
+      onDeleted: _load,
+    );
+    if (deleted) await _load();
+  }
+
   Widget _statusChip(FlutterFlowTheme theme, String status) {
     final color = {
           'planned': Colors.blueGrey,
@@ -271,6 +289,12 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
               ),
             ),
             _statusChip(theme, t.status),
+            IconButton(
+              tooltip: 'Delete trip',
+              visualDensity: VisualDensity.compact,
+              icon: Icon(Icons.delete_outline, size: 18, color: theme.error),
+              onPressed: () => _deleteTrip(t),
+            ),
           ],
         ),
       ),

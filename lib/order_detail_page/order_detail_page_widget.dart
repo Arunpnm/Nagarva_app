@@ -22,6 +22,7 @@ import '/config/app_config.dart';
 import 'order_crew_section.dart';
 import 'order_documents_section.dart';
 import 'order_pnl_section.dart';
+import 'payment_history_section.dart';
 import 'quick_payment_section.dart';
 import 'quotation_breakdown_section.dart';
 import '/backend/supabase/supabase.dart';
@@ -400,6 +401,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   final _breakdownKey = GlobalKey<QuotationBreakdownSectionState>();
   final _pnlKey = GlobalKey<OrderPnlSectionState>();
   final _quickPaymentKey = GlobalKey<QuickPaymentSectionState>();
+  final _paymentHistoryKey = GlobalKey<PaymentHistorySectionState>();
 
   Future<void> _loadSignature() async {
     if (widget.orderId == null) return;
@@ -1220,7 +1222,20 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                       QuickPaymentSection(
                           key: _quickPaymentKey,
                           orderId: widget.orderId!,
-                          onSaved: () => _pnlKey.currentState?.reload()),
+                          onSaved: () {
+                            _pnlKey.currentState?.reload();
+                            _paymentHistoryKey.currentState?.reload();
+                          }),
+                    // Item 11 sweep: payment-entry delete UI. Renders
+                    // regardless of order/balance state (unlike
+                    // QuickPaymentSection above) — always visible when
+                    // canActive('orders','edit'), same gate.
+                    if (widget.orderId != null &&
+                        StaffPermissions.canActive('orders', 'edit'))
+                      PaymentHistorySection(
+                          key: _paymentHistoryKey,
+                          orderId: widget.orderId!,
+                          onChanged: () => _pnlKey.currentState?.reload()),
                     // Order Details Session 1, item 1: P&L card. Gated on
                     // canActive('reports','view') — absent, not disabled,
                     // for a session without reports access (matches the

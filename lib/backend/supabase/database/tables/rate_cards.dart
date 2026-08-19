@@ -65,4 +65,10 @@ class RateCardsRow extends SupabaseDataRow {
 
   DateTime? get deletedAt => getField<DateTime>('deleted_at');
   set deletedAt(DateTime? value) => setField<DateTime>('deleted_at', value);
+
+  String? get deletedBy => getField<String>('deleted_by');
+  set deletedBy(String? value) => setField<String>('deleted_by', value);
+
+  String? get deleteReason => getField<String>('delete_reason');
+  set deleteReason(String? value) => setField<String>('delete_reason', value);
 }

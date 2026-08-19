@@ -25,6 +25,24 @@ class RecycleBinPage extends StatefulWidget {
 }
 
 /// Table -> (label, field to show as the row's title).
+///
+/// customers/vendors/vendor_bills added 16 Aug 2026 — all three already
+/// had working delete (DeleteAction wired into their detail pages) but
+/// were missing here, so missing the 10s Undo snackbar left no way back
+/// at all. See MEMORY.md / CLAUDE.md for the finding.
+///
+/// rate_cards/tasks/trips/vendor_payments added 17 Aug 2026 — found live,
+/// not by reading: delete UI was wired into their own pages and the
+/// columns were in kSoftDeleteTables, but this map was never updated
+/// alongside them, so their deleted rows were unreachable here too —
+/// the identical bug class as the entry above, caught during Item 11's
+/// device-verification pass rather than repeating it a second time.
+///
+/// Fleet's titleFields corrected same pass: read `vehicle_no`, a column
+/// `vehicles` has never had (the real column is `reg_no` — see
+/// fleet_page_widget.dart's own `regNo` getter) — every deleted vehicle
+/// rendered as "(untitled)" in this list. Pre-existing, not introduced
+/// this session; also caught live, not by reading.
 const Map<String, ({String label, List<String> titleFields})> _kBins = {
   'leads': (label: 'Leads', titleFields: ['customer', 'phone']),
   'quotations': (label: 'Quotations', titleFields: ['customer', 'total']),
@@ -32,7 +50,14 @@ const Map<String, ({String label, List<String> titleFields})> _kBins = {
   'payment_entries': (label: 'Payments', titleFields: ['order_id', 'amount']),
   'expenses': (label: 'Expenses', titleFields: ['category', 'amount']),
   'materials': (label: 'Materials', titleFields: ['name', 'quantity']),
-  'vehicles': (label: 'Fleet', titleFields: ['vehicle_no', 'model']),
+  'vehicles': (label: 'Fleet', titleFields: ['reg_no', 'vehicle_type']),
+  'customers': (label: 'Customers', titleFields: ['name', 'phone']),
+  'vendors': (label: 'Vendors', titleFields: ['name', 'phone']),
+  'vendor_bills': (label: 'Vendor Bills', titleFields: ['bill_no', 'total_amount']),
+  'vendor_payments': (label: 'Vendor Payments', titleFields: ['mode', 'amount']),
+  'rate_cards': (label: 'Rate Cards', titleFields: ['name', 'code']),
+  'tasks': (label: 'Tasks', titleFields: ['title', 'task_type']),
+  'trips': (label: 'Trips', titleFields: ['trip_no', 'vehicle_no']),
 };
 
 class _RecycleBinPageState extends State<RecycleBinPage> {
@@ -43,7 +68,41 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
   @override
   void initState() {
     super.initState();
+    _assertBinsMatchSoftDeleteTables();
     _load();
+  }
+
+  /// `_kBins` has drifted out of sync with `kSoftDeleteTables`
+  /// (soft_delete.dart) three times now — a table gets its delete UI
+  /// wired and added to `kSoftDeleteTables`, and this map is forgotten,
+  /// so its deleted rows become unreachable here (or, for Fleet, showed
+  /// up with the wrong title field). `_kBins` can't fully *derive* from
+  /// `kSoftDeleteTables` — it carries display metadata (a label, which
+  /// columns to show as a row's title) that has no other source and
+  /// isn't inferable from a table name — so this can't be automatic.
+  /// What it CAN be is loud: this fails hard, in debug builds, the
+  /// moment this screen is opened after the two lists diverge, instead
+  /// of staying a silent gap someone finds by accident. `assert()` is
+  /// stripped in release builds by design — this is a development-time
+  /// tripwire, not a runtime guard; it deliberately doesn't run for
+  /// Arun's own release build, only for whoever's making the next
+  /// change to either list.
+  void _assertBinsMatchSoftDeleteTables() {
+    assert(() {
+      final binKeys = _kBins.keys.toSet();
+      final missingFromBins = kSoftDeleteTables.difference(binKeys);
+      final extraInBins = binKeys.difference(kSoftDeleteTables);
+      if (missingFromBins.isNotEmpty || extraInBins.isNotEmpty) {
+        throw StateError(
+          'recycle_bin_page.dart\'s _kBins is out of sync with '
+          'kSoftDeleteTables (soft_delete.dart) — this has broken 3 '
+          'times, add the table to BOTH.\n'
+          'In kSoftDeleteTables but missing from _kBins: $missingFromBins\n'
+          'In _kBins but not in kSoftDeleteTables: $extraInBins',
+        );
+      }
+      return true;
+    }());
   }
 
   Future<void> _load() async {

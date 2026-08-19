@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
+import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/delete_action.dart';
 import '/components/entity_picker_dialog.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -306,6 +308,20 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     }
   }
 
+  // Item 11 sweep (17 Aug 2026): tasks had a live column but no delete UI.
+  Future<void> _deleteTask(TasksRow t) async {
+    if (t.id == null) return;
+    final deleted = await DeleteAction.run(
+      context,
+      table: 'tasks',
+      id: t.id!,
+      entityLabel: 'task',
+      check: () async => DeleteCheck.allow,
+      onDeleted: _load,
+    );
+    if (deleted) await _load();
+  }
+
   // ---- Activities --------------------------------------------------------
 
   Future<void> _newActivity() async {
@@ -554,6 +570,11 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
                 icon: const Icon(Icons.close, size: 20),
                 onPressed: () => _cancelTask(t)),
           ],
+          IconButton(
+            tooltip: 'Delete task',
+            icon: Icon(Icons.delete_outline, size: 20, color: theme.error),
+            onPressed: () => _deleteTask(t),
+          ),
         ],
       ),
     );

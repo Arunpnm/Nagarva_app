@@ -150,8 +150,19 @@ class OrdersRow extends SupabaseDataRow {
   set supervisorStatus(String? value) =>
       setField<String>('supervisor_status', value);
 
+  // LEGACY (18 Aug 2026): held the completion OTP, which proved nothing —
+  // the supervisor's own screen displayed it before they typed it back.
+  // No longer written. Kept only so in-flight jobs created before the
+  // switch don't break; drop in a later cleanup.
   String? get jobOtp => getField<String>('job_otp');
   set jobOtp(String? value) => setField<String>('job_otp', value);
+
+  /// Shared with the customer at confirmation; the supervisor enters it
+  /// on arrival to mark shifting started. Not a security boundary — it
+  /// proves the customer passed it on. Completion is proven by the
+  /// signature on `pod_records`, never by a code.
+  String? get arrivalCode => getField<String>('arrival_code');
+  set arrivalCode(String? value) => setField<String>('arrival_code', value);
 
   DateTime? get jobStartTime => getField<DateTime>('job_start_time');
   set jobStartTime(DateTime? value) =>
@@ -211,6 +222,17 @@ class OrdersRow extends SupabaseDataRow {
   String? get quoteGstMode => getField<String>('quote_gst_mode');
   String? get quotePackingType => getField<String>('quote_packing_type');
   double? get quoteTotalCft => getField<double>('quote_total_cft');
+
+  // Item 12C (20260817_item12c_package_columns.sql) — the frozen
+  // suggestion and the surveyor's actual choice, copied off the quotation
+  // at conversion. Deliberately NOT re-derived from the org's slab table:
+  // a later Settings edit must never rewrite a dispatched job.
+  String? get suggestedPackage => getField<String>('suggested_package');
+  String? get suggestedVehicle => getField<String>('suggested_vehicle');
+  int? get suggestedCrew => getField<int>('suggested_crew');
+  String? get chosenPackage => getField<String>('chosen_package');
+  String? get chosenVehicle => getField<String>('chosen_vehicle');
+  int? get chosenCrew => getField<int>('chosen_crew');
   int? get quoteVersion => getField<int>('quote_version');
   DateTime? get quoteSnapshotAt => getField<DateTime>('quote_snapshot_at');
 

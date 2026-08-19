@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'rate_card_detail_page_widget.dart';
@@ -152,6 +154,23 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
     );
   }
 
+  // Item 11 sweep (17 Aug 2026): rate_cards had a live column but no
+  // delete UI. Soft delete specifically — pricing changes constantly and
+  // old cards are referenced by historical quotes, so a hard delete
+  // would orphan them.
+  Future<void> _deleteCard(RateCardsRow c) async {
+    if (c.id == null) return;
+    final deleted = await DeleteAction.run(
+      context,
+      table: 'rate_cards',
+      id: c.id!,
+      entityLabel: 'rate card',
+      check: () async => DeleteCheck.allow,
+      onDeleted: _load,
+    );
+    if (deleted) await _load();
+  }
+
   Widget _cardRow(FlutterFlowTheme theme, RateCardsRow c) {
     return InkWell(
       onTap: () => context.pushNamed(
@@ -206,6 +225,12 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
                 child: Text('Inactive',
                     style: GoogleFonts.inter(fontSize: 10, color: theme.error)),
               ),
+            IconButton(
+              tooltip: 'Delete rate card',
+              visualDensity: VisualDensity.compact,
+              icon: Icon(Icons.delete_outline, size: 18, color: theme.error),
+              onPressed: () => _deleteCard(c),
+            ),
           ],
         ),
       ),

@@ -12,18 +12,59 @@ import '/backend/supabase/org_scope.dart';
 /// history.
 ///
 /// **The read side is the risky half.** Every list/KPI/report query must
-/// also filter `deleted_at is null` — see [OrgScope.read], which now
-/// applies that filter for the tables that have the column, so a new query
-/// is safe by default rather than by remembering.
+/// also filter `deleted_at is null` — see `SupabaseTable._select()`
+/// (table.dart), which now applies that filter for every table in
+/// [kSoftDeleteTables], at the one funnel `queryRows`/`querySingleRow`
+/// already pass through — not [OrgScope.read] itself (corrected 16 Aug
+/// 2026; this comment previously credited OrgScope, which never touched
+/// `deleted_at` at all). A new query is safe by default because of table.dart,
+/// not because of anything OrgScope does.
+///
+/// **This is app-layer, not RLS, and that's deliberate, not a gap.** RLS
+/// policies do not — and must not — filter `deleted_at`: the recycle bin
+/// (`recycle_bin_page.dart`) reads deleted rows directly via
+/// [recycleBin], and a policy-level filter would block that read too,
+/// same as it blocks everyone else. `_select()` is the correct place for
+/// this filter precisely because it's a *read default*, not a hard
+/// boundary — the recycle bin is the one caller that needs to opt out,
+/// and does, by going around it.
 
 /// Tables that carry the soft-delete columns (per the 28 Jul migration).
-/// [OrgScope.read] consults this to decide whether to append the filter.
+/// `SupabaseTable._select()` (table.dart) consults this to decide whether
+/// to append the filter.
+///
+/// Other tables with a live `deleted_at` column that are DELIBERATELY not
+/// listed here (checked directly against Postgres 16 Aug 2026 — see
+/// CLAUDE.md's Item 11 changelog entry for the full table-by-table audit):
+///
+/// - `lr_register`, `journal_entries` — MUST NEVER be added. An issued LR
+///   is a legal document under the Carriage by Road Act; it gets
+///   cancelled with a reason and stays in the register, never deleted.
+///   Double-entry corrects by a reversing entry, never by deleting a
+///   journal row. If either of these ever needs a "remove this" action,
+///   that's a cancel/reversal flow, not `SoftDeleteService.softDelete()`.
+/// - `warehouses`, `storage_jobs`, `contracts`, `purchase_orders` — belong
+///   to modules not built yet (no page anywhere in `lib/` queries them).
+///   Wire soft-delete in when each module actually lands, not before.
+/// - `documents` — column exists, but no page anywhere in `lib/` queries
+///   this table at all; nothing to wire delete into yet either way.
+///
+/// `rate_cards`, `tasks`, `trips` were in the same "has live UI, no
+/// delete yet" bucket as `documents` until 17 Aug 2026 — now wired in
+/// below, per Arun's decision: rate_cards (old cards are referenced by
+/// historical quotes, so hard delete would orphan them — same shape as
+/// every other table here), tasks (no special handling needed), trips
+/// (guarded — see [canDeleteTrip] — a deleted trip must not silently
+/// change P&L for a completed order).
 const Set<String> kSoftDeleteTables = {
   'leads',
   'quotations',
   'orders',
   'payment_entries',
   'expenses',
+  'rate_cards',
+  'tasks',
+  'trips',
   'materials',
   'vehicles',
   'vendors',
@@ -111,6 +152,107 @@ class SoftDeleteService {
     } catch (e) {
       return DeleteCheck(
           allowed: false, reason: 'Could not verify this lead: $e');
+    }
+  }
+
+  /// A payment already folded into an issued Money Receipt, or belonging
+  /// to a closed order, may not be deleted — added 16 Aug 2026 alongside
+  /// the first delete UI for `payment_entries`.
+  static Future<DeleteCheck> canDeletePaymentEntry(
+      PaymentEntriesRow entry) async {
+    if (entry.receiptId != null) {
+      return const DeleteCheck(
+        allowed: false,
+        reason: 'This payment has already been receipted. Deleting it '
+            'would leave that receipt referring to a payment that no '
+            'longer exists.',
+      );
+    }
+    try {
+      final orders = await OrdersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('id', entry.orderId),
+      );
+      final order = orders.isEmpty ? null : orders.first;
+      if ((order?.status ?? '').toLowerCase() == 'closed') {
+        return const DeleteCheck(
+          allowed: false,
+          reason: 'This order is closed and its payment history is locked.',
+        );
+      }
+      return DeleteCheck.allow;
+    } catch (e) {
+      return DeleteCheck(
+          allowed: false, reason: 'Could not verify this payment: $e');
+    }
+  }
+
+  /// A material still carrying stock is kept out of the recycle bin by
+  /// mistake far more easily than a real "delete this SKU" — block it
+  /// rather than silently orphan `stock_movements` rows against a vanished
+  /// material.
+  static Future<DeleteCheck> canDeleteMaterial(MaterialsRow m) async {
+    if ((m.quantity ?? 0) != 0) {
+      return const DeleteCheck(
+        allowed: false,
+        reason: 'This material still has stock on hand. Stock it out to '
+            'zero first, then delete.',
+      );
+    }
+    return DeleteCheck.allow;
+  }
+
+  /// A trip linked to a completed order, or one that already has fuel/
+  /// expense entries or a captured vehicle log (odometer/fuel) against
+  /// it, may not be deleted — a deleted trip must not silently change
+  /// P&L for a job that's already been costed. Added 17 Aug 2026
+  /// alongside the first delete UI for `trips`.
+  static Future<DeleteCheck> canDeleteTrip(TripsRow trip) async {
+    if (trip.id == null) return DeleteCheck.allow;
+    try {
+      final tripOrders = await TripOrdersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('trip_id', trip.id!),
+      );
+      final orderIds =
+          tripOrders.map((o) => o.orderId).whereType<String>().toList();
+      if (orderIds.isNotEmpty) {
+        final orders = await OrdersTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).inFilter('id', orderIds),
+        );
+        final completed = orders.any((o) => const {'delivered', 'closed'}
+            .contains((o.status ?? '').toLowerCase()));
+        if (completed) {
+          return const DeleteCheck(
+            allowed: false,
+            reason: 'This trip is linked to a completed order. Deleting it '
+                "would silently change that order's P&L.",
+          );
+        }
+      }
+
+      final expenses = await TripExpensesTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('trip_id', trip.id!).limit(1),
+      );
+      if (expenses.isNotEmpty) {
+        return const DeleteCheck(
+          allowed: false,
+          reason: 'This trip has fuel or other expenses logged against it. '
+              'Deleting it would silently change P&L.',
+        );
+      }
+
+      final hasVehicleLog = trip.kmStart != null ||
+          trip.kmEnd != null ||
+          (trip.fuelLitres ?? 0) > 0;
+      if (hasVehicleLog) {
+        return const DeleteCheck(
+          allowed: false,
+          reason: 'This trip has a vehicle log (odometer/fuel) recorded. '
+              'Cancel it instead of deleting.',
+        );
+      }
+      return DeleteCheck.allow;
+    } catch (e) {
+      return DeleteCheck(allowed: false, reason: 'Could not verify this trip: $e');
     }
   }
 

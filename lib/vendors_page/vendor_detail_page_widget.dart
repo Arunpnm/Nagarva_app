@@ -429,6 +429,15 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                         ),
                         Text(_rupees(p.amount),
                             style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                        IconButton(
+                          tooltip: 'Delete payment',
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(Icons.delete_outline, size: 16, color: theme.error),
+                          onPressed: () async {
+                            Navigator.of(sheetCtx).pop();
+                            await _deleteVendorPayment(bill, p);
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -458,6 +467,45 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
         ),
       ),
     );
+  }
+
+  // Item 11 sweep (16 Aug 2026): vendor_payments had soft-delete columns
+  // and a recycle-bin-eligible row shape (added to kSoftDeleteTables
+  // alongside vendors/vendor_bills) but no delete UI. Mirrors
+  // _recordPayment's own bill.paid_amount/status maintenance in reverse —
+  // there's no DB trigger for this, so a delete that skipped this step
+  // would leave the bill's paid_amount overstated.
+  Future<void> _deleteVendorPayment(
+      VendorBillsRow bill, VendorPaymentsRow payment) async {
+    if (bill.id == null) return;
+    final deleted = await DeleteAction.run(
+      context,
+      table: 'vendor_payments',
+      id: payment.id!,
+      entityLabel: 'payment',
+      check: () async => DeleteCheck.allow,
+    );
+    if (!deleted) return;
+    try {
+      final newPaid = (bill.paidAmount - payment.amount).clamp(0, double.infinity);
+      final balance = bill.totalAmount - bill.tdsAmount - newPaid;
+      final newStatus = balance <= 0.01 ? 'paid' : (newPaid > 0 ? 'partial' : 'unpaid');
+      await VendorBillsTable().update(
+        data: {
+          'paid_amount': newPaid,
+          'status': newStatus,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        },
+        matchingRows: (q) => OrgScope.write(q).eq('id', bill.id!),
+      );
+    } catch (_) {
+      // The payment is already deleted (recoverable via the recycle bin);
+      // a failure to resync the bill's rollup shouldn't look like the
+      // whole action failed. _load() below will still show the stale
+      // paid_amount until the next successful write touches it.
+    }
+    _changed = true;
+    await _load();
   }
 
   Future<void> _recordPayment(VendorBillsRow bill) async {
