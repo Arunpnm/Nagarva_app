@@ -1,81 +1,121 @@
 -- ============================================================================
--- Nagarva — PIN rate-limit hardening (19 Aug 2026)
+-- Nagarva — PIN rate-limit hardening (19 Aug 2026, MERGED + GUARDED)
 --
--- Standalone. Ships BEFORE any binding-model change, because the problem
--- it fixes is live right now.
+-- Supersedes and replaces BOTH:
+--   supabase/20260819_pin_rate_limit_hardening.sql   (main)
+--   supabase/20260819b_pin_org_pool_lock_cap.sql     (cap)
+-- Do not run either of those again. This file is the whole change, in
+-- ONE transaction.
 --
--- THE OUTAGE THIS FIXES
--- ---------------------
--- `org_pin_attempts` is keyed on `org_id` alone, so the failure counter
--- is per TENANT. Five wrong PINs lock out the owner AND every active
--- staff member for 15 minutes. The org slug is public and
--- `resolve_org_by_slug` is anon-callable, so any stranger can do this
--- for the cost of five HTTP requests, repeatedly, indefinitely.
+-- WHY IT IS MERGED
+-- ----------------
+-- Splitting it in two produced a half-applied security migration. The
+-- main file was correctly wrapped in begin/commit and DID roll back
+-- cleanly. The cap file then ran on top of nothing and succeeded,
+-- because it creates two functions plus a 3-argument verify_org_pin and
+-- creates no tables at all — leaving a live function querying
+-- pin_ip_attempts, which did not exist. Org-code PIN login went down
+-- with 42P01 on every call.
 --
--- Arun, 19 Aug 2026: "my whole crew locked out on a moving day for five
--- HTTP requests. That's an outage I can be given by a stranger."
+-- The cap's precondition guard was:
+--     if not exists (select 1 from pg_proc where proname='verify_org_pin')
+-- which the pre-existing 2-argument version satisfied, so it could never
+-- fire. IT CHECKED THE TARGET IT WAS REPLACING, NOT THE DEPENDENCY IT
+-- NEEDED. That is the same defect shape as the is_platform_admin()
+-- deadlock in delete_org(): a guard that reads true for the wrong
+-- reason, and therefore protects nothing.
 --
--- The lockout throttled the VICTIM, never the attacker. That inversion
--- is the actual bug; the 5/15 numbers were never the problem.
+-- Both lessons are applied below:
+--   * one file, one transaction — nothing can be half-applied
+--   * a PREFLIGHT guard that asserts every DEPENDENCY this migration
+--     consumes, and a POSTFLIGHT guard that asserts every OBJECT it is
+--     supposed to produce. If either fails, the whole thing rolls back
+--     and the database is exactly as it was.
 --
--- Second defect: the counter RESET TO ZERO when it tripped
---     failed_attempts = case when +1 >= 5 then 0 else +1 end
--- so lockouts never compounded. Sustained guessing ran at a flat
--- 5 per 15 min = 480/day forever. Against the org-code path each guess
--- is tested against every PIN in the org at once (APC today: 8 staff +
--- 1 owner = 9), so expected guesses to hit SOME account is about
--- 10,000/9 ≈ 1,111 → roughly 2.3 days of unattended traffic.
+-- WHAT IT DOES (unchanged from the two files it replaces)
+-- ------------------------------------------------------
+-- org_pin_attempts was keyed on org_id alone, so five wrong PINs locked
+-- out the owner and every active staff member for 15 minutes. The slug
+-- is public and resolve_org_by_slug is anon-callable, so a stranger
+-- could take a tenant offline for five HTTP requests, repeatedly. The
+-- lockout throttled the victim, never the attacker.
 --
--- WHAT CHANGES
--- ------------
---   1. A per-(org, IP) counter becomes the primary limiter. It locks the
---      SOURCE, so one attacker cannot take a tenant offline.
---   2. Escalating backoff (15 min → 1 hour → 24 hours) replaces
---      reset-to-zero, with decay after a clean 24 hours.
---   3. The per-org counter survives but is SPLIT BY POOL (owner vs
---      staff) and re-tuned as a distributed-attack backstop only, at a
---      threshold a fat-fingered packer can never reach. A packer
---      mistyping five times can no longer lock the owner out.
---   4. Every lockout writes a `pin_lockout_events` row the owner can
---      read, so a sustained attack stops being invisible.
+--   1. pin_ip_attempts (org_id, client_ip) becomes the primary limiter
+--      at 10 failures — deliberately looser than the old per-org 5,
+--      because a crew on one warehouse hotspot shares a public IP, and
+--      any success from that IP clears the bucket.
+--   2. Escalating backoff via pin_lock_duration(): 15 min, 1 hour,
+--      24 hours, decaying after a clean day. Replaces reset-to-zero on
+--      both the org path and the staff path.
+--   3. org_pin_attempts is split by pool (owner/staff, composite PK) and
+--      retuned to 200 as a distributed-attack backstop only. Its lock is
+--      CAPPED at a flat 15 minutes by pin_org_pool_lock_duration() and
+--      never escalates: it is the only org-wide lock left, so an
+--      outsider must not be able to grow it into a multi-hour outage.
+--   4. pin_lockout_events records every lockout, readable by owner and
+--      managers under RLS.
 --
--- ############################################################################
--- ## READ THIS BEFORE DEPLOYING — the GUC alone does NOT work here.        ##
--- ############################################################################
+-- THE IP MUST BE FORWARDED BY THE EDGE FUNCTION
+-- ---------------------------------------------
+-- verify_org_pin reads PostgREST's request.headers GUC only as a
+-- fallback. It is called by pin-login under service_role, so that GUC
+-- carries the EDGE FUNCTION's IP — every tenant sharing one bucket, a
+-- limiter that reports success while enforcing nothing. p_client_ip
+-- defaults to null so this migration is safe to run BEFORE pin-login is
+-- redeployed; the exact Edge Function diff is at the bottom of this file.
 --
--- `is_invite_code_valid` reads the caller's IP from PostgREST's
--- `request.headers` GUC, and that is correct THERE because the Dart
--- client calls it directly over PostgREST.
+-- Unverified and deliberately capped for: x-forwarded-for is
+-- client-settable. If Supabase's proxy appends rather than replaces, the
+-- per-IP limiter is advisory. Probe it after deploy (see bottom).
 --
--- `verify_org_pin` is different: it is called by the `pin-login` Edge
--- Function under service_role. The GUC would therefore carry the EDGE
--- FUNCTION's outbound request headers, not the end user's — every
--- vendor on earth would share one bucket, and the limiter would look
--- like it worked while enforcing nothing.
---
--- So the function takes `p_client_ip`, which the Edge Function must
--- pass from its own `req.headers`. The GUC remains as a fallback for
--- any direct PostgREST caller.
---
--- DEPLOY ORDER
---   1. Run this migration. `p_client_ip` defaults to null, so the
---      currently deployed 2-argument call keeps working — it simply
---      falls back to the GUC/shared bucket until step 2.
---   2. Deploy `pin-login` with the IP forwarded (see the companion note
---      at the bottom of this file for the exact change).
---   Doing it in this order means there is no window where login breaks.
---
--- SAFE TO RE-RUN: every DDL statement is IF NOT EXISTS / idempotent, and
--- the function bodies are CREATE OR REPLACE after an explicit DROP.
+-- SAFE TO RE-RUN.
 -- ============================================================================
 
 begin;
 
 -- ---------------------------------------------------------------------------
--- 1. Shared escalation ladder
+-- 0. PREFLIGHT — assert every DEPENDENCY, not the target
 -- ---------------------------------------------------------------------------
--- One place defines how long each successive lockout lasts, so the org
--- path and the staff path cannot drift apart.
+-- Checks the things this migration CONSUMES. A guard that checks whether
+-- the object being replaced exists is worthless: it is satisfied by the
+-- very thing you are about to overwrite.
+do $preflight$
+declare
+  v_missing text[] := '{}';
+begin
+  if to_regclass('public.organizations')    is null then v_missing := v_missing || 'table organizations'; end if;
+  if to_regclass('public.staff')            is null then v_missing := v_missing || 'table staff'; end if;
+  if to_regclass('public.org_members')      is null then v_missing := v_missing || 'table org_members'; end if;
+  if to_regclass('public.org_pin_attempts') is null then v_missing := v_missing || 'table org_pin_attempts'; end if;
+
+  if not exists (select 1 from pg_proc where proname = 'current_org_ids') then
+    v_missing := v_missing || 'function current_org_ids()'; end if;
+  if not exists (select 1 from pg_proc where proname = 'is_org_owner') then
+    v_missing := v_missing || 'function is_org_owner()'; end if;
+  if not exists (select 1 from pg_proc where proname = 'is_org_manager') then
+    v_missing := v_missing || 'function is_org_manager()'; end if;
+
+  -- The PIN comparison itself. pgcrypto lives in the `extensions`
+  -- schema on Supabase; without it every bcrypt check below is dead.
+  if not exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where p.proname = 'crypt' and n.nspname = 'extensions'
+  ) then v_missing := v_missing || 'extensions.crypt() (pgcrypto)'; end if;
+
+  if not exists (select 1 from pg_proc where proname = 'gen_random_uuid') then
+    v_missing := v_missing || 'function gen_random_uuid()'; end if;
+
+  if array_length(v_missing, 1) is not null then
+    raise exception
+      'PREFLIGHT FAILED — this migration depends on objects that do not exist: %',
+      array_to_string(v_missing, ', ');
+  end if;
+end
+$preflight$;
+
+-- ---------------------------------------------------------------------------
+-- 1. Shared escalation ladders
+-- ---------------------------------------------------------------------------
 create or replace function public.pin_lock_duration(p_level integer)
 returns interval
 language sql
@@ -88,11 +128,21 @@ as $$
   end;
 $$;
 
-comment on function public.pin_lock_duration(integer) is
-  'Escalating PIN lockout ladder: 15 min, then 1 hour, then 24 hours. '
-  'Replaces the old flat 15-minute lock that reset its counter on every '
-  'trip and so never compounded.';
+-- Org-pool locks are deliberately capped at the first rung of the
+-- ladder. Only the per-IP path is allowed to escalate.
+create or replace function public.pin_org_pool_lock_duration()
+returns interval
+language sql
+immutable
+as $$
+  select interval '15 minutes';
+$$;
 
+comment on function public.pin_org_pool_lock_duration() is
+  'Org-wide PIN lock duration. Deliberately flat and short: this lock '
+  'affects every user in the tenant, so it must never be escalatable by '
+  'an outsider into a multi-hour outage. Escalation belongs on the '
+  'per-IP limiter, which only affects the attacker.';
 -- ---------------------------------------------------------------------------
 -- 2. Per-(org, IP) counter — the primary limiter
 -- ---------------------------------------------------------------------------
@@ -215,12 +265,23 @@ create policy pin_lockout_events_read
     and (public.is_org_owner(org_id) or public.is_org_manager(org_id))
   );
 
--- ---------------------------------------------------------------------------
--- 5. verify_org_pin — IP-first, escalating, pool-split
--- ---------------------------------------------------------------------------
--- Signature changes (new p_client_ip argument), so an explicit DROP is
--- required first: CREATE OR REPLACE cannot do it and would raise 42P13.
--- See CLAUDE.md, "Conventions for Claude Code sessions".
+-- Only the org-pool branches differ from the main migration; everything
+-- else (IP gate, pool gates, collision guard, success path) is
+-- byte-identical and re-stated here only because a function body cannot
+-- be patched in place.
+-- Drop BOTH existing signatures before creating the new one.
+--
+-- Without this the 2-argument version (restored by the rollback) would
+-- survive alongside the new 3-argument one, and because p_client_ip has
+-- a DEFAULT, every 2-argument call would match both candidates and fail
+-- with 42725, ambiguous function call. That is exactly the state the
+-- rollback initially left behind.
+--
+-- This omission was inherited from the cap file, which had no drop
+-- because it assumed the 3-arg function already existed. It was caught
+-- by the POSTFLIGHT guard at the end of this file asserting "exactly one
+-- verify_org_pin signature" — which is precisely the job that guard
+-- exists to do.
 drop function if exists public.verify_org_pin(uuid, text);
 drop function if exists public.verify_org_pin(uuid, text, text);
 
@@ -231,7 +292,7 @@ create or replace function public.verify_org_pin(
 )
 returns table (
   ok                 boolean,
-  kind               text,        -- 'owner' | 'staff'
+  kind               text,
   user_id            uuid,
   staff_id           uuid,
   staff_role         text,
@@ -239,22 +300,18 @@ returns table (
   staff_auth_user_id uuid,
   locked             boolean,
   locked_until       timestamptz,
-  reason             text         -- 'locked' | 'locked_ip' | 'pin_collision'
+  reason             text
 )
 language plpgsql
 security definer
 set search_path = public, extensions
 as $$
 declare
-  -- Per-IP: deliberately more forgiving than the old per-org 5, because
-  -- a whole crew on one warehouse hotspot shares a public IP. A single
-  -- success from that IP clears the bucket, which is what makes the
-  -- shared-NAT case self-healing.
   v_ip_max        constant integer := 10;
-  -- Per-org-pool: a distributed-attack backstop ONLY. Set far above
-  -- anything human error produces, so five fat-fingered attempts by a
-  -- packer can never lock the owner out.
-  v_pool_max      constant integer := 50;
+  -- Raised from 50. See this file's header: this counter can be driven
+  -- by an outsider if the forwarded IP is forgeable, so it must sit far
+  -- above real-world noise and its lock must stay short.
+  v_pool_max      constant integer := 200;
   v_decay         constant interval := interval '24 hours';
 
   v_ip            text;
@@ -277,10 +334,6 @@ declare
   v_until_staff   timestamptz;
   v_attempts      integer;
 begin
-  -- ---- Resolve the caller's IP -------------------------------------------
-  -- Parameter first (the Edge Function forwards the real client IP);
-  -- the PostgREST GUC second, for a direct caller; 'unknown' last, which
-  -- is a single shared bucket and is meant to be conservative.
   v_ip := nullif(btrim(coalesce(p_client_ip, '')), '');
   if v_ip is null then
     begin
@@ -295,15 +348,12 @@ begin
   v_ip := btrim(split_part(v_ip, ',', 1));
   if v_ip = '' then v_ip := 'unknown'; end if;
 
-  -- ---- IP gate, checked before any bcrypt work ---------------------------
   select * into v_ip_row
     from public.pin_ip_attempts
    where org_id = p_org_id and client_ip = v_ip
      for update;
 
   if found then
-    -- Decay a stale bucket so an honest user who failed twice last week
-    -- doesn't start today part-way up the ladder.
     if v_ip_row.last_failed_at < now() - v_decay
        and (v_ip_row.locked_until is null or v_ip_row.locked_until <= now())
     then
@@ -323,7 +373,6 @@ begin
     end if;
   end if;
 
-  -- ---- Per-pool gates ----------------------------------------------------
   select a.locked_until into v_owner_lock
     from public.org_pin_attempts a
    where a.org_id = p_org_id and a.pool = 'owner';
@@ -341,10 +390,6 @@ begin
     return;
   end if;
 
-  -- ---- Pool 1: owner -----------------------------------------------------
-  -- Column aliasing (m_*) is load-bearing: this function's OUT parameters
-  -- are in scope as plpgsql variables, and a bare column reference that
-  -- matches one raises 42702. Hit live; do not "simplify" it away.
   if not v_skip_owner then
     for v_owner in
       select om.user_id as m_user_id, om.pin_hash as m_pin_hash
@@ -361,9 +406,6 @@ begin
     end loop;
   end if;
 
-  -- ---- Pool 2: staff (active only) --------------------------------------
-  -- Still NOT skipped just because the owner pool matched — that early
-  -- exit was the original privilege-escalation bug (20260729).
   if not v_skip_staff then
     for v_staff in
       select s.id as s_id, s.role as s_role, s.name as s_name,
@@ -384,9 +426,6 @@ begin
     end loop;
   end if;
 
-  -- ---- Ambiguous: refuse, and touch no counter --------------------------
-  -- Unchanged from 20260729. The PIN was correct; the configuration is
-  -- wrong. Counting it would punish two users for an admin mistake.
   if v_match_count > 1 then
     return query select false, null::text, null::uuid, null::uuid,
                         null::text, null::text, null::uuid,
@@ -394,7 +433,6 @@ begin
     return;
   end if;
 
-  -- ---- Success: clear this IP and the pool that matched ------------------
   if v_match_count = 1 then
     insert into public.pin_ip_attempts (org_id, client_ip, failed_attempts, lock_level, locked_until)
       values (p_org_id, v_ip, 0, 0, null)
@@ -412,7 +450,6 @@ begin
     return;
   end if;
 
-  -- ---- Failure: charge the IP first --------------------------------------
   insert into public.pin_ip_attempts (org_id, client_ip, failed_attempts, lock_level, last_failed_at)
     values (p_org_id, v_ip, 1, 0, now())
   on conflict (org_id, client_ip) do update
@@ -422,6 +459,8 @@ begin
     into v_attempts, v_level;
 
   if v_attempts >= v_ip_max then
+    -- The per-IP ladder keeps escalating: this only ever affects the
+    -- source doing the guessing.
     v_level := v_level + 1;
     v_until := now() + public.pin_lock_duration(v_level);
     update public.pin_ip_attempts
@@ -438,7 +477,6 @@ begin
     return;
   end if;
 
-  -- ---- Then the distributed backstop, on the pools actually searched -----
   v_until := null;
 
   if not v_skip_owner then
@@ -457,7 +495,9 @@ begin
 
     if v_attempts >= v_pool_max then
       v_level := v_level + 1;
-      v_until := now() + public.pin_lock_duration(v_level);
+      -- CAPPED: flat 15 minutes, never escalating. This lock hits every
+      -- user in the tenant, so an outsider must not be able to grow it.
+      v_until := now() + public.pin_org_pool_lock_duration();
       update public.org_pin_attempts
          set failed_attempts = 0, lock_level = v_level, locked_until = v_until
        where org_id = p_org_id and pool = 'owner';
@@ -483,10 +523,7 @@ begin
 
     if v_attempts >= v_pool_max then
       v_level := v_level + 1;
-      -- Its OWN duration. Using greatest() here would let an owner-pool
-      -- trip silently extend the staff lock, which is exactly the
-      -- cross-contamination this split exists to prevent.
-      v_until_staff := now() + public.pin_lock_duration(v_level);
+      v_until_staff := now() + public.pin_org_pool_lock_duration();
       update public.org_pin_attempts
          set failed_attempts = 0, lock_level = v_level, locked_until = v_until_staff
        where org_id = p_org_id and pool = 'staff';
@@ -507,9 +544,7 @@ $$;
 revoke all on function public.verify_org_pin(uuid, text, text) from public;
 revoke all on function public.verify_org_pin(uuid, text, text) from anon;
 revoke all on function public.verify_org_pin(uuid, text, text) from authenticated;
-grant execute on function public.verify_org_pin(uuid, text, text) to service_role;
-
--- ---------------------------------------------------------------------------
+grant execute on function public.verify_org_pin(uuid, text, text) to service_role;-- ---------------------------------------------------------------------------
 -- 6. verify_staff_pin — same escalation ladder
 -- ---------------------------------------------------------------------------
 -- This path is per-staff-row and so was never a tenant-wide DoS, which is
@@ -612,32 +647,96 @@ revoke all on function public.verify_staff_pin(uuid, text) from public;
 revoke all on function public.verify_staff_pin(uuid, text) from anon;
 revoke all on function public.verify_staff_pin(uuid, text) from authenticated;
 grant execute on function public.verify_staff_pin(uuid, text) to service_role;
+-- ---------------------------------------------------------------------------
+-- 7. POSTFLIGHT — assert every object this migration was supposed to create
+-- ---------------------------------------------------------------------------
+-- The half-applied state that took org-code login down would have been
+-- caught here and rolled back. Everything is still inside the same
+-- transaction, so a failure leaves the database exactly as it was.
+do $postflight$
+declare
+  v_missing text[] := '{}';
+begin
+  -- 1
+  if to_regclass('public.pin_ip_attempts') is null then
+    v_missing := v_missing || 'table pin_ip_attempts'; end if;
+  -- 2
+  if to_regclass('public.pin_lockout_events') is null then
+    v_missing := v_missing || 'table pin_lockout_events'; end if;
+  -- 3
+  if not exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'org_pin_attempts'
+       and column_name = 'pool'
+  ) then v_missing := v_missing || 'column org_pin_attempts.pool'; end if;
+  -- 4
+  if not exists (
+    select 1 from pg_proc
+     where proname = 'verify_org_pin'
+       and pg_get_function_identity_arguments(oid)
+           = 'p_org_id uuid, p_pin text, p_client_ip text'
+  ) then v_missing := v_missing || 'function verify_org_pin(uuid,text,text)'; end if;
+  -- 5
+  if not exists (select 1 from pg_proc where proname = 'pin_org_pool_lock_duration') then
+    v_missing := v_missing || 'function pin_org_pool_lock_duration()'; end if;
+
+  -- supporting objects, asserted for the same reason
+  if not exists (select 1 from pg_proc where proname = 'pin_lock_duration') then
+    v_missing := v_missing || 'function pin_lock_duration()'; end if;
+  if not exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'staff'
+       and column_name = 'pin_lock_level'
+  ) then v_missing := v_missing || 'column staff.pin_lock_level'; end if;
+
+  -- The old single-column PK must be gone, or the pool split is a lie.
+  if (select coalesce(array_length(conkey, 1), 0)
+        from pg_constraint
+       where conrelid = 'public.org_pin_attempts'::regclass and contype = 'p') <> 2
+  then v_missing := v_missing || 'composite PK on org_pin_attempts(org_id, pool)'; end if;
+
+  -- Exactly one verify_org_pin signature. Two would make every
+  -- 2-argument call ambiguous (42725), which is how the rollback
+  -- initially left things.
+  if (select count(*) from pg_proc where proname = 'verify_org_pin') <> 1 then
+    v_missing := v_missing || 'exactly one verify_org_pin signature';
+  end if;
+
+  if array_length(v_missing, 1) is not null then
+    raise exception
+      'POSTFLIGHT FAILED — rolling back, nothing applied. Missing: %',
+      array_to_string(v_missing, ', ');
+  end if;
+
+  raise notice 'POSTFLIGHT OK — all objects present.';
+end
+$postflight$;
 
 commit;
 
 -- ============================================================================
--- STEP 2 — the pin-login Edge Function change (deploy AFTER this migration)
+-- VERIFY AFTER RUNNING (read-only) — expect 5 rows, all present = true
 -- ============================================================================
--- Without this the limiter still runs, but every caller shares the
--- 'unknown' bucket because the GUC sees the Edge Function's own IP.
+-- select 'pin_ip_attempts'                 as object, to_regclass('public.pin_ip_attempts')    is not null as present
+-- union all select 'pin_lockout_events',        to_regclass('public.pin_lockout_events') is not null
+-- union all select 'org_pin_attempts.pool',     exists (select 1 from information_schema.columns
+--                                                 where table_name='org_pin_attempts' and column_name='pool')
+-- union all select 'verify_org_pin(3-arg)',     exists (select 1 from pg_proc where proname='verify_org_pin'
+--                                                 and pg_get_function_identity_arguments(oid)
+--                                                     ='p_org_id uuid, p_pin text, p_client_ip text')
+-- union all select 'pin_org_pool_lock_duration', exists (select 1 from pg_proc
+--                                                 where proname='pin_org_pool_lock_duration');
 --
---   const clientIp = (req.headers.get("x-forwarded-for") ?? "")
---     .split(",")[0].trim() || null;
+-- ============================================================================
+-- THEN, and only then — deploy pin-login (already committed, not deployed):
+--   const clientIp =
+--     (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || null;
+--   ... admin.rpc("verify_org_pin", { p_org_id, p_pin, p_client_ip: clientIp })
 --
---   const { data: rows, error: vErr } = await admin.rpc("verify_org_pin", {
---     p_org_id: org_id,
---     p_pin: String(pin),
---     p_client_ip: clientIp,          // <-- add this
---   });
---
--- The function already returns reason = 'locked_ip' for a source lock
--- versus 'locked' for a pool lock; both set `locked` true and carry
--- `locked_until`, so the existing user-facing message keeps working with
--- no change. Differentiating the copy ("too many attempts from this
--- device/network") is a nicety, not a requirement.
---
--- VERIFY AFTER DEPLOY (read-only):
---   select scope, pool, client_ip, lock_level, locked_until, created_at
---     from pin_lockout_events order by created_at desc limit 20;
---   select * from pin_ip_attempts where locked_until > now();
+-- THEN the XFF probe, BEFORE any lockout test: one failed attempt with
+--   x-forwarded-for: 203.0.113.99
+-- then  select client_ip from pin_ip_attempts order by last_failed_at desc limit 1;
+-- If 203.0.113.99 landed, the header is attacker-controlled and the
+-- per-IP limiter is advisory only — stop and rethink before testing the
+-- ladder. If the real IP landed, proceed to the 11-failure test.
 -- ============================================================================
