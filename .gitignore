@@ -48,3 +48,38 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 *.bat
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Local admin/ops scripts and their output (19 Aug 2026).
+# These have held live admin tokens and account passwords — *.bat is
+# already ignored above; this keeps the rule explicit and adds the
+# result payloads, which echo back API responses.
+*.bat
+delete_test1_result.json
+*_result.json
+
+# Local environment / key material. Never commit.
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.keystore
+*.jks
+android/key.properties
+service_role*.txt
+
+# Sibling of the ignored *.bat admin scripts — same live credentials,
+# different extension. Caught 19 Aug 2026 only because *.bat missed it.
+*.ps1
+!scripts/*.ps1
+
+# Supabase CLI local state (project ref, pooler connection string).
+supabase/.temp/
