@@ -46,10 +46,22 @@ const String kPublicBaseUrl = String.fromEnvironment(
 /// customer-facing shareable links (survey/quote/track), a separate
 /// concern that happens to be hosted on the same domain.
 ///
+/// 17 Aug 2026 (later): moved from the domain root to `/auth` — link.
+/// nagarva.in turned out to be serving the Flutter *web build* of this
+/// repo (the `/survey`, `/sign`, `/track` public routes), and a
+/// drag-drop deploy of just this relay page had silently replaced the
+/// whole site, taking those three routes down. Restored as: Flutter web
+/// build at root, this static relay page moved to `web/auth/index.html`
+/// (copied verbatim, unchanged) so it coexists — see `web/_redirects`.
+/// The Supabase Auth "Site URL" and Redirect URLs allow-list both need
+/// this exact `/auth` path, not the bare domain, or GoTrue either
+/// rejects the redirect or silently falls back to Site URL and a
+/// confirmation link lands on the Flutter SPA instead of this page.
+///
 /// Keep supabase/functions/admin-reset-owner-password/index.ts's
 /// RESET_REDIRECT_TO in sync — same value by convention, can't share the
 /// literal across Dart/Deno.
-const String kAuthRedirectUrl = 'https://link.nagarva.in';
+const String kAuthRedirectUrl = 'https://link.nagarva.in/auth';
 
 /// Builds a customer-facing shareable link.
 ///
@@ -78,6 +90,91 @@ String buildPublicLink(
 /// sign, track) — they all share the `?token=<token>` shape.
 String buildTokenLink(String path, String token) =>
     buildPublicLink(path, params: {'token': token});
+
+/// Canonical legal URLs, used by BOTH the signup agreement checkbox and
+/// Settings → Help & About.
+///
+/// Moved here 18 Aug 2026 when Help & About was built — they were
+/// top-level consts in `signup_page_widget.dart`, and duplicating them
+/// into a second screen would have meant two places to update when a URL
+/// changes. `kSignupTermsUrl`/`kSignupPrivacyUrl` still exist there as
+/// aliases so the signup screen's own code reads unchanged.
+///
+/// Confirmed live 12 Aug 2026: bare `nagarva.in/terms` 301s to the `www`
+/// host on Netlify. The redirect works, but Arun gave the `www` URLs as
+/// canonical, so these point straight at them rather than taking the hop.
+///
+/// **Play Store requires the privacy policy be reachable IN-APP**, not
+/// merely linked from the store listing — that requirement is why Help &
+/// About exists at all, alongside Meta's WhatsApp Business review asking
+/// for support contact details. Two external approvals depend on this
+/// screen; don't remove either link.
+const String kTermsUrl = 'https://www.nagarva.in/terms';
+const String kPrivacyPolicyUrl = 'https://www.nagarva.in/privacy-policy';
+
+/// App version shown in Help & About.
+///
+/// Deliberately NOT `package_info_plus` — that would be a new dependency,
+/// and this project pins exact versions FlutterFlow-style with a pinned
+/// SDK (see CLAUDE.md's environment rules), so adding one is never
+/// casual. Instead this follows the same `--dart-define` pattern
+/// [kPublicBaseUrl] above already uses:
+///
+///   flutter build apk --release --dart-define=NAGARVA_APP_VERSION=1.0.1+4
+///
+/// The default tracks `pubspec.yaml`'s `version:` field and must be
+/// bumped with it — a release built without the define shows this
+/// string, so a stale default is a wrong version number in front of a
+/// vendor, not a crash.
+const String kAppVersion = String.fromEnvironment(
+  'NAGARVA_APP_VERSION',
+  defaultValue: '1.0.0+1',
+);
+
+/// One-line positioning used on Help & About and anywhere else the
+/// product introduces itself.
+const String kNagarvaTagline =
+    'Industry ERP for packers & movers — jobs, fleet, staff and GST '
+    'billing in one place.';
+
+/// Nagarva's own support line — the PLATFORM's number, not a tenant's.
+///
+/// **Currently empty on purpose.** Arun is setting up a dedicated
+/// WhatsApp Business line (18 Aug 2026), deliberately separate from APC's
+/// customer line: Nagarva is pan-India, so lapsed-trial contact arrives
+/// at any hour and must not land on the mover's own business phone. Until
+/// he hands the number over, every consumer below must degrade to plain
+/// text with **no dead button** — a contact affordance that goes nowhere
+/// is worse than none, especially for a vendor whose trial just ended.
+///
+/// Guard every use with [hasNagarvaSupportPhone] rather than testing the
+/// string inline, so switching it on is one edit here and nothing else.
+///
+/// WHERE THIS IS (OR WILL BE) NEEDED — keep this list current, the whole
+/// point is that wiring the number is one change, not a hunt:
+///   1. `plan_page_widget.dart` — the activation CTA. Live text today,
+///      becomes a "Chat with support" WhatsApp button. **Built and
+///      waiting; see the comment at that call site.**
+///   2. Settings → Help / About — this section does not exist yet
+///      (grepped 18 Aug 2026: no About, Help or Support entry anywhere
+///      in `settings_page_widget.dart`). It needs building, and the
+///      support number is the reason to build it: support contact, app
+///      version, and the privacy-policy link Phase 5 requires for the
+///      Play Store and the Meta/WhatsApp API review.
+///   3. The signup confirmation email — NOT in this repo. It's a Supabase
+///      Auth email template, edited in the Dashboard under
+///      Authentication → Email Templates, so it needs updating there by
+///      hand rather than in code. Noted here because it's the easiest
+///      one to forget precisely because it isn't a file.
+///   4. The trial banner in `main.dart` (`_withTrialBanner`) currently
+///      routes to PlanPage, which is correct — it should keep doing that
+///      rather than opening WhatsApp directly, so there's one place a
+///      vendor learns what their plan is and how to change it.
+const String kNagarvaSupportPhone = '';
+
+/// True once [kNagarvaSupportPhone] is set. Every support-contact
+/// affordance in the app is gated on this.
+bool get hasNagarvaSupportPhone => kNagarvaSupportPhone.trim().isNotEmpty;
 
 /// Builds a `wa.me` deep link that opens WhatsApp with [message]
 /// pre-filled (fix brief #2, items 3 and 6 — "WhatsApp-first" sharing).

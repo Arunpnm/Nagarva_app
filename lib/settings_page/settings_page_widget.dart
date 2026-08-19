@@ -310,6 +310,41 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                     // Vendor self-service branding: business details, logo,
                     // e-signature — all feed the invoice PDF.
                     const BusinessSettingsSection(),
+                    // Item 12: survey catalogue + vehicle/crew slabs. Moved
+                    // here from the Survey & Quote hub (the catalogue half)
+                    // per Arun 17 Aug 2026 — both pricing editors live in
+                    // one Settings entry now.
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color:
+                            FlutterFlowTheme.of(context).secondaryBackground,
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: ListTile(
+                        leading: Icon(Icons.local_shipping_outlined,
+                            color: FlutterFlowTheme.of(context).primary),
+                        title: Text(
+                          'Survey & Pricing',
+                          style: GoogleFonts.interTight(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'CFT item catalogue and vehicle/crew slabs',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                          ),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () =>
+                            context.pushNamed(SurveyPricingPage.routeName),
+                      ),
+                    ),
                     // Item 11.6: recycle bin. Owner-only, same gate as the
                     // PIN card above.
                     if (AppSession.instance.currentStaffId == null)
@@ -344,6 +379,41 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                               context.pushNamed(RecycleBinPage.routeName),
                         ),
                       ),
+                    // Help & About. NOT owner-gated, unlike the cards
+                    // above — a staff session needs the support contact
+                    // and the legal links just as much, and Play Store
+                    // review expects the privacy policy reachable from a
+                    // normal session, not only an owner's.
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: FlutterFlowTheme.of(context).secondaryBackground,
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: ListTile(
+                        leading: Icon(Icons.help_outline,
+                            color: FlutterFlowTheme.of(context).primary),
+                        title: Text(
+                          'Help & About',
+                          style: GoogleFonts.interTight(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Support, privacy policy, terms and app version',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                          ),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () =>
+                            context.pushNamed(HelpAboutPage.routeName),
+                      ),
+                    ),
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -948,12 +1018,25 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                               planName: sessionData.planName,
                               planStatus: sessionData.planStatus,
                               trialEndsAt: sessionData.trialEndsAt,
+                              graceDays: sessionData.graceDays,
                               orgActive: sessionData.orgActive,
                             );
-                            // Full route rebuild so every org-scoped page
-                            // (Dashboard, Orders, Leads, ...) re-queries under
-                            // the newly-selected org instead of showing stale
-                            // data cached under the old one.
+                            // CORRECTED 18 Aug 2026. This used to claim a
+                            // "full route rebuild so every org-scoped page
+                            // re-queries" — it does no such thing. Tab
+                            // switching never changes the URL (main.dart's
+                            // _selectTab only setStates `_currentPageName`),
+                            // so from the Settings TAB this navigates to
+                            // the location the user is already on and
+                            // GoRouter does nothing at all.
+                            //
+                            // What actually clears stale data is the
+                            // KeyedSubtree keyed on currentOrgId in
+                            // main.dart's build. This go() is kept only to
+                            // land the user back on the Dashboard after
+                            // switching, which is the sensible place to
+                            // arrive — it is NOT the mechanism, and must
+                            // not be relied on as one.
                             if (mounted) {
                               context.go(HomePageWidget.routePath);
                             }
