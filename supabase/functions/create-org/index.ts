@@ -39,6 +39,25 @@
 // `supabase functions deploy create-org`, THEN confirm with a real
 // signup (see the migration's own verify section).
 // ============================================================
+// DEPLOY ORDER — invite-code gate (16 Aug 2026, closed beta ahead of
+// Item 12). Same rule again: this file now reads/writes the
+// `invite_codes`/`platform_settings` tables. DO NOT DEPLOY until
+// 20260816_invite_codes.sql has been run — otherwise every signup 500s
+// on missing tables instead of gracefully degrading either way. Order:
+// migration first, THEN deploy, THEN confirm with a real signup using a
+// seeded code.
+//
+// TURNING THE GATE OFF (Item 12 ships): update the DB row, not a
+// secret (changed 17 Aug 2026 — is_invite_code_valid, the anon-callable
+// pre-check RPC signup_page_widget.dart calls before auth.signUp(),
+// needs to read the same flag this function does, and Postgres can't
+// read a Deno Edge Function secret):
+//   update platform_settings set value = 'false'::jsonb
+//     where key = 'signup_requires_invite';
+// No redeploy of this function needed — it's read fresh on every
+// request. Missing row, or any value other than the JSON boolean
+// `true`, keeps the gate ON (fails closed).
+// ============================================================
 //
 // Deploy:  supabase functions deploy create-org
 // ============================================================
@@ -110,6 +129,77 @@ Deno.serve(async (req: Request) => {
     // all (see that file's own comment on metaOwnerName). null is a valid,
     // expected input, not a validation failure.
     const ownerName = typeof body.owner_name === "string" ? body.owner_name.trim() : null;
+    const inviteCode = typeof body.invite_code === "string" ? body.invite_code.trim() : "";
+
+    // ---- Closed-beta gate (16 Aug 2026): signup is live but the CFT
+    // catalogue is still APC-shaped, so every new tenant today gets a
+    // product that doesn't fit their business. Gated here, not on
+    // auth.signUp() itself — a user can still create+confirm a Supabase
+    // Auth account without a code; what a missing/invalid code blocks is
+    // finishing org bootstrap, so they never get an org/org_members row
+    // and the app has nowhere to land them.
+    //
+    // Skipped entirely for a caller who already has an org — this is the
+    // idempotent-retry path (a confirmation-gap recovery, or a plain
+    // double-call) reusing this same endpoint for someone already
+    // onboarded; re-demanding a code here would incorrectly lock out a
+    // legitimate existing user if the code they used has since been
+    // exhausted or deactivated.
+    // Single source of truth for the on/off flag — `platform_settings`,
+    // not an Edge Function secret (changed 17 Aug 2026): the signup-time
+    // pre-check RPC (is_invite_code_valid) needs to read the same flag
+    // and Postgres can't read a Deno secret, so this reads what that RPC
+    // reads instead of duplicating the flag in two places that could
+    // drift. Missing row = fail closed, same as the RPC.
+    const { data: settingRow } = await admin
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "signup_requires_invite")
+      .maybeSingle();
+    const requiresInvite = settingRow ? settingRow.value === true : true;
+
+    let inviteCodeToConsume: string | null = null;
+    let inviteCodeUsedCount = 0;
+    if (requiresInvite) {
+      const { data: existingMember } = await admin
+        .from("org_members")
+        .select("id")
+        .eq("user_id", caller.user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!existingMember) {
+        if (!inviteCode) {
+          return json({
+            error:
+              "Nagarva is currently in closed beta. Enter your invite code to continue, or contact us for access.",
+          }, 403);
+        }
+        const { data: codeRow, error: codeErr } = await admin
+          .from("invite_codes")
+          .select("code, active, max_uses, used_count, expires_at")
+          .eq("code", inviteCode)
+          .maybeSingle();
+        if (codeErr) {
+          console.error("invite_codes lookup:", codeErr.message);
+          return json({ error: "Could not verify invite code. Please try again." }, 500);
+        }
+        const notExpired = !codeRow?.expires_at ||
+          new Date(codeRow.expires_at) > new Date();
+        const valid = codeRow && codeRow.active && notExpired &&
+          (codeRow.max_uses == null || codeRow.used_count < codeRow.max_uses);
+        if (!valid) {
+          return json({
+            error: "That invite code is invalid or has already been used.",
+          }, 403);
+        }
+        // Consumed AFTER create_org_with_owner succeeds below, not here —
+        // a code shouldn't burn a use for an org creation that then fails
+        // (e.g. slug exhaustion) and gets retried.
+        inviteCodeToConsume = inviteCode;
+        inviteCodeUsedCount = codeRow!.used_count;
+      }
+    }
 
     // ---- The atomic write. ----
     const { data: rows, error: rpcErr } = await admin.rpc(
@@ -132,6 +222,30 @@ Deno.serve(async (req: Request) => {
     const row = Array.isArray(rows) ? rows[0] : rows;
     if (!row) {
       return json({ error: "Could not create organisation" }, 500);
+    }
+
+    // ---- Consume the invite code now that the org actually exists.
+    // Best-effort: the org is already created successfully at this point,
+    // so a failure to increment the usage counter must not fail the
+    // whole request over bookkeeping. Plain read-then-write, not atomic —
+    // a race between two signups on the same code at the exact same
+    // instant could both pass and over-consume by one; acceptable for a
+    // small, manually-managed closed beta, not worth a migration for an
+    // atomic RPC just for this. ----
+    if (inviteCodeToConsume) {
+      const { error: incErr } = await admin
+        .from("invite_codes")
+        .update({
+          used_count: inviteCodeUsedCount + 1,
+          // Only set on first use — a code can outlive a single org (see
+          // max_uses), so this stays whichever org used it first rather
+          // than being overwritten on a later use.
+          ...(inviteCodeUsedCount === 0 ? { used_by_org_id: row.org_id } : {}),
+        })
+        .eq("code", inviteCodeToConsume);
+      if (incErr) {
+        console.error("invite_codes increment:", incErr.message);
+      }
     }
 
     // ---- Shape the response for signup_page_widget.dart's

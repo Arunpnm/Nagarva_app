@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/backend/edge_function_errors.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
 import '/config/app_config.dart';
@@ -15,17 +16,14 @@ import 'package:url_launcher/url_launcher.dart';
 import 'signup_page_model.dart';
 export 'signup_page_model.dart';
 
-// NG-BRIEF-vendor-auth-flow.md §3 — confirmed live (12 Aug 2026): a plain
-// `curl -sI https://nagarva.in/terms` returns a 301 to
-// `https://www.nagarva.in/terms` (Netlify). The redirect works, but Arun
-// gave the `www` URLs directly as the canonical ones, so both constants
-// point straight at them rather than relying on the extra hop.
-const String kSignupTermsUrl = 'https://www.nagarva.in/terms';
-
-// Play Store requires the privacy policy be reachable in-app, not just
-// linked from the store listing — this is that link, alongside the T&C
-// one, both from the registration screen's agreement checkbox.
-const String kSignupPrivacyUrl = 'https://www.nagarva.in/privacy-policy';
+// NG-BRIEF-vendor-auth-flow.md §3. The URLs themselves moved to
+// /config/app_config.dart on 18 Aug 2026, when Settings → Help & About
+// started needing the same two links — one definition, two screens.
+// These aliases stay so this file's own call sites read unchanged; see
+// kTermsUrl/kPrivacyPolicyUrl for the live-verification note and why
+// Play Store review depends on the privacy link.
+const String kSignupTermsUrl = kTermsUrl;
+const String kSignupPrivacyUrl = kPrivacyPolicyUrl;
 
 class SignupPageWidget extends StatefulWidget {
   const SignupPageWidget({super.key});
@@ -68,6 +66,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     final email = _model.emailController!.text.trim();
     final password = _model.passwordController!.text;
     final phone = _model.phoneController!.text.trim();
+    final inviteCode = _model.inviteCodeController!.text.trim();
 
     safeSetState(() {
       _model.isLoading = true;
@@ -75,6 +74,29 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     });
 
     try {
+      // 0. Validate the invite code BEFORE creating an auth account —
+      // create-org (below) is still the real, atomic gate (this RPC can
+      // race two people onto the last use of the same single-use code;
+      // the loser gets create-org's own 403, same as before this check
+      // existed), but checking here means the common case — a blank or
+      // wrong code — never creates an orphaned "confirmed, no org"
+      // account in the first place. is_invite_code_valid is
+      // SECURITY DEFINER + anon-callable, returns a bare boolean only —
+      // no code enumeration, no other invite_codes columns exposed.
+      final codeValid = await SupaFlow.client.rpc(
+        'is_invite_code_valid',
+        params: {'p_code': inviteCode},
+      ) as bool? ?? false;
+      if (!codeValid) {
+        safeSetState(() {
+          _model.errorMessage =
+              'That invite code is invalid or has already been used. '
+              'Nagarva is currently in closed beta — contact us for access.';
+          _model.isLoading = false;
+        });
+        return;
+      }
+
       // 1. Create (or, on a retried signup, re-authenticate as) the
       // Supabase Auth user. Org creation itself no longer happens here —
       // it moved server-side into create-org / create_org_with_owner(),
@@ -94,6 +116,12 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
           'org_name': company,
           'owner_name': ownerName,
           if (phone.isNotEmpty) 'phone': phone,
+          // Closed-beta gate (16 Aug 2026): stashed in auth metadata for
+          // the same reason org_name/phone are — a confirmation-gap retry
+          // (vendor_org_resolver.dart) calls create-org again later, in a
+          // session that never saw this form, and needs the code to still
+          // be available then.
+          if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
         },
       );
 
@@ -154,6 +182,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
           'org_name': company,
           'owner_name': ownerName,
           if (phone.isNotEmpty) 'phone': phone,
+          if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
         },
       );
 
@@ -213,7 +242,8 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       }
     } catch (e) {
       safeSetState(() {
-        _model.errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _model.errorMessage = extractFunctionErrorMessage(e,
+            fallback: e.toString().replaceFirst('Exception: ', ''));
         _model.isLoading = false;
       });
     }
@@ -449,6 +479,31 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               icon: Icons.phone_outlined,
                               keyboardType: TextInputType.phone,
                             ),
+                            const SizedBox(height: 16),
+                            // Closed-beta gate — required client-side as of
+                            // 17 Aug 2026 (was deliberately optional; Arun
+                            // overrode that after finding a blank code sailed
+                            // through this form and only failed later, at
+                            // create-org, after an auth account already
+                            // existed). is_invite_code_valid (called in
+                            // _handleSignup, before signUp()) is the real
+                            // check; this validator just stops an obviously
+                            // blank submission before that round trip. NOTE
+                            // for whoever turns the gate off at Item 12: this
+                            // validator does NOT know the server-side flag,
+                            // so it will keep demanding *some* text even
+                            // once codes stop mattering — revisit then.
+                            _buildField(
+                              controller: _model.inviteCodeController!,
+                              focusNode: _model.inviteCodeFocusNode!,
+                              label: 'Invite Code',
+                              hint: 'Required during closed beta',
+                              icon: Icons.key_outlined,
+                              textCapitalization: TextCapitalization.characters,
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Invite code is required during closed beta'
+                                  : null,
+                            ),
                             const SizedBox(height: 12),
                             // §3: required, disables the submit button
                             // until ticked — not a validate-on-submit
@@ -593,6 +648,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     required IconData icon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextFormField(
       controller: controller,
@@ -600,6 +656,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       style: GoogleFonts.inter(color: Colors.white),
       keyboardType: keyboardType,
       validator: validator,
+      textCapitalization: textCapitalization,
       decoration: _inputDecoration(label: label, hint: hint, icon: icon),
     );
   }

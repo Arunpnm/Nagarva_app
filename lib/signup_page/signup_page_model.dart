@@ -29,6 +29,14 @@ class SignupPageModel extends FlutterFlowModel<SignupPageWidget> {
   FocusNode? phoneFocusNode;
   TextEditingController? phoneController;
 
+  // Closed-beta invite-code gate (16 Aug 2026) — deliberately NOT marked
+  // required client-side. The server (create-org) is the sole source of
+  // truth for whether a code is needed at all, so this screen never
+  // needs a redeploy when the gate is later turned off (Item 12) — an
+  // empty value just gets sent through and the server decides.
+  FocusNode? inviteCodeFocusNode;
+  TextEditingController? inviteCodeController;
+
   bool agreedToTerms = false;
 
   bool isLoading = false;
@@ -48,6 +56,8 @@ class SignupPageModel extends FlutterFlowModel<SignupPageWidget> {
     confirmPasswordFocusNode ??= FocusNode();
     phoneController ??= TextEditingController();
     phoneFocusNode ??= FocusNode();
+    inviteCodeController ??= TextEditingController();
+    inviteCodeFocusNode ??= FocusNode();
   }
 
   @override
@@ -64,5 +74,7 @@ class SignupPageModel extends FlutterFlowModel<SignupPageWidget> {
     confirmPasswordController?.dispose();
     phoneFocusNode?.dispose();
     phoneController?.dispose();
+    inviteCodeFocusNode?.dispose();
+    inviteCodeController?.dispose();
   }
 }

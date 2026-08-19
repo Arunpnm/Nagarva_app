@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/backend/vendor_org_resolver.dart';
@@ -136,6 +137,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
           planName: sessionData.planName,
           planStatus: sessionData.planStatus,
           trialEndsAt: sessionData.trialEndsAt,
+          graceDays: sessionData.graceDays,
           orgActive: sessionData.orgActive,
         );
         AppSession.instance.setStaff(
@@ -171,11 +173,18 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
       if (!mounted) return;
       context.go(HomePageWidget.routePath);
     } catch (e) {
+      // `invoke` throws FunctionException on any non-2xx response (17 Aug
+      // 2026 finding — see edge_function_errors.dart) — a wrong PIN (401)
+      // or a rate-limit lockout (429) both land here, not in the
+      // `data['access_token'] == null` check above, which is why this
+      // screen used to show a raw "FunctionException(status: ...)" string
+      // instead of "Wrong PIN. Try again." / the lockout message.
       _shakeCtrl.forward(from: 0);
       setState(() {
         _digits.setAll(0, ['', '', '', '']);
         _focusedBox = 0;
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = extractFunctionErrorMessage(e,
+            fallback: e.toString().replaceFirst('Exception: ', ''));
       });
     } finally {
       if (mounted) setState(() => _busy = false);

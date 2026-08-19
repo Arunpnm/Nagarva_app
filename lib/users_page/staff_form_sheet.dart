@@ -1,6 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 
 import '/app_session.dart';
+import '/backend/edge_function_errors.dart';
 import '/config/app_config.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -238,9 +239,20 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
+      // `invoke` (staff-deactivate above) throws on any non-2xx response
+      // (17 Aug 2026 finding) — was showing a raw exception string here.
+      //
+      // Item 32: the insert above can now also be refused by the
+      // plan-enforcement triggers (staff seat limit, single-branch limit,
+      // expired-trial read-only). Those raise P0001 with a sentence
+      // written for the vendor, so unwrap that before falling back —
+      // otherwise hitting a seat limit reads as a raw PostgrestException.
       setState(() {
         _saving = false;
-        _error = e.toString();
+        _error = extractDbErrorMessage(
+          e,
+          fallback: extractFunctionErrorMessage(e, fallback: e.toString()),
+        );
       });
     }
   }
@@ -332,10 +344,11 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
         ),
       );
     } catch (e) {
+      // Same FunctionException-on-non-2xx bug as _save's catch above.
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = e.toString();
+          _error = extractFunctionErrorMessage(e, fallback: e.toString());
         });
       }
     }

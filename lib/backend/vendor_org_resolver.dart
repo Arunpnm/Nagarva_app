@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/edge_function_errors.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/backend/supabase/supabase.dart';
@@ -45,6 +46,11 @@ Future<List<OrgMembershipInfo>> resolveVendorOrgs(
     var orgName = (meta['org_name'] as String?)?.trim();
     final metaPhone = (meta['phone'] as String?)?.trim();
     final metaOwnerName = (meta['owner_name'] as String?)?.trim();
+    // Closed-beta gate (16 Aug 2026) — a code entered on SignupPage is
+    // stashed in auth metadata precisely so this confirmation-gap retry,
+    // which never saw that form, can still finish create-org for a
+    // gated signup.
+    final metaInviteCode = (meta['invite_code'] as String?)?.trim();
 
     if (orgName == null || orgName.isEmpty) {
       if (promptForOrgName == null) {
@@ -59,22 +65,35 @@ Future<List<OrgMembershipInfo>> resolveVendorOrgs(
       orgName = prompted.trim();
     }
 
-    final res = await SupaFlow.client.functions.invoke(
-      'create-org',
-      body: {
-        'org_name': orgName,
-        if (metaPhone != null && metaPhone.isNotEmpty) 'phone': metaPhone,
-        if (metaOwnerName != null && metaOwnerName.isNotEmpty)
-          'owner_name': metaOwnerName,
-      },
-    );
-    final data = res.data;
-    if (data is! Map || data['ok'] != true) {
-      final serverError = (data is Map && data['error'] is String)
-          ? data['error'] as String
-          : null;
-      throw Exception(serverError ??
-          'Could not set up your organization. Please try again.');
+    Map data;
+    try {
+      final res = await SupaFlow.client.functions.invoke(
+        'create-org',
+        body: {
+          'org_name': orgName,
+          if (metaPhone != null && metaPhone.isNotEmpty) 'phone': metaPhone,
+          if (metaOwnerName != null && metaOwnerName.isNotEmpty)
+            'owner_name': metaOwnerName,
+          if (metaInviteCode != null && metaInviteCode.isNotEmpty)
+            'invite_code': metaInviteCode,
+        },
+      );
+      // `invoke` throws on any non-2xx status (confirmed 17 Aug 2026 —
+      // see edge_function_errors.dart) rather than returning here, so a
+      // successful reach of this line always means create-org's `ok:
+      // true` response, not an error one — the `data is! Map || ...`
+      // check below is defensive, not the real error path anymore.
+      data = res.data is Map ? res.data as Map : const {};
+    } catch (e) {
+      // This is what closed-beta signup's "stranded, no org" recovery
+      // path actually surfaces (16 Aug 2026 invite-code gate) — a user
+      // who confirmed email with an invalid/missing code lands back here
+      // on next login, and this is the message they see.
+      throw Exception(extractFunctionErrorMessage(e,
+          fallback: 'Could not set up your organization. Please try again.'));
+    }
+    if (data['ok'] != true) {
+      throw Exception('Could not set up your organization. Please try again.');
     }
     // caller_role is the one field allowed to gate a vendor session out
     // of this recovery path — never combined with any other flag (a
@@ -137,6 +156,7 @@ Future<void> establishVendorSession(
     planName: sessionData.planName,
     planStatus: sessionData.planStatus,
     trialEndsAt: sessionData.trialEndsAt,
+    graceDays: sessionData.graceDays,
     orgActive: sessionData.orgActive,
     availableOrgs: availableOrgs,
   );

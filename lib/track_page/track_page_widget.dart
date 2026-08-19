@@ -57,8 +57,14 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
         _data = Map<String, dynamic>.from(data);
         _state = 'ok';
       });
-    } catch (_) {
-      setState(() => _state = 'error');
+    } catch (e) {
+      // `invoke` throws FunctionException on any non-2xx response (17 Aug
+      // 2026 finding) — track-order returns 404 for an invalid/expired
+      // token, which used to land here as a generic 'error' ("Pull down
+      // to try again"), the wrong message for a link that will never
+      // resolve no matter how many times it's retried.
+      final status = e is FunctionException ? e.status : null;
+      setState(() => _state = status == 404 ? 'invalid' : 'error');
     }
   }
 
