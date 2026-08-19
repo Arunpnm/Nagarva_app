@@ -96,9 +96,30 @@ Deno.serve(async (req: Request) => {
       return json({ error: "org_id and pin are required" }, 400);
     }
 
+    // Rate limiting is per (org, source IP) as of 20260819. The IP MUST be
+    // forwarded explicitly: verify_org_pin also reads PostgREST's
+    // `request.headers` GUC as a fallback, but this call arrives there
+    // under service_role from inside an Edge Function, so that GUC would
+    // carry THIS function's outbound IP — every tenant on the platform
+    // sharing a single bucket, a limiter that reports success while
+    // enforcing nothing.
+    //
+    // NOTE on trust: x-forwarded-for is a client-settable header, and we
+    // take the first entry (the conventional "original client" position).
+    // If Supabase's edge proxy appends rather than replaces, a caller can
+    // put any value in front of the real one and get a fresh bucket per
+    // request. That does not reopen the tenant-wide lockout that this
+    // work closed — the per-pool backstop is set at 50 and is the only
+    // org-wide lock left — but it does weaken the per-IP limiter. Being
+    // verified empirically before this is relied on; see
+    // supabase/20260819_pin_rate_limit_hardening.sql.
+    const clientIp =
+      (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || null;
+
     const { data: rows, error: vErr } = await admin.rpc("verify_org_pin", {
       p_org_id: org_id,
       p_pin: String(pin),
+      p_client_ip: clientIp,
     });
     if (vErr) {
       console.error("verify_org_pin error:", vErr.message);
