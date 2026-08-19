@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 
@@ -27,9 +29,20 @@ class SurveySubItem {
 }
 
 class SurveyItem {
-  const SurveyItem(this.name, this.subs);
+  const SurveyItem(this.name, this.subs, {this.active = true});
   final String name;
   final List<SurveySubItem> subs;
+
+  /// Item 12A: deactivating hides an item from NEW surveys but leaves old
+  /// quotes intact — quote lines store their CFT at add-time, so a
+  /// historical quote never looks its items up again (that lookup was the
+  /// original 0-CFT bug). Defaults true so every pre-existing config row,
+  /// which has no `active` key at all, keeps working unchanged.
+  final bool active;
+
+  SurveyItem copyWith({String? name, List<SurveySubItem>? subs, bool? active}) =>
+      SurveyItem(name ?? this.name, subs ?? this.subs,
+          active: active ?? this.active);
 }
 
 class CftRange {
@@ -44,6 +57,104 @@ class PackageInfo {
   final int crew;
   final String vehicle;
   final num vehicleCft;
+}
+
+/// Item 12B — ONE row of the vendor's "CFT in, vehicle and crew out" table,
+/// as the Settings editor presents it.
+///
+/// The stored shape is still two separate lists (`config.cft_ranges` maps a
+/// CFT ceiling to a package NAME; `config.packages` maps that name to crew/
+/// vehicle) joined by a free-text string. That join is the structural
+/// weakness this type exists to hide: a vendor who renames a package in one
+/// list and not the other silently breaks the suggestion (see
+/// [suggestPackage], which used to guess instead of reporting it).
+/// [CftSlab] is the editor's single source of truth — [PricingConfig.slabs]
+/// derives it from both lists and [PricingConfig.slabsToConfig] writes both
+/// back atomically, so the two can't drift apart through the UI.
+///
+/// The jsonb shape was deliberately kept over the relational
+/// `cft_slabs`/`survey_catalogue_items` tables the master build brief
+/// specifies — see CLAUDE.md's Item 12 entry for the reasoning. Do not
+/// "correct" this to tables without reading that first.
+class CftSlab {
+  const CftSlab({
+    required this.cftFrom,
+    required this.cftTo,
+    required this.packageName,
+    required this.vehicle,
+    required this.crew,
+    required this.vehicleCft,
+  });
+
+  /// Inclusive lower bound, as shown in the editor.
+  final num cftFrom;
+
+  /// Inclusive upper bound. `null` means open-ended — the top row, which
+  /// catches every total above the last real ceiling.
+  final num? cftTo;
+
+  final String packageName;
+  final String vehicle;
+  final int crew;
+
+  /// Carried through from `config.packages[].vehicleCft` so a round-trip
+  /// through the editor doesn't drop it. Not exposed in the editor UI —
+  /// nothing in the app reads it today (grepped), it's data the reference
+  /// web app carried; defaults to [cftTo] for a newly added row.
+  final num vehicleCft;
+
+  CftSlab copyWith({
+    num? cftFrom,
+    num? cftTo,
+    bool clearCftTo = false,
+    String? packageName,
+    String? vehicle,
+    int? crew,
+    num? vehicleCft,
+  }) =>
+      CftSlab(
+        cftFrom: cftFrom ?? this.cftFrom,
+        cftTo: clearCftTo ? null : (cftTo ?? this.cftTo),
+        packageName: packageName ?? this.packageName,
+        vehicle: vehicle ?? this.vehicle,
+        crew: crew ?? this.crew,
+        vehicleCft: vehicleCft ?? this.vehicleCft,
+      );
+}
+
+/// Result of resolving a CFT total against the vendor's slabs.
+///
+/// Replaces the old `packageInfoForCft`, which returned `packages.first`
+/// whenever the range->package join failed. That fallback meant a renamed
+/// or deleted package silently suggested the WRONG vehicle and crew on
+/// every quote, with nothing anywhere reporting it — the surveyor saw a
+/// confident, plausible, incorrect answer. This type forces the caller to
+/// distinguish "resolved", "nothing entered yet", and "your configuration
+/// is broken", so the last one can be shown as the config error it is.
+class PackageSuggestion {
+  const PackageSuggestion._(this.info, this.unresolvedPackageName, this.empty);
+
+  /// A real match: CFT fell in a slab and that slab's package resolved.
+  const PackageSuggestion.resolved(PackageInfo info) : this._(info, null, false);
+
+  /// CFT fell in a slab, but no `packages` row matches that slab's name —
+  /// i.e. the two lists have drifted. Carries the name that didn't resolve
+  /// so the UI can name it.
+  const PackageSuggestion.unresolved(String packageName)
+      : this._(null, packageName, false);
+
+  /// Nothing to suggest yet (no items added, or no slabs configured at
+  /// all). Not an error state.
+  const PackageSuggestion.empty() : this._(null, null, true);
+
+  final PackageInfo? info;
+  final String? unresolvedPackageName;
+  final bool empty;
+
+  bool get ok => info != null;
+
+  /// True only for a real misconfiguration — the case worth shouting about.
+  bool get isConfigError => unresolvedPackageName != null;
 }
 
 /// A billable charge field. [billable] fields are the 5 that have a
@@ -358,21 +469,138 @@ const kGstDefaultPct = 5;
 /// Total CFT -> package name, using the *lowest* matching range (mirrors
 /// `getPkgFromCft`'s `CFT_RANGES.find(r => cft <= r.max)` — Array.find
 /// returns the FIRST match, i.e. the smallest range whose max the total
-/// still fits under).
-String packageNameForCft(num totalCft, List<CftRange> ranges) {
+/// still fits under). Returns null when no range matches AND none is
+/// open-ended (a gap at the top — validation prevents saving that shape,
+/// but a hand-edited config can still contain it).
+String? packageNameForCft(num totalCft, List<CftRange> ranges) {
   for (final r in ranges) {
     if (r.max == null || totalCft <= r.max!) return r.pkg;
   }
-  return ranges.isNotEmpty ? ranges.last.pkg : '4 BHK Big';
+  return null;
 }
 
+/// Item 12B-b: the honest replacement for the old `packageInfoForCft`,
+/// which fell back to `packages.first` when the range->package join
+/// failed — a renamed package silently suggested the wrong vehicle/crew
+/// on every quote, and nothing errored. See [PackageSuggestion].
+PackageSuggestion suggestPackage(
+    num totalCft, List<CftRange> ranges, List<PackageInfo> packages) {
+  if (totalCft <= 0 || ranges.isEmpty) return const PackageSuggestion.empty();
+  final name = packageNameForCft(totalCft, ranges);
+  if (name == null) {
+    // No matching range and no open-ended top row: a config gap. Report
+    // it as such rather than inventing an answer.
+    return const PackageSuggestion.unresolved('(no matching CFT slab)');
+  }
+  for (final p in packages) {
+    if (p.type == name) return PackageSuggestion.resolved(p);
+  }
+  return PackageSuggestion.unresolved(name);
+}
+
+/// DEPRECATED shim for remaining callers (survey PDF, survey response
+/// section) that only ever render "no suggestion" for null — for those,
+/// showing nothing on a config error is acceptable; the interactive quote
+/// screen uses [suggestPackage] directly and surfaces the error. Do not
+/// use in new code.
 PackageInfo? packageInfoForCft(
     num totalCft, List<CftRange> ranges, List<PackageInfo> packages) {
-  final name = packageNameForCft(totalCft, ranges);
-  for (final p in packages) {
-    if (p.type == name) return p;
+  return suggestPackage(totalCft, ranges, packages).info;
+}
+
+/// Item 12B — outcome of validating an edited slab table before save.
+class SlabValidationError {
+  const SlabValidationError(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
+/// Validate a slab table the way the editor presents it. Returns the
+/// errors found (empty list == valid). Rules, per the master brief's 12B:
+/// ranges must not overlap, must not leave gaps, exactly one open-ended
+/// top row, no duplicate package names, every field filled in. "An
+/// unmatched CFT silently producing no suggestion is the same class of
+/// bug as the 0-CFT one — fail loudly at config time, not quietly at
+/// quote time."
+List<SlabValidationError> validateSlabs(List<CftSlab> slabs) {
+  final errors = <SlabValidationError>[];
+  if (slabs.isEmpty) {
+    return [const SlabValidationError('Add at least one slab.')];
   }
-  return packages.isNotEmpty ? packages.first : null;
+
+  final sorted = List.of(slabs)..sort((a, b) => a.cftFrom.compareTo(b.cftFrom));
+
+  for (final s in sorted) {
+    if (s.packageName.trim().isEmpty) {
+      errors.add(SlabValidationError(
+          'A slab starting at ${s.cftFrom} CFT has no package name.'));
+    }
+    if (s.vehicle.trim().isEmpty) {
+      errors.add(SlabValidationError(
+          '"${s.packageName}" has no vehicle.'));
+    }
+    if (s.crew <= 0) {
+      errors.add(SlabValidationError(
+          '"${s.packageName}" needs a crew count of at least 1.'));
+    }
+    if (s.cftTo != null && s.cftTo! < s.cftFrom) {
+      errors.add(SlabValidationError(
+          '"${s.packageName}": To CFT (${s.cftTo}) is below From CFT (${s.cftFrom}).'));
+    }
+  }
+
+  final openEnded = sorted.where((s) => s.cftTo == null).toList();
+  if (openEnded.isEmpty) {
+    errors.add(const SlabValidationError(
+        'The last slab must be open-ended (no To CFT) so every total gets a '
+        'suggestion.'));
+  } else if (openEnded.length > 1) {
+    errors.add(SlabValidationError(
+        'Only the last slab can be open-ended — found ${openEnded.length} '
+        '(${openEnded.map((s) => s.packageName).join(', ')}).'));
+  } else if (openEnded.single.cftFrom != sorted.last.cftFrom) {
+    errors.add(SlabValidationError(
+        'The open-ended slab ("${openEnded.single.packageName}") must be the '
+        'highest range.'));
+  }
+
+  final names = <String>{};
+  for (final s in sorted) {
+    final n = s.packageName.trim().toLowerCase();
+    if (n.isNotEmpty && !names.add(n)) {
+      errors.add(SlabValidationError(
+          'Two slabs share the package name "${s.packageName}".'));
+    }
+  }
+
+  // Overlap/gap check between consecutive rows. Ranges are inclusive on
+  // both ends (matching `cft <= max` resolution), so row N+1 must start
+  // at exactly row N's ceiling + 1.
+  for (var i = 0; i < sorted.length - 1; i++) {
+    final a = sorted[i];
+    final b = sorted[i + 1];
+    if (a.cftTo == null) continue; // already reported above
+    final expectedNext = a.cftTo! + 1;
+    if (b.cftFrom < expectedNext) {
+      errors.add(SlabValidationError(
+          '"${a.packageName}" (up to ${a.cftTo}) overlaps '
+          '"${b.packageName}" (from ${b.cftFrom}).'));
+    } else if (b.cftFrom > expectedNext) {
+      errors.add(SlabValidationError(
+          'Gap between "${a.packageName}" (up to ${a.cftTo}) and '
+          '"${b.packageName}" (from ${b.cftFrom}) — CFT totals of '
+          '${a.cftTo! + 1}–${b.cftFrom - 1} would get no suggestion.'));
+    }
+  }
+
+  if (sorted.first.cftFrom > 0) {
+    errors.add(SlabValidationError(
+        'The first slab starts at ${sorted.first.cftFrom} CFT — totals below '
+        'that would get no suggestion. Start it at 0.'));
+  }
+
+  return errors;
 }
 
 /// Loads the current org's `pricing_config.config` and exposes each
@@ -389,9 +617,77 @@ class PricingConfig {
   });
 
   final Map<String, List<SurveyItem>> surveyCats;
+
+  /// Item 12A — [surveyCats] with deactivated items dropped, and any
+  /// category left empty by that filtering dropped too.
+  ///
+  /// Use this for the survey item PICKER. Do NOT use it when resolving an
+  /// item that's already on a quote or a submitted survey — a hidden item
+  /// must still reconcile correctly there, which is why [surveyCats]
+  /// stays available unfiltered.
+  Map<String, List<SurveyItem>> get activeSurveyCats {
+    final out = <String, List<SurveyItem>>{};
+    for (final e in surveyCats.entries) {
+      final live = e.value.where((i) => i.active).toList();
+      if (live.isNotEmpty) out[e.key] = live;
+    }
+    return out;
+  }
   final List<CftRange> cftRanges;
   final List<PackageInfo> packages;
   final Map<String, num> porterRates;
+
+  /// Item 12B — the two stored lists joined into the editor's unified
+  /// row shape. The join is by package name, same as [suggestPackage];
+  /// a range whose package is missing still yields a row (vehicle/crew
+  /// blank-ish defaults) so the editor SHOWS the broken join instead of
+  /// hiding the row — the vendor fixes it by filling the fields in.
+  List<CftSlab> get slabs {
+    final byName = {for (final p in packages) p.type: p};
+    final out = <CftSlab>[];
+    num from = 0;
+    for (final r in cftRanges) {
+      final p = byName[r.pkg];
+      out.add(CftSlab(
+        cftFrom: from,
+        cftTo: r.max,
+        packageName: r.pkg,
+        vehicle: p?.vehicle ?? '',
+        crew: p?.crew ?? 0,
+        vehicleCft: p?.vehicleCft ?? (r.max ?? from),
+      ));
+      if (r.max != null) from = r.max! + 1;
+    }
+    return out;
+  }
+
+  /// Item 12B — the inverse of [slabs]: one edited table back into the
+  /// two stored lists, written together in one config update so they
+  /// can't drift. Caller is responsible for running [validateSlabs]
+  /// first; this throws (rather than quietly writing a broken config) if
+  /// handed an invalid table, as a second line of defense.
+  static Map<String, dynamic> slabsToConfig(List<CftSlab> slabs) {
+    final errors = validateSlabs(slabs);
+    if (errors.isNotEmpty) {
+      throw StateError('Invalid slabs: ${errors.first}');
+    }
+    final sorted = List.of(slabs)
+      ..sort((a, b) => a.cftFrom.compareTo(b.cftFrom));
+    return {
+      'cft_ranges': [
+        for (final s in sorted) {'max': s.cftTo, 'pkg': s.packageName.trim()},
+      ],
+      'packages': [
+        for (final s in sorted)
+          {
+            'type': s.packageName.trim(),
+            'crew': s.crew,
+            'vehicle': s.vehicle.trim(),
+            'vehicleCft': s.vehicleCft,
+          },
+      ],
+    };
+  }
 
   /// Part 8 Rev B item 4. Unlike the other sections, this merges key by
   /// key against [kDefaultChargeBasis] even when the org HAS a
@@ -399,6 +695,23 @@ class PricingConfig {
   /// Settings must not lose sensible defaults for every other key, same
   /// reasoning as the whole-section fallback above but one level deeper.
   final Map<String, String> chargeBasis;
+
+  /// Build a config in memory, for tests only — [loadForCurrentOrg] needs
+  /// a Supabase session and a live org. Unspecified sections fall back to
+  /// the same Dart defaults the real loader uses.
+  @visibleForTesting
+  static PricingConfig forTest({
+    Map<String, List<SurveyItem>>? surveyCats,
+    List<CftRange>? cftRanges,
+    List<PackageInfo>? packages,
+  }) =>
+      PricingConfig._(
+        surveyCats: surveyCats ?? kDefaultSurveyCats,
+        cftRanges: cftRanges ?? kDefaultCftRanges,
+        packages: packages ?? kDefaultPackages,
+        porterRates: kDefaultPorterRates,
+        chargeBasis: kDefaultChargeBasis,
+      );
 
   static Future<PricingConfig> loadForCurrentOrg() async {
     final rows = await PricingConfigTable().queryRows(
@@ -422,6 +735,32 @@ class PricingConfig {
           kDefaultPorterRates,
       chargeBasis: _parseChargeBasis(config['charge_basis']),
     );
+  }
+
+  /// Merge [keys] into the current org's `pricing_config.config`,
+  /// preserving every other key (read-merge-write, same pattern the
+  /// Survey & Quote hub's catalogue save used before it moved to
+  /// Settings). Inserts the row if the org somehow has none — possible
+  /// for orgs created before create_org_with_owner() started seeding it.
+  static Future<void> saveConfigKeys(Map<String, dynamic> keys) async {
+    final existing = await PricingConfigTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).limit(1),
+    );
+    final current = existing.isNotEmpty && existing.first.config is Map
+        ? Map<String, dynamic>.from(existing.first.config as Map)
+        : <String, dynamic>{};
+    current.addAll(keys);
+    if (existing.isNotEmpty) {
+      await PricingConfigTable().update(
+        data: {'config': current},
+        matchingRows: (q) => OrgScope.write(q).eq('id', existing.first.id!),
+      );
+    } else {
+      await PricingConfigTable().insert({
+        ...OrgScope.stamp(),
+        'config': current,
+      });
+    }
   }
 
   static Map<String, String> _parseChargeBasis(dynamic raw) {
@@ -449,6 +788,9 @@ class PricingConfig {
                           .map((s) => SurveySubItem(
                               s['label'] as String, s['cft'] as num))
                           .toList(),
+                      // Item 12A. Absent key == active, so configs written
+                      // before this field existed stay fully visible.
+                      active: i['active'] != false,
                     ))
                 .toList(),
           ));

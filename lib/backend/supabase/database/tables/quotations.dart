@@ -48,6 +48,37 @@ class QuotationsRow extends SupabaseDataRow {
   dynamic get charges => getField<dynamic>('charges');
   set charges(dynamic value) => setField<dynamic>('charges', value);
 
+  // Item 12C (20260817_item12c_package_columns.sql). `suggested_vehicle`
+  // and `total_cft` pre-existed the migration but had no getters here —
+  // the same Dart-class-lags-live-schema gap this codebase has hit
+  // repeatedly (see trips/rate_cards/tasks, 17 Aug 2026). `total_cft` is
+  // read as num, not int: the migration widens it to numeric because the
+  // survey builder can produce a fractional total.
+  String? get suggestedPackage => getField<String>('suggested_package');
+  set suggestedPackage(String? value) =>
+      setField<String>('suggested_package', value);
+
+  String? get suggestedVehicle => getField<String>('suggested_vehicle');
+  set suggestedVehicle(String? value) =>
+      setField<String>('suggested_vehicle', value);
+
+  int? get suggestedCrew => getField<int>('suggested_crew');
+  set suggestedCrew(int? value) => setField<int>('suggested_crew', value);
+
+  String? get chosenPackage => getField<String>('chosen_package');
+  set chosenPackage(String? value) =>
+      setField<String>('chosen_package', value);
+
+  String? get chosenVehicle => getField<String>('chosen_vehicle');
+  set chosenVehicle(String? value) =>
+      setField<String>('chosen_vehicle', value);
+
+  int? get chosenCrew => getField<int>('chosen_crew');
+  set chosenCrew(int? value) => setField<int>('chosen_crew', value);
+
+  double? get totalCft => getField<double>('total_cft');
+  set totalCft(double? value) => setField<double>('total_cft', value);
+
   double? get subtotal => getField<double>('subtotal');
   set subtotal(double? value) => setField<double>('subtotal', value);
 

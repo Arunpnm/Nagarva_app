@@ -6,7 +6,11 @@ import '/components/survey_response_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+// Item 12B-b: the package card links to Settings -> Survey & Pricing when
+// the slab table can't resolve a suggestion.
+import '/index.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 
@@ -165,6 +169,23 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   double _gstPct = kGstDefaultPct.toDouble();
   String _gstType = 'auto'; // auto | intra | inter
   bool _gstShowInPdf = true;
+
+  /// Item 12C — the surveyor's override of the suggested package/vehicle/
+  /// crew, null until they actually change something.
+  ///
+  /// Both the suggestion and the override are persisted to real columns on
+  /// `quotations` (see [_save]) rather than re-derived at render. Real jobs
+  /// have narrow staircases and long carries no CFT table predicts; and
+  /// re-deriving would let a later slab edit silently rewrite an already
+  /// dispatched job. Keeping the suggestion alongside the override is
+  /// deliberate too — the gap between them over time is what tells the
+  /// vendor their slabs need adjusting.
+  String? _chosenPackage;
+  String? _chosenVehicle;
+  int? _chosenCrew;
+
+  bool get _hasOverride =>
+      _chosenPackage != null || _chosenVehicle != null || _chosenCrew != null;
 
   late final TextEditingController _customer;
   late final TextEditingController _phone;
@@ -374,9 +395,22 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   List<_QuoteLine> get _zeroCftLines =>
       _lines.values.where((l) => l.cft <= 0).toList();
 
-  PackageInfo? get _suggestedPackage => _config == null
-      ? null
-      : packageInfoForCft(_totalCft, _config!.cftRanges, _config!.packages);
+  /// Item 12B-b: this used to be `packageInfoForCft(...)`, which fell back
+  /// to `packages.first` when a slab's package name didn't resolve — a
+  /// renamed package silently suggested a 7 Ft tempo and 2 crew for a
+  /// 400 CFT move, and nothing errored. [suggestPackage] reports that case
+  /// instead; [_packageCard] renders it as the configuration fault it is.
+  PackageSuggestion get _suggestion => _config == null
+      ? const PackageSuggestion.empty()
+      : suggestPackage(_totalCft, _config!.cftRanges, _config!.packages);
+
+  /// What the quote will actually be saved with: the override where the
+  /// surveyor set one, otherwise the suggestion.
+  String? get _effectivePackage =>
+      _chosenPackage ?? _suggestion.info?.type;
+  String? get _effectiveVehicle =>
+      _chosenVehicle ?? _suggestion.info?.vehicle;
+  int? get _effectiveCrew => _chosenCrew ?? _suggestion.info?.crew;
 
   double get _subtotal {
     double s = 0;
@@ -466,9 +500,16 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       charges['_billingMode'] = _billingMode;
       charges['_gstType'] = _gstType;
       charges['_gstShowInPdf'] = _gstShowInPdf;
-      charges['_suggestedPackage'] = _suggestedPackage?.type;
+      // Item 12C: the package now lives in real columns (below). This key
+      // is still written because existing readers depend on it —
+      // quote_pdf.dart and lead_detail_page's order snapshot — and older
+      // quotes only have this. It carries the EFFECTIVE value (override
+      // where set), which is what those readers have always meant by it.
+      charges['_suggestedPackage'] = _effectivePackage;
       charges['_totalCft'] = _totalCft;
       charges['_totalItems'] = _totalItems;
+
+      final suggestion = _suggestion;
 
       await QuotationsTable().insert({
         'id': const Uuid().v4(),
@@ -486,6 +527,15 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         'gst_amount': _gstAmount,
         'total': _total,
         'status': 'draft',
+        // Item 12C — suggestion and choice, both frozen at save time so a
+        // later slab edit can never rewrite a quote that's already out.
+        'total_cft': _totalCft,
+        'suggested_package': suggestion.info?.type,
+        'suggested_vehicle': suggestion.info?.vehicle,
+        'suggested_crew': suggestion.info?.crew,
+        'chosen_package': _effectivePackage,
+        'chosen_vehicle': _effectiveVehicle,
+        'chosen_crew': _effectiveCrew,
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -529,7 +579,11 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   _itemSearchBar(theme),
                   const SizedBox(height: 10),
                   _customItemsSection(theme),
-                  ..._config!.surveyCats.entries
+                  // Item 12A: the picker shows active items only. Items
+                  // already on this quote resolve through `surveyCats`
+                  // (unfiltered) elsewhere, so hiding one never breaks a
+                  // quote in progress.
+                  ..._config!.activeSurveyCats.entries
                       .map((e) => _categorySection(theme, e.key, e.value)),
                   if (_search.isNotEmpty && !_anySearchMatch())
                     Padding(
@@ -620,39 +674,192 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       );
 
   Widget _packageCard(FlutterFlowTheme theme) {
-    final pkg = _suggestedPackage;
+    final s = _suggestion;
+    final isError = s.isConfigError;
+    // A broken slab table is a configuration fault, not a quoting problem —
+    // it gets the error treatment and a route to the fix, but never blocks
+    // the quote (the surveyor still knows what truck they need; the app
+    // just can't tell them).
+    final accent = isError ? theme.error : theme.primary;
+
     return Container(
       decoration: BoxDecoration(
-        color: theme.primary.withValues(alpha: 0.12),
+        color: accent.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.primary.withValues(alpha: 0.4)),
+        border: Border.all(color: accent.withValues(alpha: 0.4)),
       ),
       padding: const EdgeInsets.all(14),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('$_totalItems items · $_totalCft CFT',
+          Row(
+            children: [
+              if (isError) ...[
+                Icon(Icons.warning_amber_rounded, size: 18, color: theme.error),
+                const SizedBox(width: 6),
+              ],
+              Expanded(
+                child: Text('$_totalItems items · $_totalCft CFT',
                     style: GoogleFonts.interTight(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: theme.primaryText)),
-                const SizedBox(height: 4),
-                Text(
-                  pkg == null
-                      ? 'Add items to see a suggested package'
-                      : 'Suggested: ${pkg.type} · ${pkg.crew} crew · ${pkg.vehicle}',
-                  style: GoogleFonts.inter(
-                      fontSize: 12.5, color: theme.secondaryText),
+              ),
+              if (!isError && !s.empty)
+                TextButton.icon(
+                  onPressed: _editSuggestion,
+                  icon: const Icon(Icons.edit, size: 15),
+                  label: Text(_hasOverride ? 'Change' : 'Override'),
+                  style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 8)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          if (s.empty)
+            Text('Add items to see a suggested package',
+                style: GoogleFonts.inter(
+                    fontSize: 12.5, color: theme.secondaryText))
+          else if (isError) ...[
+            Text(
+              '$_totalCft CFT falls in the slab named '
+              '"${s.unresolvedPackageName}", but no vehicle and crew are '
+              'defined for it. This quote can still be saved — it just '
+              'won\'t carry a suggestion.',
+              style: GoogleFonts.inter(
+                  fontSize: 12.5, height: 1.35, color: theme.primaryText),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      context.pushNamed(SurveyPricingPage.routeName),
+                  icon: const Icon(Icons.settings, size: 15),
+                  label: const Text('Fix in Settings'),
+                  style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 34),
+                      foregroundColor: theme.error),
+                ),
+                TextButton.icon(
+                  onPressed: _editSuggestion,
+                  icon: const Icon(Icons.edit, size: 15),
+                  label: const Text('Set manually'),
+                  style: TextButton.styleFrom(minimumSize: const Size(0, 34)),
                 ),
               ],
             ),
-          ),
+          ] else ...[
+            Text(
+              'Suggested: ${s.info!.type} · ${s.info!.crew} crew · ${s.info!.vehicle}',
+              style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  color: theme.secondaryText,
+                  decoration:
+                      _hasOverride ? TextDecoration.lineThrough : null),
+            ),
+          ],
+          if (_hasOverride) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.check_circle, size: 14, color: theme.primary),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    'Using: ${_effectivePackage ?? '—'} · '
+                    '${_effectiveCrew ?? '—'} crew · '
+                    '${_effectiveVehicle?.isNotEmpty == true ? _effectiveVehicle : '—'}',
+                    style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: theme.primaryText),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() {
+                    _chosenPackage = null;
+                    _chosenVehicle = null;
+                    _chosenCrew = null;
+                  }),
+                  style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 30),
+                      padding: const EdgeInsets.symmetric(horizontal: 8)),
+                  child: const Text('Reset'),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  /// Item 12C — the override affordance. Seeded from the suggestion so
+  /// tweaking one field (usually crew) doesn't mean re-typing the rest.
+  Future<void> _editSuggestion() async {
+    final s = _suggestion;
+    final pkgCtrl =
+        TextEditingController(text: _chosenPackage ?? s.info?.type ?? '');
+    final vehCtrl =
+        TextEditingController(text: _chosenVehicle ?? s.info?.vehicle ?? '');
+    final crewCtrl = TextEditingController(
+        text: '${_chosenCrew ?? s.info?.crew ?? ''}');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Package, vehicle & crew'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Overrides the suggestion for this quote only. The suggested '
+              'values are kept alongside, so the vendor can see where the '
+              'slabs need adjusting.',
+              style: GoogleFonts.inter(fontSize: 12, height: 1.35),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: pkgCtrl,
+              decoration: const InputDecoration(labelText: 'Package'),
+            ),
+            TextField(
+              controller: vehCtrl,
+              decoration: const InputDecoration(labelText: 'Vehicle'),
+            ),
+            TextField(
+              controller: crewCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Crew'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Use these')),
+        ],
+      ),
+    );
+    if (saved != true) return;
+
+    setState(() {
+      // Only record a field as overridden where it actually differs from
+      // the suggestion — otherwise a surveyor who opens the dialog and
+      // presses "Use these" would mark an override that changed nothing.
+      final pkg = pkgCtrl.text.trim();
+      final veh = vehCtrl.text.trim();
+      final crew = int.tryParse(crewCtrl.text.trim());
+      _chosenPackage = (pkg.isEmpty || pkg == s.info?.type) ? null : pkg;
+      _chosenVehicle = (veh.isEmpty || veh == s.info?.vehicle) ? null : veh;
+      _chosenCrew = (crew == null || crew == s.info?.crew) ? null : crew;
+    });
   }
 
   Widget _itemSearchBar(FlutterFlowTheme theme) {
@@ -705,7 +912,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     for (final c in _customItems) {
       if (_matchesSearch(_kCustomCat, c.name, 'Qty')) return true;
     }
-    for (final entry in _config!.surveyCats.entries) {
+    for (final entry in _config!.activeSurveyCats.entries) {
       for (final item in entry.value) {
         if (_visibleSubs(item).isNotEmpty) return true;
       }
