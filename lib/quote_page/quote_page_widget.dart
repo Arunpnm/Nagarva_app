@@ -4,6 +4,16 @@ import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// DEAD CODE AS OF 17 AUG 2026 — and, unlike SurveyPage/SignPage, never
+/// live at all: `/quote` on link.nagarva.in has never been served by
+/// ANYTHING, static or Flutter (confirmed — no `public_*` RPC pair for
+/// quotations exists, unlike survey/signature which each have one; see
+/// `lib/flutter_flow/nav/nav.dart`'s "WHERE CUSTOMER LINKS ACTUALLY
+/// RESOLVE" comment and CLAUDE.md's "Public web surface" section). Kept
+/// for the same reason as SurveyPage/SignPage — ready if this build is
+/// ever hosted on a domain that owns `/quote` — but do not assume any
+/// customer has ever actually reached this page.
+///
 /// Public, unauthenticated quote view/accept page — the second
 /// customer-facing half of item 8's Survey -> Quotation -> Order flow
 /// (see supabase/20260725_survey_quote_flow.sql). Reached via a shared

@@ -4,6 +4,18 @@ import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// DEAD CODE AS OF 17 AUG 2026 — NOT what a customer reaches at
+/// link.nagarva.in/survey. That domain runs a separate, hand-written
+/// static page (built per its own handoff brief, recovered from Netlify
+/// deploy history after an unrelated incident took the site down) that
+/// calls a DIFFERENT RPC pair — `public_get_survey`/`public_submit_survey`
+/// — not the ones this page calls below. See CLAUDE.md's "Public web
+/// surface" section and `lib/flutter_flow/nav/nav.dart`'s "WHERE CUSTOMER
+/// LINKS ACTUALLY RESOLVE" comment for the full picture. Kept, not
+/// deleted, in case this Flutter build is ever hosted on a domain that
+/// owns `/survey` for real — the code below is not broken, it's just
+/// never the thing actually reached today. Do not assume it's live.
+///
 /// Public, unauthenticated survey form — the customer-facing half of
 /// item 8's Survey -> Quotation -> Order flow (see
 /// supabase/20260725_survey_quote_flow.sql for the scope assumption this

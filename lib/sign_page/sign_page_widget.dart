@@ -2,10 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/signature_pad.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 
+/// DEAD CODE AS OF 17 AUG 2026 — NOT what a customer reaches at
+/// link.nagarva.in/sign. That domain runs a separate, hand-written
+/// static page calling `public_get_signature_request`/
+/// `public_submit_signature` directly (anon-callable, no Edge Function
+/// layer) — a different RPC pair, and a different data-exposure shape,
+/// from the `sign-document` Edge Function this page goes through. See
+/// CLAUDE.md's "Public web surface" section and
+/// `lib/flutter_flow/nav/nav.dart`'s "WHERE CUSTOMER LINKS ACTUALLY
+/// RESOLVE" comment. The `sign-document` function and the RPCs below are
+/// deployed and functional — this is dead in the sense of "not reached
+/// by any live traffic," not "broken." Kept in case this build is ever
+/// hosted on a domain that owns `/sign` for real.
+///
 /// Public, unauthenticated document-signing page (live-test fix brief #2,
 /// item 3). Reached via a shared link `/sign?token=...` with no login.
 ///
@@ -82,8 +96,12 @@ class _SignPageWidgetState extends State<SignPageWidget> {
       _signedAt = signedAtRaw == null ? null : DateTime.tryParse(signedAtRaw);
       _nameCtrl.text = _signedBy ?? '';
       setState(() => _state = data['status'] == 'signed' ? 'signed' : 'form');
-    } catch (_) {
-      setState(() => _state = 'error');
+    } catch (e) {
+      // Same fix as track_page_widget.dart's _load (17 Aug 2026) —
+      // sign-document returns 404 for an invalid/expired token, which
+      // used to land here as a generic 'error' instead of 'invalid'.
+      final status = e is FunctionException ? e.status : null;
+      setState(() => _state = status == 404 ? 'invalid' : 'error');
     }
   }
 
@@ -125,7 +143,10 @@ class _SignPageWidgetState extends State<SignPageWidget> {
                 'Could not record your signature. Please try again.');
       }
     } catch (e) {
-      setState(() => _submitError = 'Could not record your signature: $e');
+      // `invoke` throws on the 400 sign-document returns for a failed
+      // submit (17 Aug 2026 finding) — was showing a raw exception string.
+      setState(() => _submitError = extractFunctionErrorMessage(e,
+          fallback: 'Could not record your signature. Please try again.'));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

@@ -1,0 +1,28 @@
+# HOLD — NOT the final version. Written 17 Aug 2026 on the wrong
+# assumption that link.nagarva.in was this repo's Flutter web build; it
+# never was (see CLAUDE.md's "Public web surface" section). /survey and
+# /sign are real, live pages on that domain — a separate hand-written
+# static site, recovered from Netlify deploy history, NOT this repo —
+# and once that recovery lands, THEIR paths need their own static
+# carve-out rules here too, the same shape as /auth's below. Not written
+# yet because the actual recovered file/directory layout isn't known
+# from here. Add them before this file is ever deployed for real.
+#
+# What's correct as-is: /auth. kAuthRedirectUrl (lib/config/app_config.dart)
+# points Supabase's email confirmation/recovery links at
+# https://link.nagarva.in/auth, which is web/auth/index.html (recovered
+# byte-for-byte from the live site, checked into this repo 17 Aug 2026).
+#
+# /auth/* is a real file, copied verbatim by `flutter build web` —
+# Netlify serves an existing static file before ever consulting this
+# file, so this first rule is a belt-and-braces no-op that keeps that
+# intent explicit rather than relying on that default going unnoticed.
+#
+# The catch-all below sends EVERYTHING ELSE to the Flutter SPA shell.
+# That is only correct for paths this repo's Flutter build actually owns
+# (today: nothing real — see CLAUDE.md). Once /survey and /sign carve-outs
+# are added above this line, this rule becomes correct for whatever's
+# left (e.g. /quote, /track, if this build is ever the thing serving
+# them for real).
+/auth/*   /auth/:splat   200
+/*        /index.html    200

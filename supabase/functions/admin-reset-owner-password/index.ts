@@ -57,7 +57,8 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Keep in sync with lib/config/app_config.dart's kAuthRedirectUrl —
 // can't share the literal across Dart/Deno, same value by convention.
-const RESET_REDIRECT_TO = "https://link.nagarva.in";
+// 17 Aug 2026: moved to /auth — see that constant's own doc comment.
+const RESET_REDIRECT_TO = "https://link.nagarva.in/auth";
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
