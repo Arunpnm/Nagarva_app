@@ -672,10 +672,25 @@ class _HomePageWidgetState extends State<HomePageWidget>
                             ),
                           ),
                         ),
-                        // Money is owner-only, same guard as the KPI row
-                        // below — no point letting staff pick a period for
-                        // KPI cards they can't see anyway.
-                        if (AppSession.instance.currentStaffId == null)
+                        // Money is gated on the reports permission, same
+                        // guard as the KPI row below — no point letting
+                        // someone pick a period for cards they can't see.
+                        //
+                        // Was `currentStaffId == null`, which is a SESSION
+                        // SHAPE test, not a permission test: it meant only
+                        // an email/vendor session saw money, so every
+                        // PIN-based session lost Revenue/Labour/Expenses/
+                        // Outstanding/Monthly Target — including managers,
+                        // whom permissions.dart grants fullAccess(). With
+                        // PIN-first login that is most sessions. Fixed
+                        // 20 Aug 2026 after Arun found the cards missing on
+                        // a manager session.
+                        //
+                        // canActive() still returns true for a vendor
+                        // session, so owner behaviour is unchanged, and
+                        // supervisors/drivers/packers/helpers stay excluded
+                        // because the matrix does not grant them 'reports'.
+                        if (StaffPermissions.canActive('reports', 'view'))
                           _periodSelector(context),
                         // Item 10.5: today's / overdue follow-up counts.
                         // Not money-gated — staff chase leads too. Renders
@@ -1953,9 +1968,10 @@ class _HomePageWidgetState extends State<HomePageWidget>
                             ),
                           ),
                         ),
-                        // Money is owner-only — hidden for staff PIN sessions
-                        // (part of the supervisor-restriction pass).
-                        if (AppSession.instance.currentStaffId == null)
+                        // Monthly Target — same reports gate as the KPI
+                        // row above. See that comment for why this is a
+                        // permission check and not `currentStaffId == null`.
+                        if (StaffPermissions.canActive('reports', 'view'))
                           Padding(
                             padding: const EdgeInsetsDirectional.fromSTEB(
                                 16.0, 0.0, 16.0, 0.0),
