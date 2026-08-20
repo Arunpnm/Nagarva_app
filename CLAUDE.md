@@ -578,6 +578,31 @@ silently doesn't is the same class of trust damage.
   defect only. Prefer sending a raw ISO timestamp and letting the client
   format it; name the zone only where the server must produce the
   finished string itself.
+- **An error-reporting integration is verified ONLY by an unhandled error
+  reaching the dashboard — never by a direct capture call.** (Arun,
+  20 Aug 2026. The sharpest instance of this whole week's pattern.)
+  Sentry was receiving **nothing from real crashes** while every single
+  test passed, because `_installErrorHandlers()` in `main.dart` runs
+  inside `initCrashReporting`'s `appRunner` — i.e. AFTER
+  `SentryFlutter.init` has installed its integrations — and **overwrote
+  both of them**:
+      FlutterError.onError         -> presentError + debugPrint, no forward
+      PlatformDispatcher.onError   -> debugPrint, return true (swallowed)
+  The integration was provably correct and completely inert. 18 unit
+  tests, an event-level scrub test, and a live test that fired a real
+  exception through the shipped config ALL passed — because every one of
+  them calls `Sentry.captureException` directly and so never touches the
+  handler chain that a real crash travels down. The APK had already been
+  sent for testing.
+  So the acceptance test for crash reporting is not "an event appears"
+  and not "the tests pass": it is **throw an unhandled error in a release
+  build on a real device and watch it arrive**. Anything short of that
+  tests the SDK, not the wiring.
+  Corollary for `main.dart`: any handler assignment there must CHAIN.
+  Capture the previous handler and call it. `FlutterError.onError` is
+  Sentry's when a DSN is configured and Flutter's own `presentError`
+  when it is not, so chaining is correct in both cases and replacing is
+  wrong in both.
 - **Scrubbing is tested against the SHIPPED config object, and must
   cover every field the SDK populates.** (20 Aug 2026, after the Sentry
   integration leaked three different ways in one afternoon.) Two rules,

@@ -9,6 +9,16 @@
 /// scrubbing here is not hygiene, it is access control, and it must fail
 /// closed.
 ///
+/// **Verifying this file is not the same as verifying crash reporting.**
+/// Every test here calls `Sentry.captureException` directly, which never
+/// touches the handler chain a real crash travels down. On 20 Aug 2026
+/// that chain was severed — `main.dart`'s `_installErrorHandlers()` runs
+/// inside `initCrashReporting`'s appRunner and overwrote both
+/// `FlutterError.onError` and `PlatformDispatcher.onError` — so Sentry
+/// received nothing from real crashes while all 18 tests passed. The
+/// acceptance test is an UNHANDLED error in a release build on a device,
+/// arriving in the dashboard. See CLAUDE.md's conventions.
+///
 /// Three layers, deliberately overlapping:
 ///   1. `sendDefaultPii: false` — no IPs, no usernames, no device
 ///      identifiers attached automatically.
