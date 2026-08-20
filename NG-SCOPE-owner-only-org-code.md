@@ -203,9 +203,13 @@ Org-bound devices never touch the server at bind time at all — binding
 is a local `SharedPreferences` write after an anon RPC — so today they
 are completely invisible.
 
-**So the register must be written at LOGIN, not at binding.** Every
-successful `pin-login` / `staff-login` already mints a session in an
-Edge Function; that is the chokepoint.
+**So the register must be written at LOGIN, not at binding.**
+CONFIRMED as the design, 20 Aug 2026. Binding time is invisible to the
+server for org-bound devices, so it cannot be the write point for half
+the population. Login can: every successful `pin-login` / `staff-login`
+already mints a session inside an Edge Function, and **both binding
+paths pass through one or the other**, so a single chokepoint covers
+everyone with no new plumbing.
 
 **New table `device_bindings`:**
 
@@ -216,7 +220,41 @@ Edge Function; that is the chokepoint.
 | `kind` | `owner` \| `staff` |
 | `label` | model/name, editable by the owner |
 | `first_seen`, `last_seen` | populated every login |
+| `last_client_ip` | the IP of the most recent login |
 | `revoked_at`, `revoked_by` | the kill switch |
+
+**`last_client_ip` is worth recording** (Arun, 20 Aug 2026). The IP is
+already in hand at exactly the right moment: `pin-login` forwards it to
+`verify_org_pin` for the per-IP limiter, and the 19 Aug XFF probe proved
+the value is the real egress IP rather than an attacker-supplied header,
+so it is trustworthy enough to store.
+
+**But do not build "logged in from a new location" as an ALERT.** As a
+notification trigger it would misfire constantly and train the owner to
+ignore it: crews work on mobile data, and Indian mobile networks put
+subscribers behind CGNAT with addresses that change between job sites,
+between cell handovers, and on every reconnect. A supervisor driving
+across Chennai legitimately produces several "new locations" in a
+morning. An alarm that cries wolf on a normal Tuesday is worse than no
+alarm, because it gets muted before the one real event.
+
+Record it, show it, do not alert on it:
+- **In the register**, as a "last seen from" column — genuinely useful
+  *forensically*, after the fact: when an owner is investigating a
+  suspected re-entry, "which address did this device log in from, and
+  when" is exactly the question, and it cannot be answered later if it
+  was never stored.
+- **The low-noise signal for re-binding is a NEW `device_id` appearing
+  for an existing `staff_id`**, not a new IP. That is precise: it means
+  a person who already had a device is now on a second one, which is
+  the literal shape of "they re-bound after leaving". It fires roughly
+  never in normal operation — a real phone upgrade — so it can carry a
+  notification without being muted.
+
+Retention: this is personal data under DPDP. Keep the latest value per
+device rather than an unbounded history, and prune with the row on
+offboard/revoke, so the register does not quietly become a movement log
+of every employee.
 
 **Client change required:** the app must send `DeviceOrgBinding.deviceId`
 on login. It already generates and persists one, but currently only
@@ -229,7 +267,7 @@ the building. With the register, both verify functions refuse a revoked
 `device_id`, and revoke becomes a real button.
 
 **Owner UI:** Settings → **Devices**. One row per device — person,
-label, last seen, and Revoke. Plus the lockout events from point 4, so
+label, last seen, last seen from, and Revoke. Plus the lockout events from point 4, so
 "someone is guessing PINs against your company" is visible.
 
 **The limitation goes in the UI, not only in this document.** Arun,
@@ -282,6 +320,15 @@ time), prompting *"Still working here?"* → Keep / Offboard. That is the
 thing that converts a remembered admin step into something the product
 asks about on a normal Tuesday.
 
-**Ordering note:** offboarding should ship in Phase A, *before*
-enforcement. It is the control that actually closes the re-entry hole;
-the binding change narrows the door, deactivation is what locks it.
+**Ordering note — CONFIRMED 20 Aug 2026.** Offboarding ships in Phase A,
+*before* any enforcement. Arun: *"The binding change narrows the door;
+deactivation is what locks it."*
+
+That ordering is not a preference, it is the dependency. Enforcement
+(Phase C) only restricts which PIN pool an org-bound device may search
+— it does nothing about a person whose `staff.active` is still true.
+Shipping enforcement first would tighten the visible door while leaving
+the actual boundary un-actionable, which reads as security theatre to
+anyone who looks closely. Offboard first, and Phase C becomes a
+narrowing of an already-closed gap rather than the only thing standing
+in the way.
