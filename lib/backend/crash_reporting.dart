@@ -43,8 +43,25 @@ bool get crashReportingEnabled => kSentryDsn.isNotEmpty;
 
 /// Query parameters whose VALUE is a credential, not data. Matched on the
 /// key so a rename of the value format cannot slip past.
+///
+/// The boundary is `(?:^|[?&])`, not `[?&]` alone. Sentry's
+/// `SentryRequest.queryString` holds the query WITHOUT its leading `?`
+/// — so `token=abc` sat at the very start of the string and the
+/// `[?&]`-only form never matched it. The URL was scrubbed and the
+/// queryString beside it was not, which is a live credential
+/// transmitted in the same event. Caught 20 Aug 2026 by the scrubEvent
+/// tests; the string-level tests never exercised a bare `key=value`
+/// with no separator in front of it.
+/// Longest alternatives first so `access_token` is never matched as a
+/// bare `token`. The boundary is a non-word lookbehind rather than
+/// `[?&]`, because these appear in three shapes and all three are real:
+/// inside a URL (`?token=`), as a bare query string with no leading `?`
+/// (Sentry's `SentryRequest.queryString`), and loose in free text
+/// (`Exception: rejected token=abc`). The first two were fixed on
+/// 20 Aug 2026, the third an hour later when the exception-scrubbing
+/// test caught it — each time by a test, never by reading the pattern.
 final _tokenParam = RegExp(
-  r'([?&](?:token|access_token|refresh_token|apikey|api_key|key|signature|sig|jwt)=)[^&\s]*',
+  r'((?<![A-Za-z0-9_])(?:access_token|refresh_token|api_key|apikey|signature|token|jwt|sig|key)=)[^&\s]*',
   caseSensitive: false,
 );
 
@@ -95,15 +112,25 @@ String? _redactNullable(String? s) => s == null ? null : redactSensitive(s);
 /// real crashes. The goal is a report that is still diagnostic with the
 /// customer data taken out of it, not no report.
 SentryEvent? scrubEvent(SentryEvent event) {
-  // 1. Request: drop the body and cookies outright, redact the URL.
+  // 1. Request: rebuild it from scratch carrying ONLY url/method/query.
+  //
+  // This CANNOT use copyWith(data: null, ...). copyWith treats a null
+  // argument as "leave unchanged", so that form silently kept the body,
+  // the cookies and the Authorization header while reading exactly like
+  // it dropped them. Caught 20 Aug 2026 by the scrubEvent tests below —
+  // the string-level tests passed the whole time, because the defect was
+  // never in the regexes.
+  //
+  // Constructing a fresh SentryRequest makes omission the default: any
+  // field not named here cannot be transmitted, including fields Sentry
+  // adds in a future version. A deny-list would have to be updated for
+  // each one; this does not.
   final req = event.request;
   if (req != null) {
-    event.request = req.copyWith(
-      data: null,
-      cookies: null,
-      headers: const {},
+    event.request = SentryRequest(
       url: _redactNullable(req.url),
       queryString: _redactNullable(req.queryString),
+      method: req.method,
     );
   }
 
@@ -115,7 +142,36 @@ SentryEvent? scrubEvent(SentryEvent event) {
     );
   }
 
-  // 3. Breadcrumbs — where URLs and navigation paths actually live, and
+  // 3. EXCEPTIONS — the payload of an actual crash.
+  //
+  // This is the one that matters most and was missing until 20 Aug 2026.
+  // A crash report is an exception, not a message: `event.message` is
+  // null for virtually every real crash, and the text a developer needs
+  // lives in exceptions[].value. Scrubbing message/request/breadcrumbs
+  // while leaving exceptions untouched meant the most common case —
+  // "Exception: no customer found for +919845011001" — went out intact.
+  //
+  // Found by the live test firing a real exception through the shipped
+  // configuration. Every string-level test passed throughout; the
+  // regexes were never the problem, the coverage was. The doc comment at
+  // the top of this file claimed exception values were scrubbed for days
+  // before the code actually did it.
+  final exceptions = event.exceptions;
+  if (exceptions != null && exceptions.isNotEmpty) {
+    event.exceptions = exceptions
+        .map((e) => e.copyWith(value: _redactNullable(e.value)))
+        .toList();
+  }
+
+  // 4. Anything a caller attached by hand.
+  final extra = event.extra;
+  if (extra != null && extra.isNotEmpty) {
+    event.extra = extra.map(
+      (k, v) => MapEntry(k, v is String ? redactSensitive(v) : v),
+    );
+  }
+
+  // 5. Breadcrumbs — where URLs and navigation paths actually live, and
   //    therefore where a /sign?token=... would otherwise be captured.
   final crumbs = event.breadcrumbs;
   if (crumbs != null) {
@@ -146,9 +202,22 @@ Future<void> initCrashReporting(Future<void> Function() appRunner) async {
     return;
   }
   await SentryFlutter.init(
-    (options) {
-      options.dsn = kSentryDsn;
-      options.environment = kSentryEnvironment;
+    (options) => configureSentryOptions(options, dsn: kSentryDsn),
+    appRunner: appRunner,
+  );
+}
+
+/// The one place Sentry's safety posture is defined.
+///
+/// Extracted so a test can initialise Sentry with EXACTLY this
+/// configuration and fire a real event through it. A test that re-declares
+/// the options would only prove that a copy of the config redacts —
+/// which is worth nothing, because the copy is not what ships.
+void configureSentryOptions(SentryFlutterOptions options,
+    {required String dsn, String? environment}) {
+  {
+      options.dsn = dsn;
+      options.environment = environment ?? kSentryEnvironment;
       options.release = 'nagarva@$_releaseTag';
 
       // No automatic PII: no IP address, no device identifiers, no
@@ -176,9 +245,7 @@ Future<void> initCrashReporting(Future<void> Function() appRunner) async {
           ),
         );
       };
-    },
-    appRunner: appRunner,
-  );
+  }
 }
 
 /// Kept separate so the version string has one source. Mirrors

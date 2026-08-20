@@ -108,6 +108,7 @@ dependency_overrides:
   uuid: ^4.0.0
 
 dev_dependencies:
+  sentry_dart_plugin: 3.4.0
   flutter_lints: 4.0.0
   lints: 4.0.0
   flutter_test:
@@ -168,3 +169,9 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
 
+
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: true
+  project: flutter
+  org: arponiya
