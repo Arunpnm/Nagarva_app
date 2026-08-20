@@ -578,6 +578,42 @@ silently doesn't is the same class of trust damage.
   defect only. Prefer sending a raw ISO timestamp and letting the client
   format it; name the zone only where the server must produce the
   finished string itself.
+- **Permission gates go through `StaffPermissions.canActive`, never a
+  session-shape test.** (Arun, 20 Aug 2026, after the third instance.)
+  `AppSession.instance.currentStaffId == null` asks *"is this an email
+  session"*, not *"may this person see this"*. Those two questions give
+  the same answer right up until a vendor customises a role, and then
+  they diverge silently — the matrix says yes and the widget says no,
+  with no way to reconcile them from the UI.
+  Three instances so far, all the same shape — something hand-rolled
+  beside `permissions.dart` rather than asking it:
+    1. `isOwnerOrManagerSession` matched only 'owner'/'manager', omitting
+       the `admin` the staff form actually offers.
+    2. SQL's `is_org_manager()` and the Dart getter disagreed about who
+       an admin was.
+    3. The dashboard's Revenue/Labour/Expenses/Outstanding/Monthly Target
+       gated on `currentStaffId == null`, so every PIN session lost them
+       — managers included, whom `presetFor('manager')` grants
+       `fullAccess()`.
+  **`permissions.dart` is the single source of truth.** `canActive()`
+  already returns true for a vendor session, so switching a gate to it
+  never changes owner behaviour — it only stops lying to everyone else.
+  **The exception, and it is a real one:** a session-shape check is
+  CORRECT when it mirrors an owner-only gate enforced in the DATABASE.
+  `business_settings_section.dart` and `users_page_widget.dart` both use
+  `currentStaffId == null` deliberately, because Tier A/B RLS makes those
+  writes owner-only via `is_org_owner()`. Using RBAC there would offer an
+  action Postgres then rejects, which is worse than hiding it. So the
+  test is: **does a DB policy enforce owner for this operation?** If yes,
+  mirror it and say so in a comment. If no, it is a permission and
+  belongs in the matrix.
+  Applying that test found a fourth, reported not fixed:
+  `SoftDeleteService.isOwner` gates order deletion and the Recycle Bin,
+  but `can_delete_order()` checks no owner, no manager and no
+  `auth.uid()` — only business state. That restriction is UI-only with
+  nothing behind it, so a vendor cannot grant delete to a manager. Left
+  as-is pending Arun's call, because the fix LOOSENS who can delete and
+  that is a decision, not a cleanup.
 - **An error-reporting integration is verified ONLY by an unhandled error
   reaching the dashboard — never by a direct capture call.** (Arun,
   20 Aug 2026. The sharpest instance of this whole week's pattern.)
