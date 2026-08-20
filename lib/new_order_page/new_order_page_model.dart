@@ -1,3 +1,4 @@
+import '/backend/pricing_defaults.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/form_field_controller.dart';
@@ -17,6 +18,12 @@ class NewOrderPageModel extends FlutterFlowModel<NewOrderPageWidget> {
   DateTime? ordMoveDate;
 
   String? ordPorterComm = '16';
+
+  // GST (20 Aug 2026). Defaults to charging GST at the configured default
+  // rate: for an Indian mover a taxable invoice is the normal case, so the
+  // toggle starts ON and the exception is the thing you switch off.
+  bool ordGstApplicable = true;
+  String? ordGstPct = '$kGstDefaultPct';
 
   bool? ordSaveSuccess = false;
 

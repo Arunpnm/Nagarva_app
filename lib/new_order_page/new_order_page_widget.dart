@@ -1,6 +1,7 @@
 import '/app_session.dart';
 import '/backend/customer_lookup.dart';
 import '/backend/edge_function_errors.dart';
+import '/backend/pricing_defaults.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
@@ -137,6 +138,20 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
     _model.ordAmountFieldTextController!.text =
         order.amount?.toString() ?? '';
     _model.ordNotesFieldTextController!.text = order.notes ?? '';
+    // GST, edit mode. Without this the form would show the default (on,
+    // 5%) for every existing order regardless of what is stored, and
+    // saving would overwrite the real value — the classic way a new field
+    // silently rewrites history the first time somebody edits a record.
+    //
+    // 0 means a deliberate no-GST order, so the toggle goes off. NULL is
+    // a legacy order that predates this field: it shows the default, and
+    // because the toggle and the live total are both on screen the person
+    // editing can see exactly what they are about to save.
+    final storedGst = order.quoteGstPct;
+    _model.ordGstApplicable = storedGst == null || storedGst > 0;
+    _model.ordGstPct = (storedGst != null && storedGst > 0)
+        ? storedGst.toStringAsFixed(0)
+        : '$kGstDefaultPct';
     _model.ordGstinFieldTextController!.text = order.billingPartyGstin ?? '';
     _model.ordPorterCashCollectFieldTextController!.text =
         order.porterCashCollect?.toString() ?? '';
@@ -1562,6 +1577,84 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       ),
                                     );
                                   }),
+                                // ---- GST (20 Aug 2026) --------------------
+                                // Toggle first, rate second: whether GST
+                                // applies at all is the decision the office
+                                // actually makes, and a rate dropdown shown
+                                // for a non-GST job is a field to ignore.
+                                // Writes the EXISTING quote_gst_* columns —
+                                // no schema change — so a directly-booked
+                                // order carries GST the same way a
+                                // quote-converted one does, and the invoice
+                                // generator reads one set of fields.
+                                SwitchListTile.adaptive(
+                                  contentPadding: EdgeInsets.zero,
+                                  value: _model.ordGstApplicable,
+                                  onChanged: (v) => safeSetState(
+                                      () => _model.ordGstApplicable = v),
+                                  title: const Text('Charge GST'),
+                                  subtitle: Text(
+                                    _model.ordGstApplicable
+                                        ? 'Added on top of the amount above.'
+                                        : 'No GST on this order.',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                                if (_model.ordGstApplicable)
+                                  Builder(builder: (context) {
+                                    final amt = double.tryParse(_model
+                                            .ordAmountFieldTextController
+                                            .text) ??
+                                        0.0;
+                                    final pct = double.tryParse(
+                                            _model.ordGstPct ??
+                                                '$kGstDefaultPct') ??
+                                        kGstDefaultPct.toDouble();
+                                    final gst =
+                                        (amt * pct / 100).roundToDouble();
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        DropdownButtonFormField<String>(
+                                          initialValue: _model.ordGstPct,
+                                          decoration: const InputDecoration(
+                                            labelText: 'GST rate',
+                                            filled: true,
+                                          ),
+                                          items: [
+                                            // 0 is filtered out on purpose:
+                                            // the toggle above already means
+                                            // "no GST", so offering 0% here
+                                            // creates a second, contradictory
+                                            // way to say the same thing.
+                                            for (final r in kGstRateOptions
+                                                .where((r) => r > 0))
+                                              DropdownMenuItem(
+                                                value: '$r',
+                                                child: Text('$r%'),
+                                              ),
+                                          ],
+                                          onChanged: (v) => safeSetState(() =>
+                                              _model.ordGstPct =
+                                                  v ?? '$kGstDefaultPct'),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        // Says the total out loud, because
+                                        // "Amount" alone is ambiguous about
+                                        // whether tax is inside it.
+                                        Text(
+                                          'Taxable ₹${amt.toStringAsFixed(0)}'
+                                          '  +  GST ₹${gst.toStringAsFixed(0)}'
+                                          '  =  ₹${(amt + gst).toStringAsFixed(0)}',
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                        const SizedBox(height: 10),
+                                      ],
+                                    );
+                                  }),
                                 TextFormField(
                                   controller:
                                       _model.ordNotesFieldTextController,
@@ -1729,6 +1822,28 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     : null,
                                 'porter_cash_collect':
                                     isPorterOrder ? cashCollect : null,
+                                // GST: reuses the existing quote_gst_*
+                                // columns so a directly-booked order and a
+                                // quote-converted one are read the same way
+                                // by the invoice generator. 0 means
+                                // "deliberately no GST", which is different
+                                // from null ("never specified") — the 24
+                                // legacy orders carrying null must stay
+                                // distinguishable from a conscious choice.
+                                'quote_gst_pct': _model.ordGstApplicable
+                                    ? (double.tryParse(_model.ordGstPct ??
+                                            '$kGstDefaultPct') ??
+                                        kGstDefaultPct.toDouble())
+                                    : 0.0,
+                                'quote_gst_amount': _model.ordGstApplicable
+                                    ? (amt *
+                                            (double.tryParse(
+                                                    _model.ordGstPct ??
+                                                        '$kGstDefaultPct') ??
+                                                kGstDefaultPct.toDouble()) /
+                                            100)
+                                        .roundToDouble()
+                                    : 0.0,
                                 'notes':
                                     _model.ordNotesFieldTextController.text,
                                 // RLS/GST audit, 12 Aug 2026: a B2B tax
