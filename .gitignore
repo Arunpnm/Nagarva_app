@@ -83,3 +83,13 @@ service_role*.txt
 
 # Supabase CLI local state (project ref, pooler connection string).
 supabase/.temp/
+
+sentry.properties
+
+# Tooling binaries. sentry-wizard.exe is 86MB and, more importantly,
+# MUST NOT BE RUN on this repo: it patches main.dart and pubspec.yaml to
+# inject its own Sentry.init, which would overwrite the redaction layer
+# in lib/backend/crash_reporting.dart. The integration is already wired
+# by hand and tested (test/crash_redaction_test.dart); the DSN arrives
+# via --dart-define, not via the wizard.
+*.exe

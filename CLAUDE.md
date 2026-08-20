@@ -935,6 +935,30 @@ it right the whole time (`is_org_manager()` matches
 `role in ('owner','admin','manager')`), so the app and the database
 disagreed about who an admin was. Keep the two definitions in step.
 
+### PIN rate limiting — CLOSED and field-verified (20 Aug 2026)
+`supabase/20260819_pin_rate_limit_hardening.sql` is live; `pin-login`
+and `staff-login` are deployed forwarding `p_client_ip`.
+
+The tenant-wide DoS is closed, proven end to end rather than argued:
+- **Source lock works.** 10 failed attempts from one IP locked that IP
+  (level 1, 15 min; a later run escalated to level 2, 1 hour).
+- **Tenant stays up.** With that IP locked, `org_pin_attempts` sat at
+  9 of 200 for both pools with `locked_until` NULL. Under the old
+  per-org counter those same attempts would have locked the owner and
+  all 8 staff out together.
+- **A different source still gets in.** Arun logged in from his phone
+  on mobile data while `171.76.87.64` was locked at level 2, with
+  exactly one row in `pin_ip_attempts`. This is the half that actually
+  proves it — everything else only shows that one source is blocked.
+- **The forwarded IP is trustworthy.** A probe sending
+  `x-forwarded-for: 203.0.113.99` recorded the real egress IP, so
+  Supabase's edge proxy does not honour a client-supplied value in
+  first position and taking `[0]` is correct. The per-IP limiter is
+  enforceable, not advisory.
+
+Do not re-open this to "verify" it again; re-tripping the ladder just
+locks a real IP for an hour.
+
 ## Device binding — two paths, and they are NOT equivalent
 (New section, 19 Aug 2026. Written because the difference cost real
 time during the 19 Aug emulator pass, and because it will confuse a
