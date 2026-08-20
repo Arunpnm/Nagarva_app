@@ -628,6 +628,28 @@ silently doesn't is the same class of trust damage.
   exceptions, request, breadcrumbs, extra, tags, contexts — and handle or
   consciously reject each. Assert on the serialised payload
   (`event.toJson()`), because that is what actually leaves the process.
+  3. **The provider's own enrichment is a SEPARATE surface, and
+     client-side scrubbing cannot reach it.** (20 Aug 2026, found by
+     reading a real event in the dashboard rather than the payload we
+     sent.) The verified-clean probe event still carried
+     `Geography: Bengaluru, India (IN)` and a stable user id. Neither
+     came from us: `sendDefaultPii: false` held, no IP was attached by
+     the client, and `beforeSend` never saw these — Sentry derives
+     coarse city-level geo from the connecting IP AT INGEST and assigns
+     an install UUID, both server-side, after our code is done.
+     So "we proved what leaves the device is clean" is only half the
+     claim. The other half is what the provider ADDS after it arrives,
+     and the only way to check it is to open a real event and read every
+     block — Highlights, Tags, Contexts, User — not to re-read
+     `scrubEvent`. For Sentry the control is
+     **Settings → Projects → <project> → Security & Privacy → Data
+     Scrubbing → "Prevent Storing of IP Addresses"** (project-level), or
+     the same page under org Settings to cover every project including
+     future ones. Turn it on before real vendors are on the build:
+     city-level location about a customer's staff, attached to every
+     crash, is not ours to collect. Verify by firing one event
+     afterwards and confirming the Geography block is gone — the same
+     rule as everything else here.
 - **`copyWith(x: null)` means "leave x unchanged", not "clear x".**
   (20 Aug 2026.) `req.copyWith(data: null, cookies: null, headers: const
   {})` read exactly like it dropped the request body, the cookies and the
