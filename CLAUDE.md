@@ -578,6 +578,45 @@ silently doesn't is the same class of trust damage.
   defect only. Prefer sending a raw ISO timestamp and letting the client
   format it; name the zone only where the server must produce the
   finished string itself.
+- **Scrubbing is tested against the SHIPPED config object, and must
+  cover every field the SDK populates.** (20 Aug 2026, after the Sentry
+  integration leaked three different ways in one afternoon.) Two rules,
+  both learned the hard way:
+  1. **Never test a re-declaration of the config.** A test that builds
+     its own options and asserts they redact proves only that *a copy*
+     redacts — and the copy is not what ships. `configureSentryOptions()`
+     exists so `initCrashReporting` and `test/sentry_live_redaction_test
+     .dart` initialise from the *same function*; if someone weakens the
+     real config, the test fails.
+  2. **Enumerate the payload, not the patterns.** All three leaks were
+     COVERAGE gaps, never regex bugs — every string-level test passed
+     throughout:
+     - `event.request` body/cookies/headers were transmitted (see the
+       copyWith note below)
+     - tokens in `request.queryString` were missed, because that field
+       stores the query with no leading `?`
+     - **`event.exceptions` was not scrubbed at all** — and a crash
+       report IS an exception, so `event.message` is null for virtually
+       every real crash. The most common case in production was leaving
+       unredacted, while this file's own doc comment claimed otherwise.
+  So when adding a scrubber, list what the SDK can populate — message,
+  exceptions, request, breadcrumbs, extra, tags, contexts — and handle or
+  consciously reject each. Assert on the serialised payload
+  (`event.toJson()`), because that is what actually leaves the process.
+- **`copyWith(x: null)` means "leave x unchanged", not "clear x".**
+  (20 Aug 2026.) `req.copyWith(data: null, cookies: null, headers: const
+  {})` read exactly like it dropped the request body, the cookies and the
+  Authorization header. It dropped none of them — Dart's conventional
+  copyWith cannot distinguish "argument omitted" from "argument is null",
+  so both mean *keep the old value*. Customer data was being transmitted
+  by code whose plain reading said the opposite.
+  **Same shape as the `timeZone` bug above**: the defect is invisible
+  precisely because the code reads as doing the right thing, so review
+  slides over it. To actually clear fields, CONSTRUCT a new object with
+  only the fields you want to keep — then omission is the default, and a
+  field the SDK adds in a later version cannot leak by inheritance. If
+  you must use copyWith to null something, check the package's own
+  signature for a sentinel; do not assume.
 - **`permissions.dart` is the source of truth for role equivalence, and
   SQL must agree with it.** (19 Aug 2026.) `isOwnerOrManagerSession`
   matched only the literal strings `'owner'` and `'manager'` — but no
@@ -592,6 +631,16 @@ silently doesn't is the same class of trust damage.
   vocabulary from `permissions.dart`/`staff_form_sheet.dart`'s actual
   dropdown values, never from intuition about what a role "should" be
   called, and keep the SQL helper and the Dart getter in step.
+- **Security migrations get their own commit.** (Arun, 20 Aug 2026.)
+  `supabase/20260820_phase_a_device_register.sql` — the device register
+  and offboarding — was swept into a commit whose message is entirely
+  about Sentry crash reporting, by a broad `git add -A ... supabase/`
+  while both were in flight. The file is correct and pushed, and pushed
+  history is not rewritten for this, but it is now effectively invisible
+  to anyone reading the log for "when did device revocation land".
+  A security change buried inside an unrelated commit cannot be found,
+  reviewed, or reverted independently. Stage security work explicitly by
+  path, never with `-A`, when anything else is uncommitted.
 - Work in small verifiable steps: one page or one migration per commit-sized change.
 - After DB changes, paste SQL for the owner to run in the Supabase SQL editor
   (he runs it manually) unless told otherwise.

@@ -42,24 +42,21 @@ bool get crashReportingEnabled => kSentryDsn.isNotEmpty;
 // ---------------------------------------------------------------------------
 
 /// Query parameters whose VALUE is a credential, not data. Matched on the
-/// key so a rename of the value format cannot slip past.
+/// key so a rename of the value format cannot slip past. Longest
+/// alternatives first, so `access_token` is never matched as a bare
+/// `token`.
 ///
-/// The boundary is `(?:^|[?&])`, not `[?&]` alone. Sentry's
-/// `SentryRequest.queryString` holds the query WITHOUT its leading `?`
-/// — so `token=abc` sat at the very start of the string and the
-/// `[?&]`-only form never matched it. The URL was scrubbed and the
-/// queryString beside it was not, which is a live credential
-/// transmitted in the same event. Caught 20 Aug 2026 by the scrubEvent
-/// tests; the string-level tests never exercised a bare `key=value`
-/// with no separator in front of it.
-/// Longest alternatives first so `access_token` is never matched as a
-/// bare `token`. The boundary is a non-word lookbehind rather than
-/// `[?&]`, because these appear in three shapes and all three are real:
-/// inside a URL (`?token=`), as a bare query string with no leading `?`
-/// (Sentry's `SentryRequest.queryString`), and loose in free text
-/// (`Exception: rejected token=abc`). The first two were fixed on
-/// 20 Aug 2026, the third an hour later when the exception-scrubbing
-/// test caught it — each time by a test, never by reading the pattern.
+/// The boundary is a NON-WORD LOOKBEHIND, `(?<![A-Za-z0-9_])`, not
+/// `[?&]`. These appear in three shapes and all three are real:
+///   * inside a URL            — `...?token=abc`
+///   * as a bare query string  — `token=abc` with no leading `?`, which
+///     is exactly how Sentry's `SentryRequest.queryString` stores it
+///   * loose in free text      — `Exception: rejected token=abc`
+///
+/// The pattern was widened twice on 20 Aug 2026 for the second and third
+/// of those, each time because a test caught a live credential going
+/// out, never because anyone spotted it by reading. That is the whole
+/// argument for the tests in crash_redaction_test.dart.
 final _tokenParam = RegExp(
   r'((?<![A-Za-z0-9_])(?:access_token|refresh_token|api_key|apikey|signature|token|jwt|sig|key)=)[^&\s]*',
   caseSensitive: false,
