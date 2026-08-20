@@ -194,7 +194,21 @@ class _FFButtonWidgetState extends State<FFButtonWidget> {
             widget.options.hoverElevation != null) {
           return widget.options.hoverElevation!;
         }
-        return widget.options.elevation ?? 2.0;
+        // A transparent button defaults to NO elevation (20 Aug 2026).
+        //
+        // The default used to be a flat 2.0 for everything. Under Material
+        // 3 an elevated surface gets a tint, so every button written as
+        // `color: Colors.transparent` with a coloured border — the app's
+        // standard "secondary/outline" button — rendered as a grey box
+        // with coloured text, which reads as DISABLED. That is why the
+        // dashboard's "Calendar ->" and "View All ->" and several Order
+        // Details actions looked washed out on device.
+        //
+        // Scoped to transparent buttons on purpose: solid buttons keep
+        // their 2.0 lift, so nothing else in the app changes appearance.
+        // An explicit `elevation:` still wins over both.
+        if (widget.options.elevation != null) return widget.options.elevation!;
+        return widget.options.color == Colors.transparent ? 0.0 : 2.0;
       }),
       iconColor: WidgetStateProperty.resolveWith<Color?>((states) {
         if (states.contains(WidgetState.disabled) &&
