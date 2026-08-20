@@ -42,8 +42,22 @@ import 'index.dart';
 /// pass can't fabricate without a real API key, same class of gap as
 /// item 11's Razorpay keys.
 void _installErrorHandlers() {
+  // CHAIN, never replace. This runs inside initCrashReporting's
+  // appRunner, i.e. AFTER SentryFlutter.init has installed its own
+  // FlutterError.onError and PlatformDispatcher.onError. Overwriting
+  // them — which this did until 20 Aug 2026 — silently disconnected
+  // crash reporting from every Flutter framework error and every
+  // uncaught async error, which is to say from every crash it exists to
+  // catch. Nothing failed loudly: the unit tests and even the live
+  // redaction test call Sentry.captureException directly and so never
+  // touch this chain. Only running the real APK on a device showed it.
+  //
+  // `priorOnError` is Sentry's handler when a DSN is configured, and
+  // Flutter's own presentError when it is not — so calling it covers
+  // both cases, and replaces the explicit presentError that used to sit
+  // here (calling both would double-present).
+  final priorOnError = FlutterError.onError;
   FlutterError.onError = (details) {
-    FlutterError.presentError(details);
     // Was exceptionAsString() only — the message, never the stack. That's
     // the "error boundary swallowing the stack trace" gap: a widget that
     // throws during build reaches this handler (Element.performRebuild
@@ -56,9 +70,13 @@ void _installErrorHandlers() {
     // builds, so nothing extra reaches a shipped APK's logcat.
     debugPrint(
         'FlutterError: ${details.exceptionAsString()}\n${details.stack}');
+    priorOnError?.call(details);
   };
+  final priorPlatformOnError = PlatformDispatcher.instance.onError;
   PlatformDispatcher.instance.onError = (error, stack) {
     debugPrint('Uncaught async error: $error\n$stack');
+    // Sentry's OnErrorIntegration lives here when a DSN is configured.
+    priorPlatformOnError?.call(error, stack);
     return true; // handled — don't crash the isolate.
   };
   ErrorWidget.builder = (details) => Material(
