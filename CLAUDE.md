@@ -1279,6 +1279,63 @@ Consequences worth knowing before touching this:
   what `suggestPackage`'s unresolved state reports.
 
 ## Changelog
+- **25 Aug 2026, Item 12 slabs editor — FIELD-VERIFIED end to end, and an
+  emulator lesson that cost most of the pass.**
+  - **The round-trip works, all three links.** Signed in as Rajesh Kumar
+    (Chennai manager) on the emulator, opened Survey & Pricing via the
+    Survey & Quote hub's `tune` shortcut, and widened slab 1 from
+    `Up to 80` to `Up to 120`.
+    1. **Derived From updated live** — slab 2's header changed from
+       `From 81 CFT` to `From 121 CFT` as soon as the field was edited,
+       which is the structural no-gaps guarantee working on device, not
+       just in `test/pricing_slabs_test.dart`.
+    2. **Save persisted** — live Postgres `pricing_config.config->
+       'cft_ranges'->0` read `{"max":120,...}`, and re-entering the page
+       reloaded 120/From-121 from the DB.
+    3. **The survey suggestion actually moved** — a walk-in quote with a
+       single 100 CFT custom item showed **"Suggested: Micro Shifting ·
+       2 crew · 7 Ft"**. Before the edit 100 CFT sat in the 81-155 band
+       and would have suggested *1 RK / Studio*. This is the link that
+       matters: it proves the range→package→vehicle/crew join is read
+       fresh, not cached from load.
+  - **APC's live config was reverted to `max: 80` and verified** (14
+    ranges / 14 packages, unchanged counts — nothing lost or duplicated).
+    No stray `quotations` row was created; the test quote was never
+    saved. This was live tenant data, so the revert is part of the test,
+    not an afterthought.
+  - **12C is live** — see the correction in the Item 12 entry below. The
+    quote-save path this pass exercised would have thrown
+    "column does not exist" otherwise.
+  - **EMULATOR: Flutter renders BLACK under Impeller on this AVD.
+    Launch with `--ez enable-impeller false` or lose an hour.**
+    `adb shell am start -n in.nagarva.app/.MainActivity --ez
+    enable-impeller false`. Flutter 3.35 defaults to Impeller on
+    Android; on the emulator's GL translator the app surface composites
+    to pure black while the native splash renders fine — so the app
+    *looks* broken and logcat shows no Dart error, because there isn't
+    one. Confirmed by the fix: same build, same device, 1 colour before
+    the flag and 1454 after.
+    Three false trails this cost, all worth not repeating:
+    - **`screencap` black is not proof of anything.** Guest `screencap`
+      AND the host-side `adb emu screenrecord screenshot` both returned
+      black, which looked like a capture bug and is not.
+    - **Do not "fix" it with `-gpu swiftshader_indirect`.** Software
+      rendering is too slow for this machine and **ANR'd SystemUI**
+      ("System UI isn't responding"), which composites everything black
+      for a completely different reason — a second black screen with a
+      different cause, on top of the first.
+    - **`uiautomator dump` is the diagnostic when pixels lie.** It read
+      the SystemUI ANR dialog straight out of the view hierarchy when no
+      screenshot could show it. When a screen is blank, dump the tree
+      before debugging the app.
+    - Also: `adb emu kill` does not release the AVD lock immediately —
+      relaunching too fast fails with "Running multiple emulators with
+      the same AVD". Clear `hardware-qemu.ini.lock`/`multiinstance.lock`
+      after confirming no qemu process survives.
+  - **Confirmed in passing, on the pre-fix build**: the manager
+    dashboard showed only ACTIVE LEADS / ORDERS/MONTH / REMINDERS — no
+    Revenue, Labour, Expenses, Outstanding or Monthly Target. That is
+    the exact bug `6380f32` fixes, captured live before the fix shipped.
 - **19 Aug 2026, owner-side verification of the arrival-code/signature
   completion flow — one real defect found on the document itself.**
   Signed in on the emulator as **Rajesh Kumar (Chennai manager)** and
