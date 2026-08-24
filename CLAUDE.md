@@ -1382,11 +1382,15 @@ Consequences worth knowing before touching this:
     silently rather than failing or cascading.
 - **17 Aug 2026 (latest), Item 12 — per-tenant CFT catalogue + vehicle/
   crew slabs.** Built in the order Arun set (12B first, then the
-  fallback fix, then 12C, then 12A polish). **SQL handed back unrun:
-  `supabase/20260817_item12c_package_columns.sql` — and this one is a
-  BREAKING ORDERING: the new build writes `quotations.suggested_*`/
-  `chosen_*`, so a quote save fails with "column does not exist" until
-  that migration runs. Run the SQL before shipping the APK.**
+  fallback fix, then 12C, then 12A polish). **~~SQL handed back unrun:
+  `supabase/20260817_item12c_package_columns.sql` ... Run the SQL
+  before shipping the APK.~~ RUN AND VERIFIED LIVE 24 Aug 2026** — all
+  13 columns exist (`quotations`/`orders` `suggested_*`/`chosen_*`) and
+  `quotations.total_cft` is `numeric`, i.e. the widening applied too.
+  Confirmed by reading `information_schema.columns` directly, not from a
+  deploy log. The APK ship-block this paragraph used to describe is
+  therefore lifted; left visible rather than deleted because a stale
+  BLOCKER is the kind of note that quietly holds a release.
   - **New `SurveyPricingPage`** (`lib/settings_page/survey_pricing_page.dart`,
     route `/survey-pricing`, reached from Settings). Two tabs: Vehicle &
     Crew Slabs (new) and Item Catalogue (**moved here from the Survey &
