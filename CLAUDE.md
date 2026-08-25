@@ -714,6 +714,32 @@ silently doesn't is the same class of trust damage.
   vocabulary from `permissions.dart`/`staff_form_sheet.dart`'s actual
   dropdown values, never from intuition about what a role "should" be
   called, and keep the SQL helper and the Dart getter in step.
+- **A permission-gate sweep must match LINE-WRAPPED conditions, or it
+  produces a false clean.** (Arun, 25 Aug 2026.) `6380f32` was reported
+  as fixing the dashboard money gates. It fixed two of four. The other
+  two — the REVENUE/LABOUR/EXPENSES block and OUTSTANDING — were missed
+  because `dart format` had wrapped them as
+
+      if (AppSession
+              .instance.currentStaffId ==
+          null)
+
+  and the sweep grepped for `currentStaffId == null`, which cannot match
+  across the line break. The grep returned nothing, the sweep was
+  declared complete, and a manager kept losing exactly the cards the
+  commit claimed to restore.
+  **The failure mode is the dangerous one: a clean grep is read as
+  proof of absence.** An unwrapped search over auto-formatted Dart is a
+  search over a formatting accident, not over the code.
+  Rules: grep for the IDENTIFIER alone (`currentStaffId`) and read every
+  hit, never for a whole expression; when a count matters, verify the
+  total against `grep -c` on the bare identifier; and prefer
+  `grep -A3`/multiline mode when the pattern spans operators. The same
+  trap caught this session twice — an `if "x.dart" not in source` guard
+  also matched a COMMENT mentioning `x.dart` and silently skipped adding
+  the import. Any "is it already there?" test that can match prose about
+  the thing, rather than the thing, is the same bug.
+
 - **Security migrations get their own commit.** (Arun, 20 Aug 2026.)
   `supabase/20260820_phase_a_device_register.sql` — the device register
   and offboarding — was swept into a commit whose message is entirely

@@ -2,6 +2,7 @@ import '/app_session.dart';
 import '/backend/session_logout.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/margin_availability.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -1351,9 +1352,34 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                         .ellipsis,
                                                               ),
                                                               Text(
-                                                                functions.inrFormat(
-                                                                    kpiListItemItem
-                                                                        .netProfitThisMonth)!,
+                                                                // Suppressed
+                                                                // when no
+                                                                // expenses
+                                                                // exist for a
+                                                                // month that
+                                                                // had orders:
+                                                                // net profit
+                                                                // would
+                                                                // collapse to
+                                                                // revenue and
+                                                                // read as a
+                                                                // ~100%
+                                                                // margin. See
+                                                                // margin_availability.dart.
+                                                                marginIsMeaningful(
+                                                                  expensesTotal:
+                                                                      kpiListItemItem
+                                                                              .expensesThisMonth ??
+                                                                          0,
+                                                                  orderCount: (kpiListItemItem
+                                                                              .ordersThisMonth ??
+                                                                          0)
+                                                                      .toInt(),
+                                                                )
+                                                                    ? functions.inrFormat(
+                                                                        kpiListItemItem
+                                                                            .netProfitThisMonth)!
+                                                                    : kMarginUnavailableTitle,
                                                                 style: FlutterFlowTheme.of(
                                                                         context)
                                                                     .titleMedium

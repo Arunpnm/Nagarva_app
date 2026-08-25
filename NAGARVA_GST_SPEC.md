@@ -4,7 +4,29 @@
 
 **Date:** 25 August 2026
 **Reference:** Packers Bilty quotation screen (GST show/hide, GST %, GST type, total show/hide)
-**Status:** Specification. No code written, no migration run.
+**Status:** Specification. Steps 2–4 built; step 1 withheld (see §6.1).
+
+> ### ⚠️ §5 and §6 ARE PENDING CA SIGN-OFF — DO NOT TREAT AS AUTHORITATIVE
+>
+> Added 25 Aug 2026 by Arun. **This document has now contained two
+> statutory errors**, both in the sections that state tax law rather
+> than describe the schema:
+>
+> 1. §3's backfill would have changed two historical documents.
+> 2. §6 stated place of supply as the **destination**. It is not — see
+>    §6 for the correction. That error inverts the tax type on most
+>    household moves.
+>
+> Treat §5 (the invoice permission matrix) and §6 (place of supply and
+> split derivation) as **working assumptions awaiting a CA's review**,
+> which is happening alongside register item 31. The engineering
+> around them is built so the rule is one function to change, not a
+> rewrite: see `invoiceRejectionReason()` and the `GstSplit` derivation
+> in `lib/backend/gst_calculator.dart`.
+>
+> Sections §1–§4 and §7–§10 are schema, arithmetic and sequencing —
+> those are grounded in introspection and tests, not in law, and are
+> not covered by this warning.
 
 ---
 
@@ -326,26 +348,78 @@ Shipping the reference UI's control set unchanged on the invoice would let a ten
 
 The reference UI makes GST TYPE a manual dropdown. Do not copy this. Interstate moves are the highest-value jobs in this business and a manually-selected wrong tax type is a real filing error.
 
+### 6.0 CORRECTED 25 Aug 2026 — it is PICKUP, not destination
+
+<details><summary>Original rule, kept for history — it is wrong</summary>
+
 ```
 place_of_supply_state_code = destination state (services: place of supply
                              is the delivery location for goods transport)
+```
+
+This inverts the tax type on most household moves, because the typical
+customer is unregistered and the two ends of the move are in different
+states precisely when it matters most.
+</details>
+
+**Section 12(8) of the IGST Act** governs place of supply for
+transportation of goods:
+
+| Recipient | Place of supply |
+|---|---|
+| **Registered** (has a GSTIN) | The recipient's registered location |
+| **Unregistered** | Where the goods are **handed over for transportation** — i.e. the **PICKUP** location |
+
+```
+place_of_supply_state_code =
+    customer_gstin is not null  -> state code parsed from customer GSTIN
+                                   (first two digits ARE the state)
+    else                        -> pickup location state code
 
 gst_split = 'cgst_sgst'  when org.state_code = place_of_supply_state_code
           = 'igst'       otherwise
+          = null         when either side is unknown  (see §6.1)
 ```
+
+Consequence for the schema: **the quotation must capture the PICKUP
+state**, not only the destination. The existing `from_address` /
+`from_city` are free text and cannot be trusted to yield a state code,
+so this is a new explicit field:
+
+```sql
+alter table public.quotations
+  add column pickup_state_code integer;   -- goes with step 1
+```
+
+`place_of_supply_state_code` is then **derived and stored**, not typed —
+so a later correction to the rule can be re-run over existing rows,
+which would be impossible if only the derived answer were kept.
+
+Note the customer-GSTIN branch makes a B2B move behave differently from
+a B2C move over the identical route. That is correct and is exactly why
+the rule cannot be simplified to "compare the two cities".
 
 Show it **read-only** on the form with the derivation visible ("Karnataka → Tamil Nadu: IGST"). Allow a manual override only behind an explicit toggle that records who overrode it and why, into the audit log.
 
-### Prerequisite — currently blocking
+### 6.1 Prerequisite — currently blocking, on two counts
 
 `organizations.state_code` is NULL for both live orgs. Until populated:
 
 - Add `state_code` to org setup as a required field
-- Backfill APC and Ponci (both Karnataka, code 29)
-- Capture destination state on the quotation
-- Until all three are done, `gst_split` falls back to manual with a visible "Verify tax type" warning on the form
+- ~~Backfill APC and Ponci (both Karnataka, code 29)~~ **WITHHELD
+  25 Aug 2026.** APC's `gstin` is `33ARLPA3366M1ZO` — the leading `33`
+  is **Tamil Nadu** — while `state` reads `'karnataka'` and `city`
+  reads `'Bengaluru'`. Those cannot both be right, and setting `29`
+  against a `33` GSTIN would invert the split on every order. Arun is
+  pulling the registration certificate; it goes to the CA with item 31.
+  Ponci has no `gstin`, `state` or `city` at all.
+- ~~Capture destination state on the quotation~~ **Capture PICKUP state**
+  (`quotations.pickup_state_code`) — see §6.0. Destination alone is the
+  wrong input for an unregistered recipient.
+- Until these are done, `gst_split` stays NULL and the form shows the
+  "Verify tax type" warning
 
-**Do not derive silently from NULL.** A NULL state code defaulting to `cgst_sgst` would apply the wrong tax to every interstate move without any signal.
+**Do not derive silently from NULL.** A NULL state code defaulting to `cgst_sgst` would apply the wrong tax to every interstate move without any signal. The calculator already enforces this: a null split computes the tax but attributes it to neither side, and `GstResult.splitReconciles` returns false — which is the signal the form must surface. There is a test pinning that behaviour.
 
 ---
 

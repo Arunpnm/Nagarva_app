@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_util.dart';
+import '/backend/margin_availability.dart';
 import 'p_l_report_page_widget.dart' show PLReportPageWidget;
 import 'package:flutter/material.dart';
 
@@ -59,10 +60,26 @@ class PLReportPageModel extends FlutterFlowModel<PLReportPageWidget> {
   double orderExpenses = 0;
   double otherExpenses = 0;
   double porterCommission = 0;
+  /// Orders counted in the current period. Needed by [marginIsShowable]:
+  /// "no expenses" only contradicts reality if work actually happened.
+  int orderCount = 0;
+
   double get grossProfit => revenue - labour;
   double get netProfit =>
       grossProfit - orderExpenses - otherExpenses - porterCommission;
   double get margin => revenue > 0 ? (netProfit / revenue) * 100 : 0;
+
+  /// False when no expenses are recorded for a period that had orders.
+  ///
+  /// Shares [marginIsMeaningful] with the dashboard deliberately — the
+  /// same starved input feeds both, so without one rule they would tell
+  /// the same lie independently. `expenses` currently has 0 live rows,
+  /// which makes [netProfit] collapse to roughly [revenue] and render as
+  /// a ~100% margin. Suppress the figure rather than print it.
+  bool get marginIsShowable => marginIsMeaningful(
+        expensesTotal: orderExpenses + otherExpenses,
+        orderCount: orderCount,
+      );
 
   List<BranchPL> branchPL = [];
   List<LeadSourceStat> leadSources = [];

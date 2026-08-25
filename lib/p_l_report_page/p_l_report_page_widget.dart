@@ -1,5 +1,6 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/margin_availability.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -151,6 +152,9 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
                     .roundToDouble());
 
     _model.revenue = revenue;
+    // Drives marginIsShowable: "no expenses" is only a contradiction
+    // when work actually happened in the period.
+    _model.orderCount = fo.length;
     _model.labour = labour;
     _model.orderExpenses = orderExpenses;
     _model.otherExpenses = otherExpenses;
@@ -274,7 +278,13 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
                                       context,
                                       Icons.account_balance_wallet,
                                       'Net Profit',
-                                      _model.netProfit,
+                                      // Suppressed entirely when no
+                                      // expenses are recorded for a
+                                      // period that had orders — see
+                                      // margin_availability.dart.
+                                      _model.marginIsShowable
+                                          ? _model.netProfit
+                                          : null,
                                       _model.netProfit >= 0
                                           ? FlutterFlowTheme.of(context).primary
                                           : FlutterFlowTheme.of(context)
@@ -345,8 +355,13 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
     );
   }
 
+  /// [value] null means "this figure is not honest right now" — render
+  /// the reason instead of a number. Deliberately NOT a zero or a dash:
+  /// both read as measurements, and the whole point is that nothing was
+  /// measured. See margin_availability.dart.
   Widget _statCard(BuildContext context, IconData icon, String label,
-      double value, Color color) {
+      double? value, Color color) {
+    final suppressed = value == null;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -358,12 +373,28 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 22.0),
+            Icon(icon,
+                color: suppressed
+                    ? FlutterFlowTheme.of(context).secondaryText
+                    : color,
+                size: 22.0),
             const SizedBox(height: 4),
-            Text(_currency.format(value.abs()),
-                style: FlutterFlowTheme.of(context).headlineSmall.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
-                    color: FlutterFlowTheme.of(context).primaryText)),
+            if (suppressed) ...[
+              Text(kMarginUnavailableTitle,
+                  style: FlutterFlowTheme.of(context).titleSmall.override(
+                      font: GoogleFonts.interTight(
+                          fontWeight: FontWeight.w600),
+                      color: FlutterFlowTheme.of(context).secondaryText)),
+              Text(kMarginUnavailableBody,
+                  style: FlutterFlowTheme.of(context).labelSmall.override(
+                      font: GoogleFonts.inter(),
+                      color: FlutterFlowTheme.of(context).secondaryText)),
+            ] else
+              Text(_currency.format(value.abs()),
+                  style: FlutterFlowTheme.of(context).headlineSmall.override(
+                      font: GoogleFonts.interTight(
+                          fontWeight: FontWeight.w600),
+                      color: FlutterFlowTheme.of(context).primaryText)),
             Text(label,
                 style: FlutterFlowTheme.of(context).labelMedium.override(
                     font: GoogleFonts.inter(),
@@ -386,12 +417,27 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Margin is net profit over revenue, so it inherits exactly
+            // the same starvation — with no expenses recorded it prints
+            // a near-100% margin, which is the most quotable wrong
+            // number on the page.
             Icon(Icons.percent,
-                color: FlutterFlowTheme.of(context).primary, size: 22.0),
+                color: _model.marginIsShowable
+                    ? FlutterFlowTheme.of(context).primary
+                    : FlutterFlowTheme.of(context).secondaryText,
+                size: 22.0),
             const SizedBox(height: 4),
-            Text('${_model.margin.toStringAsFixed(1)}%',
-                style: FlutterFlowTheme.of(context).headlineSmall.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+            if (_model.marginIsShowable)
+              Text('${_model.margin.toStringAsFixed(1)}%',
+                  style: FlutterFlowTheme.of(context).headlineSmall.override(
+                      font:
+                          GoogleFonts.interTight(fontWeight: FontWeight.w600)))
+            else
+              Text(kMarginUnavailableTitle,
+                  style: FlutterFlowTheme.of(context).titleSmall.override(
+                      font: GoogleFonts.interTight(
+                          fontWeight: FontWeight.w600),
+                      color: FlutterFlowTheme.of(context).secondaryText)),
             Text('Margin',
                 style: FlutterFlowTheme.of(context).labelMedium.override(
                     font: GoogleFonts.inter(),
