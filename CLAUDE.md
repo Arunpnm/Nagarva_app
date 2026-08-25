@@ -743,6 +743,35 @@ silently doesn't is the same class of trust damage.
   membership sees nothing. This proves a caller WITH partial membership
   sees exactly their slice.
 
+- **Branch scoping and branch NUMBERING are different problems. Do not
+  let one read like the other.** (Arun, 25 Aug 2026, recorded against
+  NG-010 because the phrase "make number_series branch-aware" will
+  otherwise later read like the thing we just rejected.)
+  - **RLS: `number_series` must NEVER get a `branch_isolation`
+    policy.** 28 of its 33 rows carry `branch = NULL` (one org-wide
+    series per doc type per FY, the 12 Aug numbering decision), the
+    helper compares `branch = p_branch`, and **NULL matches nobody**.
+    `next_doc_number` and `next_lr_number` are **not** SECURITY DEFINER
+    (`prosecdef = false`), so they run as the caller and RLS applies
+    directly. Scoping that table would make invoice, receipt, LR,
+    voucher and proforma generation fail for every manager and staff
+    session — only the owner could issue a document. Same NULL trap,
+    less catastrophically, on `lr_series`, `rate_cards`,
+    `bank_accounts`, `materials`, `stock_movements`.
+  - **The allocator is a separate, legitimate change.** If branches get
+    their own GSTINs, invoice serials must be per-GSTIN under **Rule
+    46(b)** — a distinct series per registration. That is done by
+    passing `p_branch` through the ALLOCATOR at the six call sites
+    (which today all pass null), not by filtering the table with RLS.
+  - So: **`branch` on a table is a TAG, not automatically a FILTER.**
+    Integrity and visibility are different questions — every
+    branch-carrying table gets an FK to `branches`, only the genuinely
+    branch-owned ones get a policy. Two categories, no third: a table
+    is either branch-owned (policy + eventually NOT NULL branch) or
+    org-wide (no policy at all). **Do not introduce a "NULL means
+    everyone" helper variant** — strict NULL semantics are exactly why
+    the `number_series` hazard was visible instead of silent.
+
 - **There is exactly ONE canonical definition of net profit, and the
   two views currently disagree.** (Arun, 25 Aug 2026.)
   - `dashboard_kpis_view.net_profit_this_month`
