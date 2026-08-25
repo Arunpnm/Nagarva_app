@@ -690,7 +690,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                         // session, so owner behaviour is unchanged, and
                         // supervisors/drivers/packers/helpers stay excluded
                         // because the matrix does not grant them 'reports'.
-                        if (StaffPermissions.canActive('reports', 'view'))
+                        if (StaffPermissions.canActive('financials', 'view'))
                           _periodSelector(context),
                         // Item 10.5: today's / overdue follow-up counts.
                         // Not money-gated — staff chase leads too. Renders
@@ -720,11 +720,30 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
                                       children: [
-                                        // Money is owner-only — hidden for staff PIN sessions
-                                        // (part of the supervisor-restriction pass).
-                                        if (AppSession
-                                                .instance.currentStaffId ==
-                                            null)
+                                        // REVENUE / LABOUR / EXPENSES.
+                                        //
+                                        // MISSED BY 6380f32 (25 Aug 2026).
+                                        // That commit retargeted the period
+                                        // selector and MONTHLY TARGET to
+                                        // canActive() but left these three on
+                                        // the session-shape test, because the
+                                        // condition is line-wrapped as
+                                        // `currentStaffId ==\n null` and the
+                                        // sweep grepped for the unwrapped
+                                        // form. So the reported fix was only
+                                        // two thirds applied and a manager
+                                        // still lost exactly the cards Arun
+                                        // originally reported missing.
+                                        //
+                                        // Tiered per the 25 Aug split:
+                                        // revenue is financials.view; labour
+                                        // and expenses are cost, so the block
+                                        // needs the margin tier too. Gated on
+                                        // the broader of the two here and the
+                                        // cost cards re-checked individually
+                                        // as the redesign splits this row.
+                                        if (StaffPermissions.canActive(
+                                            'financials', 'view'))
                                           Column(
                                             mainAxisSize: MainAxisSize.min,
                                             mainAxisAlignment:
@@ -1675,11 +1694,13 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.center,
                                               children: [
-                                                // Money is owner-only — hidden for staff PIN sessions
-                                                // (part of the supervisor-restriction pass).
-                                                if (AppSession.instance
-                                                        .currentStaffId ==
-                                                    null)
+                                                // OUTSTANDING. Same miss as
+                                                // the block above — see its
+                                                // comment. Outstanding is
+                                                // receivables, not margin, so
+                                                // it sits in financials.view.
+                                                if (StaffPermissions.canActive(
+                                                    'financials', 'view'))
                                                   Flexible(
                                                     flex: 1,
                                                     child: InkWell(
@@ -1971,7 +1992,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                         // Monthly Target — same reports gate as the KPI
                         // row above. See that comment for why this is a
                         // permission check and not `currentStaffId == null`.
-                        if (StaffPermissions.canActive('reports', 'view'))
+                        if (StaffPermissions.canActive('financials', 'view'))
                           Padding(
                             padding: const EdgeInsetsDirectional.fromSTEB(
                                 16.0, 0.0, 16.0, 0.0),

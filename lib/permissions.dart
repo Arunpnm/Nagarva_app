@@ -88,6 +88,41 @@ const kPermModules = <PermModule>[
   PermModule('trips', 'Trips', 'TripsPage'),
   // Session 4, Part C-12.
   PermModule('tasks', 'Tasks & Activities', 'TasksPage'),
+
+  // ---------------------------------------------------------------
+  // Dashboard financial tiers (25 Aug 2026).
+  //
+  // Split out of `reports`, which was a single coarse gate covering
+  // operational counts, revenue AND margin at once. That made a
+  // branch manager who needs Active Moves indistinguishable from one
+  // trusted with net profit. Decided BEFORE the dashboard redesign
+  // deliberately: tiles are built against the final matrix rather
+  // than retrofitted onto it.
+  //
+  // The three tiers, and what each gates:
+  //   reports.view            operational counts (leads, orders,
+  //                           reminders, active moves)
+  //   financials.view         revenue, outstanding, monthly target
+  //   financials_margin.view  profit, expenses, cost
+  //
+  // NOTE ON NAMING: the decision was written as `financials.margin`.
+  // That would be a fifth ACTION, and kPermActions is a global list
+  // driving the columns of the permission table in
+  // staff_form_sheet.dart — adding one there would put a "Margin"
+  // checkbox on all 27 modules, meaningless on 25 of them. Modelled
+  // as a second MODULE instead, so the semantics are exactly as
+  // decided while the table stays a clean 4-column grid.
+  //
+  // PAGE NAME IS DELIBERATELY EMPTY: neither is a navigable page,
+  // they gate cards on a page the `dashboard` module already covers.
+  // allowedPageNames() skips empty names so these can never widen
+  // the sidebar. See its own comment.
+  //
+  // Both are moneyModule, so they carry the ₹ marker and stay out of
+  // every non-owner/manager preset unless granted per person.
+  PermModule('financials', 'Financials — Revenue', '', moneyModule: true),
+  PermModule('financials_margin', 'Financials — Margin & Cost', '',
+      moneyModule: true),
 ];
 
 /// Helpers for reading/writing the jsonb payload.
@@ -335,9 +370,17 @@ class StaffPermissions {
   }
 
   /// Page names this permission set may open (drives the sidebar).
+  ///
+  /// Modules with an empty [PermModule.pageName] are skipped: they gate
+  /// content INSIDE a page rather than a destination of their own (the
+  /// two `financials*` tiers). Without this guard an empty string would
+  /// be added to the allow-list — harmless today because no nav item is
+  /// named '', but it would silently become a real grant the moment
+  /// anything looked up a page by empty name.
   static Set<String> allowedPageNames(Map<String, Map<String, bool>> perms) {
     final out = <String>{};
     for (final m in kPermModules) {
+      if (m.pageName.isEmpty) continue;
       if (canSeeModule(perms, m.key)) out.add(m.pageName);
     }
     return out;
