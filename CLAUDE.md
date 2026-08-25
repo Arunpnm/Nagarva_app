@@ -714,6 +714,68 @@ silently doesn't is the same class of trust damage.
   vocabulary from `permissions.dart`/`staff_form_sheet.dart`'s actual
   dropdown values, never from intuition about what a role "should" be
   called, and keep the SQL helper and the Dart getter in step.
+- **`CREATE OR REPLACE VIEW` preserves `security_invoker`. `DROP` +
+  `CREATE` silently discards it.** (25 Aug 2026. Standing rule for all
+  15 views in `public`.)
+  `security_invoker` lives in `pg_class.reloptions`, not in the view
+  body. Dropping and recreating a view reverts it to OWNER rights with
+  no error, no warning and no test failure — the columns and the data
+  all still look correct. The only symptom is that every tenant's rows
+  become readable again with the anon key, which is the leak
+  `20260825_view_security_invoker.sql` closed across 12 views.
+  The trap is that `CREATE OR REPLACE` can only APPEND columns at the
+  end and cannot rename or retype existing ones, so any non-trivial
+  edit creates real pressure to just drop and recreate. Don't.
+  Rules for editing any view: **append new columns at the end** and use
+  `CREATE OR REPLACE`; if the shape genuinely must change, include an
+  explicit `ALTER VIEW ... SET (security_invoker = on)` in the SAME
+  migration and assert it in POSTFLIGHT. **Verify by behaviour, not by
+  the flag** — `select count(*)` as anon must return 0. A flag that is
+  set but untested proves the catalogue, not the wiring.
+
+- **There is exactly ONE canonical definition of net profit, and the
+  two views currently disagree.** (Arun, 25 Aug 2026.)
+  - `dashboard_kpis_view.net_profit_this_month`
+    = revenue − labour − expenses − porter commission
+  - `branch_kpis_view.net_profit`
+    = revenue − porter commission **only** (never labour, never
+      expenses)
+  So an owner comparing the dashboard tile against a branch card sees
+  two different net profits for the same month, and neither screen
+  says which is which. This is not a rounding disagreement; the branch
+  figure is structurally overstated by the entire wage and expense
+  base.
+  **Both views must satisfy the dashboard definition.** Until they do,
+  branch margin renders as unavailable via `margin_availability.dart`
+  rather than as a number — correcting the formula first would only
+  produce a correct figure over starved expense data, which suppresses
+  anyway, so the ordering costs nothing. **The view fix is scheduled
+  with NG-046 (job costing)**, which is where per-order cost
+  attribution arrives and makes a branch-level expense column
+  meaningful.
+  When adding any third surface for profit (exports, reports, a
+  per-branch P&L), take the definition from `dashboard_kpis_view`, not
+  from whichever view is nearest.
+
+- **An "is it already present?" check must not be able to match PROSE
+  about the thing.** (25 Aug 2026 — same session as the line-wrap
+  convention below, and the same disease.)
+  Three instances in one session, all silent:
+    1. A permission sweep grepped `currentStaffId == null` and missed
+       two gates that `dart format` had wrapped.
+    2. `if "margin_availability.dart" not in source: add_import()`
+       returned "already present" because a COMMENT saying *"see
+       margin_availability.dart"* had just been written into the file.
+       The import was never added.
+    3. The identical guard on a second file, same cause, same session.
+  Each time the check answered a question about TEXT when the intent
+  was a question about CODE, and each time the false positive was
+  invisible — the tool reported success.
+  Test for the construct, not the string: match `^import '...'` at line
+  start for an import, the identifier alone for a gate. If a check can
+  be satisfied by a comment, a doc block or a filename in a log line,
+  it is not a presence check.
+
 - **A permission-gate sweep must match LINE-WRAPPED conditions, or it
   produces a false clean.** (Arun, 25 Aug 2026.) `6380f32` was reported
   as fixing the dashboard money gates. It fixed two of four. The other

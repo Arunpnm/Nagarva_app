@@ -3151,11 +3151,51 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                 ),
                                                       ),
                                                       Text(
-                                                        functions.marginPct(
-                                                            branchStatItem
-                                                                .netProfit,
-                                                            branchStatItem
-                                                                .revenue)!,
+                                                        // Branch margin is
+                                                        // suppressed, not
+                                                        // zeroed.
+                                                        //
+                                                        // branch_kpis_view
+                                                        // carries NO expense
+                                                        // column at all — its
+                                                        // net_profit is
+                                                        // revenue minus
+                                                        // porter commission
+                                                        // only, never labour
+                                                        // or expenses. So
+                                                        // expensesTotal is
+                                                        // literally 0 here by
+                                                        // construction, and
+                                                        // the figure can
+                                                        // never be honest
+                                                        // until the view is
+                                                        // fixed (scheduled
+                                                        // with NG-046).
+                                                        //
+                                                        // Passing a hardcoded
+                                                        // 0 is deliberate and
+                                                        // self-correcting:
+                                                        // when the view gains
+                                                        // a real expenses
+                                                        // column this becomes
+                                                        // that field and the
+                                                        // margin starts
+                                                        // rendering, with no
+                                                        // other change.
+                                                        marginIsMeaningful(
+                                                          expensesTotal: 0,
+                                                          orderCount:
+                                                              (branchStatItem
+                                                                          .orderCount ??
+                                                                      0)
+                                                                  .toInt(),
+                                                        )
+                                                            ? functions.marginPct(
+                                                                branchStatItem
+                                                                    .netProfit,
+                                                                branchStatItem
+                                                                    .revenue)!
+                                                            : kMarginUnavailableTitle,
                                                         style:
                                                             FlutterFlowTheme.of(
                                                                     context)
