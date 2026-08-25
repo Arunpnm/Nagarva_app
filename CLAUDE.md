@@ -733,6 +733,16 @@ silently doesn't is the same class of trust damage.
   the flag** — `select count(*)` as anon must return 0. A flag that is
   set but untested proves the catalogue, not the wiring.
 
+  **Field-verified end to end, 25 Aug 2026, and this is the stronger
+  evidence.** On the Phase 1 dashboard, Rajesh (a Chennai manager) sees
+  **Active Moves = 2** where the org-level count is 5 (Bengaluru 2 ·
+  Chennai 2 · Coimbatore 1). Pre-fix the view ran as owner, bypassed
+  RLS, and would have shown him all 5 regardless of branch. So branch
+  RLS now flows *through the view into the tile* — which the anon probe
+  cannot demonstrate, because anon proves only that a caller with no
+  membership sees nothing. This proves a caller WITH partial membership
+  sees exactly their slice.
+
 - **There is exactly ONE canonical definition of net profit, and the
   two views currently disagree.** (Arun, 25 Aug 2026.)
   - `dashboard_kpis_view.net_profit_this_month`
@@ -794,6 +804,30 @@ silently doesn't is the same class of trust damage.
   "what did this tell the user, and does anything still tell them?"
   Deleting it is occasionally right; more often it means something the
   replacement was supposed to carry over got dropped.
+
+- **`pg_stat_user_tables` is a planner statistic, not an audit log.**
+  (Arun, 25 Aug 2026, after it misassigned at least seven tables in a
+  55-module sequencing audit.)
+  `n_live_tup` is a vacuum/analyze ESTIMATE, and `n_tup_ins` counts
+  rows inserted *since the last stats reset*, including rows since
+  deleted. Neither is a record of what a table contains.
+  It failed in **both** directions on this database:
+  - **Under-reported**: `expenses` read `n_live_tup 0 / n_tup_ins 1`
+    while actually holding 10 rows totalling Rs30,150. Also `materials`
+    (5), `vehicles` (3), `customer_surveys` (2), `complaints` (1) — the
+    last two sat in the "never inserted" bucket.
+  - **Over-reported**: `trips`, `tasks` and `vendors` showed inserts
+    but are empty now, because the counter kept the deleted rows.
+  **A NULL `stats_reset` does not make the counters authoritative** —
+  that was the specific reasoning error. It only says the counters were
+  never manually reset.
+  The aggregate happened to survive (69 empty vs the 67 claimed), which
+  is exactly what made it dangerous: the headline looked corroborated
+  while the per-table assignment — the thing sequencing actually runs
+  on — was wrong. Real figures: **128 tables, 69 empty, 32 with 1-5
+  rows, 27 with >5, ~500 rows total.**
+  Rule: statistics are fine for a hint about where to look. **Any claim
+  that drives a decision uses `count(*)`.**
 
 - **A permission-gate sweep must match LINE-WRAPPED conditions, or it
   produces a false clean.** (Arun, 25 Aug 2026.) `6380f32` was reported
@@ -1409,6 +1443,30 @@ Consequences worth knowing before touching this:
   - **Quotes reads 1 for APC** (8 quotations total, 1 in August). That
     is honest and sparse, not a bug — do not "fix" it by widening the
     window.
+  - **Device pass, 25 Aug 2026 — what was and was not verified.**
+    PASSED on a real emulator session as Rajesh (manager, the ONLY
+    staff row carrying an explicit saved permissions matrix, so the
+    `base.keys u saved.keys` merge is exercised for real): Revenue,
+    Outstanding, Labour all present; Profit showed "Needs expense
+    data" and Expenses "No expenses recorded / Tap to add" — copy, not
+    Rs0. Period selector still filters (THIS MONTH -> ALL TIME moved
+    Bookings 1->12, Revenue Rs30.0K->Rs2.9L, Labour Rs2.9K->Rs19.8K)
+    and the restored period caption changed with it.
+    **The suppression self-healed live**: under ALL TIME the same two
+    tiles render Rs30.1K and Rs2.4L, because August has no expenses
+    while all-time has 10 rows. Better evidence than the unit test.
+    **NOT verified, carry to the next device pass**: Hot Leads and
+    branch KPIs (below the fold when the emulator degraded), an owner
+    session, and a supervisor session. The emulator ANR'd SystemUI
+    twice on repeated cold boots — environmental, nothing in logcat
+    implicating the app.
+  - **Active Moves reads the column; it does NOT recompute.** Verified
+    by reading the path rather than booting: `dashboard_kpis_view.dart`
+    getter -> `_activeMoves = kpiRow?.activeMoves` -> `'active_moves'`
+    in the constructed row -> `_count(row.activeMoves)` in the grid.
+    The only `booked`/`confirmed` literals in HomePage belong to the
+    Upcoming Orders query, which is a different feature. So the
+    inclusion list lives in SQL alone and cannot drift client-side.
   - **Integration catch worth remembering**: `kpiList` is BUILT
     CLIENT-SIDE from period-filtered data, not read from
     `dashboard_kpis_view`. Wiring the two new tiles straight to the view
