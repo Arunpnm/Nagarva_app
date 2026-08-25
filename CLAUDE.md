@@ -776,6 +776,25 @@ silently doesn't is the same class of trust damage.
   be satisfied by a comment, a doc block or a filename in a log line,
   it is not a presence check.
 
+  **Same family: a large deletion can orphan a helper that every
+  deleted call site used.** (25 Aug 2026.) Replacing ~1,300 lines of
+  dashboard markup removed every caller of `_periodLabel()`, which each
+  old KPI card had rendered. The new grid showed period-FILTERED money
+  with no statement of the period — so the figures were not wrong, they
+  were **ambiguous**, and the period selector directly above them
+  became meaningless.
+  That is the dangerous shape: a wrong number gets questioned, an
+  unlabelled one gets believed. It is also invisible in review, because
+  the diff shows only deletions and the reviewer is checking that the
+  right things were removed, not that a survivor lost its context.
+  Nothing caught it except the analyzer's `unused_element` warning on
+  the now-dead helper.
+  So after any large deletion: **read the warnings before reading the
+  diff**, and treat every newly-unused private helper as a question —
+  "what did this tell the user, and does anything still tell them?"
+  Deleting it is occasionally right; more often it means something the
+  replacement was supposed to carry over got dropped.
+
 - **A permission-gate sweep must match LINE-WRAPPED conditions, or it
   produces a false clean.** (Arun, 25 Aug 2026.) `6380f32` was reported
   as fixing the dashboard money gates. It fixed two of four. The other
@@ -1367,6 +1386,38 @@ Consequences worth knowing before touching this:
   what `suggestPackage`'s unresolved state reports.
 
 ## Changelog
+- **25 Aug 2026, dashboard Phase 1 — 10 tiles, and two mockup tiles
+  deliberately NOT built.**
+  - `lib/components/dashboard_kpi_grid.dart` replaces ~1,300 lines of
+    FlutterFlow markup in `home_page_widget.dart` (net -1,316/+58).
+    Ten tiles, every one gated through `StaffPermissions.canActive`
+    against the three-tier matrix: `reports` (Enquiries, Quotes,
+    Bookings, Active Moves, Reminders), `financials` (Revenue,
+    Outstanding), `financials_margin` (Labour, Profit, Expenses).
+  - **The mockup is a visual target, not a scope boundary.** LABOUR and
+    REMINDERS were inside the replaced block and absent from the
+    mockup; they moved in as tiles rather than being deleted. MONTHLY
+    TARGET, Upcoming Orders, Hot Leads, Follow-ups, the period selector
+    and branch KPIs sat outside the block and are untouched.
+  - **Bookings Trend donut and Recent Bookings: SKIPPED BY DECISION,
+    not missed.** (Arun, 25 Aug 2026.) Recent Bookings would sit beside
+    Upcoming Orders and Hot Leads and compete with them for the same
+    attention. The donut splits 7 bookings four ways, which is *less*
+    information than the four numbers already on the screen. "The
+    mockup has it" is not a reason to build it. Do not add these back
+    without a new argument.
+  - **Quotes reads 1 for APC** (8 quotations total, 1 in August). That
+    is honest and sparse, not a bug — do not "fix" it by widening the
+    window.
+  - **Integration catch worth remembering**: `kpiList` is BUILT
+    CLIENT-SIDE from period-filtered data, not read from
+    `dashboard_kpis_view`. Wiring the two new tiles straight to the view
+    row would have rendered 0 for both. HomePage has an established
+    hybrid — period-sensitive figures computed locally,
+    period-insensitive ones (`active_leads`, `reminders_today`) from the
+    view — and `active_moves`/`quotes_this_month` belong to the latter.
+    Consequence: neither responds to the period toggle, exactly as
+    `active_leads` already does not.
 - **25 Aug 2026, Item 12 slabs editor — FIELD-VERIFIED end to end, and an
   emulator lesson that cost most of the pass.**
   - **The round-trip works, all three links.** Signed in as Rajesh Kumar
