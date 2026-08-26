@@ -70,3 +70,4 @@ export 'tables/trip_expenses.dart';
 export 'tables/trip_pnl_view.dart';
 export 'tables/tasks.dart';
 export 'tables/activities.dart';
+export 'tables/branches.dart';

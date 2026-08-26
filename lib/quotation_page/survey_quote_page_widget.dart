@@ -1277,6 +1277,13 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       enabled: enabled,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(labelText: label, isDense: true),
+      // Was missing — Subtotal/GST/Total are getters read straight off
+      // these controllers at build time, so with no onChanged the typed
+      // figure only appeared once some UNRELATED control (the GST
+      // toggle, a dropdown) happened to trigger a rebuild. A vendor
+      // could type a freight amount, see Total stay ₹0, and have no way
+      // to know the number was actually being recorded correctly.
+      onChanged: (_) => setState(() {}),
     );
   }
 
@@ -1438,6 +1445,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 keyboardType: TextInputType.number,
                 decoration:
                     const InputDecoration(labelText: '₹/CFT', isDense: true),
+                onChanged: (_) => setState(() {}),
               ),
             ),
           ],
@@ -1458,6 +1466,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 keyboardType: TextInputType.number,
                 decoration:
                     InputDecoration(labelText: unitLabel, isDense: true),
+                onChanged: (_) => setState(() {}),
               ),
             ),
             const SizedBox(width: 6),
@@ -1466,6 +1475,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 controller: _rateCtrl[key],
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Rate', isDense: true),
+                onChanged: (_) => setState(() {}),
               ),
             ),
           ],
@@ -1479,6 +1489,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                     labelText: 'Declared ₹', isDense: true),
+                onChanged: (_) => setState(() {}),
               ),
             ),
             const SizedBox(width: 6),
@@ -1487,6 +1498,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 controller: _pctCtrl[key],
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: '%', isDense: true),
+                onChanged: (_) => setState(() {}),
               ),
             ),
           ],

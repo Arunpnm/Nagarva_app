@@ -63,7 +63,6 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _phone;
-  late final TextEditingController _branch;
   late final TextEditingController _pin;
   late final TextEditingController _salary;
   String _role = 'helper';
@@ -72,6 +71,18 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
   bool _esicApplicable = false;
   bool _saving = false;
   String? _error;
+
+  // Branch — was a free-text field (typo-prone: a trailing space made two
+  // branches out of one, the exact hazard the branches.dart migration's
+  // own preflight check exists to catch) and the second write path for a
+  // branch string alongside New Order's old hardcoded dropdown. Same
+  // treatment: a dropdown off the real branches table, org-scoped, and
+  // restricted (not just defaulted) to the session's own branch for a
+  // non-owner.
+  String? _branch;
+  List<String> _branchOptions = [];
+  bool _branchesLoaded = false;
+  bool get _isOwnerSession => AppSession.instance.currentStaffId == null;
 
   /// Permission matrix state: {moduleKey: {action: bool}}.
   late Map<String, Map<String, bool>> _perms;
@@ -84,7 +95,8 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
     final s = widget.existing;
     _name = TextEditingController(text: s?.name ?? '');
     _phone = TextEditingController(text: s?.phone ?? '');
-    _branch = TextEditingController(text: s?.branch ?? '');
+    _branch = s?.branch;
+    _loadBranches();
     // Deliberately never pre-filled with the existing PIN, even though
     // s.pin is technically readable — staff.pin is a write-only conduit
     // for the DB trigger that bcrypt-hashes it into pin_hash (see the
@@ -110,11 +122,41 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
         : saved;
   }
 
+  /// Loads this org's active branches. A non-owner session (a manager
+  /// adding/editing their own team) is restricted to just their own
+  /// branch — the same "restrict, don't just default" rule as New
+  /// Order's OrdBranchDropdown, and for the same reason: nothing else
+  /// stops a manager assigning a new hire to a branch that isn't theirs.
+  Future<void> _loadBranches() async {
+    final rows = await BranchesTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eq('active', true).order('name'),
+    );
+    final orgBranches = rows.map((r) => r.name).toList();
+    final ownBranch = AppSession.instance.currentStaffBranch;
+    final options = _isOwnerSession
+        ? orgBranches
+        : (ownBranch != null && orgBranches.contains(ownBranch)
+            ? [ownBranch]
+            : const <String>[]);
+    if (!mounted) return;
+    setState(() {
+      _branchOptions = options;
+      _branchesLoaded = true;
+      // Existing value survives if it's still a legal option (editing);
+      // a non-owner's single option becomes the default for a new hire.
+      if (_branch != null && !options.contains(_branch)) {
+        _branch = null;
+      }
+      _branch ??= (!_isOwnerSession && options.length == 1)
+          ? options.first
+          : _branch;
+    });
+  }
+
   @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
-    _branch.dispose();
     _pin.dispose();
     _salary.dispose();
     super.dispose();
@@ -122,6 +164,15 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_branch == null || _branch!.isEmpty) {
+      setState(() => _error = _branchOptions.isEmpty
+          ? (AppSession.instance.currentOrgId != null && _branchesLoaded
+              ? 'No branch is available to assign — set one up in Settings '
+                  'first.'
+              : 'Branch options are still loading — try again in a moment.')
+          : 'Select a branch first.');
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -142,7 +193,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
         'name': _name.text.trim(),
         'phone': _phone.text.trim().isEmpty ? null : _phone.text.trim(),
         'role': _role,
-        'branch': _branch.text.trim().isEmpty ? null : _branch.text.trim(),
+        'branch': _branch,
         'salary': _salary.text.trim().isEmpty
             ? null
             : double.tryParse(_salary.text.trim()),
@@ -669,12 +720,28 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextFormField(
-                        controller: _branch,
-                        style: textStyle,
-                        textCapitalization: TextCapitalization.words,
+                      child: DropdownButtonFormField<String>(
+                        value: _branchOptions.contains(_branch)
+                            ? _branch
+                            : null,
                         decoration: _dec(context, 'Branch',
-                            hint: 'e.g. Chennai'),
+                            hint: !_branchesLoaded
+                                ? 'Loading…'
+                                : (_branchOptions.isEmpty
+                                    ? 'No branch available'
+                                    : 'Select branch')),
+                        dropdownColor: theme.secondaryBackground,
+                        style: textStyle,
+                        // Non-owner: exactly one option (their own
+                        // branch) — restricted, not merely defaulted, so
+                        // it can't be changed to another branch here.
+                        items: [
+                          for (final b in _branchOptions)
+                            DropdownMenuItem(value: b, child: Text(b)),
+                        ],
+                        onChanged: (_branchesLoaded && _branchOptions.isEmpty)
+                            ? null
+                            : (v) => setState(() => _branch = v),
                       ),
                     ),
                     const SizedBox(width: 12),

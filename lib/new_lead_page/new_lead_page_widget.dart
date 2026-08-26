@@ -1,3 +1,4 @@
+import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
@@ -53,12 +54,47 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
     _model.ldNotesFieldTextController ??= TextEditingController();
     _model.ldNotesFieldFocusNode ??= FocusNode();
 
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadBranches());
     if (widget.leadId != null) {
       _model.isLoadingExisting = true;
       SchedulerBinding.instance.addPostFrameCallback((_) => _loadExistingLead());
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  }
+
+  /// Mirrors new_order_page_widget.dart's _loadBranches() exactly — same
+  /// bug (a hardcoded Chennai/Bengaluru/Coimbatore list defaulting to
+  /// 'Bengaluru'), same fix: read `branches`, org-scoped; restrict a
+  /// non-owner to just their own branch instead of merely defaulting to
+  /// it; owner sees every active branch with no default.
+  Future<void> _loadBranches() async {
+    final rows = await BranchesTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eq('active', true).order('name'),
+    );
+    final orgBranches = rows.map((r) => r.name).toList();
+    _model.orgHasAnyBranches = orgBranches.isNotEmpty;
+    final isOwner = AppSession.instance.currentStaffId == null;
+    final ownBranch = AppSession.instance.currentStaffBranch;
+    _model.availableBranches = isOwner
+        ? orgBranches
+        : (ownBranch != null && orgBranches.contains(ownBranch)
+            ? [ownBranch]
+            : const <String>[]);
+    _model.branchesLoaded = true;
+
+    // Only for a fresh lead — an existing one's branch is set by
+    // _loadExistingLead() and must not be overwritten here.
+    if (widget.leadId == null) {
+      final picked = (!isOwner && _model.availableBranches.length == 1)
+          ? _model.availableBranches.first
+          : null;
+      _model.ldBranch = picked;
+      _model.ldBranchDropdownValue = picked;
+      _model.ldBranchDropdownValueController?.value = picked;
+    }
+
+    safeSetState(() {});
   }
 
   @override
@@ -1151,17 +1187,10 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                     _model.ldBranchDropdownValue ??=
                                         _model.ldBranch,
                                   ),
-                                  options: [
-                                    FFLocalizations.of(context).getText(
-                                      'et1ityma' /* Chennai */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'vmoqwx1y' /* Bengaluru */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      '3uk46f3j' /* Coimbatore */,
-                                    )
-                                  ],
+                                  // Was a hardcoded Chennai/Bengaluru/
+                                  // Coimbatore list — see new_order_page
+                                  // _widget.dart's identical fix note.
+                                  options: _model.availableBranches,
                                   onChanged: (val) async {
                                     safeSetState(() =>
                                         _model.ldBranchDropdownValue = val);
@@ -1288,6 +1317,15 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                               0.0, 16.0, 0.0, 16.0),
                           child: FFButtonWidget(
                             onPressed: () async {
+                              if (_model.ldBranch == null ||
+                                  _model.ldBranch!.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Select a branch first.'),
+                                  ),
+                                );
+                                return;
+                              }
                               _model.ldSaveSuccess = false;
                               safeSetState(() {});
                               final isEditing = widget.leadId != null;

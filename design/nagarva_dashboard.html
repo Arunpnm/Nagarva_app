@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nagarva — Dashboard prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F6FB;
+  --card:#FFFFFF;
+  --line:#E9EDF5;
+  --line-soft:#F1F4F9;
+  --ink:#0F172A;
+  --ink-2:#334155;
+  --muted:#64748B;
+  --faint:#94A3B8;
+  --blue:#3B6FF6;
+  --indigo:#4F5FE0;
+  --cyan:#12B5C9;
+  --green:#22B573;
+  --violet:#8B5CF6;
+  --orange:#F97316;
+  --amber:#F5A524;
+  --purple:#A855F7;
+  --red:#EF4444;
+  --up:#16A34A;
+  --down:#DC2626;
+  --radius:16px;
+  --shadow:0 1px 2px rgba(15,23,42,.04), 0 6px 20px rgba(15,23,42,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:#E7EAF3;
+  font-family:"Inter",system-ui,-apple-system,sans-serif;
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,.num,.brandword{font-family:"Plus Jakarta Sans","Inter",sans-serif}
+
+/* ── view switcher ───────────────────────────── */
+.switch{
+  position:fixed; z-index:100; top:16px; left:50%; transform:translateX(-50%);
+  display:flex; gap:2px; padding:4px; border-radius:999px;
+  background:rgba(15,23,42,.86); backdrop-filter:blur(8px);
+  box-shadow:0 8px 24px rgba(15,23,42,.24);
+}
+.switch button{
+  border:0; cursor:pointer; padding:8px 20px; border-radius:999px;
+  background:transparent; color:#CBD5E1; font:600 13px "Inter",sans-serif;
+}
+.switch button.on{background:#fff; color:var(--ink)}
+.stage{display:none; padding:76px 0 60px}
+.stage.on{display:block}
+
+/* ── shared atoms ────────────────────────────── */
+.card{
+  background:var(--card); border:1px solid var(--line);
+  border-radius:var(--radius); box-shadow:var(--shadow);
+}
+.cardhead{display:flex; align-items:center; justify-content:space-between; gap:8px}
+.cardtitle{font-weight:700; letter-spacing:-.01em; color:var(--ink)}
+.viewall{color:var(--blue); font:600 12px "Inter",sans-serif; text-decoration:none}
+.viewall:hover{text-decoration:underline}
+.tile{
+  display:grid; place-items:center; border-radius:13px; color:#fff;
+  box-shadow:0 4px 10px rgba(15,23,42,.10);
+}
+.tile svg{width:20px; height:20px; stroke:#fff; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.delta{font:600 11px "Inter",sans-serif}
+.delta .vs{color:var(--faint); font-weight:500}
+.up{color:var(--up)} .down{color:var(--down)}
+.pill{
+  display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line);
+  background:#fff; border-radius:10px; padding:7px 11px;
+  font:600 12px "Inter",sans-serif; color:var(--ink-2);
+}
+.chip{border-radius:8px; padding:5px 11px; font:600 11.5px "Inter",sans-serif}
+.chip.sched{background:#E7F7EE; color:#15803D}
+.chip.prog{background:#E8EFFE; color:#1D4ED8}
+.chip.done{background:#E7F7EE; color:#15803D}
+.chip.recv{background:#E7F7EE; color:#15803D}
+.chip.new{background:#E8EFFE; color:#1D4ED8}
+.legend{display:flex; align-items:center; gap:7px; font:500 11.5px "Inter",sans-serif; color:var(--muted)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+
+/* brand lockup */
+.brand{display:flex; align-items:center; gap:9px}
+.brandword{font-size:21px; font-weight:800; letter-spacing:-.03em; color:#1E3A8A; line-height:1}
+.brandsub{font:600 9.5px "Inter",sans-serif; letter-spacing:.06em; color:var(--muted); text-transform:none}
+
+/* ── MOBILE ──────────────────────────────────── */
+.phone{
+  width:392px; margin:0 auto; background:#0B0F1A; border-radius:54px;
+  padding:12px; box-shadow:0 30px 70px rgba(15,23,42,.34), 0 0 0 2px #2A3040 inset;
+}
+.screen{
+  background:var(--bg); border-radius:44px; overflow:hidden; position:relative;
+  height:812px; display:flex; flex-direction:column;
+}
+.statusbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 26px 6px; font:700 14px "Plus Jakarta Sans",sans-serif; background:#fff;
+}
+.statusbar .icons{display:flex; gap:6px; align-items:center}
+.notch{
+  position:absolute; top:12px; left:50%; transform:translateX(-50%);
+  width:112px; height:26px; background:#0B0F1A; border-radius:0 0 16px 16px; z-index:5;
+}
+.mhead{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 18px 14px; background:#fff;
+}
+.iconbtn{
+  width:38px; height:38px; border-radius:12px; display:grid; place-items:center;
+  background:#fff; border:1px solid var(--line); position:relative; cursor:pointer;
+}
+.iconbtn svg{width:19px; height:19px; stroke:var(--ink-2); fill:none; stroke-width:1.8; stroke-linecap:round}
+.badge{
+  position:absolute; top:-6px; right:-6px; min-width:19px; height:19px; padding:0 5px;
+  background:var(--red); color:#fff; border-radius:999px; border:2px solid #fff;
+  font:700 10px "Inter",sans-serif; display:grid; place-items:center;
+}
+.avatar{width:40px; height:40px; border-radius:50%; position:relative; overflow:visible}
+.avatar img{width:100%; height:100%; border-radius:50%; object-fit:cover; display:block}
+.avatar .online{
+  position:absolute; right:0; bottom:1px; width:11px; height:11px; border-radius:50%;
+  background:#22C55E; border:2.5px solid #fff;
+}
+.scroll{flex:1; overflow-y:auto; padding:16px 16px 96px; scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.titlerow{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px}
+.titlerow h1{margin:0; font-size:25px; font-weight:800; letter-spacing:-.03em}
+
+.kgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-bottom:14px}
+.kpi{
+  grid-column:span 2; border-radius:15px; padding:13px 12px 12px;
+  border:1px solid rgba(255,255,255,.7);
+}
+.kpi .tile{width:40px; height:40px; margin-bottom:10px}
+.kpi .lbl{font:600 11.5px "Inter",sans-serif; color:var(--ink-2); line-height:1.25}
+.kpi .num{font-size:23px; font-weight:800; letter-spacing:-.035em; margin:3px 0 5px}
+.k-enq{background:#EEF1FE} .k-quo{background:#E6F8FA} .k-boo{background:#E9F8F0}
+.k-rev{background:#F3EEFE} .k-out{background:#FEF1E7} .k-act{background:#E9F1FE}
+.k-sto{background:#F6EEFE} .k-war{background:#FEF6E6}
+
+.duo{display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-bottom:11px}
+.duo .card{padding:14px 13px}
+.duo .cardtitle{font-size:13.5px}
+
+.quad{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-bottom:11px}
+.quad .card{grid-column:span 2; padding:14px 12px; text-align:center}
+.quad .cardtitle{font-size:13px; line-height:1.3; margin-bottom:6px}
+.gaugewrap{position:relative; width:130px; margin:0 auto}
+.gaugetext{position:absolute; left:0; right:0; top:38px; text-align:center}
+.gaugetext .g-num{font-size:22px; font-weight:800; letter-spacing:-.03em; display:block; line-height:1}
+.gaugetext .g-lbl{font:500 10.5px "Inter",sans-serif; color:var(--muted)}
+.gfoot{display:flex; justify-content:space-around; margin-top:2px}
+.gfoot div{text-align:center}
+.gfoot .t{font:500 10.5px "Inter",sans-serif; color:var(--muted)}
+.gfoot .v{font-size:16px; font-weight:800; letter-spacing:-.02em}
+.moneyring{width:46px; height:46px; border-radius:50%; display:grid; place-items:center; margin:8px auto 8px}
+.moneyring svg{width:21px; height:21px; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.quad .num{font-size:21px; font-weight:800; letter-spacing:-.035em}
+
+.listcard{padding:15px 0 4px}
+.listcard .cardhead{padding:0 15px 12px}
+.brow{display:flex; align-items:center; gap:11px; padding:11px 15px; border-top:1px solid var(--line-soft)}
+.brow .ic{width:42px; height:42px; border-radius:12px; display:grid; place-items:center; flex:none}
+.brow .ic svg{width:19px; height:19px; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.brow .mid{flex:1; min-width:0}
+.brow .id{color:var(--blue); font:700 13px "Plus Jakarta Sans",sans-serif; letter-spacing:-.01em}
+.brow .nm{font:500 12.5px "Inter",sans-serif; color:var(--ink-2); margin-top:2px}
+.brow .sv{font:500 12px "Inter",sans-serif; color:var(--faint); margin-top:1px}
+.brow .right{text-align:right; flex:none}
+.brow .dt{font:500 11.5px "Inter",sans-serif; color:var(--muted); margin-top:8px; white-space:nowrap; display:flex; align-items:center; gap:4px; justify-content:flex-end}
+.brow .dt svg{width:12px; height:12px; stroke:var(--faint); fill:none; stroke-width:1.9}
+
+.tabbar{
+  position:absolute; left:0; right:0; bottom:0; height:78px; background:#fff;
+  border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(5,1fr);
+  align-items:center; padding-bottom:12px;
+}
+.tab{display:grid; justify-items:center; gap:5px; color:var(--faint); cursor:pointer}
+.tab svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.tab span{font:600 10.5px "Inter",sans-serif}
+.tab.active{color:var(--blue)}
+.fabwrap{display:grid; place-items:center}
+.fab{
+  width:58px; height:58px; border-radius:50%; background:var(--blue); display:grid; place-items:center;
+  box-shadow:0 8px 20px rgba(59,111,246,.42); margin-bottom:14px; cursor:pointer;
+}
+.fab svg{width:25px; height:25px; stroke:#fff; stroke-width:2.4; fill:none; stroke-linecap:round}
+.homebar{position:absolute; bottom:7px; left:50%; transform:translateX(-50%); width:136px; height:5px; border-radius:3px; background:#0F172A}
+
+/* ── DESKTOP ─────────────────────────────────── */
+.desk{
+  width:1440px; margin:0 auto; background:var(--bg); border-radius:18px; overflow:hidden;
+  display:grid; grid-template-columns:212px 1fr; min-height:940px;
+  box-shadow:0 30px 70px rgba(15,23,42,.24);
+}
+.side{background:#fff; border-right:1px solid var(--line); padding:20px 12px; }
+.side .brand{padding:0 8px 20px}
+.nav{display:flex; flex-direction:column; gap:1px}
+.nav a{
+  display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:10px;
+  text-decoration:none; color:var(--ink-2); font:500 13.5px "Inter",sans-serif;
+}
+.nav a svg{width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex:none}
+.nav a:hover{background:#F5F7FC}
+.nav a.on{background:var(--blue); color:#fff; font-weight:600; box-shadow:0 4px 12px rgba(59,111,246,.3)}
+.nav .count{margin-left:auto; font:600 11.5px "Inter",sans-serif; color:var(--faint)}
+.nav .tagnew{margin-left:auto; font:700 9.5px "Inter",sans-serif; color:#15803D; background:#E7F7EE; padding:2.5px 7px; border-radius:6px}
+
+.main{display:flex; flex-direction:column; min-width:0}
+.topbar{
+  display:flex; align-items:center; gap:14px; padding:14px 24px;
+  background:#fff; border-bottom:1px solid var(--line);
+}
+.topbar h2{margin:0; font-size:19px; font-weight:800; letter-spacing:-.025em}
+.spacer{flex:1}
+.user{display:flex; align-items:center; gap:10px}
+.user img{width:38px; height:38px; border-radius:50%; object-fit:cover}
+.user .nm{font:700 13px "Plus Jakarta Sans",sans-serif; letter-spacing:-.01em}
+.user .rl{font:500 11.5px "Inter",sans-serif; color:var(--muted)}
+.content{padding:20px 24px 28px; display:flex; flex-direction:column; gap:16px}
+
+.krow{display:grid; grid-template-columns:repeat(5,1fr); gap:16px}
+.dkpi{display:flex; align-items:flex-start; gap:13px; padding:16px}
+.dkpi .tile{width:44px; height:44px; flex:none}
+.dkpi .lbl{font:500 12.5px "Inter",sans-serif; color:var(--muted)}
+.dkpi .num{font-size:25px; font-weight:800; letter-spacing:-.035em; margin:2px 0 4px; line-height:1.1}
+
+.row3{display:grid; grid-template-columns:1.72fr 1.06fr 1.06fr; gap:16px}
+.row4{display:grid; grid-template-columns:repeat(4,1fr); gap:16px}
+.pad{padding:16px 18px}
+.pad .cardtitle{font-size:14.5px}
+.srow{display:flex; align-items:center; gap:11px; padding:9px 0; border-bottom:1px solid var(--line-soft)}
+.srow:last-child{border-bottom:0}
+.srow .sic{width:26px; height:26px; border-radius:8px; display:grid; place-items:center; flex:none}
+.srow .sic svg{width:15px; height:15px; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+.srow .sl{font:500 13px "Inter",sans-serif; color:var(--ink-2); flex:1}
+.srow .sv{font:700 13.5px "Plus Jakarta Sans",sans-serif}
+.bar{height:7px; border-radius:4px; background:var(--line-soft); overflow:hidden; flex:1; max-width:120px}
+.bar i{display:block; height:100%; border-radius:4px}
+.alert{display:flex; align-items:flex-start; gap:10px; padding:9px 0; font:500 13px "Inter",sans-serif; color:var(--ink-2)}
+.alert svg{width:17px; height:17px; flex:none; margin-top:1px; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round}
+
+.note{
+  width:1440px; margin:22px auto 0; padding:18px 22px; border-radius:14px;
+  background:#fff; border:1px solid var(--line); box-shadow:var(--shadow);
+  font:500 13px "Inter",sans-serif; color:var(--ink-2); line-height:1.65;
+}
+.note b{font-weight:700; color:var(--ink)}
+.note ul{margin:8px 0 0; padding-left:18px}
+.note li{margin:3px 0}
+.note .amber{color:#B45309}
+@media (max-width:1500px){ .desk,.note{width:96vw} }
+</style>
+</head>
+<body>
+
+<div class="switch">
+  <button id="btnM" class="on">Mobile</button>
+  <button id="btnD">Desktop</button>
+</div>
+
+<!-- ══════════ MOBILE ══════════ -->
+<div class="stage on" id="stageM">
+<div class="phone"><div class="screen">
+  <div class="notch"></div>
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="icons">
+      <svg width="17" height="12" viewBox="0 0 17 12"><g fill="#0F172A"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="4.5" y="5.5" width="3" height="6.5" rx="1"/><rect x="9" y="3" width="3" height="9" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></g></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M1 4.2a10.5 10.5 0 0114 0M3.4 6.9a7 7 0 019.2 0M6 9.5a3.2 3.2 0 014 0" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="11.2" r="1" fill="#0F172A"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.6" y="0.6" width="21" height="10.8" rx="3" stroke="#0F172A" stroke-opacity=".4" fill="none"/><rect x="2.2" y="2.2" width="17.8" height="7.6" rx="1.8" fill="#0F172A"/><path d="M23 4v4a2.1 2.1 0 000-4z" fill="#0F172A" fill-opacity=".45"/></svg>
+    </span>
+  </div>
+
+  <div class="mhead">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="iconbtn" style="border:0;width:26px;height:26px">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h11"/></svg>
+      </div>
+      <div class="brand">
+        <svg width="34" height="30" viewBox="0 0 34 30" fill="none" aria-hidden="true">
+          <path d="M4 11.5L13 4.5l9 7" stroke="#F97316" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7 11.5v6h12v-6" stroke="#F97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="2" y="17.5" width="17" height="7.5" rx="1.8" fill="#1E3A8A"/>
+          <path d="M19 20h5.2l4 3.4v1.6H19z" fill="#3B6FF6"/>
+          <circle cx="8" cy="26" r="2.6" fill="#0F172A"/><circle cx="8" cy="26" r="1" fill="#fff"/>
+          <circle cx="23" cy="26" r="2.6" fill="#0F172A"/><circle cx="23" cy="26" r="1" fill="#fff"/>
+        </svg>
+        <div>
+          <div class="brandword">Nagarva</div>
+          <div class="brandsub">Packers &amp; Movers</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="iconbtn">
+        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.4 20a2 2 0 003.2 0"/></svg>
+        <span class="badge">12</span>
+      </div>
+      <div class="avatar">
+        <img src="https://i.pravatar.cc/120?img=12" alt="">
+        <span class="online"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div class="titlerow">
+      <h1>Dashboard</h1>
+      <span class="pill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+        01 May – 31 May 2025
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </div>
+
+    <div class="kgrid" id="mKpis"></div>
+
+    <div class="duo">
+      <div class="card">
+        <div class="cardhead" style="margin-bottom:8px">
+          <span class="cardtitle">Revenue Overview</span>
+          <a class="viewall" href="#">View All</a>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:6px">
+          <span class="legend"><i class="dot" style="background:#3B6FF6"></i>Revenue (₹)</span>
+          <span class="legend"><i class="dot" style="background:#22B573"></i>Profit (₹)</span>
+        </div>
+        <div id="mChart"></div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead" style="margin-bottom:10px">
+          <span class="cardtitle">Bookings Trend</span>
+          <span class="pill" style="padding:5px 8px;font-size:11px">This Month
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+        </div>
+        <div id="mDonut"></div>
+        <div id="mDonutLegend" style="margin-top:10px;display:flex;flex-direction:column;gap:7px"></div>
+      </div>
+    </div>
+
+    <div class="quad">
+      <div class="card">
+        <div class="cardtitle">Vehicle<br>Utilization</div>
+        <div class="gaugewrap">
+          <div id="gVeh"></div>
+          <div class="gaugetext"><span class="g-num">72%</span><span class="g-lbl">Utilized</span></div>
+        </div>
+        <div class="gfoot"><div><div class="t">In Use</div><div class="v">18</div></div><div><div class="t">Total</div><div class="v">25</div></div></div>
+      </div>
+      <div class="card">
+        <div class="cardtitle">Labour<br>Utilization</div>
+        <div class="gaugewrap">
+          <div id="gLab"></div>
+          <div class="gaugetext"><span class="g-num">68%</span><span class="g-lbl">Utilized</span></div>
+        </div>
+        <div class="gfoot"><div><div class="t">In Use</div><div class="v">82</div></div><div><div class="t">Total</div><div class="v">120</div></div></div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:center">
+        <div class="cardtitle">Profit</div>
+        <div class="moneyring" style="background:#22B573">
+          <svg viewBox="0 0 24 24"><path d="M6 4h11M6 9h11M15 4c0 5-4.5 5-9 5l8 10"/></svg>
+        </div>
+        <div class="num">₹64,120</div>
+        <div class="delta"><span class="up">+19%</span> <span class="vs">vs Apr</span></div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:center">
+        <div class="cardtitle">Expenses</div>
+        <div class="moneyring" style="background:#EF4444">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2z"/><path d="M4 7.2l8 4.3 8-4.3M12 21v-9.5"/></svg>
+        </div>
+        <div class="num">₹28,560</div>
+        <div class="delta"><span class="down">-3%</span> <span class="vs">vs Apr</span></div>
+      </div>
+    </div>
+
+    <div class="card listcard">
+      <div class="cardhead">
+        <span class="cardtitle">Recent Bookings</span>
+        <a class="viewall" href="#">View All</a>
+      </div>
+      <div id="mBookings"></div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab active"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg><span>Dashboard</span></div>
+    <div class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/></svg><span>Bookings</span></div>
+    <div class="fabwrap"><div class="fab"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div></div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2z"/><path d="M4 7.2l8 4.3 8-4.3M12 21v-9.5"/></svg><span>Orders</span></div>
+    <div class="tab"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg><span>More</span></div>
+  </div>
+  <div class="homebar"></div>
+</div></div>
+</div>
+
+<!-- ══════════ DESKTOP ══════════ -->
+<div class="stage" id="stageD">
+<div class="desk">
+  <aside class="side">
+    <div class="brand">
+      <svg width="36" height="32" viewBox="0 0 34 30" fill="none">
+        <path d="M4 11.5L13 4.5l9 7" stroke="#F97316" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 11.5v6h12v-6" stroke="#F97316" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="2" y="17.5" width="17" height="7.5" rx="1.8" fill="#1E3A8A"/>
+        <path d="M19 20h5.2l4 3.4v1.6H19z" fill="#3B6FF6"/>
+        <circle cx="8" cy="26" r="2.6" fill="#0F172A"/><circle cx="8" cy="26" r="1" fill="#fff"/>
+        <circle cx="23" cy="26" r="2.6" fill="#0F172A"/><circle cx="23" cy="26" r="1" fill="#fff"/>
+      </svg>
+      <div>
+        <div class="brandword" style="font-size:22px">Nagarva</div>
+        <div class="brandsub">Packers &amp; Movers</div>
+      </div>
+    </div>
+    <nav class="nav" id="dNav"></nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="iconbtn" style="border:0;width:26px;height:26px"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h11"/></svg></div>
+      <h2>Dashboard</h2>
+      <div class="spacer"></div>
+      <span class="pill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+        01 May 2025 - 31 May 2025
+      </span>
+      <span class="pill" style="min-width:150px;justify-content:space-between">Branch: All
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+      <div class="iconbtn">
+        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.4 20a2 2 0 003.2 0"/></svg>
+        <span class="badge">12</span>
+      </div>
+      <div class="user">
+        <img src="https://i.pravatar.cc/120?img=12" alt="">
+        <div><div class="nm">Suresh Kumar</div><div class="rl">Owner</div></div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="krow" id="dKpis1"></div>
+      <div class="krow" id="dKpis2"></div>
+
+      <div class="row3">
+        <div class="card pad">
+          <div class="cardhead" style="margin-bottom:10px"><span class="cardtitle">Revenue Overview</span></div>
+          <div style="display:flex;gap:16px;margin-bottom:8px">
+            <span class="legend"><i class="dot" style="background:#3B6FF6"></i>Revenue (₹)</span>
+            <span class="legend"><i class="dot" style="background:#22B573"></i>Profit (₹)</span>
+          </div>
+          <div id="dChart"></div>
+        </div>
+
+        <div class="card pad">
+          <div class="cardhead" style="margin-bottom:6px">
+            <span class="cardtitle">Bookings Trend</span>
+            <span class="pill" style="padding:5px 9px;font-size:11.5px">This Month
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div id="dDonut"></div>
+            <div id="dDonutLegend" style="display:flex;flex-direction:column;gap:9px;flex:1"></div>
+          </div>
+        </div>
+
+        <div class="card pad">
+          <div class="cardhead" style="margin-bottom:4px">
+            <span class="cardtitle">Move Status</span>
+            <a class="viewall" href="#">View All</a>
+          </div>
+          <div id="dStatus"></div>
+        </div>
+      </div>
+
+      <div class="row4">
+        <div class="card pad" style="text-align:center">
+          <div class="cardhead" style="margin-bottom:4px"><span class="cardtitle">Vehicle Utilization</span>
+            <span class="pill" style="padding:4px 8px;font-size:11px">This Month</span></div>
+          <div class="gaugewrap" style="width:190px">
+            <div id="dgVeh"></div>
+            <div class="gaugetext" style="top:56px"><span class="g-num" style="font-size:28px">72%</span><span class="g-lbl">Utilized</span></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font:500 11px 'Inter';color:#94A3B8;margin:-6px 14px 6px">
+            <span>0%</span><span>100%</span>
+          </div>
+          <div class="gfoot"><div><div class="t">Total Vehicles</div><div class="v" style="font-size:19px">25</div></div><div><div class="t">In Use</div><div class="v" style="font-size:19px">18</div></div></div>
+        </div>
+
+        <div class="card pad" style="text-align:center">
+          <div class="cardhead" style="margin-bottom:4px"><span class="cardtitle">Labour Utilization</span>
+            <span class="pill" style="padding:4px 8px;font-size:11px">This Month</span></div>
+          <div class="gaugewrap" style="width:190px">
+            <div id="dgLab"></div>
+            <div class="gaugetext" style="top:56px"><span class="g-num" style="font-size:28px">68%</span><span class="g-lbl">Utilized</span></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font:500 11px 'Inter';color:#94A3B8;margin:-6px 14px 6px">
+            <span>0%</span><span>100%</span>
+          </div>
+          <div class="gfoot"><div><div class="t">Total Labour</div><div class="v" style="font-size:19px">120</div></div><div><div class="t">In Use</div><div class="v" style="font-size:19px">82</div></div></div>
+        </div>
+
+        <div class="card pad">
+          <div class="cardhead" style="margin-bottom:8px"><span class="cardtitle">Top Revenue by Service</span>
+            <span class="pill" style="padding:4px 8px;font-size:11px">This Month</span></div>
+          <div id="dServices"></div>
+        </div>
+
+        <div class="card pad">
+          <div class="cardhead" style="margin-bottom:4px"><span class="cardtitle">Receivables Aging</span>
+            <a class="viewall" href="#">View All</a></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div id="dAging"></div>
+            <div id="dAgingLegend" style="display:flex;flex-direction:column;gap:8px;flex:1"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row4">
+        <div class="card pad">
+          <div class="cardhead" style="margin-bottom:6px"><span class="cardtitle">Recent Bookings</span><a class="viewall" href="#">View All</a></div>
+          <div id="dBookings"></div>
+        </div>
+        <div class="card pad">
+          <div class="cardhead" style="margin-bottom:6px"><span class="cardtitle">Recent Payments</span><a class="viewall" href="#">View All</a></div>
+          <div id="dPayments"></div>
+        </div>
+        <div class="card pad">
+          <div class="cardhead" style="margin-bottom:6px"><span class="cardtitle">Recent Enquiries</span><a class="viewall" href="#">View All</a></div>
+          <div id="dEnquiries"></div>
+        </div>
+        <div class="card pad">
+          <div class="cardhead" style="margin-bottom:6px"><span class="cardtitle">Alerts &amp; Reminders</span><a class="viewall" href="#">View All</a></div>
+          <div id="dAlerts"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <b>Data-source status of every tile above.</b> Everything on this screen is sample data. Before this ships, each tile needs a real source — these are the ones that don't have one yet:
+  <ul>
+    <li><span class="amber">Profit, Expenses, Revenue-vs-Profit chart</span> — need job-level actual costing. Revenue alone is available today; profit is not.</li>
+    <li><span class="amber">Vehicle Utilization, Labour Utilization</span> — need the fleet module and attendance feeding a daily allocation count.</li>
+    <li><span class="amber">Storage Customers, Warehouse Occupancy</span> — need the storage/warehouse module (Storage Order as a first-class object).</li>
+    <li><span class="amber">Receivables Aging, Top Revenue by Service</span> — need the ledger and a service-type dimension on orders.</li>
+    <li>Enquiries, Quotes, Bookings, Active Moves, Outstanding, Move Status, Recent Bookings / Payments / Enquiries, Alerts — <b>all sourceable from the current schema.</b></li>
+  </ul>
+</div>
+</div>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+
+  /* ── icons ─────────────────────────────── */
+  const I = {
+    enq:'<path d="M8 3h8a2 2 0 012 2v14a2 2 0 01-2 2H8a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+    quo:'<path d="M8 3h8a2 2 0 012 2v14a2 2 0 01-2 2H8a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M9 9h6M9 13h6M9 17h4"/>',
+    boo:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/>',
+    rev:'<path d="M6 4h11M6 9h11M15 4c0 5-4.5 5-9 5l8 10"/>',
+    out:'<path d="M8 3h8a2 2 0 012 2v14a2 2 0 01-2 2H8a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M9 9h6M9 13h4"/><circle cx="16.5" cy="16.5" r="3.2"/>',
+    act:'<rect x="2" y="7" width="12" height="9" rx="1.6"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/>',
+    sto:'<path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2z"/><path d="M4 7.2l8 4.3 8-4.3M12 21v-9.5"/>',
+    war:'<path d="M4 10l8-6 8 6v10H4z"/><path d="M9 20v-6h6v6"/>',
+    exp:'<path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2z"/><path d="M4 7.2l8 4.3 8-4.3M12 21v-9.5"/>',
+    pro:'<path d="M4 18l5-5 4 3 7-8"/><path d="M15 8h5v5"/>'
+  };
+  const svg=(p,cls)=>'<svg viewBox="0 0 24 24">'+p+'</svg>';
+
+  /* ── KPI data (matches the mockups) ────── */
+  const KPIS = [
+    {k:'enq', lbl:'Enquiries',          val:'18',       d:'+12%', up:1, c:'#4F5FE0', bg:'k-enq'},
+    {k:'quo', lbl:'Quotes',             val:'12',       d:'+8%',  up:1, c:'#12B5C9', bg:'k-quo'},
+    {k:'boo', lbl:'Bookings',           val:'7',        d:'+16%', up:1, c:'#22B573', bg:'k-boo'},
+    {k:'rev', lbl:'Revenue',            val:'₹1.85L',   d:'+22%', up:1, c:'#8B5CF6', bg:'k-rev'},
+    {k:'out', lbl:'Outstanding',        val:'₹42,350',  d:'-5%',  up:0, c:'#F97316', bg:'k-out'},
+    {k:'act', lbl:'Active Moves',       val:'11',       d:'+10%', up:1, c:'#3B6FF6', bg:'k-act'},
+    {k:'sto', lbl:'Storage Customers',  val:'38',       d:'+18%', up:1, c:'#A855F7', bg:'k-sto'},
+    {k:'war', lbl:'Warehouse Occupancy',val:'78%',      d:'+5%',  up:1, c:'#F5A524', bg:'k-war'},
+    {k:'pro', lbl:'Profit',             val:'₹64,120',  d:'+19%', up:1, c:'#22B573', bg:'k-boo'},
+    {k:'exp', lbl:'Expenses',           val:'₹28,560',  d:'-3%',  up:0, c:'#EF4444', bg:'k-out'}
+  ];
+  const deltaHtml = (o)=>'<div class="delta"><span class="'+(o.up?'up':'down')+'">'+o.d+'</span> <span class="vs">vs Apr</span></div>';
+
+  $('mKpis').innerHTML = KPIS.slice(0,8).map(o=>
+    '<div class="kpi '+o.bg+'"><div class="tile" style="background:'+o.c+'">'+svg(I[o.k])+'</div>'+
+    '<div class="lbl">'+o.lbl+'</div><div class="num">'+o.val+'</div>'+deltaHtml(o)+'</div>').join('');
+
+  const dCard = (o)=>'<div class="card dkpi"><div class="tile" style="background:'+o.c+'">'+svg(I[o.k])+'</div>'+
+    '<div><div class="lbl">'+o.lbl+'</div><div class="num">'+o.val+'</div>'+deltaHtml(o)+'</div></div>';
+  $('dKpis1').innerHTML = [0,1,2,3,4].map(i=>dCard(KPIS[i])).join('');
+  $('dKpis2').innerHTML = [5,6,7,8,9].map(i=>dCard(KPIS[i])).join('');
+
+  /* ── line chart ────────────────────────── */
+  const REV=[52,68,75,88,105,92,84,112,128,118,135,152,138,148,165,185];
+  const PRO=[12,18,22,20,34,30,26,42,48,44,58,62,55,72,88,100];
+
+  function lineChart(w,h,fs){
+    const padL=34,padB=22,padT=8,padR=6, max=200;
+    const iw=w-padL-padR, ih=h-padT-padB;
+    const X=i=>padL+iw*i/(REV.length-1), Y=v=>padT+ih*(1-v/max);
+    const pts=a=>a.map((v,i)=>X(i)+','+Y(v)).join(' ');
+    const area=a=>'M'+X(0)+','+Y(a[0])+' L'+pts(a).replace(/ /g,' L')+' L'+X(a.length-1)+','+(padT+ih)+' L'+padL+','+(padT+ih)+' Z';
+    const yl=[0,50,100,150,200], lab=['0','50K','1L','1.5L','2L'];
+    let g='';
+    yl.forEach((v,i)=>{ g+='<line x1="'+padL+'" y1="'+Y(v)+'" x2="'+(w-padR)+'" y2="'+Y(v)+'" stroke="#EEF2F8" stroke-width="1"/>'
+      +'<text x="'+(padL-7)+'" y="'+(Y(v)+3.5)+'" text-anchor="end" font-size="'+fs+'" fill="#94A3B8" font-family="Inter">'+lab[i]+'</text>'; });
+    const xt=[[0,'01 May'],[5,'08 May'],[8,'15 May'],[11,'22 May'],[15,'31 May']];
+    xt.forEach(([i,t])=>{ g+='<text x="'+X(i)+'" y="'+(h-5)+'" text-anchor="middle" font-size="'+fs+'" fill="#94A3B8" font-family="Inter">'+t+'</text>'; });
+    const dots=(a,c)=>a.map((v,i)=>'<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="2.6" fill="'+c+'"/>').join('');
+    return '<svg viewBox="0 0 '+w+' '+h+'" width="100%">'
+      +'<defs><linearGradient id="gr'+w+'" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3B6FF6" stop-opacity=".20"/><stop offset="1" stop-color="#3B6FF6" stop-opacity="0"/></linearGradient>'
+      +'<linearGradient id="gp'+w+'" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#22B573" stop-opacity=".20"/><stop offset="1" stop-color="#22B573" stop-opacity="0"/></linearGradient></defs>'
+      +g
+      +'<path d="'+area(REV)+'" fill="url(#gr'+w+')"/><path d="'+area(PRO)+'" fill="url(#gp'+w+')"/>'
+      +'<polyline points="'+pts(REV)+'" fill="none" stroke="#3B6FF6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>'
+      +'<polyline points="'+pts(PRO)+'" fill="none" stroke="#22B573" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>'
+      +dots(REV,'#3B6FF6')+dots(PRO,'#22B573')+'</svg>';
+  }
+  $('mChart').innerHTML = lineChart(190,150,7);
+  $('dChart').innerHTML = lineChart(560,230,10.5);
+
+  /* ── donuts ────────────────────────────── */
+  function donut(size,r,thick,segs,centreTop,centreBot){
+    const c=size/2, C=2*Math.PI*r, tot=segs.reduce((s,x)=>s+x.v,0);
+    let off=0, arcs='';
+    segs.forEach(s=>{ const len=C*s.v/tot;
+      arcs+='<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="none" stroke="'+s.c+'" stroke-width="'+thick+'" stroke-dasharray="'+(len-2)+' '+(C-len+2)+'" stroke-dashoffset="'+(-off)+'" stroke-linecap="round"/>';
+      off+=len; });
+    return '<svg viewBox="0 0 '+size+' '+size+'" width="'+size+'" height="'+size+'" style="transform:rotate(-90deg)">'+arcs+'</svg>'
+      +'<div style="position:absolute;inset:0;display:grid;place-content:center;text-align:center">'
+      +'<div style="font:800 '+(size>140?26:22)+'px \'Plus Jakarta Sans\';letter-spacing:-.03em">'+centreTop+'</div>'
+      +'<div style="font:500 10.5px Inter;color:#64748B;line-height:1.25">'+centreBot+'</div></div>';
+  }
+  const BOOK=[{n:'Local Shifting',v:3,p:'42%',c:'#3B6FF6'},{n:'Domestic',v:2,p:'29%',c:'#12B5C9'},
+              {n:'Office Shifting',v:1,p:'14%',c:'#22B573'},{n:'Storage',v:1,p:'14%',c:'#F5A524'}];
+  const legendRow=(s,right)=>'<div style="display:flex;align-items:center;gap:7px"><i class="dot" style="background:'+s.c+'"></i>'
+    +'<span style="font:500 11.5px Inter;color:#475569;flex:1">'+s.n+'</span>'
+    +'<span style="font:600 11.5px Inter;color:#0F172A">'+right+'</span></div>';
+
+  $('mDonut').innerHTML='<div style="position:relative;width:118px;margin:0 auto">'+donut(118,44,15,BOOK,'7','Total<br>Bookings')+'</div>';
+  $('mDonutLegend').innerHTML=BOOK.map(s=>legendRow(s,s.v+' ('+s.p+')')).join('');
+  $('dDonut').innerHTML='<div style="position:relative;width:150px;flex:none">'+donut(150,56,19,BOOK,'7','Total<br>Bookings')+'</div>';
+  $('dDonutLegend').innerHTML=BOOK.map(s=>legendRow(s,s.v+' ('+s.p+')')).join('');
+
+  const AGE=[{n:'0 - 30 Days',v:18650,p:'44%',c:'#3B6FF6'},{n:'31 - 60 Days',v:12400,p:'29%',c:'#22B573'},
+             {n:'61 - 90 Days',v:7800,p:'18%',c:'#F5A524'},{n:'90+ Days',v:3500,p:'9%',c:'#EF4444'}];
+  $('dAging').innerHTML='<div style="position:relative;width:150px;flex:none">'+donut(150,56,19,AGE,'₹42,350','Total').replace('font:800 26px','font:800 17px')+'</div>';
+  $('dAgingLegend').innerHTML=AGE.map(s=>legendRow(s,'₹'+s.v.toLocaleString('en-IN')+' ('+s.p+')')).join('');
+
+  /* ── gauges ────────────────────────────── */
+  function gauge(w,pct){
+    const h=w*0.62, cx=w/2, cy=h*0.86, r=w*0.38, t=w*0.105;
+    const L=Math.PI*r;
+    const d='M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy;
+    return '<svg viewBox="0 0 '+w+' '+h+'" width="100%">'
+      +'<defs><linearGradient id="gg'+w+pct+'" x1="0" x2="1"><stop offset="0" stop-color="#3B6FF6"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs>'
+      +'<path d="'+d+'" fill="none" stroke="#E9EDF5" stroke-width="'+t+'" stroke-linecap="round"/>'
+      +'<path d="'+d+'" fill="none" stroke="url(#gg'+w+pct+')" stroke-width="'+t+'" stroke-linecap="round" stroke-dasharray="'+(L*pct/100)+' '+L+'"/></svg>';
+  }
+  $('gVeh').innerHTML=gauge(130,72); $('gLab').innerHTML=gauge(130,68);
+  $('dgVeh').innerHTML=gauge(190,72); $('dgLab').innerHTML=gauge(190,68);
+
+  /* ── recent bookings ───────────────────── */
+  const BK=[
+    {id:'BK-2505-0012',nm:'Ramesh Kumar',sv:'House Shifting',st:'Scheduled',cls:'sched',dt:'26 May 2025',c:'#22B573',bg:'#E9F8F0'},
+    {id:'BK-2505-0011',nm:'Arun Prakash',sv:'Office Shifting',st:'In Progress',cls:'prog',dt:'25 May 2025',c:'#8B5CF6',bg:'#F3EEFE'},
+    {id:'BK-2505-0010',nm:'Karthik Singh',sv:'House Shifting',st:'Completed',cls:'done',dt:'24 May 2025',c:'#F97316',bg:'#FEF1E7'}
+  ];
+  const cal='<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4"/>';
+  const calSm='<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>';
+  $('mBookings').innerHTML=BK.map(b=>
+    '<div class="brow"><div class="ic" style="background:'+b.bg+'"><svg viewBox="0 0 24 24" stroke="'+b.c+'">'+cal+'</svg></div>'
+    +'<div class="mid"><div class="id">'+b.id+'</div><div class="nm">'+b.nm+'</div><div class="sv">'+b.sv+'</div></div>'
+    +'<div class="right"><span class="chip '+b.cls+'">'+b.st+'</span><div class="dt">'+calSm+b.dt+'</div></div></div>').join('');
+
+  const miniRow=(id,l1,l2,chip,cls,dt)=>
+    '<div style="padding:9px 0;border-bottom:1px solid #F1F4F9">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+    +'<span style="color:#3B6FF6;font:700 12.5px \'Plus Jakarta Sans\'">'+id+'</span>'
+    +'<span class="chip '+cls+'">'+chip+'</span></div>'
+    +'<div style="font:500 12px Inter;color:#334155;margin-top:3px">'+l1+'</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:2px">'
+    +'<span style="font:500 11.5px Inter;color:#94A3B8">'+l2+'</span>'
+    +'<span style="font:500 11.5px Inter;color:#64748B">'+dt+'</span></div></div>';
+  $('dBookings').innerHTML=BK.map(b=>miniRow(b.id,b.nm,b.sv,b.st,b.cls,b.dt)).join('');
+  $('dPayments').innerHTML=[
+    miniRow('PAY-2505-0023','Arun Prakash','Office Shifting','Received','recv','25 May 2025'),
+    miniRow('PAY-2505-0022','Ramesh Kumar','House Shifting','Received','recv','24 May 2025'),
+    miniRow('PAY-2505-0021','Divya Menon','Storage','Received','recv','23 May 2025')].join('');
+  $('dEnquiries').innerHTML=[
+    miniRow('ENQ-2505-0045','Karthik Singh','House Shifting','New','new','26 May 2025'),
+    miniRow('ENQ-2505-0044','Priya Nair','Office Shifting','New','new','26 May 2025'),
+    miniRow('ENQ-2505-0043','Mohan Rao','Vehicle Freight','New','new','25 May 2025')].join('');
+
+  /* ── move status ───────────────────────── */
+  const ST=[{n:'Booked',v:9,c:'#3B6FF6',bg:'#E8EFFE',i:cal},{n:'Scheduled',v:7,c:'#8B5CF6',bg:'#F3EEFE',i:cal},
+            {n:'In Progress',v:11,c:'#F5A524',bg:'#FEF6E6',i:'<rect x="2" y="7" width="12" height="9" rx="1.6"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/>'},
+            {n:'Delivered',v:23,c:'#22B573',bg:'#E9F8F0',i:'<circle cx="12" cy="12" r="9"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/>'},
+            {n:'Cancelled',v:2,c:'#EF4444',bg:'#FEECEC',i:'<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>'}];
+  $('dStatus').innerHTML=ST.map(s=>'<div class="srow"><div class="sic" style="background:'+s.bg+'">'
+    +'<svg viewBox="0 0 24 24" stroke="'+s.c+'">'+s.i+'</svg></div>'
+    +'<span class="sl">'+s.n+'</span><span class="sv">'+s.v+'</span></div>').join('');
+
+  /* ── services ──────────────────────────── */
+  const SV=[{n:'House Shifting',v:85400,c:'#3B6FF6',bg:'#E8EFFE',i:'<path d="M4 10l8-6 8 6v10H4z"/><path d="M9 20v-6h6v6"/>'},
+            {n:'Office Shifting',v:45600,c:'#22B573',bg:'#E9F8F0',i:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h2M14 8h2M8 12h2M14 12h2M8 16h8"/>'},
+            {n:'Storage',v:28300,c:'#F5A524',bg:'#FEF6E6',i:'<path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2z"/><path d="M4 7.2l8 4.3 8-4.3"/>'},
+            {n:'Vehicle Freight',v:18700,c:'#8B5CF6',bg:'#F3EEFE',i:'<rect x="2" y="7" width="12" height="9" rx="1.6"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/>'}];
+  const mx=Math.max(...SV.map(s=>s.v));
+  $('dServices').innerHTML=SV.map(s=>'<div class="srow"><div class="sic" style="background:'+s.bg+'">'
+    +'<svg viewBox="0 0 24 24" stroke="'+s.c+'">'+s.i+'</svg></div>'
+    +'<span class="sl" style="flex:none;width:96px">'+s.n+'</span>'
+    +'<div class="bar"><i style="width:'+(s.v/mx*100)+'%;background:'+s.c+'"></i></div>'
+    +'<span class="sv" style="margin-left:auto">₹'+s.v.toLocaleString('en-IN')+'</span></div>').join('');
+
+  /* ── alerts ────────────────────────────── */
+  const AL=[{t:'2 Payments are overdue',c:'#EF4444',i:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v4.5M12 16h.01"/>'},
+            {t:'3 Surveys pending',c:'#F5A524',i:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'},
+            {t:'1 Vehicle insurance expiring in 15 days',c:'#F97316',i:'<path d="M12 3l8 3.5v6c0 4.6-3.4 7.9-8 8.5-4.6-.6-8-3.9-8-8.5v-6z"/><path d="M12 9v4M12 16h.01"/>'},
+            {t:'4 Follow-ups due today',c:'#3B6FF6',i:'<path d="M18 8a6 6 0 10-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.4 20a2 2 0 003.2 0"/>'}];
+  $('dAlerts').innerHTML=AL.map(a=>'<div class="alert"><svg viewBox="0 0 24 24" stroke="'+a.c+'">'+a.i+'</svg>'+a.t+'</div>').join('');
+
+  /* ── sidebar nav ───────────────────────── */
+  const NAV=[['Dashboard','<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/>',null,1],
+    ['Enquiries',I.enq,'18'],['Leads','<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0111 0"/><path d="M16 11a3 3 0 100-6M17.5 19a5 5 0 00-2-4"/>','12'],
+    ['Surveys','<path d="M8 3h8a2 2 0 012 2v14a2 2 0 01-2 2H8a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M9 9h6M9 13h6M9 17h3"/>','7'],
+    ['Quotations',I.quo,'12'],['Bookings',I.boo,'7'],
+    ['Orders','<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>','11'],
+    ['Operations','<circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M10 7h7v7M14 17H7v-7"/>',null],
+    ['Customers','<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0111 0"/><path d="M16 11a3 3 0 100-6M17.5 19a5 5 0 00-2-4"/>',null],
+    ['Storage','<path d="M4 10l8-6 8 6v10H4z"/><path d="M9 20v-6h6v6"/>','NEW'],
+    ['Warehouse','<path d="M4 10l8-6 8 6v10H4z"/><path d="M8 20v-8h8v8"/>','NEW'],
+    ['Inventory',I.sto,null],
+    ['Fleet','<rect x="2" y="7" width="12" height="9" rx="1.6"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/>',null],
+    ['Labour','<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0111 0"/><path d="M16 11a3 3 0 100-6"/>',null],
+    ['Vendors','<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a4 4 0 018 0v2M3 13h18"/>',null],
+    ['Payments','<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M2.5 10h19"/>',null],
+    ['Accounting','<path d="M8 3h8a2 2 0 012 2v14a2 2 0 01-2 2H8a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M9 8h6M9 12h2M13 12h2M9 16h2M13 16h2"/>',null],
+    ['Reports','<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',null],
+    ['WhatsApp','<path d="M3.5 20.5l1.4-4.3A8.2 8.2 0 1112 20.2a8.2 8.2 0 01-4.2-1.1z"/><path d="M8.8 8.6c.6 2.6 2.8 4.8 5.4 5.4l1-1.4 2 .9-.4 1.7c-3.6.5-7.8-3.7-7.3-7.3l1.7-.4.9 2z"/>',null],
+    ['Settings','<circle cx="12" cy="12" r="3"/><path d="M12 2.5v2M12 19.5v2M4.2 7l1.7 1M18.1 16l1.7 1M4.2 17l1.7-1M18.1 8l1.7-1M2.5 12h2M19.5 12h2"/>',null]];
+  $('dNav').innerHTML=NAV.map(([n,i,c,on])=>{
+    const tail = c==='NEW' ? '<span class="tagnew">New</span>' : (c?'<span class="count">'+c+'</span>':'');
+    return '<a href="#" class="'+(on?'on':'')+'"><svg viewBox="0 0 24 24">'+i+'</svg>'+n+tail+'</a>';
+  }).join('');
+
+  /* ── switcher ──────────────────────────── */
+  const bM=$('btnM'), bD=$('btnD'), sM=$('stageM'), sD=$('stageD');
+  bM.onclick=()=>{bM.classList.add('on');bD.classList.remove('on');sM.classList.add('on');sD.classList.remove('on');window.scrollTo(0,0)};
+  bD.onclick=()=>{bD.classList.add('on');bM.classList.remove('on');sD.classList.add('on');sM.classList.remove('on');window.scrollTo(0,0)};
+})();
+</script>
+</body>
+</html>

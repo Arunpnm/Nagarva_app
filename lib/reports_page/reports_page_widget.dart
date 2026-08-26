@@ -8,13 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'reports_page_model.dart';
 export 'reports_page_model.dart';
 
-const List<String> _kReportBranches = [
-  'Chennai',
-  'Bengaluru',
-  'Coimbatore',
-  'Hyderabad',
-];
-
 /// Detailed business reports and analytics for the current org.
 ///
 /// Ported from reference/APC Web App JSX/App.jsx's ReportsPage component
@@ -52,6 +45,10 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
   List<OrdersRow> _allOrders = [];
   List<ExpensesRow> _allExpenses = [];
   List<OrderStaffRow> _allOrderStaff = [];
+  // Was a hardcoded Chennai/Bengaluru/Coimbatore/Hyderabad const
+  // (_kReportBranches, same APC-shaped default as p_l_report_page's
+  // kPLReportBranches) — now the org's real active branches.
+  List<String> _branchNames = [];
 
   final _searchController = TextEditingController();
 
@@ -96,10 +93,13 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
         OrdersTable().queryRows(queryFn: (q) => OrgScope.read(q)),
         ExpensesTable().queryRows(queryFn: (q) => OrgScope.read(q)),
         OrderStaffTable().queryRows(queryFn: (q) => OrgScope.read(q)),
+        BranchesTable().queryRows(
+            queryFn: (q) => OrgScope.read(q).eq('active', true)),
       ]);
       _allOrders = results[0].cast<OrdersRow>();
       _allExpenses = results[1].cast<ExpensesRow>();
       _allOrderStaff = results[2].cast<OrderStaffRow>();
+      _branchNames = results[3].cast<BranchesRow>().map((b) => b.name).toList();
       _recompute();
       _model.isLoading = false;
       _model.loadError = null;
@@ -126,7 +126,7 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
     final fo = _filteredOrders;
     _model.filteredOrderCount = fo.length;
 
-    _model.branchRevenue = _kReportBranches.map((branch) {
+    _model.branchRevenue = _branchNames.map((branch) {
       final branchOrders = fo.where((o) => o.branch == branch).toList();
       final ids = branchOrders.map((o) => o.id).toSet();
       final rev = branchOrders.fold(0.0, (s, o) => s + (o.amount ?? 0));

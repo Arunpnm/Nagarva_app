@@ -34,6 +34,13 @@ class AppSession extends ChangeNotifier {
   String? currentStaffId;
   String? currentStaffName;
   String? currentStaffRole;
+
+  /// `staff.branch` for a PIN-login session, loaded alongside the
+  /// permission matrix (see [StaffPermissions.loadForStaff] in
+  /// permissions.dart — same query, no extra round trip). Null for a
+  /// vendor/owner session, which has no single branch of its own — see
+  /// NewOrderPage's branch dropdown, the first real consumer of this.
+  String? currentStaffBranch;
   Map<String, dynamic> planLimits = {};
   Map<String, dynamic> planFeatures = {};
   String? planName;
@@ -179,6 +186,12 @@ class AppSession extends ChangeNotifier {
     currentStaffId = staffId;
     currentStaffName = staffName;
     currentStaffRole = role?.toLowerCase();
+    // Reset here, not just in clear() — loadForStaff() (permissions.dart)
+    // sets the real value right after this call, but if that query ever
+    // fails, a stale branch from a PREVIOUS staff session must not survive
+    // onto this one (org-code binding lets one device log in as several
+    // different people in a row).
+    currentStaffBranch = null;
     notifyListeners();
   }
 
@@ -229,6 +242,7 @@ class AppSession extends ChangeNotifier {
     currentStaffId = null;
     currentStaffName = null;
     currentStaffRole = null;
+    currentStaffBranch = null;
     planLimits = {};
     planFeatures = {};
     planName = null;

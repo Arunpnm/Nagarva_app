@@ -336,6 +336,7 @@ class StaffPermissions {
       if (rows.isEmpty) {
         activeStaffPages = null;
         activePerms = null;
+        AppSession.instance.currentStaffBranch = null;
         return;
       }
       final r = rows.first;
@@ -345,9 +346,14 @@ class StaffPermissions {
       );
       activeStaffPages = allowedPageNames(eff);
       activePerms = eff;
+      // Same query already fetched the row — no extra round trip to get
+      // the branch a PIN session belongs to (NewOrderPage's branch
+      // dropdown is the first consumer).
+      AppSession.instance.currentStaffBranch = r.branch;
     } catch (_) {
       activeStaffPages = null;
       activePerms = null;
+      AppSession.instance.currentStaffBranch = null;
     }
   }
 

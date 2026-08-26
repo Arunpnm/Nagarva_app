@@ -86,6 +86,10 @@ supabase/.temp/
 
 sentry.properties
 
+# Scratch screenshots/uiautomator dumps from an on-device Claude Code QA
+# pass (26 Aug 2026) — hundreds of throwaway PNGs/XML, no lasting value.
+device_pass_screens/
+
 # Tooling binaries. sentry-wizard.exe is 86MB and, more importantly,
 # MUST NOT BE RUN on this repo: it patches main.dart and pubspec.yaml to
 # inject its own Sentry.init, which would overwrite the redaction layer

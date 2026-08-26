@@ -14,7 +14,18 @@ class NewLeadPageModel extends FlutterFlowModel<NewLeadPageWidget> {
 
   String? ldSource = '';
 
-  String? ldBranch = 'Bengaluru';
+  // No hardcoded default — was the literal 'Bengaluru', the same
+  // APC-shaped-default bug as New Order's old ordBranch (see
+  // new_order_page_model.dart). Set in
+  // _NewLeadPageWidgetState._loadBranches().
+  String? ldBranch;
+
+  /// This org's active branch names, role-restricted for a non-owner
+  /// session — see new_order_page_widget.dart's _loadBranches() for the
+  /// identical pattern this mirrors.
+  List<String> availableBranches = [];
+  bool branchesLoaded = false;
+  bool orgHasAnyBranches = true;
 
   bool? ldSaveSuccess = false;
 

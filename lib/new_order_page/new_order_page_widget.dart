@@ -76,6 +76,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
     _model.ordPorterCashCollectFieldTextController ??= TextEditingController();
     _model.ordPorterCashCollectFieldFocusNode ??= FocusNode();
 
+    SchedulerBinding.instance.addPostFrameCallback((_) => _loadBranches());
     if (widget.orderId != null) {
       SchedulerBinding.instance.addPostFrameCallback((_) => _loadExistingOrder());
     }
@@ -113,6 +114,118 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
       onConflict: 'org_id,key',
     );
     return '$prefix-$next';
+  }
+
+  /// Item 5: block New Order rather than let it reach an insert the
+  /// `(org_id, branch)` FK on `orders` can only reject. Two distinct
+  /// causes get two distinct messages — "go set one up" is only correct
+  /// when the ORG has no branch row at all; a staff session whose own
+  /// `staff.branch` doesn't match any active branch needs a different fix
+  /// (their staff row, not a missing branch) and telling them to go create
+  /// an org branch they likely can't reach would be actively misleading.
+  Widget _buildNoBranchState(BuildContext context) {
+    final noOrgBranches = _model.orgHasAnyBranches == false;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.domain_disabled,
+              size: 48.0,
+              color: FlutterFlowTheme.of(context).secondaryText,
+            ),
+            const SizedBox(height: 16.0),
+            Text(
+              noOrgBranches
+                  ? 'Set up a branch first'
+                  : 'Your account has no active branch',
+              style: FlutterFlowTheme.of(context).titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8.0),
+            Text(
+              noOrgBranches
+                  ? 'This org has no branch set up yet, so a new order '
+                      "has nowhere valid to belong to. Add one in Settings, "
+                      'then come back here.'
+                  : "Your staff record isn't assigned to one of this "
+                      "org's active branches. Ask the owner to fix this in "
+                      'Settings before creating an order.',
+              style: FlutterFlowTheme.of(context).bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20.0),
+            if (noOrgBranches)
+              FFButtonWidget(
+                onPressed: () =>
+                    context.pushNamed(SettingsPageWidget.routeName),
+                text: 'Go to Settings',
+                options: FFButtonOptions(
+                  height: 44.0,
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                      24.0, 0.0, 24.0, 0.0),
+                  color: FlutterFlowTheme.of(context).primary,
+                  textStyle: FlutterFlowTheme.of(context)
+                      .titleSmall
+                      .override(color: Colors.white),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Loads this org's active branches for OrdBranchDropdown, replacing the
+  /// old hardcoded Chennai/Bengaluru/Coimbatore list — a fixed list minted
+  /// from APC's own branches, the same shape of defect as NG-050's
+  /// default_pricing_config (an APC-shaped default leaking into every
+  /// tenant's product). An org with zero branches (e.g. one that predates
+  /// the branch backfill, or never got one seeded) blocks New Order rather
+  /// than defaulting to a branch name that doesn't exist for it — the old
+  /// hardcoded default sent exactly this case into an FK it could never
+  /// satisfy.
+  Future<void> _loadBranches() async {
+    final rows = await BranchesTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).eq('active', true).order('name'),
+    );
+    final orgBranches = rows.map((r) => r.name).toList();
+    _model.orgHasAnyBranches = orgBranches.isNotEmpty;
+    final isOwner = AppSession.instance.currentStaffId == null;
+    final ownBranch = AppSession.instance.currentStaffBranch;
+
+    // The options a NON-OWNER may even see, not just the one pre-selected —
+    // restricting, not merely defaulting, is the point (a manager picking
+    // another branch is a cross-branch write nothing else stops on
+    // insert). An owner sees every active branch and gets no default, so
+    // an org with more than one branch forces an explicit pick rather than
+    // silently choosing one for them. If a staff row's own branch isn't
+    // (or no longer is) one of the org's active branches, that's the same
+    // "nothing valid to pick" case as an org with zero branches — block
+    // rather than silently falling back to the full list, which would
+    // reopen the exact leak this fixes.
+    _model.availableBranches = isOwner
+        ? orgBranches
+        : (ownBranch != null && orgBranches.contains(ownBranch)
+            ? [ownBranch]
+            : const []);
+    _model.branchesLoaded = true;
+
+    // Only for a fresh order — an existing one's branch is set by
+    // _loadExistingOrder() below and must not be overwritten here.
+    if (widget.orderId == null) {
+      final picked = (!isOwner && _model.availableBranches.length == 1)
+          ? _model.availableBranches.first
+          : null;
+      _model.ordBranch = picked;
+      _model.ordBranchDropdownValue = picked;
+      _model.ordBranchDropdownValueController?.value = picked;
+    }
+
+    safeSetState(() {});
   }
 
   Future<void> _loadExistingOrder() async {
@@ -218,7 +331,11 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
           centerTitle: true,
           elevation: 0.0,
         ),
-        body: SafeArea(
+        body: (_model.branchesLoaded &&
+                _model.availableBranches.isEmpty &&
+                widget.orderId == null)
+            ? _buildNoBranchState(context)
+            : SafeArea(
           top: true,
           child: Container(
             decoration: BoxDecoration(
@@ -1286,17 +1403,15 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   controller: _model
                                           .ordBranchDropdownValueController ??=
                                       FormFieldController<String>(null),
-                                  options: [
-                                    FFLocalizations.of(context).getText(
-                                      'd51qs0x3' /* Chennai */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'g7j9rilc' /* Bengaluru */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      '0kll1iju' /* Coimbatore */,
-                                    )
-                                  ],
+                                  // Was a hardcoded Chennai/Bengaluru/
+                                  // Coimbatore list — an APC-shaped default
+                                  // (NG-050 had the same disease in
+                                  // default_pricing_config). Now the org's
+                                  // real branches.dart rows, already
+                                  // restricted to just the caller's own
+                                  // branch for a non-owner session — see
+                                  // _loadBranches().
+                                  options: _model.availableBranches,
                                   onChanged: (val) async {
                                     safeSetState(() =>
                                         _model.ordBranchDropdownValue = val);
@@ -1749,6 +1864,22 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                               0.0, 16.0, 0.0, 16.0),
                           child: FFButtonWidget(
                             onPressed: () async {
+                              // Forces the explicit pick item 4 asks for
+                              // (owner, multi-branch org, no default) and
+                              // is also what stops a save going through
+                              // with no branch at all if the org has zero
+                              // active branches (item 5) or a staff row's
+                              // own branch didn't resolve to one.
+                              if (_model.ordBranch == null ||
+                                  _model.ordBranch!.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Select a branch first.'),
+                                  ),
+                                );
+                                return;
+                              }
+
                               _model.ordSaveSuccess = false;
                               safeSetState(() {});
 

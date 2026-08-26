@@ -1058,10 +1058,16 @@ class _NavBarPageState extends State<NavBarPage>
     final tabs = _tabs;
     // Direct-URL guard: a staff session typing /payments etc. into the
     // address bar gets bounced to the dashboard, matching the filtered nav.
+    // Was a hardcoded 'HomePage' fallback — a supervisor/field-staff
+    // session has no such tab (see the nav.dart HomePage route's own
+    // note), so this "fix" just replaced one invalid page name with
+    // another, rendering nothing (`tabs['HomePage']` is absent from
+    // their `_tabs` map) instead of correcting anything. Same
+    // role-aware fallback as that route now uses.
     if (AppSession.instance.currentStaffId != null &&
         !_navItems.any((e) => e.name == _currentPageName) &&
         _currentPage == null) {
-      _currentPageName = 'HomePage';
+      _currentPageName = homeNavNameForCurrentSession();
     }
     final currentIndex =
         _navItems.indexWhere((e) => e.name == _currentPageName);

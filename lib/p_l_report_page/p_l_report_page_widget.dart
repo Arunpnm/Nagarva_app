@@ -50,6 +50,12 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
   List<OrderStaffRow> _allOrderStaff = [];
   List<LeadsRow> _allLeads = [];
   bool _porterEnabled = false;
+  // Was a hardcoded Chennai/Bengaluru/Coimbatore/Hyderabad const (kPLReportBranches,
+  // "matching apc_webapp App.jsx's BRANCHES constant") — an APC-shaped
+  // default that silently mis-attributed or dropped branch P&L rows for
+  // any org whose real branches don't match those exact 4 names. Now the
+  // org's real active branches.
+  List<String> _branchNames = [];
 
   @override
   void initState() {
@@ -92,11 +98,14 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
         ExpensesTable().queryRows(queryFn: (q) => OrgScope.read(q)),
         OrderStaffTable().queryRows(queryFn: (q) => OrgScope.read(q)),
         LeadsTable().queryRows(queryFn: (q) => OrgScope.read(q)),
+        BranchesTable().queryRows(
+            queryFn: (q) => OrgScope.read(q).eq('active', true)),
       ]);
       _allOrders = results[0].cast<OrdersRow>();
       _allExpenses = results[1].cast<ExpensesRow>();
       _allOrderStaff = results[2].cast<OrderStaffRow>();
       _allLeads = results[3].cast<LeadsRow>();
+      _branchNames = results[4].cast<BranchesRow>().map((b) => b.name).toList();
       // Porter is a per-vendor opt-in (settings key 'porter_enabled') —
       // pan-India vendors that don't use Porter shouldn't see a commission
       // line computed off stray flags.
@@ -160,7 +169,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
     _model.otherExpenses = otherExpenses;
     _model.porterCommission = _porterEnabled ? porterCommission : 0.0;
 
-    _model.branchPL = kPLReportBranches.map((branch) {
+    _model.branchPL = _branchNames.map((branch) {
       final branchOrders = fo.where((o) => o.branch == branch).toList();
       final branchIds = branchOrders.map((o) => o.id).toSet();
       final rev = branchOrders.fold(0.0, (s, o) => s + (o.amount ?? 0));

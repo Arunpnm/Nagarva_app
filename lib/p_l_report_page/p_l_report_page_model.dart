@@ -3,14 +3,6 @@ import '/backend/margin_availability.dart';
 import 'p_l_report_page_widget.dart' show PLReportPageWidget;
 import 'package:flutter/material.dart';
 
-/// Fixed branch list, matching apc_webapp App.jsx's BRANCHES constant.
-const List<String> kPLReportBranches = [
-  'Chennai',
-  'Bengaluru',
-  'Coimbatore',
-  'Hyderabad',
-];
-
 /// Fixed lead-source list, matching apc_webapp App.jsx's SOURCES constant.
 const List<String> kPLReportSources = [
   'phone',

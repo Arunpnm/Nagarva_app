@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "nagarva-web",
-      "runtimeExecutable": "D:\\software\\flutter_windows_3.35.5-stable\\flutter\\bin\\flutter.bat",
-      "runtimeArgs": ["run", "-d", "chrome", "--web-port=5000"],
+      "runtimeExecutable": "C:\\Python314\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "5000", "--directory", "D:\\nagarva_app\\build\\web"],
       "port": 5000
     }
   ]

@@ -307,8 +307,32 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                 const SizedBox(height: 14),
                 SizedBox(
                   height: 20,
+                  // Was a bare default-colour CircularProgressIndicator —
+                  // read as generic rather than branded. Same gold as the
+                  // truck icon/active PIN boxes, plus a label, so a wait
+                  // longer than a beat still reads as "verifying your
+                  // PIN" rather than an unexplained spinner.
                   child: _busy
-                      ? const CircularProgressIndicator(strokeWidth: 2)
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: theme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text('Verifying…',
+                                style: TextStyle(
+                                    color: theme.secondaryText,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500)),
+                          ],
+                        )
                       : (_error != null
                           ? Text(_error!,
                               style: TextStyle(

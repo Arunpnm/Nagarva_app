@@ -11,7 +11,26 @@ class NewOrderPageModel extends FlutterFlowModel<NewOrderPageWidget> {
 
   String? ordService = 'House Shifting';
 
-  String? ordBranch = 'Bengaluru';
+  // No hardcoded default (was the literal 'Bengaluru' — an APC-shaped
+  // default that let every order silently land in the wrong branch unless
+  // the creator noticed and changed the dropdown). Set in
+  // _NewOrderPageWidgetState._loadBranches(): null for an owner session
+  // (forces an explicit pick), the staff's own branch for a staff session.
+  String? ordBranch;
+
+  /// This org's active branch names (`branches.name`, org-scoped), loaded
+  /// once in initState. Empty means the org hasn't set up a branch yet —
+  /// the widget blocks New Order entirely in that case rather than letting
+  /// the old hardcoded 3-city list paper over it.
+  List<String> availableBranches = [];
+  bool branchesLoaded = false;
+
+  /// Distinct from [availableBranches] being empty: that can also mean a
+  /// staff session whose own `staff.branch` isn't one of them. This one is
+  /// specifically "the org itself has no active branch row yet", which is
+  /// the case that needs a "go set one up" message rather than a
+  /// "your account needs fixing" one.
+  bool orgHasAnyBranches = true;
 
   String? ordType = 'Direct';
 

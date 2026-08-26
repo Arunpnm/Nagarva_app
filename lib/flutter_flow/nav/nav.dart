@@ -268,8 +268,21 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: HomePageWidget.routeName,
           path: HomePageWidget.routePath,
+          // pin_login_page_widget.dart sends EVERY successful login here
+          // (`context.go(HomePageWidget.routePath)`), owner and staff
+          // alike — this was unconditionally forcing `initialPage:
+          // 'HomePage'`, a tab name that doesn't exist in a supervisor's
+          // or field-staff's own `_tabs` map (main.dart). NavBarPage
+          // rendered `tabs['HomePage'] ?? const SizedBox.shrink()` — i.e.
+          // nothing at all, not even the AppBar — until the person
+          // manually tapped a bottom-nav item, which set a real page name
+          // via _selectTab. Passing null for a non-owner/manager session
+          // lets NavBarPage's own `homeNavNameForCurrentSession()` (which
+          // already returns the correct role-specific landing page) run
+          // instead of being pre-empted by this route's hardcoded value.
           builder: (context, params) => params.isEmpty
-              ? const NavBarPage(initialPage: 'HomePage')
+              ? NavBarPage(
+                  initialPage: isOwnerOrManagerSession ? 'HomePage' : null)
               : const HomePageWidget(),
         ),
         FFRoute(
