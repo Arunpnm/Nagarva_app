@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/backend/last_selected_org.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/components/org_switcher_sheet.dart';
@@ -181,6 +182,11 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         orgActive: sessionData.orgActive,
         availableOrgs: availableOrgs,
       );
+
+      // Remember which org this login landed on so a later reload/cold
+      // start restores it instead of always falling back to the first
+      // org_members row — matters once availableOrgs.length > 1.
+      await LastSelectedOrg.set(orgId);
 
       // Remember this vendor session so a later staff PIN unlock can be
       // Locked back to it without re-entering email/password (Option A).

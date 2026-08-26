@@ -13,6 +13,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/approval_queue.dart';
 import '/backend/survey_queue.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/last_selected_org.dart';
 import '/backend/session_logout.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
@@ -125,8 +126,9 @@ void main() async {
   // queries trip the OrgScope guard rail and pages render blank, and
   // isAuthenticated / plan gating silently break after a reload.
   // Mirrors the vendor login flow: member -> org -> plan -> session.
-  // TODO(W2): when the org switcher is built, persist the last-selected
-  // org and restore that instead of the first membership row.
+  // (Was TODO(W2): "when the org switcher is built, persist the
+  // last-selected org and restore that instead of the first membership
+  // row." The switcher now exists — see LastSelectedOrg.get() below.)
   final restoredUser = SupaFlow.client.auth.currentUser;
   if (restoredUser != null && AppSession.instance.currentOrgId == null) {
     // Shadow staff users (minted by the staff-login Edge Function) are
@@ -148,8 +150,19 @@ void main() async {
           .from('org_members')
           .select('org_id, role')
           .eq('user_id', restoredUser.id);
-      final orgId =
-          members.isNotEmpty ? members.first['org_id'] as String? : null;
+      // Was always `members.first` (the old TODO(W2) below this — resolved
+      // now that the switcher exists): prefer whichever org this device
+      // last explicitly switched to, so a multi-org owner's reload doesn't
+      // silently bounce them back to org #1. Falls back to `members.first`
+      // when nothing's stored yet or the stored org isn't (or is no
+      // longer) one of this user's memberships.
+      final memberOrgIds =
+          members.map((m) => m['org_id'] as String?).whereType<String>();
+      final lastSelectedOrgId = await LastSelectedOrg.get();
+      final orgId = (lastSelectedOrgId != null &&
+              memberOrgIds.contains(lastSelectedOrgId))
+          ? lastSelectedOrgId
+          : (members.isNotEmpty ? members.first['org_id'] as String? : null);
       if (orgId != null) {
         // select('*') on purpose: naming logo_url here would 400 the whole
         // restore on a DB that hasn't run 20260717_org_logo_url.sql yet.

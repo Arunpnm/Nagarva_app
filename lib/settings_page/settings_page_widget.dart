@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/last_selected_org.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/org_session_loader.dart';
@@ -949,6 +950,10 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                               trialEndsAt: sessionData.trialEndsAt,
                               orgActive: sessionData.orgActive,
                             );
+                            // Remember this choice so a later reload/cold
+                            // start restores this org instead of bouncing
+                            // back to the first org_members row.
+                            await LastSelectedOrg.set(sessionData.orgId);
                             // Full route rebuild so every org-scoped page
                             // (Dashboard, Orders, Leads, ...) re-queries under
                             // the newly-selected org instead of showing stale

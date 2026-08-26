@@ -419,7 +419,44 @@ dsl/edit.dart are useful specs of intended behaviour.
   of a big session.
 
 ## Changelog
-- **7 Aug 2026 (latest), Materials/Staff/Fleet hang follow-up — reliability
+- **11 Aug 2026 (latest), two client-side fixes — nav-permission gap and
+  owner-only Settings gating** (Claude Code sessions; picks up where 7 Aug
+  left off — see the two "not fixed this pass" corrections appended below,
+  both of which turned out to already be closed later on 7 Aug itself and
+  just never got a changelog entry until now).
+  - **`fix(nav): load staff permissions on PIN login`** (`8c3ce47`).
+    `pin_login_page_widget.dart`'s staff branch set the staff session but
+    never called `StaffPermissions.loadForStaff()` — the other two
+    `setStaff()` call sites (`main.dart`'s session-restore, the legacy
+    email login) already did. Left `activeStaffPages` null for the rest of
+    a manager's PIN-login session, so `main.dart`'s nav filter silently
+    substituted a hardcoded `{Dashboard, Orders, Operations}` guess instead
+    of the real permission set — wrong in both directions and hid the
+    failure. Fixed by adding the missing call and replacing the silent
+    guess with an explicit loading/error state (`main.dart`'s new
+    `_needsStaffPermissions` gate) using the existing `LoadErrorState`
+    component with a manual retry, instead of guessing.
+  - **`fix(settings): gate business-profile save and logo upload to
+    owner-only`** (`e60f38a`). A manager-role staff PIN session can reach
+    SettingsPage (`isOwnerOrManagerSession` includes manager,
+    `presetFor('manager')` grants full `'settings'` access), and
+    `BusinessSettingsSection` had no gate of its own — a manager could save
+    the letterhead form or upload a logo. Gated `_saveOrgProfile`/
+    `_pickLogo` on `AppSession.instance.currentStaffId == null` (client
+    mirror of `is_org_owner()`), same pattern as the existing Tier A gate
+    in `users_page_widget.dart`: disabled, lock-icon "Owner only" buttons
+    plus an internal guard as backstop. `_saveProfile` (invoice terms) and
+    `_drawSignature` write to `settings`, not `organizations`, and were
+    left untouched. This is client-side hardening ahead of a DB-level
+    fix — the commit message references
+    `supabase/20260808_tierB_org_billing_rls.sql` ("RLS remediation Tier B
+    ... still unrun") as the intended follow-up making `UPDATE` on
+    `organizations` owner-only at the database. **That file does not exist
+    anywhere in this repo** (checked directly, not present) — flagged here
+    rather than fabricated; Arun, if you have it on another machine it
+    still needs to be added to `supabase/` and run, otherwise it needs to
+    be rewritten from scratch before Tier B is actually closed.
+- **7 Aug 2026, Materials/Staff/Fleet hang follow-up — reliability
   fixes + a corrections-list sweep, nothing else touched.** Two changes
   that make a stuck query recoverable instead of a silent freeze, neither
   of which is the confirmed root cause (still pending a live `flutter run`
@@ -451,6 +488,15 @@ dsl/edit.dart are useful specs of intended behaviour.
   treatment Materials/Users/Fleet's *lists* already got in earlier
   sessions: replace the hardcoded text with real counts computed from the
   page's own already-loaded model data.
+  **CORRECTED (found stale during the 12 Aug 2026 scheduled dev-log
+  pass — this "not fixed this pass" note stood unedited for 5 days even
+  though it was resolved the same day it was written):** fixed later on 7
+  Aug 2026 itself, `8b7e988` "fix(stat-cards): wire Fleet and Leads
+  summary tiles to real data" — both Fleet's three cards and Leads'
+  New/Contacted/Qualified/Won cards now read `_statTile(context,
+  '${_model.<list>.length}', '<label>')` off the same already-loaded
+  lists each page's tab filtering already uses, per this entry's own
+  prescription above. Nothing left to do here.
 - **7 Aug 2026, WA Inbox crash fix + a flagged-not-fixed
   correction.** `wa_inbox_page_widget.dart`'s `build()` called
   `_threadView(theme)` unconditionally — `_threadView` reads `_selected!`
@@ -468,6 +514,12 @@ dsl/edit.dart are useful specs of intended behaviour.
   fixed blind; worth widening to `String?` (or confirming the column
   should really be `NOT NULL` and fixing the schema instead) next time
   this file is touched.
+  **CORRECTED (found stale during the 12 Aug 2026 scheduled dev-log
+  pass, same staleness pattern as the Fleet/Leads note above — resolved
+  same-day, changelog never updated):** fixed later on 7 Aug 2026 itself,
+  `38c2b51` "fix(wa-messages): make WaMessagesRow.contactId
+  nullable-safe" — `contactId` is now `String?` in `wa_messages.dart`,
+  matching the live schema. Nothing left to do here.
 - **5 Aug 2026, Order Details Tier 2 Session 3 — Document
   Generation, all 4 documents rebuilt** (Claude Code session; migrations
   001-009 live, built against `nagarva_document_field_spec.md` and
