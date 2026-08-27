@@ -1449,6 +1449,67 @@ Consequences worth knowing before touching this:
   what `suggestPackage`'s unresolved state reports.
 
 ## Changelog
+- **27 Aug 2026, NG-055 localisation lands, and the first compile check
+  the l10n work ever had.** Three commits; see `NAGARVA_MODULE_STATUS.md`
+  (new file, now the single tracker — it replaces the inventory in
+  `nagarva_module_register.md` with per-module *verified state*).
+  - **ARB + `gen_l10n` chosen over extending `kTranslationsMap`**, and
+    the reason is not ergonomics: this app writes GST invoices and LR
+    consignment notes for Tamil Nadu and Karnataka, which needs Indian
+    2,2,3 digit grouping, ICU plurals for Tamil/Hindi, and typed
+    placeholders checked at compile time. A `Map<String,String>` keyed by
+    opaque 8-char FlutterFlow ids cannot format or interpolate anything,
+    and no translation service accepts the format. Rationale lives in
+    `l10n.yaml`'s header. **No new dependency** —
+    `flutter_localizations`/`intl 0.20.2` were already pinned, so the
+    Flutter 3.35.5 environment rule is untouched.
+  - **CONVENTION — an ARB key that is a Dart reserved word breaks the
+    ENTIRE l10n build, not just its own string.** `gen_l10n` maps keys
+    straight to getters, so `"new"` emitted `String get new` and **all
+    five** generated files failed to parse; `flutter pub get` could not
+    complete at all. Renamed to `statusNew`. `app_en.arb` was swept
+    against the full reserved-word list — `new` was the only hit. Check
+    this on every future key addition.
+  - **171 `getText()` sites migrated across 15 files** at **zero net
+    analyzer cost**: 177 issues / 0 errors, the same 10 warnings in the
+    same files as before the migration. **16 of the 171 were line-wrapped
+    by `dart format`** and would have been missed by a single-line regex
+    — the exact trap this file's grep convention warns about.
+  - **Real bug recovered in passing:** `porcashcol1`/`porcashcol2` were
+    never present in `kTranslationsMap`, so New Order's porter section
+    rendered its cash field with **no label and no hint**. Now
+    `cashCollectedByPorter` / `leaveBlankIfNoneCollectedYet`.
+  - **`lib/l10n/gen/` is gitignored** — `flutter pub get` regenerates it.
+    **A fresh clone will not compile until that is run.** The
+    reviewability argument for committing it was deleted from `l10n.yaml`
+    in the same change, so the reasoning cannot outlive the decision.
+  - **Quick Payment no longer swallows allocator failures.** A blanket
+    `catch (_)` recorded payments with no receipt number behind a success
+    snackbar. Every other allocator site propagates; this was the only
+    one that hid it. Not made a hard block — Item 32b requires money
+    already received to stay recordable — so the real P0001 reason is
+    surfaced and the vendor chooses.
+  - **`TODO(W2)` closed after three attempts.** The `LastSelectedOrg`
+    session-restore fix was written 12 Aug, never committed, lost;
+    rewritten 26 Aug arriving at the same design; analyzer-verified and
+    committed today. The 12 Aug version is preserved on branch
+    `stash-12aug-lastselectedorg`.
+  - **PROCESS — two agents on one working tree nearly repeated the 12 Aug
+    loss.** A stale `.git/index.lock` (0 bytes, 7.5 hours old, no live
+    git process) blocked every `git add`, which is exactly how the 12 Aug
+    fix ended up on disk and then gone. Cleared after confirming
+    `.git/index` was intact. If a commit fails on `index.lock`: check for
+    a live git process, clear it, **and commit — do not leave the work on
+    disk.** Both stashes are now also anchored to branches so a
+    `stash drop` cannot destroy them.
+  - **Numbering-prefix model audited (read-only, nothing fixed)** — see
+    `NAGARVA_MODULE_STATUS.md`'s numbering-prefix section. Headline:
+    OrgSetupPage's prefix field writes `settings.invoice_prefix`, which
+    **nothing reads**, so a vendor's entered prefix is silently discarded;
+    `next_doc_number` validates the prefix not at all (`coalesce(prefix,
+    '')` is how the bare-`0001` invoices happened); and a prefix edit
+    silently continues the existing `last_number` under a new identity,
+    which for tax invoices breaks Rule 46(b) consecutiveness.
 - **25 Aug 2026, dashboard Phase 1 — 10 tiles, and two mockup tiles
   deliberately NOT built.**
   - `lib/components/dashboard_kpi_grid.dart` replaces ~1,300 lines of
