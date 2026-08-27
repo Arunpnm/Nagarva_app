@@ -561,19 +561,53 @@ class _HomePageWidgetState extends State<HomePageWidget>
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).dashboard,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
+          // Two-line title: Dashboard, with the ACTIVE ORG beneath it.
+          //
+          // The org line is a SAFETY NET, not decoration (27 Aug 2026).
+          // Nagarva is org-per-location: an owner's Tamil Nadu, Karnataka
+          // and Andhra operations are separate legal entities with
+          // separate books. Since the last-used org is now restored
+          // SILENTLY with no login picker (see org_resolution.dart),
+          // this line is the only thing telling an owner which company
+          // he is looking at. Shown unconditionally — including for
+          // single-org users — so that its absence is never something
+          // anyone has to notice.
+          //
+          // Rendered only when a name is actually known: inventing or
+          // placeholder-ing a company name here would be worse than
+          // showing none, given what it is for.
+          title: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                AppLocalizations.of(context).dashboard,
+                style: FlutterFlowTheme.of(context).titleLarge.override(
+                      font: GoogleFonts.interTight(
+                        fontWeight: FontWeight.w600,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).titleLarge.fontStyle,
+                      ),
+                      fontSize: 20.0,
+                      letterSpacing: 0.0,
+                      fontWeight: FontWeight.w600,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).titleLarge.fontStyle,
+                    ),
+              ),
+              if ((AppSession.instance.currentOrgName ?? '').trim().isNotEmpty)
+                Text(
+                  AppSession.instance.currentOrgName!.trim(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: FlutterFlowTheme.of(context).bodySmall.override(
+                        font: GoogleFonts.inter(),
+                        fontSize: 12.0,
+                        letterSpacing: 0.0,
+                        color: FlutterFlowTheme.of(context).secondaryText,
+                      ),
                 ),
+            ],
           ),
           actions: [
             // Part 8 addendum item 1: the Dashboard AppBar (mobile) had no
