@@ -160,9 +160,18 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
             const SizedBox(height: 20.0),
             if (noOrgBranches)
               FFButtonWidget(
-                onPressed: () =>
-                    context.pushNamed(SettingsPageWidget.routeName),
-                text: 'Go to Settings',
+                // Owner goes straight to the branch editor (27 Aug 2026);
+                // a non-owner can't create one, so Settings is the honest
+                // destination for them — Branches would only say "owner
+                // only", which is what the body text above already says.
+                onPressed: () => context.pushNamed(
+                  AppSession.instance.currentStaffId == null
+                      ? BranchesPage.routeName
+                      : SettingsPageWidget.routeName,
+                ),
+                text: AppSession.instance.currentStaffId == null
+                    ? 'Set up a branch'
+                    : 'Go to Settings',
                 options: FFButtonOptions(
                   height: 44.0,
                   padding: const EdgeInsetsDirectional.fromSTEB(

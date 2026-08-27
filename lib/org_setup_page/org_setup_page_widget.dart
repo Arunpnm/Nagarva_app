@@ -83,9 +83,16 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
       // their business details after finishing onboarding), so this uses
       // upsert instead of the insert this used to be.
       final rows = <Map<String, dynamic>>[];
-      if (prefix.isNotEmpty) {
-        rows.add({'key': 'invoice_prefix', 'value': prefix, ...OrgScope.stamp()});
-      }
+      // The prefix deliberately does NOT go into `settings` any more.
+      //
+      // It used to be written as settings.invoice_prefix — and NOTHING IN
+      // THE APP EVER READ THAT KEY. next_doc_number() reads
+      // number_series.prefix and never consults settings, so a vendor
+      // typed their invoice prefix here, the app accepted it, and every
+      // document they issued came out on the seeded default instead.
+      // User-visible on the very first invoice a new tenant raises, and
+      // it is their own document identity. (Status doc section 9.1.)
+      await _applyInvoicePrefix(orgId, prefix);
       if (gstin.isNotEmpty) {
         rows.add({'key': 'gstin', 'value': gstin, ...OrgScope.stamp()});
       }
@@ -110,6 +117,62 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
         _model.errorMessage = e.toString().replaceFirst('Exception: ', '');
         _model.isLoading = false;
       });
+    }
+  }
+
+  /// Doc types whose prefix is the calendar-year default (`2026/`) that
+  /// `seed_org_number_series()` generates. These are the ones a vendor's
+  /// own prefix should replace. `LR`, `CLM-`, `PO-`, `GRN-`, `PS-`,
+  /// `CTR-`, `STG-` are semantic abbreviations, not branding, and keep
+  /// their seeded values.
+  static const _prefixableDocTypes = <String>[
+    'invoice',
+    'proforma',
+    'receipt',
+    'quotation',
+    'voucher',
+    'credit_note',
+    'debit_note',
+  ];
+
+  /// Writes the vendor's chosen prefix onto their seeded `number_series`
+  /// rows — the thing that actually determines what prints on a document.
+  ///
+  /// Two guards, both deliberate:
+  ///  - `last_number = 0` only. Changing a prefix once numbers have been
+  ///    issued would silently continue the same counter under a new
+  ///    identity, leaving the earlier numbers unreachable and breaking
+  ///    Rule 46(b) consecutiveness for tax invoices (status doc 9.3). At
+  ///    onboarding every counter is still 0, so this is always satisfied
+  ///    here — the guard exists so this code stays correct if it is ever
+  ///    reused from a settings screen.
+  ///  - Format validated client-side to match the DB CHECK added in
+  ///    20260827_branches_management.sql. Rule 46(b) caps the whole
+  ///    invoice number at 16 characters, so the prefix budget is small.
+  ///
+  /// Best-effort: a failure here must not strand the vendor mid-onboarding
+  /// with an org already created, so it reports and continues rather than
+  /// throwing. They keep the seeded prefix, which is valid.
+  Future<void> _applyInvoicePrefix(String orgId, String prefix) async {
+    if (prefix.isEmpty) return;
+    if (!RegExp(r'^[A-Za-z0-9/-]{1,10}$').hasMatch(prefix)) {
+      safeSetState(() => _model.errorMessage =
+          'Invoice prefix must be 1-10 characters, letters, numbers, / or - '
+          'only. Your other details were saved.');
+      return;
+    }
+    try {
+      await SupaFlow.client
+          .from('number_series')
+          .update({'prefix': prefix})
+          .eq('org_id', orgId)
+          .eq('last_number', 0)
+          .inFilter('doc_type', _prefixableDocTypes);
+    } catch (_) {
+      // Swallowed on purpose — see the doc comment. The org exists and
+      // the rest of onboarding succeeded; a numbering prefix that stayed
+      // at its seeded default is not worth blocking the vendor's first
+      // session over, and it is changeable later.
     }
   }
 

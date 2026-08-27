@@ -394,6 +394,23 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                             context.pushNamed(SurveyPricingPage.routeName),
                       ),
                     ),
+                    // NO "Branches" entry here, deliberately (27 Aug 2026).
+                    //
+                    // Nagarva's model is ORG-PER-LOCATION: Bengaluru and
+                    // Mysuru are two separate orgs, each with its own
+                    // staff, vehicles, accounts, orders and licence — not
+                    // two branches of one org. `branches` survives only as
+                    // an FK target (22 tables carry a branch value) with
+                    // exactly one seeded 'Head Office' row per org.
+                    //
+                    // A "Branches" card in Settings would teach the wrong
+                    // mental model to every vendor who opened it, which is
+                    // a real cost for a screen with nothing to manage.
+                    // BranchesPage still EXISTS and is still routed — it is
+                    // reachable from New Order's zero-branch empty state
+                    // and by direct URL, both of which are recovery paths
+                    // rather than navigation. See NAGARVA_MODULE_STATUS.md
+                    // section 10 before re-adding this.
                     // Item 11.6: recycle bin. Owner-only, same gate as the
                     // PIN card above.
                     if (AppSession.instance.currentStaffId == null)

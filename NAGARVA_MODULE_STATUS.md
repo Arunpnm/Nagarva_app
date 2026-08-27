@@ -600,12 +600,49 @@ also unblocks the GST step-1 migration.
 **Structural correction from Arun, 27 Aug 2026. This resolves several
 open items at once and cancels one piece of planned work.**
 
-APC's Tamil Nadu, Karnataka and Andhra locations are **separate orgs**,
-not branches. Separate staff, vehicles, accounts and orders, and a
-**separate licence purchase each**. Only the owner is shared.
+**The model is ORG-PER-LOCATION. There are no branches in it.**
 
-**Branches mean multiple locations WITHIN one org, sharing staff and
-accounts.** That is the only thing they mean.
+Every location is its own org: Tamil Nadu, Karnataka and Andhra — and
+**Bengaluru and Mysuru too**. Separate staff, vehicles, accounts and
+orders, and a **separate licence purchase each**. Only the owner is
+shared. Any new location is a new org, never a new branch.
+
+> **Corrected twice on 27 Aug 2026, and the second correction matters.**
+> An earlier version of this section said "branches mean multiple
+> locations WITHIN one org, sharing staff and accounts." That was still
+> wrong: it left branches as a real, if narrower, hierarchy. They are
+> not one. Two locations never share staff or accounts, whatever their
+> distance apart.
+
+### 10.0 `branches` is VESTIGIAL — an FK target, not a hierarchy
+
+**Anyone reading `branches` as a user-facing hierarchy is reading it
+wrong.** It survives for one reason: it is a live FK target. 22 tables
+carry a `branch` value under a composite FK
+`(org_id, branch) -> branches(org_id, name)`, and `orders.branch` /
+`staff.branch` hold that literal string.
+
+The steady state is **exactly one row per org** — the `Head Office` seed
+from `20260827_branches_management.sql`. That migration is still
+correct and still needed: without a branch row the FKs cannot be
+satisfied and no order, lead or staff member can be created.
+
+Consequences, all deliberate:
+- **No "Branches" entry in Settings.** Removed 27 Aug 2026 — a card
+  there would teach the wrong model to every vendor who opened it.
+- `BranchesPage` **still exists and is still routed**, reachable from
+  New Order's zero-branch empty state and by direct URL. Kept as a
+  recovery path, not navigation. Renaming is cosmetic at one row per
+  org; a SQL `update` covers the rare real need.
+- **`branches.gstin` and `branches.state_code` are DEAD COLUMNS.**
+  Never populate them. GSTIN is **org-level** — under org-per-location
+  each registration belongs to its own org, so a branch-level GSTIN has
+  no meaning. They were added by `20260825_branches_table.sql` before
+  this model was settled. **Deliberately NOT dropped:** a tracker line
+  prevents the misreading, while a migration is irreversible for no
+  gain.
+- Item 30's `branch_isolation` policies still function, but have
+  nothing to isolate at one branch per org. Do not extend them.
 
 ### 10.1 What this resolves
 
@@ -636,12 +673,17 @@ separate serials for free. **Do not implement branch-aware allocation.**
 The NG-010 rule that `number_series` must never get a `branch_isolation`
 policy still stands, and is now doubly true.
 
-### 10.3 Branch RLS Tier 2 — re-scoped, not cancelled
+### 10.3 Branch RLS Tier 2 — CANCELLED
 
-Item 30's `branch_isolation` is field-verified and still correct for
-**within-org** branches (a Chennai manager seeing Chennai rows). It was
-never the mechanism for state separation. Tier 2 matters only for an org
-that genuinely runs several locations.
+Superseded by the second correction above. Item 30's
+`branch_isolation` policies are field-verified and still function, but
+with **one branch per org they have nothing to isolate** — every row in
+an org shares its single branch value. Isolation between locations is
+`org_isolation`, which works today.
+
+**Do not build Tier 2.** (An earlier version of this section said Tier 2
+was merely "re-scoped" to within-org branches. There are no within-org
+branches.)
 
 ### 10.4 Multi-org: switching WORKS, creating DOES NOT
 

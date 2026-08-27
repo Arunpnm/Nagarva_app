@@ -583,6 +583,15 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: SurveyPricingPage.routePath,
           builder: (context, params) => const SurveyPricingPage(),
         ),
+        // Branch management (27 Aug 2026). Reached from Settings, and
+        // deep-linked from New Order / New Lead's "set up a branch first"
+        // empty state — which is the state a brand-new org starts in,
+        // since nothing could create a branch before this screen existed.
+        FFRoute(
+          name: BranchesPage.routeName,
+          path: BranchesPage.routePath,
+          builder: (context, params) => const BranchesPage(),
+        ),
         // Help & About — carries the in-app privacy policy link Play
         // Store review requires and the support contact Meta's WhatsApp
         // Business review asks for. Not owner-gated: every staff session
