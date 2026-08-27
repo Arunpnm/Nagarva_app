@@ -4,6 +4,7 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
+import '/backend/org_resolution.dart';
 import '/backend/pending_auth_message.dart';
 import '/backend/pending_password_reset.dart';
 import '/backend/supabase/supabase.dart';
@@ -164,8 +165,22 @@ class AuthDeepLinkHandler {
       // the way the interactive login flow has one for a consultant/
       // owner account.
       final availableOrgs = await resolveVendorOrgs(user);
-      final orgId = availableOrgs.first.orgId;
-      await establishVendorSession(user, orgId, availableOrgs);
+      // Was `availableOrgs.first.orgId` unconditionally (27 Aug 2026).
+      // The comment above is right that a FRESH SIGNUP has exactly one
+      // org — but this same path also handles password RECOVERY for an
+      // existing user, who may well have several. There is no UI context
+      // to prompt from here, so no picker is passed: the stored choice
+      // decides, falling back to the oldest membership.
+      final resolved = await resolveActiveOrg(availableOrgs: availableOrgs);
+      if (resolved == null) {
+        // Multi-org user with no stored choice, and no UI here to ask
+        // with. Deliberately does NOT pick one — see org_resolution.dart.
+        // They sign in normally instead, where the picker exists.
+        throw Exception(availableOrgs.length > 1
+            ? 'Please sign in and choose which organization to open.'
+            : 'Your account is not linked to any organization.');
+      }
+      await establishVendorSession(user, resolved.orgId, availableOrgs);
 
       if (isRecovery) {
         // The one thing that must NOT happen for a password reset: the

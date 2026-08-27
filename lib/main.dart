@@ -15,7 +15,7 @@ import '/backend/approval_queue.dart';
 import '/backend/survey_queue.dart';
 import '/backend/auth_deep_link.dart';
 import '/backend/device_org_binding.dart';
-import '/backend/last_selected_org.dart';
+import '/backend/org_resolution.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/backend/crash_reporting.dart';
 import '/backend/platform_admin_status.dart';
@@ -189,23 +189,37 @@ Future<void> _startApp() async {
       final members = await SupaFlow.client
           .from('org_members')
           .select('org_id, role')
-          .eq('user_id', restoredUser.id);
-      // TODO(W2) resolved: prefer the org this device last explicitly
-      // switched to (LastSelectedOrg — set on login and on Settings'
-      // "Switch Organization") over always restoring the first
-      // org_members row, but only when that saved id is still one of
-      // this user's real memberships; otherwise fall back to
-      // members.first exactly as before this existed. Pure UX nicety,
-      // not a security boundary — see last_selected_org.dart's own doc
-      // comment.
-      final memberOrgIds = members
-          .map((m) => m['org_id'] as String?)
-          .whereType<String>()
-          .toSet();
-      final savedOrgId = await LastSelectedOrg.get();
-      final orgId = (savedOrgId != null && memberOrgIds.contains(savedOrgId))
-          ? savedOrgId
-          : (members.isNotEmpty ? members.first['org_id'] as String? : null);
+          // Ordered as of 27 Aug 2026: without it Postgres returns
+          // memberships in planner order, so the fallback row was not
+          // stable between calls. See vendor_org_resolver.dart's
+          // matching comment.
+          .eq('user_id', restoredUser.id)
+          .order('created_at', ascending: true);
+      // Routed through the shared resolver (org_resolution.dart) so all
+      // four entry points answer "which org?" identically. No picker
+      // here by design — a cold start must never prompt (Arun, 27 Aug
+      // 2026) — and no boundOrgId, which belongs to the PIN path alone.
+      // In practice that means: the stored choice when it is still a
+      // real membership, else the oldest one.
+      //
+      // Names are not needed to RESOLVE, only to display, so this list
+      // is built from ids alone; the availableOrgs list the switcher
+      // renders is built separately below and is unchanged.
+      final resolvedRestore = await resolveActiveOrg(
+        availableOrgs: members
+            .map((m) => m['org_id'] as String?)
+            .whereType<String>()
+            .map((id) => OrgMembershipInfo(orgId: id, orgName: ''))
+            .toList(),
+      );
+      final orgId = resolvedRestore?.orgId;
+      // A NULL HERE IS CORRECT, NOT A FAILURE TO HANDLE. It means this
+      // user belongs to several orgs and has no stored choice, and a
+      // cold start has no way to ask. Skipping the restore leaves
+      // AppSession empty, so the router sends them to login — the one
+      // screen that CAN show the picker. Do not "fix" this by defaulting
+      // to a membership row: silently choosing between separate legal
+      // entities is precisely what org_resolution.dart forbids.
       if (orgId != null) {
         // select('*') on purpose: naming logo_url here would 400 the whole
         // restore on a DB that hasn't run 20260717_org_logo_url.sql yet.

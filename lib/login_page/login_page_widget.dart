@@ -1,6 +1,6 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/device_org_binding.dart';
-import '/backend/last_selected_org.dart';
+import '/backend/org_resolution.dart';
 import '/backend/pending_auth_message.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/vendor_org_resolver.dart';
@@ -111,27 +111,33 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         promptForOrgName: () => _promptForBusinessName(context),
       );
 
-      // Every org this user belongs to (not just the first) — a consultant
-      // or owner can be linked to more than one, and used to silently pick
-      // availableOrgs.first, ignoring the rest.
-      String orgId = availableOrgs.first.orgId;
-      if (availableOrgs.length > 1) {
-        if (!mounted) return;
-        // Stash the list before the picker needs it (showOrgSwitcherSheet
-        // reads AppSession.instance.availableOrgs / currentOrgId — neither
-        // is set yet on first login, so pass currentOrgId irrelevant here,
-        // the sheet just won't show a checkmark, which is correct pre-login).
-        AppSession.instance.availableOrgs = availableOrgs;
-        final chosen = await showOrgSwitcherSheet(context);
-        if (chosen != null) orgId = chosen;
+      // Which org this session lands in is decided in ONE place for all
+      // four entry points — see org_resolution.dart. This used to prompt
+      // whenever length > 1, which is wrong by design (Arun, 27 Aug
+      // 2026): most users have exactly one org and a picker every login
+      // is pure friction. The stored choice is now restored silently and
+      // the picker appears only when there is no stored choice.
+      if (!mounted) return;
+      final resolved = await resolveActiveOrg(
+        availableOrgs: availableOrgs,
+        showPicker: () => showOrgSwitcherSheet(context),
+      );
+      if (resolved == null) {
+        // Either no memberships at all, or the user belongs to several
+        // and declined to choose. In the second case the app cannot
+        // proceed — it does not know which company they mean, and
+        // guessing is exactly what org_resolution.dart exists to
+        // prevent. Sign back out so the session does not sit
+        // half-established with no org.
+        await SupaFlow.client.auth.signOut();
+        throw Exception(availableOrgs.length > 1
+            ? 'Choose an organization to continue, or sign in again.'
+            : 'Your account is not linked to any organization.');
       }
 
-      await establishVendorSession(user, orgId, availableOrgs);
-      // TODO(W2) resolved: remember this org so a later reload/cold start
-      // (main.dart's session restore) lands back here instead of always
-      // falling back to the first org_members row. See
-      // last_selected_org.dart's doc comment.
-      await LastSelectedOrg.set(orgId);
+      // resolveActiveOrg persists the choice itself — one writer, so the
+      // call sites cannot drift apart on when it is stored.
+      await establishVendorSession(user, resolved.orgId, availableOrgs);
 
       if (mounted) context.go(HomePageWidget.routePath);
     } catch (e) {

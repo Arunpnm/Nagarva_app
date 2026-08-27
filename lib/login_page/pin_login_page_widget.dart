@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '/app_session.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/edge_function_errors.dart';
+import '/backend/org_resolution.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/backend/vendor_org_resolver.dart';
@@ -166,8 +167,27 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
         // "ask the user" case.
         final user = SupaFlow.client.auth.currentUser!;
         final availableOrgs = await resolveVendorOrgs(user);
-        final orgId = availableOrgs.first.orgId;
-        await establishVendorSession(user, orgId, availableOrgs);
+        // CORRECTNESS FIX, 27 Aug 2026. This used to be
+        // `availableOrgs.first.orgId` — so the PIN was verified against
+        // `orgId` (DeviceOrgBinding.boundOrgId, above) and the session
+        // was then established for an UNRELATED row. With several orgs
+        // live, an owner could authenticate against one legal entity and
+        // land in another's books; it had not bitten only because row
+        // order happened to favour the right one, and that order is not
+        // even deterministic.
+        //
+        // The bound org is now the SOLE input on this path — not
+        // consulted-then-preferred, which would leave it readable as a
+        // preference. resolveActiveOrg throws if it is not a real
+        // membership rather than falling through to another org.
+        final resolved = await resolveActiveOrg(
+          availableOrgs: availableOrgs,
+          boundOrgId: orgId,
+        );
+        if (resolved == null) {
+          throw Exception('Your account is not linked to any organization.');
+        }
+        await establishVendorSession(user, resolved.orgId, availableOrgs);
       }
 
       if (!mounted) return;

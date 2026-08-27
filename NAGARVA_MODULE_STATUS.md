@@ -917,6 +917,58 @@ name must be visible on the dashboard.** Under silent restore with no
 picker it is the ONLY signal telling an owner which company he is
 looking at, and these are separate legal entities with separate books.
 
+#### 10.4d ROOT PATTERN — two answers to one question
+
+**Third instance in a single day. The resolver fixed the auth paths;
+it did not fix the pattern.**
+
+`AppSession.currentOrgId` (the org you are LOOKING at) and
+`DeviceOrgBinding.boundOrgId` (the org this device SIGNS IN to) are two
+answers to the question "which org?". Nothing keeps them in step —
+switching org in Settings does not touch the binding at all
+(`grep DeviceOrgBinding lib/settings_page/` → no matches, by design).
+
+The three instances, all the same shape:
+
+| # | Wrote/verified against | Read/acted against | Effect |
+|---|---|---|---|
+| 1 | `boundOrgId` (PIN verify) | `availableOrgs.first` (session) | Authenticate against one legal entity, land in another |
+| 2 | — | `.first` in 3 more paths | Non-deterministic org, no ordering |
+| 3 | `currentOrgId` (PIN write) | `boundOrgId` (PIN read) | PIN saved correctly and unusable |
+
+**CONVENTION: any new code reading either field must state WHICH ONE it
+means and WHY.** Not "the org" — there are two, and picking the wrong
+one produces work that looks correct, stores correctly, and silently
+does not function. All three instances were invisible to the analyzer,
+to tests, and to review; two were found only by using the product.
+
+#### 10.4e LIMITATION (not a bug to fix now): PIN login is single-org
+
+**A device bound to one org can only PIN into that org.** The PIN lives
+on `org_members`, `UNIQUE (org_id, user_id)`, so it is per (org, user)
+— an owner of three orgs has three separate PINs, and the bound device
+can only ever use one of them.
+
+**This is fine while an owner uses one device per location**, which is
+the current reality. **It breaks the moment he wants one phone for all
+three** — he would have to unbind and re-pair to switch, and maintain a
+separate PIN per org.
+
+**Recorded as a design question for when self-serve multi-org ships
+(section 10.4a), not as work to do now.** The options, unexplored:
+bind a device to a USER rather than an org and let the resolver choose
+after authentication; or keep per-org binding and make re-pairing
+cheap. Both change the security model — `boundStaffId` is what
+structurally prevents PIN-collision escalation today — so neither is a
+small change.
+
+Symptom to recognise: *"I reset my PIN and PIN login still rejects
+it, but email login works."* That is a bound-vs-active mismatch, not a
+forgotten PIN. Recovery: email login → switch active org to the BOUND
+one → set the PIN → log out. The 27 Aug 2026 fix makes the Settings
+PIN card state this explicitly instead of writing silently to the
+active org.
+
 ### 10.5 GSTIN entry rules — RECORD ONLY, not built
 
 Same free-then-locked shape as the prefix rule in section 9.3:

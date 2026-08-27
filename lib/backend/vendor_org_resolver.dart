@@ -36,8 +36,15 @@ Future<List<OrgMembershipInfo>> resolveVendorOrgs(
   User user, {
   Future<String?> Function()? promptForOrgName,
 }) async {
+  // ORDER BY is load-bearing (27 Aug 2026). Without it Postgres returns
+  // memberships in whatever order the planner chooses, so "the first
+  // membership" was not even stable between two calls in the same
+  // session. `.first` is gone from every caller now, but ordering stays
+  // regardless: an arbitrary row order will otherwise surface somewhere
+  // else eventually, and oldest-first is the one ordering a human would
+  // predict.
   var members = await OrgMembersTable().queryRows(
-    queryFn: (q) => q.eq('user_id', user.id),
+    queryFn: (q) => q.eq('user_id', user.id).order('created_at', ascending: true),
   );
   var orgIds = members.map((m) => m.orgId).whereType<String>().toList();
 
@@ -105,7 +112,8 @@ Future<List<OrgMembershipInfo>> resolveVendorOrgs(
     }
 
     members = await OrgMembersTable().queryRows(
-      queryFn: (q) => q.eq('user_id', user.id),
+      queryFn: (q) =>
+          q.eq('user_id', user.id).order('created_at', ascending: true),
     );
     orgIds = members.map((m) => m.orgId).whereType<String>().toList();
     if (orgIds.isEmpty) {
