@@ -51,7 +51,7 @@ by hand in the editor; `list_migrations` shows only 2 entries from
 
 | File | State | How verified | Notes |
 |---|---|---|---|
-| `20260825_gst_treatment_and_display.sql` | **UNRUN** | `gst_treatment` absent from `quotations` and `orders` | GST spec step 2. Blocks correct CGST/SGST vs IGST split. **Step 1 is no longer blocked** — the GSTIN-33/Karnataka contradiction is resolved by the org-per-state model (section 10.1). |
+| `20260825_gst_treatment_and_display.sql` | **UNRUN** | `gst_treatment` absent from `quotations` and `orders` | GST spec step 2. Blocks correct CGST/SGST vs IGST split. **Step 1 is no longer blocked** — the GSTIN-33/Karnataka contradiction is resolved by the org-per-location model (section 10.1). |
 | `20260820_phase_a_device_register.sql` | **UNRUN** | `device_bindings` does not exist | Reviewed in full this pass — see §3. |
 | `20260808_tierB_org_billing_rls.sql` | **UNRUN** | `org_insert` policy still present on `organizations`; Tier B drops it | Held pending Arun's signup + Super Admin device tests. |
 | `20260819_pod_relationship_cleanup.sql` | **Not applied, by decision** | — | Render-side guard already makes the document correct. Arun's call. |
@@ -545,10 +545,33 @@ the seeding path**, not comparing two tenants' rows:
 | Shared default | seed has literals in its own body | Make configurable |
 | Derived | seed computes from FY/date/org input | **Nothing — correct** |
 
-**Genuine instances of the class:** the CFT catalogue (Item 12) and the
-branch dropdown that blocked Ponci from creating any order at all.
-**Not an instance:** number-series prefixes (shared default, and the
-year portion is correctly derived — see 9.6).
+**CORRECTED AGAIN, 27 Aug 2026 — this section has now been wrong
+twice, which is the argument for its own rule.** Applying the test
+above to every seeding path, by reading each function body:
+
+| Seeding path | Mechanism | Category |
+|---|---|---|
+| `default_pricing_config()` | `IMMUTABLE`, returns a hardcoded jsonb literal | Shared default |
+| `seed_org_number_series()` | Hardcoded `values` list; year from `current_fy_ist()` | Shared default + derived |
+| `seed_org_document_settings()` | Hardcoded terms/footer/notice text | Shared default |
+| New Order branch dropdown (pre-`cf65864`) | Hardcoded `'Bengaluru'/'Chennai'/'Coimbatore'` in Dart | Hardcoded literal in client code |
+
+**There are NO instances of tenant-copying. Nothing in the seeding path
+reads another org's rows — verified by reading all three function
+bodies, not by comparing tenants.** The CFT catalogue was previously
+listed here as a genuine instance; that was wrong.
+
+**The real class is narrower and less alarming: APC's VALUES baked in
+as hardcoded defaults.** The content originated from APC's business
+(its catalogue, its terms, its branch names), but no code path reads
+APC's data at runtime. That changes the fix: not "derive per tenant"
+but **"make it per-tenant editable"** — which Item 12 already did for
+the pricing catalogue, `app_settings` already allows for document
+text, and the section 9.1 fix now does for the invoice prefix.
+
+The branch dropdown was the one genuinely damaging case, because a
+hardcoded list in client code cannot be edited by a vendor at all —
+and it blocked Ponci from creating any order. Fixed in `cf65864`.
 
 <details><summary>Original wording, wrong, kept for the record</summary>
 
@@ -586,16 +609,28 @@ prefix-less numbers. The 5 rows recording this are all `active = false`
 and therefore inert (`next_doc_number` filters on `active`). Full
 per-row table in §4.
 
-**A CA question, not cleanup** — it concerns documents customers already
-hold and invoices that may have been filed. It should go to the CA
-**alongside the pending GSTIN state question** (APC's GSTIN begins `33`
-= Tamil Nadu while the org record says Karnataka), since both are
-invoice-compliance questions for the same adviser and the GSTIN answer
-also unblocks the GST step-1 migration.
+**CLOSED 27 Aug 2026 — no CA question. Arun: all nine are TEST
+ARTEFACTS. Nothing was ever sent to a real customer.**
+
+That was the whole basis for treating them as a compliance matter. A
+document nobody holds cannot be mis-numbered in any way that matters,
+so there is nothing to ask an adviser and nothing to reconcile. They
+are simply rows awaiting the wipe.
+
+**Both open CA questions are now closed:**
+- These nine documents — test artefacts (above).
+- The GSTIN `33` vs Karnataka pairing — resolved by the
+  org-per-location model (section 10.1). The `33` GSTIN belongs to the
+  **Tamil Nadu org**. Not a data error, nothing to reconcile, and GST
+  step 1 is unblocked.
+
+**Post-wipe consequence — see section 11.** These five rows are the
+only reason `number_series_prefix_format` had to be added `NOT VALID`.
+Once they are gone, the constraint can and should be validated.
 
 ---
 
-## 10. Tenancy model — an ORG per state, not a branch per state
+## 10. Tenancy model — an ORG per LOCATION, and no branches at all
 
 **Structural correction from Arun, 27 Aug 2026. This resolves several
 open items at once and cancels one piece of planned work.**
@@ -667,7 +702,7 @@ Consequences, all deliberate:
 **Per-GSTIN branch serials under Rule 46(b) are MOOT.** CLAUDE.md's
 NG-010 note says that if branches acquire their own GSTINs, invoice
 serials must become per-GSTIN by passing `p_branch` through the
-allocator at six call sites. Under an org-per-state model
+allocator at six call sites. Under an org-per-location model
 `number_series` is **already** org-scoped, so separate registrations get
 separate serials for free. **Do not implement branch-aware allocation.**
 The NG-010 rule that `number_series` must never get a `branch_isolation`
@@ -724,6 +759,164 @@ hold exactly one membership each (verified `org_members`), so every
 multi-org path — picker, switcher, restore — is **untested in the
 field**. Expect to find defects when the owner's second org exists.
 
+**And the reason is structural, not coincidence.** The two orgs belong
+to two *different auth users*:
+
+| Org | Owner auth user | |
+|---|---|---|
+| `apc` | `26bf3ecd-…` | arunpackersandcouriers@gmail.com |
+| `ponci-packers-and-movers` | `b3c08373-…` | ponmani444410@gmail.com |
+
+Ponci is a genuinely separate customer account, **never reachable from
+Arun's session at all**. So there has never been a user for whom
+`availableOrgs.length > 1` could be true, and the picker / switcher /
+multi-org restore branches have **never executed once in the product's
+life** — not "rarely", never. Any test of them requires deliberately
+creating a second org under a single auth user first.
+
+### 10.4a Self-serve multi-org creation — DO NOT BUILD EARLY
+
+Decided 27 Aug 2026. Creating an additional org is **Super Admin only**
+for the foreseeable future.
+
+**Creating an org is buying a licence.** Each org is its own
+subscription (section 10). Self-serve creation with no billing step
+mints unpaid tenants, and Item 32's plan enforcement is per-org — so an
+owner could otherwise spin up several orgs and run several concurrent
+free trials.
+
+- **Now:** Super Admin only, via the `p_intent` path, under a
+  `platform_admins` check (the `admin-update-org` pattern).
+- **Later, gated on Item 31 billing:** an "Add a location" entry in the
+  **org switcher sheet** — where the mental model already lives.
+  **Not** the signup flow: a logged-in owner re-entering signup implies
+  a new account, and collides with the invite-code gate.
+- **Trial inheritance is SETTLED POLICY, not a per-org choice**
+  (Arun, 27 Aug 2026). An additional org inherits the parent's
+  **`plan_id`, `plan_status` AND `trial_ends_at`**. Never a fresh
+  trial. The owner is ONE customer; his locations all sit on the same
+  plan tier. **A trial applies only to a genuinely new customer** —
+  first signup, no existing org membership.
+
+#### 10.4b The trigger that defeats inheritance — `assign_default_trial_plan`
+
+Found 27 Aug 2026 when the test-org script inherited APC's NULL
+`trial_ends_at` and the new org came out with a bogus
+`2026-09-10` trial anyway.
+
+`trg_assign_default_trial_plan` is a **BEFORE INSERT** trigger on
+`organizations`:
+
+```sql
+if new.trial_ends_at is null then
+  new.trial_ends_at := now() + interval '14 days';
+end if;
+```
+
+APC's `trial_ends_at` **is** NULL, so inheriting it passes NULL, and
+the trigger's `is null` test **cannot distinguish "deliberately no
+trial" from "caller did not supply one."** It stamps 14 days either
+way.
+
+**Same class as the `copyWith(x: null)` bug in CLAUDE.md**: null read
+as *absent* when the caller meant *explicitly none*. Inheriting a NULL
+is indistinguishable from omitting the field, so any
+inherit-the-parent design is defeated by default-on-null logic.
+
+**The fix (for step 3's migration): gate on `plan_status`.**
+
+```sql
+if new.trial_ends_at is null and new.plan_status = 'trial' then
+```
+
+A trial end date is only meaningful for a trial. Signup still gets
+stamped; an inherited `active` org never does. This fixes the class
+rather than special-casing `p_intent`, and does not touch the signup
+path — `create_org_with_owner` sets both fields explicitly and skips
+the trigger regardless.
+
+**Second, separate defect in the same function: it hardcodes 14 days
+while `subscription_plans.trial_days` says 30.** They disagree. Signup
+escapes it only because `create_org_with_owner` sets `trial_ends_at`
+itself; any other insert silently gets 14. This quietly defeats Item
+32's "no hardcoded plan values, editable in Super Admin" rule.
+Replacing `14` with the plan's `trial_days` is a real behaviour change
+for anything relying on 14 — **flagged, not folded in silently.**
+
+#### 10.4c Switcher test results — 27 Aug 2026, FIRST EVER RUN
+
+A disposable `test-karnataka` org was created under Arun's auth user so
+that `availableOrgs.length > 1` could execute for the first time in the
+product's life (see 10.4). Results:
+
+**WORKING — and these are real, load-bearing confirmations:**
+- **Settings → Switch Organization works.** Test Karnataka renders all
+  zeros.
+- **ORG ISOLATION CONFIRMED.** No APC data leaked into the new org.
+  This is now the *only* mechanism separating Arun's legal entities
+  (section 10), so it mattered more than anything else in the test.
+- APC unchanged: 25 orders, 3 branches, its own prefixes, no `TEST/`
+  leak from the seeding script.
+
+**BROKEN — three findings, diagnosed by reading each path:**
+
+1. **No picker at email login**, despite `availableOrgs.length == 2`.
+   `login_page_widget.dart:117-127` is CORRECT (it does gate on
+   `length > 1`), so that code did not run. Most likely the session was
+   still valid and `_startApp`'s restore ran instead — whose own
+   comment says *"silent restore always keeps using the first
+   membership (no picker on a background reload)"* — with the router
+   then sending an authenticated user straight to `/home`. Not proven,
+   and **moot** under the design decision below.
+
+2. **The Settings switch DOES persist.** `settings_page_widget.dart:1135`
+   calls `LastSelectedOrg.set` right after `setVendorSession`, and the
+   helper is a correct `SharedPreferences` write. The initial
+   hypothesis — "switch doesn't persist" — was WRONG. Something else
+   discarded the stored choice.
+
+3. **The PIN owner branch discards it, and is a CORRECTNESS BUG.**
+   `pin_login_page_widget.dart:167-170`:
+
+   ```dart
+   final availableOrgs = await resolveVendorOrgs(user);
+   final orgId = availableOrgs.first.orgId;   // unconditional
+   await establishVendorSession(user, orgId, availableOrgs);
+   ```
+
+   It never reads or writes `LastSelectedOrg`. **Findings 2 and 3 are
+   one bug, located in the PIN path.**
+
+   **The serious half:** line 83 verifies the PIN against
+   `DeviceOrgBinding.boundOrgId`, then line 169 establishes the session
+   for `availableOrgs.first` — an unrelated variable. **The org you
+   authenticate against and the org you land in are not connected.**
+   With three orgs live, an owner can verify against Tamil Nadu and be
+   dropped into Karnataka: separate legal entities, separate books.
+   This has not bitten only because row ordering happened to favour
+   APC. It must be impossible, not unlikely.
+
+4. **`.first` is not stable anywhere.** Neither `resolveVendorOrgs`
+   (`vendor_org_resolver.dart:39`) nor main.dart's restore query has an
+   `ORDER BY`, so "first membership" is whatever the planner returns
+   and can change between calls. **Add `order by created_at` to both
+   regardless of the `.first` removal** (Arun, 27 Aug) — arbitrary row
+   order will otherwise bite something else later.
+
+**DESIGN DECISION (Arun, 27 Aug 2026): do NOT prompt for an org at
+every login.** Most users have exactly one org; a picker every time is
+pure friction. Restore the last org **silently**, show the current org
+name clearly on the dashboard, keep the switcher in Settings. Picker
+only when there is no stored choice.
+
+This makes the login-time picker at `login_page_widget.dart:118`
+**wrong by design**, not merely unreached.
+
+**Consequence that is now a safety requirement, not polish: the org
+name must be visible on the dashboard.** Under silent restore with no
+picker it is the ONLY signal telling an owner which company he is
+looking at, and these are separate legal entities with separate books.
+
 ### 10.5 GSTIN entry rules — RECORD ONLY, not built
 
 Same free-then-locked shape as the prefix rule in section 9.3:
@@ -743,7 +936,105 @@ Same free-then-locked shape as the prefix rule in section 9.3:
 
 ---
 
-## 11. Recommended next
+## 11. The wipe — sequence, and the one post-wipe cleanup
+
+Agreed 27 Aug 2026. **The wipe happens once, and everything that exists
+afterwards is production from the first row.** Hence the ordering: do
+the risky, schema-touching work on junk data first.
+
+1. **Switcher test** — a disposable `test-karnataka` org under Arun's
+   auth user, created by hand in SQL. This is the first time any
+   `availableOrgs.length > 1` branch will ever execute (section 10.4).
+2. **Run `20260827_branches_management.sql`** — deliberately tested
+   against junk data rather than production.
+3. **Build the `p_intent` path + the `auth_deep_link.dart:167` fix**,
+   and create a third org through it.
+   **Write step 3's migration against the POST-STEP-2 function body.**
+   Both migrations rewrite `create_org_with_owner`; re-read
+   `pg_get_functiondef` after step 2 rather than working from an
+   earlier copy, or step 3 will silently revert step 2's
+   `seed_org_default_branch` call. (This is the same class as the
+   `CREATE OR REPLACE` hazards already in CLAUDE.md.)
+4. **Wipe everything.**
+5. **Create the real three orgs — TWO different flows**, not one:
+   - Org #1 (Tamil Nadu) through **signup**.
+   - Orgs #2 and #3 (Karnataka, Andhra) through **Super Admin
+     `p_intent`** — signup cannot create them, which is the whole
+     blocker (section 10.4).
+
+### 11.1 POST-WIPE: validate the prefix constraint
+
+`number_series_prefix_format` was added `NOT VALID` for exactly one
+reason: five APC rows carried `prefix = ''` and were being preserved as
+evidence (section 9.6). **Those rows are test artefacts and go with the
+wipe.**
+
+Once the wipe is done, and before real documents are issued:
+
+```sql
+alter table public.number_series
+  validate constraint number_series_prefix_format;
+```
+
+Verify first that nothing violates it (should return 0 after the wipe):
+
+```sql
+select count(*) from number_series
+ where prefix is null or prefix !~ '^[A-Za-z0-9/-]{1,10}$';
+```
+
+This turns a guard that only covers new writes into one that covers the
+whole table permanently. **Do not skip it** — leaving the constraint
+`NOT VALID` forever was never the intent, only a concession to data
+that is about to cease existing. All 14 seeded prefixes
+(`2026/`, `LR`, `CLM-`, `CTR-`, `GRN-`, `PS-`, `PO-`, `STG-`) already
+satisfy the pattern, so validation is safe by construction.
+
+---
+
+## 12. Environment hazards on the dev machine
+
+Things that are not wrong right now but are one accident away from
+being wrong, in ways that would look like a code bug.
+
+### 12.1 TWO Flutter installs — only PATH order protects the pinned one
+
+Found 27 Aug 2026 while inspecting `$PATH`:
+
+```
+C:\src\flutter\bin                               <- 3.35.5  (pinned, correct)
+C:\dev\flutter_windows_3.44.2-stable\flutter\bin <- 3.44.2  (a second install)
+```
+
+`C:\src\flutter\bin` currently sorts first, so every `flutter` call this
+session resolved to **3.35.5** and nothing is presently broken.
+
+**Why it matters:** CLAUDE.md's first environment rule pins 3.35.5
+because newer Flutter marks `IconData` as `final`, which breaks the
+pinned `font_awesome_flutter 10.x` and `page_transition 2.x`. If PATH
+order ever flips — a reinstall, an IDE writing PATH, a new shell
+profile — builds would silently use 3.44.2 and fail in exactly the
+documented way, while `flutter --version` in a different shell might
+still report the pinned one.
+
+**Same class as the stale `.git/index.lock`** (section 5): an
+environment condition that produces a confusing failure attributed to
+code. Either remove the 3.44.2 install or keep this note.
+
+**Always confirm with `flutter --version` in the same shell** before
+concluding a build failure is a code problem.
+
+### 12.2 Git Bash PATH can lose `/usr/bin` mid-session
+
+Also 27 Aug 2026: `grep`, `head` and `python` vanished from the Bash
+tool's PATH partway through a session (`/usr/bin` dropped; `git` in
+`Git\cmd` survived). Not fatal — use the dedicated Grep/Read tools or
+PowerShell — but it presents as "command not found" for tools that
+worked minutes earlier, which reads like a broken machine.
+
+---
+
+## 13. Recommended next
 
 1. **Run the device-register migration** (§3) — inert, zero-risk, off the
    critical path once done.
