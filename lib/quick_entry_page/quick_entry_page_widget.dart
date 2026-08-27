@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -51,9 +52,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              '3tpaq8no' /* Quick Entry */,
-            ),
+            AppLocalizations.of(context).quickEntry,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -84,9 +83,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    FFLocalizations.of(context).getText(
-                      'tkcgd885' /* What would you like to do? */,
-                    ),
+                    AppLocalizations.of(context).whatWouldYouLikeToDo,
                     style: FlutterFlowTheme.of(context).bodySmall.override(
                           font: GoogleFonts.inter(
                             fontWeight: FlutterFlowTheme.of(context)
@@ -140,9 +137,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                     size: 28.0,
                                   ),
                                   Text(
-                                    FFLocalizations.of(context).getText(
-                                      'nzsigfsp' /* New Inquiry */,
-                                    ),
+                                    AppLocalizations.of(context).newInquiry,
                                     textAlign: TextAlign.center,
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
@@ -207,9 +202,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                     size: 28.0,
                                   ),
                                   Text(
-                                    FFLocalizations.of(context).getText(
-                                      '9xkwd03w' /* Confirm Booking */,
-                                    ),
+                                    AppLocalizations.of(context).confirmBooking,
                                     textAlign: TextAlign.center,
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
@@ -282,9 +275,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                     size: 28.0,
                                   ),
                                   Text(
-                                    FFLocalizations.of(context).getText(
-                                      'r9blfwzc' /* Record Payment */,
-                                    ),
+                                    AppLocalizations.of(context).recordPayment,
                                     textAlign: TextAlign.center,
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
@@ -349,9 +340,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                     size: 28.0,
                                   ),
                                   Text(
-                                    FFLocalizations.of(context).getText(
-                                      'cb1xceiy' /* Quick Expense */,
-                                    ),
+                                    AppLocalizations.of(context).quickExpense,
                                     textAlign: TextAlign.center,
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium

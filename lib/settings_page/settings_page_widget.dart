@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/last_selected_org.dart';
 import '/backend/session_logout.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -8,6 +9,7 @@ import '/components/org_switcher_sheet.dart';
 import '/main.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
@@ -99,6 +101,59 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     );
   }
 
+  /// Language names are shown in their OWN script, never transliterated
+  /// and never in English. A picker that lists "Tamil" in Latin script is
+  /// useless to the person who most needs it — the crew member who cannot
+  /// read English is the reason this control exists. Keys must match
+  /// `FFLocalizations.languages()`.
+  static const Map<String, String> _kLanguageNames = {
+    'en': 'English',
+    'ta': 'தமிழ்',
+    'hi': 'हिन्दी',
+    'kn': 'ಕನ್ನಡ',
+  };
+
+  /// Same segmented-chip pattern as [_themeVariantChip] above.
+  ///
+  /// Note this switches the app locale immediately and persists it via
+  /// `FFLocalizations.storeLocale`, so it survives a restart. Coverage is
+  /// currently partial by construction — only the 18 FlutterFlow-export
+  /// pages read from the translation map, and none of its non-English
+  /// slots are filled yet, so today every locale renders English via the
+  /// fallback added in internationalization.dart. That is the intended
+  /// interim state: the control and the plumbing land first, the strings
+  /// follow. It must never render blank, which is what the fallback fix
+  /// guarantees.
+  Widget _languageChip(BuildContext context, String code) {
+    final selected = FFLocalizations.of(context).languageCode == code;
+    final theme = FlutterFlowTheme.of(context);
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => MyApp.of(context).setLocale(code),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? theme.primary : Colors.transparent,
+            border: Border.all(
+                color: selected ? theme.primary : theme.secondaryText),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            _kLanguageNames[code] ?? code,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : theme.primaryText,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -113,9 +168,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              'cz7z9tmt' /* Settings */,
-            ),
+            AppLocalizations.of(context).settings,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -182,9 +235,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                 Text(
                                   AppSession.instance.currentStaffName ??
                                       AppSession.instance.currentOrgName ??
-                                      FFLocalizations.of(context).getText(
-                                        'zcpo2iw6' /* Arun Packers Staff */,
-                                      ),
+                                      AppLocalizations.of(context).arunPackersStaff,
                                   style: FlutterFlowTheme.of(context)
                                       .titleMedium
                                       .override(
@@ -211,9 +262,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                 ),
                                 Text(
                                   _model.org?.email ??
-                                      FFLocalizations.of(context).getText(
-                                        '19brtj5o' /* admin@arunpackers.in */,
-                                      ),
+                                      AppLocalizations.of(context).adminArunpackersIn,
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
                                       .override(
@@ -432,9 +481,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                 padding: const EdgeInsetsDirectional.fromSTEB(
                                     16.0, 10.0, 16.0, 10.0),
                                 child: Text(
-                                  FFLocalizations.of(context).getText(
-                                    'k98o66fi' /* Company */,
-                                  ),
+                                  AppLocalizations.of(context).company,
                                   style: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -490,9 +537,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            FFLocalizations.of(context).getText(
-                                              'h1jc4f98' /* Business Name */,
-                                            ),
+                                            AppLocalizations.of(context).businessName,
                                             style: FlutterFlowTheme.of(context)
                                                 .bodyMedium
                                                 .override(
@@ -528,10 +573,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             _model.org?.name ??
                                                 AppSession
                                                     .instance.currentOrgName ??
-                                                FFLocalizations.of(context)
-                                                    .getText(
-                                                  'ry0wjnc3' /* Arun Packers and Couriers */,
-                                                ),
+                                                AppLocalizations.of(context).settingsPageArunPackersAndCouriers,
                                             style: FlutterFlowTheme.of(context)
                                                 .bodySmall
                                                 .override(
@@ -605,9 +647,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            FFLocalizations.of(context).getText(
-                                              'uf746q6u' /* Phone */,
-                                            ),
+                                            AppLocalizations.of(context).phone,
                                             style: FlutterFlowTheme.of(context)
                                                 .bodyMedium
                                                 .override(
@@ -641,10 +681,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                           ),
                                           Text(
                                             _model.org?.phone ??
-                                                FFLocalizations.of(context)
-                                                    .getText(
-                                                  '2po3kk4v' /* +91 44 XXXX XXXX */,
-                                                ),
+                                                AppLocalizations.of(context).n9144XxxxXxxx,
                                             style: FlutterFlowTheme.of(context)
                                                 .bodySmall
                                                 .override(
@@ -718,9 +755,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            FFLocalizations.of(context).getText(
-                                              '3beh35ql' /* GST Number */,
-                                            ),
+                                            AppLocalizations.of(context).gstNumber,
                                             style: FlutterFlowTheme.of(context)
                                                 .bodyMedium
                                                 .override(
@@ -754,10 +789,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                           ),
                                           Text(
                                             _model.org?.gstin ??
-                                                FFLocalizations.of(context)
-                                                    .getText(
-                                                  'r1lru16f' /* XXXXXXXXXXXX */,
-                                                ),
+                                                AppLocalizations.of(context).xxxxxxxxxxxx,
                                             style: FlutterFlowTheme.of(context)
                                                 .bodySmall
                                                 .override(
@@ -824,9 +856,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                 padding: const EdgeInsetsDirectional.fromSTEB(
                                     16.0, 10.0, 16.0, 10.0),
                                 child: Text(
-                                  FFLocalizations.of(context).getText(
-                                    'raio6xu4' /* App */,
-                                  ),
+                                  AppLocalizations.of(context).app,
                                   style: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -990,6 +1020,65 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                 ],
                               ),
                             ),
+                            // Language (NG-055, 27 Aug 2026). FFLocalizations
+                            // has been wired into main.dart since the
+                            // FlutterFlow export — delegate registered,
+                            // setLocale implemented, locale persisted — but
+                            // setLocale had NO caller anywhere outside
+                            // main.dart itself, so the feature was
+                            // unreachable by a user. This is that caller.
+                            // Deliberately not owner-gated: a driver or
+                            // packer is exactly who needs it.
+                            Padding(
+                              padding: const EdgeInsetsDirectional.fromSTEB(
+                                  16.0, 6.0, 16.0, 14.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.language,
+                                        color: FlutterFlowTheme.of(context)
+                                            .primary,
+                                        size: 20.0,
+                                      ),
+                                      const SizedBox(width: 14.0),
+                                      Text(
+                                        'Language',
+                                        style: FlutterFlowTheme.of(context)
+                                            .bodyMedium
+                                            .override(
+                                              font: GoogleFonts.inter(
+                                                fontWeight:
+                                                    FlutterFlowTheme.of(
+                                                            context)
+                                                        .bodyMedium
+                                                        .fontWeight,
+                                              ),
+                                              color: FlutterFlowTheme.of(
+                                                      context)
+                                                  .primaryText,
+                                              letterSpacing: 0.0,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10.0),
+                                  Row(
+                                    children: [
+                                      for (final code
+                                          in FFLocalizations.languages()) ...[
+                                        _languageChip(context, code),
+                                        if (code !=
+                                            FFLocalizations.languages().last)
+                                          const SizedBox(width: 6),
+                                      ],
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1021,6 +1110,12 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                               graceDays: sessionData.graceDays,
                               orgActive: sessionData.orgActive,
                             );
+                            // TODO(W2) resolved: persist this switch so a
+                            // later reload restores the same org instead
+                            // of falling back to the first org_members
+                            // row. See last_selected_org.dart's doc
+                            // comment.
+                            await LastSelectedOrg.set(sessionData.orgId);
                             // CORRECTED 18 Aug 2026. This used to claim a
                             // "full route rebuild so every org-scoped page
                             // re-queries" — it does no such thing. Tab
@@ -1070,9 +1165,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                           const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
                         onPressed: () => performLogout(context),
-                        text: FFLocalizations.of(context).getText(
-                          'fk4gq2pn' /* Logout */,
-                        ),
+                        text: AppLocalizations.of(context).logout,
                         icon: const Icon(
                           Icons.logout,
                           size: 20.0,

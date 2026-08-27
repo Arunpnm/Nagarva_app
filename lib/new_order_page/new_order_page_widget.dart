@@ -7,6 +7,7 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import '/index.dart';
@@ -312,9 +313,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
           title: Text(
             widget.orderId != null
                 ? 'Edit Order'
-                : FFLocalizations.of(context).getText(
-                    'r5yeqjot' /* New Order */,
-                  ),
+                : AppLocalizations.of(context).newOrder,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -370,9 +369,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  FFLocalizations.of(context).getText(
-                                    'awzv09jd' /* Customer */,
-                                  ),
+                                  AppLocalizations.of(context).newOrderPageCustomer,
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
@@ -404,13 +401,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      '5eykr8yi' /* Customer Name * */,
-                                    ),
+                                        AppLocalizations.of(context).newOrderPageCustomerName,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'inzvayo2' /* Full name */,
-                                    ),
+                                        AppLocalizations.of(context).fullName,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -466,13 +459,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'qj78jpcl' /* Phone * */,
-                                    ),
+                                        AppLocalizations.of(context).newOrderPagePhone,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'kzh2zgf1' /* +91 XXXXX XXXXX */,
-                                    ),
+                                        AppLocalizations.of(context).n91XxxxxXxxxx,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -541,9 +530,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  FFLocalizations.of(context).getText(
-                                    'mamavt7j' /* Move Details */,
-                                  ),
+                                  AppLocalizations.of(context).moveDetails,
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
@@ -575,13 +562,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'pqtmtigy' /* From City * */,
-                                    ),
+                                        AppLocalizations.of(context).fromCity,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      '7t7zx16p' /* Origin city */,
-                                    ),
+                                        AppLocalizations.of(context).originCity,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -637,13 +620,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      '7uknf493' /* To City * */,
-                                    ),
+                                        AppLocalizations.of(context).toCity,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'rpzj35pp' /* Destination city */,
-                                    ),
+                                        AppLocalizations.of(context).destinationCity,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -700,13 +679,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'wpim6v1x' /* From Address */,
-                                    ),
+                                        AppLocalizations.of(context).fromAddress,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'xmvalzhf' /* Pickup address */,
-                                    ),
+                                        AppLocalizations.of(context).pickupAddress,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -762,13 +737,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      '7qgwc0ts' /* To Address */,
-                                    ),
+                                        AppLocalizations.of(context).toAddress,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'gjo6q6u9' /* Drop address */,
-                                    ),
+                                        AppLocalizations.of(context).dropAddress,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -824,13 +795,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'ptpbyftb' /* From Floor */,
-                                    ),
+                                        AppLocalizations.of(context).fromFloor,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'cqx4d0tm' /* e.g. 2nd floor */,
-                                    ),
+                                        AppLocalizations.of(context).eG2ndFloor,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -886,13 +853,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      '37ivzayq' /* To Floor */,
-                                    ),
+                                        AppLocalizations.of(context).toFloor,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'gkhw0lho' /* e.g. Ground floor */,
-                                    ),
+                                        AppLocalizations.of(context).eGGroundFloor,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -966,10 +929,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              FFLocalizations.of(context)
-                                                  .getText(
-                                                '87o00u95' /* Move Date * */,
-                                              ),
+                                              AppLocalizations.of(context).newOrderPageMoveDate,
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -1007,10 +967,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                 false))
                                               Container(
                                                 child: Text(
-                                                  FFLocalizations.of(context)
-                                                      .getText(
-                                                    '98chvhj9' /* Tap to pick date */,
-                                                  ),
+                                                  AppLocalizations.of(context).tapToPickDate,
                                                   style: FlutterFlowTheme.of(
                                                           context)
                                                       .bodyMedium
@@ -1172,10 +1129,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                 });
                                               }
                                             },
-                                            text: FFLocalizations.of(context)
-                                                .getText(
-                                              'cdnifhil' /* Pick Date */,
-                                            ),
+                                            text: AppLocalizations.of(context).pickDate,
                                             icon: const Icon(
                                               Icons.calendar_today,
                                               size: 20.0,
@@ -1228,9 +1182,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  FFLocalizations.of(context).getText(
-                                    'nco7t7r5' /* Pricing & Classification */,
-                                  ),
+                                  AppLocalizations.of(context).pricingClassification,
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
@@ -1262,13 +1214,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'ksnfzp2x' /* Amount (₹) * */,
-                                    ),
+                                        AppLocalizations.of(context).newOrderPageAmount,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'j6tfu4aq' /* 0.00 */,
-                                    ),
+                                        AppLocalizations.of(context).n000,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -1324,24 +1272,12 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                           .ordServiceDropdownValueController ??=
                                       FormFieldController<String>(null),
                                   options: [
-                                    FFLocalizations.of(context).getText(
-                                      'vmn2hl08' /* House Shifting */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'izvd10wn' /* Office Shifting */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'xwgt552n' /* Vehicle Transport */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'avp5p7ec' /* Storage */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'f2jjjz82' /* Packing Only */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'ob0kcq3s' /* Long Distance */,
-                                    )
+                                    AppLocalizations.of(context).houseShifting,
+                                    AppLocalizations.of(context).officeShifting,
+                                    AppLocalizations.of(context).vehicleTransport,
+                                    AppLocalizations.of(context).storage,
+                                    AppLocalizations.of(context).packingOnly,
+                                    AppLocalizations.of(context).longDistance
                                   ],
                                   onChanged: (val) async {
                                     safeSetState(() =>
@@ -1371,9 +1307,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                             .bodyMedium
                                             .fontStyle,
                                       ),
-                                  hintText: FFLocalizations.of(context).getText(
-                                    'aaujq7tf' /* Select service */,
-                                  ),
+                                  hintText: AppLocalizations.of(context).selectService,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     color: FlutterFlowTheme.of(context)
@@ -1394,9 +1328,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   isSearchable: false,
                                   isMultiSelect: false,
                                   labelText:
-                                      FFLocalizations.of(context).getText(
-                                    'do548kxy' /* Service * */,
-                                  ),
+                                      AppLocalizations.of(context).newOrderPageService,
                                   labelTextStyle: const TextStyle(),
                                 ),
                                 FlutterFlowDropDown<String>(
@@ -1440,9 +1372,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                             .bodyMedium
                                             .fontStyle,
                                       ),
-                                  hintText: FFLocalizations.of(context).getText(
-                                    'iugzql5f' /* Select branch */,
-                                  ),
+                                  hintText: AppLocalizations.of(context).selectBranch,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     color: FlutterFlowTheme.of(context)
@@ -1463,9 +1393,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   isSearchable: false,
                                   isMultiSelect: false,
                                   labelText:
-                                      FFLocalizations.of(context).getText(
-                                    'laad7rkm' /* Branch * */,
-                                  ),
+                                      AppLocalizations.of(context).branch,
                                   labelTextStyle: const TextStyle(),
                                 ),
                                 FlutterFlowDropDown<String>(
@@ -1473,12 +1401,8 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       _model.ordTypeDropdownValueController ??=
                                           FormFieldController<String>(null),
                                   options: [
-                                    FFLocalizations.of(context).getText(
-                                      'buwnzpqf' /* Direct */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'n7wrocei' /* Porter */,
-                                    )
+                                    AppLocalizations.of(context).direct,
+                                    AppLocalizations.of(context).newOrderPagePorter
                                   ],
                                   onChanged: (val) async {
                                     safeSetState(() =>
@@ -1508,9 +1432,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                             .bodyMedium
                                             .fontStyle,
                                       ),
-                                  hintText: FFLocalizations.of(context).getText(
-                                    '4znc9ke0' /* Select type */,
-                                  ),
+                                  hintText: AppLocalizations.of(context).selectType,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     color: FlutterFlowTheme.of(context)
@@ -1531,9 +1453,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   isSearchable: false,
                                   isMultiSelect: false,
                                   labelText:
-                                      FFLocalizations.of(context).getText(
-                                    '581zy15a' /* Order Type * */,
-                                  ),
+                                      AppLocalizations.of(context).orderType,
                                   labelTextStyle: const TextStyle(),
                                 ),
                                 if (_model.ordType == 'Porter')
@@ -1544,12 +1464,8 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                               .ordPorterCommDropdownValueController ??=
                                           FormFieldController<String>(null),
                                       options: [
-                                        FFLocalizations.of(context).getText(
-                                          'wl21eo0f' /* 16 */,
-                                        ),
-                                        FFLocalizations.of(context).getText(
-                                          '8m4tknb1' /* 19 */,
-                                        )
+                                        AppLocalizations.of(context).n16,
+                                        AppLocalizations.of(context).n19
                                       ],
                                       onChanged: (val) async {
                                         safeSetState(() => _model
@@ -1582,9 +1498,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                     .fontStyle,
                                           ),
                                       hintText:
-                                          FFLocalizations.of(context).getText(
-                                        '4g75at47' /* Select commission */,
-                                      ),
+                                          AppLocalizations.of(context).selectCommission,
                                       icon: Icon(
                                         Icons.keyboard_arrow_down_rounded,
                                         color: FlutterFlowTheme.of(context)
@@ -1605,9 +1519,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       isSearchable: false,
                                       isMultiSelect: false,
                                       labelText:
-                                          FFLocalizations.of(context).getText(
-                                        '3kefljy6' /* Porter Commission % */,
-                                      ),
+                                          AppLocalizations.of(context).porterCommission,
                                       labelTextStyle: const TextStyle(),
                                     ),
                                   ),
@@ -1619,14 +1531,8 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         .ordPorterCashCollectFieldFocusNode,
                                     obscureText: false,
                                     decoration: InputDecoration(
-                                      labelText: FFLocalizations.of(context)
-                                          .getText(
-                                        'porcashcol1' /* Cash Collected by Porter (₹) */,
-                                      ),
-                                      hintText: FFLocalizations.of(context)
-                                          .getText(
-                                        'porcashcol2' /* Leave blank if none collected yet */,
-                                      ),
+                                      labelText: AppLocalizations.of(context).cashCollectedByPorter,
+                                      hintText: AppLocalizations.of(context).leaveBlankIfNoneCollectedYet,
                                       filled: true,
                                     ),
                                     style: const TextStyle(),
@@ -1777,13 +1683,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'viyeogi2' /* Notes */,
-                                    ),
+                                        AppLocalizations.of(context).notes,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'c6uor7wa' /* Additional details */,
-                                    ),
+                                        AppLocalizations.of(context).additionalDetails,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -2110,9 +2012,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                             },
                             text: widget.orderId != null
                                 ? 'Update Order'
-                                : FFLocalizations.of(context).getText(
-                                    'j7jprv8l' /* Save Order */,
-                                  ),
+                                : AppLocalizations.of(context).saveOrder,
                             icon: const Icon(
                               Icons.save,
                               size: 20.0,

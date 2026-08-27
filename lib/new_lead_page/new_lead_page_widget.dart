@@ -4,6 +4,7 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import '/index.dart';
@@ -168,9 +169,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
           title: Text(
             widget.leadId != null
                 ? 'Edit Lead'
-                : FFLocalizations.of(context).getText(
-                    '8abdh8kl' /* New Lead */,
-                  ),
+                : AppLocalizations.of(context).newLead,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -222,9 +221,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  FFLocalizations.of(context).getText(
-                                    'g9dwuxwa' /* Contact */,
-                                  ),
+                                  AppLocalizations.of(context).contact,
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
@@ -256,13 +253,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'qkhgnzdq' /* Customer Name * */,
-                                    ),
+                                        AppLocalizations.of(context).newOrderPageCustomerName,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      '51of1xk6' /* Full name */,
-                                    ),
+                                        AppLocalizations.of(context).fullName,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -317,13 +310,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'xe3mj8hc' /* Phone * */,
-                                    ),
+                                        AppLocalizations.of(context).newOrderPagePhone,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      '9hfe6x4j' /* +91 XXXXX XXXXX */,
-                                    ),
+                                        AppLocalizations.of(context).n91XxxxxXxxxx,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -379,13 +368,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'vqqkih8q' /* Email */,
-                                    ),
+                                        AppLocalizations.of(context).email,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'giua4r66' /* email@example.com */,
-                                    ),
+                                        AppLocalizations.of(context).emailExampleCom,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -453,9 +438,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  FFLocalizations.of(context).getText(
-                                    'efi3vmrv' /* Move Details */,
-                                  ),
+                                  AppLocalizations.of(context).moveDetails,
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
@@ -487,13 +470,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'klihmzbp' /* From City */,
-                                    ),
+                                        AppLocalizations.of(context).newLeadPageFromCity,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      '4him4871' /* Origin city */,
-                                    ),
+                                        AppLocalizations.of(context).originCity,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -549,13 +528,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      '3w9vwau0' /* To City */,
-                                    ),
+                                        AppLocalizations.of(context).newLeadPageToCity,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'kzelw06s' /* Destination city */,
-                                    ),
+                                        AppLocalizations.of(context).destinationCity,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -629,10 +604,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              FFLocalizations.of(context)
-                                                  .getText(
-                                                'zoiv1m4b' /* Approx Date * */,
-                                              ),
+                                              AppLocalizations.of(context).approxDate,
                                               style:
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
@@ -670,10 +642,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                 false))
                                               Container(
                                                 child: Text(
-                                                  FFLocalizations.of(context)
-                                                      .getText(
-                                                    '4rh4ggrx' /* Tap to pick date */,
-                                                  ),
+                                                  AppLocalizations.of(context).tapToPickDate,
                                                   style: FlutterFlowTheme.of(
                                                           context)
                                                       .bodyMedium
@@ -839,10 +808,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                 });
                                               }
                                             },
-                                            text: FFLocalizations.of(context)
-                                                .getText(
-                                              'ot7t0qf9' /* Pick Date */,
-                                            ),
+                                            text: AppLocalizations.of(context).pickDate,
                                             icon: const Icon(
                                               Icons.calendar_today,
                                               size: 20.0,
@@ -884,24 +850,12 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                         _model.ldService,
                                   ),
                                   options: [
-                                    FFLocalizations.of(context).getText(
-                                      'br2hucj0' /* House Shifting */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      '95i09bsm' /* Office Shifting */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'qqvqqtsc' /* Vehicle Transport */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'ucuovx6i' /* Storage */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'e6yr7u7b' /* Packing Only */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'wwv8vwa5' /* Long Distance */,
-                                    )
+                                    AppLocalizations.of(context).houseShifting,
+                                    AppLocalizations.of(context).officeShifting,
+                                    AppLocalizations.of(context).vehicleTransport,
+                                    AppLocalizations.of(context).storage,
+                                    AppLocalizations.of(context).packingOnly,
+                                    AppLocalizations.of(context).longDistance
                                   ],
                                   onChanged: (val) async {
                                     safeSetState(() =>
@@ -931,9 +885,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                             .bodyMedium
                                             .fontStyle,
                                       ),
-                                  hintText: FFLocalizations.of(context).getText(
-                                    'a6f26ge0' /* Select service */,
-                                  ),
+                                  hintText: AppLocalizations.of(context).selectService,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     color: FlutterFlowTheme.of(context)
@@ -954,9 +906,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   isSearchable: false,
                                   isMultiSelect: false,
                                   labelText:
-                                      FFLocalizations.of(context).getText(
-                                    '1w25o4fm' /* Service * */,
-                                  ),
+                                      AppLocalizations.of(context).newOrderPageService,
                                   labelTextStyle: const TextStyle(),
                                 ),
                               ].divide(const SizedBox(height: 14.0)),
@@ -978,9 +928,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  FFLocalizations.of(context).getText(
-                                    'kc08lwlm' /* Classification */,
-                                  ),
+                                  AppLocalizations.of(context).classification,
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
@@ -1013,24 +961,12 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                         _model.ldStatus,
                                   ),
                                   options: [
-                                    FFLocalizations.of(context).getText(
-                                      'inr5zv5f' /* new */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      '651htdcq' /* contacted */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'touvbpiu' /* survey_done */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      '9cvtsnl0' /* quoted */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      '4ckdir1v' /* converted */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'pfibdeep' /* lost */,
-                                    )
+                                    AppLocalizations.of(context).newLeadPageNew,
+                                    AppLocalizations.of(context).newLeadPageContacted,
+                                    AppLocalizations.of(context).surveyDone,
+                                    AppLocalizations.of(context).quoted,
+                                    AppLocalizations.of(context).converted,
+                                    AppLocalizations.of(context).newLeadPageLost
                                   ],
                                   onChanged: (val) async {
                                     safeSetState(() =>
@@ -1060,9 +996,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                             .bodyMedium
                                             .fontStyle,
                                       ),
-                                  hintText: FFLocalizations.of(context).getText(
-                                    'm28isdvg' /* Select status */,
-                                  ),
+                                  hintText: AppLocalizations.of(context).selectStatus,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     color: FlutterFlowTheme.of(context)
@@ -1083,9 +1017,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   isSearchable: false,
                                   isMultiSelect: false,
                                   labelText:
-                                      FFLocalizations.of(context).getText(
-                                    '2px3tiys' /* Status * */,
-                                  ),
+                                      AppLocalizations.of(context).status,
                                   labelTextStyle: const TextStyle(),
                                 ),
                                 FlutterFlowDropDown<String>(
@@ -1096,33 +1028,15 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                         _model.ldSource,
                                   ),
                                   options: [
-                                    FFLocalizations.of(context).getText(
-                                      'mhe6egjg' /* WhatsApp */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      '92hptvr2' /* Phone Call */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'wfkjv1iw' /* Website */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'hrzdqkgt' /* Porter */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'r9ydgg1q' /* Referral */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'sr6q74zu' /* Walk-in */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      '43yslz80' /* Google */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'ow715kgl' /* JustDial */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      's6ms4ki3' /* Other */,
-                                    )
+                                    AppLocalizations.of(context).whatsapp,
+                                    AppLocalizations.of(context).phoneCall,
+                                    AppLocalizations.of(context).website,
+                                    AppLocalizations.of(context).newOrderPagePorter,
+                                    AppLocalizations.of(context).referral,
+                                    AppLocalizations.of(context).walkIn,
+                                    AppLocalizations.of(context).google,
+                                    AppLocalizations.of(context).justdial,
+                                    AppLocalizations.of(context).other
                                   ],
                                   onChanged: (val) async {
                                     safeSetState(() =>
@@ -1152,9 +1066,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                             .bodyMedium
                                             .fontStyle,
                                       ),
-                                  hintText: FFLocalizations.of(context).getText(
-                                    'alsryorj' /* How did they hear about us? */,
-                                  ),
+                                  hintText: AppLocalizations.of(context).howDidTheyHearAboutUs,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     color: FlutterFlowTheme.of(context)
@@ -1175,9 +1087,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   isSearchable: false,
                                   isMultiSelect: false,
                                   labelText:
-                                      FFLocalizations.of(context).getText(
-                                    'vd433kb2' /* Source * */,
-                                  ),
+                                      AppLocalizations.of(context).source,
                                   labelTextStyle: const TextStyle(),
                                 ),
                                 FlutterFlowDropDown<String>(
@@ -1219,9 +1129,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                             .bodyMedium
                                             .fontStyle,
                                       ),
-                                  hintText: FFLocalizations.of(context).getText(
-                                    'znu1wq8r' /* Select branch */,
-                                  ),
+                                  hintText: AppLocalizations.of(context).selectBranch,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     color: FlutterFlowTheme.of(context)
@@ -1242,9 +1150,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   isSearchable: false,
                                   isMultiSelect: false,
                                   labelText:
-                                      FFLocalizations.of(context).getText(
-                                    'yqkoiakj' /* Branch * */,
-                                  ),
+                                      AppLocalizations.of(context).branch,
                                   labelTextStyle: const TextStyle(),
                                 ),
                                 TextFormField(
@@ -1253,13 +1159,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'kbot98z0' /* Notes */,
-                                    ),
+                                        AppLocalizations.of(context).notes,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'lpp8v2mq' /* Any relevant notes */,
-                                    ),
+                                        AppLocalizations.of(context).anyRelevantNotes,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -1407,9 +1309,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                             },
                             text: widget.leadId != null
                                 ? 'Update Lead'
-                                : FFLocalizations.of(context).getText(
-                                    'sxeutefv' /* Save Lead */,
-                                  ),
+                                : AppLocalizations.of(context).saveLead,
                             icon: const Icon(
                               Icons.save,
                               size: 20.0,

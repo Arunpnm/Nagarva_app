@@ -22,6 +22,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
@@ -1434,9 +1435,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              'glfe14qd' /* Lead Details */,
-            ),
+            AppLocalizations.of(context).leadDetails,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -1616,9 +1615,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                             }.withoutNulls,
                           );
                         },
-                        text: FFLocalizations.of(context).getText(
-                          'mqy6axdn' /* Edit Lead */,
-                        ),
+                        text: AppLocalizations.of(context).editLead,
                         icon: const Icon(
                           Icons.edit,
                           size: 20.0,

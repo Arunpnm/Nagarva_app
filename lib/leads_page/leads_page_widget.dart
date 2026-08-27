@@ -7,6 +7,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
@@ -272,9 +273,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              'fw8x20a4' /* Leads / CRM */,
-            ),
+            AppLocalizations.of(context).leadsCrm,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -372,9 +371,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           CrossAxisAlignment.center,
                                       children: [
                                         Text(
-                                          FFLocalizations.of(context).getText(
-                                            'w3m6agqx' /* All */,
-                                          ),
+                                          AppLocalizations.of(context).all,
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
@@ -444,9 +441,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           CrossAxisAlignment.center,
                                       children: [
                                         Text(
-                                          FFLocalizations.of(context).getText(
-                                            '8kixhsec' /* New */,
-                                          ),
+                                          AppLocalizations.of(context).statusNew,
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
@@ -516,9 +511,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           CrossAxisAlignment.center,
                                       children: [
                                         Text(
-                                          FFLocalizations.of(context).getText(
-                                            'jt2ja9lh' /* Contacted */,
-                                          ),
+                                          AppLocalizations.of(context).contacted,
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
@@ -588,9 +581,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           CrossAxisAlignment.center,
                                       children: [
                                         Text(
-                                          FFLocalizations.of(context).getText(
-                                            'upw43toz' /* Qualified */,
-                                          ),
+                                          AppLocalizations.of(context).qualified,
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
@@ -660,9 +651,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           CrossAxisAlignment.center,
                                       children: [
                                         Text(
-                                          FFLocalizations.of(context).getText(
-                                            'go6fnsk1' /* Won */,
-                                          ),
+                                          AppLocalizations.of(context).won,
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
@@ -732,9 +721,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           CrossAxisAlignment.center,
                                       children: [
                                         Text(
-                                          FFLocalizations.of(context).getText(
-                                            'hedb3sg1' /* Lost */,
-                                          ),
+                                          AppLocalizations.of(context).lost,
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
@@ -773,9 +760,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                           ].divide(const SizedBox(width: 6.0)),
                         ),
                         Text(
-                          FFLocalizations.of(context).getText(
-                            'wknufr5y' /* Leads */,
-                          ),
+                          AppLocalizations.of(context).leads,
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
                                     font: GoogleFonts.interTight(

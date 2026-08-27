@@ -4,6 +4,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
@@ -198,9 +199,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              'nwwqh0ab' /* Expenses */,
-            ),
+            AppLocalizations.of(context).homePageExpenses,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -294,9 +293,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          FFLocalizations.of(context).getText(
-                            'nuqjojzx' /* Live Expenses */,
-                          ),
+                          AppLocalizations.of(context).liveExpenses,
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
                                     font: GoogleFonts.interTight(
@@ -662,9 +659,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                         // refreshes on pop via RefreshOnPopMixin.
                         onPressed: () =>
                             context.pushNamed(QuickExpensePageWidget.routeName),
-                        text: FFLocalizations.of(context).getText(
-                          'ul361nn3' /* Add Expense */,
-                        ),
+                        text: AppLocalizations.of(context).addExpense,
                         icon: const Icon(
                           Icons.add,
                           size: 20.0,

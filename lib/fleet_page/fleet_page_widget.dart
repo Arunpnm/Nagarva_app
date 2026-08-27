@@ -4,6 +4,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/components/load_error_state.dart';
 import 'package:flutter/material.dart';
@@ -193,9 +194,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              'i6li8jmm' /* Fleet */,
-            ),
+            AppLocalizations.of(context).fleet,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -252,9 +251,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          FFLocalizations.of(context).getText(
-                            'eblq4tku' /* Live Fleet */,
-                          ),
+                          AppLocalizations.of(context).liveFleet,
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
                                     font: GoogleFonts.interTight(

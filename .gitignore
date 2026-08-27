@@ -90,6 +90,11 @@ sentry.properties
 # pass (26 Aug 2026) — hundreds of throwaway PNGs/XML, no lasting value.
 device_pass_screens/
 
+# gen_l10n output (NG-055). Generated from lib/l10n/*.arb by
+# `flutter pub get` per l10n.yaml — five files that churn on every ARB
+# edit. A fresh clone must run `flutter pub get` before it will compile.
+lib/l10n/gen/
+
 # Tooling binaries. sentry-wizard.exe is 86MB and, more importantly,
 # MUST NOT BE RUN on this repo: it patches main.dart and pubspec.yaml to
 # inject its own Sentry.init, which would overwrite the redaction layer

@@ -1,0 +1,5 @@
+{
+  "@@locale": "ta",
+  "@@x-nagarva-note": "Tamil (தமிழ்) — Tier 1 locale, TRANSLATIONS NOT YET SUPPLIED. This file exists so the locale RESOLVES: without it, selecting Tamil (தமிழ்) in Settings would silently fall back to English with no indication, because Flutter resolves an unsupported locale to supportedLocales.first. Every message absent here falls back to the app_en.arb value at generation time, so the app renders English until a translator fills this in — never blank. Add messages by copying the key and value from app_en.arb and translating the value; do not invent keys.",
+  "@@x-nagarva-priority": "Translate in this order when a translator is engaged: (1) login/PIN, (2) dashboard tiles, (3) orders and leads lists, (4) forms. Document/PDF strings are NOT in this file and must not be translated without a decision — a GST invoice or LR/consignment note has a legally expected wording and format."
+}

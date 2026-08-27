@@ -1,0 +1,1963 @@
+{
+  "@@locale": "en",
+  "arunPackersAndCouriers": "Arun Packers And Couriers",
+  "@arunPackersAndCouriers": {
+    "description": "LoginPage"
+  },
+  "movingYouTowardsYourFuture": "Moving you towards your future",
+  "@movingYouTowardsYourFuture": {
+    "description": "LoginPage"
+  },
+  "nameOrPhone": "Name or Phone",
+  "@nameOrPhone": {
+    "description": "LoginPage"
+  },
+  "enterYourNameOrPhone": "Enter your name or phone",
+  "@enterYourNameOrPhone": {
+    "description": "LoginPage"
+  },
+  "pin": "PIN",
+  "@pin": {
+    "description": "LoginPage"
+  },
+  "n4DigitPin": "4-digit PIN",
+  "@n4DigitPin": {
+    "description": "LoginPage"
+  },
+  "login": "LOGIN",
+  "@login": {
+    "description": "LoginPage"
+  },
+  "securedEncrypted": "Secured & Encrypted",
+  "@securedEncrypted": {
+    "description": "LoginPage"
+  },
+  "dashboard": "Dashboard",
+  "@dashboard": {
+    "description": "HomePage (used 2x)"
+  },
+  "thisMonth": "THIS MONTH",
+  "@thisMonth": {
+    "description": "HomePage"
+  },
+  "revenue": "REVENUE",
+  "@revenue": {
+    "description": "HomePage"
+  },
+  "labour": "LABOUR",
+  "@labour": {
+    "description": "HomePage"
+  },
+  "expenses": "EXPENSES",
+  "@expenses": {
+    "description": "HomePage"
+  },
+  "porter": "PORTER",
+  "@porter": {
+    "description": "HomePage"
+  },
+  "netProfit": "NET PROFIT",
+  "@netProfit": {
+    "description": "HomePage"
+  },
+  "activeLeads": "ACTIVE LEADS",
+  "@activeLeads": {
+    "description": "HomePage"
+  },
+  "ordersMonth": "ORDERS/MONTH",
+  "@ordersMonth": {
+    "description": "HomePage"
+  },
+  "outstanding": "OUTSTANDING",
+  "@outstanding": {
+    "description": "HomePage"
+  },
+  "reminders": "REMINDERS",
+  "@reminders": {
+    "description": "HomePage"
+  },
+  "monthlyTarget": "MONTHLY TARGET",
+  "@monthlyTarget": {
+    "description": "HomePage"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "HomePage"
+  },
+  "targetThisMonth": "target this month",
+  "@targetThisMonth": {
+    "description": "HomePage"
+  },
+  "eG200000": "e.g. 200000",
+  "@eG200000": {
+    "description": "HomePage"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "HomePage"
+  },
+  "upcomingOrders": "Upcoming Orders",
+  "@upcomingOrders": {
+    "description": "HomePage"
+  },
+  "calendar": "Calendar ->",
+  "@calendar": {
+    "description": "HomePage"
+  },
+  "hotLeads": "Hot Leads",
+  "@hotLeads": {
+    "description": "HomePage"
+  },
+  "viewAll": "View All ->",
+  "@viewAll": {
+    "description": "HomePage"
+  },
+  "branchPerformance": "BRANCH PERFORMANCE",
+  "@branchPerformance": {
+    "description": "HomePage"
+  },
+  "orders": "Orders",
+  "@orders": {
+    "description": "HomePage; OrdersPage (used 3x)"
+  },
+  "leads": "Leads",
+  "@leads": {
+    "description": "HomePage; LeadsPage (used 2x)"
+  },
+  "operations": "Operations",
+  "@operations": {
+    "description": "HomePage; OperationsPage (used 2x)"
+  },
+  "payments": "Payments",
+  "@payments": {
+    "description": "HomePage; PaymentsPage (used 2x)"
+  },
+  "homePageExpenses": "Expenses",
+  "@homePageExpenses": {
+    "description": "ExpensePage; HomePage; PLReportPage (used 3x)"
+  },
+  "salary": "Salary",
+  "@salary": {
+    "description": "HomePage; QuickExpensePage; SalaryPage (used 3x)"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "HomePage; SettingsPage (used 2x)"
+  },
+  "logout": "Logout",
+  "@logout": {
+    "description": "HomePage; SettingsPage (used 2x)"
+  },
+  "all": "All",
+  "@all": {
+    "description": "LeadsPage; OrdersPage; UsersPage (used 11x)"
+  },
+  "pending": "Pending",
+  "@pending": {
+    "description": "OrdersPage; SalaryPage (used 13x)"
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "OrdersPage (used 2x)"
+  },
+  "cancelled": "Cancelled",
+  "@cancelled": {
+    "description": "OrdersPage (used 9x)"
+  },
+  "confirmed": "Confirmed",
+  "@confirmed": {
+    "description": "OrdersPage (used 8x)"
+  },
+  "transit": "Transit",
+  "@transit": {
+    "description": "OrdersPage (used 8x)"
+  },
+  "done": "Done",
+  "@done": {
+    "description": "OrdersPage (used 8x)"
+  },
+  "ord001": "ORD-001",
+  "@ord001": {
+    "description": "OrdersPage"
+  },
+  "rajeshKumar": "Rajesh Kumar",
+  "@rajeshKumar": {
+    "description": "AccountsPage; OrdersPage; PaymentsPage (used 3x)"
+  },
+  "chennaiBangalore": "Chennai → Bangalore",
+  "@chennaiBangalore": {
+    "description": "OrdersPage"
+  },
+  "n12500": "₹12,500",
+  "@n12500": {
+    "description": "ExpensePage; OrdersPage; PLReportPage; PaymentsPage (used 4x)"
+  },
+  "ord002": "ORD-002",
+  "@ord002": {
+    "description": "OrdersPage"
+  },
+  "priyaSharma": "Priya Sharma",
+  "@priyaSharma": {
+    "description": "AccountsPage; OrdersPage; PaymentsPage (used 3x)"
+  },
+  "mumbaiPune": "Mumbai → Pune",
+  "@mumbaiPune": {
+    "description": "OrdersPage"
+  },
+  "n8000": "₹8,000",
+  "@n8000": {
+    "description": "OrdersPage; PaymentsPage (used 2x)"
+  },
+  "ord003": "ORD-003",
+  "@ord003": {
+    "description": "OrdersPage"
+  },
+  "inTransit": "In Transit",
+  "@inTransit": {
+    "description": "OperationsPage; OrdersPage (used 2x)"
+  },
+  "anandVerma": "Anand Verma",
+  "@anandVerma": {
+    "description": "OrdersPage; PaymentsPage (used 2x)"
+  },
+  "delhiNoida": "Delhi → Noida",
+  "@delhiNoida": {
+    "description": "OrdersPage"
+  },
+  "n5500": "₹5,500",
+  "@n5500": {
+    "description": "OrdersPage; PaymentsPage (used 2x)"
+  },
+  "ord004": "ORD-004",
+  "@ord004": {
+    "description": "OrdersPage"
+  },
+  "sunitaDevi": "Sunita Devi",
+  "@sunitaDevi": {
+    "description": "OrdersPage; PaymentsPage (used 2x)"
+  },
+  "hyderabadChennai": "Hyderabad → Chennai",
+  "@hyderabadChennai": {
+    "description": "OrdersPage"
+  },
+  "n9200": "₹9,200",
+  "@n9200": {
+    "description": "OrdersPage"
+  },
+  "leadsCrm": "Leads / CRM",
+  "@leadsCrm": {
+    "description": "LeadsPage"
+  },
+  "n8": "8",
+  "@n8": {
+    "description": "CalendarPage; LeadsPage (used 2x)"
+  },
+  "statusNew": "New",
+  "@statusNew": {
+    "description": "LeadsPage (used 2x). Key is NOT 'new': an ARB key that is a Dart reserved word breaks the whole l10n build, because gen_l10n maps keys straight to getters."
+  },
+  "n5": "5",
+  "@n5": {
+    "description": "CalendarPage; LeadsPage (used 2x)"
+  },
+  "contacted": "Contacted",
+  "@contacted": {
+    "description": "LeadsPage (used 3x)"
+  },
+  "n3": "3",
+  "@n3": {
+    "description": "CalendarPage; LeadsPage; MaterialsPage (used 3x)"
+  },
+  "qualified": "Qualified",
+  "@qualified": {
+    "description": "LeadsPage (used 3x)"
+  },
+  "n2": "2",
+  "@n2": {
+    "description": "CalendarPage; FleetPage; LeadsPage (used 3x)"
+  },
+  "won": "Won",
+  "@won": {
+    "description": "LeadsPage (used 2x)"
+  },
+  "lost": "Lost",
+  "@lost": {
+    "description": "LeadsPage"
+  },
+  "raviMenon": "Ravi Menon",
+  "@raviMenon": {
+    "description": "LeadsPage"
+  },
+  "n919840012345": "+91 98400 12345",
+  "@n919840012345": {
+    "description": "LeadsPage"
+  },
+  "chennaiTn": "Chennai, TN",
+  "@chennaiTn": {
+    "description": "LeadsPage"
+  },
+  "newLead": "New Lead",
+  "@newLead": {
+    "description": "LeadsPage; NewLeadPage (used 3x)"
+  },
+  "deepaNair": "Deepa Nair",
+  "@deepaNair": {
+    "description": "LeadsPage"
+  },
+  "n919447067890": "+91 94470 67890",
+  "@n919447067890": {
+    "description": "LeadsPage"
+  },
+  "coimbatoreTn": "Coimbatore, TN",
+  "@coimbatoreTn": {
+    "description": "LeadsPage"
+  },
+  "karthikS": "Karthik S.",
+  "@karthikS": {
+    "description": "LeadsPage"
+  },
+  "n919940054321": "+91 99400 54321",
+  "@n919940054321": {
+    "description": "LeadsPage"
+  },
+  "maduraiTn": "Madurai, TN",
+  "@maduraiTn": {
+    "description": "LeadsPage"
+  },
+  "meenaRaj": "Meena Raj",
+  "@meenaRaj": {
+    "description": "LeadsPage"
+  },
+  "n919380011223": "+91 93800 11223",
+  "@n919380011223": {
+    "description": "LeadsPage"
+  },
+  "trichyTn": "Trichy, TN",
+  "@trichyTn": {
+    "description": "LeadsPage"
+  },
+  "todaySJobs": "Today's Jobs",
+  "@todaySJobs": {
+    "description": "OperationsPage"
+  },
+  "n3Active": "3 Active",
+  "@n3Active": {
+    "description": "OperationsPage"
+  },
+  "tn01Ab1234": "TN-01-AB-1234",
+  "@tn01Ab1234": {
+    "description": "FleetPage; OperationsPage (used 2x)"
+  },
+  "loading": "Loading",
+  "@loading": {
+    "description": "OperationsPage"
+  },
+  "sureshDriver": "Suresh (Driver)",
+  "@sureshDriver": {
+    "description": "OperationsPage"
+  },
+  "chennaiVellore": "Chennai → Vellore",
+  "@chennaiVellore": {
+    "description": "OperationsPage"
+  },
+  "tn02Cd5678": "TN-02-CD-5678",
+  "@tn02Cd5678": {
+    "description": "FleetPage; OperationsPage (used 2x)"
+  },
+  "muruganDriver": "Murugan (Driver)",
+  "@muruganDriver": {
+    "description": "OperationsPage"
+  },
+  "salemErode": "Salem → Erode",
+  "@salemErode": {
+    "description": "OperationsPage"
+  },
+  "tn03Ef9012": "TN-03-EF-9012",
+  "@tn03Ef9012": {
+    "description": "FleetPage; OperationsPage (used 2x)"
+  },
+  "unloading": "Unloading",
+  "@unloading": {
+    "description": "OperationsPage"
+  },
+  "baluDriver": "Balu (Driver)",
+  "@baluDriver": {
+    "description": "OperationsPage"
+  },
+  "coimbatoreOoty": "Coimbatore → Ooty",
+  "@coimbatoreOoty": {
+    "description": "OperationsPage"
+  },
+  "upcoming": "Upcoming",
+  "@upcoming": {
+    "description": "OperationsPage"
+  },
+  "tn04Gh3456": "TN-04-GH-3456",
+  "@tn04Gh3456": {
+    "description": "FleetPage; OperationsPage (used 2x)"
+  },
+  "scheduled": "Scheduled",
+  "@scheduled": {
+    "description": "OperationsPage"
+  },
+  "senthilDriver": "Senthil (Driver)",
+  "@senthilDriver": {
+    "description": "OperationsPage"
+  },
+  "maduraiTirunelveli": "Madurai → Tirunelveli",
+  "@maduraiTirunelveli": {
+    "description": "OperationsPage"
+  },
+  "vehicleTripLog": "Vehicle Trip Log",
+  "@vehicleTripLog": {
+    "description": "OperationsPage"
+  },
+  "logNewTrip": "Log New Trip",
+  "@logNewTrip": {
+    "description": "OperationsPage"
+  },
+  "paymentsPageOutstanding": "Outstanding",
+  "@paymentsPageOutstanding": {
+    "description": "PaymentsPage"
+  },
+  "n42800": "₹42,800",
+  "@n42800": {
+    "description": "PaymentsPage"
+  },
+  "receivedMonth": "Received (Month)",
+  "@receivedMonth": {
+    "description": "PaymentsPage"
+  },
+  "n124000": "₹1,24,000",
+  "@n124000": {
+    "description": "PaymentsPage"
+  },
+  "pendingPaymentsLive": "Pending Payments (Live)",
+  "@pendingPaymentsLive": {
+    "description": "PaymentsPage"
+  },
+  "pendingInvoices": "Pending Invoices",
+  "@pendingInvoices": {
+    "description": "PaymentsPage"
+  },
+  "inv045": "INV-045",
+  "@inv045": {
+    "description": "PaymentsPage"
+  },
+  "due15May": "Due: 15 May",
+  "@due15May": {
+    "description": "PaymentsPage"
+  },
+  "inv046": "INV-046",
+  "@inv046": {
+    "description": "PaymentsPage"
+  },
+  "due18May": "Due: 18 May",
+  "@due18May": {
+    "description": "PaymentsPage"
+  },
+  "inv047": "INV-047",
+  "@inv047": {
+    "description": "PaymentsPage"
+  },
+  "overdue": "Overdue",
+  "@overdue": {
+    "description": "PaymentsPage"
+  },
+  "inv048": "INV-048",
+  "@inv048": {
+    "description": "PaymentsPage"
+  },
+  "due22May": "Due: 22 May",
+  "@due22May": {
+    "description": "PaymentsPage"
+  },
+  "n16800": "₹16,800",
+  "@n16800": {
+    "description": "PaymentsPage"
+  },
+  "may2025Total": "May 2025 Total",
+  "@may2025Total": {
+    "description": "ExpensePage"
+  },
+  "n68450": "₹68,450",
+  "@n68450": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "n12VsLastMonth": "↑ 12% vs last month",
+  "@n12VsLastMonth": {
+    "description": "ExpensePage"
+  },
+  "liveExpenses": "Live Expenses",
+  "@liveExpenses": {
+    "description": "ExpensePage"
+  },
+  "byCategory": "By Category",
+  "@byCategory": {
+    "description": "ExpensePage"
+  },
+  "fuel": "Fuel",
+  "@fuel": {
+    "description": "ExpensePage; PLReportPage; QuickExpensePage (used 3x)"
+  },
+  "n41": "41%",
+  "@n41": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "n28000": "₹28,000",
+  "@n28000": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "tollsPermits": "Tolls & Permits",
+  "@tollsPermits": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "n18": "18%",
+  "@n18": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "maintenance": "Maintenance",
+  "@maintenance": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "n26": "26%",
+  "@n26": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "n18000": "₹18,000",
+  "@n18000": {
+    "description": "AccountsPage; ExpensePage; PLReportPage; SalaryPage (used 4x)"
+  },
+  "expensePageLabour": "Labour",
+  "@expensePageLabour": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "n15": "15%",
+  "@n15": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "n9950": "₹9,950",
+  "@n9950": {
+    "description": "ExpensePage; PLReportPage (used 2x)"
+  },
+  "addExpense": "Add Expense",
+  "@addExpense": {
+    "description": "ExpensePage"
+  },
+  "may2025": "May 2025",
+  "@may2025": {
+    "description": "CalendarPage; SalaryPage (used 2x)"
+  },
+  "totalPayroll": "Total Payroll",
+  "@totalPayroll": {
+    "description": "SalaryPage"
+  },
+  "n182000": "₹1,82,000",
+  "@n182000": {
+    "description": "SalaryPage"
+  },
+  "liveStaffData": "Live Staff Data",
+  "@liveStaffData": {
+    "description": "SalaryPage"
+  },
+  "todaySAttendance": "Today's Attendance",
+  "@todaySAttendance": {
+    "description": "SalaryPage"
+  },
+  "label": "·",
+  "@label": {
+    "description": "SalaryPage"
+  },
+  "pendingAdvances": "Pending Advances",
+  "@pendingAdvances": {
+    "description": "SalaryPage"
+  },
+  "bal": "Bal:",
+  "@bal": {
+    "description": "SalaryPage"
+  },
+  "staff": "Staff",
+  "@staff": {
+    "description": "SalaryPage; UsersPage (used 2x)"
+  },
+  "sureshKumar": "Suresh Kumar",
+  "@sureshKumar": {
+    "description": "SalaryPage"
+  },
+  "driver": "Driver",
+  "@driver": {
+    "description": "SalaryPage; UsersPage (used 7x)"
+  },
+  "n22000": "₹22,000",
+  "@n22000": {
+    "description": "SalaryPage"
+  },
+  "paid": "Paid",
+  "@paid": {
+    "description": "SalaryPage (used 3x)"
+  },
+  "muruganP": "Murugan P.",
+  "@muruganP": {
+    "description": "SalaryPage; UsersPage (used 2x)"
+  },
+  "n20000": "₹20,000",
+  "@n20000": {
+    "description": "SalaryPage"
+  },
+  "baluS": "Balu S.",
+  "@baluS": {
+    "description": "SalaryPage; UsersPage (used 2x)"
+  },
+  "helper": "Helper",
+  "@helper": {
+    "description": "SalaryPage; UsersPage (used 2x)"
+  },
+  "n14000": "₹14,000",
+  "@n14000": {
+    "description": "SalaryPage"
+  },
+  "senthilR": "Senthil R.",
+  "@senthilR": {
+    "description": "SalaryPage; UsersPage (used 2x)"
+  },
+  "n21000": "₹21,000",
+  "@n21000": {
+    "description": "SalaryPage"
+  },
+  "kalaM": "Kala M.",
+  "@kalaM": {
+    "description": "SalaryPage"
+  },
+  "officeStaff": "Office Staff",
+  "@officeStaff": {
+    "description": "SalaryPage; UsersPage (used 2x)"
+  },
+  "fleet": "Fleet",
+  "@fleet": {
+    "description": "FleetPage"
+  },
+  "n4": "4",
+  "@n4": {
+    "description": "CalendarPage; FleetPage (used 2x)"
+  },
+  "active": "Active",
+  "@active": {
+    "description": "FleetPage; UsersPage (used 8x)"
+  },
+  "idle": "Idle",
+  "@idle": {
+    "description": "FleetPage (used 2x)"
+  },
+  "n1": "1",
+  "@n1": {
+    "description": "CalendarPage; FleetPage (used 2x)"
+  },
+  "service": "Service",
+  "@service": {
+    "description": "FleetPage; LeadDetailPage; OrderDetailPage (used 3x)"
+  },
+  "liveFleet": "Live Fleet",
+  "@liveFleet": {
+    "description": "FleetPage"
+  },
+  "miniTruck407": "Mini Truck (407)",
+  "@miniTruck407": {
+    "description": "FleetPage (used 2x)"
+  },
+  "suresh": "Suresh",
+  "@suresh": {
+    "description": "FleetPage"
+  },
+  "n124560Km": "1,24,560 km",
+  "@n124560Km": {
+    "description": "FleetPage"
+  },
+  "largeTruckTata": "Large Truck (Tata)",
+  "@largeTruckTata": {
+    "description": "FleetPage"
+  },
+  "murugan": "Murugan",
+  "@murugan": {
+    "description": "FleetPage"
+  },
+  "n98340Km": "98,340 km",
+  "@n98340Km": {
+    "description": "FleetPage"
+  },
+  "inService": "In Service",
+  "@inService": {
+    "description": "FleetPage"
+  },
+  "balu": "Balu",
+  "@balu": {
+    "description": "FleetPage"
+  },
+  "n212000Km": "2,12,000 km",
+  "@n212000Km": {
+    "description": "FleetPage"
+  },
+  "largeTruckEicher": "Large Truck (Eicher)",
+  "@largeTruckEicher": {
+    "description": "FleetPage"
+  },
+  "senthil": "Senthil",
+  "@senthil": {
+    "description": "FleetPage"
+  },
+  "n67890Km": "67,890 km",
+  "@n67890Km": {
+    "description": "FleetPage"
+  },
+  "newQuotation": "New Quotation",
+  "@newQuotation": {
+    "description": "QuotationPage"
+  },
+  "customerDetails": "Customer Details",
+  "@customerDetails": {
+    "description": "QuotationPage"
+  },
+  "customerName": "Customer Name",
+  "@customerName": {
+    "description": "QuotationPage"
+  },
+  "enterFullName": "Enter full name",
+  "@enterFullName": {
+    "description": "QuotationPage"
+  },
+  "phoneNumber": "Phone Number",
+  "@phoneNumber": {
+    "description": "QuotationPage"
+  },
+  "n91XxxxxXxxxx": "+91 XXXXX XXXXX",
+  "@n91XxxxxXxxxx": {
+    "description": "NewLeadPage; NewOrderPage; QuotationPage (used 3x)"
+  },
+  "moveDetails": "Move Details",
+  "@moveDetails": {
+    "description": "LeadDetailPage; NewLeadPage; NewOrderPage; OrderDetailPage; QuotationPage (used 5x)"
+  },
+  "fromAddress": "From Address",
+  "@fromAddress": {
+    "description": "NewOrderPage; QuotationPage (used 2x)"
+  },
+  "pickupLocation": "Pickup location",
+  "@pickupLocation": {
+    "description": "QuotationPage"
+  },
+  "toAddress": "To Address",
+  "@toAddress": {
+    "description": "NewOrderPage; QuotationPage (used 2x)"
+  },
+  "dropLocation": "Drop location",
+  "@dropLocation": {
+    "description": "QuotationPage"
+  },
+  "moveDate": "Move Date",
+  "@moveDate": {
+    "description": "OrderDetailPage; QuotationPage (used 2x)"
+  },
+  "ddMmYyyy": "DD/MM/YYYY",
+  "@ddMmYyyy": {
+    "description": "QuotationPage"
+  },
+  "floorAccess": "Floor / Access",
+  "@floorAccess": {
+    "description": "QuotationPage"
+  },
+  "eG2ndFloorLiftAvailable": "e.g. 2nd floor, lift available",
+  "@eG2ndFloorLiftAvailable": {
+    "description": "QuotationPage"
+  },
+  "estimate": "Estimate",
+  "@estimate": {
+    "description": "QuotationPage"
+  },
+  "quotedAmount": "Quoted Amount (₹)",
+  "@quotedAmount": {
+    "description": "QuotationPage"
+  },
+  "n000": "0.00",
+  "@n000": {
+    "description": "NewOrderPage; QuickExpensePage; QuotationPage; RecordPaymentPage (used 4x)"
+  },
+  "notes": "Notes",
+  "@notes": {
+    "description": "LeadDetailPage; NewLeadPage; NewOrderPage; OrderDetailPage; QuotationPage (used 7x)"
+  },
+  "additionalDetails": "Additional details",
+  "@additionalDetails": {
+    "description": "NewOrderPage; QuotationPage (used 2x)"
+  },
+  "generateQuotation": "Generate Quotation",
+  "@generateQuotation": {
+    "description": "QuotationPage"
+  },
+  "accounts": "Accounts",
+  "@accounts": {
+    "description": "AccountsPage"
+  },
+  "sbiCurrentAC": "SBI — Current A/C",
+  "@sbiCurrentAC": {
+    "description": "AccountsPage"
+  },
+  "xxxx4521": "XXXX 4521",
+  "@xxxx4521": {
+    "description": "AccountsPage"
+  },
+  "n284500": "₹2,84,500",
+  "@n284500": {
+    "description": "AccountsPage"
+  },
+  "hdfcSavingsAC": "HDFC — Savings A/C",
+  "@hdfcSavingsAC": {
+    "description": "AccountsPage"
+  },
+  "xxxx7832": "XXXX 7832",
+  "@xxxx7832": {
+    "description": "AccountsPage"
+  },
+  "n112300": "₹1,12,300",
+  "@n112300": {
+    "description": "AccountsPage"
+  },
+  "cashOnHand": "Cash on Hand",
+  "@cashOnHand": {
+    "description": "AccountsPage"
+  },
+  "totalBalance": "Total Balance",
+  "@totalBalance": {
+    "description": "AccountsPage"
+  },
+  "n414800": "₹4,14,800",
+  "@n414800": {
+    "description": "AccountsPage"
+  },
+  "recentTransactions": "Recent Transactions",
+  "@recentTransactions": {
+    "description": "AccountsPage"
+  },
+  "receivedOrd001": "Received — ORD-001",
+  "@receivedOrd001": {
+    "description": "AccountsPage"
+  },
+  "accountsPageN12500": "+₹12,500",
+  "@accountsPageN12500": {
+    "description": "AccountsPage"
+  },
+  "may5": "May 5",
+  "@may5": {
+    "description": "AccountsPage (used 2x)"
+  },
+  "fuelTn01Ab1234": "Fuel — TN-01-AB-1234",
+  "@fuelTn01Ab1234": {
+    "description": "AccountsPage"
+  },
+  "petrolBunk": "Petrol Bunk",
+  "@petrolBunk": {
+    "description": "AccountsPage"
+  },
+  "n3200": "-₹3,200",
+  "@n3200": {
+    "description": "AccountsPage"
+  },
+  "receivedOrd002": "Received — ORD-002",
+  "@receivedOrd002": {
+    "description": "AccountsPage"
+  },
+  "accountsPageN8000": "+₹8,000",
+  "@accountsPageN8000": {
+    "description": "AccountsPage"
+  },
+  "may4": "May 4",
+  "@may4": {
+    "description": "AccountsPage (used 2x)"
+  },
+  "tollChennaiNh": "Toll — Chennai NH",
+  "@tollChennaiNh": {
+    "description": "AccountsPage"
+  },
+  "nhai": "NHAI",
+  "@nhai": {
+    "description": "AccountsPage"
+  },
+  "n480": "-₹480",
+  "@n480": {
+    "description": "AccountsPage"
+  },
+  "pLReport": "P&L Report",
+  "@pLReport": {
+    "description": "PLReportPage"
+  },
+  "periodMay2025": "Period: May 2025",
+  "@periodMay2025": {
+    "description": "PLReportPage"
+  },
+  "n192000": "₹1,92,000",
+  "@n192000": {
+    "description": "PLReportPage"
+  },
+  "pLReportPageRevenue": "Revenue",
+  "@pLReportPageRevenue": {
+    "description": "PLReportPage"
+  },
+  "n123550": "₹1,23,550",
+  "@n123550": {
+    "description": "PLReportPage"
+  },
+  "pLReportPageNetProfit": "Net Profit",
+  "@pLReportPageNetProfit": {
+    "description": "PLReportPage"
+  },
+  "n643": "64.3%",
+  "@n643": {
+    "description": "PLReportPage"
+  },
+  "margin": "Margin",
+  "@margin": {
+    "description": "PLReportPage"
+  },
+  "topExpenses": "Top Expenses",
+  "@topExpenses": {
+    "description": "PLReportPage"
+  },
+  "arunPackersStaff": "Arun Packers Staff",
+  "@arunPackersStaff": {
+    "description": "SettingsPage"
+  },
+  "adminArunpackersIn": "admin@arunpackers.in",
+  "@adminArunpackersIn": {
+    "description": "SettingsPage"
+  },
+  "company": "Company",
+  "@company": {
+    "description": "SettingsPage"
+  },
+  "businessName": "Business Name",
+  "@businessName": {
+    "description": "SettingsPage"
+  },
+  "settingsPageArunPackersAndCouriers": "Arun Packers and Couriers",
+  "@settingsPageArunPackersAndCouriers": {
+    "description": "SettingsPage"
+  },
+  "phone": "Phone",
+  "@phone": {
+    "description": "LeadDetailPage; OrderDetailPage; SettingsPage (used 3x)"
+  },
+  "n9144XxxxXxxx": "+91 44 XXXX XXXX",
+  "@n9144XxxxXxxx": {
+    "description": "SettingsPage"
+  },
+  "gstNumber": "GST Number",
+  "@gstNumber": {
+    "description": "SettingsPage"
+  },
+  "xxxxxxxxxxxx": "XXXXXXXXXXXX",
+  "@xxxxxxxxxxxx": {
+    "description": "SettingsPage"
+  },
+  "app": "App",
+  "@app": {
+    "description": "SettingsPage"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "SettingsPage"
+  },
+  "enabled": "Enabled",
+  "@enabled": {
+    "description": "SettingsPage"
+  },
+  "darkMode": "Dark Mode",
+  "@darkMode": {
+    "description": "SettingsPage"
+  },
+  "on": "On",
+  "@on": {
+    "description": "SettingsPage"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "SettingsPage"
+  },
+  "english": "English",
+  "@english": {
+    "description": "SettingsPage"
+  },
+  "data": "Data",
+  "@data": {
+    "description": "SettingsPage"
+  },
+  "exportData": "Export Data",
+  "@exportData": {
+    "description": "SettingsPage"
+  },
+  "csvPdf": "CSV / PDF",
+  "@csvPdf": {
+    "description": "SettingsPage"
+  },
+  "backup": "Backup",
+  "@backup": {
+    "description": "SettingsPage"
+  },
+  "autoDaily": "Auto (Daily)",
+  "@autoDaily": {
+    "description": "SettingsPage"
+  },
+  "appTheme": "App Theme",
+  "@appTheme": {
+    "description": "SettingsPage"
+  },
+  "chooseYourPreferredColourScheme": "Choose your preferred colour scheme.",
+  "@chooseYourPreferredColourScheme": {
+    "description": "SettingsPage"
+  },
+  "dark": "Dark",
+  "@dark": {
+    "description": "SettingsPage"
+  },
+  "midnight": "Midnight",
+  "@midnight": {
+    "description": "SettingsPage"
+  },
+  "light": "Light",
+  "@light": {
+    "description": "SettingsPage"
+  },
+  "calendarPageCalendar": "Calendar",
+  "@calendarPageCalendar": {
+    "description": "CalendarPage"
+  },
+  "mon": "Mon",
+  "@mon": {
+    "description": "CalendarPage"
+  },
+  "tue": "Tue",
+  "@tue": {
+    "description": "CalendarPage"
+  },
+  "wed": "Wed",
+  "@wed": {
+    "description": "CalendarPage"
+  },
+  "thu": "Thu",
+  "@thu": {
+    "description": "CalendarPage"
+  },
+  "fri": "Fri",
+  "@fri": {
+    "description": "CalendarPage"
+  },
+  "sat": "Sat",
+  "@sat": {
+    "description": "CalendarPage"
+  },
+  "sun": "Sun",
+  "@sun": {
+    "description": "CalendarPage"
+  },
+  "n6": "6",
+  "@n6": {
+    "description": "CalendarPage"
+  },
+  "n7": "7",
+  "@n7": {
+    "description": "CalendarPage"
+  },
+  "n9": "9",
+  "@n9": {
+    "description": "CalendarPage"
+  },
+  "n10": "10",
+  "@n10": {
+    "description": "CalendarPage"
+  },
+  "n11": "11",
+  "@n11": {
+    "description": "CalendarPage"
+  },
+  "n12": "12",
+  "@n12": {
+    "description": "CalendarPage; MaterialsPage (used 2x)"
+  },
+  "n13": "13",
+  "@n13": {
+    "description": "CalendarPage"
+  },
+  "n14": "14",
+  "@n14": {
+    "description": "CalendarPage"
+  },
+  "calendarPageN15": "15",
+  "@calendarPageN15": {
+    "description": "CalendarPage"
+  },
+  "n16": "16",
+  "@n16": {
+    "description": "CalendarPage; NewOrderPage (used 2x)"
+  },
+  "n17": "17",
+  "@n17": {
+    "description": "CalendarPage"
+  },
+  "calendarPageN18": "18",
+  "@calendarPageN18": {
+    "description": "CalendarPage"
+  },
+  "n19": "19",
+  "@n19": {
+    "description": "CalendarPage; NewOrderPage (used 2x)"
+  },
+  "n20": "20",
+  "@n20": {
+    "description": "CalendarPage"
+  },
+  "n21": "21",
+  "@n21": {
+    "description": "CalendarPage"
+  },
+  "n22": "22",
+  "@n22": {
+    "description": "CalendarPage"
+  },
+  "n23": "23",
+  "@n23": {
+    "description": "CalendarPage"
+  },
+  "n24": "24",
+  "@n24": {
+    "description": "CalendarPage"
+  },
+  "n25": "25",
+  "@n25": {
+    "description": "CalendarPage"
+  },
+  "calendarPageN26": "26",
+  "@calendarPageN26": {
+    "description": "CalendarPage"
+  },
+  "n27": "27",
+  "@n27": {
+    "description": "CalendarPage"
+  },
+  "n28": "28",
+  "@n28": {
+    "description": "CalendarPage"
+  },
+  "n29": "29",
+  "@n29": {
+    "description": "CalendarPage"
+  },
+  "n30": "30",
+  "@n30": {
+    "description": "CalendarPage"
+  },
+  "n31": "31",
+  "@n31": {
+    "description": "CalendarPage"
+  },
+  "remindersFollowUps": "Reminders & Follow-ups",
+  "@remindersFollowUps": {
+    "description": "CalendarPage"
+  },
+  "followUpRaviMenon": "Follow-up: Ravi Menon",
+  "@followUpRaviMenon": {
+    "description": "CalendarPage"
+  },
+  "callRegardingBangaloreMoveQuote": "Call regarding Bangalore move quote",
+  "@callRegardingBangaloreMoveQuote": {
+    "description": "CalendarPage"
+  },
+  "may7": "May 7",
+  "@may7": {
+    "description": "CalendarPage"
+  },
+  "collectionOrd047": "Collection: ORD-047",
+  "@collectionOrd047": {
+    "description": "CalendarPage"
+  },
+  "overduePaymentFromAnandVerma": "Overdue payment from Anand Verma",
+  "@overduePaymentFromAnandVerma": {
+    "description": "CalendarPage"
+  },
+  "may8": "May 8",
+  "@may8": {
+    "description": "CalendarPage"
+  },
+  "jobTn01Ab1234": "Job: TN-01-AB-1234",
+  "@jobTn01Ab1234": {
+    "description": "CalendarPage"
+  },
+  "chennaiVelloreScheduledDelivery": "Chennai → Vellore scheduled delivery",
+  "@chennaiVelloreScheduledDelivery": {
+    "description": "CalendarPage"
+  },
+  "may9": "May 9",
+  "@may9": {
+    "description": "CalendarPage"
+  },
+  "reviewMayExpenses": "Review: May Expenses",
+  "@reviewMayExpenses": {
+    "description": "CalendarPage"
+  },
+  "monthlyExpenseReviewWithTeam": "Monthly expense review with team",
+  "@monthlyExpenseReviewWithTeam": {
+    "description": "CalendarPage"
+  },
+  "may12": "May 12",
+  "@may12": {
+    "description": "CalendarPage"
+  },
+  "activeRemindersLive": "Active Reminders (Live)",
+  "@activeRemindersLive": {
+    "description": "CalendarPage"
+  },
+  "addReminder": "Add Reminder",
+  "@addReminder": {
+    "description": "CalendarPage"
+  },
+  "materials": "Materials",
+  "@materials": {
+    "description": "MaterialsPage"
+  },
+  "totalSkus": "Total SKUs",
+  "@totalSkus": {
+    "description": "MaterialsPage"
+  },
+  "lowStock": "Low Stock",
+  "@lowStock": {
+    "description": "MaterialsPage"
+  },
+  "inventory": "Inventory",
+  "@inventory": {
+    "description": "MaterialsPage"
+  },
+  "cardboardBoxSmall": "Cardboard Box — Small",
+  "@cardboardBoxSmall": {
+    "description": "MaterialsPage"
+  },
+  "reorder20": "Reorder < 20",
+  "@reorder20": {
+    "description": "MaterialsPage (used 2x)"
+  },
+  "n42Pcs": "42 pcs",
+  "@n42Pcs": {
+    "description": "MaterialsPage"
+  },
+  "cardboardBoxMedium": "Cardboard Box — Medium",
+  "@cardboardBoxMedium": {
+    "description": "MaterialsPage"
+  },
+  "n28Pcs": "28 pcs",
+  "@n28Pcs": {
+    "description": "MaterialsPage"
+  },
+  "cardboardBoxLarge": "Cardboard Box — Large",
+  "@cardboardBoxLarge": {
+    "description": "MaterialsPage"
+  },
+  "reorder15": "Reorder < 15",
+  "@reorder15": {
+    "description": "MaterialsPage"
+  },
+  "n11Pcs": "11 pcs",
+  "@n11Pcs": {
+    "description": "MaterialsPage"
+  },
+  "bubbleWrapRoll50m": "Bubble Wrap Roll (50m)",
+  "@bubbleWrapRoll50m": {
+    "description": "MaterialsPage"
+  },
+  "reorder5": "Reorder < 5",
+  "@reorder5": {
+    "description": "MaterialsPage"
+  },
+  "n4Rolls": "4 rolls",
+  "@n4Rolls": {
+    "description": "MaterialsPage"
+  },
+  "stretchWrapRoll": "Stretch Wrap Roll",
+  "@stretchWrapRoll": {
+    "description": "MaterialsPage"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "MaterialsPage (used 4x)"
+  },
+  "n18Rolls": "18 rolls",
+  "@n18Rolls": {
+    "description": "MaterialsPage"
+  },
+  "packingTapeBrown": "Packing Tape (Brown)",
+  "@packingTapeBrown": {
+    "description": "MaterialsPage"
+  },
+  "reorder10": "Reorder < 10",
+  "@reorder10": {
+    "description": "MaterialsPage"
+  },
+  "n7Pcs": "7 pcs",
+  "@n7Pcs": {
+    "description": "MaterialsPage"
+  },
+  "furnitureCoverLarge": "Furniture Cover (Large)",
+  "@furnitureCoverLarge": {
+    "description": "MaterialsPage"
+  },
+  "n24Pcs": "24 pcs",
+  "@n24Pcs": {
+    "description": "MaterialsPage"
+  },
+  "rope50m": "Rope (50m)",
+  "@rope50m": {
+    "description": "MaterialsPage"
+  },
+  "n8Rolls": "8 rolls",
+  "@n8Rolls": {
+    "description": "MaterialsPage"
+  },
+  "cornerGuards": "Corner Guards",
+  "@cornerGuards": {
+    "description": "MaterialsPage"
+  },
+  "n60Pcs": "60 pcs",
+  "@n60Pcs": {
+    "description": "MaterialsPage"
+  },
+  "addRestockItem": "Add / Restock Item",
+  "@addRestockItem": {
+    "description": "MaterialsPage"
+  },
+  "reports": "Reports",
+  "@reports": {
+    "description": "ReportsPage"
+  },
+  "generateReports": "Generate Reports",
+  "@generateReports": {
+    "description": "ReportsPage"
+  },
+  "monthlySummary": "Monthly Summary",
+  "@monthlySummary": {
+    "description": "ReportsPage"
+  },
+  "revenueExpensesProfitOverview": "Revenue, expenses & profit overview",
+  "@revenueExpensesProfitOverview": {
+    "description": "ReportsPage"
+  },
+  "customerReport": "Customer Report",
+  "@customerReport": {
+    "description": "ReportsPage"
+  },
+  "topCustomersByRevenue": "Top customers by revenue",
+  "@topCustomersByRevenue": {
+    "description": "ReportsPage"
+  },
+  "driverPerformance": "Driver Performance",
+  "@driverPerformance": {
+    "description": "ReportsPage"
+  },
+  "jobsCompletedPerDriver": "Jobs completed per driver",
+  "@jobsCompletedPerDriver": {
+    "description": "ReportsPage"
+  },
+  "expenseBreakdown": "Expense Breakdown",
+  "@expenseBreakdown": {
+    "description": "ReportsPage"
+  },
+  "categoryWiseExpenseAnalysis": "Category-wise expense analysis",
+  "@categoryWiseExpenseAnalysis": {
+    "description": "ReportsPage"
+  },
+  "revenueTrend": "Revenue Trend",
+  "@revenueTrend": {
+    "description": "ReportsPage"
+  },
+  "monthOnMonthRevenueChart": "Month-on-month revenue chart",
+  "@monthOnMonthRevenueChart": {
+    "description": "ReportsPage"
+  },
+  "outstandingReport": "Outstanding Report",
+  "@outstandingReport": {
+    "description": "ReportsPage"
+  },
+  "pendingPaymentsAgeing": "Pending payments & ageing",
+  "@pendingPaymentsAgeing": {
+    "description": "ReportsPage"
+  },
+  "vehicleUtilisation": "Vehicle Utilisation",
+  "@vehicleUtilisation": {
+    "description": "ReportsPage"
+  },
+  "fleetUsageAndIdleTimeAnalysis": "Fleet usage and idle time analysis",
+  "@fleetUsageAndIdleTimeAnalysis": {
+    "description": "ReportsPage"
+  },
+  "exportOptions": "Export Options",
+  "@exportOptions": {
+    "description": "ReportsPage"
+  },
+  "exportPdf": "Export PDF",
+  "@exportPdf": {
+    "description": "ReportsPage"
+  },
+  "exportCsv": "Export CSV",
+  "@exportCsv": {
+    "description": "ReportsPage"
+  },
+  "users": "Users",
+  "@users": {
+    "description": "UsersPage"
+  },
+  "addNewUser": "Add New User",
+  "@addNewUser": {
+    "description": "UsersPage"
+  },
+  "admin": "Admin",
+  "@admin": {
+    "description": "UsersPage (used 2x)"
+  },
+  "activeUsers": "Active Users",
+  "@activeUsers": {
+    "description": "UsersPage"
+  },
+  "arunKumar": "Arun Kumar",
+  "@arunKumar": {
+    "description": "UsersPage"
+  },
+  "n919840000001": "+91 98400 00001",
+  "@n919840000001": {
+    "description": "UsersPage"
+  },
+  "today": "Today",
+  "@today": {
+    "description": "UsersPage (used 3x)"
+  },
+  "sureshM": "Suresh M.",
+  "@sureshM": {
+    "description": "UsersPage"
+  },
+  "n919840000002": "+91 98400 00002",
+  "@n919840000002": {
+    "description": "UsersPage"
+  },
+  "n919840000003": "+91 98400 00003",
+  "@n919840000003": {
+    "description": "UsersPage"
+  },
+  "yesterday": "Yesterday",
+  "@yesterday": {
+    "description": "UsersPage"
+  },
+  "kalaR": "Kala R.",
+  "@kalaR": {
+    "description": "UsersPage"
+  },
+  "n919840000004": "+91 98400 00004",
+  "@n919840000004": {
+    "description": "UsersPage"
+  },
+  "n919840000005": "+91 98400 00005",
+  "@n919840000005": {
+    "description": "UsersPage"
+  },
+  "n2DaysAgo": "2 days ago",
+  "@n2DaysAgo": {
+    "description": "UsersPage"
+  },
+  "inactiveUsers": "Inactive Users",
+  "@inactiveUsers": {
+    "description": "UsersPage"
+  },
+  "n919840000006": "+91 98400 00006",
+  "@n919840000006": {
+    "description": "UsersPage"
+  },
+  "inactive": "Inactive",
+  "@inactive": {
+    "description": "UsersPage"
+  },
+  "n5DaysAgo": "5 days ago",
+  "@n5DaysAgo": {
+    "description": "UsersPage"
+  },
+  "recordPayment": "Record Payment",
+  "@recordPayment": {
+    "description": "QuickEntryPage; RecordPaymentPage (used 2x)"
+  },
+  "selectOrder": "Select Order",
+  "@selectOrder": {
+    "description": "RecordPaymentPage"
+  },
+  "loadingPendingOrders": "Loading pending orders...",
+  "@loadingPendingOrders": {
+    "description": "RecordPaymentPage"
+  },
+  "select": "Select",
+  "@select": {
+    "description": "RecordPaymentPage"
+  },
+  "paymentEntry": "Payment Entry",
+  "@paymentEntry": {
+    "description": "RecordPaymentPage"
+  },
+  "customer": "Customer:",
+  "@customer": {
+    "description": "RecordPaymentPage"
+  },
+  "totalAmount": "Total Amount:",
+  "@totalAmount": {
+    "description": "RecordPaymentPage"
+  },
+  "alreadyPaid": "Already Paid:",
+  "@alreadyPaid": {
+    "description": "RecordPaymentPage"
+  },
+  "amountReceived": "Amount Received (₹)",
+  "@amountReceived": {
+    "description": "RecordPaymentPage"
+  },
+  "selectStatus": "Select status",
+  "@selectStatus": {
+    "description": "NewLeadPage; RecordPaymentPage (used 2x)"
+  },
+  "paymentStatus": "Payment Status",
+  "@paymentStatus": {
+    "description": "OrderDetailPage; RecordPaymentPage (used 2x)"
+  },
+  "partial": "partial",
+  "@partial": {
+    "description": "RecordPaymentPage"
+  },
+  "recordPaymentPagePaid": "paid",
+  "@recordPaymentPagePaid": {
+    "description": "RecordPaymentPage"
+  },
+  "savePayment": "Save Payment",
+  "@savePayment": {
+    "description": "RecordPaymentPage"
+  },
+  "quickExpense": "Quick Expense",
+  "@quickExpense": {
+    "description": "QuickEntryPage; QuickExpensePage (used 2x)"
+  },
+  "expenseDetails": "Expense Details",
+  "@expenseDetails": {
+    "description": "QuickExpensePage"
+  },
+  "amount": "Amount (₹)",
+  "@amount": {
+    "description": "QuickExpensePage"
+  },
+  "selectCategory": "Select category",
+  "@selectCategory": {
+    "description": "QuickExpensePage"
+  },
+  "category": "Category",
+  "@category": {
+    "description": "QuickExpensePage"
+  },
+  "vehicleMaintenance": "Vehicle Maintenance",
+  "@vehicleMaintenance": {
+    "description": "QuickExpensePage"
+  },
+  "office": "Office",
+  "@office": {
+    "description": "QuickExpensePage"
+  },
+  "material": "Material",
+  "@material": {
+    "description": "QuickExpensePage"
+  },
+  "other": "Other",
+  "@other": {
+    "description": "NewLeadPage; QuickExpensePage (used 2x)"
+  },
+  "date": "Date",
+  "@date": {
+    "description": "QuickExpensePage"
+  },
+  "yyyyMmDd": "YYYY-MM-DD",
+  "@yyyyMmDd": {
+    "description": "QuickExpensePage"
+  },
+  "linkedOrderIdOptional": "Linked Order ID (optional)",
+  "@linkedOrderIdOptional": {
+    "description": "QuickExpensePage"
+  },
+  "leaveBlankIfNotLinked": "Leave blank if not linked",
+  "@leaveBlankIfNotLinked": {
+    "description": "QuickExpensePage"
+  },
+  "description": "Description",
+  "@description": {
+    "description": "QuickExpensePage"
+  },
+  "briefDescription": "Brief description",
+  "@briefDescription": {
+    "description": "QuickExpensePage"
+  },
+  "saveExpense": "Save Expense",
+  "@saveExpense": {
+    "description": "QuickExpensePage"
+  },
+  "newOrder": "New Order",
+  "@newOrder": {
+    "description": "NewOrderPage"
+  },
+  "newOrderPageCustomer": "Customer",
+  "@newOrderPageCustomer": {
+    "description": "NewOrderPage; OrderDetailPage (used 2x)"
+  },
+  "newOrderPageCustomerName": "Customer Name *",
+  "@newOrderPageCustomerName": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "fullName": "Full name",
+  "@fullName": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "newOrderPagePhone": "Phone *",
+  "@newOrderPagePhone": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "fromCity": "From City *",
+  "@fromCity": {
+    "description": "NewOrderPage"
+  },
+  "originCity": "Origin city",
+  "@originCity": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "toCity": "To City *",
+  "@toCity": {
+    "description": "NewOrderPage"
+  },
+  "destinationCity": "Destination city",
+  "@destinationCity": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "pickupAddress": "Pickup address",
+  "@pickupAddress": {
+    "description": "NewOrderPage"
+  },
+  "dropAddress": "Drop address",
+  "@dropAddress": {
+    "description": "NewOrderPage"
+  },
+  "fromFloor": "From Floor",
+  "@fromFloor": {
+    "description": "NewOrderPage"
+  },
+  "eG2ndFloor": "e.g. 2nd floor",
+  "@eG2ndFloor": {
+    "description": "NewOrderPage"
+  },
+  "toFloor": "To Floor",
+  "@toFloor": {
+    "description": "NewOrderPage"
+  },
+  "eGGroundFloor": "e.g. Ground floor",
+  "@eGGroundFloor": {
+    "description": "NewOrderPage"
+  },
+  "newOrderPageMoveDate": "Move Date *",
+  "@newOrderPageMoveDate": {
+    "description": "NewOrderPage"
+  },
+  "tapToPickDate": "Tap to pick date",
+  "@tapToPickDate": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "pickDate": "Pick Date",
+  "@pickDate": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "pricingClassification": "Pricing & Classification",
+  "@pricingClassification": {
+    "description": "NewOrderPage"
+  },
+  "newOrderPageAmount": "Amount (₹) *",
+  "@newOrderPageAmount": {
+    "description": "NewOrderPage"
+  },
+  "selectService": "Select service",
+  "@selectService": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "newOrderPageService": "Service *",
+  "@newOrderPageService": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "houseShifting": "House Shifting",
+  "@houseShifting": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "officeShifting": "Office Shifting",
+  "@officeShifting": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "vehicleTransport": "Vehicle Transport",
+  "@vehicleTransport": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "storage": "Storage",
+  "@storage": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "packingOnly": "Packing Only",
+  "@packingOnly": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "longDistance": "Long Distance",
+  "@longDistance": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "selectBranch": "Select branch",
+  "@selectBranch": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "branch": "Branch *",
+  "@branch": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "chennai": "Chennai",
+  "@chennai": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "bengaluru": "Bengaluru",
+  "@bengaluru": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "coimbatore": "Coimbatore",
+  "@coimbatore": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "selectType": "Select type",
+  "@selectType": {
+    "description": "NewOrderPage"
+  },
+  "orderType": "Order Type *",
+  "@orderType": {
+    "description": "NewOrderPage"
+  },
+  "direct": "Direct",
+  "@direct": {
+    "description": "NewOrderPage"
+  },
+  "newOrderPagePorter": "Porter",
+  "@newOrderPagePorter": {
+    "description": "NewLeadPage; NewOrderPage (used 2x)"
+  },
+  "selectCommission": "Select commission",
+  "@selectCommission": {
+    "description": "NewOrderPage"
+  },
+  "porterCommission": "Porter Commission %",
+  "@porterCommission": {
+    "description": "NewOrderPage"
+  },
+  "saveOrder": "Save Order",
+  "@saveOrder": {
+    "description": "NewOrderPage"
+  },
+  "orderDetails": "Order Details",
+  "@orderDetails": {
+    "description": "OrderDetailPage"
+  },
+  "orderDetailPageBranch": "Branch",
+  "@orderDetailPageBranch": {
+    "description": "LeadDetailPage; OrderDetailPage (used 2x)"
+  },
+  "type": "Type",
+  "@type": {
+    "description": "OrderDetailPage"
+  },
+  "from": "From",
+  "@from": {
+    "description": "LeadDetailPage; OrderDetailPage (used 2x)"
+  },
+  "to": "To",
+  "@to": {
+    "description": "LeadDetailPage; OrderDetailPage (used 2x)"
+  },
+  "addressFrom": "Address (From)",
+  "@addressFrom": {
+    "description": "OrderDetailPage"
+  },
+  "addressTo": "Address (To)",
+  "@addressTo": {
+    "description": "OrderDetailPage"
+  },
+  "floorFrom": "Floor (From)",
+  "@floorFrom": {
+    "description": "OrderDetailPage"
+  },
+  "floorTo": "Floor (To)",
+  "@floorTo": {
+    "description": "OrderDetailPage"
+  },
+  "payment": "Payment",
+  "@payment": {
+    "description": "OrderDetailPage"
+  },
+  "orderDetailPageAmount": "Amount",
+  "@orderDetailPageAmount": {
+    "description": "OrderDetailPage"
+  },
+  "advancePaid": "Advance Paid",
+  "@advancePaid": {
+    "description": "OrderDetailPage"
+  },
+  "trackingStatus": "Tracking Status",
+  "@trackingStatus": {
+    "description": "OrderDetailPage"
+  },
+  "editOrder": "Edit Order",
+  "@editOrder": {
+    "description": "OrderDetailPage"
+  },
+  "contact": "Contact",
+  "@contact": {
+    "description": "LeadDetailPage; NewLeadPage (used 2x)"
+  },
+  "email": "Email",
+  "@email": {
+    "description": "LeadDetailPage; NewLeadPage (used 2x)"
+  },
+  "emailExampleCom": "email@example.com",
+  "@emailExampleCom": {
+    "description": "NewLeadPage"
+  },
+  "newLeadPageFromCity": "From City",
+  "@newLeadPageFromCity": {
+    "description": "NewLeadPage"
+  },
+  "newLeadPageToCity": "To City",
+  "@newLeadPageToCity": {
+    "description": "NewLeadPage"
+  },
+  "approxDate": "Approx Date *",
+  "@approxDate": {
+    "description": "NewLeadPage"
+  },
+  "classification": "Classification",
+  "@classification": {
+    "description": "NewLeadPage"
+  },
+  "status": "Status *",
+  "@status": {
+    "description": "NewLeadPage"
+  },
+  "newLeadPageNew": "new",
+  "@newLeadPageNew": {
+    "description": "NewLeadPage"
+  },
+  "newLeadPageContacted": "contacted",
+  "@newLeadPageContacted": {
+    "description": "NewLeadPage"
+  },
+  "surveyDone": "survey_done",
+  "@surveyDone": {
+    "description": "NewLeadPage"
+  },
+  "quoted": "quoted",
+  "@quoted": {
+    "description": "NewLeadPage"
+  },
+  "converted": "converted",
+  "@converted": {
+    "description": "NewLeadPage"
+  },
+  "newLeadPageLost": "lost",
+  "@newLeadPageLost": {
+    "description": "NewLeadPage"
+  },
+  "howDidTheyHearAboutUs": "How did they hear about us?",
+  "@howDidTheyHearAboutUs": {
+    "description": "NewLeadPage"
+  },
+  "source": "Source *",
+  "@source": {
+    "description": "NewLeadPage"
+  },
+  "whatsapp": "WhatsApp",
+  "@whatsapp": {
+    "description": "NewLeadPage"
+  },
+  "phoneCall": "Phone Call",
+  "@phoneCall": {
+    "description": "NewLeadPage"
+  },
+  "website": "Website",
+  "@website": {
+    "description": "NewLeadPage"
+  },
+  "referral": "Referral",
+  "@referral": {
+    "description": "NewLeadPage"
+  },
+  "walkIn": "Walk-in",
+  "@walkIn": {
+    "description": "NewLeadPage"
+  },
+  "google": "Google",
+  "@google": {
+    "description": "NewLeadPage"
+  },
+  "justdial": "JustDial",
+  "@justdial": {
+    "description": "NewLeadPage"
+  },
+  "anyRelevantNotes": "Any relevant notes",
+  "@anyRelevantNotes": {
+    "description": "NewLeadPage"
+  },
+  "saveLead": "Save Lead",
+  "@saveLead": {
+    "description": "NewLeadPage"
+  },
+  "leadDetails": "Lead Details",
+  "@leadDetails": {
+    "description": "LeadDetailPage"
+  },
+  "leadDetailPageSource": "Source",
+  "@leadDetailPageSource": {
+    "description": "LeadDetailPage"
+  },
+  "leadDetailPageApproxDate": "Approx. Date",
+  "@leadDetailPageApproxDate": {
+    "description": "LeadDetailPage"
+  },
+  "convertToOrder": "Convert to Order",
+  "@convertToOrder": {
+    "description": "LeadDetailPage"
+  },
+  "editLead": "Edit Lead",
+  "@editLead": {
+    "description": "LeadDetailPage"
+  },
+  "quickEntry": "Quick Entry",
+  "@quickEntry": {
+    "description": "QuickEntryPage"
+  },
+  "whatWouldYouLikeToDo": "What would you like to do?",
+  "@whatWouldYouLikeToDo": {
+    "description": "QuickEntryPage"
+  },
+  "newInquiry": "New Inquiry",
+  "@newInquiry": {
+    "description": "QuickEntryPage"
+  },
+  "confirmBooking": "Confirm Booking",
+  "@confirmBooking": {
+    "description": "QuickEntryPage"
+  },
+  "cashCollectedByPorter": "Cash Collected by Porter (₹)",
+  "@cashCollectedByPorter": {
+    "description": "NewOrderPage — porter section. RECOVERED 27 Aug 2026: the old FF key 'porcashcol1' was never present in kTranslationsMap, so this label rendered blank."
+  },
+  "leaveBlankIfNoneCollectedYet": "Leave blank if none collected yet",
+  "@leaveBlankIfNoneCollectedYet": {
+    "description": "NewOrderPage — porter section hint. Same recovery as cashCollectedByPorter (old key: porcashcol2)."
+  }
+}

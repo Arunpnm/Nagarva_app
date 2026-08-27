@@ -4,6 +4,7 @@ import '/index.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -103,9 +104,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              'pif0z0bf' /* Payments */,
-            ),
+            AppLocalizations.of(context).payments,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -158,9 +157,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    FFLocalizations.of(context).getText(
-                                      'xrk4ir04' /* Outstanding */,
-                                    ),
+                                    AppLocalizations.of(context).paymentsPageOutstanding,
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
                                         .override(
@@ -239,9 +236,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    FFLocalizations.of(context).getText(
-                                      'whp14p6y' /* Received (Month) */,
-                                    ),
+                                    AppLocalizations.of(context).receivedMonth,
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
                                         .override(
@@ -309,9 +304,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          FFLocalizations.of(context).getText(
-                            'wplx21oj' /* Pending Payments (Live) */,
-                          ),
+                          AppLocalizations.of(context).pendingPaymentsLive,
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
                                     font: GoogleFonts.interTight(

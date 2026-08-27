@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/last_selected_org.dart';
 import '/backend/pending_auth_message.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/vendor_org_resolver.dart';
@@ -126,6 +127,11 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       }
 
       await establishVendorSession(user, orgId, availableOrgs);
+      // TODO(W2) resolved: remember this org so a later reload/cold start
+      // (main.dart's session restore) lands back here instead of always
+      // falling back to the first org_members row. See
+      // last_selected_org.dart's doc comment.
+      await LastSelectedOrg.set(orgId);
 
       if (mounted) context.go(HomePageWidget.routePath);
     } catch (e) {

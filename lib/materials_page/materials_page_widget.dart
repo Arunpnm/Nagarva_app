@@ -5,6 +5,7 @@ import '/components/delete_action.dart';
 import '/components/load_error_state.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'material_detail_sheet.dart';
 import 'package:flutter/material.dart';
@@ -298,9 +299,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
           backgroundColor: theme.primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              '95925ruu' /* Materials */,
-            ),
+            AppLocalizations.of(context).materials,
             style: theme.titleLarge.override(
                   font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
                   fontSize: 22.0,

@@ -3,6 +3,7 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import 'package:flutter/material.dart';
@@ -77,9 +78,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              '928iv6t5' /* Quick Expense */,
-            ),
+            AppLocalizations.of(context).quickExpense,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -131,9 +130,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  FFLocalizations.of(context).getText(
-                                    'n69949u0' /* Expense Details */,
-                                  ),
+                                  AppLocalizations.of(context).expenseDetails,
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
@@ -165,13 +162,9 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'zv9y85hg' /* Amount (₹) */,
-                                    ),
+                                        AppLocalizations.of(context).amount,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'zup7ggz6' /* 0.00 */,
-                                    ),
+                                        AppLocalizations.of(context).n000,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -226,24 +219,12 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                           .expCategoryDropdownValueController ??=
                                       FormFieldController<String>(null),
                                   options: [
-                                    FFLocalizations.of(context).getText(
-                                      'gpylocgz' /* Fuel */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'ww7jlwle' /* Vehicle Maintenance */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'rzzma3mi' /* Office */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      's4hqadqh' /* Material */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'r3xe5tbx' /* Salary */,
-                                    ),
-                                    FFLocalizations.of(context).getText(
-                                      'n72v5r5l' /* Other */,
-                                    )
+                                    AppLocalizations.of(context).fuel,
+                                    AppLocalizations.of(context).vehicleMaintenance,
+                                    AppLocalizations.of(context).office,
+                                    AppLocalizations.of(context).material,
+                                    AppLocalizations.of(context).salary,
+                                    AppLocalizations.of(context).other
                                   ],
                                   onChanged: (val) async {
                                     safeSetState(() =>
@@ -273,9 +254,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                             .bodyMedium
                                             .fontStyle,
                                       ),
-                                  hintText: FFLocalizations.of(context).getText(
-                                    'tva1il0c' /* Select category */,
-                                  ),
+                                  hintText: AppLocalizations.of(context).selectCategory,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
                                     color: FlutterFlowTheme.of(context)
@@ -296,9 +275,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   isSearchable: false,
                                   isMultiSelect: false,
                                   labelText:
-                                      FFLocalizations.of(context).getText(
-                                    'u9p6obxj' /* Category */,
-                                  ),
+                                      AppLocalizations.of(context).category,
                                   labelTextStyle: const TextStyle(),
                                 ),
                                 TextFormField(
@@ -307,13 +284,9 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      '1xjux2tz' /* Date */,
-                                    ),
+                                        AppLocalizations.of(context).date,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'cqszka9z' /* YYYY-MM-DD */,
-                                    ),
+                                        AppLocalizations.of(context).yyyyMmDd,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -421,13 +394,9 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   obscureText: false,
                                   decoration: InputDecoration(
                                     labelText:
-                                        FFLocalizations.of(context).getText(
-                                      'pet8bc2k' /* Description */,
-                                    ),
+                                        AppLocalizations.of(context).description,
                                     hintText:
-                                        FFLocalizations.of(context).getText(
-                                      'b8f6nm43' /* Brief description */,
-                                    ),
+                                        AppLocalizations.of(context).briefDescription,
                                     enabledBorder: const OutlineInputBorder(
                                       borderSide: BorderSide(
                                         color: Color(0x00000000),
@@ -504,9 +473,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
 
                               safeSetState(() {});
                             },
-                            text: FFLocalizations.of(context).getText(
-                              'idcrnx9l' /* Save Expense */,
-                            ),
+                            text: AppLocalizations.of(context).saveExpense,
                             icon: const Icon(
                               Icons.save,
                               size: 20.0,

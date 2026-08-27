@@ -15,6 +15,8 @@ import '/backend/approval_queue.dart';
 import '/backend/survey_queue.dart';
 import '/backend/auth_deep_link.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/last_selected_org.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/backend/crash_reporting.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/session_logout.dart';
@@ -167,8 +169,6 @@ Future<void> _startApp() async {
   // queries trip the OrgScope guard rail and pages render blank, and
   // isAuthenticated / plan gating silently break after a reload.
   // Mirrors the vendor login flow: member -> org -> plan -> session.
-  // TODO(W2): when the org switcher is built, persist the last-selected
-  // org and restore that instead of the first membership row.
   final restoredUser = SupaFlow.client.auth.currentUser;
   if (restoredUser != null && AppSession.instance.currentOrgId == null) {
     // Shadow staff users (minted by the staff-login Edge Function) are
@@ -190,8 +190,22 @@ Future<void> _startApp() async {
           .from('org_members')
           .select('org_id, role')
           .eq('user_id', restoredUser.id);
-      final orgId =
-          members.isNotEmpty ? members.first['org_id'] as String? : null;
+      // TODO(W2) resolved: prefer the org this device last explicitly
+      // switched to (LastSelectedOrg — set on login and on Settings'
+      // "Switch Organization") over always restoring the first
+      // org_members row, but only when that saved id is still one of
+      // this user's real memberships; otherwise fall back to
+      // members.first exactly as before this existed. Pure UX nicety,
+      // not a security boundary — see last_selected_org.dart's own doc
+      // comment.
+      final memberOrgIds = members
+          .map((m) => m['org_id'] as String?)
+          .whereType<String>()
+          .toSet();
+      final savedOrgId = await LastSelectedOrg.get();
+      final orgId = (savedOrgId != null && memberOrgIds.contains(savedOrgId))
+          ? savedOrgId
+          : (members.isNotEmpty ? members.first['org_id'] as String? : null);
       if (orgId != null) {
         // select('*') on purpose: naming logo_url here would 400 the whole
         // restore on a DB that hasn't run 20260717_org_logo_url.sql yet.
@@ -407,6 +421,16 @@ class _MyAppState extends State<MyApp> {
       title: 'ArunPKRS',
       scrollBehavior: MyAppScrollBehavior(),
       localizationsDelegates: const [
+        // NG-055 (27 Aug 2026): the gen_l10n class, generated from
+        // lib/l10n/*.arb per l10n.yaml. Every string that used to be
+        // `FFLocalizations.getText('<8-char id>')` now resolves through
+        // here instead.
+        AppLocalizations.delegate,
+        // FFLocalizations stays registered during the transition — it
+        // still owns locale PERSISTENCE (storeLocale/getStoredLocale,
+        // which setLocale below calls) and languages(). Only the string
+        // lookup moved. Removing this delegate would break locale
+        // persistence, not just translations.
         FFLocalizationsDelegate(),
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -415,18 +439,18 @@ class _MyAppState extends State<MyApp> {
         FallbackCupertinoLocalizationDelegate(),
       ],
       locale: _locale,
+      // Tier 1 only (27 Aug 2026). Must stay in step with
+      // FFLocalizations.languages() — Flutter resolves an unsupported
+      // locale to supportedLocales.first, so a locale listed here but
+      // absent there (or vice versa) produces a silently wrong language
+      // rather than an error. The seven dropped entries were FlutterFlow
+      // export defaults, never a product decision; `ar`/`ur` additionally
+      // imply RTL, which this app has never been laid out for.
       supportedLocales: const [
         Locale('en'),
         Locale('ta'),
-        Locale('kn'),
-        Locale('ur'),
-        Locale('gu'),
-        Locale('ar'),
-        Locale('fr'),
-        Locale('de'),
         Locale('hi'),
-        Locale('te'),
-        Locale('ru'),
+        Locale('kn'),
       ],
       // Item 9: these used to be bare `ThemeData(brightness: ...)` with no
       // brand colours at all, so every Material-themed widget that

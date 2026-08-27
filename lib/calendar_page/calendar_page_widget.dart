@@ -2,6 +2,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
@@ -479,9 +480,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              'kpvdp2gb' /* Calendar */,
-            ),
+            AppLocalizations.of(context).calendarPageCalendar,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -535,9 +534,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          FFLocalizations.of(context).getText(
-                            'qoaus465' /* Active Reminders (Live) */,
-                          ),
+                          AppLocalizations.of(context).activeRemindersLive,
                           style: FlutterFlowTheme.of(context)
                               .titleMedium
                               .override(
@@ -909,9 +906,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                         onPressed: () {
                           print('AddReminderBtn pressed ...');
                         },
-                        text: FFLocalizations.of(context).getText(
-                          'l4goql9f' /* Add Reminder */,
-                        ),
+                        text: AppLocalizations.of(context).addReminder,
                         icon: const Icon(
                           Icons.add_alarm,
                           size: 20.0,

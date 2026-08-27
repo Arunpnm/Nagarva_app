@@ -126,6 +126,16 @@ flutter_launcher_icons:
 # The following section is specific to Flutter.
 flutter:
 
+  # NG-055 (27 Aug 2026). Turns on gen_l10n so `flutter pub get` /
+  # `flutter run` generate AppLocalizations from lib/l10n/*.arb, per
+  # l10n.yaml at the repo root.
+  #
+  # This adds NO dependency: flutter_localizations and intl 0.20.2 were
+  # already pinned above. Nothing about the pinned Flutter 3.35.5 / SDK
+  # environment rules in CLAUDE.md is affected — this is a codegen flag,
+  # not a version change.
+  generate: true
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

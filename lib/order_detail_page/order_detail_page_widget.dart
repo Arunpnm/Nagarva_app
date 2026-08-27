@@ -29,6 +29,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
@@ -1012,9 +1013,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              '8dc01xr1' /* Order Details */,
-            ),
+            AppLocalizations.of(context).orderDetails,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -1422,9 +1421,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                             }.withoutNulls,
                           );
                         },
-                        text: FFLocalizations.of(context).getText(
-                          '0h0xt5ip' /* Edit Order */,
-                        ),
+                        text: AppLocalizations.of(context).editOrder,
                         icon: const Icon(
                           Icons.edit,
                           size: 20.0,

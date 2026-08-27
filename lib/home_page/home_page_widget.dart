@@ -6,6 +6,7 @@ import '/backend/margin_availability.dart';
 import '/components/dashboard_kpi_grid.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/components/global_search_delegate.dart';
@@ -546,9 +547,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                         Icons.logout,
                       ),
                       title: Text(
-                        FFLocalizations.of(context).getText(
-                          'qnj2ddkf' /* Logout */,
-                        ),
+                        AppLocalizations.of(context).logout,
                         style: const TextStyle(),
                       ),
                       dense: false,
@@ -563,9 +562,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            FFLocalizations.of(context).getText(
-              'h4khyrfl' /* Dashboard */,
-            ),
+            AppLocalizations.of(context).dashboard,
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(
                     fontWeight: FontWeight.w600,
@@ -787,9 +784,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                             CrossAxisAlignment.center,
                                         children: [
                                           Text(
-                                            FFLocalizations.of(context).getText(
-                                              'sxcnle6g' /* MONTHLY TARGET */,
-                                            ),
+                                            AppLocalizations.of(context).monthlyTarget,
                                             style: FlutterFlowTheme.of(context)
                                                 .labelSmall
                                                 .override(
@@ -827,10 +822,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                   !_model.showEditTarget!;
                                               safeSetState(() {});
                                             },
-                                            text: FFLocalizations.of(context)
-                                                .getText(
-                                              'obpyg706' /* Edit */,
-                                            ),
+                                            text: AppLocalizations.of(context).edit,
                                             icon: const Icon(
                                               Icons.edit,
                                               size: 20.0,
@@ -916,10 +908,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                         ),
                                               ),
                                               Text(
-                                                FFLocalizations.of(context)
-                                                    .getText(
-                                                  'znesy4lh' /* target this month */,
-                                                ),
+                                                AppLocalizations.of(context).targetThisMonth,
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall
@@ -977,11 +966,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                   obscureText: false,
                                                   decoration: InputDecoration(
                                                     hintText:
-                                                        FFLocalizations.of(
-                                                                context)
-                                                            .getText(
-                                                      '00jbmaqj' /* e.g. 200000 */,
-                                                    ),
+                                                        AppLocalizations.of(context).eG200000,
                                                     enabledBorder:
                                                         const OutlineInputBorder(
                                                       borderSide: BorderSide(
@@ -1070,10 +1055,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                   safeSetState(() {});
                                                 },
                                                 text:
-                                                    FFLocalizations.of(context)
-                                                        .getText(
-                                                  'n6etw2aj' /* Save */,
-                                                ),
+                                                    AppLocalizations.of(context).save,
                                                 options: FFButtonOptions(
                                                   padding:
                                                       const EdgeInsetsDirectional
@@ -1120,9 +1102,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Text(
-                                      FFLocalizations.of(context).getText(
-                                        'xfquvso3' /* Upcoming Orders */,
-                                      ),
+                                      AppLocalizations.of(context).upcomingOrders,
                                       style: FlutterFlowTheme.of(context)
                                           .titleSmall
                                           .override(
@@ -1154,9 +1134,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                         context.pushNamed(
                                             CalendarPageWidget.routeName);
                                       },
-                                      text: FFLocalizations.of(context).getText(
-                                        'nabcn7ke' /* Calendar -> */,
-                                      ),
+                                      text: AppLocalizations.of(context).calendar,
                                       options: FFButtonOptions(
                                         padding: const EdgeInsetsDirectional
                                             .fromSTEB(0.0, 0.0, 0.0, 0.0),
@@ -1439,9 +1417,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Text(
-                                      FFLocalizations.of(context).getText(
-                                        'rk49x1s9' /* Hot Leads */,
-                                      ),
+                                      AppLocalizations.of(context).hotLeads,
                                       style: FlutterFlowTheme.of(context)
                                           .titleSmall
                                           .override(
@@ -1473,9 +1449,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                         context.pushNamed(
                                             LeadsPageWidget.routeName);
                                       },
-                                      text: FFLocalizations.of(context).getText(
-                                        '6rjhf88o' /* View All -> */,
-                                      ),
+                                      text: AppLocalizations.of(context).viewAll,
                                       options: FFButtonOptions(
                                         padding: const EdgeInsetsDirectional
                                             .fromSTEB(0.0, 0.0, 0.0, 0.0),
@@ -1703,9 +1677,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Text(
-                                    FFLocalizations.of(context).getText(
-                                      'i093rsaw' /* BRANCH PERFORMANCE */,
-                                    ),
+                                    AppLocalizations.of(context).branchPerformance,
                                     style: FlutterFlowTheme.of(context)
                                         .titleSmall
                                         .override(

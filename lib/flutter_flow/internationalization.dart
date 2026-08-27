@@ -13,8 +13,18 @@ class FFLocalizations {
   static FFLocalizations of(BuildContext context) =>
       Localizations.of<FFLocalizations>(context, FFLocalizations)!;
 
-  static List<String> languages() =>
-      ['en', 'ta', 'kn', 'ur', 'gu', 'ar', 'fr', 'de', 'hi', 'te', 'ru'];
+  /// Tier 1 locales only (27 Aug 2026). This used to be FlutterFlow's
+  /// default eleven — `ur`, `gu`, `ar`, `fr`, `de`, `te`, `ru` were never
+  /// chosen for this product; they came with the export. Two of them
+  /// (`ar`, `ur`) are RTL, and nothing in this app has ever been laid out
+  /// or tested for RTL, so offering them was a promise the UI could not
+  /// keep.
+  ///
+  /// ORDER IS LOAD-BEARING: `languageIndex` indexes into this list and
+  /// `getVariableText` indexes its positional array by the same value.
+  /// Change one and you must change the other in the same edit, or every
+  /// non-English string silently resolves to the wrong language.
+  static List<String> languages() => ['en', 'ta', 'hi', 'kn'];
 
   static late SharedPreferences _prefs;
   static Future initialize() async =>
@@ -35,36 +45,55 @@ class FFLocalizations {
       ? languages().indexOf(languageCode)
       : 0;
 
-  String getText(String key) =>
-      (kTranslationsMap[key] ?? {})[locale.toString()] ?? '';
+  /// Resolves a translation key, falling back to English before giving up.
+  ///
+  /// FIXED 27 Aug 2026 — this previously ended `?? ''`, with no English
+  /// fallback. All 715 keys in `kTranslationsMap` carry `'ta': ''`,
+  /// `'hi': ''`, `'kn': ''` — every non-English value is an empty string,
+  /// because the FlutterFlow export generated the slots and nothing ever
+  /// filled them. So switching the app to Tamil did not render a
+  /// partially-translated screen; it rendered a **blank** one: every
+  /// label, button and heading on the 18 FlutterFlow-export pages
+  /// resolved to ''.
+  ///
+  /// That made the locale picker unshippable and it is why this fix has
+  /// to land before the picker does, not after. English is a correct
+  /// answer for a missing translation; an empty string never is.
+  String getText(String key) {
+    final entry = kTranslationsMap[key] ?? const {};
+    final value = entry[locale.toString()];
+    if (value != null && value.isNotEmpty) return value;
+    return entry['en'] ?? '';
+  }
 
+  /// Positional counterpart to [getText] for inline per-locale strings.
+  ///
+  /// Currently called from nowhere (verified 27 Aug 2026) — kept because
+  /// it is part of the FlutterFlow surface that generated pages may still
+  /// reference. The array order MUST match `languages()`; both were
+  /// trimmed to Tier 1 together. The dropped locales' named parameters
+  /// are retained so any older generated call site still compiles, but
+  /// their values are ignored.
   String getVariableText({
     String? enText = '',
     String? taText = '',
-    String? knText = '',
-    String? urText = '',
-    String? guText = '',
-    String? arText = '',
-    String? frText = '',
-    String? deText = '',
     String? hiText = '',
-    String? teText = '',
-    String? ruText = '',
-  }) =>
-      [
-        enText,
-        taText,
-        knText,
-        urText,
-        guText,
-        arText,
-        frText,
-        deText,
-        hiText,
-        teText,
-        ruText
-      ][languageIndex] ??
-      '';
+    String? knText = '',
+    @Deprecated('Not a supported locale — value ignored.') String? urText = '',
+    @Deprecated('Not a supported locale — value ignored.') String? guText = '',
+    @Deprecated('Not a supported locale — value ignored.') String? arText = '',
+    @Deprecated('Not a supported locale — value ignored.') String? frText = '',
+    @Deprecated('Not a supported locale — value ignored.') String? deText = '',
+    @Deprecated('Not a supported locale — value ignored.') String? teText = '',
+    @Deprecated('Not a supported locale — value ignored.') String? ruText = '',
+  }) {
+    // Same fallback rule as getText: an untranslated slot resolves to
+    // English, never to an empty string.
+    final values = [enText, taText, hiText, knText];
+    final value = values[languageIndex];
+    if (value != null && value.isNotEmpty) return value;
+    return enText ?? '';
+  }
 
   static const Set<String> _languagesWithShortCode = {
     'ar',
