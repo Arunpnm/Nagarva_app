@@ -442,7 +442,111 @@ PDF paths should be translated without a specific decision.
 
 ---
 
-## 9. Recommended next
+## 9. Document numbering — prefix model (audited 27 Aug 2026)
+
+**Record only. Nothing in this section has been fixed.** Read-only audit
+of the live schema, `next_doc_number`'s body, and every Dart reference.
+
+**The model.** `number_series` is keyed per-org, per-doc-type,
+per-branch, per-FY:
+
+```sql
+CREATE UNIQUE INDEX number_series_uniq ON public.number_series
+  USING btree (org_id, doc_type, COALESCE(branch,''), COALESCE(fy,''));
+```
+
+`prefix` is **not** part of the key — it is an attribute of the slot, so
+one `(org, doc_type, branch, fy)` has exactly one prefix. `prefix` and
+`suffix` default `''`, `padding` defaults 4, `last_number` defaults 0.
+`org_id`, `branch`, `fy` and `prefix` are all NULLABLE. A composite FK
+`(org_id, branch) → branches(org_id, name)` carries `ON UPDATE CASCADE`,
+so a branch rename correctly carries its series.
+
+### 9.1 The vendor's entered prefix is silently discarded
+
+`OrgSetupPage` has a prefix field on the onboarding form. It writes
+`settings.invoice_prefix` — and **nothing reads that key.** The only
+occurrence in the entire repo is the write itself
+(`org_setup_page_widget.dart:87`). `next_doc_number` reads
+`number_series.prefix` and never consults `settings`.
+
+So a vendor types their invoice prefix during onboarding, the app
+accepts it, and their invoices carry the seeded `2026/` instead.
+**User-visible on the first invoice a new tenant issues** — and it is
+the vendor's own document identity, so it will not read as a small bug
+to them. Live: zero `settings` rows match `%prefix%` for either org.
+
+### 9.2 No prefix validation at any layer
+
+`next_doc_number` performs none. It selects `for update`, raises P0001
+if not found, increments, and returns:
+
+```sql
+coalesce(rec.prefix,'') || lpad(n::text, coalesce(rec.padding,4), '0')
+  || coalesce(rec.suffix,'')
+```
+
+`coalesce(prefix,'')` means NULL and empty are **silently valid** —
+which is exactly how the bare-`0001` invoices in §4 were produced. The
+table carries no CHECK constraints at all beyond the PK and branch FK,
+so a 400-character or punctuation-laden prefix would be accepted and
+printed onto a GST invoice.
+
+**Needed:** a CHECK — non-empty, max ~10 chars, whitelist alphanumerics
+plus `/` and `-`. **Rule 46(b) caps the whole invoice number at 16
+characters**, so the prefix budget is genuinely small once padding and
+any suffix are counted.
+
+### 9.3 A prefix edit silently continues the old counter
+
+`prefix` and `last_number` are independent columns with no trigger, no
+CHECK and no history. Changing `2026/` → `APC/` while `last_number = 12`
+makes the next document `APC/0013`: the series continues its count under
+a new identity, and `0001`–`0012` under the old prefix are unreachable
+and unrecorded. `last_number` is only ever incremented by
+`next_doc_number`, so **no audit trail exists** to reconstruct which
+numbers went out under which prefix.
+
+For tax invoices this breaks **Rule 46(b) consecutiveness** — two
+visually distinct series sharing one counter, with nothing recording
+that the change happened or when.
+
+**Proposed rule — CONFIRM WITH CA before building:**
+- Freely editable: quotations, proformas, leads, LRs.
+- **Locked once `last_number > 0`: invoices and receipts.** Changeable
+  only at FY rollover, which is where NG-010's
+  `roll_over_number_series()` (§4) already creates a clean boundary.
+
+### 9.4 Recurring class: every tenant inherits APC's shape
+
+Ponci's prefixes are **byte-identical** to APC's — `2026/`, `CLM-`,
+`CTR-`, `GRN-`, `LR`, `PO-`, `PS-`, `STG-`. This is the same class as
+the CFT catalogue (Item 12) and the branch dropdown that blocked Ponci
+from creating any order at all: **new-tenant seeding copies APC's
+configuration rather than establishing the tenant's own.**
+
+Record this as a **recurring class, not three incidents.** Any new
+per-tenant configuration surface should be checked against it before
+shipping — the question is always "what does a tenant who is not APC
+get on day one?"
+
+### 9.5 Orphan rows — verified figures
+
+6 money receipts, 2 tax invoices and 1 proforma were issued on bare,
+prefix-less numbers. The 5 rows recording this are all `active = false`
+and therefore inert (`next_doc_number` filters on `active`). Full
+per-row table in §4.
+
+**A CA question, not cleanup** — it concerns documents customers already
+hold and invoices that may have been filed. It should go to the CA
+**alongside the pending GSTIN state question** (APC's GSTIN begins `33`
+= Tamil Nadu while the org record says Karnataka), since both are
+invoice-compliance questions for the same adviser and the GSTIN answer
+also unblocks the GST step-1 migration.
+
+---
+
+## 10. Recommended next
 
 1. **Run the device-register migration** (§3) — inert, zero-risk, off the
    critical path once done.
