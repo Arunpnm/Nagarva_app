@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/audit_log_service.dart';
 import '/backend/customer_lookup.dart';
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/upi_payment.dart';
@@ -192,10 +193,46 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
           'p_branch': null,
           'p_fy': _currentFy(),
         }) as String?;
-      } catch (_) {
-        // Falls back to no receipt number rather than blocking the payment
-        // itself — most likely cause is next_doc_number/number_series not
-        // having been seeded for this org's 'receipt' doc_type yet.
+      } catch (e) {
+        // Was a blanket `catch (_) { receiptNo = null; }`: it recorded the
+        // payment with NO receipt number and still showed a success
+        // snackbar, so an unnumbered financial record could be created and
+        // nobody would ever know. Every other allocator call site in this
+        // app (invoice, proforma, voucher, money receipt, LR) lets the
+        // exception propagate — this was the only one that hid it.
+        //
+        // It is also not a hypothetical: from 1 April 2027 _currentFy()
+        // rolls to a FY with no number_series row and this fails on EVERY
+        // payment until the rollover is run.
+        //
+        // Deliberately not a hard block. Item 32b's rule is that money
+        // already received must always be recordable, so the vendor is
+        // told exactly what failed and decides. next_doc_number RAISEs
+        // P0001 (20260812_next_doc_number_fail_loud.sql), which
+        // extractDbErrorMessage surfaces verbatim; anything else falls
+        // back rather than leaking Postgres internals into the UI.
+        if (!mounted) return;
+        final reason = extractDbErrorMessage(e,
+            fallback: 'The receipt number could not be generated.');
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('No receipt number'),
+            content: Text(
+                '$reason\n\nRecord this ₹${amount.toStringAsFixed(0)} payment '
+                'without a receipt number? You can still issue a numbered '
+                'Money Receipt for it later from Documents.'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel')),
+              FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Record anyway')),
+            ],
+          ),
+        );
+        if (proceed != true) return;
         receiptNo = null;
       }
 
