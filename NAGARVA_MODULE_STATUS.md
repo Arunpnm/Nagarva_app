@@ -988,7 +988,59 @@ Same free-then-locked shape as the prefix rule in section 9.3:
 
 ---
 
-## 11. The wipe — sequence, and the one post-wipe cleanup
+## 11. The wipe — COMPLETE, 27 Aug 2026
+
+> **✅ DONE. Everything below was executed and verified live.** The
+> database now holds production data from the first row, as intended.
+>
+> **Final state, introspected 27 Aug 2026 (not reported from memory):**
+>
+> | org | GSTIN | plan | members | branches | series | orders |
+> |---|---|---|---|---|---|---|
+> | `arun-packers-and-couriers` | 33ARLPA3366M1ZO | active / no trial | 1 | 1 | 14 | 0 |
+> | `arun-packers-and-couriers-karnataka` | none | active / no trial | 1 | 1 | 14 | 0 |
+> | `arun-packers-and-couriers-andhra` | none | active / no trial | 1 | 1 | 14 | 0 |
+>
+> `auth.users` 1 · `platform_admins` 1 · `audit_log` 25 (survived, as
+> designed) · `invite_codes` 2 unused · `number_series_prefix_format`
+> **convalidated = true**, 0 violations.
+>
+> **What the rebuild proved, beyond getting data back:**
+> - **`create_additional` works in production**, not just on test data.
+>   Both extra orgs came up `active` with `trial_ends_at` null —
+>   plan inheritance held, and the `assign_default_trial_plan` gate did
+>   not stamp a trial over an inherited active status.
+> - **`seed_org_default_branch` fires on every new org.** Three orgs,
+>   three Head Office rows, none inserted by hand. The fresh-tenant
+>   blocker that started this whole sequence is closed end to end.
+> - **The invite gate does not apply to the RPC path** —
+>   `create_org_with_owner` contains no reference to invites at all
+>   (verified by reading the body). The gate lives in the `create-org`
+>   Edge Function and SignupPage. So org #1 was created by RPC without
+>   consuming the invite code, and Arun kept his auth account rather
+>   than deleting it: with no membership, `'recover'` falls through to
+>   creation, which is exactly the branch that made keeping the account
+>   viable. `WIPE_RECOVERY_platform_admin.md` was therefore never
+>   needed — **keep it anyway**, it applies to any future wipe.
+>
+> **⚠️ OPEN, and time-sensitive: all three orgs still carry the SEEDED
+> prefixes.** `2026/ | CLM- | CTR- | GRN- | LR | PO- | PS- | STG-`,
+> byte-identical across all three — the per-org prefix step did not
+> take. Every org is at `last_number = 0` with 0 orders, so **this is
+> the last moment prefixes can be changed freely**; after the first
+> invoice, section 9.3 applies and a change breaks Rule 46(b)
+> consecutiveness. May be deliberate (`2026/` is APC's real historical
+> format, and separate registrations may each run their own `2026/0001`
+> legitimately) — but it is not what was intended when the step was
+> written, so it needs a decision rather than an assumption.
+>
+> **Next: the first real test of the multi-org resolver.**
+> `org_members` now holds **3 memberships for one auth user** — the
+> condition that had never once existed in this product's life (10.4).
+> Picker, switcher, `LastSelectedOrg` restore and the PIN invariant are
+> all finally exercisable against production rows.
+
+### The sequence as executed
 
 Agreed 27 Aug 2026. **The wipe happens once, and everything that exists
 afterwards is production from the first row.** Hence the ordering: do
@@ -1063,7 +1115,14 @@ survivable needs a schema change — nullable `org_id`, ON DELETE SET
 NULL, and enough denormalised context to stay meaningful — not a list
 edit. See `20260827_delete_org_add_branches_and_pin_tables.sql`.
 
-### 11.1 POST-WIPE: validate the prefix constraint
+### 11.1 POST-WIPE: validate the prefix constraint — ✅ DONE 27 Aug 2026
+
+**Executed and verified: `convalidated = true`, 0 violating rows.** The
+guard now enforces across the whole table, not just future writes. This
+was the last thing the `NOT VALID` concession was waiting on.
+
+Kept below for the reasoning, which stays relevant if the constraint is
+ever rebuilt.
 
 `number_series_prefix_format` was added `NOT VALID` for exactly one
 reason: five APC rows carried `prefix = ''` and were being preserved as
