@@ -51,7 +51,7 @@ by hand in the editor; `list_migrations` shows only 2 entries from
 
 | File | State | How verified | Notes |
 |---|---|---|---|
-| `20260825_gst_treatment_and_display.sql` | **UNRUN** | `gst_treatment` absent from `quotations` and `orders` | GST spec step 2. Blocks correct CGST/SGST vs IGST split. |
+| `20260825_gst_treatment_and_display.sql` | **UNRUN** | `gst_treatment` absent from `quotations` and `orders` | GST spec step 2. Blocks correct CGST/SGST vs IGST split. **Step 1 is no longer blocked** — the GSTIN-33/Karnataka contradiction is resolved by the org-per-state model (section 10.1). |
 | `20260820_phase_a_device_register.sql` | **UNRUN** | `device_bindings` does not exist | Reviewed in full this pass — see §3. |
 | `20260808_tierB_org_billing_rls.sql` | **UNRUN** | `org_insert` policy still present on `organizations`; Tier B drops it | Held pending Arun's signup + Super Admin device tests. |
 | `20260819_pod_relationship_cleanup.sql` | **Not applied, by decision** | — | Render-side guard already makes the document correct. Arun's call. |
@@ -517,20 +517,69 @@ that the change happened or when.
   only at FY rollover, which is where NG-010's
   `roll_over_number_series()` (§4) already creates a clean boundary.
 
-### 9.4 Recurring class: every tenant inherits APC's shape
+### 9.4 Recurring class — and one case that only LOOKED like it
 
-Ponci's prefixes are **byte-identical** to APC's — `2026/`, `CLM-`,
-`CTR-`, `GRN-`, `LR`, `PO-`, `PS-`, `STG-`. This is the same class as
-the CFT catalogue (Item 12) and the branch dropdown that blocked Ponci
-from creating any order at all: **new-tenant seeding copies APC's
-configuration rather than establishing the tenant's own.**
+**CORRECTED 27 Aug 2026. The prefix case is NOT an instance of this
+class. The original wording here was wrong; it is kept below the
+correction because the mistake is instructive.**
 
-Record this as a **recurring class, not three incidents.** Any new
-per-tenant configuration surface should be checked against it before
-shipping — the question is always "what does a tenant who is not APC
-get on day one?"
+Ponci's prefixes are byte-identical to APC's — `2026/`, `CLM-`, `CTR-`,
+`GRN-`, `LR`, `PO-`, `PS-`, `STG-`. That was read as "new-tenant seeding
+copies APC's configuration." **It does not.** `seed_org_number_series()`
+builds every prefix from a **hardcoded `values` list inside the function
+body**, and the calendar-prefixed types derive the year from
+`current_fy_ist()`. Both orgs show `2026/` because both were seeded by
+the same function in the same financial year — nothing was ever read
+from APC.
 
-### 9.5 Orphan rows — verified figures
+**Why this matters beyond one wrong sentence: the test returns the same
+symptom for both causes.** Asking "what does a non-APC tenant get on day
+one?" yields "the same thing APC has" whether the cause is
+tenant-copying or a shared hardcoded default. The symptom cannot
+distinguish them. **Confirming an instance therefore requires reading
+the seeding path**, not comparing two tenants' rows:
+
+| Cause | Evidence | Fix |
+|---|---|---|
+| Tenant-copying | seed reads another org's rows | Derive per tenant |
+| Shared default | seed has literals in its own body | Make configurable |
+| Derived | seed computes from FY/date/org input | **Nothing — correct** |
+
+**Genuine instances of the class:** the CFT catalogue (Item 12) and the
+branch dropdown that blocked Ponci from creating any order at all.
+**Not an instance:** number-series prefixes (shared default, and the
+year portion is correctly derived — see 9.6).
+
+<details><summary>Original wording, wrong, kept for the record</summary>
+
+"Ponci's prefixes are byte-identical to APC's … This is the same class
+as the CFT catalogue (Item 12) and the branch dropdown … new-tenant
+seeding copies APC's configuration rather than establishing the
+tenant's own."
+</details>
+
+### 9.5 The seeded year prefix is DERIVED, not a literal — do not "fix" it
+
+Checked because a hardcoded `2026/` would break at the FY boundary
+alongside the `roll_over_number_series()` gap (§4). **It is not
+hardcoded.** `seed_org_number_series()` does:
+
+```sql
+v_fy   := public.current_fy_ist();
+v_year := split_part(v_fy, '-', 1);
+...
+case when d.calendar_prefix then v_year || '/' else d.prefix end
+```
+
+and `current_fy_ist()` switches on `month >= 4` in `Asia/Kolkata`. An org
+created on 1 April 2027 is seeded `2027/` with no intervention.
+
+**This is NOT part of the FY-rollover gap.** That gap is about EXISTING
+orgs having no rows for the next FY; seeding only ever runs at org
+creation. Two different problems that both mention prefixes and years —
+do not merge them, and do not replace this derivation with a literal.
+
+### 9.6 Orphan rows — verified figures
 
 6 money receipts, 2 tax invoices and 1 proforma were issued on bare,
 prefix-less numbers. The 5 rows recording this are all `active = false`
@@ -546,7 +595,113 @@ also unblocks the GST step-1 migration.
 
 ---
 
-## 10. Recommended next
+## 10. Tenancy model — an ORG per state, not a branch per state
+
+**Structural correction from Arun, 27 Aug 2026. This resolves several
+open items at once and cancels one piece of planned work.**
+
+APC's Tamil Nadu, Karnataka and Andhra locations are **separate orgs**,
+not branches. Separate staff, vehicles, accounts and orders, and a
+**separate licence purchase each**. Only the owner is shared.
+
+**Branches mean multiple locations WITHIN one org, sharing staff and
+accounts.** That is the only thing they mean.
+
+### 10.1 What this resolves
+
+- **The GSTIN 33 / Karnataka contradiction is RESOLVED — not a data
+  error.** `33` is Tamil Nadu, and that GSTIN belongs to the **Tamil Nadu
+  org**. The Karnataka org simply has no GSTIN yet. Nothing to reconcile
+  and nothing to ask the CA about on this specific point.
+  **This unblocks GST step 1** (`20260825_gst_treatment_and_display.sql`
+  is still unrun, but the question that was holding it is answered).
+  Note the orphan-row question in section 9.6 is a **separate** CA item
+  and is still open.
+- **GSTIN stays ORG-LEVEL.** Do not move it to `branches`.
+  `branches.gstin` and `branches.state_code` (added by
+  `20260825_branches_table.sql`) have **no role in this model** and are
+  written by nothing. Candidates for removal; left in place because
+  dropping columns is a decision, not a cleanup.
+- **State-to-state isolation comes from `org_isolation`, which works
+  today.** It was never branch RLS's job.
+
+### 10.2 What this CANCELS — do not build it
+
+**Per-GSTIN branch serials under Rule 46(b) are MOOT.** CLAUDE.md's
+NG-010 note says that if branches acquire their own GSTINs, invoice
+serials must become per-GSTIN by passing `p_branch` through the
+allocator at six call sites. Under an org-per-state model
+`number_series` is **already** org-scoped, so separate registrations get
+separate serials for free. **Do not implement branch-aware allocation.**
+The NG-010 rule that `number_series` must never get a `branch_isolation`
+policy still stands, and is now doubly true.
+
+### 10.3 Branch RLS Tier 2 — re-scoped, not cancelled
+
+Item 30's `branch_isolation` is field-verified and still correct for
+**within-org** branches (a Chennai manager seeing Chennai rows). It was
+never the mechanism for state separation. Tier 2 matters only for an org
+that genuinely runs several locations.
+
+### 10.4 Multi-org: switching WORKS, creating DOES NOT
+
+The owner needs to move between three orgs without logging out.
+
+**Switching is built and complete.** `showOrgSwitcherSheet`
+(`lib/components/org_switcher_sheet.dart`) surfaces in Settings gated on
+`availableOrgs.length > 1`, and at login when a user belongs to more
+than one. `main.dart`'s restore builds `memberOrgIds` as a Set and
+validates `LastSelectedOrg` against it, so cold-start restore across
+several orgs is correct. No logout required.
+
+**Creating a second org is BLOCKED, and this is now on the critical
+path.** `create_org_with_owner()` begins:
+
+```sql
+select om.org_id, om.role into v_existing
+  from public.org_members om where om.user_id = p_user_id
+  order by om.created_at asc limit 1;
+if found then
+  return query select false, ...   -- returns the EXISTING org
+  return;
+end if;
+```
+
+A user who already belongs to **any** org gets that org handed back with
+`is_new = false`, and nothing is created. So the owner **cannot create
+org #2 or #3 through signup.**
+
+That early return is **not a bug** — it is the "confirmed but no org
+yet" recovery path `vendor_org_resolver.dart` depends on, and removing
+it would strand signups. The fix is to separate *recover my existing
+org* from *deliberately create another*, which needs an explicit flag
+and its own task. **Not attempted inside branch management.**
+
+**Nothing here has ever run against real data:** all 6 users currently
+hold exactly one membership each (verified `org_members`), so every
+multi-org path — picker, switcher, restore — is **untested in the
+field**. Expect to find defects when the owner's second org exists.
+
+### 10.5 GSTIN entry rules — RECORD ONLY, not built
+
+Same free-then-locked shape as the prefix rule in section 9.3:
+
+- **Optional at registration.** A new org may have no GSTIN yet — the
+  Karnataka org is exactly that case, and forcing one would make a
+  vendor invent a value.
+- **Validated on entry:** 15 characters, and the **first two digits must
+  match the org's state code**. That is the check that would have caught
+  the `33`-vs-Karnataka pairing at the point of entry rather than months
+  later.
+- **Locked once the org has issued its first GST invoice.** Changing a
+  GSTIN after invoices carry it re-attributes filed documents to a
+  different registration. Editable before that, frozen after — with the
+  same "changeable at FY rollover" escape hatch the prefix rule uses if
+  a genuine re-registration happens.
+
+---
+
+## 11. Recommended next
 
 1. **Run the device-register migration** (§3) — inert, zero-risk, off the
    critical path once done.
