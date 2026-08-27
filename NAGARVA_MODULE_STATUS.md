@@ -1014,6 +1014,55 @@ the risky, schema-touching work on junk data first.
      `p_intent`** — signup cannot create them, which is the whole
      blocker (section 10.4).
 
+### 11.0 STANDING OBLIGATION: `delete_org()`'s table list
+
+**Whenever an org-scoped table is added, `delete_org()`'s `v_order` (or
+`v_keep`) must be updated in the same change.** This is maintenance
+with no natural reminder, and it went stale within hours of being
+needed.
+
+**Proof, 27 Aug 2026:** the first wipe dry run was refused —
+
+```
+P0001: delete_org() is out of date: 3 org-scoped table(s) it does not
+know about (branches, pin_ip_attempts, pin_lockout_events).
+```
+
+`branches` was created by `20260825_branches_table.sql` and extended by
+`20260827_branches_management.sql` — **our own branch work created this
+gap the same day we needed the function.** The PIN tables came from the
+rate-limiting work days earlier. Nobody was careless; there is simply
+nothing that connects "add a table" to "update the deleter".
+
+**The guard is why this was a refusal and not a silent orphan**, and it
+matters more here than in most schemas: only **15 of 121** org-scoped
+tables have an FK to `organizations`, so the other 106 do not clean
+themselves up. Without the guard the wipe would have looked successful
+and left rows behind in three of them.
+
+**Do not weaken that guard to make a migration pass.** Add the table to
+the right list instead, and derive its position from its foreign keys.
+
+Placement rules, learned from the three above:
+- A table referenced by others with **ON DELETE RESTRICT** goes AFTER
+  all of them (`branches` is last: 22 tables reference
+  `branches(org_id, name)`).
+- A table whose `org_id` FK is **ON DELETE CASCADE cannot go in
+  `v_keep`** — the final `delete from organizations` destroys its rows
+  whatever the list says. `v_keep` only works with a **nullable
+  `org_id` + ON DELETE SET NULL**, which is exactly why `audit_log`
+  survives and `pin_lockout_events` cannot.
+- List a cascade-deleted table anyway: being in `v_order` means its
+  rows are **counted and reported** rather than disappearing silently.
+
+**Open question, deliberately not decided:** should
+`pin_lockout_events` outlive the org it belongs to? It is a genuine
+security audit trail (scope, pool, staff_id, client_ip, lock_level),
+and the argument that keeps `audit_log` applies to it. Making it
+survivable needs a schema change — nullable `org_id`, ON DELETE SET
+NULL, and enough denormalised context to stay meaningful — not a list
+edit. See `20260827_delete_org_add_branches_and_pin_tables.sql`.
+
 ### 11.1 POST-WIPE: validate the prefix constraint
 
 `number_series_prefix_format` was added `NOT VALID` for exactly one
