@@ -1,6 +1,7 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/org_resolution.dart';
+import '/backend/owner_pin.dart';
 import '/backend/pending_auth_message.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/vendor_org_resolver.dart';
@@ -138,6 +139,21 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       // resolveActiveOrg persists the choice itself — one writer, so the
       // call sites cannot drift apart on when it is stored.
       await establishVendorSession(user, resolved.orgId, availableOrgs);
+
+      // First-run PIN bootstrap (28 Aug 2026). A brand-new org has
+      // pin_hash NULL and zero staff, so its PIN screen cannot succeed
+      // for anyone — every attempt just accrues an IP lockout. Offer to
+      // set one at the only moment we know the vendor is authenticated
+      // some other way.
+      //
+      // Email path only, deliberately: a PIN session already has a PIN
+      // by definition, and PinLoginPage never reaches this code.
+      // Skippable — see SetOwnerPinPageWidget for why.
+      if (!mounted) return;
+      if (await ownerNeedsPin(orgId: resolved.orgId, userId: user.id)) {
+        if (mounted) context.go(SetOwnerPinPageWidget.routePath);
+        return;
+      }
 
       if (mounted) context.go(HomePageWidget.routePath);
     } catch (e) {

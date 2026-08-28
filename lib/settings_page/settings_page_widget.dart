@@ -1,6 +1,6 @@
 import '/app_session.dart';
-import '/backend/device_org_binding.dart';
 import '/backend/last_selected_org.dart';
+import '/backend/owner_pin.dart';
 import '/backend/session_logout.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -1244,83 +1244,25 @@ class _PinSettingCardState extends State<_PinSettingCard> {
   }
 
   Future<void> _save() async {
-    final pin = _pinController.text.trim();
-    if (pin.length != 4 || int.tryParse(pin) == null) {
-      setState(() => _message = 'Enter exactly 4 digits.');
-      return;
-    }
-    final userId = SupaFlow.client.auth.currentUser?.id;
-    final activeOrgId = AppSession.instance.currentOrgId;
-    if (userId == null || activeOrgId == null) return;
-
-    // WHICH ORG DOES A PIN BELONG TO? (27 Aug 2026)
-    //
-    // The PIN lives on `org_members`, which is UNIQUE (org_id, user_id)
-    // — so it is per (org, user). An owner of three orgs has three
-    // separate PINs.
-    //
-    // This used to write against `currentOrgId` unconditionally, while
-    // the PIN LOGIN screen reads `DeviceOrgBinding.boundOrgId`. Switch
-    // org in Settings, set a PIN, and it lands on the active org while
-    // the bound device keeps checking the other one — the PIN is
-    // correct, stored, and unusable. Found live 27 Aug 2026 by exactly
-    // that sequence.
-    //
-    // Same class as the PIN-login bug fixed the same day (see
-    // org_resolution.dart): `AppSession.currentOrgId` and
-    // `DeviceOrgBinding.boundOrgId` are two answers to one question.
-    //
-    // Resolution: when the device is BOUND, the bound org is the only
-    // org this PIN could ever sign into, so that is what we write —
-    // but we SAY SO first rather than silently targeting a company the
-    // header does not name. Unbound, the active org is right and no
-    // notice is needed.
-    final boundOrgId = DeviceOrgBinding.boundOrgId;
-    var orgId = activeOrgId;
-    if (boundOrgId != null &&
-        boundOrgId.isNotEmpty &&
-        boundOrgId != activeOrgId) {
-      final boundName = DeviceOrgBinding.boundOrgName ?? 'another organization';
-      final activeName = AppSession.instance.currentOrgName ?? 'the current one';
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Which organization?'),
-          content: Text(
-            'This device signs in to $boundName. Setting a PIN here will '
-            'apply to $boundName, not $activeName.',
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: Text('Set for $boundName')),
-          ],
-        ),
-      );
-      if (proceed != true) return;
-      orgId = boundOrgId;
-    }
-
+    // The write, the 4-digit validation and the bound-vs-active org
+    // disambiguation all moved to backend/owner_pin.dart on 28 Aug 2026,
+    // when SetOwnerPinPage needed the same behaviour. Two copies of this
+    // rule would drift — the org-targeting subtlety below was itself a
+    // live bug once, and it is exactly the kind that survives in a
+    // duplicate. One writer.
     setState(() {
       _saving = true;
       _message = null;
     });
-    try {
-      await OrgMembersTable().update(
-        data: {'pin': pin},
-        matchingRows: (q) =>
-            q.eq('org_id', orgId).eq('user_id', userId),
-      );
-      _pinController.clear();
-      setState(() => _message = 'PIN updated.');
-    } catch (e) {
-      setState(() => _message = 'Could not update PIN: $e');
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    final result = await saveOwnerPin(context, _pinController.text);
+    if (!mounted) return;
+    setState(() {
+      _saving = false;
+      if (result.saved) _pinController.clear();
+      // Null message == the user cancelled the disambiguation; say
+      // nothing rather than invent an error for a deliberate choice.
+      _message = result.message;
+    });
   }
 
   @override

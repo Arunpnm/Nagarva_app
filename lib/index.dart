@@ -62,6 +62,8 @@ export '/quick_entry_page/quick_entry_page_widget.dart'
 export '/signup_page/signup_page_widget.dart' show SignupPageWidget;
 export '/set_new_password_page/set_new_password_page_widget.dart'
     show SetNewPasswordPageWidget;
+export '/set_owner_pin_page/set_owner_pin_page_widget.dart'
+    show SetOwnerPinPageWidget;
 export '/org_setup_page/org_setup_page_widget.dart' show OrgSetupPageWidget;
 export '/plan_page/plan_page_widget.dart' show PlanPageWidget;
 export '/supervisor_job_page/supervisor_job_page_widget.dart'

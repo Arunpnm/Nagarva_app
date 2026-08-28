@@ -260,6 +260,15 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: SetNewPasswordPageWidget.routePath,
           builder: (context, params) => const SetNewPasswordPageWidget(),
         ),
+        // NOT a public route (28 Aug 2026): reached only after a real
+        // email login, so it stays behind the `redirect:` auth guard —
+        // it writes a credential and must never be reachable by URL to
+        // an unauthenticated caller.
+        FFRoute(
+          name: SetOwnerPinPageWidget.routeName,
+          path: SetOwnerPinPageWidget.routePath,
+          builder: (context, params) => const SetOwnerPinPageWidget(),
+        ),
         FFRoute(
           name: OrgBindingPageWidget.routeName,
           path: OrgBindingPageWidget.routePath,
