@@ -1210,3 +1210,179 @@ worked minutes earlier, which reads like a broken machine.
 5. **NG-005 privacy policy + terms** — small, unblocks Play Store and
    Meta review.
 6. **`roll_over_number_series()`** — December 2026 (§4).
+
+---
+
+## 14. Session 28 Aug 2026 — machine B, smoke-test attempt
+
+Machine moved again (`D:\nagarva_app`). Merge from GitHub, then an
+attempt at the 34-step full-flow smoke test. **The run did not start.**
+What follows is only what was actually introspected, per this file's
+own rule.
+
+### 14.1 Environment — machine B builds fine, but CANNOT run the emulator
+
+| | machine B |
+|---|---|
+| Flutter | **3.35.5** (Dart 3.9.2), single install, the pinned one is in front |
+| Android SDK | `D:\Android\Sdk` — note, NOT `%LOCALAPPDATA%` |
+| Gradle JDK | Android Studio JBR (Java 24 on PATH is NOT used — no conflict) |
+| `flutter analyze lib/` | **177 issues, 0 errors** — the documented baseline, exactly |
+| debug APK | builds clean, 1909s (~32 min) first run, 207 MB |
+| **host RAM** | **7.7 GB total, 0 GB free** |
+
+**The emulator is not usable on this machine, and this cost the
+session.** Every failure looked like an app bug and was not one:
+
+- SystemUI ANR'd on *every* cold boot (three for three).
+- `uiautomator dump` returned `ERROR: null root node`.
+- The app died on the native splash screen.
+
+logcat contains **no `FATAL EXCEPTION` for `in.nagarva.app` anywhere**.
+What it does contain is `com.google.android.gms.persistent has died`,
+`Process exited due to signal 9 (Killed)`, and an ANR in `wellbeing` —
+the low-memory killer reaping processes. Raising the AVD to 3 GB on a
+host with 0 GB free made it worse, not better.
+
+**The app itself is fine on machine B**: it installed, launched, and
+rendered PinLoginPage correctly with the real org name resolved from
+Postgres. The Impeller flag is still required
+(`--ez enable-impeller false`) per the 25 Aug entry.
+
+**The next device pass on machine B should use Chrome web**
+(`flutter run -d chrome` — this project's own documented workflow) or a
+physical phone over USB. Not the emulator.
+
+**New environment trap — `uiautomator` under Git Bash.** MSYS rewrites
+`/sdcard/ui.xml` into `/Files/Git/sdcard/ui.xml`, so the dump lands
+somewhere useless and `cat` returns nothing. That reads exactly like
+"the app rendered nothing". **Export `MSYS_NO_PATHCONV=1`** for any
+`adb shell` command containing an absolute device path. Same family as
+the CRLF trap in `SETUP_NEW_MACHINE.md`: a tooling artifact that
+imitates a real failure.
+
+Also: an emulator launched from a backgrounded shell dies when that
+task is reaped. Launch it detached (`Start-Process`) or it will not
+survive the session.
+
+### 14.2 Verified by introspection — three PASSes
+
+**Cross-org numbering isolation — PASSED.** Ran the real allocator
+against the real rows inside a transaction, then rolled back. This
+reproduces the Phase 7 table exactly:
+
+| after | TN | KA | AP |
+|---|---|---|---|
+| 1st TN invoice | 1 | 0 | 0 |
+| 2nd TN invoice | 2 | 0 | 0 |
+| 1st KA invoice | 2 | 1 | 0 |
+
+Issued `TN/0001`, `TN/0002`, `KA/0001`. **No FY segment** — the
+migration-009 bug has not returned. KA starts its own series rather
+than continuing TN's. AP never moved while work happened in TN and KA.
+Post-rollback: **all 42 counters verified back at 0**.
+
+**RLS — PASSED**, three ways, using `SET LOCAL` claim simulation per
+the standing preference over minted sessions:
+
+| caller | organizations | number_series | branches |
+|---|---|---|---|
+| `anon` | 0 | 0 | 0 |
+| stranger uid | 0 | 0 | 0 |
+| real owner | 3 | 42 | 3 |
+
+Anon also returns 0 rows on staff, orders, leads, quotations and
+org_members. Scoping is membership-driven via `auth.uid()` and
+fail-closed.
+
+**All six allocator call sites — CORRECT.** Every one passes
+`p_fy` = `'2026-27'` (all three `currentFy()`/`_currentFy()` helpers
+are byte-identical and return that today) and `p_branch` = `null`. All
+42 `number_series` rows are `active`. **No caller change is needed,
+and there is no reason to set the seeded rows to `fy = NULL`.**
+
+| file:line | doc_type |
+|---|---|
+| `order_detail_page_widget.dart:577` | invoice |
+| `order_documents_section.dart:465` | receipt |
+| `order_documents_section.dart:586` | proforma |
+| `order_documents_section.dart:647` | **next_lr_number** |
+| `order_documents_section.dart:1021` | voucher |
+| `quick_payment_section.dart:190` | receipt |
+
+### 14.3 Defects found — four
+
+1. **`staff.branch_id` does not exist.** The test plan's Phase 0 query
+   would have errored. The column is **`staff.branch` (text)**, the
+   composite natural key into `branches(org_id, name)`. Already
+   corrected in `SMOKE_TEST_2026-08-27_queries.md`; the plan predates
+   that correction.
+2. **There is no quotation numbering anywhere in the product.** No call
+   site passes `p_doc_type: 'quotation'`, and `quotations` has **no**
+   number column (all 76 enumerated). So the `quotation` counter can
+   never move and no quote number can display. **Step 7 is BLOCKED, not
+   FAIL.** `SMOKE_TEST_2026-08-27_queries.md`'s Phase 2 query selects
+   `quotation_no` and **will error** — fix that file before the run.
+3. **`lr_series` is EMPTY in all three orgs**, so `next_lr_number`
+   raises P0001 and every LR fails. The `TNLR`/`KALR`/`APLR` prefixes
+   went into `number_series` doc_type `lr`, which migration 007 keeps
+   only as a **mirror** — `next_lr_number` reads `lr_series` and
+   nothing else. Seed SQL was drafted but **not run**. Note that
+   `next_lr_number` returns `coalesce(prefix,'LR') || lpad(n,4,'0')`
+   with **no separator**, so a `TNLR` prefix yields `TNLR0001`.
+4. **`web/auth/index.html` never branched on link type** — fixed, see
+   the commit below. Password reset was broken for every vendor, not
+   only this account.
+
+### 14.4 BLOCKER for the whole run — no usable credential exists
+
+- **One** auth user: `arunpackersandcouriers@gmail.com`, 3 memberships,
+  platform admin.
+- **`org_members.pin_hash` is NULL on all three orgs**, and there are
+  **0 staff rows**. So `verify_org_pin` matches nothing and **the PIN
+  screen can never succeed** — every attempt merely increments
+  `pin_ip_attempts`, and 10 of them lock the IP for 15 minutes.
+- **UX consequence worth a decision:** a bound device lands on
+  PinLoginPage by default, which for a brand-new org is unusable until
+  someone sets a PIN — and a PIN can only be set from Settings, which
+  needs a session. The only escape is the "Use email login instead"
+  link.
+- Password reset dead-ended on the `/auth` bug above, so the reset loop
+  is **unverified end to end**. The send path and the app's
+  `SetNewPasswordPage` / `type=recovery` handling are both confirmed
+  present and correct; only the landing page was broken.
+- **The `/auth` fix is committed but NOT deployed.** Deploy to `/auth`
+  **only** — a root-level drag-drop is what took `/survey` and `/sign`
+  down on 17 Aug.
+- Also add `https://link.nagarva.in/auth` to **Authentication → URL
+  Configuration → Redirect URLs**. The **dashboard's** "Send password
+  recovery" button ignores `kAuthRedirectUrl` and uses the project Site
+  URL, which is why the first attempt landed on the bare domain.
+
+### 14.5 Public link paths — live state, verified 28 Aug 2026
+
+| path | serves |
+|---|---|
+| `/` | "Nagarva — This address hosts customer links…" |
+| `/auth` | the relay page (fixed, **not yet deployed**) |
+| `/survey` | **"This link isn't available right now"** |
+| `/sign` | **"This link isn't available right now"** |
+| `/track` | **"This link isn't available right now"** |
+
+**Improvement since the 19 Aug entry**: these paths no longer serve
+"Email confirmed" to customers. A holding page is the right failure
+mode. **Fixing `/auth` does NOT fix them** — they are separate pages
+and still need the original hand-written site restored, and then put
+in git so it cannot be lost by a deploy again.
+
+### 14.6 Resume here
+
+1. Deploy `web/auth/index.html` to `/auth` **only**.
+2. Add the `/auth` redirect URL in Supabase Auth config.
+3. Reset the password, sign in once, and **set an owner PIN
+   immediately** so the PIN path stops being a dead end.
+4. Run the 34 steps — on **Chrome web or a physical phone**, not this
+   machine's emulator.
+5. Fix `SMOKE_TEST_2026-08-27_queries.md`'s `quotation_no` query before
+   using it.
+6. Decide on the `lr_series` seed, or accept LR as a known FAIL.
