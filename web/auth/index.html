@@ -64,6 +64,16 @@
   }
   .btn:focus-visible{outline:3px solid #fff;outline-offset:2px}
   .hint{font-size:13px;color:var(--muted);margin:16px 0 0}
+  .alt{
+    display:none;width:100%;margin:12px 0 0;
+    background:transparent;color:var(--muted);
+    font-family:inherit;font-size:13px;font-weight:500;
+    border:1px solid var(--line);border-radius:10px;padding:11px;
+    cursor:pointer;
+  }
+  .alt:focus-visible{outline:3px solid #fff;outline-offset:2px}
+  .show-alt .alt{display:block}
+  .is-plain .mark path{animation:none;stroke-dashoffset:0}
   .brand{
     margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
     font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);
@@ -84,6 +94,7 @@
     <h1 id="title">Email confirmed</h1>
     <p id="body">Your Nagarva account is ready. Open the app and log in with your email and password.</p>
     <button class="btn" id="action">Open Nagarva</button>
+    <button class="alt" id="copy">Copy link instead</button>
     <p class="hint" id="hint">If the app doesn't open, launch Nagarva from your home screen.</p>
     <div class="brand">Nagarva</div>
   </main>
@@ -95,20 +106,87 @@
   var params = new URLSearchParams(hash || query);
   var err = params.get('error_description') || params.get('error');
 
+  var card   = document.getElementById('card');
+  var glyph  = document.getElementById('glyph');
+  var title  = document.getElementById('title');
+  var body   = document.getElementById('body');
+  var action = document.getElementById('action');
+  var hint   = document.getElementById('hint');
+  var copy   = document.getElementById('copy');
+
+  var deepLink = 'nagarva://auth-callback' + (hash ? '#' + hash : '');
+
+  // Copy per Supabase auth email type. The page previously rendered
+  // "Email confirmed" for EVERY type, which told a user arriving on a
+  // password-reset link to "log in with your email and password" — the
+  // one thing they cannot do, since they are here precisely because they
+  // have no working password. Keys match Supabase's `type` values.
+  var COPY = {
+    recovery: {
+      title: 'Set your new password',
+      body:  'Open Nagarva to choose a new password for your account.',
+      hint:  'This link works once. If the app does not open, install ' +
+             'Nagarva first, then reopen this link from your email.',
+      // Not a confirmation — a checkmark here would read as "done".
+      glyph: 'M32 26 v12 M26 32 h12',
+      plain: true
+    },
+    invite: {
+      title: 'You have been invited',
+      body:  'Open Nagarva to finish setting up your account.'
+    },
+    magiclink: {
+      title: 'Sign in to Nagarva',
+      body:  'Open Nagarva to finish signing in.'
+    },
+    email_change: {
+      title: 'Email address updated',
+      body:  'Your new email address is confirmed. Open Nagarva to continue.'
+    }
+  };
+
   if (err) {
-    document.getElementById('card').classList.add('is-error');
-    document.getElementById('glyph').setAttribute('d', 'M23 23 L41 41 M41 23 L23 41');
-    document.getElementById('title').textContent = 'This link expired';
-    document.getElementById('body').textContent =
+    card.classList.add('is-error');
+    glyph.setAttribute('d', 'M23 23 L41 41 M41 23 L23 41');
+    title.textContent = 'This link expired';
+    body.textContent =
       decodeURIComponent(err).replace(/\+/g, ' ') +
-      '. Open Nagarva and request a new confirmation email.';
-    document.getElementById('action').textContent = 'Open Nagarva';
-    document.getElementById('hint').textContent = '';
+      '. Open Nagarva and request a new link.';
+    action.textContent = 'Open Nagarva';
+    hint.textContent = '';
+    document.title = 'Nagarva — Link expired';
+  } else {
+    // Missing/unknown type stays signup-equivalent, matching
+    // auth_deep_link.dart's own default branch.
+    var c = COPY[params.get('type')];
+    if (c) {
+      title.textContent = c.title;
+      body.textContent = c.body;
+      document.title = 'Nagarva — ' + c.title;
+      if (c.hint) hint.textContent = c.hint;
+      if (c.glyph) glyph.setAttribute('d', c.glyph);
+      if (c.plain) card.classList.add('is-plain');
+    }
   }
 
-  document.getElementById('action').addEventListener('click', function () {
-    window.location.href = 'nagarva://auth-callback' + (hash ? '#' + hash : '');
+  action.addEventListener('click', function () {
+    window.location.href = deepLink;
   });
+
+  // Fallback for a browser that silently drops the custom scheme (common
+  // in in-app webviews). Without this the token is unreachable — it only
+  // exists in this URL's fragment, which a mobile browser will not show
+  // in full.
+  if (navigator.clipboard && hash) {
+    card.classList.add('show-alt');
+    copy.addEventListener('click', function () {
+      navigator.clipboard.writeText(deepLink).then(function () {
+        copy.textContent = 'Link copied';
+      }, function () {
+        copy.textContent = 'Could not copy';
+      });
+    });
+  }
 })();
 </script>
 </body>

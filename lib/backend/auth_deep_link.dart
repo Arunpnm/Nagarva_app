@@ -15,13 +15,28 @@ import '/index.dart';
 ///
 ///   nagarva://auth-callback#access_token=...&refresh_token=...&type=...
 ///
-/// forwarded here by the link.nagarva.in landing page for every auth
-/// email type it branches on: signup, recovery, invite, magiclink,
-/// email_change — that static site has no Supabase client of its own
-/// (see the 16 Aug 2026 redirect-issue report); its only job is to bounce
-/// this scheme/host at whatever device opened the original email,
-/// matching the `nagarva`/`auth-callback` intent-filter in
-/// AndroidManifest.xml.
+/// forwarded here by the link.nagarva.in landing page (`web/auth/
+/// index.html` in this repo) for every auth email type: signup,
+/// recovery, invite, magiclink, email_change — that static site has no
+/// Supabase client of its own (see the 16 Aug 2026 redirect-issue
+/// report); its only job is to bounce this scheme/host at whatever
+/// device opened the original email, matching the
+/// `nagarva`/`auth-callback` intent-filter in AndroidManifest.xml.
+///
+/// CORRECTED 28 Aug 2026 — this comment used to say the landing page
+/// "branches on" those five types. **It did not branch on `type` at
+/// all.** It had exactly one conditional, on `error`, and rendered
+/// "Email confirmed — log in with your email and password" for
+/// everything else. So a password-reset link told a user with no
+/// working password to go and use their password, which is the one
+/// thing they cannot do. Found 28 Aug 2026 when a real reset attempt
+/// dead-ended on that screen.
+///
+/// The comment asserting a behaviour the code did not have is why this
+/// survived review — the same shape as the `copyWith(x: null)` and
+/// `toLocaleTimeString` bugs in CLAUDE.md. `web/auth/index.html` now
+/// genuinely branches on `type`; if you change the copy there, change
+/// it there, not here, and do not restate its logic in this comment.
 ///
 /// `type=recovery` is the one value handled differently — a password
 /// reset must not silently log the user in with their OLD password still
