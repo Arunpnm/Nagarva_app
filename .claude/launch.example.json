@@ -1,0 +1,12 @@
+{
+  "_comment": "Copy to .claude/launch.json and replace <REPO_ROOT> with this machine's absolute checkout path. launch.json is gitignored: absolute paths must not travel in the repo.",
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nagarva-web",
+      "runtimeExecutable": "<PATH_TO_PYTHON>/python.exe",
+      "runtimeArgs": ["-m", "http.server", "5000", "--directory", "<REPO_ROOT>/build/web"],
+      "port": 5000
+    }
+  ]
+}

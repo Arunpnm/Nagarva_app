@@ -102,3 +102,6 @@ lib/l10n/gen/
 # by hand and tested (test/crash_redaction_test.dart); the DSN arrives
 # via --dart-define, not via the wizard.
 *.exe
+
+# Machine-specific: contains absolute paths. Copy .claude/launch.example.json and edit.
+.claude/launch.json
