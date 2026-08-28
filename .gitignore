@@ -103,5 +103,7 @@ lib/l10n/gen/
 # via --dart-define, not via the wizard.
 *.exe
 
-# Machine-specific: contains absolute paths. Copy .claude/launch.example.json and edit.
+# Claude Code browser-pane dev-server config. Machine-specific: it holds
+# absolute paths to this checkout, so it must never be committed.
+# Optional - normal work needs no config file (`flutter run -d chrome`).
 .claude/launch.json
