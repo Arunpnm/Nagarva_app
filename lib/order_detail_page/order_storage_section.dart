@@ -503,6 +503,20 @@ class _StorageBookingSheetState extends State<_StorageBookingSheet> {
       case StorageBillingMode.custom:
         break;
     }
+    // Handling applies on every plan, custom included — it is loading
+    // labour, not rent, so it does not depend on how the stay is billed.
+    //
+    // Only ever FILLS A BLANK. A vendor who has already typed a handling
+    // figure for this stay has made a decision about this job, and
+    // re-selecting a size must not overwrite it. Same rule the Add
+    // Labour dialog follows after the 1 Sept 2026 fix, where changing
+    // the staff dropdown used to clobber a typed amount.
+    if (r.handlingIn > 0 && _handlingIn.text.trim().isEmpty) {
+      _handlingIn.text = r.handlingIn.toStringAsFixed(0);
+    }
+    if (r.handlingOut > 0 && _handlingOut.text.trim().isEmpty) {
+      _handlingOut.text = r.handlingOut.toStringAsFixed(0);
+    }
     setState(() {});
   }
 

@@ -340,6 +340,42 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         );
       } catch (_) {}
 
+      // Advance the quote out of 'draft' now that it has become a real
+      // order. (Arun, 3 Sept 2026.)
+      //
+      // Without this a won quote stayed `status: 'draft'` with
+      // `accepted_at` null FOREVER — verified on APC-COIMBATORE-1001,
+      // whose quote still read 'draft' while the order existed and was
+      // already in a warehouse. Every quote a vendor ever won would sit
+      // in their list looking like an unfinished draft, so the list
+      // cannot be used to see what is still outstanding, which is the
+      // one thing a quote list is for.
+      //
+      // The columns were already there and simply never written:
+      // `accepted_at` and `accepted_by_name` exist on `quotations`.
+      // Recorded against the person who confirmed it, not the customer —
+      // this is the vendor accepting on the customer's behalf at the
+      // counter, which is what the Confirm Order button means. A
+      // customer-side acceptance (via the signature flow) is a different
+      // event and sets these itself.
+      //
+      // Best-effort like the two writes above: the order is already
+      // committed by this point, and failing the conversion over a
+      // status flag would be worse than a stale one.
+      if (quote != null) {
+        try {
+          await QuotationsTable().update(
+            data: {
+              'status': 'accepted',
+              'accepted_at': supaSerialize<DateTime>(DateTime.now()),
+              'accepted_by_name':
+                  AppSession.instance.currentStaffName ?? 'Owner',
+            },
+            matchingRows: (q) => OrgScope.write(q).eq('id', quote.id),
+          );
+        } catch (_) {}
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(successMessage)),

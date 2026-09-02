@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/pricing_defaults.dart';
+import '/backend/storage_billing.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 
 /// Settings → Survey & Pricing (Item 12, 17 Aug 2026).
@@ -34,7 +35,7 @@ class SurveyPricingPage extends StatefulWidget {
 
 class _SurveyPricingPageState extends State<SurveyPricingPage>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 2, vsync: this);
+  late final TabController _tabs = TabController(length: 3, vsync: this);
 
   bool _loading = true;
   String? _loadError;
@@ -49,6 +50,16 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
   Map<String, List<SurveyItem>> _catalogue = {};
   bool _savingCatalogue = false;
 
+  // ---- Storage rates tab. Added 3 Sept 2026: before this, storage
+  // rates were settable ONLY by SQL, so a vendor could not use the
+  // warehouse module at all — the size picker came up empty and stayed
+  // empty. PricingConfig.storageRates deliberately has no default (one
+  // vendor's prices must never be another's), which makes an editor the
+  // only way to fill it.
+  final List<_RateRowCtrl> _rateRows = [];
+  bool _savingRates = false;
+  String? _rateError;
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +70,9 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
   void dispose() {
     _tabs.dispose();
     for (final r in _rows) {
+      r.dispose();
+    }
+    for (final r in _rateRows) {
       r.dispose();
     }
     super.dispose();
@@ -80,6 +94,12 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
       _catalogue = {
         for (final e in config.surveyCats.entries) e.key: List.of(e.value),
       };
+      for (final r in _rateRows) {
+        r.dispose();
+      }
+      _rateRows
+        ..clear()
+        ..addAll(config.storageRates.map(_RateRowCtrl.from));
     } catch (e) {
       _loadError = 'Could not load pricing settings: $e';
     } finally {
@@ -295,6 +315,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
           tabs: const [
             Tab(text: 'Vehicle & Crew Slabs'),
             Tab(text: 'Item Catalogue'),
+            Tab(text: 'Storage Rates'),
           ],
         ),
       ),
@@ -304,7 +325,11 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
               ? _errorState(theme)
               : TabBarView(
                   controller: _tabs,
-                  children: [_slabsTab(theme), _catalogueTab(theme)],
+                  children: [
+                    _slabsTab(theme),
+                    _catalogueTab(theme),
+                    _storageTab(theme),
+                  ],
                 ),
     );
   }
@@ -488,6 +513,175 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
       ),
     );
   }
+
+
+  // ------------------------------------------------------------------
+  // Storage rates
+  // ------------------------------------------------------------------
+
+  /// Saves the storage rate card.
+  ///
+  /// Every figure here is THE VENDOR'S price. Nothing is pre-filled and
+  /// there is no template — a shipped rate table is one vendor's prices
+  /// wearing another vendor's authority ("No suggested money. Ever.").
+  /// A new row opens empty except `Minimum days`, which carries the
+  /// documented default because 0 there would silently switch the
+  /// minimum-stay floor off rather than mean anything.
+  Future<void> _saveRates() async {
+    final seen = <String>{};
+    for (final r in _rateRows) {
+      final size = r.sizeCtrl.text.trim();
+      if (size.isEmpty) {
+        setState(() => _rateError = 'Every row needs a size name.');
+        return;
+      }
+      if (!seen.add(size.toLowerCase())) {
+        setState(() => _rateError = 'Duplicate size: "$size".');
+        return;
+      }
+      if (r.perDay <= 0 && r.perMonth <= 0) {
+        setState(() => _rateError =
+            '"$size" has no price. Set a daily rate, a monthly rate, or both.');
+        return;
+      }
+    }
+    setState(() {
+      _savingRates = true;
+      _rateError = null;
+    });
+    try {
+      await PricingConfig.saveConfigKeys({
+        'storage_rates':
+            storageRatesToConfig(_rateRows.map((r) => r.toRate()).toList()),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Storage rates saved.')));
+      }
+    } catch (e) {
+      if (mounted) setState(() => _rateError = 'Could not save: $e');
+    } finally {
+      if (mounted) setState(() => _savingRates = false);
+    }
+  }
+
+  Widget _storageTab(FlutterFlowTheme theme) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        Text('Your storage prices',
+            style: GoogleFonts.interTight(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: theme.primaryText)),
+        const SizedBox(height: 4),
+        Text(
+          'Sizes and prices are yours to set - nothing is filled in for '
+          'you. A stay bills on whichever plan was agreed at booking, and '
+          'the rate is copied onto that record, so changing a price here '
+          'never re-bills goods already in store.',
+          style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText),
+        ),
+        const SizedBox(height: 14),
+        if (_rateRows.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.secondaryBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'No storage prices set yet. Until you add a size, the picker '
+              'on a booking stays empty and the rate has to be typed by '
+              'hand every time.',
+              style:
+                  GoogleFonts.inter(fontSize: 13, color: theme.secondaryText),
+            ),
+          ),
+        for (var i = 0; i < _rateRows.length; i++) _rateCard(theme, i),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => setState(() => _rateRows.add(_RateRowCtrl.empty())),
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('Add size'),
+        ),
+        if (_rateError != null) ...[
+          const SizedBox(height: 12),
+          Text(_rateError!,
+              style: GoogleFonts.inter(fontSize: 12, color: theme.error)),
+        ],
+        const SizedBox(height: 16),
+        FilledButton(
+          onPressed: _savingRates ? null : _saveRates,
+          child: Text(_savingRates ? 'Saving...' : 'Save storage rates'),
+        ),
+      ],
+    );
+  }
+
+  Widget _rateCard(FlutterFlowTheme theme, int i) {
+    final r = _rateRows[i];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: r.sizeCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Size',
+                    hintText: 'e.g. Tata Ace, 10x10 room, 1 pallet',
+                    isDense: true,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Remove size',
+                icon: Icon(Icons.delete_outline, color: theme.error, size: 20),
+                onPressed: () =>
+                    setState(() => _rateRows.removeAt(i).dispose()),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(children: [
+            Expanded(child: _rateField(r.perDayCtrl, 'Per day')),
+            const SizedBox(width: 10),
+            Expanded(child: _rateField(r.perMonthCtrl, 'Per month')),
+          ]),
+          const SizedBox(height: 6),
+          Row(children: [
+            Expanded(child: _rateField(r.minDaysCtrl, 'Min days')),
+            const SizedBox(width: 10),
+            Expanded(child: _rateField(r.handlingInCtrl, 'Handling in')),
+            const SizedBox(width: 10),
+            Expanded(child: _rateField(r.handlingOutCtrl, 'Handling out')),
+          ]),
+          const SizedBox(height: 6),
+          Text(
+            'Daily and monthly are independent prices. The app never '
+            'compares them or picks the cheaper - whichever plan was '
+            'agreed at booking is what bills.',
+            style: GoogleFonts.inter(fontSize: 11, color: theme.secondaryText),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _rateField(TextEditingController c, String label) => TextField(
+        controller: c,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(labelText: label, isDense: true),
+      );
 
   Widget _catalogueTab(FlutterFlowTheme theme) {
     final cats = _catalogue.keys.toList();
@@ -791,5 +985,77 @@ class _SlabRowCtrl {
     nameCtrl.dispose();
     vehicleCtrl.dispose();
     crewCtrl.dispose();
+  }
+}
+
+
+/// Controllers for one storage-rate row.
+///
+/// Owned by the page rather than rebuilt per frame so in-progress typing
+/// survives a setState - same reason as _SlabRowCtrl above.
+class _RateRowCtrl {
+  _RateRowCtrl({
+    required this.sizeCtrl,
+    required this.perDayCtrl,
+    required this.perMonthCtrl,
+    required this.minDaysCtrl,
+    required this.handlingInCtrl,
+    required this.handlingOutCtrl,
+  });
+
+  factory _RateRowCtrl.from(StorageSizeRate r) => _RateRowCtrl(
+        sizeCtrl: TextEditingController(text: r.size),
+        perDayCtrl: TextEditingController(text: _n(r.perDay)),
+        perMonthCtrl: TextEditingController(text: _n(r.perMonth)),
+        minDaysCtrl: TextEditingController(text: '${r.minDays}'),
+        handlingInCtrl: TextEditingController(text: _n(r.handlingIn)),
+        handlingOutCtrl: TextEditingController(text: _n(r.handlingOut)),
+      );
+
+  /// A new row opens EMPTY on every money field. The one seeded value is
+  /// the minimum-stay default, which is an identity rather than a price:
+  /// 0 there switches the floor off instead of meaning anything - the
+  /// same reasoning as rate_card_multipliers opening at 100.
+  factory _RateRowCtrl.empty() => _RateRowCtrl(
+        sizeCtrl: TextEditingController(),
+        perDayCtrl: TextEditingController(),
+        perMonthCtrl: TextEditingController(),
+        minDaysCtrl: TextEditingController(text: '$kStorageDefaultMinDays'),
+        handlingInCtrl: TextEditingController(),
+        handlingOutCtrl: TextEditingController(),
+      );
+
+  final TextEditingController sizeCtrl;
+  final TextEditingController perDayCtrl;
+  final TextEditingController perMonthCtrl;
+  final TextEditingController minDaysCtrl;
+  final TextEditingController handlingInCtrl;
+  final TextEditingController handlingOutCtrl;
+
+  /// Trailing '.0' dropped so a saved 300 comes back as "300" - a vendor
+  /// should not see their own price restyled.
+  static String _n(double v) =>
+      v == 0 ? '' : (v == v.roundToDouble() ? '${v.toInt()}' : '$v');
+
+  double get perDay => double.tryParse(perDayCtrl.text.trim()) ?? 0;
+  double get perMonth => double.tryParse(perMonthCtrl.text.trim()) ?? 0;
+
+  StorageSizeRate toRate() => StorageSizeRate(
+        size: sizeCtrl.text.trim(),
+        perDay: perDay,
+        perMonth: perMonth,
+        minDays:
+            int.tryParse(minDaysCtrl.text.trim()) ?? kStorageDefaultMinDays,
+        handlingIn: double.tryParse(handlingInCtrl.text.trim()) ?? 0,
+        handlingOut: double.tryParse(handlingOutCtrl.text.trim()) ?? 0,
+      );
+
+  void dispose() {
+    sizeCtrl.dispose();
+    perDayCtrl.dispose();
+    perMonthCtrl.dispose();
+    minDaysCtrl.dispose();
+    handlingInCtrl.dispose();
+    handlingOutCtrl.dispose();
   }
 }

@@ -214,12 +214,30 @@ class StorageSizeRate {
     required this.perDay,
     required this.perMonth,
     this.minDays = kStorageDefaultMinDays,
+    this.handlingIn = 0,
+    this.handlingOut = 0,
   });
 
   final String size;
   final double perDay;
   final double perMonth;
   final int minDays;
+
+  /// Loading in and out, per stay.
+  ///
+  /// ADDED 3 Sept 2026 (Arun): handling was typed by hand on every single
+  /// booking, because the rate card held only rent. It is normally a
+  /// standard figure per size, so retyping it per stay is both slower and
+  /// a chance to key it wrong on a customer's bill.
+  ///
+  /// Still stored per stay on `storage_jobs` and still billed as its own
+  /// component — these are the DEFAULTS a booking opens on, exactly like
+  /// [perDay]. Rent and handling must never be conflated (brief 40).
+  ///
+  /// 0 is a legitimate value meaning "we do not charge for handling", not
+  /// "unset" — the same reason the rest of the card has no fallback.
+  final double handlingIn;
+  final double handlingOut;
 
   /// What the minimum stay costs on the daily plan. Shown at booking so
   /// the floor is disclosed rather than discovered on the final bill.
@@ -253,6 +271,10 @@ List<StorageSizeRate> parseStorageRates(dynamic raw) {
       perMonth: (num.tryParse('${e['per_month']}') ?? 0).toDouble(),
       minDays: (num.tryParse('${e['min_days']}') ?? kStorageDefaultMinDays)
           .toInt(),
+      // Absent reads as 0, so every card written before handling existed
+      // keeps working and simply offers no handling default.
+      handlingIn: (num.tryParse('${e['handling_in']}') ?? 0).toDouble(),
+      handlingOut: (num.tryParse('${e['handling_out']}') ?? 0).toDouble(),
     ));
   }
   return out;
@@ -266,6 +288,8 @@ List<Map<String, dynamic>> storageRatesToConfig(List<StorageSizeRate> rates) =>
               'per_day': r.perDay,
               'per_month': r.perMonth,
               'min_days': r.minDays,
+              'handling_in': r.handlingIn,
+              'handling_out': r.handlingOut,
             })
         .toList();
 

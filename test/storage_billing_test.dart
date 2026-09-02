@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arun_p_k_r_s/backend/storage_billing.dart';
 
 void main() {
+  _handlingOnTheRateCard();
   final inDate = DateTime(2026, 9, 1);
 
   group('storageDays', () {
@@ -411,6 +412,88 @@ void main() {
       );
       expect(c.billedUnits, 1);
       expect(c.rent, 4200);
+    });
+  });
+}
+
+void _handlingOnTheRateCard() {
+  group('rate card handling charges (added 3 Sept 2026)', () {
+    test('parses handling in/out when present', () {
+      final rates = parseStorageRates([
+        {
+          'size': 'Tata Ace',
+          'per_day': 260,
+          'per_month': 3600,
+          'min_days': 12,
+          'handling_in': 1200,
+          'handling_out': 1000,
+        }
+      ]);
+      expect(rates.single.handlingIn, 1200);
+      expect(rates.single.handlingOut, 1000);
+    });
+
+    test('a card written before handling existed still parses', () {
+      // The regression that matters: every rate card already stored in
+      // pricing_config predates these keys. Absent must read as 0 and
+      // must NOT throw or drop the rate.
+      final rates = parseStorageRates([
+        {'size': 'Pickup 8ft', 'per_day': 310, 'per_month': 4400}
+      ]);
+      expect(rates.single.size, 'Pickup 8ft');
+      expect(rates.single.perDay, 310);
+      expect(rates.single.handlingIn, 0);
+      expect(rates.single.handlingOut, 0);
+    });
+
+    test('round-trips through storageRatesToConfig', () {
+      const original = StorageSizeRate(
+        size: 'Container 20ft',
+        perDay: 820,
+        perMonth: 11200,
+        minDays: 15,
+        handlingIn: 2500,
+        handlingOut: 2000,
+      );
+      final back = parseStorageRates(storageRatesToConfig([original])).single;
+      expect(back.size, original.size);
+      expect(back.perDay, original.perDay);
+      expect(back.perMonth, original.perMonth);
+      expect(back.minDays, original.minDays);
+      expect(back.handlingIn, original.handlingIn);
+      expect(back.handlingOut, original.handlingOut);
+    });
+
+    test('zero handling is a real value, not "unset"', () {
+      // A vendor who does not charge for handling must be able to say so
+      // and have it stick, rather than the field reading as unconfigured
+      // and something later "helpfully" supplying a number.
+      final back = parseStorageRates(storageRatesToConfig([
+        const StorageSizeRate(
+            size: 'Tata 407', perDay: 450, perMonth: 6100, minDays: 15)
+      ])).single;
+      expect(back.handlingIn, 0);
+      expect(back.handlingOut, 0);
+    });
+
+    test('handling is NOT folded into rent by computeStorageCharge', () {
+      // Brief 40: rent and handling stay separate components all the way
+      // to the customer's bill. Pinned so a later "simplification" that
+      // adds them together fails here.
+      final c = computeStorageCharge(
+        inDate: DateTime(2026, 8, 15),
+        outDate: DateTime(2026, 9, 3),
+        mode: StorageBillingMode.perDay,
+        rate: 260,
+        minBillingDays: 12,
+        handlingIn: 1200,
+        handlingOut: 1000,
+      );
+      expect(c.days, 19);
+      expect(c.rent, 4940);
+      expect(c.handlingIn, 1200);
+      expect(c.handlingOut, 1000);
+      expect(c.total, 7140);
     });
   });
 }
