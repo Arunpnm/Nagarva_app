@@ -1209,7 +1209,68 @@ worked minutes earlier, which reads like a broken machine.
    testing. **Next task.**
 5. **NG-005 privacy policy + terms** — small, unblocks Play Store and
    Meta review.
-6. **`roll_over_number_series()`** — December 2026 (§4).
+6. ~~**`roll_over_number_series()`** — December 2026 (§4).~~
+   **PROMOTED 2 Sept 2026 (Arun) — see item A below. It is a required
+   build item, not a dated one to drift.**
+
+### Added 2 Sept 2026 — two required items, with their sequencing
+
+**A. FY rollover — `roll_over_number_series()`. Position: FIRST of the
+two, and ahead of the branch-management screen.**
+
+`next_doc_number()` raises P0001 at 00:00 IST on 1 Apr 2027 when no
+`number_series` row exists for the new FY. Failing loud is the correct
+behaviour and must not be softened — the alternative is allocating
+under the wrong year, or the auto-insert that produced the bare `0001`
+invoices. But there is **no rollover mechanism at all**, so the
+consequence today is that every vendor's invoicing stops that morning
+and stays stopped until someone runs SQL by hand.
+
+What moved it up the list, 2 Sept 2026: the year segment is now inside
+the **prefix** (`BLR/2026-27/`), not only in the `fy` column. So the
+rollover has to rewrite the prefix's FY segment while carrying the
+org's own code forward — `BLR/2026-27/` → `BLR/2027-28/`, never
+re-deriving `BLR`, or a vendor's document identity changes on its own
+at a year boundary. That is strictly more work than the December 2026
+scoping assumed, and the scoping is now stale.
+
+Blast radius if it slips: 5 of the 6 allocator call sites hard-fail
+(invoice, proforma, voucher, money receipt, LR). The sixth,
+`quick_payment_section`, previously swallowed the error and recorded a
+payment with no receipt number — that bare `catch (_)` is fixed, so it
+now surfaces the reason, but the payment still lands unnumbered.
+
+Ship the three agreed pieces together (CLAUDE.md's dated section):
+the RPC, the owner-only Settings card, and the shared Dart catch that
+turns a P0001 at allocation time into "2027-28 numbering hasn't been
+started yet — [Start it now]". The catch is what makes the button
+sufficient and is why no cron is needed. **Target March 2027 remains,
+but the work is sequenced now, not scheduled then.**
+
+**B. Storage rates editor UI. Position: SECOND — immediately after A,
+and before any further storage feature work.**
+
+`pricing_config.config->'storage_rates'` has **no editor anywhere in
+`lib/`**. `PricingConfig.storageRates` deliberately has no default
+fallback (absent means "this vendor has not set prices", never inherit
+another vendor's), so a new tenant opening the storage module gets an
+empty size picker and cannot proceed. Rates are settable **only by
+SQL**, which means the storage module is unusable by any vendor who is
+not Arun.
+
+This is the "no suggested money" rule creating an obligation rather
+than removing one: having correctly refused to ship APC's rate table
+as a product default (`kStorageSizeTemplate`, written and removed 2
+Sept 2026), the product now owes vendors a way to enter their own. The
+module is otherwise built and tested — `storage_billing.dart` plus 31
+tests, the order storage card, P&L and dashboard revenue all wired —
+so this single missing screen is what stands between a finished module
+and an unusable one. Natural home: a third tab on `SurveyPricingPage`
+(`/survey-pricing`), beside Vehicle & Crew Slabs and Item Catalogue,
+which is already the per-tenant pricing surface.
+
+Flagged two sessions ago and dropped off the list; recorded here so it
+cannot fall off again.
 
 ---
 
