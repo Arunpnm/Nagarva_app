@@ -25,6 +25,66 @@
 
 begin;
 
+-- ---------------------------------------------------------- PREFLIGHT --
+-- REFUSES rather than skips. Added 2 Sep 2026 after the sandbox-drop
+-- script ran BEFORE this one and reported success: its dependency on
+-- doc_prefix_reservations was guarded with `if to_regclass(...) is not
+-- null then`, which turned "the migration I depend on has not run" into
+-- a silent no-op. A guard that lets a script succeed without doing its
+-- job is worse than no guard, because it consumes the operator's
+-- attention and returns a clean result.
+--
+-- Convention for every migration from here: assert your preconditions
+-- and RAISE. Never branch around a missing dependency.
+do $pre$
+declare
+  v_fy   text := public.current_fy_ist();
+  v_n    int;
+  v_max  int;
+begin
+  -- The literals in section 5 are hardcoded to one financial year. If the
+  -- FY has rolled since this was written they would silently write last
+  -- year's identity onto a live series.
+  if v_fy <> '2026-27' then
+    raise exception
+      'PREFLIGHT: this migration hardcodes FY 2026-27, but current_fy_ist() is %. Update sections 5 and 6 before running.', v_fy;
+  end if;
+
+  select count(*) into v_n from public.organizations
+   where slug in ('apc-bengaluru', 'apc-coimbatore');
+  if v_n <> 2 then
+    raise exception
+      'PREFLIGHT: expected both apc-bengaluru and apc-coimbatore to exist, found %. Run 20260902_apc_branch_orgs.sql first.', v_n;
+  end if;
+
+  -- Moving a prefix once numbers have been issued strands them under an
+  -- identity the series no longer carries. Verified 2 Sep 2026: all 14
+  -- branding rows for these two orgs are at 0.
+  select count(*) into v_n
+    from public.number_series ns
+    join public.organizations o on o.id = ns.org_id
+   where o.slug in ('apc-bengaluru', 'apc-coimbatore')
+     and ns.last_number > 0
+     and ns.doc_type in ('invoice','proforma','receipt','quotation',
+                         'voucher','credit_note','debit_note');
+  if v_n > 0 then
+    raise exception
+      'PREFLIGHT: % branding series for BLR/CBE have already issued numbers. Moving their prefix now would strand those numbers. Stop and re-plan.', v_n;
+  end if;
+
+  -- The new CHECK is narrower than nothing but wider than the old one;
+  -- fail with a sentence rather than a constraint violation.
+  select max(length(prefix)) into v_max from public.number_series;
+  if v_max > 12 then
+    raise exception
+      'PREFLIGHT: a prefix of % characters already exists; the new CHECK allows 12.', v_max;
+  end if;
+
+  raise notice 'PREFLIGHT ok: fy=%, BLR/CBE present and unissued, longest prefix=%',
+    v_fy, v_max;
+end;
+$pre$;
+
 -- ---------------------------------------------------------------- 1 ----
 -- A CHECK cannot be replaced in place; drop then add, inside this
 -- transaction so there is no window where the column is unconstrained.
@@ -286,7 +346,100 @@ on conflict (prefix) do nothing;
 --      and ns.doc_type = any(public.branding_doc_types());
 
 -- ---------------------------------------------------------------- 7 ----
--- POSTFLIGHT. Every org must render a different first number.
+-- POSTFLIGHT — ASSERTS, does not print.
+--
+-- This migration was written with a postflight of two SELECTs to read by
+-- eye. It then failed to run at all and the failure was not noticed,
+-- because nothing in the pipeline could tell "ran and passed" from "never
+-- ran". A select is evidence only if somebody reads it; a raise is
+-- evidence whether or not they do. Any assertion below that fails rolls
+-- the whole transaction back, so a partial application is impossible.
+do $post$
+declare
+  v_n    int;
+  v_def  text;
+  v_row  record;
+begin
+  -- (a) the prefix budget is 12, not the old 10
+  select pg_get_constraintdef(oid) into v_def
+    from pg_constraint
+   where conrelid = 'public.number_series'::regclass
+     and conname  = 'number_series_prefix_format';
+  if v_def is null or v_def not like '%{1,12}%' then
+    raise exception 'POSTFLIGHT(a): prefix CHECK is not the 12-character form. Got: %',
+      coalesce(v_def, '<constraint missing>');
+  end if;
+
+  -- (b) the uniqueness trigger exists and is enabled
+  select count(*) into v_n
+    from pg_trigger
+   where tgrelid = 'public.number_series'::regclass
+     and tgname  = 'number_series_prefix_unique'
+     and not tgisinternal
+     and tgenabled <> 'D';
+  if v_n <> 1 then
+    raise exception 'POSTFLIGHT(b): number_series_prefix_unique trigger absent or disabled.';
+  end if;
+
+  -- (c) BLR and CBE are on the FY prefix, all seven branding types each
+  for v_row in
+    select o.slug, count(*) filter (
+             where ns.prefix = case o.slug
+                                 when 'apc-bengaluru'  then 'BLR/2026-27/'
+                                 when 'apc-coimbatore' then 'CBE/2026-27/'
+                               end) as ok,
+           count(*) as total
+      from public.number_series ns
+      join public.organizations o on o.id = ns.org_id
+     where o.slug in ('apc-bengaluru', 'apc-coimbatore')
+       and ns.doc_type = any(public.branding_doc_types())
+     group by o.slug
+  loop
+    if v_row.ok <> 7 or v_row.total <> 7 then
+      raise exception
+        'POSTFLIGHT(c): % has %/7 branding series on the FY prefix (of % rows).',
+        v_row.slug, v_row.ok, v_row.total;
+    end if;
+  end loop;
+
+  -- (d) Andhra Pradesh is reserved and unclaimed
+  select count(*) into v_n
+    from public.doc_prefix_reservations
+   where prefix = 'AP/2026-27/' and org_id is null;
+  if v_n <> 1 then
+    raise exception 'POSTFLIGHT(d): AP/2026-27/ is not reserved-and-unclaimed.';
+  end if;
+
+  -- (e) no branding prefix is shared by two orgs.
+  --
+  -- Re-verified 2 Sep 2026 AFTER the sandbox drop: this now returns 0 on
+  -- the first run. The earlier note saying it would return one row was
+  -- true only while the sandbox still held '2026/' alongside APC. With
+  -- the sandbox gone APC's '2026/' is unshared, so there is no expected
+  -- failure left here and any hit is real.
+  select count(*) into v_n from (
+    select 1 from public.number_series
+     where doc_type = any(public.branding_doc_types())
+     group by prefix having count(distinct org_id) > 1) z;
+  if v_n > 0 then
+    raise exception 'POSTFLIGHT(e): % prefix(es) shared across orgs.', v_n;
+  end if;
+
+  -- (f) every org still renders a distinct first invoice number
+  select count(*) into v_n from (
+    select ns.prefix || lpad((ns.last_number + 1)::text, ns.padding, '0') as n
+      from public.number_series ns
+     where ns.doc_type = 'invoice'
+     group by 1 having count(*) > 1) z;
+  if v_n > 0 then
+    raise exception 'POSTFLIGHT(f): % duplicate next-invoice number(s) across orgs.', v_n;
+  end if;
+
+  raise notice 'POSTFLIGHT ok: CHECK=12, trigger live, BLR+CBE on FY prefix, AP reserved, no shared or duplicate numbers.';
+end;
+$post$;
+
+-- Informational only; the assertions above are what gate the commit.
 select o.slug, ns.prefix, ns.last_number,
        ns.prefix || lpad((ns.last_number + 1)::text, ns.padding, '0')
          as next_invoice_would_be
@@ -294,11 +447,5 @@ select o.slug, ns.prefix, ns.last_number,
   join public.organizations o on o.id = ns.org_id
  where ns.doc_type = 'invoice'
  order by o.slug;
-
--- Must return ZERO rows: no branding prefix shared across orgs.
-select prefix, count(distinct org_id) as orgs
-  from public.number_series
- where doc_type = any(public.branding_doc_types())
- group by prefix having count(distinct org_id) > 1;
 
 commit;

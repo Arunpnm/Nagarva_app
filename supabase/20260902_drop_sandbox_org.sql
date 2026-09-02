@@ -19,6 +19,11 @@
 -- pass makes no progress. For an org with no business data this settles
 -- in one or two passes.
 
+-- ALREADY APPLIED, 2 Sep 2026. The sandbox org is gone and this file is
+-- spent. It is kept for the record and refuses to run again (see the
+-- first check below) rather than being deleted, so the guard lesson at
+-- the doc_prefix_reservations delete stays readable.
+
 begin;
 
 do $do$
@@ -30,6 +35,13 @@ declare
   v_pass     int := 0;
   v_left     bigint;
 begin
+  -- Already applied. Stop rather than doing nothing quietly - the same
+  -- failure shape this script's own guard bug had.
+  if not exists (select 1 from public.organizations where id = v_org) then
+    raise exception
+      'Sandbox org % is already gone; this script has been applied. Nothing to do.', v_org;
+  end if;
+
   -- Refuse outright if the org acquired real data since this was written.
   execute 'select count(*) from public.orders where org_id = $1'
     into v_left using v_org;
@@ -71,11 +83,25 @@ begin
     end loop;
   end loop;
 
-  -- Guarded so this script runs in either order relative to
-  -- 20260902_doc_prefix_identity.sql, which is what creates this table.
-  if to_regclass('public.doc_prefix_reservations') is not null then
-    delete from public.doc_prefix_reservations where org_id = v_org;
+  -- FIXED 2 Sep 2026. This read:
+  --
+  --     if to_regclass('public.doc_prefix_reservations') is not null then
+  --       delete ... ;
+  --     end if;
+  --
+  -- which was written to make run order not matter and instead made a
+  -- missing dependency invisible: this script was run BEFORE
+  -- 20260902_doc_prefix_identity.sql, the guard skipped, and the whole
+  -- thing reported success while the identity migration had never
+  -- executed. A guard that lets a script pass without doing its job is
+  -- worse than no guard, because it spends the operator's attention and
+  -- hands back a clean result. Assert and RAISE; never branch around an
+  -- absent dependency.
+  if to_regclass('public.doc_prefix_reservations') is null then
+    raise exception
+      'doc_prefix_reservations is missing. Run 20260902_doc_prefix_identity.sql first.';
   end if;
+  delete from public.doc_prefix_reservations where org_id = v_org;
 
   delete from public.org_members    where org_id = v_org;
   delete from public.organizations  where id     = v_org;
@@ -86,13 +112,13 @@ $do$;
 
 -- POSTFLIGHT. Expect exactly three orgs and no shared invoice prefix.
 --
--- ORDERING NOTE. Until this script runs, APC and the sandbox BOTH carry
--- prefix '2026/', so the "zero shared prefixes" assertion at the end of
--- 20260902_doc_prefix_identity.sql will return one row on its first run.
--- That is expected, not a failure of that migration: its trigger fires
--- on INSERT/UPDATE and cannot retroactively split two rows that already
--- shared a prefix before it existed. The assertion below is the one that
--- must come back empty.
+-- ORDERING NOTE, corrected 2 Sep 2026. This previously said the identity
+-- migration's "zero shared prefixes" assertion would return one row on
+-- its first run, because APC and the sandbox both carried '2026/'. That
+-- was true when written and is no longer: this script ran first, so the
+-- sandbox is gone, APC's '2026/' is unshared, and that assertion now
+-- passes cleanly. There is no expected failure left there - any hit is
+-- real. Re-verified against live state before the identity migration ran.
 select slug, name from public.organizations order by created_at;
 
 select o.slug, ns.prefix,
