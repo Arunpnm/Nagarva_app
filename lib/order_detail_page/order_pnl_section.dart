@@ -443,6 +443,18 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           // under a ₹0 line and reading like an arithmetic bug.
           if (_quoteTotal == 0 && _amount != 0)
             _row(theme, label: 'Order Amount', amount: _amount),
+          // GST is shown being REMOVED, rather than silently absent from
+          // the total. Without this line the card printed
+          // "Quote Amount 35,990" and "Revenue (Final) 37,640" with a
+          // 7,140 storage line between them - three numbers that do not
+          // add up, which reads as an arithmetic bug rather than as tax
+          // being excluded. Same reasoning as the 'Order Amount'
+          // fallback row directly above: the column has to visibly add
+          // up, or the vendor cannot check it.
+          if (_quoteGstAmount > 0)
+            _row(theme,
+                label: 'Less GST (collected for govt)',
+                amount: -_quoteGstAmount),
           if (_addonsCount > 0)
             _row(theme, label: 'Add-ons ($_addonsCount)', amount: _addonsTotal),
           // Storage rent is revenue, and it is shown as its own line so a
