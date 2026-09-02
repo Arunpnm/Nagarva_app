@@ -798,8 +798,18 @@ class _NavBarPageState extends State<NavBarPage>
   // has its own AppBar/tabs already). Routed via pushNamed instead of the
   // tab-swap so the same onTap(index) callback both the rail (line ~1000)
   // and MobileBottomNav funnel through can stay a single, ungated handler.
-  void _selectTab(int i) {
-    final item = _navItems[i];
+  void _selectTab(int i) => _selectTabNamed(_navItems[i].name);
+
+  /// Selects by NAME, not by list position.
+  ///
+  /// The bottom bar shows only [kPrimaryNavNames] as of 3 Sept 2026,
+  /// while the rail and drawer still show every destination. An index
+  /// into one list means nothing in the other, so both funnel through
+  /// this instead — a positional callback would have silently opened
+  /// the wrong screen from the bottom bar.
+  void _selectTabNamed(String name) {
+    final item = _navItems.firstWhere((e) => e.name == name,
+        orElse: () => _navItems.first);
     if (item.name == SuperAdminPageWidget.routeName) {
       context.pushNamed(SuperAdminPageWidget.routeName);
       return;
@@ -1175,11 +1185,27 @@ class _NavBarPageState extends State<NavBarPage>
         bottomNavigationBar: SizeTransition(
           sizeFactor: _navAnimController,
           axisAlignment: -1,
-          child: MobileBottomNav(
-            items: _navItems,
-            currentIndex: currentIndex < 0 ? 0 : currentIndex,
-            onTap: _selectTab,
-          ),
+          child: Builder(builder: (context) {
+            // Only the five everyday destinations. The bar used to render
+            // all 27 owner items and scroll horizontally, which is how a
+            // vendor ends up not knowing what the app contains — Arun,
+            // 3 Sept 2026: "we have plenty of modules which is also
+            // getting confused which is for what". Everything else is in
+            // the drawer, grouped.
+            final bottomItems = _navItems
+                .where((e) => kPrimaryNavNames.contains(e.name))
+                .toList();
+            if (bottomItems.isEmpty) return const SizedBox.shrink();
+            final idx =
+                bottomItems.indexWhere((e) => e.name == _currentPageName);
+            return MobileBottomNav(
+              items: bottomItems,
+              currentIndex: idx < 0 ? 0 : idx,
+              // By name: an index into bottomItems is NOT an index into
+              // _navItems.
+              onTap: (i) => _selectTabNamed(bottomItems[i].name),
+            );
+          }),
         ),
       );
     }

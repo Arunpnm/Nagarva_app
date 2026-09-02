@@ -561,6 +561,28 @@ class _HomePageWidgetState extends State<HomePageWidget>
     );
   }
 
+  /// One drawer destination. Extracted when the drawer was grouped
+  /// (3 Sept 2026) so the tile markup is written once rather than
+  /// repeated inside each section.
+  Widget _drawerTile(BuildContext context, NavItem item) => InkWell(
+        onTap: () {
+          if (scaffoldKey.currentState!.isDrawerOpen ||
+              scaffoldKey.currentState!.isEndDrawerOpen) {
+            Navigator.pop(context);
+          }
+          if (item.name != 'HomePage') {
+            context.pushNamed(item.name);
+          }
+        },
+        child: Material(
+          color: Colors.transparent,
+          child: ListTile(
+            leading: Icon(item.icon),
+            title: Text(item.label),
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     // This drawer used to list every page unconditionally, unlike the
@@ -623,26 +645,60 @@ class _HomePageWidgetState extends State<HomePageWidget>
                 // again, the exact class of drift this fix already closed
                 // once. Every tile keeps a real 48dp+ tap target via
                 // ListTile's own default sizing.
-                for (final item in navItemsForCurrentSession())
-                  if (showDrawerPage(item.name))
-                    InkWell(
-                      onTap: () {
-                        if (scaffoldKey.currentState!.isDrawerOpen ||
-                            scaffoldKey.currentState!.isEndDrawerOpen) {
-                          Navigator.pop(context);
-                        }
-                        if (item.name != 'HomePage') {
-                          context.pushNamed(item.name);
-                        }
-                      },
-                      child: Material(
-                        color: Colors.transparent,
-                        child: ListTile(
-                          leading: Icon(item.icon),
-                          title: Text(item.label),
+                // GROUPED 3 Sept 2026. 27 flat tiles gave no clue which
+                // screen was for what; ordering by section does. The
+                // grouping is presentation only — `item.name` is
+                // untouched, so `_tabs` (the real router) is unaffected.
+                for (final group in [...kNavGroups, kNavGroupOther])
+                  ...(() {
+                    final inGroup = navItemsForCurrentSession()
+                        .where((e) =>
+                            showDrawerPage(e.name) &&
+                            (kNavGroups.contains(e.group)
+                                ? e.group == group
+                                // An item whose group is not a known
+                                // section still renders, under Other,
+                                // rather than disappearing from the
+                                // drawer entirely.
+                                : group == kNavGroupOther))
+                        .toList();
+                    if (inGroup.isEmpty) return <Widget>[];
+                    return <Widget>[
+                      // Collapsible, so the drawer opens as a short list
+                      // of seven sections instead of 27 tiles. Only the
+                      // section holding the CURRENT screen starts open —
+                      // expanding everything by default would put the
+                      // vendor back where they started.
+                      Theme(
+                        // ExpansionTile draws its own divider lines by
+                        // default, which read as separators between
+                        // unrelated items rather than as section edges.
+                        data: Theme.of(context)
+                            .copyWith(dividerColor: Colors.transparent),
+                        child: ExpansionTile(
+                          initiallyExpanded:
+                              inGroup.any((e) => e.name == 'HomePage'),
+                          tilePadding: const EdgeInsetsDirectional.fromSTEB(
+                              16, 0, 12, 0),
+                          childrenPadding:
+                              const EdgeInsetsDirectional.only(bottom: 4),
+                          title: Text(
+                            group.toUpperCase(),
+                            style: GoogleFonts.interTight(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.1,
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                            ),
+                          ),
+                          children: [
+                            for (final item in inGroup)
+                              _drawerTile(context, item),
+                          ],
                         ),
                       ),
-                    ),
+                    ];
+                  })(),
                 InkWell(
                   splashColor: Colors.transparent,
                   focusColor: Colors.transparent,

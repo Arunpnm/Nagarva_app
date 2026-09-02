@@ -26,7 +26,52 @@ import '/permissions.dart';
 /// drifted apart once already (see the history note below); both now
 /// call [navItemsForCurrentSession] instead of branching on session type
 /// themselves, so they cannot drift apart again.
-typedef NavItem = ({String name, IconData icon, String label});
+/// A navigation destination.
+///
+/// [group] was added 3 Sept 2026: the owner nav had grown to 34 flat
+/// entries and Arun could not tell "which is for what". It is used ONLY
+/// for rendering section headers in the drawer — `name` is untouched,
+/// which matters because `main.dart`'s `_tabs` map keys off `name` and
+/// IS the real router for nav destinations. A previous session changed
+/// the nav list without changing `_tabs` and six screens silently
+/// rendered a "coming soon" stub, so grouping deliberately changes
+/// presentation only.
+typedef NavItem = ({
+  String name,
+  IconData icon,
+  String label,
+  String group,
+});
+
+/// Drawer section order. Anything whose group is not listed falls to the
+/// end under [kNavGroupOther] rather than vanishing - a new item added
+/// without a group must still be reachable.
+const kNavGroups = <String>[
+  'Sales',
+  'Operations',
+  'Money',
+  'People',
+  'Assets',
+  'Partners',
+  'Setup',
+];
+
+const kNavGroupOther = 'Other';
+
+/// The handful shown in the bottom bar on a phone. Everything else lives
+/// in the drawer, grouped.
+///
+/// Before this the bottom bar rendered ALL owner items and scrolled
+/// horizontally - 34 destinations in a strip five wide, which is how a
+/// vendor ends up not knowing what exists. These five are the ones a
+/// working day actually returns to.
+const kPrimaryNavNames = <String>{
+  'HomePage',
+  'LeadsPage',
+  'OrdersPage',
+  'OperationsPage',
+  'PaymentsPage',
+};
 
 /// The 19 owner/manager destinations (Users Kickoff Step 2.1). Six of
 /// these route to `ComingSoonPage` today — `surveys`, `inbox`, `survey`
@@ -47,64 +92,118 @@ typedef NavItem = ({String name, IconData icon, String label});
 /// filtered). Both call sites now read this file instead of hand-rolling
 /// their own copy — see [navItemsForCurrentSession].
 const kOwnerManagerNavItems = <NavItem>[
-  (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard'),
-  (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM'),
-  // NG-FIX brief, bug 2c (7 Aug 2026): 'Surveys' and 'Survey' were one
-  // character apart with no way to tell them apart at a glance —
-  // CustomerSurveysPage is the review queue for surveys customers already
-  // submitted (public /survey link, see customer_surveys_page_widget.dart);
-  // SurveyQuoteHubPage is the staff-side hub for starting/building a new
-  // survey+quote (see survey_quote_hub_page_widget.dart's own doc
-  // comment). Renamed to describe what each actually does instead of the
-  // brief's guessed 'New Survey', which undersells the hub (it's also the
-  // cross-lead quote list and CFT catalogue admin, not just "new").
-  (
-    name: 'CustomerSurveysPage',
-    icon: Icons.fact_check,
-    label: 'Customer Surveys'
+  (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard',
+    group: 'Sales',
   ),
-  (name: 'WaInboxPage', icon: Icons.inbox, label: 'Inbox'),
-  (name: 'SurveyQuoteHubPage', icon: Icons.add_task, label: 'Survey & Quote'),
-  (name: 'CalendarPage', icon: Icons.calendar_month, label: 'Calendar'),
-  (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders'),
-  (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations'),
-  (name: 'ReviewsPage', icon: Icons.star_outline, label: 'Reviews'),
-  (name: 'PaymentsPage', icon: Icons.payments, label: 'Payments'),
-  (name: 'ExpensePage', icon: Icons.receipt_long, label: 'Expenses'),
+  (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM',
+    group: 'Sales',
+  ),
+  // REMOVED FROM NAV 3 Sept 2026. `CustomerSurveysPage` reads
+  // `customer_surveys`, and NOTHING HAS EVER WRITTEN A ROW TO THAT
+  // TABLE. Verified against the live database: 0 rows, no writer
+  // anywhere in `lib/`, and all four survey RPCs -- `submit_survey`,
+  // `get_survey_by_token`, and the two `public_*` ones the live
+  // link.nagarva.in site calls -- write to `surveys`, not to this
+  // table.
+  //
+  // So it occupied a top-level slot with a screen that could only ever
+  // be empty, one character away from 'Survey & Quote' (the real
+  // staff-side builder, which reads `surveys`). Arun, 3 Sept 2026:
+  // "there is two survey it is creating confusion".
+  //
+  // The page, its detail sheet and `survey_queue.dart` are LEFT IN
+  // PLACE and the route stays registered -- the 29-column shape may
+  // have been intended for something, and an unrouted page costs
+  // nothing. Only the nav entry is gone. The real path is Leads ->
+  // "Request Survey" -> customer fills -> Survey & Quote.
+  (name: 'WaInboxPage', icon: Icons.inbox, label: 'Inbox',
+    group: 'Sales',
+  ),
+  (name: 'SurveyQuoteHubPage', icon: Icons.add_task, label: 'Survey & Quote',
+    group: 'Sales',
+  ),
+  (name: 'CalendarPage', icon: Icons.calendar_month, label: 'Calendar',
+    group: 'Operations',
+  ),
+  (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders',
+    group: 'Operations',
+  ),
+  (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations',
+    group: 'Operations',
+  ),
+  (name: 'ReviewsPage', icon: Icons.star_outline, label: 'Reviews',
+    group: 'Sales',
+  ),
+  (name: 'PaymentsPage', icon: Icons.payments, label: 'Payments',
+    group: 'Money',
+  ),
+  (name: 'ExpensePage', icon: Icons.receipt_long, label: 'Expenses',
+    group: 'Money',
+  ),
   (
     name: 'UsersPage',
     icon: Icons.groups,
-    label: 'Staff'
+    label: 'Staff',
+    group: 'People',
   ), // label overridden dynamically
-  (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet'),
-  (name: 'MaterialsPage', icon: Icons.inventory_2, label: 'Materials'),
-  (name: 'WarehousesPage', icon: Icons.warehouse, label: 'Warehouses'),
+  (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet',
+    group: 'Assets',
+  ),
+  (name: 'MaterialsPage', icon: Icons.inventory_2, label: 'Materials',
+    group: 'Assets',
+  ),
+  (name: 'WarehousesPage', icon: Icons.warehouse, label: 'Warehouses',
+    group: 'Assets',
+  ),
   // Session 4, Part C-2 — new module, not a former ComingSoon stub.
-  (name: 'RateCardsPage', icon: Icons.price_change, label: 'Rate Cards'),
+  (name: 'RateCardsPage', icon: Icons.price_change, label: 'Rate Cards',
+    group: 'Money',
+  ),
   (
     name: 'LrRegisterPage',
     icon: Icons.receipt_long_outlined,
-    label: 'LR Register'
+    label: 'LR Register',
+    group: 'Operations',
   ),
   (
     name: 'OperationsStandalonePage',
     icon: Icons.support_agent,
-    label: 'Ops Log'
+    label: 'Ops Log',
+    group: 'Operations',
   ),
-  (name: 'VendorsPage', icon: Icons.local_shipping_outlined, label: 'Vendors'),
-  (name: 'CustomersPage', icon: Icons.people_outline, label: 'Customers'),
+  (name: 'VendorsPage', icon: Icons.local_shipping_outlined, label: 'Vendors',
+    group: 'Partners',
+  ),
+  (name: 'CustomersPage', icon: Icons.people_outline, label: 'Customers',
+    group: 'Sales',
+  ),
   (
     name: 'InsuranceClaimsPage',
     icon: Icons.shield_outlined,
-    label: 'Insurance'
+    label: 'Insurance',
+    group: 'Partners',
   ),
-  (name: 'TripsPage', icon: Icons.alt_route, label: 'Trips'),
-  (name: 'TasksPage', icon: Icons.task_alt, label: 'Tasks'),
-  (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts'),
-  (name: 'PLReportPage', icon: Icons.assessment, label: 'P & L'),
-  (name: 'ReportsPage', icon: Icons.bar_chart, label: 'Reports'),
-  (name: 'SalaryPage', icon: Icons.badge, label: 'Salary'),
-  (name: 'SettingsPage', icon: Icons.settings, label: 'Settings'),
+  (name: 'TripsPage', icon: Icons.alt_route, label: 'Trips',
+    group: 'Operations',
+  ),
+  (name: 'TasksPage', icon: Icons.task_alt, label: 'Tasks',
+    group: 'Operations',
+  ),
+  (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts',
+    group: 'Money',
+  ),
+  (name: 'PLReportPage', icon: Icons.assessment, label: 'P & L',
+    group: 'Money',
+  ),
+  (name: 'ReportsPage', icon: Icons.bar_chart, label: 'Reports',
+    group: 'Money',
+  ),
+  (name: 'SalaryPage', icon: Icons.badge, label: 'Salary',
+    group: 'People',
+  ),
+  (name: 'SettingsPage', icon: Icons.settings, label: 'Settings',
+    group: 'Setup',
+  ),
 ];
 
 /// Backward-compat alias — kept because the pre-Step-2 name is still the
@@ -131,17 +230,23 @@ const kAllNavItems = kOwnerManagerNavItems;
 /// cutoff (Team Attendance was getting clipped) — 4 items fit without
 /// scrolling on any phone width this app supports.
 const kSupervisorNavItems = <NavItem>[
-  (name: 'SupervisorJobsListPage', icon: Icons.work_outline, label: 'My Jobs'),
-  (name: 'SupervisorTeamPage', icon: Icons.groups_outlined, label: 'My Team'),
+  (name: 'SupervisorJobsListPage', icon: Icons.work_outline, label: 'My Jobs',
+    group: 'Field',
+  ),
+  (name: 'SupervisorTeamPage', icon: Icons.groups_outlined, label: 'My Team',
+    group: 'Field',
+  ),
   (
     name: 'SupervisorEarningsPage',
     icon: Icons.currency_rupee,
-    label: 'My Earnings'
+    label: 'My Earnings',
+    group: 'Field',
   ),
   (
     name: 'SupervisorAttendancePage',
     icon: Icons.event_available,
-    label: 'My Attendance'
+    label: 'My Attendance',
+    group: 'Field',
   ),
 ];
 
@@ -151,9 +256,12 @@ const kFieldStaffNavItems = <NavItem>[
   (
     name: 'MyAttComingSoon',
     icon: Icons.event_available,
-    label: 'My Attendance'
+    label: 'My Attendance',
+    group: 'Field',
   ),
-  (name: 'MySalComingSoon', icon: Icons.currency_rupee, label: 'My Earnings'),
+  (name: 'MySalComingSoon', icon: Icons.currency_rupee, label: 'My Earnings',
+    group: 'Field',
+  ),
 ];
 
 /// Canonical "is this session owner-or-manager" check for nav purposes —
@@ -218,7 +326,17 @@ List<NavItem> navItemsForCurrentSession() {
         (
           name: item.name,
           icon: item.icon,
-          label: canEditSalary ? 'Salary & Staff' : 'Team Attendance',
+          // 'Staff', not 'Salary & Staff'. Grouping the drawer put this
+          // directly above SalaryPage's own 'Salary' tile, so the two
+          // read as near-duplicates of each other — the confusion Arun
+          // reported. This screen manages PEOPLE (add, edit, roles,
+          // permissions, PIN); SalaryPage pays them. The label now says
+          // which is which.
+          label: canEditSalary ? 'Staff' : 'Team Attendance',
+          // Carried from the const entry rather than restated, so this
+          // rebuild cannot silently drop the item into a different
+          // drawer section than the one it is declared in.
+          group: item.group,
         )
       else
         item,
@@ -236,6 +354,7 @@ List<NavItem> navItemsForCurrentSession() {
       name: SuperAdminPageWidget.routeName,
       icon: Icons.admin_panel_settings,
       label: 'Platform Admin',
+      group: 'Setup',
     ));
   }
   return items;

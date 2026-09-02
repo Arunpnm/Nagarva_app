@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '/nav_items.dart';
 
 import '/backend/approval_queue.dart';
 import '/backend/survey_queue.dart';
@@ -39,7 +40,7 @@ class MobileBottomNav extends StatelessWidget {
     required this.onTap,
   });
 
-  final List<({String name, IconData icon, String label})> items;
+  final List<NavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
 
@@ -135,7 +136,7 @@ class _NavItem extends StatelessWidget {
     required this.onTap,
   });
 
-  final ({String name, IconData icon, String label}) item;
+  final NavItem item;
   final bool selected;
   final double width;
   final VoidCallback onTap;
