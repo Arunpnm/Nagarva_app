@@ -71,7 +71,12 @@ begin
     end loop;
   end loop;
 
-  delete from public.doc_prefix_reservations where org_id = v_org;
+  -- Guarded so this script runs in either order relative to
+  -- 20260902_doc_prefix_identity.sql, which is what creates this table.
+  if to_regclass('public.doc_prefix_reservations') is not null then
+    delete from public.doc_prefix_reservations where org_id = v_org;
+  end if;
+
   delete from public.org_members    where org_id = v_org;
   delete from public.organizations  where id     = v_org;
 
@@ -79,8 +84,15 @@ begin
 end;
 $do$;
 
--- POSTFLIGHT. Expect exactly three orgs, no shared invoice prefix, and
--- no row anywhere still pointing at the deleted org.
+-- POSTFLIGHT. Expect exactly three orgs and no shared invoice prefix.
+--
+-- ORDERING NOTE. Until this script runs, APC and the sandbox BOTH carry
+-- prefix '2026/', so the "zero shared prefixes" assertion at the end of
+-- 20260902_doc_prefix_identity.sql will return one row on its first run.
+-- That is expected, not a failure of that migration: its trigger fires
+-- on INSERT/UPDATE and cannot retroactively split two rows that already
+-- shared a prefix before it existed. The assertion below is the one that
+-- must come back empty.
 select slug, name from public.organizations order by created_at;
 
 select o.slug, ns.prefix,
@@ -90,5 +102,12 @@ select o.slug, ns.prefix,
   join public.organizations o on o.id = ns.org_id
  where ns.doc_type = 'invoice'
  order by o.slug;
+
+-- Must return ZERO rows.
+select prefix, count(distinct org_id) as orgs
+  from public.number_series
+ where doc_type in ('invoice','proforma','receipt','quotation',
+                    'voucher','credit_note','debit_note')
+ group by prefix having count(distinct org_id) > 1;
 
 commit;
