@@ -819,11 +819,22 @@ silently doesn't is the same class of trust damage.
     session — only the owner could issue a document. Same NULL trap,
     less catastrophically, on `lr_series`, `rate_cards`,
     `bank_accounts`, `materials`, `stock_movements`.
-  - **The allocator is a separate, legitimate change.** If branches get
-    their own GSTINs, invoice serials must be per-GSTIN under **Rule
-    46(b)** — a distinct series per registration. That is done by
-    passing `p_branch` through the ALLOCATOR at the six call sites
-    (which today all pass null), not by filtering the table with RLS.
+  - **The allocator is a separate, legitimate change.** Branch-level
+    series are done by passing `p_branch` through the ALLOCATOR at the
+    six call sites (which today all pass null), not by filtering the
+    table with RLS.
+    **CORRECTED 2 Sept 2026 (Arun).** This used to read "invoice
+    serials must be per-GSTIN under Rule 46(b) — a distinct series per
+    registration." That is wrong, and the error is worth naming because
+    it points design the wrong way. Rule 46(b) requires a consecutive
+    serial number **"in one or multiple series"**, unique for a
+    financial year. **Multiple series under one GSTIN are permitted.**
+    So per-branch series are a free choice, not a compliance
+    requirement, and — the half that actually bites — *sharing* a GSTIN
+    never obliged anyone to collapse to one series. The real rule is
+    UNIQUENESS: two orgs must never print the same number, which is
+    what `20260902_doc_prefix_identity.sql` enforces. Do not
+    reintroduce the one-series-per-registration assumption.
   - So: **`branch` on a table is a TAG, not automatically a FILTER.**
     Integrity and visibility are different questions — every
     branch-carrying table gets an FK to `branches`, only the genuinely
@@ -1122,6 +1133,69 @@ that. Scoped conclusions worth keeping:
   no refund; downgrade over-limit keeps existing rows and only blocks new
   creates (which Item 32's INSERT-only triggers already do naturally).
 
+## Document numbering identity (built 2 Sept 2026)
+
+`supabase/20260902_doc_prefix_identity.sql`. A vendor's document prefix
+is their identity on every invoice, receipt and quotation they issue.
+
+**The bug this closed.** `seed_org_number_series()` hardcoded the
+calendar year as the prefix for all seven branding doc types, with
+nothing org-specific in it. So every org seeded `2026/` at
+`last_number = 0`, and **every org's first invoice printed the
+identical string `2026/0001`**. Counters were isolated per org the
+whole time — the *printed number* was not. Found 2 Sep 2026 before
+creating APC Bengaluru/Coimbatore, which would have baked it in.
+
+**Rule 46(b), stated correctly** (Arun, 2 Sep 2026 — an earlier
+version of this file had it wrong, see NG-010 above): a consecutive
+serial number **"in one or multiple series"**, unique for a financial
+year. Multiple series under one GSTIN are allowed. The requirement is
+uniqueness, not one-series-per-registration.
+
+- **Prefix budget is 12 characters, and that is statutory.** The whole
+  document number is capped at 16 and `padding` is 4. `BLR/2026-27/`
+  is exactly 12; `BLR/2026-27/0001` is exactly 16. The CHECK allowed
+  10 until this migration, which fits a calendar year but not an FY —
+  so widening it was a prerequisite, not a nicety. Raising it past 12
+  produces non-compliant numbers.
+- **Uniqueness is a trigger, not a constraint.** It cannot be a unique
+  index: one org's seven branding rows legitimately share a prefix, so
+  the rule is "no prefix belongs to two orgs", which an index cannot
+  express. `LR`/`CLM-`/`PO-`/`GRN-`/`PS-`/`CTR-`/`STG-` are exempt —
+  semantic abbreviations every org shares by design.
+- **It cannot be a client-side check, at all.** `number_series` is
+  RLS-scoped per org, so a client asking "is this prefix taken" only
+  ever sees its own rows and would answer "free" every time. Hence
+  `doc_prefix_conflict()` / `check_doc_prefix()` as SECURITY DEFINER.
+- **The seeded default had to become per-org first.** Enforcing
+  uniqueness over a shared default would have made org #4 fail at
+  creation, refused by the trigger meant to protect it.
+  `seed_prefix_for_org()` derives a 3-char code from the slug with a
+  numeric tail only on collision — 3 chars is the ceiling the 12-char
+  budget leaves once `/2026-27/` is spent.
+- **`doc_prefix_reservations` holds a prefix for an org that does not
+  exist yet**, so a branch planned for next quarter cannot lose its
+  identity to this week's signup. `AP/2026-27/` is reserved for the
+  Andhra Pradesh org. A row with `org_id` null is blocked for
+  everyone until claimed.
+- **Dart fails closed.** `docPrefixRejection()` treats an unexpected
+  RPC shape as a rejection: reading it as "available" hands out a
+  duplicate silently, which is the whole failure being prevented.
+  `test/doc_prefix_test.dart` pins this.
+- **APC's own series was deliberately left on `2026/`** — it has
+  issued `2026/0001` and `2026/0002`, and rewriting a prefix
+  mid-counter leaves issued numbers under an identity the series no
+  longer carries. That is why every prefix update is guarded on
+  `last_number = 0`.
+
+**Bug found in `OrgSetupPage` while wiring this**: `_applyInvoicePrefix`
+set `_model.errorMessage` and then fell through to
+`context.go(HomePage)` two statements later, so the rejection message
+was written and discarded in the same frame — a vendor whose prefix was
+refused landed on the dashboard believing it had been set. It also ran
+*before* the settings upsert while claiming "your other details were
+saved". Both fixed; it now runs last and halts.
+
 ## ⏳ DEADLINE: MARCH 2027 — financial-year numbering rollover
 (New section, 18 Aug 2026. Scoped, NOT built, per Arun. This is a dated
 time bomb, not a backlog item — if it isn't shipped before 1 April 2027,
@@ -1157,7 +1231,11 @@ no-number_series bug. Arun's question was the right one to ask.
 **Agreed design — button + catch, and no cron.** Three pieces:
 1. **`roll_over_number_series(p_org_id, p_from_fy, p_to_fy)`** — clones
    the org's ACTIVE rows into the new FY: same doc types, same padding
-   and suffix, calendar-year prefix advanced (`2026/` -> `2027/`),
+   and suffix, **FY segment of the prefix advanced** (`BLR/2026-27/` ->
+   `BLR/2027-28/`; this said `2026/` -> `2027/` until 2 Sep 2026, when
+   the year segment moved from calendar year to FY — see "Document
+   numbering identity" above), the org's own code carried forward and
+   never re-derived,
    `last_number` reset to 0, `ON CONFLICT DO NOTHING`. **Derived from
    the org's existing configuration, never invented** — this is the
    whole distinction from the auto-insert that `next_doc_number()` used
@@ -1508,6 +1586,60 @@ Consequences worth knowing before touching this:
   editor works on one unified row and writes both lists atomically, so
   the UI can't create drift. A hand-edited config still can, which is
   what `suggestPackage`'s unresolved state reports.
+
+## Warehouse storage (built 2 Sep 2026) — rates are TENANT DATA
+
+Built against `nagarva_staff_pay_and_expense_brief.md` §37-44. Storage is
+a **revenue line inside an order**, never a separate order (§37), so the
+inbound job, the storage period and the outbound delivery stay on one
+record chain.
+
+**The rate table in brief §38 (Tata Ace ₹300/day · ₹4,200/mo, Pickup,
+407, 14/17/20 ft) is APC'S OWN PRICING, shared as a sample. It is not a
+product default and must never be hardcoded again.** It was, briefly, on
+2 Sep 2026 — as `kStorageSizeTemplate`, a `const` list in
+`storage_billing.dart` read straight by the booking sheet — which shipped
+one vendor's prices pre-filled as every other vendor's. Removed the same
+day. Arun, 2 Sep 2026: *"its a saas product so each vendor will set price
+accordingly."* This is the "No suggested money. Ever." rule applied to
+storage, and the brief's own §44 says the same ("prices, plans and sizes
+are all vendor-editable").
+
+- Rates live in **`pricing_config.config->'storage_rates'`** (jsonb, same
+  row as `survey_cats`/`cft_ranges`/`packages`), parsed by
+  `parseStorageRates()`. Shape:
+  `[{"size","per_day","per_month","min_days"}]`.
+- `PricingConfig.storageRates` has **no `?? kDefault…` fallback**, unlike
+  every other section in that loader. Absent means *the vendor has not
+  set their prices*, not *inherit someone else's*. An org with none sees
+  an empty size picker and a blank rate field it types into.
+- **Sizes are a vendor-defined list**, never an enum — APC prices by
+  vehicle/container, another vendor may price by square feet, room count
+  or pallet.
+- **A rates editor UI does not exist yet.** Rates are set by SQL, or
+  typed per stay. Building it is the obvious next piece.
+
+**Billing rules that are money, not preference** (all in
+`storage_billing.dart`, 31 tests in `test/storage_billing_test.dart`):
+- **Minimum 15 days** — an 8-day stay bills 15, and the card says why.
+- **The plan is LOCKED at booking.** A daily stay bills daily for its
+  whole run — 45 days is ₹13,500, it does not become the ₹8,400 monthly
+  figure at day 30. A monthly stay collected on day 5 still pays the
+  full month.
+- **Never compare the two plans.** In APC's own rates monthly is cheaper
+  for a Tata Ace (₹4,200 vs ₹4,500) and dearer for a Pickup (₹5,300 vs
+  ₹5,250). Independent numbers — no "best rate" suggestion, no automatic
+  switching. Both directions are pinned by test.
+- **The rate is snapshotted onto `storage_jobs.rate` at booking** and the
+  charge only ever reads that. Editing the rate card must not re-bill
+  goods already in store; tests pin it in both directions.
+- Rent and handling in/out stay separate components — never conflated on
+  a customer's bill.
+
+Storage income is revenue in three places and priced by the one function
+so they cannot disagree: the order storage card, `OrderPnlSection`
+(labelled "Storage (accruing)" while goods are in store), and the
+dashboard revenue tile.
 
 ## Changelog
 - **2 Sept 2026 (later), `commission_expected` closes the residual — the
