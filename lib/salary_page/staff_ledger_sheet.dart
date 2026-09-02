@@ -207,6 +207,161 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
     });
   }
 
+  /// Attendance for the month, DERIVED FROM ORDERS.
+  ///
+  /// Present = this person was on at least one order that moved that day.
+  /// Built 3 Sept 2026 to match the reference app's Attendance tab, which
+  /// states the same rule on screen so nobody mistakes it for a punch
+  /// clock.
+  ///
+  /// **There is no separate attendance capture here on purpose.** The
+  /// crew list on an order already says who worked it; a second source of
+  /// truth for "was this man on this job" is exactly how the labour
+  /// figure and the crew list drift apart (the same reasoning as the crew
+  /// sheet's "present == an order_staff row exists").
+  ///
+  /// Only days up to TODAY are judged. A future date in the current month
+  /// is blank, not absent — marking someone absent for a day that has not
+  /// happened is a lie the vendor would have to explain to them.
+  Widget _attendanceCalendar(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final month = widget.month;
+    final first = DateTime(month.year, month.month, 1);
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    final today = DateTime.now();
+    final todayDay = DateTime(today.year, today.month, today.day);
+
+    // Day-of-month -> worked. An order with no move_date cannot be placed
+    // on the calendar and is skipped rather than guessed onto today.
+    final worked = <int>{};
+    for (final os in widget.monthOrderStaff) {
+      final order = widget.ordersById[os.orderId];
+      final d = order?.moveDate;
+      if (d == null) continue;
+      if (d.year == month.year && d.month == month.month) worked.add(d.day);
+    }
+
+    var present = 0, absent = 0;
+    for (var day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(month.year, month.month, day);
+      if (date.isAfter(todayDay)) continue;
+      if (worked.contains(day)) {
+        present++;
+      } else {
+        absent++;
+      }
+    }
+
+    // weekday: Mon=1..Sun=7. The grid starts on Sunday, as the reference
+    // does, so Sunday is column 0.
+    final leadingBlanks = first.weekday % 7;
+
+    Widget cell(Widget child, {Color? bg}) => Container(
+          margin: const EdgeInsets.all(2),
+          height: 38,
+          decoration: BoxDecoration(
+            color: bg ?? theme.primaryBackground,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          alignment: Alignment.center,
+          child: child,
+        );
+
+    final cells = <Widget>[
+      for (var i = 0; i < leadingBlanks; i++) const SizedBox.shrink(),
+    ];
+    for (var day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(month.year, month.month, day);
+      final future = date.isAfter(todayDay);
+      final didWork = worked.contains(day);
+      final mark = future ? '' : (didWork ? 'P' : 'A');
+      final colour = future
+          ? theme.secondaryText
+          : (didWork ? theme.success : theme.error);
+      cells.add(cell(
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('$day',
+                style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: theme.primaryText)),
+            Text(mark.isEmpty ? '·' : mark,
+                style: GoogleFonts.interTight(
+                    fontSize: 10, fontWeight: FontWeight.w700, color: colour)),
+          ],
+        ),
+        bg: future
+            ? null
+            : (didWork
+                ? theme.success.withValues(alpha: 0.14)
+                : theme.error.withValues(alpha: 0.10)),
+      ));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Attendance — ${DateFormat('MMMM yyyy').format(month)}',
+            style: GoogleFonts.interTight(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: theme.primaryText)),
+        const SizedBox(height: 2),
+        Text(
+          'Auto-derived from orders. Present = assigned to at least one '
+          'order that day.',
+          style:
+              GoogleFonts.inter(fontSize: 11, color: theme.secondaryText),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            for (final d in const ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
+              Expanded(
+                child: Center(
+                  child: Text(d,
+                      style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: theme.secondaryText)),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        GridView.count(
+          crossAxisCount: 7,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 1.05,
+          children: cells,
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Icon(Icons.check_circle, size: 14, color: theme.success),
+            const SizedBox(width: 4),
+            Text('Present: $present day${present == 1 ? '' : 's'}',
+                style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: theme.primaryText)),
+            const SizedBox(width: 14),
+            Icon(Icons.cancel, size: 14, color: theme.error),
+            const SizedBox(width: 4),
+            Text('Absent: $absent day${absent == 1 ? '' : 's'}',
+                style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: theme.primaryText)),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _chip(String label, double value, {Color? color}) {
     final theme = FlutterFlowTheme.of(context);
     return Expanded(
@@ -345,6 +500,8 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                     color: const Color(0xFF2E7D32)),
               ],
             ),
+            const SizedBox(height: 18),
+            _attendanceCalendar(context),
             const SizedBox(height: 18),
             Text('Orders This Month (${widget.monthOrderStaff.length})',
                 style: GoogleFonts.interTight(
