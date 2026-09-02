@@ -7,6 +7,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/signature_pad.dart';
 import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/index.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:math';
@@ -897,7 +898,26 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Crew', style: theme.titleSmall),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Crew', style: theme.titleSmall),
+              // Day-close crew sheet (staff-pay brief §4/§10). The brief
+              // puts day close on the supervisor, so the sheet has to be
+              // reachable from the job he already has open — the crew card
+              // is where he is standing when he thinks about who worked.
+              TextButton.icon(
+                onPressed: () => context
+                    .pushNamed(
+                      CrewSheetPageWidget.routeName,
+                      queryParameters: {'orderId': widget.orderId ?? ''},
+                    )
+                    .then((_) => _loadData()),
+                icon: const Icon(Icons.fact_check_outlined, size: 17),
+                label: const Text('Crew sheet'),
+              ),
+            ],
+          ),
           const SizedBox(height: 6),
           if (_model.crew.isEmpty)
             Text('No crew on record for this order yet.',

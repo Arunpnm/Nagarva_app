@@ -82,3 +82,4 @@ export '/track_page/track_page_widget.dart' show TrackPageWidget;
 export '/super_admin_page/super_admin_page_widget.dart'
     show SuperAdminPageWidget;
 export '/quote_page/quote_page_widget.dart' show QuotePageWidget;
+export '/crew_sheet_page/crew_sheet_page_widget.dart' show CrewSheetPageWidget;

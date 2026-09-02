@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,7 @@ import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/index.dart';
 import '/permissions.dart';
 
 /// Order crew management, embedded in Order Details (owner view).
@@ -148,10 +150,14 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
       return;
     }
     String selectedId = available.first.id!;
-    final salaryCtrl = TextEditingController(
-        text: available.first.salary == null
-            ? ''
-            : (available.first.salary! / 26).round().toString());
+    // Opens EMPTY, and switching staff below does not repopulate it.
+    // Nagarva is a SaaS product (Arun, 1 Sept 2026): no price, rate or
+    // wage field is ever pre-filled or suggested anywhere in the app —
+    // rates move by vendor, by city, by job type and by role, so any
+    // figure the app supplies is a guess wearing the vendor's authority.
+    // This used to seed `staff.salary / 26`; see
+    // CrewSyncService.kUnpricedSalary for the full reasoning.
+    final salaryCtrl = TextEditingController();
     bool halfDay = false;
 
     final theme = FlutterFlowTheme.of(context);
@@ -176,16 +182,12 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                       child: Text('${s.name} (${s.role ?? '—'})'),
                     ),
                 ],
-                onChanged: (v) => setDialogState(() {
-                  selectedId = v!;
-                  final s =
-                      available.firstWhere((x) => x.id == selectedId);
-                  // Suggest a day rate from the monthly salary (26 working
-                  // days) — editable, just a starting point.
-                  salaryCtrl.text = s.salary == null
-                      ? ''
-                      : (s.salary! / 26).round().toString();
-                }),
+                // Changing who this is does NOT touch the amount — whatever
+                // the vendor has typed stays typed. The old handler
+                // overwrote it with a derived day rate, so correcting the
+                // name after entering an amount silently replaced the
+                // amount too.
+                onChanged: (v) => setDialogState(() => selectedId = v!),
               ),
               const SizedBox(height: 10),
               TextField(
@@ -403,6 +405,25 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                 label: const Text('Add Labour'),
               ),
             ],
+          ),
+          // Day-close crew sheet (staff-pay brief §4). This section stays
+          // as the owner's quick add/correct view; the sheet is the
+          // end-of-day pass over the whole crew at once — present/absent,
+          // wage per person, one driver tag, A/C. Both write the same
+          // `order_staff` rows, so whichever the vendor reaches for, the
+          // labour figure below and the P&L card agree.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _busy
+                  ? null
+                  : () => context.pushNamed(
+                        CrewSheetPageWidget.routeName,
+                        queryParameters: {'orderId': widget.orderId},
+                      ).then((_) => _load().then((_) => widget.onCrewChanged?.call())),
+              icon: const Icon(Icons.fact_check_outlined, size: 17),
+              label: const Text('Open crew sheet'),
+            ),
           ),
           if (_crew.isEmpty)
             Text('No labour assigned yet.',
