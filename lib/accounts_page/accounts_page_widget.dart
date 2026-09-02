@@ -1,3 +1,4 @@
+import '/backend/commission_pricing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -130,6 +131,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
 
       double revenue = 0, quote = 0, collections = 0, advance = 0;
       double overCollected = 0, pending = 0, salary = 0, porterCommission = 0;
+      final unpricedCommission = <String>[];
 
       for (final o in dayOrders) {
         final amount = o.amount ?? 0;
@@ -154,17 +156,18 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
             .where((os) => os.orderId == o.id)
             .fold(0.0, (s, os) => s + (os.salaryAmount ?? 0));
 
-        // This app stores the porter commission % directly per order
-        // (`is_porter` + `porter_commission_pct`, picked 16/19 on
-        // NewOrderPage) rather than deriving it from a local/outstation
-        // order_type like the reference web app does — this app has no
-        // local/outstation field at all. Default to 16% (the reference
-        // app's "local" rate) if a porter order is missing the pct for
-        // any reason.
-        final isPorter = o.isPorter ?? (o.orderSource == 'porter');
-        if (isPorter) {
-          final pct = (o.porterCommissionPct ?? 16) / 100;
-          porterCommission += (amount * pct).roundToDouble();
+        // Commission is the rate SNAPSHOTTED on the order at order time
+        // (`orders.commission_pct`, from the lead source it came from).
+        // This used to read `?? 16` — APC's own porter rate — so an order
+        // nobody had priced silently carried a cost into this register
+        // and into the day's profit/loss. A day that contains an unpriced
+        // order now reports commission as a floor and says so; see
+        // /backend/commission_pricing.dart.
+        final comm = commissionAmount(order: o, revenueBase: amount);
+        if (comm == null) {
+          unpricedCommission.add(o.id ?? '—');
+        } else {
+          porterCommission += comm;
         }
       }
 
@@ -191,6 +194,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         orderExpenses: orderExpenses,
         otherExpenses: otherExpenses,
         porterCommission: porterCommission,
+        unpricedCommissionOrderIds: unpricedCommission,
       ));
     }
 
@@ -337,12 +341,33 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                   _detailLine(
                       context, 'Other expenses', row.otherExpenses, true),
                   _detailLine(
-                      context, 'Porter commission', row.porterCommission, true),
+                      context, 'Commission', row.porterCommission, true),
+                  // Says which orders were left out, not just that some
+                  // were: a count alone tells the vendor a number is
+                  // wrong without telling them where to go and fix it.
+                  if (row.hasUnpricedCommission)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, bottom: 6),
+                      child: Text(
+                        '${commissionIncompleteNote(row.unpricedCommissionOrderIds.length)}'
+                        ' (${row.unpricedCommissionOrderIds.join(', ')})',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: FlutterFlowTheme.of(context).warning,
+                        ),
+                      ),
+                    ),
                   if (row.overCollected > 0)
                     _detailLine(context, 'Over-collected (unexplained)',
                         row.overCollected, false),
                   const Divider(height: 24),
-                  _detailLine(context, 'Net profit/loss', row.profitLoss, false,
+                  _detailLine(
+                      context,
+                      row.hasUnpricedCommission
+                          ? 'Net profit/loss (at least)'
+                          : 'Net profit/loss',
+                      row.profitLoss,
+                      false,
                       bold: true),
                   _detailLine(
                       context, 'Running balance', row.runningBalance, false,

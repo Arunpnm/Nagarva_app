@@ -32,6 +32,14 @@ class StaffRow extends SupabaseDataRow {
   String? get role => getField<String>('role');
   set role(String? value) => setField<String>('role', value);
 
+  /// How this person earns — 'monthly_fixed' | 'dynamic' | 'temporary'.
+  /// See /backend/staff_pay_types.dart for what each means and which of
+  /// them the crew sheet is allowed to show. NOT NULL in Postgres with a
+  /// 'dynamic' default and a CHECK on the three values, so a null here
+  /// only ever means the column was not selected.
+  String? get payType => getField<String>('pay_type');
+  set payType(String? value) => setField<String>('pay_type', value);
+
   String? get branch => getField<String>('branch');
   set branch(String? value) => setField<String>('branch', value);
 

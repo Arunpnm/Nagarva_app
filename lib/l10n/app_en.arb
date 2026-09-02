@@ -1092,10 +1092,6 @@
   "@calendarPageN15": {
     "description": "CalendarPage"
   },
-  "n16": "16",
-  "@n16": {
-    "description": "CalendarPage; NewOrderPage (used 2x)"
-  },
   "n17": "17",
   "@n17": {
     "description": "CalendarPage"
@@ -1103,10 +1099,6 @@
   "calendarPageN18": "18",
   "@calendarPageN18": {
     "description": "CalendarPage"
-  },
-  "n19": "19",
-  "@n19": {
-    "description": "CalendarPage; NewOrderPage (used 2x)"
   },
   "n20": "20",
   "@n20": {
@@ -1747,10 +1739,6 @@
   "newOrderPagePorter": "Porter",
   "@newOrderPagePorter": {
     "description": "NewLeadPage; NewOrderPage (used 2x)"
-  },
-  "selectCommission": "Select commission",
-  "@selectCommission": {
-    "description": "NewOrderPage"
   },
   "porterCommission": "Porter Commission %",
   "@porterCommission": {

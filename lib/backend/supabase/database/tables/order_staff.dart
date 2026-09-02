@@ -35,4 +35,24 @@ class OrderStaffRow extends SupabaseDataRow {
 
   String? get teamType => getField<String>('team_type');
   set teamType(String? value) => setField<String>('team_type', value);
+
+  /// Staff-pay brief §4 "Driver tag": the driver premium is a property of
+  /// the ASSIGNMENT, not the person — a crew may hold three licensed
+  /// drivers and the sheet records who actually drove this job. Enforced
+  /// at most once per order by the partial unique index
+  /// `order_staff_one_driver_per_order` (order_id WHERE is_driver); the
+  /// "at least one" half of the rule lives in the crew sheet's own
+  /// validation, since a partial unique index cannot express it.
+  bool get isDriver => getField<bool>('is_driver') ?? false;
+  set isDriver(bool value) => setField<bool>('is_driver', value);
+
+  /// Staff-pay brief §5: A/C uninstall is a TASK, not a pay tier — an
+  /// additive amount on top of the wage, never absorbed into it, so a man
+  /// who drove and also uninstalled an A/C earns both and both report
+  /// separately.
+  double get acAmount => getField<double>('ac_amount') ?? 0;
+  set acAmount(double value) => setField<double>('ac_amount', value);
+
+  DateTime? get createdAt => getField<DateTime>('created_at');
+  set createdAt(DateTime? value) => setField<DateTime>('created_at', value);
 }

@@ -12,6 +12,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'new_order_page_model.dart';
@@ -40,6 +41,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => NewOrderPageModel());
+
+    _model.ordCommissionFieldTextController ??= TextEditingController();
+    _model.ordCommissionFieldFocusNode ??= FocusNode();
 
     _model.ordCustomerFieldTextController ??= TextEditingController();
     _model.ordCustomerFieldFocusNode ??= FocusNode();
@@ -77,7 +81,10 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
     _model.ordPorterCashCollectFieldTextController ??= TextEditingController();
     _model.ordPorterCashCollectFieldFocusNode ??= FocusNode();
 
-    SchedulerBinding.instance.addPostFrameCallback((_) => _loadBranches());
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _loadBranches();
+      _loadLeadSources();
+    });
     if (widget.orderId != null) {
       SchedulerBinding.instance.addPostFrameCallback((_) => _loadExistingOrder());
     }
@@ -198,6 +205,116 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
   /// than defaulting to a branch name that doesn't exist for it — the old
   /// hardcoded default sent exactly this case into an FK it could never
   /// satisfy.
+  /// Commission is entered whenever the job could carry one: an explicit
+  /// Porter order, or any configured lead source other than direct.
+  /// Deliberately WIDER than `commissionStateFor`'s unpriced test: the
+  /// field is offered on any selected lead source so a one-off cut can be
+  /// entered, while only an order whose `commission_expected` snapshot is
+  /// true gets FLAGGED when left blank. Offering a field costs nothing; a
+  /// false "unpriced" warning on every walk-in costs the warning's
+  /// credibility.
+  bool get _showCommissionField =>
+      _model.ordType == 'Porter' || (_model.ordLeadSourceCode ?? '').isNotEmpty;
+  // Note the form is DELIBERATELY wider than commissionStateFor's
+  // "unpriced" test: offering the field on any selected lead source lets a
+  // vendor price a paid directory, while only a porter job is FLAGGED when
+  // left blank. Offering a field is free; a false "unpriced" warning on
+  // every walk-in is not.
+
+  /// True when this order names a source the picker did not load — it was
+  /// deactivated after the order was placed.
+  bool get _leadSourceIsRetired {
+    final code = _model.ordLeadSourceCode;
+    if (code == null || code.isEmpty) return false;
+    return !_model.leadSources.any((src) => src.code == code);
+  }
+
+  LeadSourcesRow? get _selectedLeadSource {
+    final code = _model.ordLeadSourceCode;
+    if (code == null || code.isEmpty) return null;
+    for (final src in _model.leadSources) {
+      if (src.code == code) return src;
+    }
+    return null;
+  }
+
+  /// Was a commission owed on this job at all? Snapshotted, not inferred
+  /// later.
+  ///
+  /// Taken from the selected source's `is_paid`. With NO source selected
+  /// the legacy Porter toggle stands in, because that is exactly what the
+  /// old `is_porter` column meant and a porter booking always owes a cut —
+  /// dropping it would silently stop flagging unpriced porter jobs, which
+  /// is the single most common commission-bearing order in this product.
+  bool get _commissionExpected =>
+      _model.ordCommissionExpected ?? (_model.ordType == 'Porter');
+
+  /// Recompute the expectation — called ONLY when the vendor picks a lead
+  /// source, which is the one moment the answer legitimately changes.
+  void _refreshCommissionExpected() {
+    final src = _selectedLeadSource;
+    _model.ordCommissionExpected =
+        src != null ? (src.isPaid ?? false) : (_model.ordType == 'Porter');
+  }
+
+  bool get _commissionIsBlank =>
+      (_model.ordCommissionFieldTextController?.text ?? '').trim().isEmpty;
+
+  /// Trimmed percentage, or null when the vendor left it blank.
+  ///
+  /// Null is the whole point: it reaches Postgres as NULL and reads back as
+  /// "not priced". This replaces `double.tryParse(_model.ordPorterComm ??
+  /// '16')`, which wrote APC's rate for a vendor who never chose one.
+  double? get _commissionPctOrNull {
+    if (!_showCommissionField || _commissionIsBlank) return null;
+    final n = double.tryParse(
+        (_model.ordCommissionFieldTextController?.text ?? '').trim());
+    if (n == null || n < 0 || n > 100) return null;
+    return n;
+  }
+
+  static String _leadSourceLabel(LeadSourcesRow src) {
+    final pct = src.commissionPct;
+    if (pct == null) return src.name;
+    final asText = pct % 1 == 0 ? pct.toStringAsFixed(0) : pct.toString();
+    return '${src.name} \u00b7 $asText%';
+  }
+
+  /// The rate a freshly-picked lead source offers, as field text.
+  ///
+  /// This is a DEFAULT, not a suggestion the app invented: the number is
+  /// the vendor's own `lead_sources.commission_pct`, which CLAUDE.md's "No
+  /// suggested money" convention explicitly permits ("applying
+  /// vendor-configured rates ... is the vendor deciding"). A source with no
+  /// rate configured yields an empty field, never a fallback.
+  String _defaultCommissionFor(String? code) {
+    if (code == null || code.isEmpty) return '';
+    for (final src in _model.leadSources) {
+      if (src.code == code) {
+        final pct = src.commissionPct;
+        if (pct == null) return '';
+        return pct % 1 == 0 ? pct.toStringAsFixed(0) : pct.toString();
+      }
+    }
+    return '';
+  }
+
+  Future<void> _loadLeadSources() async {
+    try {
+      final rows = await LeadSourcesTable().queryRows(
+        queryFn: (q) =>
+            OrgScope.read(q).eq('active', true).order('sort_order'),
+      );
+      if (!mounted) return;
+      safeSetState(() => _model.leadSources = rows);
+    } catch (_) {
+      // A lead-source list that fails to load must not block order entry:
+      // the commission field still appears for a Porter order and can be
+      // typed by hand. Failing open here costs nothing, because the field
+      // itself is the source of truth for what gets saved.
+    }
+  }
+
   Future<void> _loadBranches() async {
     final rows = await BranchesTable().queryRows(
       queryFn: (q) => OrgScope.read(q).eq('active', true).order('name'),
@@ -296,12 +413,24 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
     _model.ordTypeDropdownValue = order.orderType;
     _model.ordTypeDropdownValueController?.value = order.orderType;
 
-    final pctStr = order.porterCommissionPct != null
-        ? order.porterCommissionPct!.toStringAsFixed(0)
-        : '16';
-    _model.ordPorterComm = pctStr;
-    _model.ordPorterCommDropdownValue = pctStr;
-    _model.ordPorterCommDropdownValueController?.value = pctStr;
+    // Editing shows the rate STORED ON THIS ORDER, never the lead source's
+    // current rate — re-reading the source here is exactly the re-pricing
+    // that brief §44 forbids. A null stays blank: the order is unpriced,
+    // and opening the form must not quietly price it.
+    _model.ordLeadSourceCode = order.orderSource;
+    _model.ordLeadSourceDropdownValue = order.orderSource;
+    _model.ordLeadSourceDropdownValueController?.value = order.orderSource;
+    // The STORED expectation, not one re-derived from the source's current
+    // `is_paid`. Re-deriving here would let a source flipped to unpaid
+    // months later un-owe the commission on a job already delivered, just
+    // because somebody opened the form.
+    _model.ordCommissionExpected = order.commissionExpected ?? false;
+    _model.ordLeadSourceId = order.leadSourceId;
+
+    final pct = order.commissionPct;
+    _model.ordCommissionFieldTextController?.text = pct == null
+        ? ''
+        : (pct % 1 == 0 ? pct.toStringAsFixed(0) : pct.toString());
 
     safeSetState(() {});
   }
@@ -1465,71 +1594,136 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       AppLocalizations.of(context).orderType,
                                   labelTextStyle: const TextStyle(),
                                 ),
-                                if (_model.ordType == 'Porter')
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: FlutterFlowDropDown<String>(
-                                      controller: _model
-                                              .ordPorterCommDropdownValueController ??=
-                                          FormFieldController<String>(null),
-                                      options: [
-                                        AppLocalizations.of(context).n16,
-                                        AppLocalizations.of(context).n19
-                                      ],
-                                      onChanged: (val) async {
-                                        safeSetState(() => _model
-                                            .ordPorterCommDropdownValue = val);
-                                        _model.ordPorterComm =
-                                            _model.ordPorterCommDropdownValue;
-                                        safeSetState(() {});
-                                      },
-                                      textStyle: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .override(
-                                            font: GoogleFonts.inter(
-                                              fontWeight:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontWeight,
-                                              fontStyle:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .fontStyle,
+                                // Lead source + commission (2 Sept 2026).
+                                // Replaces the old 16/19 dropdown, which
+                                // hardcoded APC's two porter rates for every
+                                // tenant and wrote 16 even when untouched.
+                                // Shown for any commission-bearing order, not
+                                // only Porter ones — commission is now a
+                                // property of WHERE THE JOB CAME FROM.
+                                if (_model.leadSources.isNotEmpty)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0, 0, 0, 12),
+                                    child: DropdownButtonFormField<String>(
+                                      value: _model.ordLeadSourceCode,
+                                      isExpanded: true,
+                                      decoration: InputDecoration(
+                                        labelText: 'Lead source',
+                                        filled: true,
+                                        fillColor: FlutterFlowTheme.of(context)
+                                            .secondaryBackground,
+                                      ),
+                                      items: [
+                                        const DropdownMenuItem<String>(
+                                          value: null,
+                                          child:
+                                              Text('Direct - no commission'),
+                                        ),
+                                        // A retired source still has to
+                                        // appear, or DropdownButtonFormField
+                                        // asserts on a value with no
+                                        // matching item and the whole form
+                                        // fails to build. Editing an old
+                                        // order whose source was later
+                                        // deactivated is an ordinary thing
+                                        // to do, not an edge case.
+                                        if (_leadSourceIsRetired)
+                                          DropdownMenuItem<String>(
+                                            value: _model.ordLeadSourceCode,
+                                            child: Text(
+                                              '${_model.ordLeadSourceCode} '
+                                              '(no longer active)',
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            letterSpacing: 0.0,
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
                                           ),
-                                      hintText:
-                                          AppLocalizations.of(context).selectCommission,
-                                      icon: Icon(
-                                        Icons.keyboard_arrow_down_rounded,
+                                        for (final src in _model.leadSources)
+                                          DropdownMenuItem<String>(
+                                            value: src.code,
+                                            child: Text(
+                                              _leadSourceLabel(src),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                      ],
+                                      onChanged: (val) => safeSetState(() {
+                                        _model.ordLeadSourceCode = val;
+                                        _refreshCommissionExpected();
+                                        _model.ordLeadSourceId =
+                                            _selectedLeadSource?.id;
+                                        // Snapshot semantics start here: the
+                                        // source's rate is COPIED into the
+                                        // field, and the field is what gets
+                                        // saved. Nothing re-reads the source
+                                        // afterwards, so editing a lead
+                                        // source's rate later cannot
+                                        // re-price this order (brief §44).
+                                        _model.ordCommissionFieldTextController
+                                            ?.text = _defaultCommissionFor(val);
+                                      }),
+                                    ),
+                                  ),
+                                if (_showCommissionField)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0, 0, 0, 4),
+                                    child: TextFormField(
+                                      controller:
+                                          _model.ordCommissionFieldTextController,
+                                      focusNode:
+                                          _model.ordCommissionFieldFocusNode,
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                              decimal: true),
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.allow(
+                                            RegExp(r'[0-9.]')),
+                                      ],
+                                      onChanged: (_) => safeSetState(() {}),
+                                      decoration: InputDecoration(
+                                        labelText: 'Commission %',
+                                        // No example number in the hint: an
+                                        // "e.g. 16" anchors exactly the way
+                                        // the old dropdown did.
+                                        hintText:
+                                            'Leave blank if not decided yet',
+                                        suffixText: '%',
+                                        filled: true,
+                                        fillColor: FlutterFlowTheme.of(context)
+                                            .secondaryBackground,
+                                      ),
+                                      validator: (v) {
+                                        final t = (v ?? '').trim();
+                                        if (t.isEmpty) return null;
+                                        final n = double.tryParse(t);
+                                        if (n == null) {
+                                          return 'Enter a number, or leave blank';
+                                        }
+                                        // Mirrors the DB CHECK on
+                                        // lead_sources.commission_pct.
+                                        if (n < 0 || n > 100) {
+                                          return 'Must be between 0 and 100';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                if (_showCommissionField && _commissionIsBlank)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0, 0, 0, 12),
+                                    child: Text(
+                                      'Saved as not priced. This order stays '
+                                      'flagged in reports until a rate is set '
+                                      '- it is never costed at a guessed rate.',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
                                         color: FlutterFlowTheme.of(context)
                                             .secondaryText,
-                                        size: 24.0,
                                       ),
-                                      fillColor: FlutterFlowTheme.of(context)
-                                          .secondaryBackground,
-                                      elevation: 2.0,
-                                      borderColor: FlutterFlowTheme.of(context)
-                                          .alternate,
-                                      borderWidth: 1.0,
-                                      borderRadius: 8.0,
-                                      margin: const EdgeInsetsDirectional.fromSTEB(
-                                          12.0, 0.0, 12.0, 0.0),
-                                      hidesUnderline: true,
-                                      isOverButton: false,
-                                      isSearchable: false,
-                                      isMultiSelect: false,
-                                      labelText:
-                                          AppLocalizations.of(context).porterCommission,
-                                      labelTextStyle: const TextStyle(),
                                     ),
                                   ),
                                 if (_model.ordType == 'Porter')
@@ -1561,17 +1755,22 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                 .ordPorterCashCollectFieldTextController
                                                 .text) ??
                                         0.0;
-                                    final pct =
-                                        (double.tryParse(
-                                                    _model.ordPorterComm ??
-                                                        '16') ??
-                                                16) /
-                                            100;
+                                    // Null when the vendor has not priced
+                                    // this yet. The preview then shows no
+                                    // commission and no net rather than
+                                    // computing both off a guessed rate —
+                                    // a settlement preview is the single
+                                    // most persuasive place to show a
+                                    // wrong number, because it reads as
+                                    // already agreed.
+                                    final pctValue = _commissionPctOrNull;
                                     final adv = (amt - cashCollect)
                                         .clamp(0.0, double.infinity)
                                         .toDouble();
-                                    final comm = (amt * pct).roundToDouble();
-                                    final net = amt - comm;
+                                    final comm = pctValue == null
+                                        ? null
+                                        : (amt * (pctValue / 100))
+                                            .roundToDouble();
                                     return Container(
                                       width: double.infinity,
                                       padding: const EdgeInsets.all(14),
@@ -1596,13 +1795,36 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                           const SizedBox(height: 6),
                                           _settlementLine(context,
                                               'Advance (Porter paid)', adv),
-                                          _settlementLine(context,
-                                              'Commission (${_model.ordPorterComm}%)',
-                                              comm),
-                                          _settlementLine(context,
-                                              'Net to APC (Quote − Comm)',
-                                              net,
-                                              bold: true),
+                                          if (comm == null)
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 4),
+                                              child: Text(
+                                                'Commission not priced — enter '
+                                                'a % above to see the net.',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: FlutterFlowTheme.of(
+                                                          context)
+                                                      .secondaryText,
+                                                ),
+                                              ),
+                                            )
+                                          else ...[
+                                            _settlementLine(
+                                                context,
+                                                'Commission '
+                                                '(${_commissionPctOrNull}%)',
+                                                comm),
+                                            // "Net to you", not "Net to APC":
+                                            // this is a multi-tenant product
+                                            // and APC is one tenant.
+                                            _settlementLine(context,
+                                                'Net to you (Quote − Comm)',
+                                                amt - comm,
+                                                bold: true),
+                                          ],
                                         ],
                                       ),
                                     );
@@ -1852,16 +2074,34 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                 // app uses that column for — this app has
                                 // no local/outstation field at all).
                                 'order_type': _model.ordType,
-                                // Porter commission fields — previously
-                                // captured in the form (ordPorterComm) but
-                                // never actually saved. Fixed as part of
-                                // porting the porter settlement feature.
-                                'is_porter': isPorterOrder,
-                                'order_source': isPorterOrder ? 'porter' : null,
-                                'porter_commission_pct': isPorterOrder
-                                    ? double.tryParse(
-                                        _model.ordPorterComm ?? '16')
-                                    : null,
+                                // Commission (2 Sept 2026). `commission_pct`
+                                // is a SNAPSHOT of the rate agreed at order
+                                // time — copied from the lead source when
+                                // one was picked, then owned by this row.
+                                // Editing that source's rate later must
+                                // never re-price this order (brief §44,
+                                // the storage-rate rule).
+                                //
+                                // NULL when the vendor left it blank, and
+                                // that null is load-bearing: it reads back
+                                // as "not priced" and is surfaced, never
+                                // costed. This used to be
+                                // `?? '16'` — APC's own porter rate,
+                                // written to Postgres for any vendor who
+                                // never touched the dropdown.
+                                // The three commission fields are written
+                                // TOGETHER, as one snapshot of the terms
+                                // agreed now. commission_expected comes
+                                // from the source's `is_paid` at this
+                                // moment; nothing re-reads the source
+                                // later, so flipping a source to unpaid
+                                // next month cannot un-owe a commission on
+                                // a job already done (brief §44).
+                                'commission_expected': _commissionExpected,
+                                'commission_pct': _commissionPctOrNull,
+                                'lead_source_id': _model.ordLeadSourceId,
+                                'order_source': _model.ordLeadSourceCode ??
+                                    (isPorterOrder ? 'porter' : null),
                                 'porter_cash_collect':
                                     isPorterOrder ? cashCollect : null,
                                 // GST: reuses the existing quote_gst_*

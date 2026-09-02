@@ -102,3 +102,8 @@ lib/l10n/gen/
 # by hand and tested (test/crash_redaction_test.dart); the DSN arrives
 # via --dart-define, not via the wizard.
 *.exe
+
+# Claude Code browser-pane dev-server config. Machine-specific: it holds
+# absolute paths to this checkout, so it must never be committed.
+# Optional - normal work needs no config file (`flutter run -d chrome`).
+.claude/launch.json

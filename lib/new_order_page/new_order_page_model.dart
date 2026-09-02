@@ -36,7 +36,36 @@ class NewOrderPageModel extends FlutterFlowModel<NewOrderPageWidget> {
 
   DateTime? ordMoveDate;
 
-  String? ordPorterComm = '16';
+  /// Lead source this job came from — `lead_sources.code`, written to
+  /// `orders.order_source`. Selecting one OFFERS its configured
+  /// commission rate as the default for [ordCommissionFieldTextController]
+  /// (a vendor-authored rate, which CLAUDE.md's "No suggested money"
+  /// convention explicitly permits — unlike the old hardcoded 16/19,
+  /// which were APC's rates shown to every tenant).
+  String? ordLeadSourceCode;
+  List<LeadSourcesRow> leadSources = [];
+
+  /// Whether a commission is owed on this job — the snapshot that will be
+  /// written to `orders.commission_expected`.
+  ///
+  /// Held as STATE rather than recomputed at save time, and the difference
+  /// is not cosmetic. Recomputing would read the lead source's `is_paid`
+  /// as it stands at save; on an EDIT that turns any unrelated change (a
+  /// corrected address, a moved date) into a silent re-pricing of a job
+  /// already done, if that source has been flipped paid/unpaid since. This
+  /// is set exactly where the answer legitimately changes: when the order
+  /// is loaded for editing (from the stored snapshot), and when the vendor
+  /// picks a lead source. Null on a fresh form means "nothing has decided
+  /// yet" and the Porter toggle answers it.
+  bool? ordCommissionExpected;
+
+  /// FK to the `lead_sources` row, held as state for the same reason as
+  /// [ordCommissionExpected]: resolving it from the picker at save time
+  /// would write NULL whenever the source cannot be found in the list —
+  /// which happens routinely, because the picker only loads ACTIVE
+  /// sources. Editing an old order whose source has since been retired
+  /// would silently drop its attribution.
+  String? ordLeadSourceId;
 
   // GST (20 Aug 2026). Defaults to charging GST at the configured default
   // rate: for an Indian mover a taxable invoice is the normal case, so the
@@ -104,9 +133,19 @@ class NewOrderPageModel extends FlutterFlowModel<NewOrderPageWidget> {
   // State field(s) for OrdTypeDropdown widget.
   String? ordTypeDropdownValue;
   FormFieldController<String>? ordTypeDropdownValueController;
-  // State field(s) for OrdPorterCommDropdown widget.
-  String? ordPorterCommDropdownValue;
-  FormFieldController<String>? ordPorterCommDropdownValueController;
+  // State field(s) for OrdLeadSourceDropdown widget.
+  String? ordLeadSourceDropdownValue;
+  FormFieldController<String>? ordLeadSourceDropdownValueController;
+  // Commission %, free numeric entry 0-100 (2 Sept 2026). Was a hardcoded
+  // 16/19 dropdown defaulting to '16' — APC's own porter rates, applied to
+  // every tenant, and written to Postgres for a vendor who never chose
+  // them. EMPTY means not priced and saves NULL; see
+  // /backend/commission_pricing.dart for why null must never be read as a
+  // rate.
+  FocusNode? ordCommissionFieldFocusNode;
+  TextEditingController? ordCommissionFieldTextController;
+  String? Function(BuildContext, String?)?
+      ordCommissionFieldTextControllerValidator;
   // State field(s) for OrdNotesField widget.
   FocusNode? ordNotesFieldFocusNode;
   TextEditingController? ordNotesFieldTextController;
@@ -137,6 +176,9 @@ class NewOrderPageModel extends FlutterFlowModel<NewOrderPageWidget> {
   void dispose() {
     ordPorterCashCollectFieldFocusNode?.dispose();
     ordPorterCashCollectFieldTextController?.dispose();
+
+    ordCommissionFieldFocusNode?.dispose();
+    ordCommissionFieldTextController?.dispose();
 
     ordCustomerFieldFocusNode?.dispose();
     ordCustomerFieldTextController?.dispose();

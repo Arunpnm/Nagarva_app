@@ -182,12 +182,53 @@ class OrdersRow extends SupabaseDataRow {
   set porterCashCollect(double? value) =>
       setField<double>('porter_cash_collect', value);
 
-  bool? get isPorter => getField<bool>('is_porter');
-  set isPorter(bool? value) => setField<bool>('is_porter', value);
+  /// Does this job owe a commission at all?
+  ///
+  /// Renamed from `is_porter` on 2 Sept 2026. SNAPSHOTTED at order time
+  /// from `lead_sources.is_paid`, alongside [commissionPct] and
+  /// [leadSourceId] — the three travel together and are never re-read from
+  /// the source afterwards (brief §44).
+  ///
+  /// This is what separates "no commission is owed" from "a commission is
+  /// owed and nobody has priced it". Without it those two collapse into
+  /// one null and the app must guess which it is: warn on everything, or
+  /// warn on nothing. Both are wrong.
+  bool? get commissionExpected => getField<bool>('commission_expected');
+  set commissionExpected(bool? value) =>
+      setField<bool>('commission_expected', value);
 
-  double? get porterCommissionPct => getField<double>('porter_commission_pct');
-  set porterCommissionPct(double? value) =>
-      setField<double>('porter_commission_pct', value);
+  /// The `lead_sources` row this job came from. Stored for attribution and
+  /// reporting; the COMMERCIAL terms are snapshotted onto the order itself
+  /// (see [commissionPct]) rather than read back through this FK.
+  String? get leadSourceId => getField<String>('lead_source_id');
+  set leadSourceId(String? value) => setField<String>('lead_source_id', value);
+
+  /// Commission rate for this order, as a percentage of order value.
+  ///
+  /// Renamed from `porter_commission_pct` on 2 Sept 2026 when commission
+  /// stopped being a porter-only idea: it is now a property of the LEAD
+  /// SOURCE the job came from (`lead_sources.commission_pct`), so a paid
+  /// directory or a referral partner that takes a cut is priced the same
+  /// way a porter job is.
+  ///
+  /// **This is a SNAPSHOT, taken at order time, not a pointer.** It is
+  /// copied from the selected lead source when the order is created and
+  /// never re-read afterwards — the same rule the staff-pay brief §44
+  /// sets for storage rates: "Each storage record stores the rate it was
+  /// booked at, not a pointer to the current rate card", because
+  /// otherwise "a price revision silently re-bills every existing
+  /// customer". Changing a lead source's rate must never re-price a job
+  /// that is already closed and settled.
+  ///
+  /// **Null means NOT PRICED — it does not mean zero.** Nothing may
+  /// substitute a rate for a null (this column's predecessor was read as
+  /// `?? 16` in four places, which quietly costed every unpriced order at
+  /// APC's own porter rate). Route every read through
+  /// `/backend/commission_pricing.dart`, which distinguishes "no
+  /// commission applies" from "nobody has priced this yet".
+  double? get commissionPct => getField<double>('commission_pct');
+  set commissionPct(double? value) =>
+      setField<double>('commission_pct', value);
 
   String? get porterOrderNo => getField<String>('porter_order_no');
   set porterOrderNo(String? value) =>

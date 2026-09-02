@@ -617,6 +617,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             orderId: params.getParam('orderId', ParamType.String),
           ),
         ),
+        // Day-close crew sheet (staff-pay brief §4) — per-job crew,
+        // wages, driver tag and A/C. Not public: it falls under the
+        // GoRouter auth guard like every other non-prefixed route.
+        FFRoute(
+          name: CrewSheetPageWidget.routeName,
+          path: CrewSheetPageWidget.routePath,
+          builder: (context, params) => CrewSheetPageWidget(
+            orderId: params.getParam('orderId', ParamType.String),
+          ),
+        ),
         // Public, unauthenticated pages (item 8, CORE V1) — reached via a
         // shared /survey?token=... or /quote?token=... link, no login.
         FFRoute(

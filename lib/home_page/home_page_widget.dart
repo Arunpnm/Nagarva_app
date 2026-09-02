@@ -1,5 +1,6 @@
 import '/app_session.dart';
 import '/backend/session_logout.dart';
+import '/backend/commission_pricing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/margin_availability.dart';
@@ -302,17 +303,15 @@ class _HomePageWidgetState extends State<HomePageWidget>
             start,
             end))
         .fold(0.0, (s, e) => s + (e.amount ?? 0));
-    final porterCommission = _model.porterEnabled
-        ? periodOrders
-            .where((o) => o.isPorter ?? (o.orderSource == 'porter'))
-            .fold(
-                0.0,
-                (s,
-                        o) =>
-                    s +
-                    ((o.amount ?? 0) * ((o.porterCommissionPct ?? 16) / 100))
-                        .roundToDouble())
-        : 0.0;
+    // Commission at each order's own snapshotted rate. Orders with no
+    // rate are EXCLUDED and counted, never costed at a substitute — this
+    // read `?? 16` (APC's porter rate) until 2 Sept 2026, which quietly
+    // put an invented cost into every tenant's dashboard profit.
+    final commissionRollup = _model.porterEnabled
+        ? rollUpCommission(periodOrders, (o) => o.amount ?? 0)
+        : CommissionRollup.empty;
+    final porterCommission = commissionRollup.total;
+    _model.unpricedCommissionCount = commissionRollup.unpricedCount;
 
     _model.kpiList = [
       DashboardKpisViewRow({
@@ -451,7 +450,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
     // Users Kickoff Step 2 (1 Aug 2026): activeStaffPages is a
     // kPermModules-derived set and only ever applies to a MANAGER
     // session — owner never filters, and supervisor/field-staff's nav
-    // items (SupJobsComingSoon, MyAttComingSoon, ...) aren't in
+    // items (SupervisorJobsListPage, MyAttComingSoon, ...) aren't in
     // kPermModules at all and never will be (their set is fixed by role,
     // not per-person customizable — see nav_items.dart). Applying the
     // old owner-vs-any-staff branch here would have filtered a
@@ -782,6 +781,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                 kpi: _model.kpiList.isNotEmpty
                                     ? _model.kpiList.first
                                     : null,
+                                unpricedCommissionCount:
+                                    _model.unpricedCommissionCount,
                                 onAddExpense: () => context
                                     .pushNamed(QuickExpensePageWidget.routeName),
                               ),

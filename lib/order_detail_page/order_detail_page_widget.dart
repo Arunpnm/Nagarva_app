@@ -308,14 +308,27 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
         if (o.rateCardId != null) 'rate_card_id': o.rateCardId,
         if (o.contractId != null) 'contract_id': o.contractId,
         // Not in the brief's literal §3 clone list, but necessary for
-        // consistency: this app's actual porter-commission mechanism is
-        // is_porter/porter_commission_pct (order_type is just a Direct/
-        // Porter label here, not the brief's assumed local/outstation
-        // split — see the P&L card's own doc comment). Cloning order_type
-        // without these would silently produce a "Porter" duplicate with
-        // no commission in its own P&L.
-        'is_porter': o.isPorter ?? false,
-        'porter_commission_pct': o.porterCommissionPct,
+        // consistency: commission lives in commission_expected /
+        // commission_pct / lead_source_id (order_type is just a
+        // Direct/Porter label here, not the brief's assumed
+        // local/outstation split — see the P&L card's own doc comment).
+        //
+        // ALL THREE ARE COPIED TOGETHER, and they have to be. They are one
+        // snapshot of the commercial terms agreed at order time, and any
+        // two of them without the third is a contradiction: expected
+        // without a rate silently flags the duplicate unpriced when the
+        // original was not; a rate without expected leaves it costed but
+        // unexplained; either without the source id loses the attribution
+        // that says where the money went.
+        //
+        // Copied, never re-derived from the lead source's CURRENT terms: a
+        // duplicate of an order priced at 14% is a 14% job even if that
+        // source charges 18% today (brief §44). Copying a null rate is
+        // equally deliberate — the original was never priced, so the
+        // duplicate inherits the gap rather than inventing a rate.
+        'commission_expected': o.commissionExpected ?? false,
+        'commission_pct': o.commissionPct,
+        'lead_source_id': o.leadSourceId,
         // Brief §3 "Set": notes -> "Copy of {source_id}", not the
         // original notes.
         'notes': 'Copy of ${o.id}',

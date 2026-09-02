@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '/backend/commission_pricing.dart';
 import '/backend/margin_availability.dart';
 import '/backend/supabase/database/tables/dashboard_kpis_view.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -49,6 +50,7 @@ class DashboardKpiGrid extends StatelessWidget {
   const DashboardKpiGrid({
     super.key,
     required this.kpi,
+    this.unpricedCommissionCount = 0,
     this.onAddExpense,
     this.onTapTile,
   });
@@ -58,6 +60,13 @@ class DashboardKpiGrid extends StatelessWidget {
   /// wall of zeros, which would be indistinguishable from a real month
   /// of no activity.
   final DashboardKpisViewRow? kpi;
+
+  /// Orders in the period from a commission-bearing source with no rate
+  /// set. Above zero, Profit is suppressed exactly the way starved
+  /// expense data suppresses it: an unknown cost cannot be subtracted, and
+  /// a profit figure that silently skips it is overstated in the
+  /// flattering direction. See /backend/commission_pricing.dart.
+  final int unpricedCommissionCount;
 
   /// Opens expense entry. Wired to the Expenses tile's empty state so
   /// the tile offers the action that fixes it.
@@ -172,10 +181,17 @@ class DashboardKpiGrid extends StatelessWidget {
     // ---- margin ------------------------------------------------------
     final expenses = row.expensesThisMonth ?? 0;
     final orderCount = (row.ordersThisMonth ?? 0).toInt();
+    // Two independent reasons a margin can be dishonest, and BOTH must
+    // hold for it to show. Expenses starved (marginIsMeaningful) is the
+    // 25 Aug case; an unpriced commission is a second, unrelated missing
+    // cost — folding them into one flag would let a fix for one silently
+    // re-enable the figure while the other is still true.
+    final commissionPriced = unpricedCommissionCount == 0;
     final marginShowable = marginIsMeaningful(
-      expensesTotal: expenses,
-      orderCount: orderCount,
-    );
+          expensesTotal: expenses,
+          orderCount: orderCount,
+        ) &&
+        commissionPriced;
 
     // Labour is a cost, so it sits in the margin tier alongside
     // Expenses. It is NOT starved the way Expenses is — it sums
@@ -197,8 +213,14 @@ class DashboardKpiGrid extends StatelessWidget {
       value: marginShowable
           ? (functions.inrFormat(row.netProfitThisMonth) ?? '-')
           : null,
-      emptyTitle: kMarginUnavailableTitle,
-      emptyBody: kMarginUnavailableBody,
+      // Name the reason that actually applies. "Needs expense data" on an
+      // org that has plenty of expenses and one unpriced order sends the
+      // vendor to fix the wrong thing.
+      emptyTitle:
+          commissionPriced ? kMarginUnavailableTitle : 'Commission not priced',
+      emptyBody: commissionPriced
+          ? kMarginUnavailableBody
+          : commissionIncompleteNote(unpricedCommissionCount),
       icon: Icons.savings_outlined,
       color: const Color(0xFF22B573),
     ));

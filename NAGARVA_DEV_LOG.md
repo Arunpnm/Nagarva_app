@@ -7,6 +7,278 @@ across runs — read the most recent entry first.
 
 ---
 
+## 2026-09-01
+
+**Health check.** Shell available. No Flutter/Dart toolchain in this
+sandbox — confirmed again (`which flutter dart` both fail, `flutter
+--version` → "command not found", no `/opt/flutter`, empty `$PATH` beyond
+system dirs). `flutter analyze`/`flutter test` could not be run, same as
+every prior run. No `TODO`/`FIXME` live in `lib/` (only the two
+historical "TODO(W2) resolved" comments, unchanged since 26/28 Aug).
+
+**`.git/index.lock` reproduced and root-caused — this is a mount-level
+bug, not a stale process lock.** `git status --short` on this repo (350
+files, still the same CRLF/LF drift flagged since 12 Aug — sampled
+`lib/main.dart`: 1465/1465 line-for-line, pure whitespace) silently
+created `.git/index.lock` as a side effect, and this session then could
+not delete a file it had *just created itself*: `rm -f`, and even
+deleting a fresh `touch`ed throwaway file in `.git/`, both returned
+"Operation not permitted" with zero delay (not a timeout/retry pattern).
+`mount` shows this repo is a FUSE mount
+(`type fuse (rw,nosuid,nodev,relatime,...,default_permissions,...)`) —
+`lsattr` on the lock file returned "Operation not supported," consistent
+with a FUSE bridge to the Windows-side folder that doesn't correctly
+implement unlink for this session's own writes, not with another process
+genuinely holding the file open (no `lsof`/competing PID needed to prove
+it — a same-session `touch` + immediate `rm` failing the same way rules
+that out). **This explains the 28 Aug / 12 Aug entries' identical
+symptom** — it isn't intermittent contention, it's structural: any git
+read command that ends up creating `index.lock` (which `status`/`diff`
+can do) leaves this session permanently unable to run `git add`/`commit`
+for the rest of the run. `git add` was attempted anyway (see Git section)
+and failed with git's own "Another git process seems to be running"
+message, confirming the lock was never cleared. **Recommend Arun delete
+`.git/index.lock` from Windows (Explorer/PowerShell) between runs**, and
+if it keeps recurring, treat it as this mount's `default_permissions`
+FUSE option disagreeing with git's lock-file lifecycle rather than
+chasing a phantom process each time.
+
+**Closed out 28 Aug's "next up" items 1–3, all clean/blocked, nothing
+newly broken:**
+1. Toolchain/lock check — done above; still no compiler, lock still
+   stuck (worse understood now, see above).
+2. CRLF/LF drift — still present (350 files), still correctly left
+   untouched per every prior entry's own caution (needs a working
+   `flutter analyze` to verify a mechanical repo-wide change is safe).
+3. **Stub-button sweep, finished.** Re-ran `print(.*[Bb]tn.*pressed`
+   across `lib/` — zero hits (28 Aug's fix, CalendarPage's "Add
+   Reminder," was the last one). Also checked the 12 files still matching
+   `ComingSoon|TODO|FIXME` individually: all are either the intentional
+   `ComingSoonPage` component, historical "resolved" doc comments, or the
+   two genuinely-unbuilt field-staff (driver/helper/packer) destinations
+   (`MyAttComingSoon`/`MySalComingSoon` in `nav_items.dart`'s
+   `kFieldStaffNavItems`, explicitly documented as "Neither screen exists
+   yet" and correctly wired to `ComingSoonPage` in both `main.dart`'s
+   `_tabs` map and `nav.dart`). No hidden dead buttons remain.
+
+**Extra audit run today, also clean:** grepped every `matchingRows:`
+write site across `lib/` (the update/delete row-filter convention
+CLAUDE.md calls out as a past real bug — `eqOrNull` silently dropping a
+null id filter). All ~50 sites use a plain `.eq(...)`, none use
+`eqOrNull` as the row-identifying filter. No regression since the 14 Aug
+fix; nothing to change.
+
+**What I worked on and why (priority (d) — nothing broken, no live TODO,
+stub sweep and write-filter audit both came back clean, so a small QoL
+correction).** While closing out item 3 above, found `home_page_widget
+.dart`'s own drawer-filter doc comment (line ~454) still named the
+pre-rename route `SupJobsComingSoon` as an example of a
+supervisor/field-staff nav item — the real route has been
+`SupervisorJobsListPage` since Session 2's rename (correctly used
+everywhere else, including `main.dart`'s `_tabs` map two files over,
+which I cross-checked and found already correct). This is exactly the
+class of drift CLAUDE.md's own changelog has flagged as dangerous
+multiple times (a stale name in a comment reads as current and misleads
+the next reader/grep) — low stakes here since it's illustrative prose in
+a comment, not a lookup key, but cheap and safe to fix while already
+looking at it.
+
+**What changed:** `lib/home_page/home_page_widget.dart` — one comment
+line, `SupJobsComingSoon` → `SupervisorJobsListPage`. No code/logic
+touched.
+
+**Verification (no compiler, same caveat as every prior entry):**
+- Re-grepped `SupJobsComingSoon` across `lib/` after the edit — zero
+  hits remaining anywhere.
+- Confirmed `main.dart`'s `_tabs` map (the actual runtime router for this
+  route, per its own doc comment) already uses `SupervisorJobsListPage`
+  correctly — this was a comment-only drift, not a second instance of the
+  real bug that comment describes.
+- Comment-only change; no braces/logic/imports touched, nothing to
+  balance-check.
+- **Not run**: `flutter analyze`, `flutter test` — no toolchain (see
+  health check). Zero risk either way — this edit can't affect
+  compilation or runtime behavior.
+
+**Git:** **could not commit** — reproduced and root-caused the
+`.git/index.lock` blocker this run (see above); `git add
+lib/home_page/home_page_widget.dart` failed with git's own "Another git
+process seems to be running" (exit 128), confirming the lock created by
+this run's own `git status` was never released. The one edited file is
+saved to disk — that's the actual deliverable. Arun: once
+`.git/index.lock` is cleared from Windows, `git add
+lib/home_page/home_page_widget.dart NAGARVA_DEV_LOG.md && git commit`.
+
+**Next up (tomorrow's run should prioritize, in order):**
+1. If `.git/index.lock` is gone AND a real Flutter toolchain is
+   available: run `flutter analyze` + `flutter test` — there's now a
+   backlog of several sessions' worth of unverified-by-compiler changes
+   (28 Aug's calendar reminder fix, today's comment fix, plus whatever
+   non-scheduled-task sessions have landed since).
+2. If a shell + git work but no Flutter SDK: commit today's one-line fix
+   and 28 Aug's still-uncommitted calendar-reminder change together (both
+   should still be sitting as working-tree changes if no other session
+   has committed them since).
+3. Given today's audits (stub buttons, `eqOrNull`-in-writes) both came
+   back fully clean, the next fresh sweep worth trying is a different bug
+   class — e.g. `TextEditingController` construction vs. `dispose()`
+   counts per file (spot-checked today, found large imbalances, but they
+   all appear to be short-lived dialog-local controllers rather than
+   `State`-field leaks — `customer_detail_page_widget.dart` was checked
+   directly and confirmed to be this harmless pattern). A future run with
+   a working analyzer should let the linter judge this class properly
+   rather than guessing by eye.
+4. Still standing: the CRLF/LF drift (only with a working `flutter
+   analyze` to confirm normalization is safe).
+
+---
+
+## 2026-08-28
+
+**Health check.** Shell available this run (unlike 26 Aug's "no shell at
+all"). No Flutter/Dart toolchain in this sandbox — confirmed again
+(`which flutter dart` both empty, no `/opt/flutter`, no `/usr/lib/dart*`),
+same as every prior run. `flutter analyze`/`flutter test` could not be run.
+A `test/` suite exists (7 files: crash_redaction, gst_calculator,
+margin_availability, permissions_financial_tiers, pricing_slabs,
+sentry_live_redaction, widget_test) but couldn't be executed for the same
+reason. `Grep "TODO|FIXME"` across `lib/` found zero live hits — the only
+two matches are historical "TODO(W2) resolved" comments.
+
+**Closed out 26 Aug's "next up" item 1/2 by reading, not by re-fixing.**
+26 Aug's own stopgap TODO(W2) fix (wiring `LastSelectedOrg` into
+`main.dart`/`login_page_widget.dart`/`settings_page_widget.dart`) is gone
+from `main.dart` — but not because it was lost again. `git log --oneline
+-- lib/backend/last_selected_org.dart lib/main.dart` shows it was properly
+superseded: commit `b0aa35f` ("one org resolver, and the PIN path lands
+where it authenticated") replaced the whole approach with a real dedicated
+module, `lib/backend/org_resolution.dart` (`resolveActiveOrg`/
+`OrgResolution`/`OrgChoiceMode`, dated 27 Aug 2026 in its own doc comments)
+— a proper single-decision-point resolver with documented precedence
+(bound device > stored choice > picker > sole membership > fail closed),
+replacing four call sites that used to each answer "which org?"
+differently. Read the module fully; it's solid, already handles the
+`LastSelectedOrg` read/write internally, and needs nothing further from
+this task. 26 Aug's patch was a reasonable stopgap given no shell that
+day — a later (non-scheduled-task) session did the real fix properly.
+
+**Found and worked around a real environment blocker: an unremovable
+`.git/index.lock`, created by my own `git status` on this repo's ~349
+line-ending-drifted files (see below), that could not be cleared from
+this session.** `git status --porcelain` took ~50s and listed 349
+modified files with `insertions == deletions` file-for-file on every
+sampled diff (`git diff --stat` on 3 files: 2505/2505) — this is the
+already-flagged, still-open CRLF/LF drift (12 Aug/26 Aug entries), not
+real code drift; not touched, per those entries' own caution ("only fix
+with a working `flutter analyze` to verify safe", which still isn't
+available). One of those `git status`/`git diff` invocations left a
+0-byte `.git/index.lock` behind. `rm -f`, `mv`, and `chmod` on it all
+returned "Operation not permitted" — repeatedly, across ~15 minutes and
+multiple bash calls — despite `lsof`/`fuser`/`ps aux` showing no process
+holding it from this session's view. Most likely explanation: this
+sandbox's bind-mount of the Windows folder enforces Windows-side file
+locking semantics that a plain POSIX `rm` can't override (e.g. an
+antivirus or indexer scan on the host), not a live git process this
+session can see or kill (each bash call runs in its own PID namespace, so
+a same-session orphan wouldn't explain it either). **No git write
+operation (`add`/`commit`) was attempted after this** — a lock this
+session can't remove is exactly the setup that caused the 12 Aug lost-fix
+incident CLAUDE.md's changelog documents, and this task's own instruction
+is to clear it before committing, not commit around it.
+**Arun: `.git/index.lock` in the repo root may still need a manual
+delete from Windows (Explorer or PowerShell `Remove-Item`) before any
+session — this one included — can commit again.** If it's still there
+next run, this is worth a closer look (a stuck OneDrive/antivirus handle
+on that specific file, or something else host-side).
+
+**What I worked on and why (priority (c) — resolve a TODO/FIXME did not
+apply, zero live ones; moved to the same class of "FlutterFlow stub
+button" bug CLAUDE.md has fixed twice before — Expenses' "Add Expense"
+on 18 Aug, and this session's own 25 Aug precedent).** `Grep -i "not
+built|ComingSoon|print\(.*pressed"` across `lib/` turned up
+`calendar_page_widget.dart:907`: the "Add Reminder" button on
+CalendarPage's day-detail panel did `print('AddReminderBtn pressed
+...')` and nothing else — a real, user-facing dead button, not a parked
+placeholder (unlike the deliberately-stubbed Job Entry/Team Attendance
+items CLAUDE.md documents as intentional).
+
+**What changed:**
+- `lib/backend/reminders_service.dart` — `RemindersService.add()`'s
+  `entityType`/`entityId` params changed from `required String` to
+  optional `String?` (default null). Safe: only one existing call site
+  (`reminders_section.dart`'s `_AddReminderSheet`) always passes both, so
+  this is purely additive. The `reminders` table's `entity_type`/
+  `entity_id` columns are nullable (per the table class's own doc
+  comment — they were bolted onto a table that pre-dated them, which
+  worked fine on `lead_id`/`order_id` alone), so a null-entity "general"
+  reminder is the table's original shape, not a new edge case.
+- `lib/calendar_page/calendar_page_widget.dart` — added
+  `import '/backend/reminders_service.dart'`; new `_addReminder()` method
+  (a small `AlertDialog` with title/date/note, date defaulting to the
+  tapped day at 10am or tomorrow 10am if none selected — same "not the
+  current time of day" convention `reminders_section.dart`'s sheet
+  already uses); the button's `onPressed` now calls it instead of
+  `print(...)`. On save, calls `RemindersService.add(title:, dueAt:,
+  note:)` with no entity (CalendarPage shows every org reminder, not one
+  lead/order's) and reloads via the page's existing `_loadCalendarData()`
+  so the new reminder's dot/row appears immediately. Wrapped in try/catch
+  with a SnackBar on failure, matching every other write path in this
+  codebase. Controllers disposed after the dialog closes.
+
+**Verification (no compiler available, same caveat as every prior
+entry):**
+- Re-read both edited files in full after editing, not from memory.
+- Confirmed `RemindersService.add` has exactly one other call site
+  (`Grep "RemindersService\.add\("`) and it always supplies both
+  entity params, so relaxing them to optional cannot change that site's
+  behavior.
+- Confirmed the `if (entityType == kEntityLead) 'lead_id': entityId`
+  collection-if guards degrade safely to "omit the key" when
+  `entityType` is null — no null-comparison crash, this is a plain `==`
+  against a non-null constant.
+- Confirmed `reminders_view`'s `lead_customer`/`order_customer` columns
+  are already read with `?? '-'` at the one render site in this file
+  (line ~850, pre-existing), so a reminder with null `lead_id`/`order_id`
+  renders correctly rather than crashing on a null join.
+- Re-grepped `AddReminderBtn pressed` — zero remaining hits.
+- Re-grepped `TODO|FIXME` across `lib/` — unchanged (still zero live).
+- **Not run**: `flutter analyze`, `flutter test` — no toolchain, as
+  above. This change is judged correct by careful reading and by
+  mirroring an already-proven pattern (`reminders_section.dart`'s
+  `_AddReminderSheet` uses the identical `RemindersService.add` call,
+  same field set, same null-safe rendering downstream), not by a
+  compiler.
+
+**Git:** **could not commit** — see the index.lock blocker above. The two
+edited files (`lib/backend/reminders_service.dart`,
+`lib/calendar_page/calendar_page_widget.dart`) are saved to disk; that's
+the actual deliverable, same posture as 26 Aug's "no shell at all" entry,
+except this time the blocker is a stuck lock rather than a missing shell.
+Arun: once `.git/index.lock` is cleared, please run `flutter analyze`
+and, if clean, `git add lib/backend/reminders_service.dart
+lib/calendar_page/calendar_page_widget.dart NAGARVA_DEV_LOG.md && git
+commit`.
+
+**Next up (tomorrow's run should prioritize, in order):**
+1. Check whether `.git/index.lock` is still stuck. If a real Flutter
+   toolchain AND working git are both available, run `flutter analyze`
+   on today's calendar-reminder change first — it's unverified by a
+   compiler.
+2. If git works but the CRLF/LF drift is still showing ~349 modified
+   files with 1:1 insertion/deletion counts, that's still the same
+   standing item from 12/26 Aug — only touch it with a working `flutter
+   analyze` to confirm a normalization pass doesn't break anything.
+3. Otherwise, sweep for more of the same "FlutterFlow stub button" class
+   (`print\(.*pressed`, `ComingSoon`, ungated `TODO`) — today's pass only
+   looked at `lib/` broadly and fixed the one clear hit; the other 13
+   files that matched the same grep are believed to be either the
+   `ComingSoonPage` component itself or deliberately-parked screens per
+   CLAUDE.md (Job Entry, Team Attendance) — worth a closer file-by-file
+   pass to confirm none of the other 13 hide a second live dead button
+   the way `calendar_page_widget.dart` did.
+
+---
+
 ## 2026-08-26
 
 **Setup note on the gap since the last entry:** this scheduled task's own

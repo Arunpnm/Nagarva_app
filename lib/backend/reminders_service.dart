@@ -153,9 +153,15 @@ class RemindersService {
     );
   }
 
+  /// [entityType]/[entityId] are optional — a reminder created from
+  /// CalendarPage's "Add Reminder" button (or anywhere else general,
+  /// not-tied-to-a-lead/quote/order) simply omits them. The `reminders`
+  /// table predates the polymorphic entity pair and both columns are
+  /// nullable, so a general reminder is the table's original shape, not
+  /// a workaround.
   static Future<RemindersRow> add({
-    required String entityType,
-    required String entityId,
+    String? entityType,
+    String? entityId,
     required String title,
     required DateTime dueAt,
     String? note,

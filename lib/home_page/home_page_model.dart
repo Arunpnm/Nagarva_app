@@ -13,6 +13,11 @@ class HomePageModel extends FlutterFlowModel<HomePageWidget> {
   /// for new orgs; APC seeds it on (see 20260717_notifications_and_settings.sql).
   bool porterEnabled = false;
 
+  /// Orders in the current period from a commission-bearing source with no
+  /// rate set. Drives the Profit tile suppression on DashboardKpiGrid —
+  /// see /backend/commission_pricing.dart.
+  int unpricedCommissionCount = 0;
+
   List<DashboardKpisViewRow> kpiList = [];
   void addToKpiList(DashboardKpisViewRow item) => kpiList.add(item);
   void removeFromKpiList(DashboardKpisViewRow item) => kpiList.remove(item);

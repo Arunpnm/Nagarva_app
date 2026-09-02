@@ -1,3 +1,4 @@
+import '/backend/commission_pricing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/margin_availability.dart';
@@ -147,18 +148,12 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
     final otherExpenses = _allExpenses
         .where((e) => e.orderId == null)
         .fold(0.0, (s, e) => s + (e.amount ?? 0));
-    // See accounts_page_widget.dart's _computeDailyRows comment: this app
-    // stores the porter commission % directly (`is_porter` +
-    // `porter_commission_pct`), it doesn't derive 16%/19% from a
-    // local/outstation order_type like the reference web app.
-    final porterCommission = fo
-        .where((o) => o.isPorter ?? (o.orderSource == 'porter'))
-        .fold(
-            0.0,
-            (s, o) =>
-                s +
-                ((o.amount ?? 0) * ((o.porterCommissionPct ?? 16) / 100))
-                    .roundToDouble());
+    // Commission at each order's own snapshotted rate, with unpriced
+    // orders excluded and counted rather than costed at a substitute.
+    // Read `?? 16` (APC's porter rate) until 2 Sept 2026 — see
+    // /backend/commission_pricing.dart.
+    final commissionRollup = rollUpCommission(fo, (o) => o.amount ?? 0);
+    final porterCommission = commissionRollup.total;
 
     _model.revenue = revenue;
     // Drives marginIsShowable: "no expenses" is only a contradiction
@@ -168,6 +163,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
     _model.orderExpenses = orderExpenses;
     _model.otherExpenses = otherExpenses;
     _model.porterCommission = _porterEnabled ? porterCommission : 0.0;
+    _model.unpricedCommissionCount =
+        _porterEnabled ? commissionRollup.unpricedCount : 0;
 
     _model.branchPL = _branchNames.map((branch) {
       final branchOrders = fo.where((o) => o.branch == branch).toList();
@@ -302,6 +299,22 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
                               Expanded(child: _marginCard(context)),
                             ],
                           ),
+                          // Names why the figures above are incomplete.
+                          // Without this, a suppressed Net Profit reads as
+                          // a bug in the report rather than a gap in the
+                          // data the vendor can close.
+                          if (_model.hasUnpricedCommission)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Text(
+                                commissionIncompleteNote(
+                                    _model.unpricedCommissionCount),
+                                style: TextStyle(
+                                    fontSize: 11.5,
+                                    color:
+                                        FlutterFlowTheme.of(context).warning),
+                              ),
+                            ),
                           const SizedBox(height: 20),
                           Text('Branch P&L',
                               style: FlutterFlowTheme.of(context).titleMedium),
