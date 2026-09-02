@@ -416,6 +416,13 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     double s = 0;
     for (final f in kDefaultChargeFields) {
       if (f.key == 'discount') continue;
+      // An advance is money the customer has ALREADY PAID. It is not a
+      // charge, and adding it here billed them for it a second time and
+      // then charged GST on top: 28,000 freight + 8,000 advance produced a
+      // 36,000 taxable value and a 37,800 total (found 2 Sep 2026, live).
+      // The field was already excluded from the "other charges" list in
+      // _chargesCard - only the total had never been told.
+      if (f.key == 'advanceOnQuote') continue;
       if (f.billable && (_billingMode[f.key] ?? 'included') == 'included') {
         continue;
       }

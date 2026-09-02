@@ -31,7 +31,9 @@ import '/index.dart';
 ///      fy)` for the confirmation toast and the ledger narration. The
 ///      kickoff brief is explicit that this session ships no new SQL
 ///      ("the schema is complete... report rather than write a
-///      migration"), and `payment_entries` has no `receipt_no` column —
+///      migration"). `payment_entries` DOES have a `receipt_no`
+///      column and this method writes it (see below) - the note that
+///      it has none was wrong, corrected 2 Sep 2026 —
 ///      so the number is consumed from the series (it will not be handed
 ///      out again) but not persisted on the row. The Documents grid's
 ///      Money Receipt document (item 4) is the durable, printable record

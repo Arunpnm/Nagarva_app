@@ -21,6 +21,7 @@ import '/components/share_link_sheet.dart';
 import '/config/app_config.dart';
 import 'order_crew_section.dart';
 import 'order_documents_section.dart';
+import 'order_storage_section.dart';
 import 'order_pnl_section.dart';
 import 'payment_history_section.dart';
 import 'quick_payment_section.dart';
@@ -415,6 +416,63 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
 
   final _breakdownKey = GlobalKey<QuotationBreakdownSectionState>();
   final _pnlKey = GlobalKey<OrderPnlSectionState>();
+
+  /// The order row, loaded from the database.
+  ///
+  /// This page was built to render from NAVIGATION PARAMS - the caller
+  /// passes customer, phone, amount and the rest when pushing the route.
+  /// That works when you tap through from a list and fails completely
+  /// otherwise: a browser refresh, a pasted link or any direct URL
+  /// arrives with only `orderId`, and every one of those fields rendered
+  /// as "-" while the DB-backed sections below loaded fine (found 2 Sep
+  /// 2026 opening an order by URL).
+  ///
+  /// The params are kept as the fast path so tapping through still paints
+  /// instantly with no wait, and this row fills in whatever they did not
+  /// carry.
+  OrdersRow? _rowFallback;
+
+  Future<void> _loadRowFallback() async {
+    final id = widget.orderId;
+    if (id == null || id.isEmpty) return;
+    try {
+      final rows = await OrdersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('id', id),
+        limit: 1,
+      );
+      if (!mounted || rows.isEmpty) return;
+      setState(() => _rowFallback = rows.first);
+    } catch (_) {
+      // Params-only rendering is still better than an error page.
+    }
+  }
+
+  String? _fromRow(String column) {
+    final v = _rowFallback?.data[column];
+    if (v == null) return null;
+    final s = '$v'.trim();
+    return s.isEmpty ? null : s;
+  }
+  String? get _orderCustomer => widget.orderCustomer ?? _fromRow('customer');
+  String? get _orderPhone => widget.orderPhone ?? _fromRow('phone');
+  String? get _orderFromCity => widget.orderFromCity ?? _fromRow('from_city');
+  String? get _orderToCity => widget.orderToCity ?? _fromRow('to_city');
+  String? get _orderFromAddress => widget.orderFromAddress ?? _fromRow('from_address');
+  String? get _orderToAddress => widget.orderToAddress ?? _fromRow('to_address');
+  String? get _orderFromFloor => widget.orderFromFloor ?? _fromRow('from_floor');
+  String? get _orderToFloor => widget.orderToFloor ?? _fromRow('to_floor');
+  String? get _orderMoveDate => widget.orderMoveDate ?? _fromRow('move_date');
+  String? get _orderAmount => widget.orderAmount ?? _fromRow('amount');
+  String? get _orderAdvancePaid => widget.orderAdvancePaid ?? _fromRow('advance_paid');
+  String? get _orderStatus => widget.orderStatus ?? _fromRow('status');
+  String? get _orderPaymentStatus => widget.orderPaymentStatus ?? _fromRow('payment_status');
+  String? get _orderTrackingStatus => widget.orderTrackingStatus ?? _fromRow('tracking_status');
+  String? get _orderService => widget.orderService ?? _fromRow('service');
+  String? get _orderBranch => widget.orderBranch ?? _fromRow('branch');
+  String? get _orderType => widget.orderType ?? _fromRow('order_type');
+  String? get _orderNotes => widget.orderNotes ?? _fromRow('notes');
+
+  final _storageKey = GlobalKey<OrderStorageSectionState>();
   final _quickPaymentKey = GlobalKey<QuickPaymentSectionState>();
   final _paymentHistoryKey = GlobalKey<PaymentHistorySectionState>();
 
@@ -438,7 +496,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       final sig = await SignatureService.getOrCreate(
         documentType: 'invoice',
         documentId: widget.orderId!,
-        customerName: widget.orderCustomer,
+        customerName: _orderCustomer,
       );
       if (!mounted) return;
       setState(() => _signature = sig);
@@ -453,8 +511,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
             : 'The customer opens this link, reviews the invoice and signs '
                 'on their phone. No login needed.',
         link: sig.link,
-        phone: widget.orderPhone,
-        message: 'Hello${widget.orderCustomer == null ? '' : ' ${widget.orderCustomer}'}, '
+        phone: _orderPhone,
+        message: 'Hello${_orderCustomer == null ? '' : ' ${_orderCustomer}'}, '
             'please review and accept your invoice from $org:',
       );
     } catch (e) {
@@ -484,8 +542,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
         subtitle: 'The customer can follow their move status live. No login '
             'needed — the link itself is the access.',
         link: buildTokenLink('/track', token),
-        phone: widget.orderPhone,
-        message: 'Hello${widget.orderCustomer == null ? '' : ' ${widget.orderCustomer}'}, '
+        phone: _orderPhone,
+        message: 'Hello${_orderCustomer == null ? '' : ' ${_orderCustomer}'}, '
             'you can track your move with $org here:',
       );
     } catch (e) {
@@ -633,7 +691,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
         );
       }
 
-      final amount = double.tryParse(widget.orderAmount ?? '') ?? 0.0;
+      final amount = double.tryParse(_orderAmount ?? '') ?? 0.0;
       // Fixed (RLS/numbering audit, 12 Aug 2026): was a hardcoded 5.0
       // unconditionally, ignoring orders.quote_gst_pct even when it held
       // the real quoted rate — confirmed live to have wrongly invoiced at
@@ -643,7 +701,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       // as a silent override of a real one.
       final gstPct = existing.isNotEmpty ? (existing.first.quoteGstPct ?? 5.0) : 5.0;
       final interstate =
-          isInterState(widget.orderFromCity, widget.orderToCity);
+          isInterState(_orderFromCity, _orderToCity);
       final igst = interstate ? (amount * gstPct / 100).roundToDouble() : 0.0;
       final sgst =
           interstate ? 0.0 : (amount * (gstPct / 2) / 100).roundToDouble();
@@ -852,7 +910,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
           (sig?.isSigned ?? false) ? sig!.signatureBytes : null,
       customerSignedByName: (sig?.isSigned ?? false) ? sig!.customerName : null,
       customerSignedByPhone:
-          (sig?.isSigned ?? false) ? (_hideCustomer ? null : widget.orderPhone) : null,
+          (sig?.isSigned ?? false) ? (_hideCustomer ? null : _orderPhone) : null,
       customerSignedAt: (sig?.isSigned ?? false) ? sig!.signedAt : null,
       signatureInherited: inherited,
       inheritedFromQuoteRef: inherited ? quoteRef : null,
@@ -861,10 +919,10 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       boilerplate: boilerplate,
       customerName: _hideCustomer
           ? 'Customer (hidden)'
-          : (widget.orderCustomer ?? '—'),
-      customerPhone: _hideCustomer ? null : widget.orderPhone,
-      fromCity: widget.orderFromCity,
-      toCity: widget.orderToCity,
+          : (_orderCustomer ?? '—'),
+      customerPhone: _hideCustomer ? null : _orderPhone,
+      fromCity: _orderFromCity,
+      toCity: _orderToCity,
       fromAddress: order?.fromAddress,
       toAddress: order?.toAddress,
       baseAmount: baseAmount,
@@ -991,6 +1049,9 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     super.initState();
     _model = createModel(context, () => OrderDetailPageModel());
     _loadSignature();
+    // Fills in any field the caller did not pass, so a refresh or a
+    // direct link renders a complete order instead of a page of dashes.
+    _loadRowFallback();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
@@ -1007,7 +1068,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   /// page is also reachable by deep link with arbitrary params).
   bool get _hideCustomer {
     if (!AppSession.instance.isSupervisorSession) return false;
-    final st = (widget.orderStatus ?? '').toLowerCase();
+    final st = (_orderStatus ?? '').toLowerCase();
     return st == 'delivered' || st == 'done' || st == 'completed' ||
         st == 'closed';
   }
@@ -1073,7 +1134,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                             Text(
                               _hideCustomer
                                   ? 'Customer (hidden)'
-                                  : (widget.orderCustomer ?? '—'),
+                                  : (_orderCustomer ?? '—'),
                               style: FlutterFlowTheme.of(context)
                                   .titleMedium
                                   .override(
@@ -1106,7 +1167,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                                 padding: const EdgeInsetsDirectional.fromSTEB(
                                     12.0, 6.0, 12.0, 6.0),
                                 child: Text(
-                                  (widget.orderStatus ?? '—'),
+                                  (_orderStatus ?? '—'),
                                   style: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
@@ -1157,41 +1218,41 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                           label: 'Phone',
                           value: _hideCustomer
                               ? '••••••••••'
-                              : widget.orderPhone,
+                              : _orderPhone,
                         ),
-                        DetailRow(label: 'Service', value: widget.orderService),
-                        DetailRow(label: 'Branch', value: widget.orderBranch),
-                        DetailRow(label: 'Type', value: widget.orderType),
+                        DetailRow(label: 'Service', value: _orderService),
+                        DetailRow(label: 'Branch', value: _orderBranch),
+                        DetailRow(label: 'Type', value: _orderType),
                       ],
                     ),
                     DetailCard(
                       title: 'Move Details',
                       children: [
-                        DetailRow(label: 'From', value: widget.orderFromCity),
-                        DetailRow(label: 'To', value: widget.orderToCity),
+                        DetailRow(label: 'From', value: _orderFromCity),
+                        DetailRow(label: 'To', value: _orderToCity),
                         DetailRow(
                           label: 'Address (From)',
-                          value: widget.orderFromAddress,
+                          value: _orderFromAddress,
                           hideWhenEmpty: true,
                         ),
                         DetailRow(
                           label: 'Address (To)',
-                          value: widget.orderToAddress,
+                          value: _orderToAddress,
                           hideWhenEmpty: true,
                         ),
                         DetailRow(
                           label: 'Floor (From)',
-                          value: widget.orderFromFloor,
+                          value: _orderFromFloor,
                           hideWhenEmpty: true,
                         ),
                         DetailRow(
                           label: 'Floor (To)',
-                          value: widget.orderToFloor,
+                          value: _orderToFloor,
                           hideWhenEmpty: true,
                         ),
                         DetailRow(
                           label: 'Move Date',
-                          value: widget.orderMoveDate,
+                          value: _orderMoveDate,
                         ),
                       ],
                     ),
@@ -1200,19 +1261,19 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                       children: [
                         DetailRow(
                           label: 'Amount',
-                          value: _money(widget.orderAmount),
+                          value: _money(_orderAmount),
                         ),
                         DetailRow(
                           label: 'Advance Paid',
-                          value: _money(widget.orderAdvancePaid),
+                          value: _money(_orderAdvancePaid),
                         ),
                         DetailRow(
                           label: 'Payment Status',
-                          value: widget.orderPaymentStatus,
+                          value: _orderPaymentStatus,
                         ),
                         DetailRow(
                           label: 'Tracking Status',
-                          value: widget.orderTrackingStatus,
+                          value: _orderTrackingStatus,
                         ),
                       ],
                     ),
@@ -1231,7 +1292,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                     DetailCard(
                       title: 'Notes',
                       children: [
-                        DetailNote(text: widget.orderNotes),
+                        DetailNote(text: _orderNotes),
                       ],
                     ),
                     // Order Details Session 1, item 2: Quick Payment
@@ -1272,6 +1333,15 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                     if (widget.orderId != null)
                       QuotationBreakdownSection(
                           key: _breakdownKey, orderId: widget.orderId!),
+                    // Warehouse storage as a revenue line ON the order
+                    // (brief section 37) - move in, accrue rent, release
+                    // out. Same reports gate as the P&L card it feeds.
+                    if (widget.orderId != null &&
+                        StaffPermissions.canActive('reports', 'view'))
+                      OrderStorageSection(
+                          key: _storageKey,
+                          orderId: widget.orderId!,
+                          onChanged: () => _pnlKey.currentState?.reload()),
                     // Assign supervisor + labour/salary (owner view) —
                     // was missing from the order flow entirely.
                     // Permission-model decision (1 Aug 2026), Step 4 sweep:

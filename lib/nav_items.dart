@@ -78,6 +78,7 @@ const kOwnerManagerNavItems = <NavItem>[
   ), // label overridden dynamically
   (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet'),
   (name: 'MaterialsPage', icon: Icons.inventory_2, label: 'Materials'),
+  (name: 'WarehousesPage', icon: Icons.warehouse, label: 'Warehouses'),
   // Session 4, Part C-2 — new module, not a former ComingSoon stub.
   (name: 'RateCardsPage', icon: Icons.price_change, label: 'Rate Cards'),
   (

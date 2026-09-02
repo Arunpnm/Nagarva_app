@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/commission_pricing.dart';
+import '/backend/field_expenses.dart';
+import '/backend/storage_billing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -51,6 +53,15 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   int _vendorCount = 0;
   double _materialsTotal = 0;
   int _materialsCount = 0;
+
+  /// Warehouse rent + handling earned on this order. Storage is a REVENUE
+  /// line inside the order (brief §37), not a separate order and not a
+  /// cost - so it is added to revenue, never subtracted.
+  double _storageIncome = 0;
+
+  /// Null when the goods are still in store, in which case the figure is
+  /// an accrual rather than a settled charge and the card says so.
+  bool _storageOpen = false;
   /// Snapshotted at order time from the lead source — see
   /// `OrdersRow.commissionExpected`. Never re-derived here.
   bool _commissionExpected = false;
@@ -76,7 +87,8 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   /// `quote_total` is the right revenue basis when a quote exists.)
   double get _revenueBase => _quoteTotal != 0 ? _quoteTotal : _amount;
 
-  double get _revenueFinal => _revenueBase + _addonsTotal;
+  double get _revenueFinal =>
+      _revenueBase + _addonsTotal + _storageIncome;
 
   CommissionState get _commissionState => commissionStateFor(
         commissionExpected: _commissionExpected,
@@ -148,18 +160,9 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   /// to a count of 0 for an order whose costs came entirely from field
   /// expenses — the `expenses` table's row count was being shown as if it
   /// were the count of everything in `_expensesTotal`.
-  (double, int) _sumFieldExpenses(dynamic raw) {
-    if (raw is! List) return (0, 0);
-    var total = 0.0;
-    var count = 0;
-    for (final e in raw) {
-      if (e is Map && e['amount'] != null) {
-        total += _asNum(e['amount']).toDouble();
-        count++;
-      }
-    }
-    return (total, count);
-  }
+  /// Delegates to the shared parser so this card and the dashboard can
+  /// never drift apart on what a field expense is worth.
+  (double, int) _sumFieldExpenses(dynamic raw) => sumFieldExpenses(raw);
 
   Future<void> _load() async {
     if (!mounted) return;
@@ -200,6 +203,13 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
             .eq('order_id', widget.orderId)
             .eq('movement_type', 'consumption')
             .then((v) => v),
+        // Warehouse storage on this order. Revenue, not cost - rent the
+        // vendor earns while holding the customer's goods (brief §37).
+        OrgScope.read(SupaFlow.client.from('storage_jobs').select(
+                'in_date,out_date,billing_mode,rate,min_billing_days,'
+                'handling_in_charge,handling_out_charge'))
+            .eq('order_id', widget.orderId)
+            .then((v) => v),
       ]);
 
       final addonsRows = results[0];
@@ -209,6 +219,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           .where((r) => r['deleted_at'] == null && r['status'] != 'cancelled')
           .toList();
       final stockRows = results[4];
+      final storageRows = results[5];
 
       if (!mounted) return;
       setState(() {
@@ -238,6 +249,32 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
         _materialsTotal =
             stockRows.fold(0.0, (s, r) => s + _asNum(r['value']).abs());
         _materialsCount = stockRows.length;
+
+        // Priced by the same function the storage card uses, so the two
+        // can never quote a different number for the same stay.
+        _storageIncome = 0;
+        _storageOpen = false;
+        for (final r in storageRows) {
+          final rawIn = r['in_date'];
+          if (rawIn == null) continue;
+          final inDate = DateTime.tryParse('$rawIn');
+          if (inDate == null) continue;
+          final rawOut = r['out_date'];
+          final outDate =
+              rawOut == null ? null : DateTime.tryParse('$rawOut');
+          if (outDate == null) _storageOpen = true;
+          final charge = computeStorageCharge(
+            inDate: inDate,
+            outDate: outDate,
+            mode: storageBillingModeFromWire(r['billing_mode'] as String?),
+            rate: _asNum(r['rate']).toDouble(),
+            minBillingDays: _asNum(r['min_billing_days']).toInt(),
+            handlingIn: _asNum(r['handling_in_charge']).toDouble(),
+            handlingOut: _asNum(r['handling_out_charge']).toDouble(),
+            customAmount: _asNum(r['rate']).toDouble(),
+          );
+          _storageIncome += charge.total;
+        }
 
         _loading = false;
         _notFound = false;
@@ -381,6 +418,17 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
             _row(theme, label: 'Order Amount', amount: _amount),
           if (_addonsCount > 0)
             _row(theme, label: 'Add-ons ($_addonsCount)', amount: _addonsTotal),
+          // Storage rent is revenue, and it is shown as its own line so a
+          // vendor can see what the godown earned on this job rather than
+          // finding it folded anonymously into the total. Labelled as an
+          // accrual while the goods are still in store, because that
+          // figure will keep growing.
+          if (_storageIncome > 0)
+            _row(theme,
+                label: _storageOpen
+                    ? 'Storage (accruing)'
+                    : 'Storage',
+                amount: _storageIncome),
           const Divider(height: 16),
           _row(theme,
               label: 'Revenue (Final)',

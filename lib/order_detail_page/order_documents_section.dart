@@ -348,6 +348,15 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               : 'Your document is ready. Download to share on WhatsApp/'
                   'email, or print it directly.'),
           actions: [
+            // Every other dialog in the app can be dismissed. This one had
+            // Print and Download only, so it could be closed just by tapping
+            // the scrim - undiscoverable, and impossible on a build that
+            // hangs.
+            TextButton(
+              onPressed:
+                  busy ? null : () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
             TextButton(
               onPressed: busy
                   ? null
@@ -384,6 +393,10 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     );
   }
 
+  /// Label of the document currently generating, so its tile can show a
+  /// spinner instead of looking untouched. Null when idle.
+  String? _pendingLabel;
+
   Future<void> _run(Future<void> Function() action) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -395,7 +408,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             .showSnackBar(SnackBar(content: Text('Could not generate: $e')));
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _pendingLabel = null;
+        });
+      }
     }
   }
 
@@ -514,18 +532,48 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           });
           receiptId = inserted.id!;
 
-          for (final p in toReceipt) {
-            await PaymentEntriesTable().update(
-              data: {
-                'receipt_id': receiptId,
-                'receipt_no': receiptNo,
-                'is_final_payment': isFinal,
-                if (o.invoiceNo != null) 'invoice_no': o.invoiceNo,
-                if (invoiceDate != null)
-                  'invoice_date': invoiceDate.toIso8601String(),
-              },
-              matchingRows: (q) => OrgScope.write(q).eq('id', p.id),
-            );
+          // NOTE the absence of 'receipt_no' here, and do not add it back.
+          //
+          // `payment_receipt_no_uniq` is a UNIQUE index on
+          // payment_entries (org_id, receipt_no). This receipt deliberately
+          // consolidates SEVERAL payments onto ONE document, so stamping its
+          // number on every entry made the second UPDATE violate that index
+          // and the whole generation failed with a 409 - but only ever on an
+          // order with two or more unreceipted payments, which is why it
+          // survived until a full-cycle test (2 Sep 2026).
+          //
+          // The link that matters is `receipt_id`, which has no uniqueness
+          // constraint; the consolidated number lives on the receipts row
+          // itself and is read back through that FK. Any entry that already
+          // carries a per-payment acknowledgement number from Quick Payment
+          // keeps it, which is correct - that number was shown to the
+          // customer at the time and is not this document's number.
+          try {
+            for (final p in toReceipt) {
+              await PaymentEntriesTable().update(
+                data: {
+                  'receipt_id': receiptId,
+                  'is_final_payment': isFinal,
+                  if (o.invoiceNo != null) 'invoice_no': o.invoiceNo,
+                  if (invoiceDate != null)
+                    'invoice_date': invoiceDate.toIso8601String(),
+                },
+                matchingRows: (q) => OrgScope.write(q).eq('id', p.id),
+              );
+            }
+          } catch (e) {
+            // These are separate PostgREST calls with no surrounding
+            // transaction, so a failure part-way leaves a receipts row
+            // claiming money that nothing is linked to - which is exactly
+            // the corrupt state the 409 produced. Undo it and rethrow so
+            // _run surfaces the real reason rather than leaving the books
+            // inconsistent behind a snackbar.
+            try {
+              await ReceiptsTable().delete(
+                matchingRows: (q) => OrgScope.write(q).eq('id', receiptId),
+              );
+            } catch (_) {}
+            rethrow;
           }
         }
 
@@ -1178,8 +1226,14 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
   Widget _docButton(String label, IconData icon, VoidCallback onTap) {
     final theme = FlutterFlowTheme.of(context);
+    final isPending = _pendingLabel == label;
     return InkWell(
-      onTap: _busy ? null : onTap,
+      onTap: _busy
+          ? null
+          : () {
+              setState(() => _pendingLabel = label);
+              onTap();
+            },
       borderRadius: BorderRadius.circular(10),
       child: Container(
         width: 104,
@@ -1192,9 +1246,19 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 22, color: theme.primary),
+            if (isPending)
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2.2, color: theme.primary),
+              )
+            else
+              Icon(icon,
+                  size: 22,
+                  color: _busy ? theme.secondaryText : theme.primary),
             const SizedBox(height: 6),
-            Text(label,
+            Text(isPending ? 'Working…' : label,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                     fontSize: 10.5,

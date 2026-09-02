@@ -1,0 +1,19 @@
+{
+  "name": "Nagarva",
+  "short_name": "Nagarva",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0F1E2E",
+  "theme_color": "#0F1E2E",
+  "description": "Industry ERP for packers & movers - jobs, fleet, staff and GST billing in one place.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "assets/assets/images/nagarva_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

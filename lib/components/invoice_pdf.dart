@@ -104,6 +104,90 @@ class InvoicePdf {
     pw.Widget kv(String label, String value, {bool boldValue = false}) =>
         PdfBranding.kv(label, value, fonts, boldValue: boldValue);
 
+    // ---- Signature band geometry ----------------------------------------
+    // Each cell is a fixed height AND the caption block under each rule is a
+    // fixed height. That is what pins every signature rule to the same y.
+    // The previous band was a bare pw.Row of three children with different
+    // intrinsic heights, so the customer rule, the signatory rule and the
+    // payment panel each settled at a different baseline - the misalignment
+    // was structural, not a spacing tweak.
+    const signBandHeight = 124.0;
+    const signCaptionHeight = 40.0;
+
+    pw.Widget signCell({
+      Uint8List? image,
+      String? emptyNote,
+      required String caption,
+      String? line2,
+      String? line3,
+      String? footnote,
+    }) =>
+        pw.Container(
+          height: signBandHeight,
+          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              pw.Expanded(
+                child: pw.Center(
+                  child: image != null
+                      ? pw.Image(pw.MemoryImage(image), fit: pw.BoxFit.contain)
+                      : pw.Text(
+                          emptyNote ?? '',
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(
+                              font: fonts.regular,
+                              fontSize: 8,
+                              fontStyle: pw.FontStyle.italic,
+                              color: PdfBranding.grey),
+                        ),
+                ),
+              ),
+              pw.Container(height: .8, color: PdfColors.grey600),
+              pw.SizedBox(
+                height: signCaptionHeight,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.SizedBox(height: 3),
+                    pw.Text(caption,
+                        textAlign: pw.TextAlign.center,
+                        style: pw.TextStyle(font: fonts.bold, fontSize: 8.5)),
+                    if (line2 != null)
+                      pw.Text(line2,
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(
+                              font: fonts.regular,
+                              fontSize: 7.5,
+                              color: PdfBranding.grey)),
+                    if (line3 != null)
+                      pw.Text(line3,
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(
+                              font: fonts.regular,
+                              fontSize: 7.5,
+                              color: PdfBranding.grey)),
+                    if (footnote != null)
+                      pw.Text(footnote,
+                          textAlign: pw.TextAlign.center,
+                          style: pw.TextStyle(
+                              font: fonts.regular,
+                              fontSize: 6.5,
+                              fontStyle: pw.FontStyle.italic,
+                              color: PdfBranding.grey)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+
+    // Explicit height rather than stretching: the band Row is laid out
+    // inside an unbounded-height Container, so a stretched divider makes
+    // the flex constraints unbounded and the whole page fails to lay out.
+    pw.Widget vRule() => pw.Container(
+        width: .8, height: signBandHeight, color: PdfColors.grey400);
+
     final resolvedBillToName =
         (billingPartyName ?? '').trim().isNotEmpty ? billingPartyName! : customerName;
     final resolvedBillToGstin = billingPartyGstin;
@@ -391,151 +475,92 @@ class InvoicePdf {
                 ],
                 pw.SizedBox(height: 16),
 
-                // ---- Bank + signature ------------------------------------
-                pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
-                  children: [
-                    pw.Expanded(
-                      child: pw.Container(
-                        padding: const pw.EdgeInsets.all(10),
-                        decoration: pw.BoxDecoration(
-                          color: PdfBranding.lightRow,
-                          borderRadius: pw.BorderRadius.circular(6),
-                        ),
-                        child: pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            pw.Text('PAYMENT DETAILS',
-                                style: pw.TextStyle(
-                                    font: fonts.bold,
-                                    fontSize: 9,
-                                    color: PdfBranding.navy)),
-                            pw.SizedBox(height: 4),
-                            if ((org.beneficiaryName ?? '').isNotEmpty)
-                              kv('Beneficiary', org.beneficiaryName!),
-                            if ((org.bankName ?? '').isNotEmpty)
-                              kv('Bank', org.bankName!),
-                            if ((org.bankAccountNo ?? '').isNotEmpty)
-                              kv('A/c No', org.bankAccountNo!),
-                            if ((org.bankIfsc ?? '').isNotEmpty)
-                              kv('IFSC', org.bankIfsc!),
-                            if ((org.upiId ?? '').isNotEmpty)
-                              kv('UPI', org.upiId!),
-                            if ((org.upiDisplayNumber ?? '').isNotEmpty)
-                              kv('PhonePe/GPay', org.upiDisplayNumber!),
-                            if ((org.bankName ?? '').isEmpty &&
-                                (org.upiId ?? '').isEmpty)
-                              pw.Text(
-                                  'Add bank & UPI details in Settings to show them here.',
+                // ---- Bank + signature band -------------------------------
+                // One bordered strip, three equal cells divided by rules -
+                // bank/UPI, customer acceptance, authorised signatory - with
+                // every signature rule on a common baseline (see signCell).
+                pw.Container(
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey400, width: .8),
+                  ),
+                  child: pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Expanded(
+                        child: pw.Container(
+                          height: signBandHeight,
+                          padding: const pw.EdgeInsets.all(8),
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text('PAYMENT DETAILS',
                                   style: pw.TextStyle(
-                                      font: fonts.regular,
-                                      fontSize: 8,
-                                      color: PdfBranding.grey)),
-                          ],
+                                      font: fonts.bold,
+                                      fontSize: 8.5,
+                                      color: PdfBranding.navy)),
+                              pw.SizedBox(height: 3),
+                              if ((org.beneficiaryName ?? '').isNotEmpty)
+                                kv('Beneficiary', org.beneficiaryName!),
+                              if ((org.bankName ?? '').isNotEmpty)
+                                kv('Bank', org.bankName!),
+                              if ((org.bankAccountNo ?? '').isNotEmpty)
+                                kv('A/c No', org.bankAccountNo!),
+                              if ((org.bankIfsc ?? '').isNotEmpty)
+                                kv('IFSC', org.bankIfsc!),
+                              if ((org.upiId ?? '').isNotEmpty)
+                                kv('UPI', org.upiId!),
+                              if ((org.upiDisplayNumber ?? '').isNotEmpty)
+                                kv('PhonePe/GPay', org.upiDisplayNumber!),
+                              if ((org.bankName ?? '').isEmpty &&
+                                  (org.upiId ?? '').isEmpty)
+                                pw.Text(
+                                    'Add bank & UPI details in Settings.',
+                                    style: pw.TextStyle(
+                                        font: fonts.regular,
+                                        fontSize: 7.5,
+                                        color: PdfBranding.grey)),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    pw.SizedBox(width: 24),
-                    // Customer acceptance block (fix brief #2, item 3; Part 8
-                    // addendum item 3; field spec §3: name + phone + date/
-                    // time). Always rendered — an unsigned invoice used to
-                    // show nothing here at all, which reads as an oversight
-                    // on a document sent to a customer, not a status.
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,
-                      children: [
-                        if (customerSignatureBytes != null) ...[
-                          pw.Container(
-                            height: 42,
-                            child: pw.Image(
-                                pw.MemoryImage(customerSignatureBytes),
-                                fit: pw.BoxFit.contain),
-                          ),
-                          pw.Container(
-                              width: 150, height: .8, color: PdfColors.grey600),
-                          pw.SizedBox(height: 3),
-                          pw.Text(
-                            'Accepted by ${customerSignedByName ?? 'Customer'}',
-                            style: pw.TextStyle(font: fonts.bold, fontSize: 8.5),
-                          ),
-                          if ((customerSignedByPhone ?? '').isNotEmpty)
-                            pw.Text(
-                              customerSignedByPhone!,
-                              style: pw.TextStyle(
-                                  font: fonts.regular,
-                                  fontSize: 7.5,
-                                  color: PdfBranding.grey),
-                            ),
-                          if (customerSignedAt != null)
-                            pw.Text(
-                              PdfBranding.fmtDateTime(customerSignedAt),
-                              style: pw.TextStyle(
-                                  font: fonts.regular,
-                                  fontSize: 8,
-                                  color: PdfBranding.grey),
-                            ),
-                          // Provenance line — an inherited quote signature
-                          // must never read as if it were signed on the
-                          // invoice itself (Rev B, item 3): quote acceptance
-                          // and delivery confirmation are legally different
-                          // things, so this is stated, not left implicit.
-                          if (signatureInherited)
-                            pw.Padding(
-                              padding: const pw.EdgeInsets.only(top: 2),
-                              child: pw.Text(
-                                'Signature carried forward from quotation'
-                                '${inheritedFromQuoteRef == null ? '' : ' $inheritedFromQuoteRef'}',
-                                textAlign: pw.TextAlign.center,
-                                style: pw.TextStyle(
-                                    font: fonts.regular,
-                                    fontSize: 7,
-                                    fontStyle: pw.FontStyle.italic,
-                                    color: PdfBranding.grey),
-                              ),
-                            ),
-                        ] else
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.symmetric(vertical: 14),
-                            child: pw.Text(
-                              'Awaiting customer signature',
-                              style: pw.TextStyle(
-                                  font: fonts.regular,
-                                  fontSize: 8.5,
-                                  fontStyle: pw.FontStyle.italic,
-                                  color: PdfBranding.grey),
-                            ),
-                          ),
-                      ],
-                    ),
-                    pw.SizedBox(width: 24),
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,
-                      children: [
-                        if (signatureBytes != null)
-                          pw.Container(
-                            height: 42,
-                            child: pw.Image(pw.MemoryImage(signatureBytes),
-                                fit: pw.BoxFit.contain),
-                          )
-                        else
-                          pw.SizedBox(height: 42),
-                        pw.Container(
-                            width: 150, height: .8, color: PdfColors.grey600),
-                        pw.SizedBox(height: 3),
-                        pw.Text(
-                            (org.signatoryName ?? '').isNotEmpty
-                                ? org.signatoryName!
-                                : 'Authorized Signatory',
-                            style:
-                                pw.TextStyle(font: fonts.regular, fontSize: 8.5)),
-                        pw.Text('for ${org.name}',
-                            style: pw.TextStyle(
-                                font: fonts.regular,
-                                fontSize: 8,
-                                color: PdfBranding.grey)),
-                      ],
-                    ),
-                  ],
+                      vRule(),
+                      pw.Expanded(
+                        child: signCell(
+                          image: customerSignatureBytes,
+                          emptyNote: 'Awaiting customer signature',
+                          caption: customerSignatureBytes == null
+                              ? 'Receiver Signature'
+                              : 'Accepted by ${customerSignedByName ?? 'Customer'}',
+                          line2: (customerSignedByPhone ?? '').isNotEmpty
+                              ? customerSignedByPhone
+                              : null,
+                          line3: customerSignedAt == null
+                              ? null
+                              : PdfBranding.fmtDateTime(customerSignedAt),
+                          // An inherited quote signature must never read as if
+                          // it were signed on the invoice itself - quote
+                          // acceptance and delivery confirmation are legally
+                          // different things, so this is stated, not implied.
+                          footnote:
+                              (customerSignatureBytes != null && signatureInherited)
+                                  ? 'Signature carried forward from quotation'
+                                      '${inheritedFromQuoteRef == null ? '' : ' $inheritedFromQuoteRef'}'
+                                  : null,
+                        ),
+                      ),
+                      vRule(),
+                      pw.Expanded(
+                        child: signCell(
+                          image: signatureBytes,
+                          emptyNote: '',
+                          caption: (org.signatoryName ?? '').isNotEmpty
+                              ? org.signatoryName!
+                              : 'Authorized Signatory',
+                          line2: 'for ${org.name}',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 pw.SizedBox(height: 14),
                 pw.Text('NOTE',

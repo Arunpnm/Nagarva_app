@@ -21,6 +21,7 @@ export '/settings_page/branches_page.dart' show BranchesPage;
 export '/settings_page/settings_page_widget.dart' show SettingsPageWidget;
 export '/calendar_page/calendar_page_widget.dart' show CalendarPageWidget;
 export '/materials_page/materials_page_widget.dart' show MaterialsPageWidget;
+export '/warehouses_page/warehouses_page_widget.dart' show WarehousesPageWidget;
 export '/reviews_page/reviews_page_widget.dart' show ReviewsPageWidget;
 export '/wa_inbox_page/wa_inbox_page_widget.dart' show WaInboxPageWidget;
 export '/survey_quote_hub_page/survey_quote_hub_page_widget.dart'

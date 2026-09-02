@@ -110,6 +110,10 @@ class AuthDeepLinkHandler {
             router.go(HomePageWidget.routePath);
           case _AuthLinkResult.setNewPassword:
             router.go(SetNewPasswordPageWidget.routePath);
+          case _AuthLinkResult.notAnAuthLink:
+            // Somebody else's URL — leave the router alone. On web this
+            // is the common case: it is the page being visited.
+            break;
           case _AuthLinkResult.failure:
             router.go(LoginPageWidget.routePath);
         }
@@ -129,8 +133,10 @@ class AuthDeepLinkHandler {
   /// setNewPassword) — callers just route, never compose their own state.
   static Future<_AuthLinkResult> _process(Uri uri) async {
     if (uri.scheme != 'nagarva' || uri.host != 'auth-callback') {
-      // Not ours — some other deep link. Ignore silently.
-      return _AuthLinkResult.failure;
+      // Not ours — some other deep link, or (on web) simply the page the
+      // user actually asked for. Genuinely ignore it: do NOT set a
+      // PendingAuthMessage and do NOT let the caller route anywhere.
+      return _AuthLinkResult.notAnAuthLink;
     }
 
     // access_token/refresh_token/type arrive in the URI FRAGMENT
@@ -224,4 +230,29 @@ class AuthDeepLinkHandler {
   }
 }
 
-enum _AuthLinkResult { dashboard, setNewPassword, failure }
+enum _AuthLinkResult {
+  dashboard,
+  setNewPassword,
+
+  /// The URI was not an auth callback at all (wrong scheme/host).
+  ///
+  /// DISTINCT FROM [failure] on purpose, and the distinction is
+  /// load-bearing (2 Sep 2026). `_process` has always documented this
+  /// case as "Not ours - some other deep link. Ignore silently", but it
+  /// returned [failure], and `startListening`'s handler for [failure]
+  /// calls `router.go('/login')`. So "ignore silently" navigated away.
+  ///
+  /// On WEB that broke every public token route. `app_links` emits the
+  /// CURRENT PAGE URL on the uriLinkStream, so loading
+  /// `/survey?token=...` produced an `http://` URI here, which is not
+  /// ours, which redirected the visitor to the login screen. Verified
+  /// 2 Sep 2026 against a real survey link: `/survey`, `/sign`, `/quote`
+  /// and `/track` all bounced to `/login` for an unauthenticated
+  /// customer - i.e. the entire customer-facing surface.
+  ///
+  /// Callers must do NOTHING for this value. A URI we do not recognise
+  /// is not a failed sign-in; it is somebody else's route.
+  notAnAuthLink,
+
+  failure,
+}

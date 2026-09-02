@@ -432,7 +432,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'ArunPKRS',
+      title: 'Nagarva',
       scrollBehavior: MyAppScrollBehavior(),
       localizationsDelegates: const [
         // NG-055 (27 Aug 2026): the gen_l10n class, generated from
@@ -765,6 +765,10 @@ class _NavBarPageState extends State<NavBarPage>
       // placeholders — see nav_items.dart's correction note.
       'CalendarPage': const CalendarPageWidget(),
       'MaterialsPage': const MaterialsPageWidget(),
+      // _tabs is the REAL router for nav destinations - registering a
+      // route in nav.dart alone renders nothing here (the 2 Aug 2026
+      // supervisor-screens bug). Both are required.
+      'WarehousesPage': const WarehousesPageWidget(),
       'ReportsPage': const ReportsPageWidget(),
       // Genuinely unbuilt (Step 2.1: "route to a Coming soon placeholder").
       // Session 4, Part B1/B2/B3/B4: real screens now — see nav_items.dart's

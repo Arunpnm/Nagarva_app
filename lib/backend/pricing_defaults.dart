@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import '/backend/supabase/supabase.dart';
+import '/backend/storage_billing.dart';
 import '/backend/supabase/org_scope.dart';
 
 /// Survey/CFT/package/charge data model + defaults (parity brief Part 3,
@@ -464,7 +465,15 @@ const kDefaultChargeBasis = <String, String>{
 /// these options (matches the reference app's <select>).
 const kGstSac = '996719';
 const kGstRateOptions = [0, 5, 12, 18];
-const kGstDefaultPct = 5;
+// 18% is the rate for full-service shifting under SAC 996719, which is
+// what this product bills. 5% is the GTA-without-ITC rate and was
+// inherited by accident, not chosen: APC's own live invoices bill
+// CGST 9% + SGST 9%, so every invoice generated at 5% understated the
+// tax against how the business actually bills (2 Sep 2026).
+// NAGARVA_GST_SPEC.md sec 4 asked for this to be decided deliberately
+// rather than inherited. Per-quote overrides are unaffected - this is
+// only the value a NEW quote opens on.
+const kGstDefaultPct = 18;
 
 /// Total CFT -> package name, using the *lowest* matching range (mirrors
 /// `getPkgFromCft`'s `CFT_RANGES.find(r => cft <= r.max)` — Array.find
@@ -614,6 +623,7 @@ class PricingConfig {
     required this.packages,
     required this.porterRates,
     required this.chargeBasis,
+    required this.storageRates,
   });
 
   final Map<String, List<SurveyItem>> surveyCats;
@@ -636,6 +646,13 @@ class PricingConfig {
   final List<CftRange> cftRanges;
   final List<PackageInfo> packages;
   final Map<String, num> porterRates;
+
+  /// Storage sizes and their rates, as THIS org configured them.
+  ///
+  /// Empty for an org that has not set any, and there is deliberately no
+  /// Dart fallback: shipping a rate table would pre-fill one vendor's
+  /// prices as another's. See "No suggested money. Ever." in CLAUDE.md.
+  final List<StorageSizeRate> storageRates;
 
   /// Item 12B — the two stored lists joined into the editor's unified
   /// row shape. The join is by package name, same as [suggestPackage];
@@ -704,6 +721,7 @@ class PricingConfig {
     Map<String, List<SurveyItem>>? surveyCats,
     List<CftRange>? cftRanges,
     List<PackageInfo>? packages,
+    List<StorageSizeRate>? storageRates,
   }) =>
       PricingConfig._(
         surveyCats: surveyCats ?? kDefaultSurveyCats,
@@ -711,6 +729,7 @@ class PricingConfig {
         packages: packages ?? kDefaultPackages,
         porterRates: kDefaultPorterRates,
         chargeBasis: kDefaultChargeBasis,
+        storageRates: storageRates ?? const [],
       );
 
   static Future<PricingConfig> loadForCurrentOrg() async {
@@ -725,6 +744,8 @@ class PricingConfig {
         packages: kDefaultPackages,
         porterRates: kDefaultPorterRates,
         chargeBasis: kDefaultChargeBasis,
+        // No org config at all - so certainly no agreed storage prices.
+        storageRates: const [],
       );
     }
     return PricingConfig._(
@@ -734,6 +755,9 @@ class PricingConfig {
       porterRates: _parsePorterRates(config['porter_rates']) ??
           kDefaultPorterRates,
       chargeBasis: _parseChargeBasis(config['charge_basis']),
+      // No `?? kDefault...` here on purpose - absent means the vendor has
+      // not set their prices, not that they inherit somebody else's.
+      storageRates: parseStorageRates(config['storage_rates']),
     );
   }
 

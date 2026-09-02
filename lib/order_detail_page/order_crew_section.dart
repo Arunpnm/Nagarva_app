@@ -563,8 +563,33 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
   /// check `status == 'closed'` and stop accepting writes) — no
   /// `pnl_locked`-style column exists or was asked for.
   Future<void> _markComplete() async {
-    final o = _order;
-    if (o == null || widget.orderId.isEmpty) return;
+    final cached = _order;
+    if (cached == null || widget.orderId.isEmpty) return;
+    // Non-nullable local so the refresh below can reassign it without
+    // losing null promotion from the guard above.
+    var o = cached;
+
+    // Re-read the row before computing the balance. `_order` is cached model
+    // state, and Quick Payment updates `paid_total` through a DB trigger on
+    // payment_entries - so after recording a payment the cached copy is
+    // stale and this dialog warned of a 29,800 outstanding balance on an
+    // order the database already showed as fully paid (found live, 2 Sep
+    // 2026). This is the one dialog whose entire job is to state the
+    // balance correctly, so it must not read a remembered number.
+    // CLAUDE.md: "after a successful mutation, refresh the whole row".
+    try {
+      final fresh = await OrdersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId),
+        limit: 1,
+      );
+      if (fresh.isNotEmpty) {
+        o = fresh.first;
+        if (mounted) setState(() => _order = fresh.first);
+      }
+    } catch (_) {
+      // Keep the cached row rather than blocking a close on a network
+      // blip - the confirm dialog below still asks before anything writes.
+    }
 
     // Same quote_total-vs-amount fallback as the P&L card: quote_total is
     // only populated for orders created from a quote, so reading it alone

@@ -389,6 +389,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const MaterialsPageWidget(),
         ),
         FFRoute(
+          name: WarehousesPageWidget.routeName,
+          path: WarehousesPageWidget.routePath,
+          builder: (context, params) => const WarehousesPageWidget(),
+        ),
+        FFRoute(
           name: ReportsPageWidget.routeName,
           path: ReportsPageWidget.routePath,
           builder: (context, params) => const ReportsPageWidget(),

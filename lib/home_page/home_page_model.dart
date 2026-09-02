@@ -58,7 +58,25 @@ class HomePageModel extends FlutterFlowModel<HomePageWidget> {
   void updateHotLeadsAtIndex(int index, Function(LeadsRow) updateFn) =>
       hotLeads[index] = updateFn(hotLeads[index]);
 
-  double? monthlyTarget = 200000.0;
+  // Was hardcoded to 200000.0 - APC's own figure, shown to every tenant
+  // as if it were theirs, and never read from or written to the
+  // database (found 2 Sep 2026: `settings` held zero rows while the
+  // card displayed Rs2.0L). Null now means "not set"; _loadDashboard
+  // fills it from settings.monthly_target and the editor persists it.
+  // See CLAUDE.md, "No suggested money. Ever."
+  double? monthlyTarget;
+
+  /// Net of GST — see _recomputePeriodKpis. Used by the target progress bar
+  /// so it measures the same money the Revenue tile reports.
+  double periodNetRevenue = 0;
+
+  /// GST collected in the period. Held separately so the target card can
+  /// say why the figure is lower than the gross the customer paid.
+  double periodGstCollected = 0;
+
+  /// What the monthly target is actually measured against: revenue net of
+  /// GST, less labour, expenses and porter commission.
+  double periodNetProfit = 0;
 
   bool? showEditTarget = false;
 

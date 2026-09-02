@@ -1,6 +1,8 @@
 import '/app_session.dart';
 import '/backend/session_logout.dart';
 import '/backend/commission_pricing.dart';
+import '/backend/field_expenses.dart';
+import '/backend/storage_billing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/margin_availability.dart';
@@ -50,6 +52,17 @@ class _HomePageWidgetState extends State<HomePageWidget>
   List<OrdersRow> _allOrders = [];
   List<ExpensesRow> _allExpenses = [];
   List<OrderStaffRow> _allOrderStaff = [];
+
+  /// Raw `stock_movements` consumption rows (order_id + value), org-scoped.
+  /// Materials are the third place a job's costs are recorded, alongside
+  /// the `expenses` table and orders.field_expenses.
+  List<dynamic> _allConsumption = const [];
+
+  /// Storage stays, org-scoped. Warehouse rent is REVENUE the order earns
+  /// and it lives in neither `orders.amount` nor any quote, so without
+  /// this the dashboard under-reports what the business actually made -
+  /// the mirror of the materials/field-expense gaps on the cost side.
+  List<dynamic> _allStorage = const [];
   // Current-state fields from dashboard_kpis_view that do NOT follow the
   // period filter (see HomePageModel.periodType doc comment).
   double _activeLeads = 0;
@@ -104,6 +117,21 @@ class _HomePageWidgetState extends State<HomePageWidget>
     );
     _model.porterEnabled = porterRows.isNotEmpty &&
         (porterRows.first.value ?? '').toLowerCase() == 'true';
+
+    // Monthly target is the vendor's own number, so it is READ, never
+    // defaulted. Absent simply leaves it null and the card invites them to
+    // set one.
+    try {
+      final targetRows = await SettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('key', 'monthly_target'),
+      );
+      _model.monthlyTarget = targetRows.isEmpty
+          ? null
+          : double.tryParse((targetRows.first.value ?? '').trim());
+    } catch (_) {
+      // A failed read must not invent a target.
+      _model.monthlyTarget = null;
+    }
     safeSetState(() {});
     // Phase 1 multi-tenancy pass: all four dashboard queries were
     // unscoped and would read every org's data. Filtered by
@@ -131,6 +159,36 @@ class _HomePageWidgetState extends State<HomePageWidget>
     _allOrders = results[0].cast<OrdersRow>();
     _allExpenses = results[1].cast<ExpensesRow>();
     _allOrderStaff = results[2].cast<OrderStaffRow>();
+
+    // Material consumed on a job is a cost, and it lives in
+    // stock_movements - not in `expenses`, and not in
+    // orders.field_expenses either. Order Details already charges it
+    // ("Materials (1) - Rs2,700"); the dashboard did not, so the same job
+    // showed one profit on the order and a higher one here. Same shape as
+    // the field-expenses gap fixed earlier the same day - a third place
+    // costs are recorded, and the dashboard knew about only one of them.
+    //
+    // Valued exactly as order_pnl_section values it: abs(value) on rows
+    // with movement_type 'consumption', so the two cannot disagree.
+    try {
+      _allConsumption = await OrgScope.read(SupaFlow.client
+              .from('stock_movements')
+              .select('order_id,value'))
+          .eq('movement_type', 'consumption');
+    } catch (_) {
+      // Never let a stock read blank the dashboard; costs simply stay as
+      // known so far rather than the page failing.
+      _allConsumption = const [];
+    }
+
+    try {
+      _allStorage = await OrgScope.read(SupaFlow.client.from('storage_jobs').select(
+              'order_id,in_date,out_date,billing_mode,rate,min_billing_days,'
+              'handling_in_charge,handling_out_charge'))
+          .isFilter('deleted_at', null);
+    } catch (_) {
+      _allStorage = const [];
+    }
     _recomputePeriodKpis();
     safeSetState(() {});
     // "Upcoming" means move_date hasn't passed yet — without this filter
@@ -283,7 +341,46 @@ class _HomePageWidgetState extends State<HomePageWidget>
     }).toList();
     final periodOrderIds = periodOrders.map((o) => o.id).toSet();
 
-    final revenue = periodOrders.fold(0.0, (s, o) => s + (o.amount ?? 0));
+    // GROSS is what the customer pays. It is NOT revenue, and it is not
+    // profit: the GST component is collected on the government's behalf and
+    // owed straight back to it, so counting it as earnings overstates both
+    // (Arun, 2 Sep 2026 - "gst wont comes under profit").
+    //
+    // On the live test order that was 37,800 gross carrying 1,800 of GST -
+    // so Revenue read 37.8K and Profit 34.6K when the business had actually
+    // earned 36,000 and made 32,800.
+    //
+    // Orders with no recorded GST (quote_gst_amount null - a direct booking
+    // that never went through a quote) net to their gross, which is correct:
+    // no GST was charged, so none is owed.
+    final grossRevenue = periodOrders.fold(0.0, (s, o) => s + (o.amount ?? 0));
+    final gstCollected =
+        periodOrders.fold(0.0, (s, o) => s + (o.quoteGstAmount ?? 0));
+    // Storage rent earned on the period's orders, priced by the very same
+    // function the order card and the P&L use so all three agree.
+    final storageIncome = _allStorage.fold<double>(0.0, (s, r) {
+      final oid = r['order_id'];
+      if (oid == null || !periodOrderIds.contains(oid)) return s;
+      final inDate = DateTime.tryParse('${r['in_date']}');
+      if (inDate == null) return s;
+      final rawOut = r['out_date'];
+      final rate = (num.tryParse('${r['rate']}') ?? 0).toDouble();
+      return s +
+          computeStorageCharge(
+            inDate: inDate,
+            outDate: rawOut == null ? null : DateTime.tryParse('$rawOut'),
+            mode: storageBillingModeFromWire(r['billing_mode'] as String?),
+            rate: rate,
+            minBillingDays: (num.tryParse('${r['min_billing_days']}') ?? 0)
+                .toInt(),
+            handlingIn:
+                (num.tryParse('${r['handling_in_charge']}') ?? 0).toDouble(),
+            handlingOut:
+                (num.tryParse('${r['handling_out_charge']}') ?? 0).toDouble(),
+            customAmount: rate,
+          ).total;
+    });
+    final revenue = grossRevenue - gstCollected + storageIncome;
     final labour = periodOrders.fold(
         0.0,
         (s, o) =>
@@ -295,7 +392,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
     // quirk of never date-filtering non-order-linked expenses), a
     // period *toggle* on the dashboard should make "other expenses" move
     // with the selected period too — that's the whole point of the UI.
-    final expenses = _allExpenses
+    final expensesFromTable = _allExpenses
         .where((e) => _inRange(
             e.orderId != null
                 ? (e.expenseDate ?? DateTime.now())
@@ -303,6 +400,24 @@ class _HomePageWidgetState extends State<HomePageWidget>
             start,
             end))
         .fold(0.0, (s, e) => s + (e.amount ?? 0));
+    // Plus what supervisors logged in the field. These are real costs on
+    // orders.field_expenses (fuel, parking, crane), and the dashboard used
+    // to ignore them entirely: a job could carry Rs2,500 of fuel, show it
+    // on the Order Details P&L, and STILL report "No expenses recorded"
+    // here with margin suppressed as "Needs expense data" (found 2 Sep
+    // 2026, on the very order that had just been delivered). Same period
+    // window as the order itself, since a field expense belongs to its job.
+    final fieldExpenses = periodOrders.fold(
+        0.0, (s, o) => s + sumFieldExpenses(o.data['field_expenses']).$1);
+    // Materials consumed on the period's orders. Scoped by order rather
+    // than by movement date so a job's material cost always sits in the
+    // same period as the job's revenue.
+    final materials = _allConsumption.fold<double>(0.0, (s, r) {
+      final oid = r['order_id'];
+      if (oid == null || !periodOrderIds.contains(oid)) return s;
+      return s + (num.tryParse('${r['value']}') ?? 0).abs().toDouble();
+    });
+    final expenses = expensesFromTable + fieldExpenses + materials;
     // Commission at each order's own snapshotted rate. Orders with no
     // rate are EXCLUDED and counted, never costed at a substitute — this
     // read `?? 16` (APC's porter rate) until 2 Sept 2026, which quietly
@@ -312,6 +427,13 @@ class _HomePageWidgetState extends State<HomePageWidget>
         : CommissionRollup.empty;
     final porterCommission = commissionRollup.total;
     _model.unpricedCommissionCount = commissionRollup.unpricedCount;
+
+    // Progress against the monthly target uses the same net figure the
+    // Revenue tile shows, so the two cannot disagree on screen.
+    _model.periodNetRevenue = revenue;
+    _model.periodGstCollected = gstCollected;
+    _model.periodNetProfit =
+        revenue - labour - expenses - porterCommission;
 
     _model.kpiList = [
       DashboardKpisViewRow({
@@ -907,8 +1029,14 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                functions.inrFormat(
-                                                    _model.monthlyTarget)!,
+                                                // inrFormat(null) renders
+                                                // "Rs0", which reads as a
+                                                // real target of zero rather
+                                                // than one nobody has set.
+                                                _model.monthlyTarget == null
+                                                    ? 'Not set'
+                                                    : functions.inrFormat(
+                                                        _model.monthlyTarget)!,
                                                 style:
                                                     FlutterFlowTheme.of(context)
                                                         .headlineMedium
@@ -942,8 +1070,69 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                   .fontStyle,
                                                         ),
                                               ),
+                                              // Progress toward the target.
+                                              //
+                                              // Measured in PROFIT, not revenue (Arun, 2 Sep 2026: "in target
+                                              // we need profit not revenue"). A revenue target rewards booking
+                                              // work at any price; the number a mover actually runs the business
+                                              // on is what is left after labour, expenses and commission - and
+                                              // after GST, which is collected for the government and is not
+                                              // earnings at all.
+                                              if ((_model.monthlyTarget ?? 0) > 0) ...[
+                                                const SizedBox(height: 8.0),
+                                                Builder(builder: (context) {
+                                                  final target = _model.monthlyTarget!;
+                                                  final done = _model.periodNetProfit;
+                                                  // A loss-making period must not read as progress.
+                                                  final frac = (done <= 0 ? 0.0 : done / target).clamp(0.0, 1.0);
+                                                  final pct = (done / target * 100).round();
+                                                  final left = target - done;
+                                                  final theme = FlutterFlowTheme.of(context);
+                                                  return Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      // LinearProgressIndicator has no intrinsic width and this
+                                                      // Column is sized by its widest child, so without an
+                                                      // explicit width the bar collapses to nothing and renders
+                                                      // invisibly - which is exactly what it did first time.
+                                                      SizedBox(
+                                                        width: 240,
+                                                        child: ClipRRect(
+                                                          borderRadius: BorderRadius.circular(6),
+                                                          child: LinearProgressIndicator(
+                                                            value: frac,
+                                                            minHeight: 8,
+                                                            backgroundColor: theme.alternate,
+                                                            valueColor: AlwaysStoppedAnimation<Color>(done <= 0
+                                                                ? theme.error
+                                                                : (left <= 0 ? theme.success : theme.primary)),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 6.0),
+                                                      Text(
+                                                        done <= 0
+                                                            ? 'No profit yet this period'
+                                                            : (left <= 0
+                                                                ? 'Target met — ${functions.inrFormat(done)} profit ($pct%)'
+                                                                : '${functions.inrFormat(done)} profit of ${functions.inrFormat(target)} · ${functions.inrFormat(left)} to go ($pct%)'),
+                                                        style: theme.bodySmall.override(
+                                                          font: GoogleFonts.inter(),
+                                                          color: theme.secondaryText,
+                                                          letterSpacing: 0.0,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                }),
+                                                const SizedBox(height: 2.0),
+                                              ],
                                               Text(
-                                                AppLocalizations.of(context).targetThisMonth,
+                                                // Labelled as a PROFIT target
+                                                // so the big number above is
+                                                // not read as revenue.
+                                                'profit target this month',
                                                 style: FlutterFlowTheme.of(
                                                         context)
                                                     .bodySmall
@@ -1081,13 +1270,40 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                               ),
                                               FFButtonWidget(
                                                 onPressed: () async {
-                                                  _model.monthlyTarget =
+                                                  final entered =
                                                       functions.parseDouble(_model
                                                           .targetInputFieldTextController
                                                           .text);
-                                                  safeSetState(() {});
-                                                  _model.showEditTarget = false;
-                                                  safeSetState(() {});
+                                                  // This used to setState and
+                                                  // stop. Nothing was ever
+                                                  // written, so the vendor's
+                                                  // correction silently
+                                                  // reverted on the next
+                                                  // reload - a button that
+                                                  // looks like it works and
+                                                  // does not.
+                                                  try {
+                                                    await SettingsTable().upsert(
+                                                      {
+                                                        ...OrgScope.stamp(),
+                                                        'key': 'monthly_target',
+                                                        'value':
+                                                            (entered ?? 0)
+                                                                .toStringAsFixed(0),
+                                                      },
+                                                      onConflict: 'org_id,key',
+                                                    );
+                                                    _model.monthlyTarget = entered;
+                                                    _model.showEditTarget = false;
+                                                    safeSetState(() {});
+                                                  } catch (e) {
+                                                    if (context.mounted) {
+                                                      ScaffoldMessenger.of(context)
+                                                          .showSnackBar(SnackBar(
+                                                              content: Text(
+                                                                  'Could not save target: $e')));
+                                                    }
+                                                  }
                                                 },
                                                 text:
                                                     AppLocalizations.of(context).save,
