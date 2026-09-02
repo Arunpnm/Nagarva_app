@@ -1,5 +1,6 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/reminders_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -66,6 +67,108 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
     _model.dispose();
 
     super.dispose();
+  }
+
+  /// "Add Reminder" — was a FlutterFlow stub (`print('AddReminderBtn
+  /// pressed ...')`, no action). This reminder isn't tied to a lead/quote/
+  /// order (CalendarPage shows every org reminder, not one entity's), so
+  /// it goes through `RemindersService.add` with entityType/entityId left
+  /// null — the table's original, pre-polymorphic shape.
+  Future<void> _addReminder() async {
+    final titleController = TextEditingController();
+    final noteController = TextEditingController();
+    final selected = _model.selectedDay;
+    // Default to the tapped day at 10am; if no day is selected, tomorrow
+    // at 10am — a reminder due at the current time of day is rarely what
+    // anyone means (same convention as reminders_section.dart's sheet).
+    final defaultDay = selected ?? DateTime.now().add(const Duration(days: 1));
+    DateTime due =
+        DateTime(defaultDay.year, defaultDay.month, defaultDay.day, 10, 0);
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(AppLocalizations.of(context).addReminder),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: titleController,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: dialogContext,
+                      initialDate: due,
+                      firstDate:
+                          DateTime.now().subtract(const Duration(days: 1)),
+                      lastDate:
+                          DateTime.now().add(const Duration(days: 365 * 2)),
+                    );
+                    if (picked != null) {
+                      setDialogState(() {
+                        due = DateTime(
+                            picked.year, picked.month, picked.day, 10, 0);
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.event, size: 17),
+                  label: Text('${due.day}/${due.month}/${due.year}'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: noteController,
+                  maxLines: 2,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(labelText: 'Note (optional)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (titleController.text.trim().isEmpty) return;
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final title = titleController.text.trim();
+    final note = noteController.text.trim();
+    titleController.dispose();
+    noteController.dispose();
+
+    if (saved != true) return;
+    try {
+      await RemindersService.add(
+        title: title,
+        dueAt: due,
+        note: note.isEmpty ? null : note,
+      );
+      if (mounted) await _loadCalendarData();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save reminder: $e')),
+        );
+      }
+    }
   }
 
   // ---- Month grid helpers -------------------------------------------------
@@ -903,9 +1006,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                       padding: const EdgeInsetsDirectional.fromSTEB(
                           0.0, 16.0, 0.0, 16.0),
                       child: FFButtonWidget(
-                        onPressed: () {
-                          print('AddReminderBtn pressed ...');
-                        },
+                        onPressed: _addReminder,
                         text: AppLocalizations.of(context).addReminder,
                         icon: const Icon(
                           Icons.add_alarm,
