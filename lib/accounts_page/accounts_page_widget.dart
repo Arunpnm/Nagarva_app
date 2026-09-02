@@ -3,6 +3,8 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter/scheduler.dart';
@@ -643,13 +645,18 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
           // Rows open the day detail; they are not selectable, and
           // onSelectChanged alone makes DataTable add a checkbox column.
           showCheckboxColumn: false,
-          headingRowHeight: 38,
-          dataRowMinHeight: 44,
-          dataRowMaxHeight: 62,
-          horizontalMargin: 12,
-          columnSpacing: 18,
+          headingRowHeight: 42,
+          dataRowMinHeight: 48,
+          dataRowMaxHeight: 66,
+          horizontalMargin: 14,
+          // Roomy on purpose. At 18/11pt the figures crowded each other
+          // and read as one smear of digits — Arun, 3 Sept 2026: "the
+          // numbers values are not visible clearly its shrinking". A
+          // register is only useful if every figure can be read at a
+          // glance, so the table is allowed to be wider and scroll.
+          columnSpacing: 26,
           headingTextStyle: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               color: theme.secondaryText),
           columns: const [
@@ -679,7 +686,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
               cells: [
                 DataCell(Text('TOTAL - ${rows.length} day${rows.length == 1 ? '' : 's'}',
                     style: GoogleFonts.interTight(
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText))),
                 DataCell(_num(context, sum((r) => r.dayOrders.length.toDouble()),
@@ -722,7 +729,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
           children: [
             Text(DateFormat('EEE, d MMM').format(r.date),
                 style: GoogleFonts.interTight(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: theme.primaryText)),
             if (names.isNotEmpty)
@@ -782,27 +789,46 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
       {bool bold = false, bool plain = false}) {
     final theme = FlutterFlowTheme.of(context);
     if (v == 0) {
-      return Text('-',
-          style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText));
+      return _cell(Text('-',
+          style: GoogleFonts.inter(fontSize: 14, color: theme.secondaryText)));
     }
     if (plain) {
-      return Text(v.toInt().toString(),
+      return _cell(Text(v.toInt().toString(),
           maxLines: 1,
           softWrap: false,
           style: GoogleFonts.interTight(
-              fontSize: 12,
+              fontSize: 14,
+              fontFeatures: const [FontFeature.tabularFigures()],
               fontWeight: FontWeight.w600,
-              color: theme.primaryText));
+              color: theme.primaryText)));
     }
-    return Text(_currency.format(v),
+    // Fixed minimum width per money cell.
+    //
+    // Without it DataTable sized the column to the HEADER ("Quote") and
+    // clipped the figure to "Rs30,50" - a register that shows a wrong
+    // number is worse than one that scrolls. A floor also makes the
+    // columns line up down the page, which is how a register is read.
+    return _cell(
+      Text(_currency.format(v),
         maxLines: 1,
         softWrap: false,
         style: GoogleFonts.interTight(
-          fontSize: 12,
+          fontSize: 14,
+          // Tabular figures so digits align vertically down the column —
+          // the whole point of a register is scanning one column.
+          fontFeatures: const [FontFeature.tabularFigures()],
           fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
           color: v < 0 ? theme.error : theme.primaryText,
-        ));
+        )),
+    );
   }
+
+  /// Right-aligned cell with a minimum width, so no figure is ever
+  /// clipped by a narrower heading.
+  Widget _cell(Widget child) => ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 84),
+        child: Align(alignment: Alignment.centerRight, child: child),
+      );
 
   /// Copies the register as CSV.
   ///
