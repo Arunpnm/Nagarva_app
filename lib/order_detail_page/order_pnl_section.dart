@@ -42,6 +42,10 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   bool _notFound = false;
 
   double _quoteTotal = 0;
+  /// GST-exclusive quote figure and the tax on it. See [_revenueBase]:
+  /// GST is collected for the government, never revenue.
+  double _quoteSubtotal = 0;
+  double _quoteGstAmount = 0;
   double _amount = 0;
   double _addonsTotal = 0;
   int _addonsCount = 0;
@@ -85,7 +89,28 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   /// `quote_total` while Quick Payment's balance uses `amount` — a
   /// pre-existing divergence, deliberately left alone here since
   /// `quote_total` is the right revenue basis when a quote exists.)
-  double get _revenueBase => _quoteTotal != 0 ? _quoteTotal : _amount;
+  /// **GST IS NOT REVENUE AND NOT PROFIT.** (Arun, 2 Sept 2026 — a
+  /// standing rule, stated for the dashboard and applying everywhere.)
+  ///
+  /// GST collected on an invoice is money held for the government and
+  /// remitted; treating it as revenue overstates profit by the whole tax
+  /// amount, in the flattering direction — the direction nobody
+  /// questions. On the first Coimbatore order this card read Net Profit
+  /// ₹35,990 where the true figure was ₹30,500, while the DASHBOARD read
+  /// ₹30,500 for the same order because it already excludes GST. Two
+  /// screens, two profits for one job, with nothing saying which is
+  /// which — the exact disease CLAUDE.md records between
+  /// `dashboard_kpis_view` and `branch_kpis_view`.
+  ///
+  /// `quote_subtotal` is the GST-exclusive figure and is preferred.
+  /// Falling back to `total - gst` rather than to `total` matters for
+  /// rows written before subtotal was stored. An order with no quote and
+  /// no GST (a direct booking) lands on `amount` unchanged.
+  double get _revenueBase {
+    if (_quoteSubtotal != 0) return _quoteSubtotal;
+    final gross = _quoteTotal != 0 ? _quoteTotal : _amount;
+    return gross - _quoteGstAmount;
+  }
 
   double get _revenueFinal =>
       _revenueBase + _addonsTotal + _storageIncome;
@@ -224,6 +249,8 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
       if (!mounted) return;
       setState(() {
         _quoteTotal = order.quoteTotal ?? 0;
+        _quoteSubtotal = order.quoteSubtotal ?? 0;
+        _quoteGstAmount = order.quoteGstAmount ?? 0;
         _amount = order.amount ?? 0;
         _commissionExpected = order.commissionExpected ?? false;
         _commissionPct = order.commissionPct;
