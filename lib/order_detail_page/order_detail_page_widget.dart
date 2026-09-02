@@ -22,6 +22,7 @@ import '/config/app_config.dart';
 import 'order_crew_section.dart';
 import 'order_documents_section.dart';
 import 'order_storage_section.dart';
+import 'order_addons_section.dart';
 import 'order_pnl_section.dart';
 import 'payment_history_section.dart';
 import 'quick_payment_section.dart';
@@ -473,6 +474,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   String? get _orderNotes => widget.orderNotes ?? _fromRow('notes');
 
   final _storageKey = GlobalKey<OrderStorageSectionState>();
+  final _addonsKey = GlobalKey<OrderAddonsSectionState>();
   final _quickPaymentKey = GlobalKey<QuickPaymentSectionState>();
   final _paymentHistoryKey = GlobalKey<PaymentHistorySectionState>();
 
@@ -1342,6 +1344,23 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                           key: _storageKey,
                           orderId: widget.orderId!,
                           onChanged: () => _pnlKey.currentState?.reload()),
+                    // Add-on services: extra work agreed after the quote,
+                    // often done on a different day. Sits directly under
+                    // storage because both are revenue lines added to an
+                    // order after it was booked, and both feed the same
+                    // P&L card. Gated on orders.edit rather than reports
+                    // or salary — recording that a job still owes an AC
+                    // install is order admin, not a money module, and the
+                    // supervisor who did the uninstall is the person who
+                    // knows.
+                    if (widget.orderId != null &&
+                        StaffPermissions.canActive('orders', 'view'))
+                      OrderAddonsSection(
+                        key: _addonsKey,
+                        orderId: widget.orderId!,
+                        readOnly: !StaffPermissions.canActive('orders', 'edit'),
+                        onChanged: () => _pnlKey.currentState?.reload(),
+                      ),
                     // Assign supervisor + labour/salary (owner view) —
                     // was missing from the order flow entirely.
                     // Permission-model decision (1 Aug 2026), Step 4 sweep:
