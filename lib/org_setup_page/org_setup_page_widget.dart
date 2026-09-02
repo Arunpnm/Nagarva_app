@@ -1,5 +1,7 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/doc_prefix.dart';
+import '/backend/edge_function_errors.dart';
 import '/components/logo_upload_card.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -92,7 +94,6 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
       // document they issued came out on the seeded default instead.
       // User-visible on the very first invoice a new tenant raises, and
       // it is their own document identity. (Status doc section 9.1.)
-      await _applyInvoicePrefix(orgId, prefix);
       if (gstin.isNotEmpty) {
         rows.add({'key': 'gstin', 'value': gstin, ...OrgScope.stamp()});
       }
@@ -109,6 +110,29 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
         await SupaFlow.client
             .from('settings')
             .upsert(rows, onConflict: 'org_id,key');
+      }
+
+      // LAST, and it can halt. Deliberately after the settings write so
+      // the rejection message's "your other details were saved" is true
+      // — it runs before them until 2 Sep 2026, which meant a rejected
+      // prefix also silently discarded the address and city.
+      //
+      // Halting at all is the change Arun asked for: this used to set
+      // `_model.errorMessage` and then fall straight through to
+      // `context.go(HomePage)`, so the message was written and discarded
+      // in the same frame. The vendor landed on the dashboard believing
+      // they had set a prefix they had not.
+      //
+      // Safe to halt now that seeding derives a per-org default from the
+      // slug: refusing this prefix leaves them on a valid, unique one, so
+      // they can correct the field or clear it and continue.
+      final prefixError = await _applyInvoicePrefix(orgId, prefix);
+      if (prefixError != null) {
+        safeSetState(() {
+          _model.errorMessage = prefixError;
+          _model.isLoading = false;
+        });
+        return;
       }
 
       if (mounted) context.go(HomePageWidget.routePath);
@@ -138,7 +162,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
   /// Writes the vendor's chosen prefix onto their seeded `number_series`
   /// rows — the thing that actually determines what prints on a document.
   ///
-  /// Two guards, both deliberate:
+  /// Three guards, all deliberate:
   ///  - `last_number = 0` only. Changing a prefix once numbers have been
   ///    issued would silently continue the same counter under a new
   ///    identity, leaving the earlier numbers unreachable and breaking
@@ -146,33 +170,61 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
   ///    onboarding every counter is still 0, so this is always satisfied
   ///    here — the guard exists so this code stays correct if it is ever
   ///    reused from a settings screen.
-  ///  - Format validated client-side to match the DB CHECK added in
-  ///    20260827_branches_management.sql. Rule 46(b) caps the whole
-  ///    invoice number at 16 characters, so the prefix budget is small.
+  ///  - Format validated client-side by [validateDocPrefix], which
+  ///    mirrors the `number_series_prefix_format` CHECK. Rule 46(b) caps
+  ///    the whole invoice number at 16 characters and `padding` takes 4,
+  ///    so the prefix budget is 12 — widened from 10 on 2 Sep 2026 so an
+  ///    FY segment (`BLR/2026-27/`) fits.
+  ///  - Uniqueness across tenants, checked server-side. This CANNOT be
+  ///    done from here: `number_series` is RLS-scoped per org, so a
+  ///    client query for "is this prefix taken" can only ever see this
+  ///    org's own rows and would answer "free" every time. The
+  ///    `check_doc_prefix` RPC (SECURITY DEFINER) answers it properly,
+  ///    and a BEFORE INSERT/UPDATE trigger enforces it for real so a
+  ///    request that bypasses the app cannot take a prefix either.
   ///
-  /// Best-effort: a failure here must not strand the vendor mid-onboarding
-  /// with an org already created, so it reports and continues rather than
-  /// throwing. They keep the seeded prefix, which is valid.
-  Future<void> _applyInvoicePrefix(String orgId, String prefix) async {
-    if (prefix.isEmpty) return;
-    if (!RegExp(r'^[A-Za-z0-9/-]{1,10}$').hasMatch(prefix)) {
-      safeSetState(() => _model.errorMessage =
-          'Invoice prefix must be 1-10 characters, letters, numbers, / or - '
-          'only. Your other details were saved.');
-      return;
+  /// Returns null on success, or the reason to show the vendor. A
+  /// rejection is NOT swallowed any more: the whole point of the prefix
+  /// is that it is the vendor's document identity, and quietly leaving
+  /// them on a different one than they typed is how the original bug
+  /// (every org printing the same first invoice number) stayed invisible.
+  /// Refusing is safe because seeding now derives a unique per-org
+  /// default from the slug — a rejected vendor still has a valid prefix.
+  Future<String?> _applyInvoicePrefix(String orgId, String prefix) async {
+    if (prefix.isEmpty) return null;
+
+    final formatError = validateDocPrefix(prefix);
+    if (formatError != null) {
+      return '$formatError Your other details were saved.';
     }
+
     try {
+      final taken = docPrefixRejection(
+        await SupaFlow.client.rpc('check_doc_prefix', params: {
+          'p_prefix': prefix,
+          'p_org_id': orgId,
+        }),
+      );
+      if (taken != null) {
+        return '$taken Your other details were saved — '
+            'pick a different prefix, or leave it blank to keep the default.';
+      }
+
       await SupaFlow.client
           .from('number_series')
           .update({'prefix': prefix})
           .eq('org_id', orgId)
           .eq('last_number', 0)
           .inFilter('doc_type', _prefixableDocTypes);
-    } catch (_) {
-      // Swallowed on purpose — see the doc comment. The org exists and
-      // the rest of onboarding succeeded; a numbering prefix that stayed
-      // at its seeded default is not worth blocking the vendor's first
-      // session over, and it is changeable later.
+      return null;
+    } catch (e) {
+      // The trigger raises P0001 with a real sentence, which
+      // extractDbErrorMessage surfaces verbatim; it is also what catches
+      // the race where two vendors submit the same prefix between the
+      // pre-check above and this write.
+      return extractDbErrorMessage(e,
+          fallback: 'Could not save your invoice prefix. Your other details '
+              'were saved; the default prefix is still in use.');
     }
   }
 
