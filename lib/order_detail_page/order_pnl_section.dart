@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '/backend/commission_pricing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -21,7 +22,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 /// That's wrong for this app specifically — order_type here has always
 /// meant Direct/Porter (a prior session already found and fixed this
 /// exact confusion in AccountsPage/PLReportPage). The real fields are
-/// `orders.is_porter` (gate) and `orders.porter_commission_pct` (the
+/// `orders.commission_expected` (gate) and `orders.commission_pct` (the
 /// office-picked rate, stored per order, not derived) — using those
 /// instead, since re-deriving from order_type would silently misfire on
 /// every Porter job exactly the way the brief warned against.
@@ -50,8 +51,14 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   int _vendorCount = 0;
   double _materialsTotal = 0;
   int _materialsCount = 0;
-  bool _isPorter = false;
-  double _porterCommissionPct = 16;
+  /// Snapshotted at order time from the lead source — see
+  /// `OrdersRow.commissionExpected`. Never re-derived here.
+  bool _commissionExpected = false;
+
+  /// Null means NOT PRICED, and must stay null all the way to the render.
+  /// It used to default to 16 — APC's porter rate — so an unpriced order
+  /// silently carried a commission cost nobody had agreed.
+  double? _commissionPct;
   String? _status;
 
   /// The order's value before add-ons: `quote_total` when it came from a
@@ -71,19 +78,48 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
 
   double get _revenueFinal => _revenueBase + _addonsTotal;
 
-  double get _porterCommission =>
-      _isPorter ? _revenueFinal * (_porterCommissionPct / 100) : 0;
+  CommissionState get _commissionState => commissionStateFor(
+        commissionExpected: _commissionExpected,
+        commissionPct: _commissionPct,
+      );
 
-  double get _netProfit =>
-      _revenueFinal -
-      _salaryTotal -
-      _expensesTotal -
-      _vendorCostTotal -
-      _materialsTotal -
-      _porterCommission;
+  /// Null when the order is commission-bearing but unpriced. Net profit
+  /// below is deliberately NOT computed in that case — see [_netProfit].
+  double? get _commission {
+    switch (_commissionState) {
+      case CommissionState.none:
+        return 0;
+      case CommissionState.unpriced:
+        return null;
+      case CommissionState.priced:
+        return _revenueFinal * (_commissionPct! / 100);
+    }
+  }
 
-  double get _marginPct =>
-      _revenueFinal <= 0 ? 0 : (_netProfit / _revenueFinal) * 100;
+  /// Null when commission is unpriced.
+  ///
+  /// Net profit MUST follow commission into unavailability rather than
+  /// quietly dropping the cost: subtracting nothing would overstate profit
+  /// by the whole commission, which is the flattering direction — the one
+  /// nobody questions. Same reasoning as `marginIsMeaningful` in
+  /// /backend/margin_availability.dart, which already suppresses margin
+  /// rather than reporting it over starved expense data.
+  double? get _netProfit {
+    final comm = _commission;
+    if (comm == null) return null;
+    return _revenueFinal -
+        _salaryTotal -
+        _expensesTotal -
+        _vendorCostTotal -
+        _materialsTotal -
+        comm;
+  }
+
+  double? get _marginPct {
+    final net = _netProfit;
+    if (net == null) return null;
+    return _revenueFinal <= 0 ? 0 : (net / _revenueFinal) * 100;
+  }
 
   @override
   void initState() {
@@ -178,8 +214,8 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
       setState(() {
         _quoteTotal = order.quoteTotal ?? 0;
         _amount = order.amount ?? 0;
-        _isPorter = order.isPorter ?? false;
-        _porterCommissionPct = order.porterCommissionPct ?? 16;
+        _commissionExpected = order.commissionExpected ?? false;
+        _commissionPct = order.commissionPct;
         _status = order.status;
 
         _addonsTotal =
@@ -284,11 +320,17 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
     }
     if (_notFound) return const SizedBox.shrink();
 
-    // Health dot thresholds, computed against Revenue (Final).
+    // Health dot thresholds, computed against Revenue (Final). A null
+    // margin (commission unpriced) shows a neutral dot and no percentage
+    // — a green dot over an unknown cost is the most confident possible
+    // way to be wrong.
+    final margin = _marginPct;
     final Color dot;
-    if (_marginPct >= 25) {
+    if (margin == null) {
+      dot = theme.secondaryText;
+    } else if (margin >= 25) {
       dot = theme.success;
-    } else if (_marginPct >= 10) {
+    } else if (margin >= 10) {
       dot = const Color(0xFFE0A82E);
     } else {
       dot = theme.error;
@@ -323,7 +365,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
                 decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
               ),
               const SizedBox(width: 5),
-              Text('${_marginPct.toStringAsFixed(0)}%',
+              Text(margin == null ? '--' : '${margin.toStringAsFixed(0)}%',
                   style: GoogleFonts.interTight(
                       fontSize: 12, fontWeight: FontWeight.w700, color: dot)),
             ],
@@ -377,20 +419,99 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
                 amount: _materialsTotal,
                 negative: true,
                 color: theme.error),
-          if (_isPorter)
+          if (_commissionState == CommissionState.priced)
             _row(theme,
-                label:
-                    'Porter Commission (${_porterCommissionPct.toStringAsFixed(0)}%)',
-                amount: _porterCommission,
+                label: 'Commission '
+                    '(${_commissionPct!.toStringAsFixed(_commissionPct! % 1 == 0 ? 0 : 2)}%)',
+                amount: _commission,
                 negative: true,
                 color: theme.error),
+          // An unpriced commission is stated, not rendered as "—". A dash
+          // in a cost column reads as "nothing to pay"; this order has a
+          // cost nobody has quantified yet, which is a different fact and
+          // the only one that prompts anybody to fix it.
+          if (_commissionState == CommissionState.unpriced)
+            _unpricedCommissionRow(theme),
           const Divider(height: 16),
-          _row(theme,
-              label: 'Net Profit',
-              amount: _netProfit,
-              bold: true,
-              large: true,
-              color: _netProfit >= 0 ? theme.success : theme.error),
+          if (_netProfit == null)
+            _unavailableNetProfitRow(theme)
+          else
+            _row(theme,
+                label: 'Net Profit',
+                amount: _netProfit,
+                bold: true,
+                large: true,
+                color: _netProfit! >= 0 ? theme.success : theme.error),
+        ],
+      ),
+    );
+  }
+
+  /// Commission is owed on this order but has no rate. Tappable, because
+  /// an empty state that offers the action fixing it beats one that only
+  /// reports emptiness (same shape as the dashboard's Expenses tile).
+  Widget _unpricedCommissionRow(FlutterFlowTheme theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Commission',
+                    style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: theme.secondaryText)),
+                Text(kCommissionUnpricedBody,
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: theme.warning)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(kCommissionUnpricedLabel,
+              style: GoogleFonts.interTight(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: theme.warning)),
+        ],
+      ),
+    );
+  }
+
+  /// Net profit cannot be stated while a cost is unknown. Showing the
+  /// figure minus nothing would overstate it by the entire commission.
+  Widget _unavailableNetProfitRow(FlutterFlowTheme theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Net Profit',
+                    style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: theme.secondaryText)),
+                Text('Set the commission % to see profit',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: theme.secondaryText)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text('Unavailable',
+              style: GoogleFonts.interTight(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: theme.warning)),
         ],
       ),
     );

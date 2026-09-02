@@ -516,6 +516,67 @@ silently doesn't is the same class of trust damage.
   where the object doesn't exist. When writing new SQL that alters an
   existing function/view's shape, add the `DROP IF EXISTS` up front
   rather than finding out from a live 42P13/42P16.
+- **No suggested money. Ever.** (Arun, 1 Sept 2026, standing product
+  rule — this is not a crew-sheet detail, it applies app-wide.)
+  **No price, rate or wage field is ever pre-filled or suggested
+  anywhere in the app. All money fields open at zero or empty; the
+  vendor decides.**
+  The reason is that Nagarva is a SaaS product, not APC's internal
+  tool. Rates move by vendor, by city, by job type and by role, so any
+  figure the app supplies is a guess wearing the vendor's own
+  authority. And a suggested number is not a neutral starting point:
+  once written it is **indistinguishable from a decision** — it flows
+  into the job's cost, the P&L card and the settlement table exactly as
+  if someone had agreed it. A blank is visibly unfinished; a plausible
+  wrong number is not. The staff-pay brief §3 makes the same point from
+  the speed side: "an auto-suggested rate the vendor has to correct on
+  every job is slower than typing the right number once."
+  **What this rule does NOT forbid** — three distinctions that matter,
+  or the rule reads as "delete every number":
+  - **Showing a stored value for editing.** A rate card editor must
+    open on the rate it currently holds. That is the vendor's own
+    number being displayed, not a suggestion.
+  - **Carrying the vendor's own figure forward.** Seeding an order's
+    amount from the quote they issued is memory, not judgement — brief
+    §3's "capture once, never ask for the same number twice".
+  - **Applying vendor-configured rates.** A rate card the vendor
+    authored, applied by the quote builder, is the vendor deciding.
+  The line is: *did a human at this tenant choose this number?* If no,
+  the app must not supply it.
+  **Identity values are the one exception, and only where zero would be
+  destructive**: `rate_card_multipliers.multiplier_pct` opens at `100`
+  because 100% means "no multiplier", i.e. the neutral element. Opening
+  it at 0 would zero out a charge on save. Note it in a comment
+  wherever it recurs.
+
+  **Sweep, 1 Sept 2026 — one chain still open, and it needs a decision.**
+  Every seeded money controller in `lib/` was checked. All of them show
+  an existing stored value for editing (rate cards, claims, plan price,
+  staff salary, vendor TDS, trip hire) or open at `0`/empty, which is
+  compliant. `qtyCtrl = '1'` is a quantity, `hintText: 'e.g. 30'` is
+  CFT. **The exception is porter commission: the app invents APC's 16%
+  in seven places across five files** —
+  `new_order_page_widget.dart` (edit-mode load :301, settlement preview
+  :1567, and the SAVE payload :1863, which writes `16` to Postgres for a
+  vendor who never chose it), then `?? 16` again in
+  `accounts_page_widget.dart:166`, `home_page_widget.dart:313`,
+  `order_pnl_section.dart:182` and `p_l_report_page_widget.dart:160`.
+  The dropdown itself starts unset — correctly — but offers only
+  **16 and 19**, which are APC's two rates hardcoded for every tenant, so
+  a vendor whose porter rate is 12% cannot enter it at all.
+  **CLOSED 2 Sept 2026** — all seven sites, in one pass, as it had to be.
+  `porter_commission_pct` is now `commission_pct`, the dropdown is free
+  numeric entry defaulting from the vendor-configured
+  `lead_sources.commission_pct`, the save writes NULL when unset, and the
+  four calculation sites route through `/backend/commission_pricing.dart`
+  — which renders "not priced" rather than substituting ANY rate, in
+  either direction. See the 2 Sept changelog entry, including the one
+  known residual (a non-porter paid source with a forgotten rate reads as
+  "no commission", not "unpriced").
+  Related but out of scope: `order_detail_page_widget.dart:631`'s
+  `quoteGstPct ?? 5.0` and `kGstDefaultPct = 5`. GST is a statutory rate,
+  not a vendor price, so it is not this rule — but 5 vs 18 for SAC 996719
+  is worth confirming separately.
 - **Every org-scoped query goes through `OrgScope` (`lib/backend/supabase/org_scope.dart`)** —
   see "Org scoping convention" above. Do not hand-write `.eq('org_id', ...)`.
 - **After a successful mutation, refresh the whole row — never hand-patch
@@ -1449,6 +1510,250 @@ Consequences worth knowing before touching this:
   what `suggestPackage`'s unresolved state reports.
 
 ## Changelog
+- **2 Sept 2026 (later), `commission_expected` closes the residual — the
+  commission snapshot is now three fields, written and copied together.**
+  Verified: `flutter analyze lib/ test/` — **0 errors, 0 warnings**, 172
+  infos; full suite **103 passing, 1 skipped**.
+  - **Schema (migrated, verified live):** `orders.is_porter` →
+    **`orders.commission_expected`** (boolean, default false), plus new
+    **`orders.lead_source_id`** (uuid → `lead_sources`).
+  - **`commissionStateFor` is now exact rather than approximate.** It
+    reads `commissionExpected` instead of `is_porter`: a rate set → priced
+    (checked first, so a one-off negotiated cut is never dropped);
+    expected with no rate → **unpriced**; not expected → **none**. A paid
+    directory with a forgotten rate now warns; a walk-in never does. Both
+    halves are pinned by test.
+  - **A NULL `commission_expected` is read as false**, deliberately. The
+    column is NOT NULL-defaulted in Postgres, so a null in Dart means the
+    field was not selected — and defaulting a missing value to "commission
+    owed" would warn on rows nobody even queried it for.
+
+  ### The snapshot is three fields, and they move as one
+  `commission_expected` (from `lead_sources.is_paid`), `commission_pct`
+  and `lead_source_id` are written together at order time and never
+  re-read from the source. Any two without the third is a contradiction:
+  expected without a rate flags an order unpriced when it was not; a rate
+  without expected leaves it costed but unexplained; either without the
+  source id loses the attribution saying where the money went. Duplicate
+  Order copies all three, nulls included.
+
+  ### Two real bugs found while wiring the edit path
+  Both are the same shape — a value RE-DERIVED at save time when it should
+  have been carried — and both were silent.
+  1. **Re-saving an edited order would have recomputed
+     `commission_expected` from the source's CURRENT `is_paid`.** So an
+     unrelated edit (a corrected address, a moved date) on a job whose
+     source had since been flipped unpaid would quietly un-owe its
+     commission. Fixed by holding the expectation as model state, set at
+     exactly the two moments it legitimately changes: edit-load (from the
+     stored snapshot) and the vendor picking a source.
+  2. **`lead_source_id` would have been NULLED on any edit of an order
+     whose source was later deactivated** — the picker loads only ACTIVE
+     sources, so the lookup returned null and wrote null. Same fix, same
+     reason. **And the same cause would have CRASHED the form**:
+     `DropdownButtonFormField` asserts when its value has no matching
+     item, so editing that order failed to build at all. A retired source
+     now renders as "(no longer active)" rather than vanishing.
+  The general lesson, and it is this file's `copyWith`/`timeZone` lesson
+  again: **a snapshot that is recomputed from its source on the way out is
+  not a snapshot.** Load it, hold it, write back what you loaded.
+
+  ### ARB cleanup — en only, because the other three hold no messages
+  `n16`, `n19` and `selectCommission` are deleted from `app_en.arb` (975
+  keys remain, JSON validated). **`app_hi`/`app_kn`/`app_ta` contain no
+  message keys at all** — they are locale-resolution stubs carrying only
+  `@@locale` and notes, falling back to English at generation time, so
+  there was nothing to remove in them. Reported rather than silently
+  counted as four edits.
+  Worth recording: `n16`/`n19`'s own ARB descriptions claimed
+  "CalendarPage; NewOrderPage (used 2x)", which made them look shared and
+  unsafe to touch. **That metadata was stale** — grep found zero Dart
+  references to any of the three, and CalendarPage has four
+  `AppLocalizations` calls, none of them these. An ARB `description` is a
+  generated comment, not a usage index; check the code.
+
+- **2 Sept 2026, commission: renamed, vendor-configured, snapshotted, and
+  no longer invented.** Closes the porter-commission chain the 1 Sept
+  sweep flagged and deliberately left open. Verified: `flutter analyze
+  lib/ test/` — **0 errors**; full suite **102 passing, 1 skipped**,
+  including a new `test/commission_pricing_test.dart` (14 tests).
+  - **Schema (already migrated, verified live):**
+    `orders.porter_commission_pct` → **`orders.commission_pct`**;
+    new **`lead_sources`** table with a nullable `commission_pct` and a
+    CHECK of `NULL OR 0..100`. New Dart class
+    `tables/lead_sources.dart`; `OrdersRow.porterCommissionPct` →
+    `commissionPct`.
+  - **The 16/19 dropdown is gone.** Replaced by a **Lead source** picker
+    (from `lead_sources`, active, org-scoped) plus a **free numeric
+    Commission %** field, validated 0–100 to mirror the DB CHECK.
+    Selecting a source COPIES its configured rate into the field — a
+    vendor-authored number, which the "No suggested money" convention
+    explicitly permits, unlike the old 16/19 which were APC's own rates
+    shown to every tenant.
+  - **`?? '16'` is gone from all seven sites.** Three were in
+    `new_order_page` (edit-mode load, settlement preview, and the SAVE
+    payload, which wrote `16` to Postgres for a vendor who never chose
+    it). Four were calculation sites — Daily Accounts, dashboard KPIs,
+    the per-order P&L card, the P&L report — all now routed through the
+    new `/backend/commission_pricing.dart`.
+
+  ### `commission_pct` is a SNAPSHOT, not a pointer
+  Taken at order time and never re-read, exactly as brief §44 requires of
+  storage rates: *"Each storage record stores the rate it was booked at,
+  not a pointer to the current rate card"*, because otherwise "a price
+  revision silently re-bills every existing customer". Three places
+  enforce it, and each was a place it could have leaked:
+  - **Save** writes the field's value, not the source's.
+  - **Edit-mode load** shows the rate stored on THIS ORDER. Re-reading
+    the source here would re-price the order just by opening the form.
+  - **Duplicate Order** copies the snapshot, including a null. A copy of
+    an order priced at 14% is a 14% job even if that source charges 18%
+    today; a copy of an unpriced order inherits the gap rather than
+    inventing a rate.
+
+  ### Null means unpriced, and unpriced is rendered, never costed
+  `/backend/commission_pricing.dart` is the single rule, built in the same
+  shape as `margin_availability.dart` for the same reason: four surfaces
+  reading one starved input would otherwise tell the same lie
+  independently. `CommissionState` is `none` / `unpriced` / `priced`.
+  - **Order P&L card**: an unpriced order shows "Not priced" with the
+    reason, **and Net Profit becomes "Unavailable"** with a neutral
+    margin dot. Net profit has to follow commission into unavailability —
+    subtracting nothing overstates profit by the entire commission, which
+    is the flattering direction, the one nobody questions.
+  - **Daily Accounts**: commission is a floor, the excluded order IDs are
+    named inline, and the day's line reads "Net profit/loss (at least)".
+    Naming the IDs matters — a count says a number is wrong without
+    saying where to go and fix it.
+  - **Dashboard**: Profit suppresses through the tile's existing
+    null-value empty state, with copy that names the RIGHT reason
+    ("Commission not priced" vs "Needs expense data"). The two conditions
+    are ANDed, not merged: they are unrelated missing costs, and folding
+    them into one flag would let fixing one silently re-enable the figure
+    while the other still holds.
+  - **P&L report**: `marginIsShowable` gains the same condition, plus a
+    caveat line — a suppressed figure with no explanation reads as a bug
+    in the report rather than a gap the vendor can close.
+  - **New Order's settlement preview** shows no commission and no net
+    until a rate is entered. A settlement preview is the most persuasive
+    possible place to show a wrong number, because it reads as agreed.
+
+  ### ~~KNOWN RESIDUAL~~ — CLOSED the same day by `commission_expected`
+  Kept below for the reasoning, which still explains why the flag had to
+  be a snapshotted COLUMN rather than something inferred at render time.
+  The residual itself is gone: see the 2 Sept (later) entry above.
+
+  ### Original residual note — non-porter paid sources were not flagged
+  `commissionStateFor` checks a set rate first, then `is_porter`. So a
+  paid directory booking that is not a porter job, with the rate
+  forgotten, reads as **`none`** rather than `unpriced`.
+  This is a decision, pinned by its own test. Inferring "does this source
+  charge?" from `order_source` at render time would mean re-reading
+  `lead_sources` — the pointer behaviour §44 forbids, since whether a
+  source charges is part of its rate. The alternative, treating every
+  non-direct source as commission-bearing, puts an "unpriced" warning on
+  every walk-in, and **a warning nobody believes is worse than no
+  warning.**
+  Closing it properly needs the EXPECTATION snapshotted next to the rate:
+  an `orders.commission_expected boolean` written at order time. Not
+  invented here — it is a schema change and therefore Arun's to run.
+  Note the FORM is deliberately wider than the flag: the commission field
+  is offered on any selected lead source, so a paid directory CAN be
+  priced; only a porter job is flagged when left blank.
+
+  ### Smaller things found in passing
+  - **"Net to APC" → "Net to you"** in the settlement preview. Hardcoded
+    tenant branding in a multi-tenant product, same disease as the 16/19.
+  - **Orphaned ARB keys, not removed**: `n16`, `n19`, `selectCommission`
+    and the `porterCommission` label now have zero call sites. Harmless
+    (they generate unused getters) but `n16`/`n19` are literally APC's
+    rates sitting in the string table — delete them so nobody re-wires
+    them, in a pass that can regenerate l10n cleanly.
+  - **Field names still say porter**: `DailyAccountRow.porterCommission`
+    and `PLReportModel.porterCommission` are now misnomers, since
+    commission is no longer porter-specific. Labels were updated to
+    "Commission"; the Dart identifiers were left alone to keep this diff
+    about behaviour.
+  - **`lead_sources` has 0 rows**, so the picker does not render until
+    the table is seeded. Order entry still works — the commission field
+    appears for Porter orders regardless, and a failed lead-source load
+    fails open rather than blocking the form.
+
+- **1 Sept 2026, day-close crew sheet (staff-pay brief §4) — first screen
+  of the Staff Pay / Expenses / Settlement module.** New
+  `lib/crew_sheet_page/crew_sheet_page_widget.dart`, route `/crew-sheet
+  ?orderId=`, reachable from Order Details' Team & Salary section (owner)
+  and from the supervisor's Field Job crew card (the brief puts day close
+  on the supervisor). New `lib/backend/staff_pay_types.dart` +
+  `test/staff_pay_types_test.dart` (7 tests, passing). Verified:
+  `flutter analyze lib/` — **0 errors, 0 warnings**, 176 infos.
+  - **Schema-lag getters added, as usual**: `staff.pay_type`,
+    `order_staff.is_driver`/`ac_amount`/`created_at`. All four columns were
+    live and had no Dart getter — the recurring gap in this codebase.
+  - **Present == an `order_staff` row exists.** No presence column, and
+    there should not be one: two sources of truth for "was this man on
+    this job" is how the labour figure and the crew list drift apart.
+  - **`StaffPayType.of()` defaults to `dynamic`, and that default is
+    load-bearing.** Every staff row written before the migration has to
+    keep appearing on crew sheets; defaulting to `monthly_fixed` instead
+    would empty every crew sheet in the product **silently** — no error,
+    just an empty list and a vendor back on the diary. Pinned by test
+    rather than left to review.
+  - **Driver writes are ORDERED, not last-write-wins.**
+    `order_staff_one_driver_per_order` is a partial unique index checked as
+    each row is written, so `_save` clears every existing driver tag on the
+    order FIRST, then upserts. Upserting the new driver while the old one
+    is still flagged is a live constraint violation. The "at least one
+    driver" half of §4 is enforced in Dart, because a partial unique index
+    cannot express it.
+  - **Gated on `orders`, not on the `salary` money module** — deliberate.
+    `presetFor('supervisor')` grants orders view/create/edit and no money
+    module at all, so gating wage entry behind `salary` would lock out the
+    one person the screen exists for. Still routed through
+    `StaffPermissions.canActive`, never a session-shape test.
+  - **Monthly-fixed staff already attached to a job are SHOWN, not
+    hidden.** §11 forbids adding them; it says nothing about ones already
+    there, and hiding them would leave labour cost in the job's profit that
+    no screen can account for. Read-only card with a Remove button.
+
+  ### RESOLVED same day — the two derived wages are gone
+  This entry first flagged `CrewSyncService._dayRate` (`staff.salary / 26`)
+  and Add Labour's matching pre-fill as a conflict with brief §3, and left
+  them alone because zeroing them moves labour cost and therefore profit.
+  **Arun's call, 1 Sept 2026: remove both, and treat it as a product-wide
+  rule** — see "No suggested money" in the conventions above. Both are now
+  gone: `_dayRate` is deleted (replaced by `CrewSyncService
+  .kUnpricedSalary`, a documented `0`), and Add Labour opens empty and no
+  longer overwrites a typed amount when the staff dropdown changes.
+  Two consequences worth knowing:
+  - **The sync's removal guard got STRICTER, not looser.** It used to
+    delete a dropped crew row when `salary_amount` equalled the derived
+    day rate — i.e. it deleted a wage a vendor had genuinely typed
+    whenever that wage matched `salary / 26`, which was the single figure
+    most likely to be typed, because the old dialog had suggested it.
+    Now only an untouched `0` is removable.
+  - **`0` now carries meaning**: nobody has priced this assignment yet. It
+    is not a placeholder, and nothing should "helpfully" fill it.
+
+  ### Not verifiable on device yet — 0 orders exist
+  Read-only live check as `postgres` (RLS-bypassing) on 1 Sept 2026: **0
+  rows in `orders`, 0 in `order_staff`, 1 in `staff`** (dynamic, active),
+  2 organizations. So the sheet is analyzer-clean and unit-tested but has
+  never rendered against real data, and cannot until an order and some
+  crew exist. The device pass has to cover: the driver-clear-then-upsert
+  ordering against a real prior driver, the temp-hand insert under a
+  **staff PIN session** (Tier A RLS makes staff UPDATE/DELETE owner-only —
+  INSERT is org-scope, so this should work, but it is untested), and the
+  §11 monthly-fixed card.
+
+  ### Open questions from the brief, still open (§12)
+  1. **A/C per unit or per man?** Built as per-man additive, with the last
+     A/C amount typed on the sheet offered as the default for the next tick
+     — so the diary's `500 x 2` is two taps and one number. If it turns out
+     to be per unit, that is a different input (a count), not a default.
+  2. External vehicle hire job-level vs day-level — not touched; expenses
+     are the next screen.
+  3. Temporary partial-cash settlement — not touched.
 - **27 Aug 2026, NG-055 localisation lands, and the first compile check
   the l10n work ever had.** Three commits; see `NAGARVA_MODULE_STATUS.md`
   (new file, now the single tracker — it replaces the inventory in

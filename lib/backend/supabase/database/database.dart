@@ -7,6 +7,7 @@ export 'table.dart';
 
 export 'tables/complaints.dart';
 export 'tables/expenses.dart';
+export 'tables/lead_sources.dart';
 export 'tables/leads.dart';
 export 'tables/materials.dart';
 export 'tables/notifications.dart';

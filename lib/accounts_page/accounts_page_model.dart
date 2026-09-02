@@ -24,6 +24,7 @@ class DailyAccountRow {
     required this.orderExpenses,
     required this.otherExpenses,
     required this.porterCommission,
+    this.unpricedCommissionOrderIds = const [],
   });
 
   final DateTime date;
@@ -58,13 +59,26 @@ class DailyAccountRow {
   /// (expenses.order_id null, expenses.expense_date == date).
   final double otherExpenses;
 
-  /// Platform commission on porter-source orders: 16% local / 19% outstation
-  /// of orders.amount, rounded — see apc_webapp App.jsx lines 3719-3731 etc.
+  /// Commission on this day's commission-bearing orders, at the rate each
+  /// order snapshotted at order time (`orders.commission_pct`).
+  ///
+  /// **A FLOOR, not a total, when [hasUnpricedCommission] is true** —
+  /// orders with no rate are excluded rather than costed at a guess. This
+  /// used to substitute 16% (APC's own porter rate) for any missing value,
+  /// which put an invented cost into a vendor's daily register.
   final double porterCommission;
+
+  /// Orders on this day from a commission-bearing source with no rate set.
+  final List<String> unpricedCommissionOrderIds;
+
+  bool get hasUnpricedCommission => unpricedCommissionOrderIds.isNotEmpty;
 
   double get totalExpenses =>
       salary + orderExpenses + otherExpenses + porterCommission;
 
+  /// Also a floor while [hasUnpricedCommission] — real profit can only be
+  /// lower, never higher, since the missing cost is a cost. The UI must
+  /// mark it rather than presenting it as settled.
   double get profitLoss => revenue - totalExpenses;
 
   /// Set after all rows are computed: cumulative balance starting from the

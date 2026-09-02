@@ -56,6 +56,14 @@ class PLReportPageModel extends FlutterFlowModel<PLReportPageWidget> {
   /// "no expenses" only contradicts reality if work actually happened.
   int orderCount = 0;
 
+  /// Orders in the period from a commission-bearing source with no rate
+  /// set. Their commission is excluded from [porterCommission], which is
+  /// therefore a FLOOR while this is above zero — see
+  /// /backend/commission_pricing.dart.
+  int unpricedCommissionCount = 0;
+
+  bool get hasUnpricedCommission => unpricedCommissionCount > 0;
+
   double get grossProfit => revenue - labour;
   double get netProfit =>
       grossProfit - orderExpenses - otherExpenses - porterCommission;
@@ -68,10 +76,16 @@ class PLReportPageModel extends FlutterFlowModel<PLReportPageWidget> {
   /// the same lie independently. `expenses` currently has 0 live rows,
   /// which makes [netProfit] collapse to roughly [revenue] and render as
   /// a ~100% margin. Suppress the figure rather than print it.
-  bool get marginIsShowable => marginIsMeaningful(
+  ///
+  /// Also false while a commission is unpriced: that is a second, unrelated
+  /// missing cost, and [netProfit] silently omits it. Both conditions must
+  /// clear before a profit figure is honest.
+  bool get marginIsShowable =>
+      marginIsMeaningful(
         expensesTotal: orderExpenses + otherExpenses,
         orderCount: orderCount,
-      );
+      ) &&
+      !hasUnpricedCommission;
 
   List<BranchPL> branchPL = [];
   List<LeadSourceStat> leadSources = [];
