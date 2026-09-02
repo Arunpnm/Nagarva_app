@@ -133,10 +133,31 @@ Future<OwnerPinResult> saveOwnerPin(BuildContext context, String rawPin) async {
   }
 
   try {
-    await OrgMembersTable().update(
+    // returnRows: true is LOAD-BEARING, not diagnostic.
+    //
+    // 2 Sep 2026: org_members had RLS enabled with only SELECT and INSERT
+    // policies and no UPDATE policy at all, so this update matched zero
+    // rows. PostgREST does not error on that — it returns success — and
+    // this function then reported "PIN updated." having written nothing.
+    // Every owner who set a PIN was told it worked and could never
+    // PIN-log-in, with no error anywhere to explain it. Found only by
+    // reading pin_hash back out of the database afterwards.
+    //
+    // So the write is verified by what comes back, not assumed from the
+    // absence of an exception. A policy change, a revoked grant or a
+    // renamed column all fail the same silent way, and this turns every
+    // one of them into a message the vendor can act on.
+    final rows = await OrgMembersTable().update(
       data: {'pin': pin},
       matchingRows: (q) => q.eq('org_id', orgId).eq('user_id', userId),
+      returnRows: true,
     );
+    if (rows.isEmpty) {
+      return const OwnerPinResult.failed(
+          'Your PIN could not be saved — the app was not permitted to '
+          'update your membership. Nothing was changed. Please report '
+          'this; you can still sign in with your email and password.');
+    }
     return const OwnerPinResult.ok();
   } catch (e) {
     return OwnerPinResult.failed('Could not update PIN: $e');
