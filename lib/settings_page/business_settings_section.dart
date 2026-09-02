@@ -98,11 +98,27 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
         ('upi_display_number', 'PhonePe/GPay Number', ''),
       ],
     ),
+    // RENAMED 2 Sept 2026. This section was headed 'Branches' with a
+    // field called 'Branch List', which read as branch MANAGEMENT and is
+    // not — `branch_list_text` is one text column on `organizations`,
+    // printed by pdf_branding.dart on document headers. It creates no
+    // `branches` row and touches nothing to do with staff assignment,
+    // order scoping or RLS.
+    //
+    // That mattered because settings_page_widget.dart deliberately
+    // REMOVED the real Branches card, on the grounds that it "would
+    // teach the wrong mental model to every vendor who opened it" — the
+    // tenancy model is one ORG PER LOCATION, with a single seeded 'Head
+    // Office' per org. Leaving a section literally headed 'Branches'
+    // taught that exact wrong model anyway: type your branches, save,
+    // and believe the app now knows about them when all it has is a
+    // string for the letterhead. Labels only; the column is unchanged.
     (
-      'Branches',
+      'Branch line on documents',
       [
-        ('branch_list_text', 'Branch List',
-            'e.g. Branch: Chennai, Bengaluru, Coimbatore & Hyderabad'),
+        ('branch_list_text', 'Branch line (printed text only)',
+            'Printed on document headers. e.g. Branch: Chennai, '
+                'Bengaluru, Coimbatore & Hyderabad'),
       ],
     ),
   ];
