@@ -373,17 +373,34 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
       _error = null;
     });
     try {
+      // Empty optional fields are written as NULL, never ''.
+      //
+      // `branch` carries a foreign key to `branches`, and '' is not a
+      // branch — so leaving the field blank, which is the ordinary case
+      // for an org that has never set branches up, failed the insert
+      // outright with a raw 23503 shown to the vendor:
+      //
+      //   insert or update on table "warehouses" violates foreign key
+      //   constraint "warehouses_branch_fk" ... Key is not present in
+      //   table "branches"
+      //
+      // Found creating the first Coimbatore godown, 2 Sept 2026. The
+      // other fields have no FK so '' merely stored junk, but an empty
+      // string is not "unset" and makes every later "is it filled in?"
+      // check answer wrongly, so they are nullified too.
+      String? nz(String v) => v.trim().isEmpty ? null : v.trim();
+
       final data = <String, dynamic>{
         'name': name,
-        'code': _code.text.trim(),
-        'address': _address.text.trim(),
+        'code': nz(_code.text),
+        'address': nz(_address.text),
         // City drives the storage rate card, so it is worth keeping clean.
-        'city': _city.text.trim(),
-        'pincode': _pincode.text.trim(),
-        'branch': _branch.text.trim(),
+        'city': nz(_city.text),
+        'pincode': nz(_pincode.text),
+        'branch': nz(_branch.text),
         'capacity_cft': double.tryParse(_capacity.text.trim()) ?? 0,
-        'contact_person': _contactPerson.text.trim(),
-        'contact_phone': _contactPhone.text.trim(),
+        'contact_person': nz(_contactPerson.text),
+        'contact_phone': nz(_contactPhone.text),
         'active': _active,
       };
       final existingId = widget.existing?.id;
@@ -400,7 +417,15 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = '$e';
+          // Branch is free text against an FK, so a typo reads as a
+          // Postgres constraint dump. Say what the vendor can actually
+          // do about it instead. (The field should be a picker fed by
+          // `branches`, as the staff and lead forms already are - that
+          // is the real fix and is not done here.)
+          _error = '$e'.contains('warehouses_branch_fk')
+              ? 'That branch does not exist. Leave Branch empty, or type '
+                  'the exact name of a branch you have already created.'
+              : '$e';
         });
       }
     }
