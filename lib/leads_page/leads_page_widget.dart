@@ -11,6 +11,7 @@ import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
+import '/components/theme_quick_button.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
@@ -286,7 +287,9 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: const [],
+          actions: [
+            ThemeQuickButton(iconColor: IconTheme.of(context).color),
+          ],
           centerTitle: true,
           elevation: 0.0,
         ),

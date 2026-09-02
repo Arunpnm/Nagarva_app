@@ -14,6 +14,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/components/global_search_delegate.dart';
 import '/components/notification_bell.dart';
+import '/components/theme_quick_button.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/components/follow_up_summary_card.dart';
 import '/components/quick_entry_dialog.dart';
@@ -743,6 +744,13 @@ class _HomePageWidgetState extends State<HomePageWidget>
             // (AppBar's default IconTheme) instead of a hardcoded colour,
             // so it stays correct across light/dark/midnight.
             NotificationBell(iconColor: IconTheme.of(context).color),
+            // Theme, promoted out of Settings (Arun, 2 Sep 2026) so it is
+            // one tap from wherever the vendor already is — daylight
+            // outdoors, a dark flat at night. Language deliberately did
+            // NOT come with it; see ThemeQuickButton's doc comment for
+            // why moving a control that does nothing would be worse than
+            // leaving it buried.
+            ThemeQuickButton(iconColor: IconTheme.of(context).color),
             // Restored gap vs the reference app: the header "Mobile /
             // Name..." global customer search (orders + leads by name or
             // phone) — see GlobalSearchDelegate. 48x48dp default IconButton

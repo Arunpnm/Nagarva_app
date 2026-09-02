@@ -8,6 +8,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
+import '/components/theme_quick_button.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'calendar_page_model.dart';
@@ -596,7 +597,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                   fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
                 ),
           ),
-          actions: const [],
+          actions: [
+            ThemeQuickButton(iconColor: IconTheme.of(context).color),
+          ],
           centerTitle: true,
           elevation: 0.0,
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '/components/theme_quick_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
@@ -83,6 +84,9 @@ class _CustomerSurveysPageWidgetState extends State<CustomerSurveysPageWidget>
     return Scaffold(
       backgroundColor: theme.primaryBackground,
       appBar: AppBar(
+        actions: [
+          ThemeQuickButton(iconColor: IconTheme.of(context).color),
+        ],
         backgroundColor: theme.primaryBackground,
         automaticallyImplyLeading: true,
         title: Text('Customer Surveys',
