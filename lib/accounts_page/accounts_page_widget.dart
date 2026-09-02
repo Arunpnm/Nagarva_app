@@ -4,6 +4,7 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'accounts_page_model.dart';
@@ -46,7 +47,6 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
     decimalDigits: 0,
   );
   static final _dayFormat = DateFormat('MMM d, yyyy');
-  static final _dayShort = DateFormat('EEE, MMM d');
 
   // LEAK_AUDIT.md leak #10 (Stage 1 fix): this used to be
   // 'accounts_opening_balance:<orgId>' — namespaced by string content
@@ -134,14 +134,35 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
       final unpricedCommission = <String>[];
 
       for (final o in dayOrders) {
-        final amount = o.amount ?? 0;
+        // GST IS NOT REVENUE. (Arun's standing rule, 2 Sept 2026.)
+        //
+        // This register read `orders.amount`, the GST-INCLUSIVE total, so
+        // the same Coimbatore order showed Rs35,990 here, Rs37,640 on the
+        // order P&L and Rs37.6K on the dashboard - three screens, three
+        // revenue figures for one job. GST collected is held for the
+        // government and remitted; counting it inflates revenue, profit
+        // and the running cash balance together.
+        //
+        // Same basis as OrderPnlSection._revenueBase: prefer the stored
+        // GST-exclusive subtotal, else total minus the tax, so rows
+        // written before subtotal was stored still exclude it. An order
+        // with no GST is unchanged.
+        final gross = o.amount ?? 0;
+        final subtotal = o.quoteSubtotal ?? 0;
+        final amount =
+            subtotal != 0 ? subtotal : gross - (o.quoteGstAmount ?? 0);
         // orderQuote(o) in the reference app: amount minus extra charges.
         // extra_charges isn't modeled as a column here yet, so quote ==
         // amount until that field is ported (tracked separately).
+        // Follows revenue's tax-exclusive basis, so the Extra column
+        // (revenue - quote) stays 0 rather than becoming the GST.
         final orderQuote = amount;
         final advancePaid = o.advancePaid ?? 0;
+        // Collections are cash actually received, which includes the GST
+        // the customer paid - so this stays on the GROSS figure. Only
+        // revenue excludes tax; the money in the drawer does not.
         final bookingAdvance =
-            amount; // no dedicated booking_advance column yet
+            gross; // no dedicated booking_advance column yet
 
         revenue += amount;
         quote += orderQuote;
@@ -149,8 +170,13 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         advance += [bookingAdvance, advancePaid]
             .reduce((a, b) => a < b ? a : b)
             .clamp(0, double.infinity);
-        overCollected += (advancePaid - amount).clamp(0, double.infinity);
-        pending += (amount - advancePaid).clamp(0, double.infinity);
+        // Both compare against GROSS, not the ex-GST figure. What the
+        // customer still owes, and any over-payment, are cash positions -
+        // the customer pays the tax too. Only `revenue` and `quote` are
+        // tax-exclusive; every cash column on this register is gross, or
+        // Pending would understate the bill by the GST on it.
+        overCollected += (advancePaid - gross).clamp(0, double.infinity);
+        pending += (gross - advancePaid).clamp(0, double.infinity);
 
         salary += orderStaff
             .where((os) => os.orderId == o.id)
@@ -428,7 +454,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
           title: Text(
-            'Accounts',
+            'Daily Accounts Register',
             style: FlutterFlowTheme.of(context).titleLarge.override(
                   font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
                   fontSize: 22.0,
@@ -436,11 +462,10 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                 ),
           ),
           actions: [
-            IconButton(
-              icon: Icon(Icons.edit_calendar_outlined,
-                  color: FlutterFlowTheme.of(context).primaryText),
-              tooltip: 'Edit opening balance',
-              onPressed: _editOpeningBalance,
+            TextButton.icon(
+              onPressed: _model.dailyRows.isEmpty ? null : _copyCsv,
+              icon: const Icon(Icons.download_outlined, size: 16),
+              label: const Text('CSV'),
             ),
           ],
           centerTitle: true,
@@ -467,80 +492,16 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                         padding: const EdgeInsets.all(16.0),
                         child: ListView(
                           children: [
-                            Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context)
-                                    .secondaryBackground,
-                                borderRadius: BorderRadius.circular(12.0),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Current Balance',
-                                      style: FlutterFlowTheme.of(context)
-                                          .titleMedium,
-                                    ),
-                                    Text(
-                                      _currency.format(_model.currentBalance),
-                                      style: FlutterFlowTheme.of(context)
-                                          .titleLarge
-                                          .override(
-                                              font: GoogleFonts.interTight(
-                                                  fontWeight: FontWeight.w600),
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primary),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            _openingBalanceBar(context),
                             const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                    child: _summaryChip(
-                                        context,
-                                        'Revenue',
-                                        _model.periodRevenue,
-                                        FlutterFlowTheme.of(context).primary)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                    child: _summaryChip(
-                                        context,
-                                        'Expenses',
-                                        _model.periodExpenses,
-                                        FlutterFlowTheme.of(context).error)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                    child: _summaryChip(
-                                        context,
-                                        'Net',
-                                        _model.periodProfit,
-                                        _model.periodProfit >= 0
-                                            ? FlutterFlowTheme.of(context)
-                                                .primary
-                                            : FlutterFlowTheme.of(context)
-                                                .error)),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              'Daily Register',
-                              style: FlutterFlowTheme.of(context).titleMedium,
-                            ),
-                            const SizedBox(height: 8),
+                            _summaryStrip(context),
+                            const SizedBox(height: 16),
                             if (_model.dailyRows.isEmpty)
                               Padding(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 24),
                                 child: Text(
-                                  'No orders yet — the register fills in once orders have a move date.',
+                                  'No orders yet - the register fills in once orders have a move date.',
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
@@ -550,97 +511,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                                 ),
                               )
                             else
-                              ...(_model.dailyRows.map((row) => GestureDetector(
-                                    onTap: () => _showDayDetail(row),
-                                    child: Container(
-                                      margin: const EdgeInsets.only(bottom: 10),
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                        color: FlutterFlowTheme.of(context)
-                                            .secondaryBackground,
-                                        borderRadius:
-                                            BorderRadius.circular(10.0),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(14.0),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  _dayShort.format(row.date),
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodyMedium
-                                                      .override(
-                                                          font: GoogleFonts.inter(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600)),
-                                                ),
-                                                Text(
-                                                  '${row.dayOrders.length} order${row.dayOrders.length == 1 ? '' : 's'} · Rev ${_currency.format(row.revenue)}',
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodySmall
-                                                      .override(
-                                                          font: GoogleFonts
-                                                              .inter(),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .secondaryText),
-                                                ),
-                                              ],
-                                            ),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  '${row.profitLoss >= 0 ? '+' : '-'}${_currency.format(row.profitLoss.abs())}',
-                                                  style:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .titleSmall
-                                                          .override(
-                                                            font: GoogleFonts
-                                                                .interTight(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w600),
-                                                            color: row.profitLoss >=
-                                                                    0
-                                                                ? FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .primary
-                                                                : FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .error,
-                                                          ),
-                                                ),
-                                                Text(
-                                                  'Bal ${_currency.format(row.runningBalance)}',
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodySmall
-                                                      .override(
-                                                          font: GoogleFonts
-                                                              .inter(),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .secondaryText),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ))),
+                              _registerTable(context),
                           ],
                         ),
                       ),
@@ -650,29 +521,326 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
     );
   }
 
-  Widget _summaryChip(
-      BuildContext context, String label, double value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: [
-          Text(label,
-              style: FlutterFlowTheme.of(context).bodySmall.override(
-                  font: GoogleFonts.inter(),
-                  color: FlutterFlowTheme.of(context).secondaryText)),
-          const SizedBox(height: 2),
-          Text(
-            _currency.format(value.abs()),
-            style: FlutterFlowTheme.of(context).titleSmall.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
-                color: color),
+  /// Opening balance strip.
+  ///
+  /// The running Cash Bal column is meaningless without it - it is the
+  /// number the whole register walks forward from - so it is stated at
+  /// the top rather than hidden behind the AppBar action it used to be.
+  Widget _openingBalanceBar(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Row(
+      children: [
+        Text('Opening Balance:',
+            style: GoogleFonts.inter(
+                fontSize: 12, color: theme.secondaryText)),
+        const SizedBox(width: 8),
+        InkWell(
+          onTap: _editOpeningBalance,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: theme.secondaryBackground,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(_currency.format(_model.openingBalance),
+                style: GoogleFonts.interTight(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: theme.primaryText)),
           ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text('starting cash before this period',
+              style: GoogleFonts.inter(
+                  fontSize: 11, color: theme.secondaryText)),
+        ),
+      ],
+    );
+  }
+
+  /// The seven period totals, in the same order as the reference register.
+  ///
+  /// EXPENSES is order + other expenses ONLY. Labour and commission are
+  /// their own tiles because a mover reads them separately - and folding
+  /// them in would make the tile disagree with the Total Exp column,
+  /// which is the sum of all four.
+  Widget _summaryStrip(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final rows = _model.dailyRows;
+    double sum(double Function(DailyAccountRow) f) =>
+        rows.fold(0.0, (a, r) => a + f(r));
+
+    final tiles = <(String, double, Color)>[
+      ('REVENUE', sum((r) => r.revenue), theme.primary),
+      ('COLLECTED', sum((r) => r.collections), theme.success),
+      ('LABOUR', sum((r) => r.salary), theme.secondaryText),
+      ('EXPENSES', sum((r) => r.orderExpenses + r.otherExpenses), theme.error),
+      ('COMMISSION', sum((r) => r.porterCommission), theme.error),
+      ('NET P&L', _model.periodProfit,
+          _model.periodProfit < 0 ? theme.error : theme.success),
+      ('CLOSING BAL', _model.currentBalance,
+          _model.currentBalance < 0 ? theme.error : theme.primaryText),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final (label, value, colour) in tiles)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: theme.secondaryBackground,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_currency.format(value),
+                      style: GoogleFonts.interTight(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: colour)),
+                  const SizedBox(height: 2),
+                  Text(label,
+                      style: GoogleFonts.inter(
+                          fontSize: 10,
+                          letterSpacing: 0.6,
+                          color: theme.secondaryText)),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
+
+  /// The register itself: one row per day, every component in its own
+  /// column, and a TOTAL row.
+  ///
+  /// Horizontally scrollable rather than reflowed, because the columns
+  /// only mean anything side by side - Quote, Advance, Bal Coll. and
+  /// Pending have to line up for a vendor to check the day's cash. The
+  /// page body must never scroll sideways, so the scroll lives here.
+  Widget _registerTable(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final rows = _model.dailyRows;
+    double sum(double Function(DailyAccountRow) f) =>
+        rows.fold(0.0, (a, r) => a + f(r));
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          // Rows open the day detail; they are not selectable, and
+          // onSelectChanged alone makes DataTable add a checkbox column.
+          showCheckboxColumn: false,
+          headingRowHeight: 38,
+          dataRowMinHeight: 44,
+          dataRowMaxHeight: 62,
+          horizontalMargin: 12,
+          columnSpacing: 18,
+          headingTextStyle: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: theme.secondaryText),
+          columns: const [
+            DataColumn(label: Text('Date')),
+            DataColumn(label: Text('Orders'), numeric: true),
+            DataColumn(label: Text('Quote'), numeric: true),
+            DataColumn(label: Text('Advance'), numeric: true),
+            DataColumn(label: Text('Bal Coll.'), numeric: true),
+            DataColumn(label: Text('Extra'), numeric: true),
+            DataColumn(label: Text('Pending'), numeric: true),
+            DataColumn(label: Text('Salary'), numeric: true),
+            DataColumn(label: Text('Ord Exp'), numeric: true),
+            DataColumn(label: Text('Oth Exp'), numeric: true),
+            DataColumn(label: Text('Commission'), numeric: true),
+            DataColumn(label: Text('Total Exp'), numeric: true),
+            DataColumn(label: Text('P / L'), numeric: true),
+            DataColumn(label: Text('Cash Bal'), numeric: true),
+          ],
+          rows: [
+            for (final r in rows) _dataRow(context, r),
+            // TOTAL. Cash Bal is the CLOSING balance, not a sum of the
+            // column - adding running balances together would be
+            // meaningless, and a vendor would still read it as money.
+            DataRow(
+              color: WidgetStatePropertyAll(
+                  theme.primary.withValues(alpha: 0.06)),
+              cells: [
+                DataCell(Text('TOTAL - ${rows.length} day${rows.length == 1 ? '' : 's'}',
+                    style: GoogleFonts.interTight(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: theme.primaryText))),
+                DataCell(_num(context, sum((r) => r.dayOrders.length.toDouble()),
+                    plain: true)),
+                DataCell(_num(context, sum((r) => r.quote))),
+                DataCell(_num(context, sum((r) => r.advance))),
+                DataCell(_num(context,
+                    sum((r) => (r.collections - r.advance).clamp(0, double.infinity)))),
+                DataCell(_num(context, sum((r) => r.revenue - r.quote))),
+                DataCell(_num(context, sum((r) => r.pending))),
+                DataCell(_num(context, -sum((r) => r.salary))),
+                DataCell(_num(context, -sum((r) => r.orderExpenses))),
+                DataCell(_num(context, -sum((r) => r.otherExpenses))),
+                DataCell(_num(context, -sum((r) => r.porterCommission))),
+                DataCell(_num(context, -sum((r) => r.totalExpenses))),
+                DataCell(_num(context, _model.periodProfit, bold: true)),
+                DataCell(_num(context, _model.currentBalance, bold: true)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  DataRow _dataRow(BuildContext context, DailyAccountRow r) {
+    final theme = FlutterFlowTheme.of(context);
+    final names = r.dayOrders
+        .map((o) => o.customer.trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+    final balColl = (r.collections - r.advance).clamp(0, double.infinity);
+
+    return DataRow(
+      onSelectChanged: (_) => _showDayDetail(r),
+      cells: [
+        DataCell(Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(DateFormat('EEE, d MMM').format(r.date),
+                style: GoogleFonts.interTight(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: theme.primaryText)),
+            if (names.isNotEmpty)
+              Text(names.join(', '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                      fontSize: 10, color: theme.secondaryText)),
+          ],
+        )),
+        DataCell(_num(context, r.dayOrders.length.toDouble(), plain: true)),
+        DataCell(_num(context, r.quote)),
+        DataCell(_num(context, r.advance)),
+        DataCell(_num(context, balColl.toDouble())),
+        DataCell(_num(context, r.revenue - r.quote)),
+        DataCell(_num(context, r.pending)),
+        DataCell(_num(context, -r.salary)),
+        DataCell(_num(context, -r.orderExpenses)),
+        DataCell(_num(context, -r.otherExpenses)),
+        // Commission is a FLOOR when some order on this day has no rate:
+        // the day is marked rather than presented as settled, since the
+        // missing figure is a cost and real profit can only be lower.
+        DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
+          if (r.hasUnpricedCommission)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Tooltip(
+                message:
+                    'At least one order has no commission rate set, so this '
+                    'is a floor. Profit can only be lower.',
+                child: Icon(Icons.warning_amber_rounded,
+                    size: 13, color: theme.warning),
+              ),
+            ),
+          _num(context, -r.porterCommission),
+        ])),
+        DataCell(_num(context, -r.totalExpenses)),
+        DataCell(Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _num(context, r.profitLoss, bold: true),
+            if (r.profitLoss < 0)
+              Text('Loss',
+                  style:
+                      GoogleFonts.inter(fontSize: 9, color: theme.error)),
+          ],
+        )),
+        DataCell(_num(context, r.runningBalance, bold: true)),
+      ],
+    );
+  }
+
+  /// A figure. Zero renders as an em dash rather than Rs0 so an empty
+  /// column is visibly empty instead of looking like a real zero.
+  Widget _num(BuildContext context, double v,
+      {bool bold = false, bool plain = false}) {
+    final theme = FlutterFlowTheme.of(context);
+    if (v == 0) {
+      return Text('-',
+          style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText));
+    }
+    if (plain) {
+      return Text(v.toInt().toString(),
+          maxLines: 1,
+          softWrap: false,
+          style: GoogleFonts.interTight(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: theme.primaryText));
+    }
+    return Text(_currency.format(v),
+        maxLines: 1,
+        softWrap: false,
+        style: GoogleFonts.interTight(
+          fontSize: 12,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+          color: v < 0 ? theme.error : theme.primaryText,
+        ));
+  }
+
+  /// Copies the register as CSV.
+  ///
+  /// COPY, not download, and the button says so. This app has no file-save
+  /// package on any platform (`printing` handles PDFs only, and adding a
+  /// dependency would break the pinned-pubspec rule), so a "Download CSV"
+  /// button would be an affordance that goes nowhere - the same trust
+  /// damage as the dead share links. The clipboard genuinely works on
+  /// web and Android and pastes straight into Sheets or Excel.
+  Future<void> _copyCsv() async {
+    final b = StringBuffer()
+      ..writeln('Date,Orders,Quote,Advance,Bal Collected,Extra,Pending,'
+          'Salary,Order Expenses,Other Expenses,Commission,Total Expenses,'
+          'Profit/Loss,Cash Balance');
+    String n(double v) => v.toStringAsFixed(2);
+    for (final r in _model.dailyRows.reversed) {
+      b.writeln([
+        DateFormat('yyyy-MM-dd').format(r.date),
+        r.dayOrders.length,
+        n(r.quote),
+        n(r.advance),
+        n((r.collections - r.advance).clamp(0, double.infinity).toDouble()),
+        n(r.revenue - r.quote),
+        n(r.pending),
+        n(r.salary),
+        n(r.orderExpenses),
+        n(r.otherExpenses),
+        n(r.porterCommission),
+        n(r.totalExpenses),
+        n(r.profitLoss),
+        n(r.runningBalance),
+      ].join(','));
+    }
+    await Clipboard.setData(ClipboardData(text: b.toString()));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Register copied as CSV - paste into Sheets or Excel.')));
+    }
+  }
+
 }
