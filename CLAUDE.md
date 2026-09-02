@@ -577,6 +577,31 @@ silently doesn't is the same class of trust damage.
   `quoteGstPct ?? 5.0` and `kGstDefaultPct = 5`. GST is a statutory rate,
   not a vendor price, so it is not this rule — but 5 vs 18 for SAC 996719
   is worth confirming separately.
+- **A migration asserts its preconditions and its results. A guard
+  RAISES; it never skips.** (Arun, 2 Sept 2026.)
+  `20260902_drop_sandbox_org.sql` was run before the migration it
+  depended on and **reported success**. Its one dependency was guarded
+  as `if to_regclass('public.doc_prefix_reservations') is not null
+  then ... end if;` — written so run order would not matter, which
+  instead turned *"the migration I depend on has not run"* into a
+  silent no-op. Both scripts then looked applied while the identity
+  migration had never executed at all; it surfaced only because Arun
+  ran a diagnostic by hand.
+  **A guard that lets a script pass without doing its job is worse
+  than no guard** — it spends the operator's attention and hands back
+  a clean result. Missing dependency, unmet assumption, absent table:
+  `raise exception` with a sentence naming what to run first.
+  The same failure shape applies to verification. **A postflight of
+  `select`s is evidence only if somebody reads it**; the two selects
+  at the end of that migration would have shown the problem and were
+  never seen, because nothing distinguished "ran and passed" from
+  "never ran". Postflights therefore go in a `do $$ ... raise
+  exception ... $$` block, inside the same transaction, so a failed
+  assertion rolls the whole thing back and partial application is
+  impossible. Assert the *construct*, not a printed row: constraint
+  definition, `pg_trigger` presence and `tgenabled`, exact row counts.
+  Preflight likewise — especially where a migration hardcodes a value
+  that dates (an FY literal, an org slug, a plan name).
 - **Every org-scoped query goes through `OrgScope` (`lib/backend/supabase/org_scope.dart`)** —
   see "Org scoping convention" above. Do not hand-write `.eq('org_id', ...)`.
 - **After a successful mutation, refresh the whole row — never hand-patch
