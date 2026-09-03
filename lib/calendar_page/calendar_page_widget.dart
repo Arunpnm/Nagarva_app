@@ -8,6 +8,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
+import '/components/language_quick_button.dart';
 import '/components/theme_quick_button.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -598,6 +599,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                 ),
           ),
           actions: [
+            LanguageQuickButton(iconColor: IconTheme.of(context).color),
             ThemeQuickButton(iconColor: IconTheme.of(context).color),
           ],
           centerTitle: true,

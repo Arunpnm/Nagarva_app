@@ -1,12 +1,9 @@
 import '/app_session.dart';
-import '/backend/last_selected_org.dart';
 import '/backend/owner_pin.dart';
 import '/backend/session_logout.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/backend/supabase/org_session_loader.dart';
 import '/components/notification_bell.dart';
-import '/components/org_switcher_sheet.dart';
 import '/main.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -1101,83 +1098,14 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                         ),
                       ),
                     ),
-                    if (AppSession.instance.availableOrgs.length > 1)
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(
-                            0.0, 16.0, 0.0, 0.0),
-                        child: FFButtonWidget(
-                          onPressed: () async {
-                            final chosen = await showOrgSwitcherSheet(context);
-                            if (chosen == null ||
-                                chosen == AppSession.instance.currentOrgId) {
-                              return;
-                            }
-                            final sessionData =
-                                await loadOrgSessionData(chosen);
-                            AppSession.instance.setVendorSession(
-                              authUserId: AppSession.instance.authUserId!,
-                              orgId: sessionData.orgId,
-                              orgName: sessionData.orgName,
-                              orgSlug: sessionData.orgSlug,
-                              logoUrl: sessionData.logoUrl,
-                              limits: sessionData.limits,
-                              features: sessionData.features,
-                              planName: sessionData.planName,
-                              planStatus: sessionData.planStatus,
-                              trialEndsAt: sessionData.trialEndsAt,
-                              graceDays: sessionData.graceDays,
-                              orgActive: sessionData.orgActive,
-                            );
-                            // TODO(W2) resolved: persist this switch so a
-                            // later reload restores the same org instead
-                            // of falling back to the first org_members
-                            // row. See last_selected_org.dart's doc
-                            // comment.
-                            await LastSelectedOrg.set(sessionData.orgId);
-                            // CORRECTED 18 Aug 2026. This used to claim a
-                            // "full route rebuild so every org-scoped page
-                            // re-queries" — it does no such thing. Tab
-                            // switching never changes the URL (main.dart's
-                            // _selectTab only setStates `_currentPageName`),
-                            // so from the Settings TAB this navigates to
-                            // the location the user is already on and
-                            // GoRouter does nothing at all.
-                            //
-                            // What actually clears stale data is the
-                            // KeyedSubtree keyed on currentOrgId in
-                            // main.dart's build. This go() is kept only to
-                            // land the user back on the Dashboard after
-                            // switching, which is the sensible place to
-                            // arrive — it is NOT the mechanism, and must
-                            // not be relied on as one.
-                            if (mounted) {
-                              context.go(HomePageWidget.routePath);
-                            }
-                          },
-                          text: 'Switch Organization',
-                          icon: const Icon(
-                            Icons.swap_horiz,
-                            size: 20.0,
-                          ),
-                          options: FFButtonOptions(
-                            width: double.infinity,
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                                0.0, 0.0, 0.0, 0.0),
-                            iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                                0.0, 0.0, 0.0, 0.0),
-                            iconColor: FlutterFlowTheme.of(context).primary,
-                            color: Colors.transparent,
-                            textStyle: TextStyle(
-                              color: FlutterFlowTheme.of(context).primary,
-                            ),
-                            borderSide: BorderSide(
-                              color: FlutterFlowTheme.of(context).primary,
-                              width: 1.0,
-                            ),
-                            borderRadius: BorderRadius.circular(8.0),
-                          ),
-                        ),
-                      ),
+                    // "Switch Organization" MOVED OUT of Settings on
+                    // 3 Sept 2026 (Arun: "this switch org also try to keep
+                    // in top somewhere or in menu directly not inside
+                    // settings modules"). It is now the header of the
+                    // bottom-bar Menu drawer, next to the org's own name -
+                    // see components/app_nav_drawer.dart. The switch
+                    // itself lives in backend/org_switch.dart so there is
+                    // still exactly one implementation.
                     Padding(
                       padding:
                           const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),

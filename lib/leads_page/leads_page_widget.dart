@@ -11,6 +11,7 @@ import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
+import '/components/language_quick_button.dart';
 import '/components/theme_quick_button.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
@@ -288,6 +289,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                 ),
           ),
           actions: [
+            LanguageQuickButton(iconColor: IconTheme.of(context).color),
             ThemeQuickButton(iconColor: IconTheme.of(context).color),
           ],
           centerTitle: true,

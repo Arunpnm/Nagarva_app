@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
+import '/backend/module_navigation.dart';
+import '/backend/org_switch.dart';
 import '/backend/session_logout.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
-import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/nav_items.dart';
 import '/permissions.dart';
@@ -65,19 +66,58 @@ class AppNavDrawer extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 10),
-              child: Text(
-                AppSession.instance.currentOrgName ?? 'Nagarva',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.interTight(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: theme.primaryText,
+            // The org header doubles as the SWITCHER when there is more
+            // than one org. Moved out of Settings 3 Sept 2026 at Arun's
+            // request - which company you are working in is not a
+            // preference, it is context, and it belongs next to the
+            // company's name rather than three taps inside Settings.
+            // With a single org it stays a plain, untappable label; an
+            // affordance that leads to a list of one is noise.
+            Builder(builder: (context) {
+              final orgName = AppSession.instance.currentOrgName ?? 'Nagarva';
+              final multi = AppSession.instance.availableOrgs.length > 1;
+              final header = Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            orgName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.interTight(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: theme.primaryText,
+                            ),
+                          ),
+                          if (multi)
+                            Text(
+                              'Tap to switch organisation',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11, color: theme.secondaryText),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (multi)
+                      Icon(Icons.swap_horiz, size: 20, color: theme.primary),
+                  ],
                 ),
-              ),
-            ),
+              );
+              if (!multi) return header;
+              return InkWell(
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await switchOrgFlow(context);
+                },
+                child: header,
+              );
+            }),
             const Divider(height: 1),
             for (final group in [...kNavGroups, kNavGroupOther])
               ...(() {
@@ -132,7 +172,11 @@ class AppNavDrawer extends StatelessWidget {
                             onTap: () {
                               Navigator.of(context).pop();
                               if (item.name != currentPageName) {
-                                context.pushNamed(item.name);
+                                // Replaces rather than stacks once you
+                                // are already off the Dashboard, so back
+                                // is always one press home. See
+                                // module_navigation.dart.
+                                openModule(context, item.name);
                               }
                             },
                           ),

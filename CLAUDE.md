@@ -1666,6 +1666,30 @@ so they cannot disagree: the order storage card, `OrderPnlSection`
 (labelled "Storage (accruing)" while goods are in store), and the
 dashboard revenue tile.
 
+## Navigation contract (3 Sept 2026) — modules replace, details push
+
+Every module route in `nav.dart` builds its own `NavBarPage`, i.e. a
+whole app shell. So `pushNamed` from the menu never swapped a screen, it
+STACKED another shell. Dashboard -> Customers -> Vendors -> Tasks left
+four shells on the stack, and back walked them one at a time. Which
+screen back landed on depended on the order menu items were tapped, so
+the same button behaved differently every time. That is what Arun
+reported as "back is not redirecting to dashboard".
+
+- **Modules go through `openModule()`** (`lib/backend/module_navigation.dart`):
+  push from the Dashboard, `pushReplacementNamed` from anywhere else.
+  At most one module ever sits above the Dashboard, so back from any
+  module is one press home, from any depth of wandering.
+- **Details keep a plain `pushNamed`** on top of their list, so back
+  there returns to the list.
+- The line is: **a module is a place you go, a detail is a thing you
+  opened.** Only the second has a meaningful "previous".
+- **`_tabs` in `main.dart` is still the real router for bottom-bar
+  taps** and is unaffected — tab switches change no route at all.
+
+**Do not "simplify" this back to a uniform `pushNamed`.** It reads like
+an inconsistency and is the whole fix.
+
 ## Changelog
 - **2 Sept 2026 (later), `commission_expected` closes the residual — the
   commission snapshot is now three fields, written and copied together.**

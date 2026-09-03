@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '/components/language_quick_button.dart';
 import '/components/theme_quick_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -85,6 +86,7 @@ class _CustomerSurveysPageWidgetState extends State<CustomerSurveysPageWidget>
       backgroundColor: theme.primaryBackground,
       appBar: AppBar(
         actions: [
+          LanguageQuickButton(iconColor: IconTheme.of(context).color),
           ThemeQuickButton(iconColor: IconTheme.of(context).color),
         ],
         backgroundColor: theme.primaryBackground,

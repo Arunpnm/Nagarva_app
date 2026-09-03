@@ -13,6 +13,8 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/components/global_search_delegate.dart';
 import '/components/notification_bell.dart';
+import '/backend/module_navigation.dart';
+import '/components/language_quick_button.dart';
 import '/components/theme_quick_button.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/components/follow_up_summary_card.dart';
@@ -523,7 +525,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
   void _openKpiTile(String tileId) {
     final page = _kTileDestinations[tileId];
     if (page == null || !_canOpen(page)) return;
-    context.pushNamed(page);
+    openModule(context, page);
   }
 
   Widget _periodSelector(BuildContext context) {
@@ -717,6 +719,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
             // NOT come with it; see ThemeQuickButton's doc comment for
             // why moving a control that does nothing would be worse than
             // leaving it buried.
+            LanguageQuickButton(iconColor: IconTheme.of(context).color),
             ThemeQuickButton(iconColor: IconTheme.of(context).color),
             // Restored gap vs the reference app: the header "Mobile /
             // Name..." global customer search (orders + leads by name or
