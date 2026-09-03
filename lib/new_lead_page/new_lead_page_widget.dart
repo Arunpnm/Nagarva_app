@@ -70,10 +70,24 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
   /// non-owner to just their own branch instead of merely defaulting to
   /// it; owner sees every active branch with no default.
   Future<void> _loadBranches() async {
-    final rows = await BranchesTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eq('active', true).order('name'),
-    );
-    final orgBranches = rows.map((r) => r.name).toList();
+    // GUARDED. Branch is mandatory, so a failure here does not merely
+    // degrade the page - it blocks the whole form, and it used to do so
+    // silently: empty dropdown, and "Select a branch first" on save,
+    // which blames the vendor for a query that died.
+    List<String> orgBranches;
+    try {
+      final rows = await BranchesTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('active', true).order('name'),
+      );
+      orgBranches = rows.map((r) => r.name).toList();
+      _model.branchLoadError = null;
+    } catch (e) {
+      if (!mounted) return;
+      _model.branchLoadError = 'Could not load branches: $e';
+      _model.branchesLoaded = false;
+      safeSetState(() {});
+      return;
+    }
     _model.orgHasAnyBranches = orgBranches.isNotEmpty;
     final isOwner = AppSession.instance.currentStaffId == null;
     final ownBranch = AppSession.instance.currentStaffBranch;
@@ -1090,6 +1104,36 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                       AppLocalizations.of(context).source,
                                   labelTextStyle: const TextStyle(),
                                 ),
+                                // The recovery path. Without it the only
+                                // way out of a failed branch load was to
+                                // guess that reopening the page might
+                                // help - which is what actually fixed it
+                                // in testing, discovered by accident.
+                                if (_model.branchLoadError != null)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0, 8, 0, 0),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            'Branches did not load, so none '
+                                            'can be picked.',
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color:
+                                                    FlutterFlowTheme.of(context)
+                                                        .error),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: _loadBranches,
+                                          child: const Text('Retry'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 FlutterFlowDropDown<String>(
                                   controller:
                                       _model.ldBranchDropdownValueController ??=
@@ -1222,8 +1266,10 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                               if (_model.ldBranch == null ||
                                   _model.ldBranch!.isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Select a branch first.'),
+                                  SnackBar(
+                                    content: Text(_model.branchLoadError != null
+                                        ? 'Branches could not be loaded, so none can be picked. Pull to retry or reopen this page.'
+                                        : 'Select a branch first.'),
                                   ),
                                 );
                                 return;

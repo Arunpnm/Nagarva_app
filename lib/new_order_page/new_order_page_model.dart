@@ -32,6 +32,23 @@ class NewOrderPageModel extends FlutterFlowModel<NewOrderPageWidget> {
   /// "your account needs fixing" one.
   bool orgHasAnyBranches = true;
 
+  /// Set when the branch query itself FAILED, as distinct from the org
+  /// genuinely having no branches.
+  ///
+  /// Added 3 Sept 2026. `_loadBranches()` had no try/catch, so any
+  /// failure left `availableBranches` empty and `branchesLoaded` false
+  /// with nothing shown anywhere. Branch is MANDATORY, so the vendor got
+  /// an unopenable dropdown and, on save, "Select a branch first" -
+  /// blaming them for a load that had silently died. Reproduced live in
+  /// APC Bengaluru right after an in-app org switch: the org had an
+  /// active Head Office the whole time, and a page reload fixed it.
+  ///
+  /// Same failure shape as the Materials/Users/Fleet hangs fixed on
+  /// 7 Aug 2026 - an unguarded primary query that leaves the screen
+  /// looking empty rather than broken.
+  String? branchLoadError;
+
+
   String? ordType = 'Direct';
 
   DateTime? ordMoveDate;
