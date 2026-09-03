@@ -258,10 +258,48 @@
     });
   }
 
+  // The server refuses more than MAX_LINES entries (public_submit_survey
+  // guards a public endpoint against an oversized payload). The
+  // catalogue holds 110 selectable lines, so a well-stocked 3BHK can
+  // pass 50 without doing anything unusual - this is a real customer
+  // hitting a real ceiling, not an attacker.
+  var MAX_LINES = 50;
+
+  var SUBMIT_ERRORS = {
+    too_large: "You've listed more than " + MAX_LINES + " different item " +
+      "types. Use the + button to raise the count on items you already " +
+      "picked instead of adding new lines, then send again.",
+    bad_payload: "Something went wrong building your list. Reload the " +
+      "page and pick your items again.",
+    invalid: "This link isn't valid any more. Ask your moving company " +
+      "for a fresh one."
+  };
+
+  function fail(message) {
+    var btn = document.getElementById("submit");
+    var err = document.getElementById("submit-error");
+    err.textContent = message;
+    err.hidden = false;
+    btn.disabled = false;
+    btn.textContent = "Send list";
+    err.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
   function submit() {
     var btn = document.getElementById("submit");
     var err = document.getElementById("submit-error");
     var rooms = Object.keys(selections).map(function (k) { return selections[k]; });
+
+    // Caught BEFORE sending, so the count in the message is the one on
+    // screen. Letting it reach the server means the customer finishes a
+    // long list and is then refused with nothing to act on.
+    if (rooms.length > MAX_LINES) {
+      fail("You've listed " + rooms.length + " different item types and " +
+        MAX_LINES + " is the most we can send at once. Use the + button " +
+        "to raise the count on items you already picked, rather than " +
+        "adding new lines.");
+      return;
+    }
 
     err.hidden = true;
     btn.disabled = true;
@@ -276,13 +314,15 @@
       if (res && (res.reason === "expired" || res.reason === "not_submittable")) {
         blocked("expired"); return;
       }
-      throw new Error(res && res.reason ? res.reason : "failed");
+      // A REJECTION IS NOT A NETWORK PROBLEM. The request reached the
+      // server and came back 200 saying no. Telling someone to check
+      // their connection here sends them into a retry loop that cannot
+      // ever succeed, because the same payload is refused every time.
+      fail(SUBMIT_ERRORS[res && res.reason] ||
+        "Your list couldn't be saved. Please tell your moving company.");
     }).catch(function () {
-      err.textContent = "Your list didn't send. Check your connection and try again.";
-      err.hidden = false;
-      btn.disabled = false;
-      btn.textContent = "Send list";
-      err.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Only here - fetch failed or the server did not return 200.
+      fail("Your list didn't send. Check your connection and try again.");
     });
   }
 

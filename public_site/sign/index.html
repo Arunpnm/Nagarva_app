@@ -108,6 +108,28 @@
     show("view-blocked");
   }
 
+  var SUBMIT_ERRORS = {
+    // public_submit_signature caps the image at 512KB and requires at
+    // least 100 characters.
+    too_large: "Your signature image is too big to send. Tap Clear and " +
+      "sign again with a simpler stroke.",
+    bad_payload: "That signature didn't come through. Tap Clear and " +
+      "sign again.",
+    invalid: "This link isn't valid any more. Ask your moving company " +
+      "for a fresh one."
+  };
+
+  function fail(message) {
+    // The button id is "submit" - checked against the markup rather
+    // than assumed from its label.
+    var btn = document.getElementById("submit");
+    var err = document.getElementById("submit-error");
+    err.textContent = message;
+    err.hidden = false;
+    btn.disabled = false;
+    btn.textContent = "Sign and send";
+  }
+
   // ---- signature pad ----
   var canvas = document.getElementById("pad");
   var ctx = canvas.getContext("2d");
@@ -198,12 +220,14 @@
       if (res && (res.reason === "expired" || res.reason === "not_signable")) {
         blocked("expired"); return;
       }
-      throw new Error("failed");
+      // Same rule as the survey page: the server answered, so this is
+      // not a connection problem and must not be described as one.
+      // "too_large" in particular is unfixable by retrying - the same
+      // image is sent every time.
+      fail(SUBMIT_ERRORS[res && res.reason] ||
+        "Your signature couldn't be saved. Please tell your moving company.");
     }).catch(function () {
-      err.textContent = "Your signature didn't send. Check your connection and try again.";
-      err.hidden = false;
-      btn.disabled = false;
-      btn.textContent = "Sign and send";
+      fail("Your signature didn't send. Check your connection and try again.");
     });
   }
 
