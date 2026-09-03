@@ -1385,9 +1385,16 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               // See kTrackLinkHosted — /track is built but unhosted.
               if (kTrackLinkHosted)
                 _utilityButton('Copy Track Link', Icons.link, _copyTrackLink),
+              // "Duplicate Order", not "Copy". Arun, 3 Sept 2026: "there
+              // is copy upi and send paylink then again copy what is that
+              // last copy is for". Sitting third in a row whose other two
+              // buttons copy things to the CLIPBOARD, a button labelled
+              // "Copy" reads as a third clipboard action - when it
+              // actually creates a whole new order. The icon said
+              // copy_all, which made it worse.
               _utilityButton(
-                  '⧉ Copy',
-                  Icons.copy_all,
+                  'Duplicate Order',
+                  Icons.control_point_duplicate,
                   widget.duplicating ? null : widget.onDuplicate,
                   color: const Color(0xFF7C3AED)),
             ],

@@ -2,6 +2,7 @@ import '/app_session.dart';
 import '/backend/approval_queue.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/field_expenses.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 // kNotAvailableReasons — the same labels the supervisor chose from, so
@@ -60,6 +61,17 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   /// populated for the (small) awaiting list.
   Map<String, String> _supervisorNames = {};
   Map<String, double> _awaitingBalances = {};
+
+  /// What the supervisor spent on each awaiting job, and how many
+  /// entries make it up.
+  ///
+  /// Arun, 3 Sept 2026: *"we cant simply approve what ever the
+  /// supervisor update"*. The queue showed the money coming IN (balance
+  /// due) and nothing about the money going OUT, so approving was a
+  /// click-through: the one number a reviewer most needs to sanity-check
+  /// — what this job was claimed to have cost — was only visible by
+  /// opening the order.
+  Map<String, ({double total, int count})> _awaitingSpend = {};
 
   /// How each awaiting job was completed, from `pod_records` — so an
   /// unsigned completion is visible IN THE ROW, not behind a tap. Arun,
@@ -149,6 +161,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   Future<void> _loadAwaitingDetail() async {
     _supervisorNames = {};
     _awaitingBalances = {};
+    _awaitingSpend = {};
     _awaitingPod = {};
     if (_awaiting.isEmpty) return;
     final orderIds = _awaiting.map((o) => o.id).whereType<String>().toList();
@@ -175,6 +188,33 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
         }
       } catch (_) {}
     }
+    // What the supervisor spent. Read from BOTH stores for the same
+    // reason the order P&L does: entries made before 3 Sept 2026 live in
+    // orders.field_expenses (jsonb) and everything since is a real
+    // `expenses` row. Showing one would under-report the claim the owner
+    // is being asked to approve.
+    try {
+      final expRows = await ExpensesTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).inFilter('order_id', orderIds),
+      );
+      for (final e in expRows) {
+        final oid = e.orderId;
+        if (oid == null) continue;
+        final cur = _awaitingSpend[oid] ?? (total: 0.0, count: 0);
+        _awaitingSpend[oid] =
+            (total: cur.total + (e.amount ?? 0), count: cur.count + 1);
+      }
+    } catch (_) {}
+    for (final o in _awaiting) {
+      if (o.id == null) continue;
+      final (fieldTotal, fieldCount) =
+          sumFieldExpenses(o.data['field_expenses']);
+      if (fieldTotal == 0 && fieldCount == 0) continue;
+      final cur = _awaitingSpend[o.id!] ?? (total: 0.0, count: 0);
+      _awaitingSpend[o.id!] =
+          (total: cur.total + fieldTotal, count: cur.count + fieldCount);
+    }
+
     // One bounded query for the whole queue — the completion method is
     // the difference between "done, signed" and "done, nobody signed",
     // which are different risks and must not look identical here.
@@ -343,6 +383,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     final theme = FlutterFlowTheme.of(context);
     const gold = Color(0xFFE0A82E);
     final balance = _awaitingBalances[o.id] ?? 0;
+    final spend = _awaitingSpend[o.id];
     final supervisor = o.supervisorId == null
         ? null
         : _supervisorNames[o.supervisorId!];
@@ -456,6 +497,36 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                 ),
               ],
             ),
+            // What the supervisor CLAIMED to have spent, on the card, so
+            // approving is a review rather than a click-through. Arun,
+            // 3 Sept 2026: "we cant simply approve what ever the
+            // supervisor update".
+            if (spend != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                      'Spent by supervisor  ·  '
+                      '${spend.count} item${spend.count == 1 ? '' : 's'}',
+                      style: GoogleFonts.inter(
+                          fontSize: 11.5, color: theme.secondaryText)),
+                  Text('₹${spend.total.toStringAsFixed(0)}',
+                      style: GoogleFonts.interTight(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                          color: theme.warning)),
+                ],
+              ),
+            ] else ...[
+              const SizedBox(height: 4),
+              // Stated, not omitted. "Nothing claimed" is itself worth
+              // seeing on a job that ran all day - a blank row would read
+              // as "not loaded" instead.
+              Text('No expenses claimed on this job',
+                  style: GoogleFonts.inter(
+                      fontSize: 11.5, color: theme.secondaryText)),
+            ],
           ],
         ),
       ),
