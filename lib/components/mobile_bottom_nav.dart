@@ -64,6 +64,9 @@ class MobileBottomNav extends StatelessWidget {
   final List<({IconData icon, String label, VoidCallback onTap})> actions;
 
   static const double barHeight = 68.0;
+  /// Height reserved for a label, one line or two. Fixed on purpose:
+  /// see the note in [_NavItem].
+  static const double labelHeight = 22.0;
   /// Pinned-action slot width. Narrower than a destination because the
   /// labels are one short word and there is no badge to fit.
   static const double _actionWidth = 52.0;
@@ -91,10 +94,20 @@ class MobileBottomNav extends StatelessWidget {
           height: barHeight,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              // Actions are pinned; destinations share what is left.
-              final reserved = _actionWidth * actions.length;
-              final avail = constraints.maxWidth - reserved;
-              final fits = _minItemWidth * items.length <= avail;
+              // EVERY slot is the same width when the whole bar fits -
+              // destinations and actions alike. Giving the actions their
+              // own narrower fixed width made the row read as misaligned
+              // on a narrow screen, where the pinned pair ended up WIDER
+              // than the destinations they sat beside (3 Sept 2026).
+              // The fixed width is kept for the case it exists for: when
+              // the destinations have to scroll, the actions must not
+              // scroll with them.
+              final total = items.length + actions.length;
+              final fits = _minItemWidth * total <= constraints.maxWidth;
+              final slot = fits
+                  ? constraints.maxWidth / total
+                  : _actionWidth;
+              final avail = constraints.maxWidth - slot * actions.length;
               final row = Row(
                 mainAxisAlignment:
                     fits ? MainAxisAlignment.spaceEvenly : MainAxisAlignment.start,
@@ -103,7 +116,7 @@ class MobileBottomNav extends StatelessWidget {
                     _NavItem(
                       item: items[i],
                       selected: i == currentIndex,
-                      width: fits ? avail / items.length : _itemWidth,
+                      width: fits ? slot : _itemWidth,
                       onTap: () => onTap(i),
                     ),
                 ],
@@ -112,12 +125,12 @@ class MobileBottomNav extends StatelessWidget {
                 if (actions.isEmpty) return destinations;
                 return Row(
                   children: [
-                    Expanded(child: destinations),
+                    SizedBox(width: avail, child: destinations),
                     for (final a in actions)
                       _ActionItem(
                           icon: a.icon,
                           label: a.label,
-                          width: _actionWidth,
+                          width: slot,
                           onTap: a.onTap),
                   ],
                 );
@@ -204,16 +217,19 @@ class _ActionItem extends StatelessWidget {
               child: Icon(icon, size: 27, color: theme.secondaryText),
             ),
             const SizedBox(height: 2),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 9.5,
-                height: 1.1,
-                fontWeight: FontWeight.w500,
-                color: theme.secondaryText,
+            SizedBox(
+              height: MobileBottomNav.labelHeight,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 9.5,
+                  height: 1.1,
+                  fontWeight: FontWeight.w500,
+                  color: theme.secondaryText,
+                ),
               ),
             ),
           ],
@@ -293,23 +309,31 @@ class _NavItem extends StatelessWidget {
                     ),
             ),
             const SizedBox(height: 2),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Text(
-                item.label,
-                textAlign: TextAlign.center,
+            // Fixed height, not free-flowing. "Leads / CRM" wraps to two
+            // lines where every other label takes one, and a Column that
+            // centres its children then pushed that item's ICON up out of
+            // line with its neighbours - the row looked misaligned, and
+            // the cause was the one label that wrapped.
+            SizedBox(
+              height: MobileBottomNav.labelHeight,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Text(
+                  item.label,
+                  textAlign: TextAlign.center,
                 // 2 lines rather than 1 + ellipsis: at any width narrow
                 // enough to matter, "Dashboard" and "Leads / CRM" (this
                 // app's longest labels) still fit fully across two lines
                 // instead of truncating — Part 5a requires labels ALWAYS
                 // visible, not just present.
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 9.5,
-                  height: 1.1,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? theme.primary : theme.secondaryText,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    height: 1.1,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? theme.primary : theme.secondaryText,
+                  ),
                 ),
               ),
             ),

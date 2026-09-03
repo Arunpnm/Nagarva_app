@@ -17,6 +17,7 @@ import '/components/theme_quick_button.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/components/follow_up_summary_card.dart';
 import '/index.dart';
+import '/nav_items.dart';
 import '/permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -475,6 +476,51 @@ class _HomePageWidgetState extends State<HomePageWidget>
     safeSetState(() {});
   }
 
+  /// Where each dashboard tile leads.
+  ///
+  /// Arun, 3 Sept 2026: *"in dashboard we can check all our reports or
+  /// status, like how many enquires, quotes, bookings, revenue etc, can
+  /// u wire everything so that if i press that it should take to that
+  /// page, now its just viewable"*. `DashboardKpiGrid` has taken an
+  /// `onTapTile` since it was built and HomePage never passed one, so
+  /// every populated tile was inert - a number with no way through to
+  /// the rows behind it.
+  ///
+  /// Reminders leads to the Calendar because that is the only screen
+  /// that renders `reminders_view`. It is also the one destination with
+  /// no permission module of its own, so [_canOpen] leaves the tile
+  /// inert for a staff session rather than sending them somewhere the
+  /// nav guard will bounce them out of.
+  static const _kTileDestinations = <String, String>{
+    'enquiries': 'LeadsPage',
+    'quotes': 'SurveyQuoteHubPage',
+    'bookings': 'OrdersPage',
+    'active_moves': 'OperationsPage',
+    'reminders': 'CalendarPage',
+    'revenue': 'PaymentsPage',
+    'outstanding': 'PaymentsPage',
+    'labour': 'SalaryPage',
+    'profit': 'PLReportPage',
+    'expenses': 'ExpensePage',
+  };
+
+  /// Mirrors the drawer and the nav rail exactly, so a tile can never
+  /// offer a route those two hide. Owner: everything.
+  bool _canOpen(String pageName) {
+    final allowed =
+        isOwnerOrManagerSession && AppSession.instance.currentStaffId != null
+            ? (StaffPermissions.activeStaffPages ??
+                const {'HomePage', 'OrdersPage', 'OperationsPage'})
+            : null;
+    return allowed == null || allowed.contains(pageName);
+  }
+
+  void _openKpiTile(String tileId) {
+    final page = _kTileDestinations[tileId];
+    if (page == null || !_canOpen(page)) return;
+    context.pushNamed(page);
+  }
+
   Widget _periodSelector(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     final now = DateTime.now();
@@ -508,26 +554,43 @@ class _HomePageWidgetState extends State<HomePageWidget>
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
+                  // A hand-built pill, NOT a ChoiceChip.
+                  //
+                  // The chip clipped its own label: "This" rendered as
+                  // "Thi" with the s faded out at the pill edge, and the
+                  // same for "Last", "3M" and "FY" (3 Sept 2026). Not a
+                  // width problem - it reproduced identically at 500dp
+                  // with the row half empty, so it was the chip sizing
+                  // its box smaller than the text it then painted.
+                  // Fighting Material's chip internals to get a pill with
+                  // a label in it is not worth it; this is the pill.
                   for (final (key, label, onTap) in chips)
                     Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(
                           0.0, 0.0, 6.0, 0.0),
-                      child: ChoiceChip(
-                        label: Text(label),
-                        selected: isSelected(key),
-                        onSelected: (_) => onTap(),
-                        labelStyle: GoogleFonts.inter(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected(key)
-                              ? theme.primaryBackground
-                              : theme.primaryText,
+                      child: Material(
+                        color: isSelected(key)
+                            ? theme.primary
+                            : theme.secondaryBackground,
+                        borderRadius: BorderRadius.circular(16),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: onTap,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            child: Text(
+                              label,
+                              style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected(key)
+                                    ? theme.primaryBackground
+                                    : theme.primaryText,
+                              ),
+                            ),
+                          ),
                         ),
-                        selectedColor: theme.primary,
-                        backgroundColor: theme.secondaryBackground,
-                        showCheckmark: false,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
                       ),
                     ),
                 ],
@@ -814,6 +877,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                     _model.unpricedCommissionCount,
                                 onAddExpense: () => context
                                     .pushNamed(QuickExpensePageWidget.routeName),
+                                onTapTile: _openKpiTile,
                               ),
                             ],
                           ),
