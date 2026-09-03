@@ -138,6 +138,7 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
         qty: picked.qty,
         orderId: widget.orderId,
         billToCustomer: picked.billToCustomer,
+        chargeAmount: picked.chargeAmount,
       );
       await _load();
       widget.onChanged?.call();
@@ -254,10 +255,14 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
 }
 
 class _UsageInput {
-  const _UsageInput(this.material, this.qty, this.billToCustomer);
+  const _UsageInput(
+      this.material, this.qty, this.billToCustomer, this.chargeAmount);
   final MaterialsRow material;
   final double qty;
   final bool billToCustomer;
+
+  /// What to charge. Null when not billing.
+  final double? chargeAmount;
 }
 
 class _AddMaterialDialog extends StatefulWidget {
@@ -271,12 +276,44 @@ class _AddMaterialDialog extends StatefulWidget {
 class _AddMaterialDialogState extends State<_AddMaterialDialog> {
   late MaterialsRow _selected = widget.materials.first;
   final _qtyCtrl = TextEditingController();
+  final _chargeCtrl = TextEditingController();
   bool _bill = false;
+
+  /// True once the vendor types in the charge box.
+  ///
+  /// After that the suggested figure stops overwriting it. Changing the
+  /// quantity must not silently undo a negotiated price - the same rule
+  /// Add Labour got after the staff dropdown was found clobbering a
+  /// typed amount.
+  bool _chargeTouched = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _chargeCtrl.addListener(() {
+      if (!_chargeTouched) _chargeTouched = true;
+    });
+  }
+
+  /// Refreshes the suggested charge from the vendor's own selling price,
+  /// unless they have already typed their own figure.
+  void _suggestCharge() {
+    if (_chargeTouched) return;
+    final qty = double.tryParse(_qtyCtrl.text.trim()) ?? 0;
+    final price = _selected.sellingPrice ?? 0;
+    final v = price * qty;
+    final text = v <= 0 ? '' : v.toStringAsFixed(0);
+    if (_chargeCtrl.text != text) {
+      _chargeCtrl.value = TextEditingValue(text: text);
+      _chargeTouched = false;
+    }
+  }
 
   @override
   void dispose() {
     _qtyCtrl.dispose();
+    _chargeCtrl.dispose();
     super.dispose();
   }
 
@@ -304,8 +341,11 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
                       overflow: TextOverflow.ellipsis),
                 ),
             ],
-            onChanged: (v) => setState(() => _selected = widget.materials
-                .firstWhere((m) => m.id == v, orElse: () => _selected)),
+            onChanged: (v) => setState(() {
+              _selected = widget.materials
+                  .firstWhere((m) => m.id == v, orElse: () => _selected);
+              _suggestCharge();
+            }),
           ),
           const SizedBox(height: 10),
           TextField(
@@ -315,6 +355,7 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
             decoration: InputDecoration(
                 labelText: 'Quantity used',
                 helperText: '${onHand.toStringAsFixed(0)} in stock'),
+            onChanged: (_) => setState(_suggestCharge),
           ),
           const SizedBox(height: 6),
           // OFF by default: materials used on a job are the normal case.
@@ -322,16 +363,30 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
           // agreed to.
           CheckboxListTile(
             value: _bill,
-            onChanged: (v) => setState(() => _bill = v ?? false),
+            onChanged: (v) => setState(() {
+              _bill = v ?? false;
+              if (_bill) _suggestCharge();
+            }),
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
             dense: true,
             title: const Text('Customer is paying for these'),
             subtitle: Text(price > 0
-                ? 'Adds ₹${price.toStringAsFixed(0)} each to this order.'
-                : 'No selling price set on this material, so nothing can '
-                    'be charged.'),
+                ? 'Suggested ₹${price.toStringAsFixed(0)} each - edit below '
+                    'if you agreed a different price.'
+                : 'No selling price set on this material. Type what you '
+                    'agreed below.'),
           ),
+          if (_bill)
+            TextField(
+              controller: _chargeCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Charge to customer',
+                helperText: 'Total for this line, not per unit',
+              ),
+            ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -357,7 +412,14 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
                   _error = 'Only ${onHand.toStringAsFixed(0)} in stock.');
               return;
             }
-            Navigator.of(context).pop(_UsageInput(_selected, q, _bill));
+            final charge = double.tryParse(_chargeCtrl.text.trim());
+            if (_bill && (charge == null || charge <= 0)) {
+              setState(() =>
+                  _error = 'Enter what the customer is being charged.');
+              return;
+            }
+            Navigator.of(context)
+                .pop(_UsageInput(_selected, q, _bill, _bill ? charge : null));
           },
           child: const Text('Record'),
         ),

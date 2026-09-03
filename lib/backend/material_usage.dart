@@ -43,6 +43,17 @@ class MaterialUsage {
     required double qty,
     required String orderId,
     required bool billToCustomer,
+    /// What the customer is actually charged. Null means "use the
+    /// material's selling price x qty".
+    ///
+    /// Arun, 3 Sept 2026: *"the price that the customer paid wont be
+    /// fixed so make it editable or dynamic"*. The selling price on the
+    /// material is a DEFAULT the vendor set, not a fixed tariff - a
+    /// carton goes out cheaper on a big job and dearer on a small one.
+    /// Showing that stored figure for editing is explicitly what the
+    /// "no suggested money" rule permits; forcing it would be the app
+    /// pricing the vendor's goods for them.
+    double? chargeAmount,
     String? note,
   }) async {
     final cost = material.costPerUnit ?? 0;
@@ -82,18 +93,22 @@ class MaterialUsage {
     if (!billToCustomer) return null;
 
     final price = material.sellingPrice ?? 0;
-    if (price <= 0) {
+    // An explicit amount wins, INCLUDING when the material has no selling
+    // price - a vendor who types a figure has priced it, and refusing
+    // because the catalogue is blank would lose a real charge.
+    final charge = chargeAmount ?? (price * qty);
+    if (charge <= 0) {
       // Reported, never silent. The stock has already left; the vendor
       // has to know the charge did not land so they can add it by hand.
-      return '${material.name} has no selling price set, so it was '
-          'recorded as used but not charged.';
+      return '${material.name} has no price set and no amount was '
+          'entered, so it was recorded as used but not charged.';
     }
 
     await SupaFlow.client.from('addons').insert({
       ...OrgScope.stamp(),
       'order_id': orderId,
       'description': '${_qtyLabel(qty)} x ${material.name}',
-      'amount': price * qty,
+      'amount': charge,
       // Complete immediately: unlike an AC install booked for tomorrow,
       // the goods have already changed hands. This is money owed, not
       // work outstanding.
@@ -102,7 +117,7 @@ class MaterialUsage {
     });
 
     return 'Charged to the order: ${_qtyLabel(qty)} x ${material.name} '
-        'at ₹${price.toStringAsFixed(0)} each.';
+        '- ₹${charge.toStringAsFixed(0)}.';
   }
 
   static String _qtyLabel(double q) =>

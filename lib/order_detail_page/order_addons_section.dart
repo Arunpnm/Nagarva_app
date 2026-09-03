@@ -6,8 +6,20 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 
-/// Add-on services on an order: extra work agreed after the quote, which
-/// often happens on a DIFFERENT DAY from the move itself.
+/// Extra charges on an order: anything billed on top of the quote.
+///
+/// Mostly extra WORK agreed after the quote, which often happens on a
+/// different day from the move itself. Also GOODS the customer buys —
+/// cartons and the like — pushed here by
+/// `MaterialUsage.record`.
+///
+/// **Renamed from "Add-on Services" on 3 Sept 2026.** Arun, seeing a
+/// carton box listed under it: *"in add on service y the cartton box?"*.
+/// He was right: the table is the single revenue path for everything
+/// charged beyond the quote, which is the correct plumbing, but the
+/// heading claimed it was all services. Filing goods under a label that
+/// says "Services" makes a vendor distrust the line rather than the
+/// label. The storage decision is unchanged; only the wording is.
 ///
 /// Built 3 Sept 2026, from Arun's case: *"today ac uninstall done but
 /// install is tomorrow, due to this customer have also hold some money —
@@ -126,7 +138,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-          title: Text(existing == null ? 'Add pending work' : 'Edit add-on'),
+          title: Text(existing == null ? 'Add a charge' : 'Edit charge'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -134,7 +146,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                 controller: descCtrl,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  labelText: 'What work?',
+                  labelText: 'What is being charged?',
                   hintText: 'e.g. AC install at destination',
                 ),
               ),
@@ -243,11 +255,34 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
             children: [
               Icon(Icons.handyman_outlined, size: 18, color: theme.primary),
               const SizedBox(width: 8),
-              Text('Add-on Services',
+              Text('Extra Charges',
                   style: GoogleFonts.interTight(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText)),
+              // Pending count on the HEADER, not only in the list below.
+              // Arun, 3 Sept 2026: "that addon serice is pending so make
+              // it clear its pending in that order". Outstanding work is
+              // the thing a vendor needs to see without reading the
+              // rows - it is money not yet earned and a job not yet
+              // finished.
+              if (_pendingCount > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: theme.warning,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text('$_pendingCount PENDING',
+                      style: GoogleFonts.interTight(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: Colors.white)),
+                ),
+              ],
               const Spacer(),
               if (!widget.readOnly)
                 TextButton.icon(
@@ -269,9 +304,10 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Extra work agreed after the quote — an AC install the next '
-                'day, a carpenter, a second trip. Add it here and it counts '
-                'toward the balance until it is done.',
+                'Anything charged on top of the quote — an AC install the '
+                'next day, a carpenter, a second trip, or materials the '
+                'customer bought. Pending items count toward the balance '
+                'until they are done.',
                 style:
                     GoogleFonts.inter(fontSize: 12, color: theme.secondaryText),
               ),
@@ -320,8 +356,21 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
       _ => (theme.warning, 'Pending', Icons.schedule),
     };
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+    final pending = !done && !cancelled;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.fromLTRB(pending ? 8 : 0, 6, 0, 6),
+      decoration: pending
+          // A pending charge is money not yet earned and work not yet
+          // done. It gets a tint and a rule so it cannot be skimmed past
+          // as if it were finished.
+          ? BoxDecoration(
+              color: theme.warning.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(8),
+              border: Border(
+                  left: BorderSide(color: theme.warning, width: 3)),
+            )
+          : null,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
