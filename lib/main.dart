@@ -26,6 +26,8 @@ import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
 import 'components/coming_soon_page.dart';
+import 'components/app_nav_drawer.dart';
+import 'components/quick_entry_dialog.dart';
 import 'components/load_error_state.dart';
 import 'components/mobile_bottom_nav.dart';
 import 'components/nav_badge.dart';
@@ -1157,6 +1159,12 @@ class _NavBarPageState extends State<NavBarPage>
       // ------- MOBILE: custom bottom nav (parity brief Part 5a/5b) -------
       return Scaffold(
         resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
+        // The module menu, on the SHELL rather than on HomePage. It used
+        // to be declared on HomePage's own Scaffold, so it existed on the
+        // Dashboard and nowhere else - from Orders or Leads the other
+        // twenty-odd modules could not be reached at all. Opened from the
+        // bar's pinned Menu button, within thumb reach.
+        drawer: AppNavDrawer(currentPageName: _currentPageName),
         body: NotificationListener<UserScrollNotification>(
           onNotification: (notification) {
             // Scroll-aware only — no idle timer anywhere, so the nav can
@@ -1192,9 +1200,11 @@ class _NavBarPageState extends State<NavBarPage>
             // 3 Sept 2026: "we have plenty of modules which is also
             // getting confused which is for what". Everything else is in
             // the drawer, grouped.
-            final bottomItems = _navItems
-                .where((e) => kPrimaryNavNames.contains(e.name))
-                .toList();
+            // primaryNavItems, not a raw kPrimaryNavNames filter: every
+            // name in that set is an owner/manager destination, so a
+            // supervisor or field-staff session matched none and was left
+            // with no bar - and no drawer either. See nav_items.dart.
+            final bottomItems = primaryNavItems(_navItems);
             if (bottomItems.isEmpty) return const SizedBox.shrink();
             final idx =
                 bottomItems.indexWhere((e) => e.name == _currentPageName);
@@ -1204,6 +1214,29 @@ class _NavBarPageState extends State<NavBarPage>
               // By name: an index into bottomItems is NOT an index into
               // _navItems.
               onTap: (i) => _selectTabNamed(bottomItems[i].name),
+              // Pinned right, on every screen the shell renders. Offered
+              // only to owner/manager: a supervisor's four destinations
+              // are already all in the bar, so a Menu there would open a
+              // drawer listing what is under their thumb already, and
+              // most Quick tiles are permission-gated away from them.
+              actions: isOwnerOrManagerSession
+                  ? [
+                      (
+                        icon: Icons.add_circle_outline,
+                        label: 'Quick',
+                        onTap: () => QuickEntryDialog.show(context),
+                      ),
+                      (
+                        icon: Icons.menu,
+                        label: 'Menu',
+                        // Scaffold.of finds the SHELL scaffold: this
+                        // builder sits in its bottomNavigationBar slot,
+                        // and the page bodies with their own Scaffolds
+                        // are below it in the tree, not above.
+                        onTap: () => Scaffold.of(context).openDrawer(),
+                      ),
+                    ]
+                  : const [],
             );
           }),
         ),
@@ -1293,6 +1326,55 @@ class _NavBarPageState extends State<NavBarPage>
                   ),
                 ),
                 const Divider(height: 1),
+                // Quick Entry, wide layouts. Same four shortcuts the
+                // mobile bar's pinned button opens, in the one place a
+                // rail layout has that is always visible. Deliberately
+                // NOT a FloatingActionButton: eleven pages render their
+                // own FAB inside this shell's body, and a shell FAB would
+                // sit on the same point as theirs.
+                if (isOwnerOrManagerSession)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                    child: Material(
+                      color: FlutterFlowTheme.of(context)
+                          .primary
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () => QuickEntryDialog.show(context),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: _railExpanded
+                                ? MainAxisAlignment.start
+                                : MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_circle_outline,
+                                  size: 22,
+                                  color: FlutterFlowTheme.of(context).primary),
+                              if (_railExpanded) ...[
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Quick Entry',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13.5,
+                                      color: FlutterFlowTheme.of(context)
+                                          .primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 // Nav items
                 Expanded(
                   child: ListView.builder(

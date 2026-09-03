@@ -73,6 +73,27 @@ const kPrimaryNavNames = <String>{
   'PaymentsPage',
 };
 
+/// The destinations the mobile bottom bar shows, for THIS session.
+///
+/// **Fixes a regression introduced 3 Sept 2026 by the grouping change.**
+/// `main.dart` filtered its nav list through [kPrimaryNavNames] directly
+/// and rendered nothing when the result was empty. Every name in that set
+/// belongs to the owner/manager nav, so a SUPERVISOR or FIELD-STAFF
+/// session matched none of them and lost its bottom bar entirely - and
+/// those sessions have no drawer either, so they were left with no
+/// navigation at all. The bar was only ever meant to be trimmed because
+/// the OWNER set had grown to 27; the supervisor set is 4 and the
+/// field-staff set is 2, which were never the problem.
+///
+/// Falls back to the full list rather than an empty bar in every case, so
+/// a future set that happens to share no names with [kPrimaryNavNames]
+/// degrades to "shows everything" instead of "shows nothing".
+List<NavItem> primaryNavItems(List<NavItem> all) {
+  if (!isOwnerOrManagerSession) return all;
+  final primary = all.where((e) => kPrimaryNavNames.contains(e.name)).toList();
+  return primary.isEmpty ? all : primary;
+}
+
 /// The 19 owner/manager destinations (Users Kickoff Step 2.1). Six of
 /// these route to `ComingSoonPage` today — `surveys`, `inbox`, `survey`
 /// and `reviews` are genuinely unbuilt. **`materials`, `reports` and

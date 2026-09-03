@@ -38,13 +38,40 @@ class MobileBottomNav extends StatelessWidget {
     required this.items,
     required this.currentIndex,
     required this.onTap,
+    this.actions = const [],
   });
 
   final List<NavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
 
+  /// Global actions PINNED to the right of the bar — never part of the
+  /// scrolling destination row, so they cannot slide off-screen the way
+  /// a destination can.
+  ///
+  /// Added 3 Sept 2026 for Arun: *"i need that button to be in all place
+  /// in same location now its visible only in dashboard page"* (Quick
+  /// Entry) and *"the left bar menu button is need in bottom ... its hard
+  /// to touch ther when we use mobile in one hand"* (Menu).
+  ///
+  /// Both were previously bound to HomePage's own `Scaffold` — the Quick
+  /// Entry FAB and the drawer alike — so neither existed on any other
+  /// screen. Putting them in the bar rather than in a `FloatingActionButton`
+  /// is deliberate: eleven pages in `lib/` already declare their own FAB
+  /// (Leads, Orders, Customers, Fleet, Tasks, Trips, Vendors, Rate Cards,
+  /// Claims, Branches, Survey hub), and those render in the shell's body,
+  /// so a shell FAB would land on the same point as theirs.
+  final List<({IconData icon, String label, VoidCallback onTap})> actions;
+
   static const double barHeight = 68.0;
+  /// Pinned-action slot width. Narrower than a destination because the
+  /// labels are one short word and there is no badge to fit.
+  static const double _actionWidth = 52.0;
+  /// Below this a destination is compressed no further and the row
+  /// scrolls instead. 50 keeps every slot above Material's 48dp minimum
+  /// while letting five destinations plus two pinned actions sit on a
+  /// 360dp phone without scrolling.
+  static const double _minItemWidth = 50.0;
   // Widened from an earlier 64dp — at 64dp "Dashboard"/"Leads / CRM" (the
   // full owner nav set's longest labels) truncated to "Dashbo…" even on a
   // single line, found live-testing on a real phone. 76dp plus the 2-line
@@ -64,7 +91,10 @@ class MobileBottomNav extends StatelessWidget {
           height: barHeight,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final fits = _itemWidth * items.length <= constraints.maxWidth;
+              // Actions are pinned; destinations share what is left.
+              final reserved = _actionWidth * actions.length;
+              final avail = constraints.maxWidth - reserved;
+              final fits = _minItemWidth * items.length <= avail;
               final row = Row(
                 mainAxisAlignment:
                     fits ? MainAxisAlignment.spaceEvenly : MainAxisAlignment.start,
@@ -73,14 +103,26 @@ class MobileBottomNav extends StatelessWidget {
                     _NavItem(
                       item: items[i],
                       selected: i == currentIndex,
-                      width: fits
-                          ? constraints.maxWidth / items.length
-                          : _itemWidth,
+                      width: fits ? avail / items.length : _itemWidth,
                       onTap: () => onTap(i),
                     ),
                 ],
               );
-              if (fits) return row;
+              Widget withActions(Widget destinations) {
+                if (actions.isEmpty) return destinations;
+                return Row(
+                  children: [
+                    Expanded(child: destinations),
+                    for (final a in actions)
+                      _ActionItem(
+                          icon: a.icon,
+                          label: a.label,
+                          width: _actionWidth,
+                          onTap: a.onTap),
+                  ],
+                );
+              }
+              if (fits) return withActions(row);
               // NG-FIX brief, bug 2b: this app's owner/manager nav has far
               // more destinations than fit a phone-width bar (27 today,
               // growing) — reducing the destination count isn't on the
@@ -92,7 +134,7 @@ class MobileBottomNav extends StatelessWidget {
               // unreachable destination — this trailing fade is the
               // low-risk fix for that: a visual cue that there's more to
               // scroll to, without restructuring a nav this app relies on.
-              return Stack(
+              return withActions(Stack(
                 children: [
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -119,9 +161,62 @@ class MobileBottomNav extends StatelessWidget {
                     ),
                   ),
                 ],
-              );
+              ));
             },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A pinned bar action. Same visual language as a destination — icon in
+/// a pill, label under it — but never "selected", because it opens a
+/// sheet or a drawer rather than swapping the body.
+class _ActionItem extends StatelessWidget {
+  const _ActionItem({
+    required this.icon,
+    required this.label,
+    required this.width,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final double width;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return SizedBox(
+      width: width,
+      height: MobileBottomNav.barHeight,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 40,
+              height: 30,
+              alignment: Alignment.center,
+              child: Icon(icon, size: 27, color: theme.secondaryText),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 9.5,
+                height: 1.1,
+                fontWeight: FontWeight.w500,
+                color: theme.secondaryText,
+              ),
+            ),
+          ],
         ),
       ),
     );

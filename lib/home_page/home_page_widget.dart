@@ -1,5 +1,4 @@
 import '/app_session.dart';
-import '/backend/session_logout.dart';
 import '/backend/commission_pricing.dart';
 import '/backend/field_expenses.dart';
 import '/backend/storage_billing.dart';
@@ -17,9 +16,7 @@ import '/components/notification_bell.dart';
 import '/components/theme_quick_button.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/components/follow_up_summary_card.dart';
-import '/components/quick_entry_dialog.dart';
 import '/index.dart';
-import '/nav_items.dart';
 import '/permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -564,50 +561,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
   /// One drawer destination. Extracted when the drawer was grouped
   /// (3 Sept 2026) so the tile markup is written once rather than
   /// repeated inside each section.
-  Widget _drawerTile(BuildContext context, NavItem item) => InkWell(
-        onTap: () {
-          if (scaffoldKey.currentState!.isDrawerOpen ||
-              scaffoldKey.currentState!.isEndDrawerOpen) {
-            Navigator.pop(context);
-          }
-          if (item.name != 'HomePage') {
-            context.pushNamed(item.name);
-          }
-        },
-        child: Material(
-          color: Colors.transparent,
-          child: ListTile(
-            leading: Icon(item.icon),
-            title: Text(item.label),
-          ),
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
-    // This drawer used to list every page unconditionally, unlike the
-    // bottom nav / sidebar in main.dart's NavBarPage which filters by the
-    // staff permission matrix (StaffPermissions.activeStaffPages) — a
-    // staff member without e.g. Payments access could still see and tap
-    // it here, only to silently bounce back to Dashboard via NavBarPage's
-    // own URL guard. Mirrors the same allow-list so the two navs agree.
-    //
-    // Users Kickoff Step 2 (1 Aug 2026): activeStaffPages is a
-    // kPermModules-derived set and only ever applies to a MANAGER
-    // session — owner never filters, and supervisor/field-staff's nav
-    // items (SupervisorJobsListPage, MyAttComingSoon, ...) aren't in
-    // kPermModules at all and never will be (their set is fixed by role,
-    // not per-person customizable — see nav_items.dart). Applying the
-    // old owner-vs-any-staff branch here would have filtered a
-    // supervisor/field-staff drawer down to nothing, since none of their
-    // items could ever match activeStaffPages.
-    final allowedDrawerPages =
-        isOwnerOrManagerSession && AppSession.instance.currentStaffId != null
-            ? (StaffPermissions.activeStaffPages ??
-                const {'HomePage', 'OrdersPage', 'OperationsPage'})
-            : null; // owner, and supervisor/field-staff: unfiltered (fixed) set
-    bool showDrawerPage(String pageName) =>
-        allowedDrawerPages == null || allowedDrawerPages.contains(pageName);
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -616,126 +571,14 @@ class _HomePageWidgetState extends State<HomePageWidget>
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            // Popup on the same screen (matches the React web app),
-            // not a navigation to /quick-entry.
-            await QuickEntryDialog.show(context);
-          },
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          tooltip: 'Quick Entry',
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
-        drawer: Drawer(
-          child: SafeArea(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                // Parity brief Part 5/nav-completeness fix: this drawer used
-                // to hand-duplicate main.dart's nav item list and had
-                // silently drifted to only 8 of the 12 real destinations
-                // (Accounts/Staff/Fleet/P&L were missing outright, not
-                // permission-filtered — found live-testing on a real
-                // phone). Users Kickoff Step 2 (1 Aug 2026): now calls the
-                // same navItemsForCurrentSession() main.dart's NavBarPage
-                // uses, instead of reading kAllNavItems directly — that
-                // raw list is only ever correct for an owner/manager
-                // session, so reading it directly here would have shown a
-                // supervisor/field-staff session the wrong 19-item drawer
-                // again, the exact class of drift this fix already closed
-                // once. Every tile keeps a real 48dp+ tap target via
-                // ListTile's own default sizing.
-                // GROUPED 3 Sept 2026. 27 flat tiles gave no clue which
-                // screen was for what; ordering by section does. The
-                // grouping is presentation only — `item.name` is
-                // untouched, so `_tabs` (the real router) is unaffected.
-                for (final group in [...kNavGroups, kNavGroupOther])
-                  ...(() {
-                    final inGroup = navItemsForCurrentSession()
-                        .where((e) =>
-                            showDrawerPage(e.name) &&
-                            (kNavGroups.contains(e.group)
-                                ? e.group == group
-                                // An item whose group is not a known
-                                // section still renders, under Other,
-                                // rather than disappearing from the
-                                // drawer entirely.
-                                : group == kNavGroupOther))
-                        .toList();
-                    if (inGroup.isEmpty) return <Widget>[];
-                    return <Widget>[
-                      // Collapsible, so the drawer opens as a short list
-                      // of seven sections instead of 27 tiles. Only the
-                      // section holding the CURRENT screen starts open —
-                      // expanding everything by default would put the
-                      // vendor back where they started.
-                      Theme(
-                        // ExpansionTile draws its own divider lines by
-                        // default, which read as separators between
-                        // unrelated items rather than as section edges.
-                        data: Theme.of(context)
-                            .copyWith(dividerColor: Colors.transparent),
-                        child: ExpansionTile(
-                          initiallyExpanded:
-                              inGroup.any((e) => e.name == 'HomePage'),
-                          tilePadding: const EdgeInsetsDirectional.fromSTEB(
-                              16, 0, 12, 0),
-                          childrenPadding:
-                              const EdgeInsetsDirectional.only(bottom: 4),
-                          title: Text(
-                            group.toUpperCase(),
-                            style: GoogleFonts.interTight(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.1,
-                              color: FlutterFlowTheme.of(context).secondaryText,
-                            ),
-                          ),
-                          children: [
-                            for (final item in inGroup)
-                              _drawerTile(context, item),
-                          ],
-                        ),
-                      ),
-                    ];
-                  })(),
-                InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    // Was a second, independently-drifted logout sequence
-                    // (missing StaffAuth.clearStoredVendorToken()/
-                    // StaffPermissions.clearActive(), and — the live bug —
-                    // hardcoded context.go(LoginPageWidget.routePath)
-                    // regardless of device binding, stranding a PIN-only
-                    // staff member on a screen he has no credentials for).
-                    // Now calls the one shared sequence directly instead of
-                    // re-duplicating it a second time.
-                    if (Navigator.of(context).canPop()) {
-                      context.pop();
-                    }
-                    await performLogout(context);
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.logout,
-                      ),
-                      title: Text(
-                        AppLocalizations.of(context).logout,
-                        style: const TextStyle(),
-                      ),
-                      dense: false,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        // Quick Entry and the module menu MOVED TO THE SHELL, 3 Sept
+        // 2026 (main.dart's NavBarPage + components/app_nav_drawer.dart).
+        // Both used to hang off this Scaffold, which meant they existed
+        // on the Dashboard and nowhere else - the Quick Entry FAB was
+        // unreachable from Orders or Leads, and so were the twenty-odd
+        // modules in the drawer. They are now pinned to the right of the
+        // bottom bar, in the same place on every screen the shell
+        // renders, and within thumb reach one-handed.
         appBar: AppBar(
           backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
           automaticallyImplyLeading: true,
