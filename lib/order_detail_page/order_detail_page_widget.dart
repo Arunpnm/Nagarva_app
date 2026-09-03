@@ -24,7 +24,6 @@ import 'order_documents_section.dart';
 import 'order_storage_section.dart';
 import 'order_addons_section.dart';
 import 'order_materials_section.dart';
-import 'order_expenses_section.dart';
 import 'order_pnl_section.dart';
 import 'payment_history_section.dart';
 import 'quick_payment_section.dart';
@@ -478,7 +477,6 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   final _storageKey = GlobalKey<OrderStorageSectionState>();
   final _addonsKey = GlobalKey<OrderAddonsSectionState>();
   final _materialsKey = GlobalKey<OrderMaterialsSectionState>();
-  final _expensesKey = GlobalKey<OrderExpensesSectionState>();
   final _quickPaymentKey = GlobalKey<QuickPaymentSectionState>();
   final _paymentHistoryKey = GlobalKey<PaymentHistorySectionState>();
 
@@ -1379,20 +1377,6 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                           _pnlKey.currentState?.reload();
                           _addonsKey.currentState?.reload();
                         },
-                      ),
-                    // What the job COST. Sits directly under Extra
-                    // Charges (what it EARNS) on purpose: the same words
-                    // appear in both - AC install is a cost when you pay
-                    // the technician and a charge when you bill the
-                    // customer - and putting them side by side is what
-                    // makes that pair legible instead of confusing.
-                    if (widget.orderId != null &&
-                        StaffPermissions.canActive('orders', 'view'))
-                      OrderExpensesSection(
-                        key: _expensesKey,
-                        orderId: widget.orderId!,
-                        readOnly: !StaffPermissions.canActive('orders', 'edit'),
-                        onChanged: () => _pnlKey.currentState?.reload(),
                       ),
                     // Assign supervisor + labour/salary (owner view) —
                     // was missing from the order flow entirely.

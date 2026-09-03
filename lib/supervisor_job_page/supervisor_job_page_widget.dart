@@ -164,7 +164,24 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       _model.kmEndController!.text =
           _model.vehicleTrip?.kmEnd?.toStringAsFixed(0) ?? '';
 
-      _model.fieldExpenses = _parseFieldExpenses(_model.order!.data['field_expenses']);
+      // Both stores, because entries written before 3 Sept 2026 live in
+      // the jsonb and everything since lives in `expenses`. Showing only
+      // one would let a supervisor re-enter money already recorded.
+      final fromJson =
+          _parseFieldExpenses(_model.order!.data['field_expenses']);
+      final fromTable = await ExpensesTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
+      );
+      _model.fieldExpenses = [
+        ...fromJson,
+        for (final e in fromTable)
+          {
+            'type': e.category ?? 'Expense',
+            'amount': e.amount ?? 0,
+            'note': e.description ?? '',
+            'at': e.date ?? '',
+          },
+      ];
 
       final team = _model.order!.jobTeam;
       if (team is List) {
@@ -279,9 +296,26 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
   }
 
-  /// Session 2 B2 correction: field expenses append to
-  /// `orders.field_expenses` (migration 007 shape) instead of the
-  /// `expenses` table the previous build of this page used.
+  /// Field expenses now write to the `expenses` TABLE, not to
+  /// `orders.field_expenses`.
+  ///
+  /// CHANGED 3 Sept 2026 (Arun, option 3). The Field Job screen stays the
+  /// ONE place a job expense is captured — it is where the person who
+  /// actually spent the money is standing — but the jsonb it wrote to was
+  /// a dead end: those rows reached the order's own P&L and NOTHING else.
+  /// Not the Expenses page, not the Daily Accounts Register, not the P&L
+  /// report. A vendor's diesel and carpenter money simply did not exist
+  /// outside the one order screen.
+  ///
+  /// Writing a real row fixes that with no new UI. The alternative
+  /// considered and rejected was a second expense section on Order
+  /// Details, which would have made three ways to record one thing —
+  /// exactly the "plenty of modules, which is for what" problem Arun
+  /// raised the same day.
+  ///
+  /// **Existing jsonb entries are still READ** (see `_load` and the P&L's
+  /// `sumFieldExpenses`) so nothing already captured disappears. Only new
+  /// entries go to the table; a backfill is a separate, deliberate step.
   Future<void> _addFieldExpense() async {
     final amount = double.tryParse(_model.expenseAmountController!.text);
     if (amount == null || amount <= 0) {
@@ -290,18 +324,26 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
     setState(() => _model.saving = true);
     try {
-      final entry = {
-        'type': _model.expenseType,
+      final note = _model.expenseNoteController!.text.trim();
+      await ExpensesTable().insert({
+        ...OrgScope.stamp(),
         'amount': amount,
-        'note': _model.expenseNoteController!.text.trim(),
-        'at': DateTime.now().toIso8601String().split('T').first,
-      };
-      final updated = [..._model.fieldExpenses, entry];
-      await OrdersTable().update(
-        data: {'field_expenses': updated},
-        matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
-      );
-      _model.fieldExpenses = updated;
+        'category': _model.expenseType,
+        'date': DateTime.now().toIso8601String().split('T').first,
+        'order_id': widget.orderId,
+        if (note.isNotEmpty) 'description': note,
+      });
+      // Mirrored into local state so the list on screen updates without a
+      // reload. The row itself is the source of truth; this is display.
+      _model.fieldExpenses = [
+        ..._model.fieldExpenses,
+        {
+          'type': _model.expenseType,
+          'amount': amount,
+          'note': note,
+          'at': DateTime.now().toIso8601String().split('T').first,
+        }
+      ];
       _model.expenseAmountController!.clear();
       _model.expenseNoteController!.clear();
     } catch (e) {
