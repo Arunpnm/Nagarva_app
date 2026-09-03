@@ -3,58 +3,315 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex">
-<title>Link unavailable</title>
-<style>
-  :root { color-scheme: light dark; }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; padding: 24px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                 "Helvetica Neue", Arial, sans-serif;
-    background: #f4f6f8; color: #16202c;
-  }
-  .card {
-    width: 100%; max-width: 440px; background: #fff; border-radius: 14px;
-    padding: 30px 26px; box-shadow: 0 1px 3px rgba(0,0,0,.08),
-                                    0 8px 28px rgba(0,0,0,.06);
-  }
-  .mark { width: 44px; height: 44px; border-radius: 11px; background: #e8b640;
-          display: flex; align-items: center; justify-content: center;
-          margin-bottom: 18px; }
-  .mark svg { width: 24px; height: 24px; }
-  h1 { font-size: 19px; line-height: 1.35; margin: 0 0 10px; font-weight: 700; }
-  p  { font-size: 14.5px; line-height: 1.6; margin: 0 0 12px; color: #445; }
-  .foot { margin-top: 22px; padding-top: 16px; border-top: 1px solid #e6e9ed;
-          font-size: 12px; color: #8792a2; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #10151c; color: #e8edf3; }
-    .card { background: #182029; box-shadow: none; }
-    p { color: #a9b6c6; }
-    .foot { border-top-color: #26313d; color: #7d8b9c; }
-  }
-</style>
+<meta name="robots" content="noindex, nofollow">
+<title>Your moving list — Nagarva</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Inter+Tight:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/nagarva.css">
 </head>
 <body>
-  <main class="card">
-    <div class="mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#16202c" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path>
-        <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"></path>
-      </svg>
+
+<!-- Loading -->
+<div id="view-loading" class="state">
+  <div class="spinner"></div>
+  <p>Opening your list…</p>
+</div>
+
+<!-- Link problem -->
+<div id="view-blocked" class="state" hidden>
+  <div class="mark" id="blocked-mark">🔗</div>
+  <h2 id="blocked-title">This link isn't working</h2>
+  <p id="blocked-body">Ask your moving company to send a fresh link.</p>
+</div>
+
+<!-- Submitted -->
+<div id="view-done" class="state" hidden>
+  <div class="mark">✅</div>
+  <h2>List received</h2>
+  <p>Thanks — your moving company has your item list and will get back to you with a quote.</p>
+</div>
+
+<!-- Form -->
+<main id="view-form" class="wrap" hidden>
+  <div class="masthead">
+    <span class="logo">Nagarva</span>
+    <span class="tag">Moving survey</span>
+  </div>
+
+  <h1 id="greeting">Tell us what you're moving</h1>
+  <p class="lede">Add the items you're taking with you. Rough counts are fine — this helps your movers send an accurate quote and the right size vehicle.</p>
+
+  <div class="trip">
+    <div class="trip-route">
+      <span id="from-addr">—</span>
+      <span class="arrow">→</span>
+      <span id="to-addr">—</span>
     </div>
-    <h1>This link isn&rsquo;t available right now</h1>
-    <p>
-      Nothing is wrong on your side, and the link you were sent was a real
-      one. This page is temporarily unable to open it.
-    </p>
-    <p>
-      Please contact your moving company and ask them to send the link
-      again. They can also collect the same details over the phone.
-    </p>
-    <div class="foot">Delivered by Nagarva on behalf of your moving company.</div>
-  </main>
+    <div class="trip-meta" id="move-date"></div>
+  </div>
+
+  <div id="cats"></div>
+
+  <div class="field">
+    <label for="notes">Anything else they should know? <span class="hint">(optional)</span></label>
+    <textarea id="notes" rows="3" maxlength="2000" placeholder="Fragile items, narrow staircase, lift not working, preferred timing…"></textarea>
+  </div>
+
+  <div id="submit-error" class="errline" hidden></div>
+</main>
+
+<!-- Running total -->
+<div id="totalbar" class="totalbar" hidden>
+  <div class="totalbar-inner">
+    <div class="meter">
+      <div class="meter-row">
+        <span class="meter-label">Your load</span>
+        <span class="meter-value"><span id="total-cft">0</span><small>cft</small></span>
+      </div>
+      <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+    </div>
+    <button id="submit" class="btn btn-primary" disabled>Send list</button>
+  </div>
+</div>
+
+<script src="/config.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var CFG = window.NAGARVA_CONFIG || {};
+  var token = new URLSearchParams(location.search).get("token") || "";
+
+  // selections[cat|item|sub] = { cat, item, sub, cft, qty }
+  var selections = Object.create(null);
+  var METER_FULL = 1200; // 3 BHK Big — the bar is a sense of scale, not a limit
+
+  function rpc(fn, body) {
+    return fetch(CFG.SUPABASE_URL + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": CFG.SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + CFG.SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  function show(id) {
+    ["view-loading", "view-blocked", "view-done", "view-form"].forEach(function (v) {
+      document.getElementById(v).hidden = (v !== id);
+    });
+    document.getElementById("totalbar").hidden = (id !== "view-form");
+  }
+
+  var BLOCKED = {
+    not_found:         ["🔗", "This link isn't working", "The link may have been typed in by hand or cut short. Ask your moving company to send it again."],
+    expired:           ["⌛", "This link has expired", "Survey links stay open for 14 days. Ask your moving company for a fresh one."],
+    already_submitted: ["✅", "You've already sent this list", "Your moving company has your items. Contact them directly if something needs changing."],
+    invalid:           ["🔗", "This link isn't working", "Ask your moving company to send it again."],
+    network:           ["📡", "Couldn't load your list", "Check your connection and reload the page."]
+  };
+
+  function blocked(reason) {
+    var m = BLOCKED[reason] || BLOCKED.not_found;
+    document.getElementById("blocked-mark").textContent = m[0];
+    document.getElementById("blocked-title").textContent = m[1];
+    document.getElementById("blocked-body").textContent = m[2];
+    show("view-blocked");
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "";
+    var d = new Date(iso + "T00:00:00");
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function recalc() {
+    var total = 0, lines = 0;
+    for (var k in selections) {
+      total += selections[k].cft * selections[k].qty;
+      lines += 1;
+    }
+    document.getElementById("total-cft").textContent = total;
+    document.getElementById("meter-fill").style.width =
+      Math.min(100, (total / METER_FULL) * 100) + "%";
+    document.getElementById("submit").disabled = (lines === 0);
+
+    // Per-category selected counts
+    document.querySelectorAll(".cat").forEach(function (el) {
+      var cat = el.dataset.cat, n = 0;
+      for (var kk in selections) if (selections[kk].cat === cat) n += selections[kk].qty;
+      var badge = el.querySelector(".count");
+      badge.textContent = n;
+      badge.hidden = (n === 0);
+    });
+  }
+
+  function buildCatalogue(cats) {
+    var host = document.getElementById("cats");
+    host.innerHTML = "";
+
+    Object.keys(cats).forEach(function (catName, ci) {
+      var items = cats[catName] || [];
+
+      var wrap = document.createElement("section");
+      wrap.className = "cat" + (ci === 0 ? " open" : "");
+      wrap.dataset.cat = catName;
+
+      var head = document.createElement("button");
+      head.type = "button";
+      head.className = "cat-head";
+      head.setAttribute("aria-expanded", ci === 0 ? "true" : "false");
+      head.innerHTML =
+        "<span>" + esc(catName) + "</span>" +
+        '<span style="display:flex;align-items:center;gap:10px">' +
+          '<span class="count" hidden>0</span><span class="chev">▾</span>' +
+        "</span>";
+      head.addEventListener("click", function () {
+        wrap.classList.toggle("open");
+        head.setAttribute("aria-expanded", wrap.classList.contains("open") ? "true" : "false");
+      });
+
+      var body = document.createElement("div");
+      body.className = "cat-body";
+
+      items.forEach(function (item) {
+        var row = document.createElement("div");
+        row.className = "item";
+        var nm = document.createElement("div");
+        nm.className = "item-name";
+        nm.textContent = item.name;
+        row.appendChild(nm);
+
+        (item.subs || []).forEach(function (sub) {
+          var key = catName + "|" + item.name + "|" + sub.label;
+
+          var line = document.createElement("div");
+          line.className = "sub";
+          line.innerHTML =
+            '<span class="sub-label">' + esc(sub.label) +
+            '<span class="cft">' + sub.cft + ' cft</span></span>';
+
+          var stepper = document.createElement("div");
+          stepper.className = "stepper";
+
+          var minus = document.createElement("button");
+          minus.type = "button";
+          minus.textContent = "−";
+          minus.disabled = true;
+          minus.setAttribute("aria-label", "Remove one " + item.name + " " + sub.label);
+
+          var qty = document.createElement("span");
+          qty.className = "qty";
+          qty.textContent = "0";
+
+          var plus = document.createElement("button");
+          plus.type = "button";
+          plus.textContent = "+";
+          plus.setAttribute("aria-label", "Add one " + item.name + " " + sub.label);
+
+          function set(n) {
+            n = Math.max(0, Math.min(99, n));
+            if (n === 0) delete selections[key];
+            else selections[key] = {
+              cat: catName, item: item.name, sub: sub.label,
+              cft: Number(sub.cft), qty: n
+            };
+            qty.textContent = n;
+            minus.disabled = (n === 0);
+            line.classList.toggle("on", n > 0);
+            recalc();
+          }
+
+          minus.addEventListener("click", function () {
+            set((selections[key] ? selections[key].qty : 0) - 1);
+          });
+          plus.addEventListener("click", function () {
+            set((selections[key] ? selections[key].qty : 0) + 1);
+          });
+
+          stepper.appendChild(minus);
+          stepper.appendChild(qty);
+          stepper.appendChild(plus);
+          line.appendChild(stepper);
+          row.appendChild(line);
+        });
+
+        body.appendChild(row);
+      });
+
+      wrap.appendChild(head);
+      wrap.appendChild(body);
+      host.appendChild(wrap);
+    });
+  }
+
+  function submit() {
+    var btn = document.getElementById("submit");
+    var err = document.getElementById("submit-error");
+    var rooms = Object.keys(selections).map(function (k) { return selections[k]; });
+
+    err.hidden = true;
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+
+    rpc("public_submit_survey", {
+      p_token: token,
+      p_rooms: rooms,
+      p_instructions: document.getElementById("notes").value || null
+    }).then(function (res) {
+      if (res && res.ok) { show("view-done"); window.scrollTo(0, 0); return; }
+      if (res && (res.reason === "expired" || res.reason === "not_submittable")) {
+        blocked("expired"); return;
+      }
+      throw new Error(res && res.reason ? res.reason : "failed");
+    }).catch(function () {
+      err.textContent = "Your list didn't send. Check your connection and try again.";
+      err.hidden = false;
+      btn.disabled = false;
+      btn.textContent = "Send list";
+      err.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  // ---- boot ----
+  if (!token) { blocked("invalid"); return; }
+
+  rpc("public_get_survey", { p_token: token }).then(function (res) {
+    if (!res || !res.ok) { blocked(res && res.reason); return; }
+
+    if (res.customer_name) {
+      document.getElementById("greeting").textContent =
+        "Hi " + res.customer_name + ", what are you moving?";
+    }
+    document.getElementById("from-addr").textContent = res.from_address || "Pickup";
+    document.getElementById("to-addr").textContent = res.to_address || "Drop";
+    var d = fmtDate(res.move_date);
+    document.getElementById("move-date").textContent = d ? "Planned move: " + d : "";
+    if (res.special_instructions) {
+      document.getElementById("notes").value = res.special_instructions;
+    }
+
+    buildCatalogue(res.survey_cats || {});
+    recalc();
+    show("view-form");
+    document.getElementById("submit").addEventListener("click", submit);
+  }).catch(function () {
+    blocked("network");
+  });
+})();
+</script>
 </body>
 </html>

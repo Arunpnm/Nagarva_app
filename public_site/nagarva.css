@@ -1,0 +1,372 @@
+/* Nagarva — public customer pages
+   Palette and type deliberately match the Flutter app so the customer sees
+   one brand across WhatsApp, this link, and the invoice that follows. */
+
+:root {
+  --ink:        #071523;
+  --panel:      #0F2740;
+  --panel-2:    #143253;
+  --line:       #1E4266;
+  --gold:       #E0A82E;
+  --gold-soft:  rgba(224, 168, 46, 0.14);
+  --teal:       #2FB6A8;
+  --text:       #EAF1F8;
+  --muted:      #8FA6BC;
+  --danger:     #E06C5A;
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+body { padding-bottom: 96px; }
+
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 16px 32px;
+}
+
+/* ---------- Header ---------- */
+
+.masthead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 18px;
+}
+
+.logo {
+  font-family: "Inter Tight", Inter, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: var(--gold);
+}
+
+.masthead .tag {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-family: "Inter Tight", Inter, system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.lede { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+
+/* ---------- Move summary ---------- */
+
+.trip {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 14px;
+  margin-bottom: 22px;
+}
+
+.trip-route {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.trip-route .arrow { color: var(--gold); }
+.trip-meta { font-size: 12.5px; color: var(--muted); }
+
+/* ---------- Categories ---------- */
+
+.cat { margin-bottom: 12px; }
+
+.cat-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 14px;
+  color: var(--text);
+  font-family: "Inter Tight", Inter, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cat-head:hover { background: var(--panel-2); }
+.cat-head .count {
+  font-family: Inter, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--gold);
+  border-radius: 20px;
+  padding: 2px 9px;
+}
+.cat-head .count[hidden] { display: none; }
+.cat-head .chev { color: var(--muted); font-size: 13px; }
+
+.cat-body {
+  display: none;
+  padding: 4px 0 8px;
+}
+.cat.open .cat-body { display: block; }
+
+.item {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 4px;
+}
+.item:last-child { border-bottom: none; }
+
+.item-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+}
+
+.sub-label { font-size: 13.5px; color: var(--muted); }
+.sub.on .sub-label { color: var(--text); }
+.sub-label .cft { font-size: 11.5px; color: var(--muted); margin-left: 6px; }
+
+.stepper { display: flex; align-items: center; gap: 4px; flex: none; }
+
+.stepper button {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.stepper button:hover { background: var(--panel-2); }
+.stepper button:disabled { opacity: 0.35; cursor: default; }
+
+.qty {
+  min-width: 30px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--muted);
+}
+.sub.on .qty { color: var(--gold); }
+
+/* ---------- Notes ---------- */
+
+.field { margin: 22px 0; }
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.field .hint { font-weight: 400; color: var(--muted); }
+
+textarea, input[type="text"] {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  padding: 12px;
+  resize: vertical;
+}
+
+textarea:focus, input:focus, button:focus-visible, .cat-head:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* ---------- Sticky total ---------- */
+
+.totalbar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: rgba(7, 21, 35, 0.96);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+
+.totalbar-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.meter { flex: 1; min-width: 0; }
+
+.meter-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.meter-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.meter-value {
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+.meter-value small { font-size: 11px; font-weight: 600; color: var(--muted); margin-left: 3px; }
+
+.meter-track {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--line);
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--teal), var(--gold));
+  transition: width 240ms ease;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  border: none;
+  border-radius: var(--r-md);
+  padding: 13px 20px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
+  cursor: pointer;
+  flex: none;
+}
+
+.btn-primary { background: var(--gold); color: var(--ink); }
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:disabled { opacity: 0.45; cursor: default; filter: none; }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 600;
+  padding: 10px 16px;
+}
+.btn-ghost:hover { color: var(--text); }
+
+.btn-block { width: 100%; }
+
+/* ---------- Signature ---------- */
+
+.padwrap {
+  background: #FFFFFF;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: 10px;
+  touch-action: none;
+}
+#pad { display: block; width: 100%; height: 220px; }
+
+.padnote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 14px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+.consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--gold); flex: none; }
+
+/* ---------- States ---------- */
+
+.state {
+  text-align: center;
+  padding: 64px 20px;
+}
+.state .mark { font-size: 34px; margin-bottom: 14px; }
+.state h2 {
+  font-family: "Inter Tight", Inter, sans-serif;
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+.state p { color: var(--muted); font-size: 14px; margin: 0 auto; max-width: 340px; }
+
+.spinner {
+  width: 26px; height: 26px;
+  border: 3px solid var(--line);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  animation: spin 720ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.errline {
+  background: rgba(224, 108, 90, 0.12);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+[hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

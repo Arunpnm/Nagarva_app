@@ -3,58 +3,233 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex">
-<title>Link unavailable</title>
-<style>
-  :root { color-scheme: light dark; }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; padding: 24px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                 "Helvetica Neue", Arial, sans-serif;
-    background: #f4f6f8; color: #16202c;
-  }
-  .card {
-    width: 100%; max-width: 440px; background: #fff; border-radius: 14px;
-    padding: 30px 26px; box-shadow: 0 1px 3px rgba(0,0,0,.08),
-                                    0 8px 28px rgba(0,0,0,.06);
-  }
-  .mark { width: 44px; height: 44px; border-radius: 11px; background: #e8b640;
-          display: flex; align-items: center; justify-content: center;
-          margin-bottom: 18px; }
-  .mark svg { width: 24px; height: 24px; }
-  h1 { font-size: 19px; line-height: 1.35; margin: 0 0 10px; font-weight: 700; }
-  p  { font-size: 14.5px; line-height: 1.6; margin: 0 0 12px; color: #445; }
-  .foot { margin-top: 22px; padding-top: 16px; border-top: 1px solid #e6e9ed;
-          font-size: 12px; color: #8792a2; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #10151c; color: #e8edf3; }
-    .card { background: #182029; box-shadow: none; }
-    p { color: #a9b6c6; }
-    .foot { border-top-color: #26313d; color: #7d8b9c; }
-  }
-</style>
+<meta name="robots" content="noindex, nofollow">
+<title>Sign — Nagarva</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Inter+Tight:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/nagarva.css">
 </head>
 <body>
-  <main class="card">
-    <div class="mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#16202c" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path>
-        <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"></path>
-      </svg>
+
+<div id="view-loading" class="state">
+  <div class="spinner"></div>
+  <p>Opening your document…</p>
+</div>
+
+<div id="view-blocked" class="state" hidden>
+  <div class="mark" id="blocked-mark">🔗</div>
+  <h2 id="blocked-title">This link isn't working</h2>
+  <p id="blocked-body">Ask your moving company to send a fresh link.</p>
+</div>
+
+<div id="view-done" class="state" hidden>
+  <div class="mark">✅</div>
+  <h2>Signed</h2>
+  <p>Thanks — your signature has been recorded and sent to your moving company.</p>
+</div>
+
+<main id="view-form" class="wrap" hidden>
+  <div class="masthead">
+    <span class="logo">Nagarva</span>
+    <span class="tag" id="doc-tag">Signature</span>
+  </div>
+
+  <h1>Sign to confirm</h1>
+  <p class="lede" id="doc-lede">Draw your signature in the box below.</p>
+
+  <div class="field">
+    <label for="signer">Your full name</label>
+    <input type="text" id="signer" maxlength="120" autocomplete="name" placeholder="As it should appear on the document">
+  </div>
+
+  <div class="field">
+    <label>Signature</label>
+    <div class="padwrap"><canvas id="pad"></canvas></div>
+    <div class="padnote">
+      <span>Use your finger or mouse</span>
+      <button type="button" class="btn btn-ghost" id="clear">Clear</button>
     </div>
-    <h1>This link isn&rsquo;t available right now</h1>
-    <p>
-      Nothing is wrong on your side, and the link you were sent was a real
-      one. This page is temporarily unable to open it.
-    </p>
-    <p>
-      Please contact your moving company and ask them to send the link
-      again. They can also collect the same details over the phone.
-    </p>
-    <div class="foot">Delivered by Nagarva on behalf of your moving company.</div>
-  </main>
+  </div>
+
+  <label class="consent">
+    <input type="checkbox" id="agree">
+    <span>I confirm this is my signature and that I agree to the terms of this document.</span>
+  </label>
+
+  <div id="submit-error" class="errline" hidden></div>
+
+  <button id="submit" class="btn btn-primary btn-block" disabled>Sign and send</button>
+</main>
+
+<script src="/config.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var CFG = window.NAGARVA_CONFIG || {};
+  var token = new URLSearchParams(location.search).get("token") || "";
+  var hasInk = false;
+
+  function rpc(fn, body) {
+    return fetch(CFG.SUPABASE_URL + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": CFG.SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + CFG.SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  function show(id) {
+    ["view-loading", "view-blocked", "view-done", "view-form"].forEach(function (v) {
+      document.getElementById(v).hidden = (v !== id);
+    });
+  }
+
+  var BLOCKED = {
+    not_found:      ["🔗", "This link isn't working", "The link may have been cut short. Ask your moving company to send it again."],
+    expired:        ["⌛", "This link has expired", "Signature links stay open for 14 days. Ask your moving company for a fresh one."],
+    already_signed: ["✅", "Already signed", "This document has your signature on it. Contact your moving company if you need a copy."],
+    invalid:        ["🔗", "This link isn't working", "Ask your moving company to send it again."],
+    network:        ["📡", "Couldn't load the document", "Check your connection and reload the page."]
+  };
+
+  function blocked(reason) {
+    var m = BLOCKED[reason] || BLOCKED.not_found;
+    document.getElementById("blocked-mark").textContent = m[0];
+    document.getElementById("blocked-title").textContent = m[1];
+    document.getElementById("blocked-body").textContent = m[2];
+    show("view-blocked");
+  }
+
+  // ---- signature pad ----
+  var canvas = document.getElementById("pad");
+  var ctx = canvas.getContext("2d");
+  var drawing = false, last = null;
+
+  function sizePad() {
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    var data = hasInk ? canvas.toDataURL() : null;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#0F2740";
+    if (data) {
+      var img = new Image();
+      img.onload = function () { ctx.drawImage(img, 0, 0, rect.width, rect.height); };
+      img.src = data;
+    }
+  }
+
+  function pos(e) {
+    var r = canvas.getBoundingClientRect();
+    var p = e.touches ? e.touches[0] : e;
+    return { x: p.clientX - r.left, y: p.clientY - r.top };
+  }
+
+  function start(e) {
+    e.preventDefault();
+    drawing = true;
+    last = pos(e);
+  }
+
+  function move(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    var p = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(last.x, last.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    last = p;
+    if (!hasInk) { hasInk = true; refreshSubmit(); }
+  }
+
+  function end() { drawing = false; last = null; }
+
+  canvas.addEventListener("mousedown", start);
+  canvas.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", end);
+  canvas.addEventListener("touchstart", start, { passive: false });
+  canvas.addEventListener("touchmove", move, { passive: false });
+  canvas.addEventListener("touchend", end);
+  window.addEventListener("resize", sizePad);
+
+  document.getElementById("clear").addEventListener("click", function () {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasInk = false;
+    refreshSubmit();
+  });
+
+  function refreshSubmit() {
+    document.getElementById("submit").disabled = !(
+      hasInk &&
+      document.getElementById("agree").checked &&
+      document.getElementById("signer").value.trim().length > 1
+    );
+  }
+
+  document.getElementById("agree").addEventListener("change", refreshSubmit);
+  document.getElementById("signer").addEventListener("input", refreshSubmit);
+
+  function submit() {
+    var btn = document.getElementById("submit");
+    var err = document.getElementById("submit-error");
+    err.hidden = true;
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+
+    rpc("public_submit_signature", {
+      p_token: token,
+      p_customer_name: document.getElementById("signer").value.trim(),
+      p_signature_data: canvas.toDataURL("image/png")
+    }).then(function (res) {
+      if (res && res.ok) { show("view-done"); window.scrollTo(0, 0); return; }
+      if (res && (res.reason === "expired" || res.reason === "not_signable")) {
+        blocked("expired"); return;
+      }
+      throw new Error("failed");
+    }).catch(function () {
+      err.textContent = "Your signature didn't send. Check your connection and try again.";
+      err.hidden = false;
+      btn.disabled = false;
+      btn.textContent = "Sign and send";
+    });
+  }
+
+  // ---- boot ----
+  if (!token) { blocked("invalid"); return; }
+
+  rpc("public_get_signature_request", { p_token: token }).then(function (res) {
+    if (!res || !res.ok) { blocked(res && res.reason); return; }
+
+    var type = (res.document_type || "document").replace(/_/g, " ");
+    document.getElementById("doc-tag").textContent = type;
+    document.getElementById("doc-lede").textContent =
+      "You're signing " + type + (res.document_id ? " " + res.document_id : "") +
+      ". Draw your signature in the box below.";
+    if (res.customer_name) {
+      document.getElementById("signer").value = res.customer_name;
+    }
+
+    show("view-form");
+    sizePad();
+    refreshSubmit();
+    document.getElementById("submit").addEventListener("click", submit);
+  }).catch(function () {
+    blocked("network");
+  });
+})();
+</script>
 </body>
 </html>
