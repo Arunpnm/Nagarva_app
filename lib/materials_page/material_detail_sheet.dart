@@ -146,16 +146,88 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
     if (m == null) return;
     final result = await showDialog<_MovementInput>(
       context: context,
-      builder: (_) => _StockOutDialog(available: m.quantity ?? 0),
+      builder: (_) => _StockOutDialog(
+          available: m.quantity ?? 0,
+          sellingPrice: m.sellingPrice ?? 0),
     );
     if (result == null) return;
     await _recordMovement(
       movementType: 'consumption',
+      // Always recorded at COST. The stock movement is what the material
+      // cost the business; what the customer pays is a separate thing
+      // and is billed below. Conflating them would make the P&L's
+      // Materials line show a margin instead of a cost.
       quantity: -result.quantity,
       rate: m.costPerUnit ?? 0,
       note: result.note,
       orderId: result.orderId,
     );
+    if (result.billToCustomer && (result.orderId ?? '').isNotEmpty) {
+      await _billMaterialToCustomer(m, result.quantity, result.orderId!);
+    }
+  }
+
+  /// Charges the customer for materials they are buying, at the
+  /// material's own selling price.
+  ///
+  /// Arun, 3 Sept 2026: "sometimes customer will pay for the cartoons how
+  /// will we track that and get that money inside the order".
+  ///
+  /// Before this, `materials.selling_price` was captured on every
+  /// material and READ BY NOTHING. Stock going out was recorded purely as
+  /// a cost, so a vendor who sold 12 cartons to a customer took the
+  /// Rs1,080 hit and had no way to collect the Rs1,680 — the job looked
+  /// less profitable than it was, and the money was simply never asked
+  /// for.
+  ///
+  /// **Written as an ADD-ON, not a new revenue path.** Add-ons already
+  /// flow into Revenue (Final) on the P&L, into the balance Close Order
+  /// warns about, and into the Operations queue. Inventing a second way
+  /// for materials to become revenue would give this app two answers to
+  /// "what does this job earn", which is the disease this codebase keeps
+  /// having to cure.
+  ///
+  /// Marked `completed` immediately: unlike an AC install booked for
+  /// tomorrow, the goods have already changed hands. It is money owed,
+  /// not work outstanding.
+  Future<void> _billMaterialToCustomer(
+      MaterialsRow m, double qty, String orderId) async {
+    final unit = m.sellingPrice ?? 0;
+    if (unit <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('${m.name} has no selling price set, so it was '
+                'recorded as used but not charged. Set one on the material '
+                'to bill it.')));
+      }
+      return;
+    }
+    try {
+      await SupaFlow.client.from('addons').insert({
+        ...OrgScope.stamp(),
+        'order_id': orderId,
+        'description':
+            '${qty.toStringAsFixed(qty == qty.roundToDouble() ? 0 : 2)} x '
+            '${m.name}',
+        'amount': unit * qty,
+        'status': 'completed',
+        'completed_at': DateTime.now().toIso8601String(),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Charged to the order: '
+                '${qty.toStringAsFixed(0)} x ${m.name}')));
+      }
+    } catch (e) {
+      // Reported, never silent: the stock has already left and the
+      // vendor needs to know the charge did not land so they can add it
+      // by hand.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Stock recorded, but the charge could not be '
+                'added to the order: $e')));
+      }
+    }
   }
 
   Future<void> _adjust() async {
@@ -430,11 +502,20 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
 
 class _MovementInput {
   const _MovementInput(
-      {required this.quantity, this.rate = 0, this.note, this.orderId});
+      {required this.quantity,
+      this.rate = 0,
+      this.note,
+      this.orderId,
+      this.billToCustomer = false});
   final double quantity;
   final double rate;
   final String? note;
   final String? orderId;
+
+  /// True when the customer is buying these, not just having them used
+  /// on their job. See _stockOut for why this is a separate flag rather
+  /// than something inferred from the material.
+  final bool billToCustomer;
 }
 
 class _AdjustInput {
@@ -514,8 +595,12 @@ class _StockInDialogState extends State<_StockInDialog> {
 }
 
 class _StockOutDialog extends StatefulWidget {
-  const _StockOutDialog({required this.available});
+  const _StockOutDialog({required this.available, required this.sellingPrice});
   final double available;
+
+  /// Shown on the "customer pays" row so the vendor sees what will be
+  /// charged before ticking it, rather than after.
+  final double sellingPrice;
   @override
   State<_StockOutDialog> createState() => _StockOutDialogState();
 }
@@ -524,6 +609,7 @@ class _StockOutDialogState extends State<_StockOutDialog> {
   final _qtyCtrl = TextEditingController();
   final _orderCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  bool _billToCustomer = false;
   String? _error;
 
   @override
@@ -563,6 +649,24 @@ class _StockOutDialogState extends State<_StockOutDialog> {
             controller: _noteCtrl,
             decoration: const InputDecoration(labelText: 'Note (optional)'),
           ),
+          const SizedBox(height: 4),
+          // OFF by default. Materials used on a job are the normal case;
+          // the customer buying them is the exception, and defaulting to
+          // "charge them" would put money on a bill nobody agreed.
+          CheckboxListTile(
+            value: _billToCustomer,
+            onChanged: (v) => setState(() => _billToCustomer = v ?? false),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            dense: true,
+            title: const Text('Customer is paying for these'),
+            subtitle: Text(widget.sellingPrice > 0
+                ? 'Adds a charge to the order at '
+                    'Rs${widget.sellingPrice.toStringAsFixed(0)} each. '
+                    'Needs an Order ID above.'
+                : 'This material has no selling price set, so nothing can '
+                    'be charged yet.'),
+          ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -587,11 +691,17 @@ class _StockOutDialogState extends State<_StockOutDialog> {
                   'Only ${widget.available.toStringAsFixed(1)} available.');
               return;
             }
+            if (_billToCustomer && _orderCtrl.text.trim().isEmpty) {
+              setState(() => _error =
+                  'Enter the Order ID to charge the customer for these.');
+              return;
+            }
             Navigator.of(context).pop(_MovementInput(
               quantity: qty,
               orderId:
                   _orderCtrl.text.trim().isEmpty ? null : _orderCtrl.text.trim(),
               note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+              billToCustomer: _billToCustomer,
             ));
           },
           child: const Text('Record Usage'),

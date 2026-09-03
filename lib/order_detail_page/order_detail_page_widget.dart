@@ -23,6 +23,7 @@ import 'order_crew_section.dart';
 import 'order_documents_section.dart';
 import 'order_storage_section.dart';
 import 'order_addons_section.dart';
+import 'order_materials_section.dart';
 import 'order_pnl_section.dart';
 import 'payment_history_section.dart';
 import 'quick_payment_section.dart';
@@ -475,6 +476,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
 
   final _storageKey = GlobalKey<OrderStorageSectionState>();
   final _addonsKey = GlobalKey<OrderAddonsSectionState>();
+  final _materialsKey = GlobalKey<OrderMaterialsSectionState>();
   final _quickPaymentKey = GlobalKey<QuickPaymentSectionState>();
   final _paymentHistoryKey = GlobalKey<PaymentHistorySectionState>();
 
@@ -1360,6 +1362,21 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         orderId: widget.orderId!,
                         readOnly: !StaffPermissions.canActive('orders', 'edit'),
                         onChanged: () => _pnlKey.currentState?.reload(),
+                      ),
+                    // Materials used on THIS job, recorded from the order
+                    // rather than from the Materials page. Sits beside
+                    // add-ons because both change what the job costs and
+                    // what it earns, and both feed the same P&L card.
+                    if (widget.orderId != null &&
+                        StaffPermissions.canActive('orders', 'view'))
+                      OrderMaterialsSection(
+                        key: _materialsKey,
+                        orderId: widget.orderId!,
+                        readOnly: !StaffPermissions.canActive('orders', 'edit'),
+                        onChanged: () {
+                          _pnlKey.currentState?.reload();
+                          _addonsKey.currentState?.reload();
+                        },
                       ),
                     // Assign supervisor + labour/salary (owner view) —
                     // was missing from the order flow entirely.
