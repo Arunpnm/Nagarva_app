@@ -4,6 +4,7 @@ import '/app_session.dart';
 import '/backend/edge_function_errors.dart';
 import '/config/app_config.dart';
 import '/backend/supabase/supabase.dart';
+import '/backend/staff_pay_types.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/permissions.dart';
@@ -79,6 +80,16 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
   // treatment: a dropdown off the real branches table, org-scoped, and
   // restricted (not just defaulted) to the session's own branch for a
   // non-owner.
+  /// How this person is paid. `staff.pay_type` has existed since 1 Sept
+  /// 2026 and this form never exposed it, so EVERY staff member added
+  /// through the app took the column default, `dynamic`. That is not a
+  /// cosmetic gap: pay type decides whether someone appears on a crew
+  /// sheet at all, so an accountant or an office manager added here would
+  /// turn up in the crew list of every job. Arun, 3 Sept 2026: "why cant
+  /// we have salary as a drop down and mention there whether he is
+  /// monthly or daily".
+  String _payType = StaffPayType.dynamicPay;
+
   String? _branch;
   List<String> _branchOptions = [];
   bool _branchesLoaded = false;
@@ -96,6 +107,10 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
     _name = TextEditingController(text: s?.name ?? '');
     _phone = TextEditingController(text: s?.phone ?? '');
     _branch = s?.branch;
+    // Read back through StaffPayType.of so an unrecognised or null value
+    // lands on the same default Postgres and the crew sheet already use,
+    // rather than a third answer invented here.
+    _payType = s == null ? StaffPayType.dynamicPay : StaffPayType.of(s);
     _loadBranches();
     // Deliberately never pre-filled with the existing PIN, even though
     // s.pin is technically readable — staff.pin is a write-only conduit
@@ -194,6 +209,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
         'phone': _phone.text.trim().isEmpty ? null : _phone.text.trim(),
         'role': _role,
         'branch': _branch,
+        'pay_type': _payType,
         'salary': _salary.text.trim().isEmpty
             ? null
             : double.tryParse(_salary.text.trim()),
@@ -611,6 +627,23 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
     );
   }
 
+  /// Says out loud what each pay type does, because the consequence
+  /// (whether this person can be put on a crew sheet) is not guessable
+  /// from the name.
+  String _payTypeHint(String t) {
+    switch (t) {
+      case StaffPayType.monthlyFixed:
+        return 'Office staff. Paid a fixed salary and NOT shown on crew '
+            'sheets, so no job wage is added on top.';
+      case StaffPayType.temporary:
+        return 'Casual hand for a single shift. Paid per job and closed to '
+            'zero the same day - carries no running balance.';
+      default:
+        return 'Loading crew and drivers. Paid per job at an amount you '
+            'type on the crew sheet; balance carries forward.';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
@@ -746,17 +779,46 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextFormField(
-                        controller: _salary,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _payType,
                         style: textStyle,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly
+                        isExpanded: true,
+                        decoration: _dec(context, 'Pay type'),
+                        items: [
+                          for (final t in StaffPayType.all)
+                            DropdownMenuItem(
+                                value: t,
+                                child: Text(StaffPayType.label(t),
+                                    overflow: TextOverflow.ellipsis)),
                         ],
-                        decoration: _dec(context, 'Monthly Salary (₹)'),
+                        onChanged: (v) => setState(
+                            () => _payType = v ?? StaffPayType.dynamicPay),
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _salary,
+                  style: textStyle,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  // The label follows the pay type, because the number
+                  // means a different thing in each case. Calling a
+                  // per-job wage "Monthly Salary" is how a day rate ends
+                  // up entered as a month's pay.
+                  decoration: _dec(
+                      context,
+                      _payType == StaffPayType.monthlyFixed
+                          ? 'Monthly salary'
+                          : 'Usual amount per job (optional)'),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _payTypeHint(_payType),
+                  style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: FlutterFlowTheme.of(context).secondaryText),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
