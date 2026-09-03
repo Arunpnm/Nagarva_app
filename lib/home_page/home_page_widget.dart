@@ -497,7 +497,12 @@ class _HomePageWidgetState extends State<HomePageWidget>
     'bookings': 'OrdersPage',
     'active_moves': 'OperationsPage',
     'reminders': 'CalendarPage',
-    'revenue': 'PaymentsPage',
+    // Revenue opens ACCOUNTS, not Payments (Arun, 3 Sept 2026).
+    // Accounts is the Daily Accounts Register - revenue, collections and
+    // costs by day, which is the breakdown BEHIND the revenue figure.
+    // Payments is a list of who still owes, which is what Outstanding
+    // means and is a different question about the same money.
+    'revenue': 'AccountsPage',
     'outstanding': 'PaymentsPage',
     'labour': 'SalaryPage',
     'profit': 'PLReportPage',
