@@ -780,7 +780,16 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       case SupervisorJobStep.shifting:
         return _shiftingCard(context);
       case SupervisorJobStep.completing:
-        return _completionCard(context);
+        // Closing reading lives WITH the handover, so it can only be
+        // entered at the moment the job actually ends.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _closingOdometerCard(context),
+            const SizedBox(height: 16),
+            _completionCard(context),
+          ],
+        );
       case SupervisorJobStep.done:
         return _doneCard(context);
     }
@@ -849,7 +858,19 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               children: _model.staffList.map((s) {
                 final selected = _model.selectedTeamIds.contains(s.id);
                 return FilterChip(
-                  label: Text(s.name),
+                  // Role alongside the name. Arun, 3 Sept 2026: "only
+                  // labour name were visible their role is not visible
+                  // so by this it might get confused selecting wrong
+                  // person, if both were in same name". Two Balajis on
+                  // a crew list are indistinguishable by name alone, and
+                  // the wrong tick puts the wrong man on the job - which
+                  // then flows into his attendance, his earnings and the
+                  // job's labour cost.
+                  label: Text(
+                    (s.role ?? '').trim().isEmpty
+                        ? s.name
+                        : '${s.name} · ${s.role!.trim()}',
+                  ),
                   selected: selected,
                   onSelected: (v) {
                     setState(() {
@@ -869,6 +890,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                 );
               }).toList(),
             ),
+          const SizedBox(height: 16),
+          // Opening reading sits WITH the crew selection, because both
+          // are things you do before the vehicle moves.
+          _openingOdometerCard(context),
           const SizedBox(height: 12),
           FFButtonWidget(
             onPressed: _model.saving ? null : _startShifting,
@@ -1035,7 +1060,21 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     );
   }
 
-  Widget _odometerCard(BuildContext context) {
+  /// Opening odometer — captured WHEN THE JOB STARTS, beside the crew.
+  ///
+  /// Arun, 3 Sept 2026: *"while selecting labour make the opening odo km
+  /// noted and while he marks order complete then only closing odo. now
+  /// we have both at the same time which is not proper way to track"*.
+  ///
+  /// He is right, and the reason matters. Both boxes on one card meant
+  /// the supervisor could fill them in together at the END of the day —
+  /// at which point the opening reading is not observed, it is
+  /// remembered or guessed. Every kilometre figure downstream (fuel per
+  /// km, a driver's distance, what an outstation job really cost) is
+  /// then built on a number nobody actually read off the dial. Splitting
+  /// the two is what makes the opening reading evidence instead of a
+  /// reconstruction.
+  Widget _openingOdometerCard(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     return Container(
       width: double.infinity,
@@ -1047,35 +1086,94 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Vehicle Odometer', style: theme.titleSmall),
+          Text('Opening Odometer', style: theme.titleSmall),
           const SizedBox(height: 4),
-          Text('Optional — leave blank for a third-party vehicle.',
+          Text(
+              'Read it off the dial before you leave. Optional — leave '
+              'blank for a third-party vehicle.',
               style: theme.bodySmall.override(
                   font: GoogleFonts.inter(), color: theme.secondaryText)),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _model.kmStartController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Opening KM'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: _model.kmEndController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Closing KM'),
-                ),
-              ),
-            ],
+          TextField(
+            controller: _model.kmStartController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Opening KM'),
           ),
           const SizedBox(height: 8),
           FFButtonWidget(
             onPressed: _model.saving ? null : _saveOdometer,
-            text: 'Save Odometer',
+            text: 'Save Opening KM',
+            options: FFButtonOptions(
+              width: double.infinity,
+              color: theme.secondaryBackground,
+              textStyle: TextStyle(color: theme.primary),
+              borderSide: BorderSide(color: theme.primary),
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Closing odometer — only at completion, and only after an opening
+  /// reading exists.
+  ///
+  /// Shows the opening figure read-only above it, so the supervisor is
+  /// entering a number they can see is larger, and the distance is
+  /// visible before they commit rather than discovered in a report later.
+  Widget _closingOdometerCard(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    final opening = double.tryParse(_model.kmStartController.text.trim());
+    final closing = double.tryParse(_model.kmEndController.text.trim());
+    final distance =
+        (opening != null && closing != null) ? closing - opening : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.secondaryBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Closing Odometer', style: theme.titleSmall),
+          const SizedBox(height: 4),
+          Text(
+              opening == null
+                  ? 'No opening reading was recorded for this job, so the '
+                      'distance cannot be worked out. Enter the closing '
+                      'reading anyway if you have it.'
+                  : 'Opening was ${opening.toStringAsFixed(0)} km.',
+              style: theme.bodySmall.override(
+                  font: GoogleFonts.inter(), color: theme.secondaryText)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _model.kmEndController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Closing KM'),
+            onChanged: (_) => setState(() {}),
+          ),
+          if (distance != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              distance < 0
+                  // Flagged, not blocked: a genuine reason exists (the
+                  // dial was misread, or the vehicle was swapped), and
+                  // refusing to save would lose the reading entirely.
+                  ? 'Closing is lower than opening — check the reading.'
+                  : 'Distance this job: ${distance.toStringAsFixed(0)} km',
+              style: theme.bodySmall.override(
+                  font: GoogleFonts.inter(),
+                  color: distance < 0 ? theme.error : theme.primary),
+            ),
+          ],
+          const SizedBox(height: 8),
+          FFButtonWidget(
+            onPressed: _model.saving ? null : _saveOdometer,
+            text: 'Save Closing KM',
             options: FFButtonOptions(
               width: double.infinity,
               color: theme.secondaryBackground,
@@ -1098,8 +1196,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         const SizedBox(height: 16),
         _fieldExpensesCard(context),
         const SizedBox(height: 16),
-        _odometerCard(context),
-        const SizedBox(height: 16),
+        // No odometer here on purpose. Opening was taken at the crew
+        // step; closing belongs on the completion card, so the two
+        // cannot be typed together at the end of the day.
+
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
