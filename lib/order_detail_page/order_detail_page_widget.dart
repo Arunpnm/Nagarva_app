@@ -1393,6 +1393,38 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                     // Items 3 + 6: signature status and the two customer
                     // share actions.
                     _signatureStatusChip(context),
+                    // Hidden while the customer signature page is down.
+                    // Verified 3 Sept 2026 by fetching link.nagarva.in/sign:
+                    // it returns "Link unavailable". Sending a signature
+                    // request would put a dead link in front of the
+                    // customer at the moment they are being asked to
+                    // approve a document.
+                    if (!kSignLinkHosted)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                            0.0, 14.0, 0.0, 0.0),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: FlutterFlowTheme.of(context)
+                                .warning
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Remote signature links are switched off — the '
+                            'customer signing page is not live. Use '
+                            'Capture Signature in Documents below to take '
+                            'the signature in person.',
+                            style: GoogleFonts.inter(
+                                fontSize: 11.5,
+                                color: FlutterFlowTheme.of(context)
+                                    .primaryText),
+                          ),
+                        ),
+                      )
+                    else
                     Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(
                           0.0, 14.0, 0.0, 0.0),

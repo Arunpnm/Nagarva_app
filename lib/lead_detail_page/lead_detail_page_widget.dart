@@ -1100,7 +1100,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           ),
           const SizedBox(height: 10),
           // Step 1: survey
-          if (survey == null)
+          if (!kSurveyLinkHosted)
+            _linkUnavailableNote(context, 'Survey',
+                'Fill the survey in yourself from Survey & Quote.')
+          else if (survey == null)
             OutlinedButton.icon(
               onPressed: _requestingSurvey ? null : _requestSurvey,
               icon: const Icon(Icons.fact_check_outlined, size: 18),
@@ -1213,6 +1216,11 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               ],
             )
           else
+            if (!kSignLinkHosted)
+              _linkUnavailableNote(context, 'Signature',
+                  'Capture the signature in person instead — Order '
+                  'Details, Documents, Capture Signature.')
+            else
             OutlinedButton.icon(
               onPressed: _sendingQuoteSignature
                   ? null
@@ -1455,6 +1463,45 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } finally {
       if (mounted) setState(() => _downloadingQuotePdf = false);
     }
+  }
+
+  /// Explains why a customer-link button is missing, instead of leaving a
+/// hole where a feature used to be.
+///
+/// Added 3 Sept 2026. `kSurveyLinkHosted` and `kSignLinkHosted` had been
+/// declared since 19 Aug and NEVER REFERENCED - 0 uses - so the flags
+/// documented an intention nobody enforced, and the buttons handed out
+/// links to a dead page regardless of what the flags said. Verified the
+/// same day by fetching all four paths: every one returns "Link
+/// unavailable".
+///
+/// Hidden rather than disabled, matching the quote/track buttons, but
+/// with this note so it does not read as a missing feature.
+  Widget _linkUnavailableNote(BuildContext context, String what, String instead) {
+    final theme = FlutterFlowTheme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.link_off, size: 15, color: theme.warning),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$what links are switched off — the customer page is not '
+              'live right now, so a link would open a dead page. $instead',
+              style: GoogleFonts.inter(
+                  fontSize: 11.5, color: theme.primaryText),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

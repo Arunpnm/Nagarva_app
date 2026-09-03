@@ -215,15 +215,30 @@ String buildWhatsAppLink({String? phone, required String message}) {
 // opening a real token link in a browser first — not by reading the
 // deploy log.
 //
-// Status, 19 Aug 2026:
-//   survey  — hosted (hand-written static site; restored after the
-//             drag-drop incident)
-//   sign    — hosted (same site)
-//   quote   — NEVER hosted by anything, at any point. No public_* RPC for
-//             quotations exists either, so this needs a page AND an RPC.
-//   track   — not deployed yet. This repo has a working TrackPage widget;
-//             it has simply never been hosted anywhere.
-const bool kSurveyLinkHosted = true;
-const bool kSignLinkHosted = true;
+// Status, 3 Sept 2026 — VERIFIED BY FETCHING ALL FOUR PATHS, not read
+// from the previous note. Every one of them now returns a holding page
+// headed "Link unavailable":
+//
+//   /survey — "Link unavailable"  (was recorded as hosted on 19 Aug)
+//   /sign   — "Link unavailable"  (was recorded as hosted on 19 Aug)
+//   /quote  — never hosted by anything, at any point
+//   /track  — never deployed
+//
+// So survey and sign were flipped to FALSE. They were marked true, which
+// meant the app was handing customers survey and signature links that
+// land on a dead page — the precise trust damage the comment above warns
+// about, live, today. The holding page is at least honest ("nothing is
+// wrong on your side"), which is far better than the "Email confirmed"
+// relay that used to answer every path, but it is not a working link.
+//
+// The signature one has a second consequence worth stating: the remote
+// customer-signature path is the only way a customer signs WITHOUT being
+// present. With it down, in-app capture on the Documents section is the
+// only route to a signed document.
+//
+// Flip back the moment a real token link opens the real page in a
+// browser — verified that way, not from a deploy log.
+const bool kSurveyLinkHosted = false;
+const bool kSignLinkHosted = false;
 const bool kQuoteLinkHosted = false;
 const bool kTrackLinkHosted = false;

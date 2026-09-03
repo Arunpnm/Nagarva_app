@@ -397,6 +397,52 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   /// spinner instead of looking untouched. Null when idle.
   String? _pendingLabel;
 
+  /// Documents that a customer's signature belongs on.
+  ///
+  /// Arun, 3 Sept 2026: *"customer sign is must in doc"*. Not every
+  /// document needs one — a packing list or a loading slip is an internal
+  /// working sheet — but anything that settles what was delivered or what
+  /// is owed should carry the customer's signature, or it is worth
+  /// nothing in a dispute months later.
+  static const _needsCustomerSignature = <String>{
+    'Tax Invoice',
+    'Money Receipt',
+    'LR / Bilty',
+    'Proof of Delivery',
+  };
+
+  /// Warns before generating a signature-bearing document with no
+  /// signature held.
+  ///
+  /// A WARNING, not a block. A vendor legitimately prints an invoice
+  /// before the customer has signed anything, and refusing would stop
+  /// real work. But generating one silently is how a POD ends up filed
+  /// with an empty signature box that nobody notices until it is needed.
+  /// Returns true to proceed.
+  Future<bool> _confirmUnsigned(String label) async {
+    if (_heldSignature != null) return true;
+    if (!_needsCustomerSignature.contains(label)) return true;
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        title: const Text('No customer signature'),
+        content: Text('This $label will be generated without the '
+            'customer signature.\n\nUse "Capture Signature" above to take '
+            'it on this device first, if the customer is with you.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Generate anyway')),
+        ],
+      ),
+    );
+    return go == true;
+  }
+
   Future<void> _run(Future<void> Function() action) async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -1230,7 +1276,13 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     return InkWell(
       onTap: _busy
           ? null
-          : () {
+          : () async {
+              // Checked HERE, not inside _run: 'Tax Invoice' is wired to
+              // widget.onGenerateInvoice and never passes through _run,
+              // so a guard there would have skipped the one document that
+              // matters most.
+              if (!await _confirmUnsigned(label)) return;
+              if (!mounted) return;
               setState(() => _pendingLabel = label);
               onTap();
             },
