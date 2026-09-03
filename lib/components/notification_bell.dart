@@ -148,24 +148,58 @@ class _NotificationBellState extends State<NotificationBell> {
         .subscribe();
   }
 
+  /// Marks everything currently listed as read.
+  ///
+  /// Rewritten 3 Sept 2026. The old version cleared the badge in local
+  /// state FIRST and then fired the update without awaiting it and
+  /// without a catch. Two consequences, both silent: a failed write left
+  /// the badge cleared on screen while the row was still unread in
+  /// Postgres, so the count came back on the next load with no error
+  /// anywhere; and any thrown error became an unhandled async
+  /// exception, because the one caller did not await either.
+  ///
+  /// Now the write goes first and the rows are RE-READ afterwards rather
+  /// than hand-patched - CLAUDE.md's standing rule, learned three times:
+  /// patching by hand is a bet that you can list every field the write
+  /// touched, and that bet loses quietly.
   Future<void> _markAllRead() async {
-    final unreadIds =
-        _items.where((n) => !n.read).map((n) => n.id).toList();
+    final unreadIds = _items.where((n) => !n.read).map((n) => n.id).toList();
     if (unreadIds.isEmpty) return;
-    setState(() {
-      for (final n in _items) {
-        n.data['read'] = true;
+    try {
+      await NotificationsTable().update(
+        data: {'read': true},
+        matchingRows: (q) => OrgScope.write(q).inFilter('id', unreadIds),
+      );
+    } catch (e) {
+      // The badge deliberately STAYS. It is telling the truth: these are
+      // still unread in the database.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not mark notifications as read: $e')));
       }
-    });
-    await NotificationsTable().update(
-      data: {'read': true},
-      matchingRows: (q) => OrgScope.write(q).inFilter('id', unreadIds),
-    );
+      return;
+    }
+    await _load();
   }
 
-  void _openList() {
+  /// Opens the panel, and marks everything read once it CLOSES.
+  ///
+  /// Arun, 3 Sept 2026: *"check notification how it works even after
+  /// reading its still showing"*. He was right, and the database showed
+  /// exactly why: three of his org's owner notifications are already
+  /// `read = true`, so the write works - but nothing marked anything
+  /// read except a small "Mark all read" text link in the corner of the
+  /// panel. Open the bell, read the notification, close it, and the
+  /// badge was still there, because in the app's model he had never
+  /// said he had read them.
+  ///
+  /// Marking on CLOSE rather than on open is the deliberate half: the
+  /// rows keep their unread weight while he is looking at them, which is
+  /// what tells him which ones are new, and the badge clears when he is
+  /// done. Marking on open would fade them out from under him.
+  Future<void> _openList() async {
     final theme = FlutterFlowTheme.of(context);
-    showDialog(
+    await showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
         backgroundColor: theme.secondaryBackground,
@@ -189,17 +223,17 @@ class _NotificationBellState extends State<NotificationBell> {
                         color: theme.primaryText,
                       ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        _markAllRead();
-                        Navigator.of(dialogContext).pop();
-                      },
-                      child: Text(
-                        'Mark all read',
+                    // Was a "Mark all read" link - the ONLY thing in the
+                    // app that ever cleared the badge, and easy to miss.
+                    // Closing the panel does it now, so this states that
+                    // rather than offering a second way to do the same
+                    // thing one tap earlier.
+                    if (_unread > 0)
+                      Text(
+                        'Marked read on close',
                         style: GoogleFonts.inter(
-                            fontSize: 12.5, color: theme.primary),
+                            fontSize: 11, color: theme.secondaryText),
                       ),
-                    ),
                   ],
                 ),
                 Flexible(
@@ -266,6 +300,7 @@ class _NotificationBellState extends State<NotificationBell> {
         ),
       ),
     );
+    await _markAllRead();
   }
 
   @override
