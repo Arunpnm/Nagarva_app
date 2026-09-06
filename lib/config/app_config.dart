@@ -238,7 +238,7 @@ String buildWhatsAppLink({String? phone, required String message}) {
 //
 // Flip back the moment a real token link opens the real page in a
 // browser — verified that way, not from a deploy log.
-const bool kSurveyLinkHosted = false;
-const bool kSignLinkHosted = false;
+const bool kSurveyLinkHosted = true;
+const bool kSignLinkHosted = true;
 const bool kQuoteLinkHosted = false;
 const bool kTrackLinkHosted = false;

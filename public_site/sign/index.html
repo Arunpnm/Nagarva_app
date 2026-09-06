@@ -31,7 +31,7 @@
 
 <main id="view-form" class="wrap" hidden>
   <div class="masthead">
-    <span class="logo">Nagarva</span>
+    <span class="logo" id="vendor">&nbsp;</span>
     <span class="tag" id="doc-tag">Signature</span>
   </div>
 
@@ -99,6 +99,32 @@
     invalid:        ["🔗", "This link isn't working", "Ask your moving company to send it again."],
     network:        ["📡", "Couldn't load the document", "Check your connection and reload the page."]
   };
+
+  // The vendor's name, NOT the platform's.
+  //
+  // Arun, 6 Sept 2026: "here the top it showing nagarva but this vendor
+  // name is Arun packers and couriers". A customer of Arun Packers who
+  // opens their own mover's link and is shown someone else's brand has
+  // no way to tell the link is genuine - and Nagarva is a name they have
+  // never heard. Same class as the hardcoded "Net to APC" that came out
+  // of New Order.
+  //
+  // Falls back to NOTHING rather than to the platform name: an empty
+  // slot reads as plain, while the wrong company reads as the wrong
+  // company. The name arrives once public_get_survey /
+  // public_get_signature_request return vendor_name (see
+  // supabase/20260906_public_vendor_identity.sql); until then this
+  // simply stays blank.
+  function setVendor(name) {
+    var el = document.getElementById("vendor");
+    if (!el) return;
+    if (name && String(name).trim()) {
+      el.textContent = String(name).trim();
+      document.title = document.title.replace(/Nagarva/, String(name).trim());
+    } else {
+      el.textContent = "";
+    }
+  }
 
   function blocked(reason) {
     var m = BLOCKED[reason] || BLOCKED.not_found;
@@ -236,6 +262,7 @@
 
   rpc("public_get_signature_request", { p_token: token }).then(function (res) {
     if (!res || !res.ok) { blocked(res && res.reason); return; }
+    setVendor(res.vendor_name);
 
     var type = (res.document_type || "document").replace(/_/g, " ");
     document.getElementById("doc-tag").textContent = type;

@@ -719,11 +719,34 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     if (widget.leadId == null) return;
     setState(() => _requestingSurvey = true);
     try {
+      // Carry the ROUTE and the DATE onto the survey, not just the name.
+      //
+      // Found in the 6 Sept 2026 live run: the customer page rendered
+      // "Pickup -> Drop" with no date, because this insert wrote only
+      // name and phone. `public_get_survey` returns from_address,
+      // to_address and move_date, and the page renders all three - so
+      // three fields the vendor had already captured were dropped on the
+      // way out, and the customer was shown placeholder labels instead
+      // of their own move.
+      //
+      // The lead's ADDRESS fields are frequently blank at this stage (the
+      // New Lead form captures cities, and the full address arrives with
+      // the survey), so the city is the fallback rather than the other
+      // way round: a city is what the vendor actually has when the link
+      // is sent.
+      String? orBlank(String? v) =>
+          (v == null || v.trim().isEmpty) ? null : v.trim();
+      final from = orBlank(_lead?.fromAddress) ?? orBlank(widget.leadFromCity);
+      final to = orBlank(_lead?.toAddress) ?? orBlank(widget.leadToCity);
       final row = await SurveysTable().insert({
         ...OrgScope.stamp(),
         'lead_id': widget.leadId,
         'customer_name': widget.leadCustomer,
         'customer_phone': widget.leadPhone,
+        if (from != null) 'from_address': from,
+        if (to != null) 'to_address': to,
+        if (orBlank(widget.leadApproxDate) != null)
+          'move_date': widget.leadApproxDate,
       });
       setState(() => _survey = row);
       // Item 5.2: sending a survey moves the lead to at least follow_up.
