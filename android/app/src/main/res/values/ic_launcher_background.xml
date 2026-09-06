@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The brand tile is white in the source artwork; the adaptive
+         background keeps it, so the masked icon matches the logo as
+         drawn rather than inventing a new ground colour. -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>

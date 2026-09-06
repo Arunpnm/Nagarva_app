@@ -281,8 +281,27 @@ one family is a stated future goal, not scheduled.
    path only survives as the *folder name* for MainActivity.kt, not the
    package). Now `in.nagarva.app`, app label "Nagarva", in build.gradle,
    all 3 AndroidManifest.xml files, strings.xml, and MainActivity.kt's package
-   declaration. Proper launcher icons are still the default Flutter icon —
-   not done.
+   declaration. **Launcher icons — CORRECTED 3 Sept 2026.** This line read
+   "still the default Flutter icon" for seven weeks and was WRONG; it was
+   repeated into a status report before anyone looked. The Android
+   mipmaps have carried the real Nagarva mark at all five densities for
+   some time. What was genuinely missing was the **adaptive** icon: with
+   no `mipmap-anydpi-v26/ic_launcher.xml`, Android 8+ masks the legacy
+   square PNG itself, shrinking the whole tile — white ground, baked-in
+   drop shadow and all — into a circle, so the mark rendered small inside
+   a second border with a shadow line tracing the old square edge. Fixed
+   the same day: a foreground/background pair generated from
+   `assets/icon/nagarva_icon.png` with the wordmark and tile stripped (a
+   wordmark is unreadable at 48dp), a `monochrome` layer for Android 13
+   themed icons, round variants, and `assets/icon/play_store_512.png`
+   (no alpha — Google rejects alpha). Sizing was solved rather than
+   eyeballed: the mark is 1052x558, so the widest box fitting the 66dp
+   safe CIRCLE is ~0.54 of the canvas.
+   **iOS is still Flutter's default icon** — verified, not assumed:
+   `Icon-App-20x20@1x.png` centres on Flutter's light blue. Left alone;
+   Play Store is the launch target and an iOS set is its own pass.
+   Lesson: a stale "not done" note costs as much as a stale "done" one —
+   this one put an already-fixed item on a launch-blocker list.
 7. **Phase 1 multi-tenancy groundwork laid 13 Jul 2026; DB migration
    ~~NOT been run yet~~ REPORTED RUN 13 Jul 2026 ("Phase 0b" sync, not
    independently verified from this session).** `org_id` getters were added

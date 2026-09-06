@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive icon, added 3 Sept 2026.
+
+  Without this file Android 8 and above takes the legacy square PNG and
+  masks it ITSELF: the launcher shrinks the whole tile - white ground,
+  drop shadow and all - into a circle or squircle, so the brand mark
+  ends up small, inside a second border, with a shadow line following
+  the old square edge. The icon looked wrong on essentially every device
+  in use, and the cause was a missing file rather than missing artwork.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
