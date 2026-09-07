@@ -125,8 +125,36 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
                 Wrap(
                   spacing: 6,
                   children: [
+                    // NOT VisualDensity.compact, and not a Chip.
+                    //
+                    // Compact subtracts 8 logical pixels from the widget's
+                    // own size, and on the dashboard period chips that came
+                    // straight out of the label - "This" rendered as "Thi"
+                    // with the s faded at the pill edge, reproducible at
+                    // 500dp with the row half empty, so it was never a space
+                    // problem. Copy types are LONGER words ("Consignor",
+                    // "Transporter"), so the same squeeze bites harder here.
+                    //
+                    // Swept 6 Sept 2026: eleven other sites use compact
+                    // density and ten are IconButtons, which have no label to
+                    // clip. This was the only other chip.
                     for (final c in copies)
-                      Chip(label: Text(c.copyType), visualDensity: VisualDensity.compact),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: FlutterFlowTheme.of(context).primaryBackground,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          c.copyType,
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: FlutterFlowTheme.of(context).primaryText,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ],
