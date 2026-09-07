@@ -417,3 +417,49 @@ textarea:focus, input:focus, button:focus-visible, .cat-head:focus-visible {
   .docrow span:first-child { opacity: 1; }
   .docrow-head, .docrow-total { border-color: #999; }
 }
+
+/* ---- Track page: the customer's document hub (7 Sept 2026) ---- */
+.sechead {
+  font-family: 'Inter Tight', Inter, system-ui, sans-serif;
+  font-size: 15px; font-weight: 700;
+  margin: 26px 0 10px;
+}
+.lede.small { font-size: 12.5px; }
+
+/* A download is the point of this page, so it is a full-width target
+   with the action named on it, not an icon someone has to interpret. */
+.docdl {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; text-decoration: none;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 10px;
+  padding: 13px 15px; margin-bottom: 9px;
+  background: rgba(255,255,255,.04);
+  color: inherit;
+}
+.docdl:hover, .docdl:focus-visible { background: rgba(255,255,255,.08); }
+.docdl-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.docdl-name { font-size: 14.5px; font-weight: 600; }
+.docdl-meta { font-size: 11.5px; opacity: .65; }
+.docdl-cta {
+  font-size: 12.5px; font-weight: 700; white-space: nowrap;
+  color: #E0B75E;
+}
+
+/* Progress. A rule down the left rather than dots per row: the moves
+   have few steps, and a full dotted timeline would be more chrome than
+   content. */
+.timeline { list-style: none; margin: 0; padding: 0 0 0 14px;
+            border-left: 2px solid rgba(255,255,255,.16); }
+.timeline li {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 0 0 14px 4px; font-size: 13.5px;
+}
+.timeline li:last-child { padding-bottom: 0; }
+.tl-status { font-weight: 600; }
+.tl-when { font-size: 11.5px; opacity: .65; }
+.tl-note { font-size: 12.5px; opacity: .8; margin-top: 2px; }
+
+@media print {
+  .docdl-cta { display: none; }
+}

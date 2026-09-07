@@ -3,58 +3,311 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex">
-<title>Link unavailable</title>
-<style>
-  :root { color-scheme: light dark; }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; padding: 24px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                 "Helvetica Neue", Arial, sans-serif;
-    background: #f4f6f8; color: #16202c;
-  }
-  .card {
-    width: 100%; max-width: 440px; background: #fff; border-radius: 14px;
-    padding: 30px 26px; box-shadow: 0 1px 3px rgba(0,0,0,.08),
-                                    0 8px 28px rgba(0,0,0,.06);
-  }
-  .mark { width: 44px; height: 44px; border-radius: 11px; background: #e8b640;
-          display: flex; align-items: center; justify-content: center;
-          margin-bottom: 18px; }
-  .mark svg { width: 24px; height: 24px; }
-  h1 { font-size: 19px; line-height: 1.35; margin: 0 0 10px; font-weight: 700; }
-  p  { font-size: 14.5px; line-height: 1.6; margin: 0 0 12px; color: #445; }
-  .foot { margin-top: 22px; padding-top: 16px; border-top: 1px solid #e6e9ed;
-          font-size: 12px; color: #8792a2; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #10151c; color: #e8edf3; }
-    .card { background: #182029; box-shadow: none; }
-    p { color: #a9b6c6; }
-    .foot { border-top-color: #26313d; color: #7d8b9c; }
-  }
-</style>
+<meta name="robots" content="noindex, nofollow">
+<title>Your move — Nagarva</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Inter+Tight:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/nagarva.css">
 </head>
 <body>
-  <main class="card">
-    <div class="mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#16202c" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path>
-        <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"></path>
-      </svg>
+
+<main class="wrap">
+
+  <div class="brandline">
+    <span class="logo" id="vendor">&nbsp;</span>
+    <span class="tag">YOUR MOVE</span>
+  </div>
+
+  <!-- Loading -->
+  <section id="view-loading">
+    <p class="lede">Loading your move…</p>
+  </section>
+
+  <!-- Dead or expired link -->
+  <section id="view-blocked" hidden>
+    <div class="mark" id="blocked-mark">🔗</div>
+    <h1 id="blocked-title">This link isn't working</h1>
+    <p class="lede" id="blocked-body">Ask your moving company to send it again.</p>
+  </section>
+
+  <!-- The move -->
+  <section id="view-main" hidden>
+    <h1 id="headline">Your move</h1>
+    <p class="lede" id="subline"></p>
+
+    <div class="doccard">
+      <div class="docrow docrow-head">
+        <span>Move</span><span id="m-ref"></span>
+      </div>
+      <div class="docrow" id="m-route-row" hidden>
+        <span>Route</span><span id="m-route"></span>
+      </div>
+      <div class="docrow" id="m-date-row" hidden>
+        <span>Planned move</span><span id="m-date"></span>
+      </div>
+      <div class="docrow" id="m-status-row" hidden>
+        <span>Status</span><span id="m-status"></span>
+      </div>
+      <div class="docrow" id="m-vehicle-row" hidden>
+        <span>Vehicle</span><span id="m-vehicle"></span>
+      </div>
+      <div class="docrow" id="m-driver-row" hidden>
+        <span>Driver</span><span id="m-driver"></span>
+      </div>
     </div>
-    <h1>This link isn&rsquo;t available right now</h1>
-    <p>
-      Nothing is wrong on your side, and the link you were sent was a real
-      one. This page is temporarily unable to open it.
+
+    <h2 class="sechead" id="docs-head" hidden>Your documents</h2>
+    <div id="docs"></div>
+    <p class="lede small" id="docs-empty" hidden>
+      No documents yet. They appear here as your moving company issues
+      them.
     </p>
-    <p>
-      Please contact your moving company and ask them to send the link
-      again. They can also collect the same details over the phone.
-    </p>
-    <div class="foot">Delivered by Nagarva on behalf of your moving company.</div>
-  </main>
+
+    <h2 class="sechead" id="hist-head" hidden>Progress</h2>
+    <ol class="timeline" id="hist"></ol>
+
+    <p class="lede small" id="callvendor" hidden></p>
+  </section>
+
+</main>
+
+<script src="/config.js"></script>
+<script>
+(function () {
+  "use strict";
+  var CFG = window.NAGARVA_CONFIG || {};
+  var token = new URLSearchParams(location.search).get("token") || "";
+
+  var BLOCKED = {
+    not_found: ["🔗", "This link isn't working",
+      "The link may have been cut short. Ask your moving company to send it again."],
+    invalid:   ["🔗", "This link isn't working",
+      "Ask your moving company to send it again."],
+    network:   ["📡", "Couldn't load your move",
+      "Check your connection and reload the page."]
+  };
+
+  function show(id) {
+    ["view-loading", "view-blocked", "view-main"].forEach(function (v) {
+      document.getElementById(v).hidden = (v !== id);
+    });
+  }
+
+  function blocked(reason) {
+    var m = BLOCKED[reason] || BLOCKED.not_found;
+    document.getElementById("blocked-mark").textContent = m[0];
+    document.getElementById("blocked-title").textContent = m[1];
+    document.getElementById("blocked-body").textContent = m[2];
+    show("view-blocked");
+  }
+
+  function esc(str) {
+    return String(str).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function fmtDate(d) {
+    if (!d) return "";
+    var dt = new Date(d);
+    if (isNaN(dt.getTime())) return "";
+    return dt.toLocaleDateString("en-IN",
+      { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function fmtDateTime(d) {
+    if (!d) return "";
+    var dt = new Date(d);
+    if (isNaN(dt.getTime())) return "";
+    return dt.toLocaleString("en-IN",
+      { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  }
+
+  function setRow(rowId, valueId, value) {
+    var row = document.getElementById(rowId);
+    var el = document.getElementById(valueId);
+    if (!row || !el) return;
+    if (!value) { row.hidden = true; return; }
+    el.textContent = value;
+    row.hidden = false;
+  }
+
+  // The vendor's name, never the platform's — same rule as the survey and
+  // sign pages. Falls back to nothing rather than to "Nagarva": an empty
+  // slot reads as plain, the wrong company reads as the wrong company.
+  function setVendor(name) {
+    var el = document.getElementById("vendor");
+    if (!el) return;
+    var n = (name || "").trim();
+    el.textContent = n;
+    if (n) document.title = document.title.replace(/Nagarva/, n);
+  }
+
+  // Human wording for the internal status vocabulary. An unknown value
+  // is shown as-is rather than hidden — a status the customer cannot
+  // read is better than a status that silently is not there.
+  var STATUS = {
+    booked: "Booked",
+    pending: "Booked",
+    confirmed: "Confirmed",
+    team_assigned: "Crew assigned",
+    transit: "On the way",
+    in_transit: "On the way",
+    arrived: "Arrived",
+    unloading: "Unloading",
+    delivered: "Delivered",
+    closed: "Completed",
+    cancelled: "Cancelled"
+  };
+  function statusLabel(s) {
+    if (!s) return "";
+    return STATUS[s] || String(s).replace(/_/g, " ");
+  }
+
+  // Document types, named the way a customer would.
+  var DOCNAME = {
+    invoice: "Tax invoice",
+    quote: "Quotation",
+    quotation: "Quotation",
+    receipt: "Money receipt",
+    proforma: "Proforma invoice",
+    lr: "Consignment note (LR)",
+    voucher: "Payment voucher",
+    pod: "Proof of delivery",
+    packing_list: "Packing list",
+    loading_slip: "Loading slip"
+  };
+
+  function sizeLabel(n) {
+    var v = Number(n);
+    if (!isFinite(v) || v <= 0) return "";
+    if (v < 1024) return v + " B";
+    if (v < 1024 * 1024) return Math.round(v / 1024) + " KB";
+    return (v / 1048576).toFixed(1) + " MB";
+  }
+
+  function renderDocs(docs) {
+    var host = document.getElementById("docs");
+    var head = document.getElementById("docs-head");
+    var empty = document.getElementById("docs-empty");
+    host.innerHTML = "";
+    head.hidden = false;
+
+    if (!Array.isArray(docs) || !docs.length) {
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+
+    docs.forEach(function (d) {
+      if (!d || !d.url) return;
+      var a = document.createElement("a");
+      a.className = "docdl";
+      a.href = d.url;
+      // download + target so a phone browser saves it rather than
+      // navigating away from the page they came for.
+      a.setAttribute("download", d.file_name || "document.pdf");
+      a.setAttribute("target", "_blank");
+      a.setAttribute("rel", "noopener");
+
+      var meta = [sizeLabel(d.size_bytes), fmtDate(d.issued_at)]
+        .filter(Boolean).join(" · ");
+
+      a.innerHTML =
+        '<span class="docdl-main">' +
+          '<span class="docdl-name">' +
+            esc(DOCNAME[d.doc_type] || d.doc_type || "Document") +
+          "</span>" +
+          (meta ? '<span class="docdl-meta">' + esc(meta) + "</span>" : "") +
+        "</span><span class=\"docdl-cta\">Download</span>";
+      host.appendChild(a);
+    });
+  }
+
+  function renderHistory(history) {
+    var host = document.getElementById("hist");
+    var head = document.getElementById("hist-head");
+    host.innerHTML = "";
+    if (!Array.isArray(history) || !history.length) {
+      head.hidden = true;
+      return;
+    }
+    head.hidden = false;
+    history.forEach(function (h) {
+      if (!h) return;
+      var li = document.createElement("li");
+      li.innerHTML =
+        '<span class="tl-status">' + esc(statusLabel(h.status)) + "</span>" +
+        '<span class="tl-when">' + esc(fmtDateTime(h.changed_at)) + "</span>" +
+        (h.note ? '<span class="tl-note">' + esc(h.note) + "</span>" : "");
+      host.appendChild(li);
+    });
+  }
+
+  if (!token) { blocked("invalid"); return; }
+
+  fetch(CFG.SUPABASE_URL + "/rest/v1/rpc/public_get_order_documents", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": CFG.SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + CFG.SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify({ p_token: token })
+  }).then(function (r) {
+    // A 404 here means the endpoint is not installed, not that the
+    // customer's connection failed. Telling them to check their
+    // connection would be a retry loop with no exit - the same mistake
+    // the survey and sign pages made until 3 Sept. From their side a
+    // link that resolves to nothing IS a broken link, so say that.
+    if (r.status === 404) { blocked("not_found"); return null; }
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  }).then(function (res) {
+    if (res === null) return;          // already handled above
+    if (!res || !res.ok) { blocked(res && res.reason); return; }
+
+    setVendor(res.vendor_name);
+
+    var who = (res.customer_name || "").trim();
+    document.getElementById("headline").textContent =
+      who ? "Hi " + who + ", here's your move" : "Your move";
+    document.getElementById("subline").textContent =
+      "Everything your moving company has issued for this job, in one "
+      + "place. Nothing here expires.";
+
+    document.getElementById("m-ref").textContent =
+      res.invoice_no || res.order_ref || "";
+
+    var from = (res.from_city || "").trim();
+    var to = (res.to_city || "").trim();
+    setRow("m-route-row", "m-route",
+      (from && to) ? (from + " → " + to) : "");
+    setRow("m-date-row", "m-date", fmtDate(res.move_date));
+    setRow("m-status-row", "m-status",
+      statusLabel(res.tracking_status || res.status));
+    setRow("m-vehicle-row", "m-vehicle", res.vehicle_no);
+    setRow("m-driver-row", "m-driver", res.driver_name);
+
+    renderDocs(res.documents);
+    renderHistory(res.history);
+
+    // Only when the vendor actually has a number on file. Never render a
+    // contact affordance that goes nowhere.
+    var phone = (res.vendor_phone || "").trim();
+    if (phone) {
+      var cv = document.getElementById("callvendor");
+      cv.textContent = "Questions about this move? Call " +
+        (res.vendor_name || "your moving company") + " on " + phone + ".";
+      cv.hidden = false;
+    }
+
+    show("view-main");
+  }).catch(function () {
+    blocked("network");
+  });
+})();
+</script>
 </body>
 </html>

@@ -30,6 +30,7 @@ import 'quick_payment_section.dart';
 import 'quotation_breakdown_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/issued_documents.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -944,7 +945,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
         ? quotationId!.substring(0, 8).toUpperCase()
         : quotationId;
 
-    return InvoicePdf.generate(
+    final pdfBytes = await InvoicePdf.generate(
       customerSignatureBytes:
           (sig?.isSigned ?? false) ? sig!.signatureBytes : null,
       customerSignedByName: (sig?.isSigned ?? false) ? sig!.customerName : null,
@@ -991,6 +992,23 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       amountInWords: amountInWords,
       isPaid: order?.paymentStatus == 'paid',
     );
+
+    // Keep the issued copy. Hooked HERE rather than at the Print and
+    // Share buttons because both call this, and so will anything added
+    // later - a hook per button is a hook someone forgets.
+    //
+    // Best-effort by design: a storage failure must never stop a vendor
+    // handing an invoice to a customer standing in front of them. See
+    // IssuedDocuments' own doc comment for why storing beats
+    // regenerating regardless of the customer link.
+    await IssuedDocuments.storeForOrder(
+      orderId: widget.orderId!,
+      docType: 'invoice',
+      fileName: 'Invoice_${invoiceNo.replaceAll('/', '-')}.pdf',
+      bytes: pdfBytes,
+    );
+
+    return pdfBytes;
   }
 
   void _showInvoiceDialog({
