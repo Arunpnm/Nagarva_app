@@ -1312,13 +1312,40 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           const SizedBox(height: 10),
           _amountField(theme, 'advanceOnQuote', 'Advance Paid'),
           const SizedBox(height: 14),
-          Text('Packing & Labour (bundle in freight, or bill separately)',
-              style: GoogleFonts.inter(
-                  fontSize: 11.5,
+          // Arun, 3 Sept 2026: "add price separately packing achrag,
+          // loading , unloading". The prices existed from that day; what
+          // was missing was any sign they did. Every line defaults to
+          // "Incl. in Freight", which hides its price box, so the feature
+          // was invisible unless you already knew to go looking for it -
+          // and the only label saying otherwise was 11.5px grey text.
+          Text('Packing & Labour',
+              style: GoogleFonts.interTight(
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: theme.secondaryText)),
-          const SizedBox(height: 8),
+                  color: theme.primaryText)),
+          const SizedBox(height: 2),
+          Text(
+            'Each line is bundled into the freight price unless you switch '
+            'it to "Bill separately", which opens its own price field.',
+            style: GoogleFonts.inter(
+                fontSize: 11.5, color: theme.secondaryText, height: 1.35),
+          ),
+          const SizedBox(height: 10),
           for (final f in billable) _billableRow(theme, f),
+          if (_separatelyBilledCount > 0) ...[
+            const SizedBox(height: 2),
+            Text(
+              '$_separatelyBilledCount of ${billable.length} billed '
+              'separately${_separatelyBilledUnpriced > 0 ? ' · '
+                  '$_separatelyBilledUnpriced still to price' : ''}',
+              style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _separatelyBilledUnpriced > 0
+                      ? theme.warning
+                      : theme.secondaryText),
+            ),
+          ],
           const SizedBox(height: 14),
           Text('Other Charges',
               style: GoogleFonts.inter(
@@ -1358,6 +1385,31 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     );
   }
 
+  /// What the vendor has typed against a charge line, or 0.
+  double _chargeAmount(String key) =>
+      double.tryParse(_amountCtrl[key]?.text.trim() ?? '') ?? 0;
+
+  /// Never invents a figure — an unpriced line says so in words rather
+  /// than showing a plausible zero, which reads as a decision. Same rule
+  /// as the commission work: a blank is visibly unfinished, a number is
+  /// not.
+  String _chargeAmountLabel(String key) {
+    final v = _chargeAmount(key);
+    return v > 0 ? '\u20B9${v.toStringAsFixed(0)}' : 'Not priced yet';
+  }
+
+  /// The five packing/labour lines the vendor has moved off freight.
+  int get _separatelyBilledCount => _billingMode.entries
+      .where((e) => e.value == 'additional')
+      .length;
+
+  /// Of those, the ones still carrying no price. Surfaced because
+  /// switching a line and then not pricing it is the easy mistake: it
+  /// looks handled, and bills nothing.
+  int get _separatelyBilledUnpriced => _billingMode.entries
+      .where((e) => e.value == 'additional' && _chargeAmount(e.key) <= 0)
+      .length;
+
   Widget _billableRow(FlutterFlowTheme theme, ChargeField f) {
     final included = (_billingMode[f.key] ?? 'included') == 'included';
     return Padding(
@@ -1369,10 +1421,31 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                  flex: 2,
-                  child: Text(f.label,
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: theme.primaryText))),
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(f.label,
+                        style: GoogleFonts.inter(
+                            fontSize: 13, color: theme.primaryText)),
+                    // The figure, on the row, once there is one. Without
+                    // it a priced line looks exactly like an unpriced one
+                    // until you scroll into its expanded fields.
+                    if (!included)
+                      Text(
+                        _chargeAmountLabel(f.key),
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: _chargeAmount(f.key) > 0
+                              ? theme.primary
+                              : theme.warning,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
               Expanded(
                 flex: 2,
                 child: DropdownButtonFormField<String>(
@@ -1380,9 +1453,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   isDense: true,
                   items: const [
                     DropdownMenuItem(
-                        value: 'included', child: Text('Incl. in Freight')),
+                        value: 'included', child: Text('Incl. in freight')),
+                    // "Additional" said this line was extra without saying
+                    // what happens next. "Bill separately" names the
+                    // action, and the action is what opens the price box.
                     DropdownMenuItem(
-                        value: 'additional', child: Text('Additional')),
+                        value: 'additional', child: Text('Bill separately')),
                   ],
                   onChanged: (v) =>
                       setState(() => _billingMode[f.key] = v ?? 'included'),
