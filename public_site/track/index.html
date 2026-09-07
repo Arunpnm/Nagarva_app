@@ -67,6 +67,66 @@
     <h2 class="sechead" id="hist-head" hidden>Progress</h2>
     <ol class="timeline" id="hist"></ol>
 
+    <!-- Rate the move. Only offered once it has actually happened —
+         can_review comes from the server, so the form is never shown for
+         a write that would be refused. -->
+    <section id="review-block" hidden>
+      <h2 class="sechead">How did it go?</h2>
+      <div id="review-done" hidden>
+        <p class="lede small">
+          You rated this move <b><span id="my-rating"></span>/5</b>. Thank
+          you.
+        </p>
+        <p class="lede small" id="my-comment-wrap" hidden>
+          "<span id="my-comment"></span>"
+        </p>
+      </div>
+      <div id="review-form">
+        <div class="stars" id="stars" role="radiogroup" aria-label="Rating">
+          <button type="button" class="star" data-v="1" aria-label="1 star">★</button>
+          <button type="button" class="star" data-v="2" aria-label="2 stars">★</button>
+          <button type="button" class="star" data-v="3" aria-label="3 stars">★</button>
+          <button type="button" class="star" data-v="4" aria-label="4 stars">★</button>
+          <button type="button" class="star" data-v="5" aria-label="5 stars">★</button>
+        </div>
+        <textarea id="review-comment" rows="3" maxlength="2000"
+          placeholder="Anything you'd like them to know? (optional)"></textarea>
+        <div class="errline" id="review-error" hidden></div>
+        <button type="button" class="btn btn-primary" id="review-send" disabled>
+          Send rating
+        </button>
+      </div>
+    </section>
+
+    <!-- Raise a problem. Available at ANY stage, deliberately: the moment
+         something is wrong is when it can still be fixed. -->
+    <section id="complaint-block" hidden>
+      <h2 class="sechead">Something wrong?</h2>
+      <div id="complaint-done" hidden>
+        <p class="lede small">
+          Sent. <span id="complaint-who"></span> can see it and will be in
+          touch.
+        </p>
+      </div>
+      <div id="complaint-form">
+        <select id="complaint-type">
+          <option value="">What's the problem?</option>
+          <option value="Damage">Something was damaged</option>
+          <option value="Missing">Something is missing</option>
+          <option value="Delay">Delay</option>
+          <option value="Billing">Billing</option>
+          <option value="Staff conduct">Staff conduct</option>
+          <option value="Other">Something else</option>
+        </select>
+        <textarea id="complaint-text" rows="3" maxlength="4000"
+          placeholder="Tell them what happened."></textarea>
+        <div class="errline" id="complaint-error" hidden></div>
+        <button type="button" class="btn btn-ghost" id="complaint-send">
+          Send
+        </button>
+      </div>
+    </section>
+
     <p class="lede small" id="callvendor" hidden></p>
   </section>
 
@@ -285,8 +345,21 @@
     setRow("m-route-row", "m-route",
       (from && to) ? (from + " → " + to) : "");
     setRow("m-date-row", "m-date", fmtDate(res.move_date));
+    // `status` WINS, not tracking_status.
+    //
+    // Arun, 7 Sept 2026: "there is a full status". On a real closed order
+    // this page printed "Status: Booked" directly above a Progress
+    // timeline ending in "Completed" — because orders.tracking_status is
+    // a presentation string nothing keeps in sync (that order carried
+    // status='closed' and tracking_status='Booked'), while `status` and
+    // order_status_history are both maintained.
+    //
+    // A document that contradicts itself on its own face is worse than
+    // one missing a field: the customer cannot tell which half to
+    // believe. tracking_status is kept only as a fallback for a row that
+    // somehow has no status at all.
     setRow("m-status-row", "m-status",
-      statusLabel(res.tracking_status || res.status));
+      statusLabel(res.status || res.tracking_status));
     setRow("m-vehicle-row", "m-vehicle", res.vehicle_no);
     setRow("m-driver-row", "m-driver", res.driver_name);
 
@@ -303,10 +376,163 @@
       cv.hidden = false;
     }
 
+    setupReview(res);
+    setupComplaint(res);
+
     show("view-main");
   }).catch(function () {
     blocked("network");
   });
+
+  function rpc(fn, body) {
+    return fetch(CFG.SUPABASE_URL + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": CFG.SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + CFG.SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  // A refusal is the SERVER answering, so it never says "check your
+  // connection" — the retry loop this codebase has now fixed three
+  // times. Only a thrown fetch gets the connection wording.
+  var REVIEW_ERR = {
+    bad_rating: "Please pick between 1 and 5 stars.",
+    too_early: "This move isn't finished yet, so it can't be rated.",
+    already_reviewed: "This move has already been rated.",
+    not_found: "This link isn't working any more.",
+    invalid: "This link isn't working any more."
+  };
+  var COMPLAINT_ERR = {
+    too_short: "Please say a little more about what happened.",
+    too_many: "There are already several open reports on this move. "
+      + "Please call instead.",
+    not_found: "This link isn't working any more.",
+    invalid: "This link isn't working any more."
+  };
+
+  function setupReview(res) {
+    var block = document.getElementById("review-block");
+    var form = document.getElementById("review-form");
+    var done = document.getElementById("review-done");
+
+    // Already rated: show it back rather than inviting a second one the
+    // server would refuse.
+    if (res.my_rating) {
+      document.getElementById("my-rating").textContent = res.my_rating;
+      var c = (res.my_comment || "").trim();
+      if (c) {
+        document.getElementById("my-comment").textContent = c;
+        document.getElementById("my-comment-wrap").hidden = false;
+      }
+      form.hidden = true;
+      done.hidden = false;
+      block.hidden = false;
+      return;
+    }
+
+    if (!res.can_review) { block.hidden = true; return; }
+    block.hidden = false;
+
+    var chosen = 0;
+    var stars = Array.prototype.slice.call(
+      document.querySelectorAll("#stars .star"));
+    var send = document.getElementById("review-send");
+
+    function paint() {
+      stars.forEach(function (b, i) {
+        b.classList.toggle("on", i < chosen);
+      });
+      send.disabled = chosen < 1;
+    }
+    stars.forEach(function (b) {
+      b.addEventListener("click", function () {
+        chosen = Number(b.getAttribute("data-v")) || 0;
+        paint();
+      });
+    });
+    paint();
+
+    send.addEventListener("click", function () {
+      var err = document.getElementById("review-error");
+      err.hidden = true;
+      send.disabled = true;
+      send.textContent = "Sending…";
+      rpc("public_submit_review", {
+        p_token: token,
+        p_rating: chosen,
+        p_comment: document.getElementById("review-comment").value || null
+      }).then(function (r) {
+        if (r && r.ok) {
+          document.getElementById("my-rating").textContent = chosen;
+          form.hidden = true;
+          done.hidden = false;
+          return;
+        }
+        err.textContent = REVIEW_ERR[r && r.reason]
+          || "That didn't send. Please try again.";
+        err.hidden = false;
+        send.disabled = false;
+        send.textContent = "Send rating";
+      }).catch(function () {
+        err.textContent = "That didn't send. Check your connection and "
+          + "try again.";
+        err.hidden = false;
+        send.disabled = false;
+        send.textContent = "Send rating";
+      });
+    });
+  }
+
+  function setupComplaint(res) {
+    var block = document.getElementById("complaint-block");
+    var form = document.getElementById("complaint-form");
+    var done = document.getElementById("complaint-done");
+    block.hidden = false;
+    document.getElementById("complaint-who").textContent =
+      res.vendor_name || "Your moving company";
+
+    var send = document.getElementById("complaint-send");
+    send.addEventListener("click", function () {
+      var err = document.getElementById("complaint-error");
+      var text = document.getElementById("complaint-text").value || "";
+      err.hidden = true;
+
+      // Checked here so the customer is told before the round trip, with
+      // the same rule the server enforces.
+      if (text.trim().length < 5) {
+        err.textContent = COMPLAINT_ERR.too_short;
+        err.hidden = false;
+        return;
+      }
+      send.disabled = true;
+      send.textContent = "Sending…";
+      rpc("public_submit_complaint", {
+        p_token: token,
+        p_type: document.getElementById("complaint-type").value || null,
+        p_description: text
+      }).then(function (r) {
+        if (r && r.ok) { form.hidden = true; done.hidden = false; return; }
+        err.textContent = COMPLAINT_ERR[r && r.reason]
+          || "That didn't send. Please try again.";
+        err.hidden = false;
+        send.disabled = false;
+        send.textContent = "Send";
+      }).catch(function () {
+        err.textContent = "That didn't send. Check your connection and "
+          + "try again.";
+        err.hidden = false;
+        send.disabled = false;
+        send.textContent = "Send";
+      });
+    });
+  }
 })();
 </script>
 </body>

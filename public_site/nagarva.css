@@ -463,3 +463,29 @@ textarea:focus, input:focus, button:focus-visible, .cat-head:focus-visible {
 @media print {
   .docdl-cta { display: none; }
 }
+
+/* ---- Track page: rating and problem reporting (7 Sept 2026) ---- */
+.stars { display: flex; gap: 4px; margin: 0 0 10px; }
+.star {
+  background: none; border: 0; cursor: pointer;
+  font-size: 30px; line-height: 1; padding: 2px 3px;
+  color: rgba(255,255,255,.22);
+}
+.star.on { color: #E0B75E; }
+.star:focus-visible { outline: 2px solid #E0B75E; outline-offset: 2px; }
+
+#review-comment, #complaint-text, #complaint-type {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 10px;
+  color: inherit; font: inherit; font-size: 14px;
+}
+#review-comment:focus, #complaint-text:focus, #complaint-type:focus {
+  outline: none; border-color: #E0B75E;
+}
+/* A select inherits the page's dark ground but its OPTIONS are painted
+   by the OS, so they need an explicit colour or they render dark-on-dark
+   on some Android browsers. */
+#complaint-type option { background: #0F2740; color: #fff; }
