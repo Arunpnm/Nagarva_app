@@ -1576,10 +1576,16 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         ),
                       ),
                     ),
-                    // Hidden until /track is actually hosted. The page and
-                    // the token plumbing both work; the path has simply
-                    // never been deployed, so this could only hand a
-                    // customer a dead link. See kTrackLinkHosted.
+                    // LIVE since 7 Sept 2026. /track now serves the
+                    // customer document hub from public_site/: their
+                    // status timeline, every document issued for the
+                    // order as a download, and forms to rate the move or
+                    // report a problem.
+                    //
+                    // The flag stays rather than being deleted - it is
+                    // the switch that turns the affordance off again if
+                    // the page ever goes down, which is exactly the
+                    // situation it was added for.
                     if (kTrackLinkHosted)
                     Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(

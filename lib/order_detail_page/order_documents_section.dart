@@ -1434,7 +1434,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               if (!paid)
                 _utilityButton(
                     'Send Pay Link', Icons.send, _sendPayLink),
-              // See kTrackLinkHosted — /track is built but unhosted.
+              // Live since 7 Sept 2026 — /track serves the customer
+              // document hub. See kTrackLinkHosted.
               if (kTrackLinkHosted)
                 _utilityButton('Copy Track Link', Icons.link, _copyTrackLink),
               // "Duplicate Order", not "Copy". Arun, 3 Sept 2026: "there

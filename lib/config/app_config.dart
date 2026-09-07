@@ -241,4 +241,11 @@ String buildWhatsAppLink({String? phone, required String message}) {
 const bool kSurveyLinkHosted = true;
 const bool kSignLinkHosted = true;
 const bool kQuoteLinkHosted = false;
-const bool kTrackLinkHosted = false;
+/// True since 7 Sept 2026: /track serves the customer document hub
+/// (status timeline, issued documents as downloads, rate-the-move and
+/// report-a-problem), deployed from `public_site/track/`.
+///
+/// Verified the way this file's own convention demands - by opening a
+/// real token link in a browser and downloading the invoice, not by
+/// reading a deploy log.
+const bool kTrackLinkHosted = true;
