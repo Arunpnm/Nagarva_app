@@ -269,8 +269,11 @@
     document.getElementById("doc-lede").textContent =
       "You're signing " + type + (res.document_id ? " " + res.document_id : "") +
       ". Draw your signature in the box below.";
-    if (res.customer_name) {
-      document.getElementById("signer").value = res.customer_name;
+    // Same trim as the survey page: this value is submitted straight back
+    // as the signer's name, so an untrimmed one is stored on the signed
+    // document rather than merely displayed.
+    if ((res.customer_name || "").trim()) {
+      document.getElementById("signer").value = res.customer_name.trim();
     }
 
     show("view-form");

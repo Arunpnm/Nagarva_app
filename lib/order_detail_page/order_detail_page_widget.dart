@@ -500,6 +500,11 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       final sig = await SignatureService.getOrCreate(
         documentType: 'invoice',
         documentId: widget.orderId!,
+        // document_id stays the ORDER id: it is the stable lookup key
+        // `find()` matches on, so it must not change when the invoice is
+        // later generated, or a second signature request would be minted
+        // for a document the customer has already signed.
+        orderId: widget.orderId,
         customerName: _orderCustomer,
       );
       if (!mounted) return;

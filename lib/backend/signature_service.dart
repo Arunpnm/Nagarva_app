@@ -79,6 +79,18 @@ class SignatureService {
     required String documentType,
     required String documentId,
     String? customerName,
+    /// The order this signature belongs to, where there is one.
+    ///
+    /// `document_signatures.order_id` has existed since migration 007 and
+    /// NOTHING HAS EVER WRITTEN IT — found 7 Sept 2026 by joining a live
+    /// signature row back to its order and getting nulls for every order
+    /// column. The link survived only as a string in `document_id`, so
+    /// "which signatures belong to this order" was answerable by matching
+    /// text and not by the foreign key the column exists to provide.
+    ///
+    /// Optional because a QUOTE signature belongs to a quotation on a
+    /// lead, where no order exists yet.
+    String? orderId,
   }) async {
     final existing = await find(
       documentType: documentType,
@@ -92,6 +104,8 @@ class SignatureService {
           ...OrgScope.stamp(),
           'document_type': documentType,
           'document_id': documentId,
+          if (orderId != null && orderId.trim().isNotEmpty)
+            'order_id': orderId.trim(),
           if (customerName != null && customerName.trim().isNotEmpty)
             'customer_name': customerName.trim(),
           // sign_token and status have DB defaults

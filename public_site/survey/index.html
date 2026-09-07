@@ -359,6 +359,13 @@
     if (!res || !res.ok) { blocked(res && res.reason); return; }
     setVendor(res.vendor_name);
 
+    // TRIMMED. Seen live 7 Sept 2026: a lead saved as "Ponmani " (with a
+    // trailing space) greeted the customer as "Hi Ponmani , what are you
+    // moving?". The stray space before the comma is the page's problem to
+    // absorb, not the vendor's to avoid - names are typed on a phone, in
+    // a hurry, and every one already in the database would need cleaning
+    // otherwise.
+    res.customer_name = (res.customer_name || "").trim();
     if (res.customer_name) {
       document.getElementById("greeting").textContent =
         "Hi " + res.customer_name + ", what are you moving?";
