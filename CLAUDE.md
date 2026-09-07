@@ -213,11 +213,29 @@ was never in git — a Netlify drag-drop deploy, not a repo-tracked
 pipeline). `flutter build web` was run and `web/auth/index.html` +
 `web/_redirects` were added to this repo assuming link.nagarva.in was
 this Flutter build — **that assumption was wrong**, caught before
-deploying. Arun is recovering the original `/survey`/`/sign` files from
-Netlify's deploy history. **Nothing gets deployed to link.nagarva.in
-until that recovery is confirmed** — the prepared Flutter web build
-(`build/web/`, plus `web/auth/index.html`/`web/_redirects` in source) is
-held, not shipped. `kAuthRedirectUrl` was changed to
+deploying.
+
+**RESOLVED 3-6 Sept 2026 — this hold is LIFTED, and the source is in git
+now.** The original `/survey` and `/sign` were recovered from Netlify's
+deploy history (deploy `6a6bc316`, 30 Jul 2026, still reachable at its
+own permalink the whole time) and committed to **`public_site/`** in this
+repo, which is the real answer to "their source was never in git". They
+were deployed to link.nagarva.in on 6 Sept 2026 and verified path by
+path: `/survey` and `/sign` serve the real pages, `nagarva.css` and
+`config.js` return 200 after three weeks of 404, and **`/auth` survived
+the deploy** — checked specifically, because wiping it is exactly what
+the 17 Aug deploy did to everything else. `kSurveyLinkHosted` and
+`kSignLinkHosted` are now `true`. `/quote` and `/track` keep their
+holding pages and their flags stay false; neither has ever been built.
+**The two shared assets are the load-bearing part of that recovery.**
+The live site had lost `nagarva.css` and `config.js` as well, so
+restoring only the two HTML files — which is what "restore the survey
+page" sounds like — yields an unstyled page with no Supabase URL and no
+key: broken, in front of a customer. See `public_site/README.md`.
+The prepared Flutter web build (`build/web/`, plus
+`web/auth/index.html`/`web/_redirects` in source) was never the right
+thing to deploy here and still isn't — link.nagarva.in serves
+`public_site/`, not this repo's Flutter build. `kAuthRedirectUrl` was changed to
 `https://link.nagarva.in/auth` (from the bare domain) as part of this —
 that part stands regardless of how the survey/sign recovery resolves,
 since the `/auth` relay page needs to move off root either way once
@@ -1362,8 +1380,8 @@ AFFORDANCE only — never the page code, never the token plumbing.
 
 | Path | Minted by | Hosted? |
 |---|---|---|
-| `/survey` | `leads_page_widget.dart` | yes (hand-written static site) |
-| `/sign` | `backend/signature_service.dart` | yes (same site) |
+| `/survey` | `leads_page_widget.dart` | yes — `public_site/`, live 6 Sept 2026 |
+| `/sign` | `backend/signature_service.dart` | yes — same site, same deploy |
 | `/quote` | `survey_quote_hub_page_widget.dart` | **never, by anything** |
 | `/track` | `order_detail_page_widget.dart`, `order_documents_section.dart` | **never deployed** |
 
@@ -1378,6 +1396,39 @@ their own customer and cannot tell it was our fault. Flip the flag when
 the page is live, and verify by opening a real token link in a browser
 — not by reading a deploy log.
 
+**Live state — CORRECTED 6 Sept 2026. The paragraph below described
+19 Aug and stood stale for two and a half weeks. The correction is kept
+ABOVE the history deliberately: the stale half is the half that
+misleads, so it must not be the half that is read first.**
+
+`/survey` and `/sign` serve the real customer pages again, deployed from
+`public_site/` and verified by opening a real token link in a browser
+rather than by reading a deploy log. `/quote` and `/track` serve an
+honest "Link unavailable" holding page — the correct answer for two
+paths that have never been built — and their share buttons stay hidden.
+
+Two bugs the live run found that no page load would have, both fixed,
+both worth knowing because they are shapes this file keeps recording:
+- **The survey insert wrote only name and phone**, while
+  `public_get_survey` returns `from_address`, `to_address` and
+  `move_date`, and the page renders all three. So the customer saw
+  "Pickup -> Drop" with no date: three fields the vendor had already
+  captured, dropped on the way out. The CITY is the fallback rather than
+  the address, because New Lead captures cities and the full address
+  only arrives WITH the survey.
+- **The pages wore the platform's name.** A customer of Arun Packers
+  opened their own mover's link and was shown "Nagarva", a company they
+  have never heard of — so they cannot tell the link is genuine, and the
+  vendor looks like they are borrowing someone else's tool. Both pages
+  now render the vendor's name and fall back to NOTHING rather than to
+  the platform's: an empty slot reads as plain, the wrong company reads
+  as the wrong company. Needs
+  `supabase/20260906_public_vendor_identity.sql` — which adds
+  `vendor_name`, the org's public trading name and nothing else — to
+  actually populate.
+
+<details><summary>Original 19 Aug 2026 paragraph, kept for history</summary>
+
 **Live state, 19 Aug 2026 — worse than a 404.** After the drag-drop
 incident, EVERY path on link.nagarva.in serves the `/auth` relay page:
 `/survey`, `/sign`, `/quote`, `/track` all return "Email confirmed —
@@ -1388,6 +1439,7 @@ plain 404 would be less damaging, because it reads as "link expired".
 Restoring the pre-drag-drop deploy is what fixes this; the recovered
 files must then go into git alongside `web/auth/index.html` and
 `web/_redirects` so the site is never unversioned again.
+</details>
 
 ### Crash reporting — Sentry (19 Aug 2026)
 `lib/backend/crash_reporting.dart`. DSN and environment come from
