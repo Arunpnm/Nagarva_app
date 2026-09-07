@@ -44,6 +44,44 @@ class IssuedDocuments {
     required String docType,
     required String fileName,
     required Uint8List bytes,
+  }) =>
+      _store(
+          entityType: 'order',
+          entityId: orderId,
+          docType: docType,
+          fileName: fileName,
+          bytes: bytes);
+
+  /// Stores a QUOTATION's PDF.
+  ///
+  /// Kept against the quotation rather than an order because at quote
+  /// time there IS no order — the whole point of a quote is that the job
+  /// has not been booked. `documents.entity_type` is generic, so this
+  /// needs no schema change, and `public_get_order_documents` picks it up
+  /// through the order's own `quotation_id` once the lead converts.
+  ///
+  /// Consequence worth knowing: the customer sees their quote on the
+  /// tracking link only AFTER the order exists. A quote sent to someone
+  /// who never books is stored but never surfaced, which is correct —
+  /// there is no order to hang a link off.
+  static Future<String?> storeForQuotation({
+    required String quotationId,
+    required String fileName,
+    required Uint8List bytes,
+  }) =>
+      _store(
+          entityType: 'quotation',
+          entityId: quotationId,
+          docType: 'quote',
+          fileName: fileName,
+          bytes: bytes);
+
+  static Future<String?> _store({
+    required String entityType,
+    required String entityId,
+    required String docType,
+    required String fileName,
+    required Uint8List bytes,
   }) async {
     try {
       final orgId = OrgScope.stamp()['org_id'] as String?;
@@ -57,7 +95,7 @@ class IssuedDocuments {
       //
       // The bucket is public but nothing is listable, and an order id is
       // not guessable from outside, so a path cannot be walked to.
-      final path = '$orgId/$orderId/$docType.pdf';
+      final path = '$orgId/$entityId/$docType.pdf';
 
       await SupaFlow.client.storage.from(bucket).uploadBinary(
             path,
@@ -75,16 +113,16 @@ class IssuedDocuments {
       final existing = await SupaFlow.client
           .from('documents')
           .select('id')
-          .eq('entity_type', 'order')
-          .eq('entity_id', orderId)
+          .eq('entity_type', entityType)
+          .eq('entity_id', entityId)
           .eq('doc_type', docType)
           .filter('deleted_at', 'is', null)
           .limit(1);
 
       final payload = <String, dynamic>{
         ...OrgScope.stamp(),
-        'entity_type': 'order',
-        'entity_id': orderId,
+        'entity_type': entityType,
+        'entity_id': entityId,
         'doc_type': docType,
         'file_name': fileName,
         'storage_path': path,

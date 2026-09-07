@@ -20,6 +20,7 @@ import '/components/survey_pdf.dart';
 import '/components/quote_pdf.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/issued_documents.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -1474,10 +1475,25 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         surveyLines: surveyLines,
         amountInWords: amountInWords,
       );
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename: QuotePdf.filename(_leadRef, DateTime.now()),
-      );
+      final quoteFile = QuotePdf.filename(_leadRef, DateTime.now())
+          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '-');
+
+      // Keep the customer's copy. Arun, 7 Sept 2026: "also add quote".
+      // Stored against the QUOTATION, since no order exists yet — it
+      // reaches the customer's tracking link through the order's
+      // quotation_id once the lead converts.
+      //
+      // Best-effort, like every other document: a storage failure must
+      // never stop a quote going out.
+      if ((quotation.id ?? '').isNotEmpty) {
+        await IssuedDocuments.storeForQuotation(
+          quotationId: quotation.id!,
+          fileName: quoteFile,
+          bytes: bytes,
+        );
+      }
+
+      await Printing.sharePdf(bytes: bytes, filename: quoteFile);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
