@@ -13,6 +13,8 @@ import '/backend/audit_log_service.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/pdf_view_page.dart';
+import '/backend/issued_documents.dart';
 import '/backend/upi_payment.dart';
 import '/components/pdf_branding.dart';
 import '/components/lr_pdf.dart';
@@ -335,9 +337,49 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
   // ---- Shared print/share dialog --------------------------------------
 
+  /// One dialog for all eight documents, so View, the download and the
+  /// stored customer copy are wired ONCE rather than eight times.
+  ///
+  /// [docType] is what the customer's tracking link keys off — it becomes
+  /// `documents.doc_type` and the storage filename. Null means "generate
+  /// it, but do not keep a copy": correct for the internal worksheets
+  /// (packing list, loading slip, vehicle condition) which are the crew's
+  /// paperwork, not the customer's, and would be noise on their link.
   Future<void> _showDocDialog(
-      String title, String filename, Future<Uint8List> Function() build) {
+      String title, String filename, Future<Uint8List> Function() build,
+      {String? docType}) {
     var busy = false;
+
+    // A document NUMBER contains slashes (CBE/2026-27/0001), and these
+    // eight call sites interpolate it straight into the filename — so the
+    // proforma stored as "Proforma_CBE/2026-27/0001.pdf". That is the
+    // name the customer's browser is handed by the download attribute on
+    // their tracking link, and a path separator in it is at best
+    // rewritten and at worst rejected.
+    //
+    // Sanitised HERE rather than at eight call sites, for the same reason
+    // the storing hook lives here: one place cannot drift, eight can. The
+    // invoice path already did this by hand, which is why its stored name
+    // was correct and these were not.
+    final safeFilename =
+        filename.replaceAll(RegExp(r'[\/:*?"<>|]'), '-');
+
+    // Generated once per press and reused by View, Print and Download, so
+    // tapping all three does not rebuild the PDF three times — and, more
+    // to the point, does not write the stored copy three times.
+    Uint8List? built;
+    Future<Uint8List> ensure() async {
+      final b = built ??= await build();
+      if (docType != null) {
+        await IssuedDocuments.storeForOrder(
+          orderId: widget.orderId,
+          docType: docType,
+          fileName: safeFilename,
+          bytes: b,
+        );
+      }
+      return b;
+    }
     return showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -357,12 +399,32 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                   busy ? null : () => Navigator.of(dialogContext).pop(),
               child: const Text('Close'),
             ),
+            // Same View as the invoice dialog, for the same reason: Arun,
+            // 7 Sept 2026, "so that we dont have to download evertime then
+            // do correction". These eight had only Print and Download.
             TextButton(
               onPressed: busy
                   ? null
                   : () async {
                       setDialogState(() => busy = true);
-                      final bytes = await build();
+                      final bytes = await ensure();
+                      if (!context.mounted) return;
+                      setDialogState(() => busy = false);
+                      await PdfViewPage.open(
+                        context,
+                        title: title,
+                        bytes: bytes,
+                        filename: safeFilename,
+                      );
+                    },
+              child: const Text('View'),
+            ),
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      setDialogState(() => busy = true);
+                      final bytes = await ensure();
                       await Printing.layoutPdf(onLayout: (_) async => bytes);
                       if (dialogContext.mounted) {
                         Navigator.of(dialogContext).pop();
@@ -375,14 +437,15 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                   ? null
                   : () async {
                       setDialogState(() => busy = true);
-                      final bytes = await build();
-                      await Printing.sharePdf(bytes: bytes, filename: filename);
+                      final bytes = await ensure();
+                      await Printing.sharePdf(
+                          bytes: bytes, filename: safeFilename);
                       if (dialogContext.mounted) {
                         Navigator.of(dialogContext).pop();
                       }
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('$filename downloaded.')));
+                            content: Text('$safeFilename downloaded.')));
                       }
                     },
               child: const Text('Download'),
@@ -656,7 +719,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             amount: amount,
             amountInWords: amountInWords,
           );
-        });
+        }, docType: 'receipt');
         await AuditLogService.log(
           entityType: 'orders',
           entityId: o.id!,
@@ -712,7 +775,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                   notesBlock:
                       'This is a preliminary estimate, not a tax invoice. '
                       'Final billed amount may vary based on actuals.',
-                ));
+                ), docType: 'proforma');
         await AuditLogService.log(
           entityType: 'orders',
           entityId: o.id!,
@@ -846,7 +909,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             gstPayableBy:
                 gstPayableBy[0].toUpperCase() + gstPayableBy.substring(1),
           );
-        });
+        }, docType: 'lr');
 
         // field spec §2.1: "generate all four ... record each in lr_copies
         // with copy_type/pdf_url." pdf_url stays null — this app never
@@ -1062,7 +1125,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           return;
         }
         await _showDocDialog(
-            'Proof of Delivery', 'POD-${o.id}.pdf', () async => bytes);
+            'Proof of Delivery', 'POD-${o.id}.pdf', () async => bytes, docType: 'pod');
       });
 
   Future<void> _genVoucher() => _run(() async {
@@ -1143,7 +1206,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             signatureBytes: _heldSignature,
             signatureLabel: 'Received by',
           );
-        });
+        }, docType: 'voucher');
         await AuditLogService.log(
           entityType: 'orders',
           entityId: o.id!,
