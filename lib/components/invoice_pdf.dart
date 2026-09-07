@@ -511,14 +511,26 @@ class InvoicePdf {
                                 kv('UPI', org.upiId!),
                               if ((org.upiDisplayNumber ?? '').isNotEmpty)
                                 kv('PhonePe/GPay', org.upiDisplayNumber!),
-                              if ((org.bankName ?? '').isEmpty &&
-                                  (org.upiId ?? '').isEmpty)
-                                pw.Text(
-                                    'Add bank & UPI details in Settings.',
-                                    style: pw.TextStyle(
-                                        font: fonts.regular,
-                                        fontSize: 7.5,
-                                        color: PdfBranding.grey)),
+                              // NOTHING when the vendor has no bank
+                              // details. This used to print "Add bank &
+                              // UPI details in Settings." — an
+                              // instruction addressed to the VENDOR,
+                              // printed on the tax invoice the CUSTOMER
+                              // receives. Seen 7 Sept 2026 by rendering a
+                              // real invoice rather than reading the
+                              // code.
+                              //
+                              // A customer cannot act on it and should
+                              // never have been shown it: it tells them
+                              // their mover has not finished setting up
+                              // their software, on the document that is
+                              // supposed to be the most formal thing the
+                              // business produces. An empty panel says
+                              // "pay another way"; this said "we are
+                              // half-configured".
+                              //
+                              // In-app prompts belong in the app. The
+                              // Settings screen already has one.
                             ],
                           ),
                         ),
