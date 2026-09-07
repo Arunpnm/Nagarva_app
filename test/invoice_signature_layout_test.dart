@@ -93,12 +93,14 @@ void main() {
       customerPhone: '9840012345',
       fromCity: 'Chennai',
       toCity: 'Coimbatore',
-      baseAmount: 22857.14,
+      baseAmount: 20338.98,
       interstate: false,
       igst: 0,
-      cgst: 571.43,
-      sgst: 571.43,
+      cgst: 1830.51,
+      sgst: 1830.51,
       total: 24000,
+      // 18%, so the rate labels have something to get wrong.
+      gstPct: 18,
       logoBytes: logo,
       signatureBytes: vendorSig,
       // The CUSTOMER slot deliberately reuses the same image. This is a

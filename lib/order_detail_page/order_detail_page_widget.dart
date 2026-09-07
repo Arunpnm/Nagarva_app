@@ -31,6 +31,7 @@ import 'quotation_breakdown_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/issued_documents.dart';
+import '/components/pdf_view_page.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -742,15 +743,43 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       final gstPct = existing.isNotEmpty ? (existing.first.quoteGstPct ?? 5.0) : 5.0;
       final interstate =
           isInterState(_orderFromCity, _orderToCity);
-      final igst = interstate ? (amount * gstPct / 100).roundToDouble() : 0.0;
-      final sgst =
-          interstate ? 0.0 : (amount * (gstPct / 2) / 100).roundToDouble();
+
+      // GST IS INCLUSIVE IN `amount`, so the tax is BACKED OUT of the
+      // total, not taken as a percentage OF it. Fixed 7 Sept 2026 after
+      // Arun sent a real issued invoice (CBE/2026-27/0001) whose own
+      // figures contradicted each other.
+      //
+      // The old line computed `amount * pct / 100` — a percentage of the
+      // GST-INCLUSIVE total — and then subtracted that from the total to
+      // get the taxable value. At 18% on Rs35,990 that printed:
+      //     taxable Rs29,512, CGST Rs3,239, SGST Rs3,239
+      // when the correct split is:
+      //     taxable Rs30,500, CGST Rs2,745, SGST Rs2,745
+      // The GRAND TOTAL was right either way, which is exactly why this
+      // survived: the number the customer pays was never wrong. The
+      // taxable value was understated by Rs988 and the tax overstated by
+      // the same, on every invoice with a non-zero rate.
+      //
+      // It is not cosmetic. Those two figures are what GSTR-1 reports,
+      // and the invoice contradicted ITSELF on its face: the particulars
+      // summed to Rs30,500 — the correct taxable value — directly above a
+      // "Taxable Value" line reading Rs29,512.
+      //
+      // base = total / (1 + pct/100); tax = total - base.
+      final baseAmount = gstPct <= 0
+          ? amount
+          : (amount / (1 + gstPct / 100));
+      final taxTotal = amount - baseAmount;
+      final igst = interstate ? double.parse(taxTotal.toStringAsFixed(2)) : 0.0;
+      final sgst = interstate
+          ? 0.0
+          : double.parse((taxTotal / 2).toStringAsFixed(2));
       final cgst = sgst;
-      final baseAmount = amount - (interstate ? igst : sgst + cgst);
 
       if (!mounted) return;
       _showInvoiceDialog(
         invoiceNo: invoiceNo,
+        gstPct: gstPct,
         baseAmount: baseAmount,
         interstate: interstate,
         igst: igst,
@@ -788,6 +817,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   /// and builds the branded A4 PDF.
   Future<Uint8List> _buildInvoicePdfBytes({
     required String invoiceNo,
+    required double gstPct,
     required double baseAmount,
     required bool interstate,
     required double igst,
@@ -955,6 +985,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       signatureInherited: inherited,
       inheritedFromQuoteRef: inherited ? quoteRef : null,
       invoiceNo: invoiceNo,
+      gstPct: gstPct,
       org: org,
       boilerplate: boilerplate,
       customerName: _hideCustomer
@@ -1013,6 +1044,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
 
   void _showInvoiceDialog({
     required String invoiceNo,
+    required double gstPct,
     required double baseAmount,
     required bool interstate,
     required double igst,
@@ -1035,6 +1067,12 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                     'WhatsApp/email, or print it directly.',
           ),
           actions: [
+            // VIEW first, because checking is what you do most.
+            // Arun, 7 Sept 2026: "create view option so that we dont have
+            // to download evertime then do correction". Every document
+            // was download-or-print only, so proof-reading one meant a
+            // file in Downloads per round, and no way to tell which of
+            // them was current.
             TextButton(
               onPressed: busy
                   ? null
@@ -1042,6 +1080,34 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                       setDialogState(() => busy = true);
                       final bytes = await _buildInvoicePdfBytes(
                         invoiceNo: invoiceNo,
+                        gstPct: gstPct,
+                        baseAmount: baseAmount,
+                        interstate: interstate,
+                        igst: igst,
+                        sgst: sgst,
+                        cgst: cgst,
+                        total: total,
+                        quotationId: quotationId,
+                      );
+                      if (!context.mounted) return;
+                      setDialogState(() => busy = false);
+                      await PdfViewPage.open(
+                        context,
+                        title: 'Invoice $invoiceNo',
+                        bytes: bytes,
+                        filename: 'Invoice_$safeName.pdf',
+                      );
+                    },
+              child: const Text('View'),
+            ),
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      setDialogState(() => busy = true);
+                      final bytes = await _buildInvoicePdfBytes(
+                        invoiceNo: invoiceNo,
+                        gstPct: gstPct,
                         baseAmount: baseAmount,
                         interstate: interstate,
                         igst: igst,
@@ -1064,6 +1130,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                       setDialogState(() => busy = true);
                       final bytes = await _buildInvoicePdfBytes(
                         invoiceNo: invoiceNo,
+                        gstPct: gstPct,
                         baseAmount: baseAmount,
                         interstate: interstate,
                         igst: igst,

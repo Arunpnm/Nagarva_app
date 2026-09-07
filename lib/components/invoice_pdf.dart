@@ -26,6 +26,15 @@ import 'pdf_branding.dart';
 ///
 /// Fonts: Noto Sans via PdfGoogleFonts (fetched once, cached) because the
 /// built-in Helvetica has no ₹ glyph.
+
+/// Renders a GST rate the way an invoice states it: 18, 2.5, 0.25 — never
+/// "18.0". Kept next to its only caller rather than in a util file,
+/// because it exists for this one presentation rule.
+String _ratePct(double v) {
+  final s = v.toStringAsFixed(2);
+  return s.replaceFirst(RegExp(r'\.?0+$'), '');
+}
+
 class InvoicePdf {
   static Future<Uint8List> generate({
     required String invoiceNo,
@@ -43,6 +52,18 @@ class InvoicePdf {
     required double cgst,
     required double sgst,
     required double total,
+    /// The rate actually charged, for the tax rows' labels.
+    ///
+    /// They were hardcoded 'IGST @ 5%' / 'CGST @ 2.5%' / 'SGST @ 2.5%'
+    /// while the AMOUNTS came from the order's real quote_gst_pct — so a
+    /// live invoice printed "CGST @ 2.5%  Rs3,239.00" against a taxable
+    /// value of Rs30,500, which is 9%. A tax invoice must state the rate
+    /// it charges; a stated rate that contradicts the tax beside it is a
+    /// compliance defect, not a typo.
+    ///
+    /// Same half-fixed bug twice: the 12 Aug 2026 pass corrected the
+    /// hardcoded 5% in the CALCULATION and left it in the LABELS.
+    double gstPct = 5,
     Uint8List? logoBytes,
     Uint8List? signatureBytes,
     // Customer's e-signature captured via the public /sign link
@@ -410,12 +431,15 @@ class InvoicePdf {
                           _totalRow('Taxable Value', PdfBranding.rupees(baseAmount),
                               fonts.regular, fonts.bold),
                           if (interstate)
-                            _totalRow('IGST @ 5%', PdfBranding.rupees(igst),
+                            _totalRow('IGST @ ${_ratePct(gstPct)}%',
+                                PdfBranding.rupees(igst),
                                 fonts.regular, fonts.bold)
                           else ...[
-                            _totalRow('CGST @ 2.5%', PdfBranding.rupees(cgst),
+                            _totalRow('CGST @ ${_ratePct(gstPct / 2)}%',
+                                PdfBranding.rupees(cgst),
                                 fonts.regular, fonts.bold),
-                            _totalRow('SGST @ 2.5%', PdfBranding.rupees(sgst),
+                            _totalRow('SGST @ ${_ratePct(gstPct / 2)}%',
+                                PdfBranding.rupees(sgst),
                                 fonts.regular, fonts.bold),
                           ],
                           pw.Container(
