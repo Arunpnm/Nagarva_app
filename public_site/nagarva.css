@@ -370,3 +370,50 @@ textarea:focus, input:focus, button:focus-visible, .cat-head:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ---- Sign page: the document being signed (7 Sept 2026) ----
+   Deliberately plain. This is evidence, not a brochure, and it has to
+   stay readable once the customer saves it to PDF. */
+.doccard {
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 0 0 22px;
+  background: rgba(255,255,255,.04);
+}
+.docrow {
+  display: flex; justify-content: space-between; gap: 16px;
+  padding: 5px 0; font-size: 14px;
+}
+.docrow span:first-child { opacity: .7; }
+.docrow-head {
+  font-weight: 700; font-size: 15px;
+  padding-bottom: 9px; margin-bottom: 5px;
+  border-bottom: 1px solid rgba(255,255,255,.14);
+}
+.docrow-head span:first-child { opacity: 1; }
+.docrow-total {
+  font-weight: 700; font-size: 16px;
+  border-top: 1px solid rgba(255,255,255,.14);
+  margin-top: 6px; padding-top: 10px;
+}
+#doc-items { width: 100%; border-collapse: collapse; margin: 8px 0 4px; }
+#doc-items td { padding: 4px 0; font-size: 13.5px; vertical-align: top; }
+#doc-items td:last-child { text-align: right; white-space: nowrap; opacity: .85; }
+#save-doc { margin-top: 12px; }
+
+/* "Save a copy" is the browser's own print-to-PDF: no file to host,
+   nothing to expire, and no second rendering of the invoice that could
+   drift from the one the vendor issues. Everything interactive is
+   dropped from the printed sheet. */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .padwrap, .padnote, .consent, #submit, #save-doc,
+  #submit-error, .field { display: none !important; }
+  .doccard {
+    border: 1px solid #999; background: #fff; color: #000;
+    page-break-inside: avoid;
+  }
+  .docrow span:first-child { opacity: 1; }
+  .docrow-head, .docrow-total { border-color: #999; }
+}

@@ -38,6 +38,34 @@
   <h1>Sign to confirm</h1>
   <p class="lede" id="doc-lede">Draw your signature in the box below.</p>
 
+  <!-- What they are actually signing. Empty until the RPC fills it, and
+       hidden entirely when it returns nothing, so an older signature row
+       that resolves to no document degrades to the previous behaviour
+       rather than showing an empty frame. -->
+  <div id="doc-card" class="doccard" hidden>
+    <div class="docrow docrow-head">
+      <span id="doc-title">Document</span>
+      <span id="doc-no"></span>
+    </div>
+    <div class="docrow" id="doc-route-row" hidden>
+      <span>Move</span><span id="doc-route"></span>
+    </div>
+    <div class="docrow" id="doc-date-row" hidden>
+      <span>Planned move</span><span id="doc-date"></span>
+    </div>
+    <table id="doc-items" hidden></table>
+    <div class="docrow" id="doc-sub-row" hidden>
+      <span>Subtotal</span><span id="doc-sub"></span>
+    </div>
+    <div class="docrow" id="doc-gst-row" hidden>
+      <span id="doc-gst-label">GST</span><span id="doc-gst"></span>
+    </div>
+    <div class="docrow docrow-total" id="doc-total-row" hidden>
+      <span>Total</span><span id="doc-total"></span>
+    </div>
+    <button type="button" class="btn btn-ghost" id="save-doc">Save a copy</button>
+  </div>
+
   <div class="field">
     <label for="signer">Your full name</label>
     <input type="text" id="signer" maxlength="120" autocomplete="name" placeholder="As it should appear on the document">
@@ -115,6 +143,101 @@
   // public_get_signature_request return vendor_name (see
   // supabase/20260906_public_vendor_identity.sql); until then this
   // simply stays blank.
+  function money(n) {
+    if (n === null || n === undefined || n === "") return "";
+    var v = Number(n);
+    if (!isFinite(v)) return "";
+    // Indian grouping: 2,2,3 from the right. toLocaleString with en-IN
+    // does this natively and is what the invoice itself uses.
+    return "\u20B9" + v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  }
+
+  function setRow(rowId, valueId, value) {
+    var row = document.getElementById(rowId);
+    var el = document.getElementById(valueId);
+    if (!row || !el) return;
+    if (value === null || value === undefined || value === "") {
+      row.hidden = true;
+      return;
+    }
+    el.textContent = value;
+    row.hidden = false;
+  }
+
+  // Renders what the customer is agreeing to. Every field is optional:
+  // the card shows what the server actually returned and hides the rest,
+  // so a signature row that resolves to no document simply does not
+  // render a card rather than rendering an empty one.
+  function renderDocument(type, docNo, res) {
+    var card = document.getElementById("doc-card");
+    if (!card) return;
+
+    var total = res.total;
+    var hasAnything =
+      docNo || (total !== null && total !== undefined && total !== "");
+    if (!hasAnything) { card.hidden = true; return; }
+
+    document.getElementById("doc-title").textContent =
+      type.charAt(0).toUpperCase() + type.slice(1);
+    document.getElementById("doc-no").textContent = docNo || "";
+
+    var from = (res.from_city || "").trim();
+    var to = (res.to_city || "").trim();
+    setRow("doc-route-row", "doc-route",
+      (from && to) ? (from + " \u2192 " + to) : "");
+
+    setRow("doc-date-row", "doc-date", fmtDate(res.move_date));
+
+    // Line items, when the document has them.
+    var items = Array.isArray(res.items) ? res.items : [];
+    var table = document.getElementById("doc-items");
+    if (items.length) {
+      var html = "";
+      items.forEach(function (it) {
+        if (!it || typeof it !== "object") return;
+        var label = esc(String(it.name || it.description || it.item || ""));
+        if (!label) return;
+        var qty = it.qty || it.quantity;
+        if (qty) label += " \u00D7 " + esc(String(qty));
+        var amt = money(it.amount != null ? it.amount : it.total);
+        html += "<tr><td>" + label + "</td><td>" + esc(amt) + "</td></tr>";
+      });
+      table.innerHTML = html;
+      table.hidden = !html;
+    } else {
+      table.hidden = true;
+    }
+
+    setRow("doc-sub-row", "doc-sub", money(res.subtotal));
+    var gstLabel = document.getElementById("doc-gst-label");
+    if (gstLabel && res.gst_pct) {
+      gstLabel.textContent = "GST (" + res.gst_pct + "%)";
+    }
+    setRow("doc-gst-row", "doc-gst", money(res.gst_amount));
+    setRow("doc-total-row", "doc-total", money(total));
+
+    card.hidden = false;
+
+    var save = document.getElementById("save-doc");
+    if (save) {
+      save.addEventListener("click", function () { window.print(); });
+    }
+  }
+
+  function fmtDate(d) {
+    if (!d) return "";
+    var dt = new Date(d);
+    if (isNaN(dt.getTime())) return "";
+    return dt.toLocaleDateString("en-IN",
+      { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function esc(str) {
+    return String(str).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
   function setVendor(name) {
     var el = document.getElementById("vendor");
     if (!el) return;
@@ -266,9 +389,17 @@
 
     var type = (res.document_type || "document").replace(/_/g, " ");
     document.getElementById("doc-tag").textContent = type;
+
+    // Prefer the DOCUMENT's own number over the internal id. The id is an
+    // order reference like ARUN-PACKERS-AND-COURIERS-1002 and reads as
+    // noise to a customer; document_no is the invoice number they will
+    // see on the invoice itself.
+    var docNo = (res.document_no || "").trim();
     document.getElementById("doc-lede").textContent =
-      "You're signing " + type + (res.document_id ? " " + res.document_id : "") +
-      ". Draw your signature in the box below.";
+      "You're signing " + type + (docNo ? " " + docNo : "") +
+      ". Check the details below, then draw your signature.";
+
+    renderDocument(type, docNo, res);
     // Same trim as the survey page: this value is submitted straight back
     // as the signer's name, so an untrimmed one is stored on the signed
     // document rather than merely displayed.

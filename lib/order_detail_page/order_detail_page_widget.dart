@@ -497,6 +497,36 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     if (widget.orderId == null) return;
     setState(() => _sendingSignature = true);
     try {
+      // THE INVOICE MUST EXIST FIRST. Arun's call, 7 Sept 2026, after
+      // seeing the live page ask a customer to sign "invoice
+      // ARUN-PACKERS-AND-COURIERS-1002" - an ORDER id, on an order with
+      // no invoice, with no amount shown anywhere.
+      //
+      // A signature is evidence in a dispute months later. One taken
+      // before the document exists evidences that somebody drew a
+      // squiggle, not what they agreed to - and once the invoice IS
+      // generated it carries a different number entirely, so the signed
+      // record and the document name different things.
+      //
+      // This removes nothing: a QUOTE signature (Lead Details -> Send for
+      // Signature) is the pre-invoice acceptance path and is untouched.
+      final rows = await OrdersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId!),
+      );
+      final invoiceNo =
+          rows.isNotEmpty ? (rows.first.invoiceNo ?? '') : '';
+      if (invoiceNo.trim().isEmpty) {
+        if (!mounted) return;
+        setState(() => _sendingSignature = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Generate the invoice first — the customer signs the '
+              'invoice, so it has to exist before the link is sent.'),
+          duration: Duration(seconds: 5),
+        ));
+        return;
+      }
+
       final sig = await SignatureService.getOrCreate(
         documentType: 'invoice',
         documentId: widget.orderId!,
