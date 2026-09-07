@@ -1712,8 +1712,36 @@ are all vendor-editable").
 - **Sizes are a vendor-defined list**, never an enum — APC prices by
   vehicle/container, another vendor may price by square feet, room count
   or pallet.
-- **A rates editor UI does not exist yet.** Rates are set by SQL, or
-  typed per stay. Building it is the obvious next piece.
+- **A rates editor UI DOES exist — CORRECTED 7 Sept 2026.** This line
+  read "does not exist yet ... the obvious next piece" and was WRONG. It
+  went onto a ship list as outstanding work, and was only caught when
+  someone opened the file to build the thing that was already built.
+  **Third stale note in a week** (see bug 6's launcher icon, and the
+  link.nagarva.in section), which is why the rule below is stated as a
+  rule and not an apology.
+  It is the THIRD TAB of `SurveyPricingPage`
+  (`lib/settings_page/survey_pricing_page.dart`, route `/survey-pricing`,
+  Settings -> Survey & Pricing -> **Storage Rates**): add/remove a size,
+  per-day, per-month, minimum days, handling in/out, saved through
+  `PricingConfig.saveConfigKeys({'storage_rates': ...})` via
+  `storageRatesToConfig` — which exists precisely because the editor
+  does, and whose own doc comment says "for the rates editor".
+  It validates before saving: every row needs a size name, duplicate
+  sizes are refused by case-insensitive comparison, and a row with
+  neither a daily nor a monthly price is refused by name rather than
+  saved as a free stay. The empty state says what the absence COSTS —
+  "the picker on a booking stays empty and the rate has to be typed by
+  hand every time" — rather than merely stating there is no data.
+  **NOT verified on device**, and that is the honest half: the 7 Sept
+  pass confirmed the tab, the validation and the save path by reading
+  them, then lost its session before it could exercise them. A live
+  add-a-size/save/reopen round trip is still owed.
+
+  **THE RULE THIS KEEPS EARNING.** Before writing "X does not exist" or
+  "X is not built" in this file, grep for X. Before ACTING on such a
+  line, grep for X. A stale "not done" costs exactly what a stale "done"
+  costs — it puts finished work on a blocker list and sends the next
+  session to build something twice.
 
 **Billing rules that are money, not preference** (all in
 `storage_billing.dart`, 31 tests in `test/storage_billing_test.dart`):
