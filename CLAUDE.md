@@ -1877,6 +1877,43 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **8 Sept 2026 (later), launch pass — the release build was debug-signed,
+  and invoices were missing a statutory field.**
+  - **`buildTypes.release` used `signingConfigs.debug`** — FlutterFlow's
+    TODO, never completed, while a fully-written `signingConfigs.release`
+    sat unused beside it. Play rejects a debug-signed bundle on upload, so
+    this would have been found on release day. Fixed; an AAB build with no
+    `android/key.properties` now FAILS with a sentence naming the file,
+    while an APK release still falls back to debug so `flutter run
+    --release` works. **Both halves verified by running them** — the first
+    guard matched AGP's internal `bundleRelease*` tasks and broke plain APK
+    builds, caught only by building both. See `android/key.properties.example`.
+    **The upload keystore does not exist yet — Arun must create it (it
+    takes passwords) and back it up in two places. It is the single least
+    recoverable artefact in the project.**
+  - **Rule 46: no org had an ADDRESS.** A tax invoice must carry the
+    supplier's name, address and GSTIN. The renderer prints the address
+    correctly; nothing ever asked for it. `_generateInvoice` now warns
+    before allocating a number (a number is spent once, the series must
+    stay gapless), resolving the org the same way the PDF builder does so
+    the warning cannot disagree with the document. Warns, never blocks.
+  - **Suspension migration RUN and verified live**: 7 `_impl` functions, 2
+    write guards, anon can call the wrapper and **cannot** call the impl
+    (the bypass that would have made the gate decorative), APC serviceable,
+    token resolver working on a real token.
+  - **`public_site` DEPLOYED and verified on the live domain**, not from
+    the deploy log: `/survey` `/sign` `/track` `/404` all 200 with **zero**
+    rendered platform-name occurrences, titles carrying no platform name,
+    the `unavailable` state present, `nagarva.css`/`config.js` 200, and
+    **`/auth` intact** (301 -> 200, `auth-callback` present) — checked
+    specifically because wiping it is what the 17 Aug incident did.
+  - **Domain decision: link.nagarva.in STAYS** (Arun, 8 Sept 2026). The
+    vendor's name is already on the page the customer opens, so the URL was
+    judged not worth a new domain. Per-vendor subdomains are therefore not
+    being built; if that is revisited, `nagarva.in` is on Netlify DNS and
+    the site is `nf_team_pro`, so a wildcard alias needs no per-signup
+    provisioning at all — the token already identifies the org, so a
+    subdomain is cosmetic.
 - **8 Sept 2026, white-label sweep + the signature banner became
   actionable.** Verified: `flutter analyze lib/ test/` — 0 errors, 0
   warnings; suite **172 passing, 1 skipped**; `flutter build web
