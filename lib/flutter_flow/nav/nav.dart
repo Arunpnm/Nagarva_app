@@ -710,12 +710,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             navLead: params.getParam('navLead', ParamType.String),
           ),
         ),
-        // Session 4, Part B1.
-        FFRoute(
-          name: CustomerSurveysPageWidget.routeName,
-          path: CustomerSurveysPageWidget.routePath,
-          builder: (context, params) => const CustomerSurveysPageWidget(),
-        ),
+        // CustomerSurveysPage is NOT routed. Dormant, not deleted — see
+        // the header of customer_surveys_page_widget.dart. It was pulled
+        // from the nav on 3 Sept 2026 but stayed reachable by URL, and
+        // its detail sheet has four update paths that can only ever act
+        // on rows nothing is able to create.
         // Session 4, Part C-2.
         FFRoute(
           name: RateCardsPageWidget.routeName,

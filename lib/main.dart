@@ -644,10 +644,12 @@ class _NavBarPageState extends State<NavBarPage>
     // its nav set, so the count would render nowhere.
     if (isOwnerOrManagerSession) {
       ApprovalQueue.instance.refresh();
-      // Session 4, Part B1: same reasoning as ApprovalQueue — a submitted
-      // survey waiting for review should be visible without opening
-      // Surveys first.
-      SurveyQueue.instance.refresh();
+      // SurveyQueue.refresh() is NOT called. It counts unreviewed
+      // `customer_surveys` rows, and that module is dormant: no writer
+      // exists, the table is empty, its screen is unrouted, and the nav
+      // item its badge would decorate was removed on 3 Sept 2026. So the
+      // call was a network round-trip on every owner login to render a
+      // count nowhere. Restore it with the module, not before.
     }
     // Fire-and-forget, same style as the SharedPreferences load above —
     // no-ops immediately if activeStaffPages is already populated (the
@@ -782,7 +784,10 @@ class _NavBarPageState extends State<NavBarPage>
       'ReviewsPage': const ReviewsPageWidget(),
       'WaInboxPage': const WaInboxPageWidget(),
       'SurveyQuoteHubPage': const SurveyQuoteHubPageWidget(),
-      'CustomerSurveysPage': const CustomerSurveysPageWidget(),
+      // 'CustomerSurveysPage' is deliberately absent — dormant module,
+      // see customer_surveys_page_widget.dart's header. _tabs is the real
+      // router for bottom-bar taps, so leaving it here would keep the
+      // screen reachable after its route was removed.
       'RateCardsPage': const RateCardsPageWidget(),
       'LrRegisterPage': const LrRegisterPageWidget(),
       'OperationsStandalonePage': const OperationsStandalonePageWidget(),

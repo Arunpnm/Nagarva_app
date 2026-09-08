@@ -14,6 +14,32 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 
+/// DORMANT MODULE — built, correct, and deliberately unreachable.
+///
+/// Arun, 8 Sept 2026, deciding between the two survey tables: "surveys
+/// wins. customer_surveys is NOT a duplicate — it's an item/CFT-based
+/// model with a review workflow. It stays in the schema for a future
+/// module. Do not drop it, do not merge, do not build a writer for it."
+///
+/// So this screen and its detail sheet stay in the repo, and stay OUT of
+/// routing: no `FFRoute` in nav.dart, no entry in main.dart's `_tabs`
+/// (which is the real router for bottom-bar taps — leaving an entry
+/// there would keep the screen reachable after its route was removed),
+/// and no nav item since 3 Sept 2026.
+///
+/// **Why unreachable rather than merely unlisted.** `customer_surveys`
+/// has zero rows and no writer anywhere in `lib/` or in any of the four
+/// survey RPCs — all of which write `surveys`. The detail sheet has four
+/// update paths. Every one of them can only ever act on a row nothing is
+/// able to create, so the screen could only render empty while offering
+/// actions that cannot fire. A URL-reachable screen in that state is a
+/// trap for whoever finds it next, not a feature waiting to be used.
+///
+/// To revive: build the writer first, then restore the route, the
+/// `_tabs` entry, the nav item, and `SurveyQueue.instance.refresh()` in
+/// main.dart. In that order — the badge counts rows that must exist
+/// before the count means anything.
+///
 /// Detail view + actions for one `customer_surveys` row (Session 4, Part
 /// B1). Room-by-room inventory isn't possible — see
 /// customer_survey_parse.dart's doc comment: `items` has no room/category
