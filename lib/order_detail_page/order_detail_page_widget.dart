@@ -44,6 +44,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'arrival_code_card.dart';
 import 'order_detail_page_model.dart';
 import '/backend/vendor_identity.dart';
+import '/backend/module_navigation.dart';
 export 'order_detail_page_model.dart';
 
 /// Read-only view of a single order.
@@ -762,8 +763,124 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     }) as String;
   }
 
+  /// The org exactly as the invoice will render it.
+  ///
+  /// Same dual-source resolution the PDF builder uses (organizations
+  /// columns first, that org's `business_profile` jsonb as fallback), so
+  /// the warning can never disagree with the document it is warning
+  /// about — a check that reads a different source than the renderer is
+  /// worse than no check.
+  Future<OrgProfile> _resolveOrgProfile() async {
+    Map<String, dynamic> profile = {};
+    try {
+      final rows = await SettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('key', 'business_profile'),
+      );
+      if (rows.isNotEmpty && (rows.first.value ?? '').isNotEmpty) {
+        final decoded = jsonDecode(rows.first.value!);
+        if (decoded is Map) profile = Map<String, dynamic>.from(decoded);
+      }
+    } catch (_) {}
+    OrganizationsRow? orgRow;
+    try {
+      final orgRows = await OrganizationsTable().queryRows(
+        queryFn: (q) => q.eq('id', OrgScope.currentOrgId!),
+      );
+      if (orgRows.isNotEmpty) orgRow = orgRows.first;
+    } catch (_) {}
+    return OrgProfile.resolve(orgRow, businessProfile: profile);
+  }
+
+  /// Statutory fields a tax invoice must carry, checked before one is
+  /// issued.
+  ///
+  /// Rule 46 of the CGST Rules requires the supplier's NAME, ADDRESS and
+  /// GSTIN on a tax invoice. Checked live 8 Sept 2026: not one org had an
+  /// address — so every invoice this product has ever issued was missing
+  /// a mandatory field, and nothing anywhere said so.
+  ///
+  /// That is a SaaS problem, not an APC one. A vendor who signs up on
+  /// Sunday and invoices on Monday has no way to know: the document looks
+  /// finished, the total is right, and the omission only surfaces when a
+  /// customer's accountant rejects the input-credit claim months later.
+  ///
+  /// **It warns, it does not block.** Refusing to issue an invoice would
+  /// be this app deciding a vendor cannot bill for work they have done —
+  /// and the vendor may have a reason (an unregistered supplier issuing a
+  /// bill of supply, a field this app does not model). The vendor gets
+  /// the facts and the decision. Same shape as the Close Order balance
+  /// warning.
+  List<String> _missingStatutoryFields(OrgProfile org) => [
+        if ((org.name).trim().isEmpty) 'business name',
+        if ((org.address ?? '').trim().isEmpty) 'address',
+        if ((org.gstin ?? '').trim().isEmpty) 'GSTIN',
+      ];
+
+  /// Returns true if the vendor wants to continue.
+  Future<bool> _confirmIncompleteInvoice(List<String> missing) async {
+    final theme = FlutterFlowTheme.of(context);
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Invoice is missing required details'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'A tax invoice must show your ${missing.join(', ')}. '
+                  'Without ${missing.length == 1 ? 'it' : 'them'} your '
+                  'customer may not be able to claim input credit on this '
+                  'invoice.',
+                  style: GoogleFonts.inter(fontSize: 13.5),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Add it once in Settings → Business and every document '
+                  'from then on carries it.',
+                  style: GoogleFonts.inter(
+                      fontSize: 12.5, color: theme.secondaryText),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Open Settings'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Issue anyway'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   Future<void> _generateInvoice() async {
     if (widget.orderId == null) return;
+
+    // Before a number is allocated — an invoice number is spent once and
+    // the series must stay gapless, so the vendor decides BEFORE we burn
+    // one, not after.
+    try {
+      final missing = _missingStatutoryFields(await _resolveOrgProfile());
+      if (missing.isNotEmpty && mounted) {
+        final go = await _confirmIncompleteInvoice(missing);
+        if (!go) {
+          // openModule, not pushNamed — Settings is a module, and
+          // pushNamed would stack a second app shell on top of this
+          // one. See the navigation contract in CLAUDE.md.
+          if (mounted) openModule(context, 'SettingsPage');
+          return;
+        }
+      }
+    } catch (_) {
+      // A failed profile read must not stop a vendor invoicing. The check
+      // is a courtesy; issuing the invoice is the job.
+    }
+
     setState(() => _generatingInvoice = true);
 
     try {
