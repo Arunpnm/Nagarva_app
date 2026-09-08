@@ -91,6 +91,25 @@ String buildPublicLink(
 String buildTokenLink(String path, String token) =>
     buildPublicLink(path, params: {'token': token});
 
+/// Has `supabase/20260908_quotations_survey_id_fk_repoint.sql` been run?
+///
+/// `quotations.survey_id`'s foreign key targeted `customer_surveys` — a
+/// table with no writer and no rows — while every survey the product
+/// creates lands in `surveys`. So the column was structurally impossible
+/// to populate: any id worth writing would have violated the constraint,
+/// which is why it has never been non-null on any row.
+///
+/// Ships FALSE, and stays false until that migration is live. **Writing
+/// survey_id before the FK is repointed makes every quote-from-survey
+/// save fail with a foreign-key violation** — the quote is lost and the
+/// surveyor is standing in a customer's flat. Flip it, ship a build, and
+/// only then does the link start being recorded.
+///
+/// Deliberately a compile-time flag rather than a runtime probe: asking
+/// Postgres about its own constraints on every quote save costs a round
+/// trip to answer a question whose answer changes once, ever.
+const bool kQuotationSurveyIdFkRepointed = false;
+
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
 ///

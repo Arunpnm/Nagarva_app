@@ -168,9 +168,14 @@ void main() {
       InvoiceComplianceKind.incompleteProfile,
     }, reason: 'a fabricated GSTIN AND an empty address are both true');
 
-    // Coimbatore duplicates its parent's GSTIN. Worth stating plainly:
-    // this check CANNOT see that. Duplication across orgs is not visible
-    // from one OrgProfile, and catching it needs a cross-tenant query.
+    // Coimbatore shares its parent's GSTIN, and that is CORRECT — one
+    // registration covers multiple places of business within a state, so
+    // two orgs under the same GSTIN is lawful and needs no warning. An
+    // earlier version of this file asserted the shared number as a
+    // "known gap"; it was not a gap, and detecting it would have fired
+    // on a legitimate setup. The real error of this shape is a Bengaluru
+    // org carrying a 33 (Tamil Nadu) number, which the state-code check
+    // above catches once state_code is filled in.
     final cbe = good(
         name: 'APC Coimbatore',
         address: null, city: null, state: null, stateCode: null,

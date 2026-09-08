@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
+import '/config/app_config.dart';
 
 /// Survey & Quote builder (parity brief Part 3a-3d, 28 Jul 2026).
 ///
@@ -523,6 +524,11 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         'token': _hexToken(),
         ...OrgScope.stamp(),
         'lead_id': widget.leadId,
+        // Which survey this quote came from. Gated: until the FK is
+        // repointed at `surveys` this must stay absent, or the insert is
+        // rejected outright — see kQuotationSurveyIdFkRepointed.
+        if (kQuotationSurveyIdFkRepointed && widget.surveyId != null)
+          'survey_id': widget.surveyId,
         'customer': _customer.text.trim(),
         'phone': _phone.text.trim(),
         'from_address': _fromAddr.text.trim(),

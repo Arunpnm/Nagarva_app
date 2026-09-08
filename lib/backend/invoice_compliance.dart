@@ -5,8 +5,15 @@
 /// looked at `address` alone, which meant it passed an invoice carrying a
 /// **fabricated** GSTIN — the exact case live data contained: APC
 /// Bengaluru holds `29AAAAA0000A1Z5`, the specimen number from GST
-/// documentation, and APC Coimbatore holds a straight duplicate of its
-/// parent's.
+/// documentation.
+///
+/// Deliberately NOT checked: two orgs sharing a GSTIN. One registration
+/// covers multiple places of business within a state, so APC Coimbatore
+/// carrying its parent's number is lawful — warning on it would fire on
+/// a correct setup, and a warning nobody believes is worse than no
+/// warning. The error worth catching in that family is a GSTIN whose
+/// state does not match the org's, which [checkInvoiceCompliance]
+/// already reports once `state_code` is filled in.
 ///
 /// **A missing field and a false one are different failures, and this
 /// file keeps them apart.** An incomplete invoice is unfinished
