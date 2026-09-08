@@ -837,6 +837,54 @@ silently doesn't is the same class of trust damage.
   vocabulary from `permissions.dart`/`staff_form_sheet.dart`'s actual
   dropdown values, never from intuition about what a role "should" be
   called, and keep the SQL helper and the Dart getter in step.
+- **"No unique CONSTRAINT" and "no uniqueness" are different statements.
+  Ask `pg_index.indisunique`, not `pg_constraint`.** (Arun, 8 Sept 2026,
+  after we both made the same error on the same table in the same week.)
+  A unique index created with `CREATE UNIQUE INDEX` rather than
+  `ALTER TABLE ... ADD CONSTRAINT` **never appears in `pg_constraint`.**
+  It exists only in `pg_index`. So a query listing constraints can report
+  a table as unprotected while a unique index has been enforcing the key
+  for months.
+  That is exactly what happened to `number_series`. `pg_constraint`
+  showed the PK, the prefix CHECK and the branch FK — no uniqueness on
+  `(org_id, doc_type, branch, fy)` — and on that basis a "live invoice
+  exposure" was asserted and a second index added to close it.
+  `number_series_uniq` had been enforcing that key since
+  `nagarva_migration_006_compliance.sql:292`, with a byte-identical
+  coalesce expression. The claim was false and the index redundant the
+  moment it was written; see
+  `supabase/20260908_drop_redundant_duplicate_indexes.sql`.
+  **Same failure shape as the `reloptions` note below: the right answer
+  to the wrong catalogue.** To ask whether a key is protected:
+
+      select i.relname, ix.indisunique, (con.conname is not null) as constraint_backed,
+             pg_get_indexdef(i.oid)
+        from pg_index ix
+        join pg_class i on i.oid = ix.indexrelid
+        left join pg_constraint con on con.conindid = i.oid
+       where ix.indrelid = 'public.<table>'::regclass;
+
+  The `constraint_backed` column matters for a second reason: **`DROP
+  INDEX` against a constraint-backed index fails outright.** Check it
+  before writing a drop, not during one.
+- **"The file is ready", "the migration ran" and "the objects exist" are
+  three different states.** (Arun, 8 Sept 2026, standing rule, after a
+  live outage.)
+  A feature flag that switches the app onto new database objects flips
+  **only after those objects are confirmed present by querying the
+  database** — never on a clean-looking migration file, and never on a
+  report that it ran.
+  `kServerSideOrderIds` was set true on the strength of a message saying
+  the migration had run. It had aborted in its own preflight on a 42803
+  and rolled back. `OrderIdAllocator` has no fallback by design — a
+  fallback would reintroduce the race it exists to remove — so order
+  creation broke in every org, including the live business, until the
+  flag was reverted.
+  **A clean postflight proves the migration was correct WHEN IT RAN. It
+  says nothing about whether it ran.** The two failed attempts and the
+  successful one all reported through the same UI and looked alike; only
+  the database distinguishes them. One `select` answers it, and there is
+  never a good reason to substitute reasoning for that select.
 - **`CREATE OR REPLACE VIEW` preserves `security_invoker`. `DROP` +
   `CREATE` silently discards it.** (25 Aug 2026. Standing rule for all
   15 views in `public`.)
@@ -1852,6 +1900,53 @@ so they cannot disagree: the order storage card, `OrderPnlSection`
 (labelled "Storage (accruing)" while goods are in store), and the
 dashboard revenue tile.
 
+## The two survey tables — DECIDED, and the decision CHANGED once
+(8 Sept 2026. Recorded here because the first decision lived only in
+commit messages and two Dart file headers, which is why it could go
+stale without anything catching it. Both versions are below: the stale
+one is named so it cannot be mistaken for current.)
+
+**CURRENT DECISION (Arun, 8 Sept 2026, later): ONE survey table,
+customer-facing, and its `total_cft` is what quotation pricing is built
+from.**
+
+- **`customer_surveys` is the NAME that survives. `surveys` is the TABLE
+  that survives.** Its columns move onto `surveys`, and `surveys` is then
+  renamed to `customer_surveys`.
+- **`customer_surveys` (the current, empty table) will be DROPPED**, not
+  kept. It is not a future module any more.
+- The move is column-wise onto the live table rather than a switch to the
+  empty one, because `surveys` holds the rows, all four survey RPCs write
+  it, and `quotations.survey_id`'s FK was repointed at it on 8 Sept 2026
+  (`20260908_quotations_survey_id_fk_repoint.sql`).
+- `surveys_token_idx` was dropped ahead of the rename
+  (`20260908_drop_redundant_duplicate_indexes.sql`) precisely because a
+  rename carries indexes across — one moves to the new name instead of
+  two.
+- **Full spec comes separately. Do not start it.**
+
+<details><summary>SUPERSEDED, 8 Sept 2026 (earlier the same day) — do not
+act on this</summary>
+
+The earlier decision was: "surveys wins. customer_surveys is NOT a
+duplicate — it's an item/CFT-based model with a review workflow. It stays
+in the schema for a future module. Do not drop it, do not merge, do not
+build a writer for it." On that basis `CustomerSurveysPage` and its
+detail sheet were made dormant — route removed from `nav.dart`, entry
+removed from `main.dart`'s `_tabs`, `SurveyQueue.refresh()` dropped from
+the login path — with the files kept in the repo.
+
+**Those two Dart files still carry headers stating the superseded
+reason** ("stays in the schema for a future module", "To revive: build
+the writer first..."). They are wrong as of the current decision and
+should be corrected when the spec lands, not before —
+`lib/customer_surveys_page/customer_surveys_page_widget.dart` and
+`customer_survey_detail_sheet.dart`.
+
+The dormancy work itself is not wasted: the screens still must not be
+reachable, since they read a table that is about to be dropped.
+</details>
+
 ## Navigation contract (3 Sept 2026) — modules replace, details push
 
 Every module route in `nav.dart` builds its own `NavBarPage`, i.e. a
@@ -1877,6 +1972,55 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **8 Sept 2026 (last), order ids server-side — and a live outage caused
+  by flipping a flag on a report instead of a query.**
+  - **`next_order_id(uuid)` is LIVE and verified by direct query**:
+    SECURITY INVOKER (matching `next_doc_number`, whose `prosecdef =
+    false` was introspected rather than assumed), granted to
+    `authenticated` only, reusing `number_series` and its
+    `SELECT ... FOR UPDATE`. Three org counters, each `fy IS NULL` /
+    `branch IS NULL` / `active`, each seeded exactly on its org's highest
+    issued id. `kServerSideOrderIds` is true.
+  - **Order ids are deliberately NOT FY-scoped**, and the function says so
+    in a comment aimed at the March 2027 rollover work. Seeding
+    `fy = '2026-27'` to match its neighbours would make 1 April 2027 a
+    core-workflow outage: either P0001 with no matching row so no order
+    can be created, or a fresh counter at zero colliding with `orders.id`,
+    which is the primary key.
+  - **`next_doc_number` now refuses `doc_type = 'order'`.** The same
+    `coalesce(fy,'') = coalesce(p_fy,'')` matching that the expression
+    index depends on ALSO let `next_doc_number(org, 'order')` reach the
+    order counter, advance it, and return `ORD-1003` — a different string
+    from `next_order_id`'s `APC-1003`, off the same counter.
+  - **`anon` and `PUBLIC` lost EXECUTE on all three allocators.** RLS was
+    already holding (`current_org_ids()` returns nothing for anon), but
+    one policy should not be the only thing there.
+  - **Four client-side read-modify-write copies deleted, no fallback.**
+    A fallback would reintroduce the race exactly when the RPC is failing
+    and retries are most likely.
+  - **THE OUTAGE.** The flag was set true on a message saying the
+    migration had run. It had aborted in its own preflight on a 42803
+    (`select slug ... group by upper(slug)`) and rolled back. With no
+    fallback, order creation broke in all three orgs including the live
+    business. Reverted, rebuilt, then re-flipped only after querying the
+    database. See the new convention above; that rule is the lasting
+    output of this, not the feature.
+  - **Blocker A was my error and is corrected in place.** See the
+    `pg_index.indisunique` convention — `number_series_uniq` had enforced
+    the series key since migration 006, so the added index was redundant
+    and the "live invoice exposure" was never real. The source migration
+    now ASSERTS the index by SHAPE rather than creating one.
+  - **HANDED OVER, NOT RUN**:
+    `supabase/20260908_drop_redundant_duplicate_indexes.sql` — drops the
+    redundant member of four duplicate index pairs
+    (`document_signatures`, `pricing_config`, `surveys`, `number_series`).
+    Arun's scan found this is a standing schema habit, three of the four
+    pairs predating this work. Per-pair preflight, no `IF EXISTS`, and it
+    checks the drop target is not constraint-backed because `DROP INDEX`
+    against one fails outright. All four pairs dry-run read-only first.
+  - **Still unproven, and only the app can prove it**: that an order
+    created through the UI returns `ARUN-PACKERS-AND-COURIERS-1003`,
+    `APC-BENGALURU-1002`, `APC-COIMBATORE-1002`.
 - **8 Sept 2026 (later), launch pass — the release build was debug-signed,
   and invoices were missing a statutory field.**
   - **`buildTypes.release` used `signingConfigs.debug`** — FlutterFlow's
