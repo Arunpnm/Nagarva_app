@@ -123,10 +123,20 @@ const bool kQuotationSurveyIdFkRepointed = true;
 /// SELECT ... FOR UPDATE shape on `number_series` as every other numbered
 /// document in the product.
 ///
-/// Ships FALSE. While false, `OrderIdAllocator.next()` THROWS rather than
-/// falling back to the old path — a fallback would reintroduce the race
-/// exactly when the RPC is failing and retries are most likely.
-const bool kServerSideOrderIds = false;
+/// While false, `OrderIdAllocator.next()` THROWS rather than falling back
+/// to the old path — a fallback would reintroduce the race exactly when
+/// the RPC is failing and retries are most likely.
+///
+/// RUN 8 Sept 2026, and the clean commit is the verification: the
+/// migration's postflight asserts — inside the same transaction — that
+/// exactly one counter exists per org, that it is `active` and NOT
+/// FY-scoped, that no counter sits below an issued order id, that two
+/// successive calls return different numbers in the `<SLUG>-<n>` shape,
+/// that `next_doc_number(org, 'order')` now raises, and that the
+/// allocators are unreachable by anon and PUBLIC. Any one of those
+/// failing rolls the whole migration back, so a half-applied state that
+/// this flag could enable on top of is not reachable.
+const bool kServerSideOrderIds = true;
 
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
