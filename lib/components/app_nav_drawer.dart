@@ -9,6 +9,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/nav_items.dart';
 import '/permissions.dart';
+import '/backend/vendor_identity.dart';
 
 /// The full module list, grouped — the app's own menu.
 ///
@@ -74,7 +75,7 @@ class AppNavDrawer extends StatelessWidget {
             // With a single org it stays a plain, untappable label; an
             // affordance that leads to a list of one is noise.
             Builder(builder: (context) {
-              final orgName = AppSession.instance.currentOrgName ?? 'Nagarva';
+              final orgName = VendorIdentity.forDocument;
               final multi = AppSession.instance.availableOrgs.length > 1;
               final header = Padding(
                 padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 12),

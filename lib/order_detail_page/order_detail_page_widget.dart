@@ -43,6 +43,7 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:google_fonts/google_fonts.dart';
 import 'arrival_code_card.dart';
 import 'order_detail_page_model.dart';
+import '/backend/vendor_identity.dart';
 export 'order_detail_page_model.dart';
 
 /// Read-only view of a single order.
@@ -541,7 +542,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       );
       if (!mounted) return;
       setState(() => _signature = sig);
-      final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+      final org = VendorIdentity.forSentence;
       await ShareLinkSheet.show(
         context,
         title: sig.isSigned ? 'Already signed' : 'Send for signature',
@@ -576,7 +577,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
             'This order has no tracking token yet. Run the 28 Jul migration.');
       }
       if (!mounted) return;
-      final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+      final org = VendorIdentity.forSentence;
       await ShareLinkSheet.show(
         context,
         title: 'Share tracking link',
@@ -630,9 +631,76 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
               ),
             ),
           ),
+          // Arun, 8 Sept 2026: "if the customer sign is not available then
+          // share that sign link capture and update in doc".
+          //
+          // The banner used to only REPORT the gap. Noticing "awaiting
+          // customer signature" and being able to do something about it are
+          // the same moment, and separating them meant hunting for the
+          // Send for Signature button further down the page — so in
+          // practice the link did not get sent. This is the same
+          // affordance, offered where the absence is visible.
+          if (!signed)
+            TextButton(
+              onPressed: _sendingSignature ? null : _sendForSignature,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                minimumSize: const Size(0, 32),
+              ),
+              child: Text(
+                sig.link.isEmpty ? 'Send link' : 'Share link',
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ),
+          // Once they have signed, the DOCUMENT still has to be rebuilt to
+          // carry the signature — the stored copy on the customer's link
+          // was generated before they signed. Regenerating is what updates
+          // both, so say so rather than leaving the vendor to discover it.
+          if (signed)
+            IconButton(
+              tooltip: 'Regenerate the invoice so it carries this signature',
+              onPressed: _refreshSignature,
+              visualDensity: VisualDensity.compact,
+              icon: Icon(Icons.refresh, size: 18, color: color),
+            ),
         ],
       ),
     );
+  }
+
+  /// Re-reads the signature and tells the vendor what to do with it.
+  ///
+  /// A signature captured on the public link lands in Postgres, not in the
+  /// PDF that was generated before it. Nothing is wrong — the document is
+  /// rebuilt on demand and picks it up — but a vendor looking at a green
+  /// "Signed by ..." badge reasonably assumes the copy the customer can
+  /// download already shows it. It does not until the invoice is
+  /// regenerated, which is also what refreshes the stored copy behind the
+  /// tracking link.
+  Future<void> _refreshSignature() async {
+    try {
+      final sig = await SignatureService.find(
+        documentType: 'invoice',
+        documentId: widget.orderId!,
+      );
+      if (!mounted) return;
+      if (sig != null) setState(() => _signature = sig);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text((sig?.isSigned ?? false)
+            ? 'Signature on file. Generate the invoice again so the copy '
+                'the customer downloads carries it.'
+            : 'Not signed yet.'),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not check the signature: $e')));
+    }
   }
 
   /// Formats a money field that arrives as a nav-param String. Falls back

@@ -266,7 +266,9 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    final orgName = DeviceOrgBinding.boundOrgName ?? 'Nagarva';
+    // The org this device is bound to — never the platform. A person
+    // signing in should see who they are signing in to.
+    final orgName = (DeviceOrgBinding.boundOrgName ?? '').trim();
     return Scaffold(
       backgroundColor: theme.primaryBackground,
       body: SafeArea(

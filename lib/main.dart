@@ -36,6 +36,7 @@ import 'nav_items.dart';
 import 'permissions.dart';
 import 'staff_auth.dart';
 import 'index.dart';
+import '/backend/vendor_identity.dart';
 
 /// Beta-hardening safety net (item 13, NAGARVA_STATUS.md): a widget that
 /// throws during build previously showed Flutter's default red error
@@ -1061,7 +1062,7 @@ class _NavBarPageState extends State<NavBarPage>
                 Text(
                   suspended
                       ? '${AppSession.instance.currentOrgName ?? 'This account'} has been suspended. Contact Nagarva support to reactivate.'
-                      : 'Upgrade your plan to keep using ${AppSession.instance.currentOrgName ?? 'Nagarva'}.',
+                      : 'Upgrade your plan to keep using ${VendorIdentity.forSentence}.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: theme.secondaryText, fontSize: 13.5),
                 ),

@@ -11,6 +11,7 @@ import '/permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '/backend/vendor_identity.dart';
 
 /// Week 2 — Staff Management: add/edit staff form.
 ///
@@ -351,7 +352,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
 
       final code = data['code'] as String;
       final name = (data['staff_name'] as String?) ?? 'your team member';
-      final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+      final org = VendorIdentity.forSentence;
       final message = 'Hi $name, set up the $org app on your phone.\n\n'
           'Open Nagarva, tap "I have an invite code", and enter:\n\n'
           '$code\n\n'

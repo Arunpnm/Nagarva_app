@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Your moving list — Nagarva</title>
+<title>Your moving list</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Inter+Tight:wght@700;800&display=swap" rel="stylesheet">
@@ -132,14 +132,27 @@
   // public_get_signature_request return vendor_name (see
   // supabase/20260906_public_vendor_identity.sql); until then this
   // simply stays blank.
+  // The browser tab carries the VENDOR's name or no name at all.
+  //
+  // Arun, 8 Sept 2026: a paying vendor's customers must never see the
+  // platform anywhere. The page title used to ship as "Your moving list — Nagarva"
+  // and get rewritten once the vendor name arrived - so the wrong company
+  // sat in the tab for the whole lookup, and stayed there for good if the
+  // lookup failed. The document no longer contains the platform's name.
+  var BASE_TITLE = "Your moving list";
+  function setPageTitle(vendor) {
+    document.title = vendor ? (BASE_TITLE + " — " + vendor) : BASE_TITLE;
+  }
+
   function setVendor(name) {
     var el = document.getElementById("vendor");
     if (!el) return;
     if (name && String(name).trim()) {
       el.textContent = String(name).trim();
-      document.title = document.title.replace(/Nagarva/, String(name).trim());
+      setPageTitle(String(name).trim());
     } else {
       el.textContent = "";
+      setPageTitle("");
     }
   }
 

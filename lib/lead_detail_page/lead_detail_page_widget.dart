@@ -32,6 +32,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'lead_detail_page_model.dart';
+import '/backend/vendor_identity.dart';
 export 'lead_detail_page_model.dart';
 
 /// Read-only view of a single lead with convert-to-order action.
@@ -926,7 +927,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 
   Future<String> _leadOpeningMessage() async {
     final customer = widget.leadCustomer ?? 'there';
-    final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+    final org = VendorIdentity.forSentence;
     // Tenant-editable template (app_settings, category 'whatsapp') with a
     // sensible default when unset — same fallback-default pattern as
     // DocumentBoilerplate (Session 3), never a hardcoded-only string.
@@ -1273,7 +1274,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       );
       if (!mounted) return;
       setState(() => _quoteSignature = sig);
-      final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+      final org = VendorIdentity.forSentence;
       await ShareLinkSheet.show(
         context,
         title: 'Send quote for signature',
@@ -1340,7 +1341,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         fromCity: widget.leadFromCity,
         toCity: widget.leadToCity,
         lines: lines,
-        orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+        orgName: VendorIdentity.forDocument,
         profile: profile,
         logoBytes: logoBytes,
         cftRanges: config.cftRanges,

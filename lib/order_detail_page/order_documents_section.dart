@@ -24,6 +24,7 @@ import '/components/pod_pdf.dart';
 import '/components/simple_document_pdf.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/backend/vendor_identity.dart';
 
 /// Order Details Session 1, item 4 — the documents grid + signature
 /// companion + utility row.
@@ -777,7 +778,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               terms: _standardTerms,
                   docLabel: 'PROFORMA INVOICE',
                   docNo: docNo,
-                  orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+                  orgName: VendorIdentity.forDocument,
                   profile: profile,
                   logoBytes: logoBytes,
                   metaLeft: [
@@ -1037,7 +1038,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               terms: _standardTerms,
                   docLabel: 'PACKING LIST',
                   docNo: o.id!,
-                  orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+                  orgName: VendorIdentity.forDocument,
                   profile: profile,
                   logoBytes: logoBytes,
                   metaLeft: [
@@ -1068,7 +1069,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               terms: _standardTerms,
                   docLabel: 'LOADING SLIP',
                   docNo: o.id!,
-                  orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+                  orgName: VendorIdentity.forDocument,
                   profile: profile,
                   logoBytes: logoBytes,
                   metaLeft: [
@@ -1111,7 +1112,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               terms: _standardTerms,
                   docLabel: 'VEHICLE CONDITION REPORT',
                   docNo: o.id!,
-                  orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+                  orgName: VendorIdentity.forDocument,
                   profile: profile,
                   logoBytes: logoBytes,
                   metaLeft: [
@@ -1217,7 +1218,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               terms: _standardTerms,
             docLabel: 'PAYMENT VOUCHER',
             docNo: docNo,
-            orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+            orgName: VendorIdentity.forDocument,
             profile: profile,
             logoBytes: logoBytes,
             metaLeft: [

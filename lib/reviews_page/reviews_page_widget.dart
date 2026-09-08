@@ -9,6 +9,7 @@ import '/backend/supabase/org_scope.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/backend/vendor_identity.dart';
 
 /// Reviews (Session 4, Part B2) — was a ComingSoonPage stub.
 ///
@@ -106,7 +107,7 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
           .maybeSingle();
       googleUrl = rows?['google_review_url'] as String?;
     } catch (_) {}
-    final org = AppSession.instance.currentOrgName ?? 'Nagarva';
+    final org = VendorIdentity.forSentence;
     final greeting = 'Hi${(customerName ?? '').isEmpty ? '' : ' $customerName'}, '
         'thank you for choosing $org! We\'d really appreciate a quick review '
         'of your experience.';
