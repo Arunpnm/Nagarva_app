@@ -606,6 +606,8 @@ class InvoicePdf {
                 pw.Text(boilerplate.invoiceNote,
                     style: pw.TextStyle(
                         font: fonts.regular, fontSize: 7.5, color: PdfBranding.grey)),
+                pw.SizedBox(height: 10),
+                PdfBranding.termsBlock(fonts, boilerplate.standardTerms),
                 pw.Spacer(),
                 PdfBranding.footerFull(fonts, org: org, boilerplate: boilerplate),
               ],

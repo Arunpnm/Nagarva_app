@@ -726,20 +726,21 @@ class QuotePdf {
               style:
                   pw.TextStyle(font: fonts.bold, fontSize: 10, color: PdfBranding.navy)),
           pw.SizedBox(height: 6),
-          if (boilerplate.quotationTerms.isEmpty)
-            pw.Text(
-                'Add your terms & conditions in Settings to show them here.',
-                style: pw.TextStyle(
-                    font: fonts.regular,
-                    fontSize: 8.5,
-                    fontStyle: pw.FontStyle.italic,
-                    color: PdfBranding.grey))
-          else
-            for (var i = 0; i < boilerplate.quotationTerms.length; i++)
+          // The vendor's own quotation terms when they have written them,
+          // otherwise the standard set every document carries. NEVER an
+          // instruction to the vendor — this page is the customer's.
+          for (var i = 0;
+              i <
+                  (boilerplate.quotationTerms.isEmpty
+                          ? boilerplate.standardTerms
+                          : boilerplate.quotationTerms)
+                      .length;
+              i++)
               pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 3),
                 child: pw.Text(
-                  '${i + 1}. ${boilerplate.quotationTerms[i]}',
+                  '${i + 1}. '
+                  '${(boilerplate.quotationTerms.isEmpty ? boilerplate.standardTerms : boilerplate.quotationTerms)[i]}',
                   style: pw.TextStyle(font: fonts.regular, fontSize: 8.5),
                 ),
               ),

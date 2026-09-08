@@ -177,6 +177,8 @@ class MoneyReceiptPdf {
                 ),
               ],
             ),
+            pw.SizedBox(height: 10),
+            PdfBranding.termsBlock(fonts, boilerplate.standardTerms),
             pw.Spacer(),
             PdfBranding.footerFull(fonts, org: org, boilerplate: boilerplate),
           ],

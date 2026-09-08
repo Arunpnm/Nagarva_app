@@ -88,6 +88,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   @override
   void initState() {
     super.initState();
+    _loadStandardTerms();
     _loadOrder();
     _loadHeldSignature();
   }
@@ -157,6 +158,29 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   /// handful of lines — matches this codebase's existing per-page
   /// duplication convention (see _nextOrderId in new_order_page/
   /// order_detail_page/lead_detail_page).
+  /// The vendor's document terms, loaded once.
+  ///
+  /// Held as a FIELD rather than awaited at each call site: the five
+  /// documents that need it build their PDF inside a closure passed to
+  /// the dialog, and threading an await through each of those turns a
+  /// one-line addition into five signature changes. Starts at the
+  /// shipped default so a document generated before the load returns
+  /// still carries terms rather than none.
+  List<String> _standardTerms = kDefaultStandardTerms;
+
+  Future<void> _loadStandardTerms() async {
+    try {
+      final rows = await AppSettingsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('category', 'documents'),
+      );
+      final terms = DocumentBoilerplate.resolve(rows).standardTerms;
+      if (mounted) setState(() => _standardTerms = terms);
+    } catch (_) {
+      // Keeps the shipped default. A document with standard terms beats
+      // a document with none because a settings read failed.
+    }
+  }
+
   Future<(Map<String, dynamic>, Uint8List?)> _loadBranding() async {
     Map<String, dynamic> profile = const {};
     try {
@@ -750,6 +774,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final (profile, logoBytes) = await _loadBranding();
         await _showDocDialog('Proforma $docNo', 'Proforma_$docNo.pdf',
             () => SimpleDocumentPdf.generate(
+              terms: _standardTerms,
                   docLabel: 'PROFORMA INVOICE',
                   docNo: docNo,
                   orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
@@ -1009,6 +1034,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final (profile, logoBytes) = await _loadBranding();
         await _showDocDialog('Packing List', 'PackingList_${o.id}.pdf',
             () => SimpleDocumentPdf.generate(
+              terms: _standardTerms,
                   docLabel: 'PACKING LIST',
                   docNo: o.id!,
                   orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
@@ -1039,6 +1065,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final (profile, logoBytes) = await _loadBranding();
         await _showDocDialog('Loading Slip', 'LoadingSlip_${o.id}.pdf',
             () => SimpleDocumentPdf.generate(
+              terms: _standardTerms,
                   docLabel: 'LOADING SLIP',
                   docNo: o.id!,
                   orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
@@ -1081,6 +1108,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             'Vehicle Condition Report',
             'VehicleCondition_${o.id}.pdf',
             () => SimpleDocumentPdf.generate(
+              terms: _standardTerms,
                   docLabel: 'VEHICLE CONDITION REPORT',
                   docNo: o.id!,
                   orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
@@ -1114,7 +1142,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   Future<void> _genPod() => _run(() async {
         final o = _order;
         if (o == null) return;
-        final bytes = await PodPdf.generateForOrder(o.id!);
+        final bytes =
+            await PodPdf.generateForOrder(o.id!, terms: _standardTerms);
         if (bytes == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -1185,6 +1214,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         await _showDocDialog('Voucher $docNo', 'Voucher_$docNo.pdf',
             () async {
           return SimpleDocumentPdf.generate(
+              terms: _standardTerms,
             docLabel: 'PAYMENT VOUCHER',
             docNo: docNo,
             orgName: AppSession.instance.currentOrgName ?? 'Nagarva',

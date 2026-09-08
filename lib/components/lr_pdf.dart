@@ -486,7 +486,9 @@ class LrPdf {
                   ),
                 ],
               ),
-              pw.SizedBox(height: 14),
+              pw.SizedBox(height: 10),
+              PdfBranding.termsBlock(fonts, boilerplate.standardTerms),
+              pw.SizedBox(height: 10),
 
               // ---- 2.7 Declaration + signature ------------------------------
               pw.Text(

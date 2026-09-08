@@ -34,6 +34,11 @@ class SimpleDocumentPdf {
     String signatureLabel = 'Customer Signature',
     String? notesBlock,
     String? footerNote,
+    /// The short terms printed on every document. Passed as a plain list
+    /// rather than the whole DocumentBoilerplate because this renderer
+    /// deliberately knows nothing about app_settings - it is a layout,
+    /// and its callers resolve the content.
+    List<String> terms = const [],
   }) async {
     final fonts = await PdfBranding.loadFonts();
     final doc = pw.Document();
@@ -194,6 +199,12 @@ class SimpleDocumentPdf {
                 ),
               ],
             ),
+            // Terms on EVERY document, per Arun 7 Sept 2026. Placed
+            // above the spacer so they sit with the content rather than
+            // pinned to the page foot, where they read as fine print
+            // nobody was expected to see.
+            pw.SizedBox(height: 10),
+            PdfBranding.termsBlock(fonts, terms),
             pw.Spacer(),
             PdfBranding.footer(fonts, extraLine: footerNote),
           ],

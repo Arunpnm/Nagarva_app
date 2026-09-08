@@ -31,7 +31,8 @@ import 'simple_document_pdf.dart';
 class PodPdf {
   /// Loads the POD row for [orderId] and renders it. Returns null when no
   /// `pod_records` row exists yet — the job hasn't been completed.
-  static Future<Uint8List?> generateForOrder(String orderId) async {
+  static Future<Uint8List?> generateForOrder(String orderId,
+      {List<String> terms = const []}) async {
     final rows = await OrgScope.read(SupaFlow.client
             .from('pod_records')
             .select())
@@ -106,6 +107,7 @@ class PodPdf {
     }
 
     return SimpleDocumentPdf.generate(
+      terms: terms,
       docLabel: 'PROOF OF DELIVERY',
       docNo: orderId,
       // Falls back to NOTHING, never to the platform. A POD headed

@@ -138,6 +138,40 @@ class OrgProfile {
 /// the defaults shown here as fallback text, so a document still renders
 /// sensibly in the (should-never-happen, seed runs per org) case the row
 /// is missing rather than printing a blank.
+/// The terms every document carries until the vendor writes their own.
+///
+/// **These are OPERATIONAL statements, not a liability position.** Each
+/// one describes what the mover does or what the customer must do — the
+/// deliberate choice being that a SaaS product must not draft the legal
+/// terms governing a vendor's exposure. A default indemnity or liability
+/// cap would be this app deciding, on a vendor's behalf and without their
+/// lawyer, what they are on the hook for.
+///
+/// That is the same reasoning as "No suggested money. Ever." applied to
+/// words instead of figures: a plausible default is indistinguishable
+/// from a decision once printed, and these get printed on documents that
+/// settle disputes.
+///
+/// Overridden per tenant by `app_settings` key `document_terms`, one
+/// term per line.
+const List<String> kDefaultStandardTerms = [
+  'Goods are accepted for transport at the owner\'s risk unless transit '
+      'insurance has been arranged separately and is stated on this '
+      'document.',
+  'Any shortage or damage must be reported to us in writing within 48 '
+      'hours of delivery, with the consignment note number.',
+  'Cash, jewellery, documents and other valuables must be retained by the '
+      'customer and are not accepted for transport.',
+  'Delivery dates are estimates and may be affected by traffic, weather, '
+      'permits or conditions outside our control.',
+  'Payment is due as agreed on the quotation. Goods may be held until '
+      'payment of the agreed amount is received.',
+];
+
+extension _Let<T> on T {
+  R let<R>(R Function(T) f) => f(this);
+}
+
 class DocumentBoilerplate {
   const DocumentBoilerplate({
     this.docFooterText = 'This is a computer-generated document. '
@@ -159,6 +193,7 @@ class DocumentBoilerplate {
         'Acid of any type of Liquids (like Ghee Tin, Oil etc.) is totally '
         'prohibited.',
     this.quotationTerms = const [],
+    this.standardTerms = kDefaultStandardTerms,
   });
 
   final String docFooterText;
@@ -169,6 +204,21 @@ class DocumentBoilerplate {
   final String goodsDescriptionDefault;
   final String invoiceNote;
   final List<String> quotationTerms;
+
+  /// The short terms printed on EVERY document.
+  ///
+  /// Arun, 7 Sept 2026: "i need the basic terms and conditons in all
+  /// documents ... by deafult".
+  ///
+  /// Distinct from [quotationTerms], which is the long list on the
+  /// quotation's own third page. These are the four or five lines that
+  /// belong on an invoice, a receipt, an LR and a POD alike.
+  ///
+  /// **Tenant-editable, and they should be edited.** Sourced from
+  /// `app_settings` key `document_terms`, one per line, falling back to
+  /// [kDefaultStandardTerms]. See that constant for why the shipped set
+  /// is worded the way it is.
+  final List<String> standardTerms;
 
   /// The demurrage sentence with {days}/{rate} substituted.
   String get demurrageSentence => demurrageText
@@ -206,6 +256,12 @@ class DocumentBoilerplate {
       goodsDescriptionDefault: str('goods_description_default') ??
           fallback.goodsDescriptionDefault,
       invoiceNote: str('invoice_note') ?? fallback.invoiceNote,
+      standardTerms: (str('document_terms') ?? '')
+              .split('\n')
+              .map((l) => l.trim())
+              .where((l) => l.isNotEmpty)
+              .toList()
+              .let((v) => v.isEmpty ? fallback.standardTerms : v),
       quotationTerms: (str('quotation_terms') ?? '')
           .split('\n')
           .map((l) => l.trim())
@@ -494,6 +550,33 @@ class PdfBranding {
           textAlign: pw.TextAlign.center,
           style: pw.TextStyle(font: fonts.regular, fontSize: 7.5, color: grey),
         ),
+      ],
+    );
+  }
+
+  /// A compact terms block, for the foot of any document.
+  ///
+  /// Returns an empty widget when there are no terms, so a vendor who
+  /// clears them gets a clean document rather than an empty heading.
+  static pw.Widget termsBlock(
+    PdfFonts fonts,
+    List<String> terms, {
+    String heading = 'TERMS & CONDITIONS',
+  }) {
+    if (terms.isEmpty) return pw.SizedBox();
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(heading,
+            style: pw.TextStyle(font: fonts.bold, fontSize: 7.5, color: navy)),
+        pw.SizedBox(height: 2),
+        for (var i = 0; i < terms.length; i++)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 1.5),
+            child: pw.Text('${i + 1}. ${terms[i]}',
+                style: pw.TextStyle(
+                    font: fonts.regular, fontSize: 6.8, color: grey)),
+          ),
       ],
     );
   }
