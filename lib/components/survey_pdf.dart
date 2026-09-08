@@ -181,11 +181,12 @@ class SurveyPdf {
     return doc.save();
   }
 
-  /// `Nagarva_Survey_<lead_ref>_<yyyyMMdd>.pdf` — same convention as the
-  /// quote (Part 8 addendum, item 2).
+  /// `Survey_<lead_ref>_<yyyyMMdd>.pdf` — same convention as the quote,
+  /// and the same reason for carrying no platform name; see
+  /// [QuotePdf.filename].
   static String filename(String leadRef, DateTime date) {
     final d = '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
     final safeRef = leadRef.replaceAll(RegExp(r'[^A-Za-z0-9]'), '');
-    return 'Nagarva_Survey_${safeRef}_$d.pdf';
+    return 'Survey_${safeRef}_$d.pdf';
   }
 }

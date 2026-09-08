@@ -814,10 +814,17 @@ class QuotePdf {
     );
   }
 
-  /// `Nagarva_Quote_<lead_ref>_<yyyyMMdd>.pdf`
+  /// `Quote_<lead_ref>_<yyyyMMdd>.pdf`
+  ///
+  /// The platform's name is deliberately NOT in here. This is the name
+  /// the customer's phone shows in their downloads, and a file called
+  /// `Nagarva_Quote_...` from Arun Packers is a quote that appears to
+  /// come from someone else. The vendor's name is not substituted in
+  /// either: it would collide with a customer's own filing and can carry
+  /// characters a filesystem rejects.
   static String filename(String leadRef, DateTime date) {
     final d = '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
     final safeRef = leadRef.replaceAll(RegExp(r'[^A-Za-z0-9]'), '');
-    return 'Nagarva_Quote_${safeRef}_$d.pdf';
+    return 'Quote_${safeRef}_$d.pdf';
   }
 }

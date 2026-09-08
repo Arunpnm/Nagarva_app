@@ -108,7 +108,13 @@ class PodPdf {
     return SimpleDocumentPdf.generate(
       docLabel: 'PROOF OF DELIVERY',
       docNo: orderId,
-      orgName: AppSession.instance.currentOrgName ?? 'Nagarva',
+      // Falls back to NOTHING, never to the platform. A POD headed
+      // "Nagarva" tells a customer their goods were delivered by a
+      // company they have never dealt with — and it is the document that
+      // settles a damage dispute months later. An empty letterhead reads
+      // as plain; the wrong company reads as the wrong company. Same
+      // rule Arun set for the public survey and sign pages.
+      orgName: AppSession.instance.currentOrgName ?? '',
       profile: profile,
       metaLeft: [
         MapEntry('Order', orderId),
