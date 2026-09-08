@@ -228,120 +228,148 @@ class LrPdf {
               pw.SizedBox(height: 8),
 
               // ---- 2.2 Three-column band ---------------------------------
-              pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              // A TABLE, not a Row. `pw.Row(crossAxisAlignment: stretch)`
+              // reads as the obvious way to make three bordered panels
+              // share a height — and inside a Column it silently breaks
+              // the whole page. A horizontal Flex with `stretch` hands
+              // each child `maxHeight: constraints.maxHeight`, which in a
+              // Column is INFINITY, so this band claimed the entire sheet
+              // and every section below it — freight, goods, declaration,
+              // the consignor's signature line — was never drawn. The LR
+              // printed as a letterhead with two address boxes.
+              //
+              // `TableCellVerticalAlignment.full` is the construct that
+              // actually does the intended job: measure the tallest cell,
+              // then re-lay every cell to exactly that height. Bounded, so
+              // the band takes the space it needs and no more.
+              //
+              // Do not "simplify" this back to a Row. See
+              // test/document_terms_layout_test.dart, which renders this
+              // page precisely so a regression is visible instead of
+              // silent.
+              pw.Table(
+                columnWidths: const {
+                  0: pw.FlexColumnWidth(3),
+                  1: pw.FlexColumnWidth(4),
+                  2: pw.FlexColumnWidth(3),
+                },
+                defaultVerticalAlignment: pw.TableCellVerticalAlignment.full,
                 children: [
-                  pw.Expanded(
-                    flex: 3,
-                    child: pw.Container(
-                      padding: const pw.EdgeInsets.all(6),
-                      decoration: pw.BoxDecoration(
-                          border: pw.Border.all(
-                              color: PdfColors.grey400, width: .5)),
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text('NOTICE',
-                              style: pw.TextStyle(
-                                  font: fonts.bold,
-                                  fontSize: 8,
-                                  color: PdfBranding.navy)),
-                          pw.SizedBox(height: 2),
-                          pw.Text(boilerplate.lrNoticeText,
-                              style: pw.TextStyle(
-                                  font: fonts.regular,
-                                  fontSize: 6.5,
-                                  color: PdfBranding.grey)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  pw.SizedBox(width: 4),
-                  pw.Expanded(
-                    flex: 4,
-                    child: pw.Container(
-                      padding: const pw.EdgeInsets.all(6),
-                      decoration: pw.BoxDecoration(
-                          border: pw.Border.all(
-                              color: PdfColors.grey400, width: .5)),
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(
-                              riskType == 'carrier'
-                                  ? "AT CARRIER'S RISK"
-                                  : "AT OWNER'S RISK",
-                              style: pw.TextStyle(
-                                  font: fonts.bold,
-                                  fontSize: 8,
-                                  color: PdfBranding.navy)),
-                          pw.SizedBox(height: 2),
-                          kv('Material Insured',
-                              materialInsured ? 'Yes' : 'No'),
-                          kv('Insurance Co',
-                              (insurerName ?? '').isEmpty ? '—' : insurerName!),
-                          kv('Policy No',
-                              (policyNo ?? '').isEmpty ? '—' : policyNo!),
-                          kv(
-                              'Insurance Date',
-                              insuranceDate == null
-                                  ? '—'
-                                  : PdfBranding.fmtDate(insuranceDate)),
-                          kv('Insured Amount', amtOrDash(insuredAmount)),
-                          kv('Distance',
-                              distanceKm == null ? '—' : '$distanceKm km'),
-                          kv(
-                              'Driver',
-                              [
-                                if ((driverName ?? '').isNotEmpty) driverName,
-                                if ((driverPhone ?? '').isNotEmpty) driverPhone,
-                              ].whereType<String>().join(' / ').isEmpty
-                                  ? '—'
-                                  : [
-                                      if ((driverName ?? '').isNotEmpty)
-                                        driverName,
-                                      if ((driverPhone ?? '').isNotEmpty)
-                                        driverPhone,
-                                    ].whereType<String>().join(' / ')),
-                        ],
-                      ),
-                    ),
-                  ),
-                  pw.SizedBox(width: 4),
-                  pw.Expanded(
-                    flex: 3,
-                    child: pw.Container(
-                      padding: const pw.EdgeInsets.all(6),
-                      decoration: pw.BoxDecoration(
-                          border: pw.Border.all(
-                              color: PdfColors.grey400, width: .5)),
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          kv('LR No', lrNo, boldValue: true),
-                          kv('Date', PdfBranding.fmtDate(lrDate)),
-                          kv('Move From', fromPlace ?? '—'),
-                          kv('Move To', toPlace ?? '—'),
-                          kv('Vehicle No', vehicleNo ?? '—'),
-                          pw.SizedBox(height: 3),
-                          pw.Container(
-                            width: double.infinity,
-                            padding: const pw.EdgeInsets.symmetric(vertical: 4),
-                            alignment: pw.Alignment.center,
-                            decoration: pw.BoxDecoration(
-                              color: PdfBranding.navy,
-                              borderRadius: pw.BorderRadius.circular(3),
-                            ),
-                            child: pw.Text('${copyType.toUpperCase()} COPY',
+                  pw.TableRow(children: [
+                    pw.Container(
+                      margin: const pw.EdgeInsets.only(right: 4),
+                      child: pw.Container(
+                        padding: const pw.EdgeInsets.all(6),
+                        decoration: pw.BoxDecoration(
+                            border: pw.Border.all(
+                                color: PdfColors.grey400, width: .5)),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text('NOTICE',
                                 style: pw.TextStyle(
                                     font: fonts.bold,
                                     fontSize: 8,
-                                    color: PdfColors.white)),
-                          ),
-                        ],
+                                    color: PdfBranding.navy)),
+                            pw.SizedBox(height: 2),
+                            pw.Text(boilerplate.lrNoticeText,
+                                style: pw.TextStyle(
+                                    font: fonts.regular,
+                                    fontSize: 6.5,
+                                    color: PdfBranding.grey)),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                    pw.Container(
+                      margin: const pw.EdgeInsets.only(right: 4),
+                      child: pw.Container(
+                        padding: const pw.EdgeInsets.all(6),
+                        decoration: pw.BoxDecoration(
+                            border: pw.Border.all(
+                                color: PdfColors.grey400, width: .5)),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                                riskType == 'carrier'
+                                    ? "AT CARRIER'S RISK"
+                                    : "AT OWNER'S RISK",
+                                style: pw.TextStyle(
+                                    font: fonts.bold,
+                                    fontSize: 8,
+                                    color: PdfBranding.navy)),
+                            pw.SizedBox(height: 2),
+                            kv('Material Insured',
+                                materialInsured ? 'Yes' : 'No'),
+                            kv(
+                                'Insurance Co',
+                                (insurerName ?? '').isEmpty
+                                    ? '—'
+                                    : insurerName!),
+                            kv('Policy No',
+                                (policyNo ?? '').isEmpty ? '—' : policyNo!),
+                            kv(
+                                'Insurance Date',
+                                insuranceDate == null
+                                    ? '—'
+                                    : PdfBranding.fmtDate(insuranceDate)),
+                            kv('Insured Amount', amtOrDash(insuredAmount)),
+                            kv('Distance',
+                                distanceKm == null ? '—' : '$distanceKm km'),
+                            kv(
+                                'Driver',
+                                [
+                                  if ((driverName ?? '').isNotEmpty) driverName,
+                                  if ((driverPhone ?? '').isNotEmpty)
+                                    driverPhone,
+                                ].whereType<String>().join(' / ').isEmpty
+                                    ? '—'
+                                    : [
+                                        if ((driverName ?? '').isNotEmpty)
+                                          driverName,
+                                        if ((driverPhone ?? '').isNotEmpty)
+                                          driverPhone,
+                                      ].whereType<String>().join(' / ')),
+                          ],
+                        ),
+                      ),
+                    ),
+                    pw.Container(
+                      child: pw.Container(
+                        padding: const pw.EdgeInsets.all(6),
+                        decoration: pw.BoxDecoration(
+                            border: pw.Border.all(
+                                color: PdfColors.grey400, width: .5)),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            kv('LR No', lrNo, boldValue: true),
+                            kv('Date', PdfBranding.fmtDate(lrDate)),
+                            kv('Move From', fromPlace ?? '—'),
+                            kv('Move To', toPlace ?? '—'),
+                            kv('Vehicle No', vehicleNo ?? '—'),
+                            pw.SizedBox(height: 3),
+                            pw.Container(
+                              width: double.infinity,
+                              padding:
+                                  const pw.EdgeInsets.symmetric(vertical: 4),
+                              alignment: pw.Alignment.center,
+                              decoration: pw.BoxDecoration(
+                                color: PdfBranding.navy,
+                                borderRadius: pw.BorderRadius.circular(3),
+                              ),
+                              child: pw.Text('${copyType.toUpperCase()} COPY',
+                                  style: pw.TextStyle(
+                                      font: fonts.bold,
+                                      fontSize: 8,
+                                      color: PdfColors.white)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ]),
                 ],
               ),
               pw.SizedBox(height: 8),
