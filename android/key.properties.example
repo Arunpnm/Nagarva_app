@@ -1,0 +1,45 @@
+# Release signing for the Play Store — copy to android/key.properties.
+#
+# android/key.properties and *.jks are gitignored, and MUST stay that way:
+# anyone holding the keystore plus these passwords can publish an update
+# that Android will install over the real app.
+#
+# ---------------------------------------------------------------------
+# 1. Create the keystore (run this yourself — it asks for passwords, and
+#    nobody else should ever type or see them):
+#
+#      keytool -genkey -v -keystore %USERPROFILE%\nagarva-upload.jks ^
+#        -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 ^
+#        -alias nagarva
+#
+#    Put it OUTSIDE the repo. A keystore inside the working tree is one
+#    `git add -f` from being public forever.
+#
+# 2. Copy this file to android/key.properties and fill in the four values.
+#
+# 3. Verify before uploading — a debug-signed bundle is rejected by Play,
+#    and the whole point of this setup is to find that out here:
+#
+#      flutter build appbundle --release
+#      keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab
+#
+#    The owner must be YOUR CN, not "CN=Android Debug". If key.properties
+#    is missing, the bundle build now fails outright rather than quietly
+#    producing a debug-signed artifact.
+#
+# ---------------------------------------------------------------------
+# BACK THIS UP, IN TWO PLACES, TODAY.
+#
+# Losing the upload keystore is not a small problem: without Play App
+# Signing enrolment you cannot ever update the listing again, and even
+# with it you need a Google support reset that takes days. Back up the
+# .jks file and these passwords to a password manager, and keep a second
+# copy offline. This is the single least recoverable thing in the whole
+# project.
+
+storePassword=CHANGEME
+keyPassword=CHANGEME
+keyAlias=nagarva
+# Absolute path, outside the repo. Windows: use forward slashes or escape
+# the backslashes, e.g. C:/Users/you/nagarva-upload.jks
+storeFile=CHANGEME

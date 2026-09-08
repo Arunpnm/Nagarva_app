@@ -72,11 +72,50 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            // Real release signing when android/key.properties is present.
+            //
+            // This read `signingConfig signingConfigs.debug` — FlutterFlow's
+            // own TODO, never completed — while the `signingConfigs.release`
+            // block above sat fully written and unused. So
+            // `flutter build appbundle --release` produced a DEBUG-SIGNED
+            // bundle: Play refuses it on upload ("signed in debug mode"),
+            // and the failure surfaces at the last possible moment, on
+            // release day, looking like a Play Console problem rather than
+            // a two-line gradle one.
+            //
+            // Falls back to debug signing ONLY for local `flutter run
+            // --release`, and says so loudly. The bundle task cannot use
+            // that fallback at all — see the hard failure below, which is
+            // the guard that actually matters: this project's convention is
+            // that a guard raises rather than letting something pass
+            // without doing its job.
+            signingConfig keystorePropertiesFile.exists()
+                ? signingConfigs.release
+                : signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+// A Play-bound artifact must never be debug-signed. Local release runs may
+// be; an upload bundle may not.
+// Checks the task the USER asked for, not the whole graph. Matching
+// `bundle.*Release` across `graph.allTasks` also caught AGP's internal
+// bundleRelease* tasks, which `assembleRelease` pulls in too — so a plain
+// `flutter build apk --release` failed with a message about AAB uploads.
+// startParameter.taskNames holds only what was invoked: `bundleRelease`
+// for an app bundle, `assembleRelease` for an APK.
+gradle.taskGraph.whenReady { graph ->
+    def bundling = gradle.startParameter.taskNames.any {
+        it.tokenize(':').last() ==~ /(?i)bundle[a-z0-9]*Release/
+    }
+    if (bundling && !keystorePropertiesFile.exists()) {
+        throw new GradleException(
+            "\n\n  Refusing to build a release bundle with the debug key.\n" +
+            "  android/key.properties is missing, so this AAB would be\n" +
+            "  debug-signed and rejected by Play on upload.\n\n" +
+            "  Create the keystore and key.properties first — see\n" +
+            "  android/key.properties.example.\n")
     }
 }
 
