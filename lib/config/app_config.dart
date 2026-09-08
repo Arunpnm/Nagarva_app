@@ -115,6 +115,19 @@ String buildTokenLink(String path, String token) =>
 // rather than leaving a half-applied FK.
 const bool kQuotationSurveyIdFkRepointed = true;
 
+/// Has `supabase/20260908_next_order_id_allocator.sql` been run?
+///
+/// Order ids were allocated by read-modify-write from the device across
+/// two round trips with no lock, in four identical copies. The allocator
+/// moves that into `next_order_id()`, which uses the same
+/// SELECT ... FOR UPDATE shape on `number_series` as every other numbered
+/// document in the product.
+///
+/// Ships FALSE. While false, `OrderIdAllocator.next()` THROWS rather than
+/// falling back to the old path — a fallback would reintroduce the race
+/// exactly when the RPC is failing and retries are most likely.
+const bool kServerSideOrderIds = false;
+
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
 ///

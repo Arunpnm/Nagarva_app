@@ -7,6 +7,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '/backend/order_id_allocator.dart';
 
 /// Session 2 Part C — Job Entry (`sup-entry`). Minimal field-side order
 /// creation: customer, phone, route, date, service. Deliberately thin —
@@ -68,27 +69,6 @@ class _SupervisorEntryPageWidgetState
     super.dispose();
   }
 
-  Future<String> _nextOrderId() async {
-    final prefix = AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV';
-    const key = 'order_id_seq';
-    final rows = await SettingsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eq('key', key),
-    );
-    final current = rows.isNotEmpty
-        ? (int.tryParse(rows.first.value ?? '1000') ?? 1000)
-        : 1000;
-    final next = current + 1;
-    await SettingsTable().upsert(
-      {
-        'key': key,
-        ...OrgScope.stamp(),
-        'value': next.toString(),
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      onConflict: 'org_id,key',
-    );
-    return '$prefix-$next';
-  }
 
   Future<void> _save() async {
     if (_customerCtrl.text.trim().isEmpty) {
@@ -104,7 +84,7 @@ class _SupervisorEntryPageWidgetState
         name: _customerCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
       );
-      final newOrderId = await _nextOrderId();
+      final newOrderId = await OrderIdAllocator.next();
       final created = await OrdersTable().insert({
         'id': newOrderId,
         ...OrgScope.stamp(orgId: orgId),

@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'new_order_page_model.dart';
+import '/backend/order_id_allocator.dart';
 export 'new_order_page_model.dart';
 
 /// Create a new moving order, or edit an existing one when [orderId] is
@@ -101,28 +102,6 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
 
   /// Same convention as lead_detail_page._nextOrderId — orders.id is text
   /// with no default, must be supplied on insert or NOT-NULL fires (23502).
-  Future<String> _nextOrderId() async {
-    final prefix =
-        (AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV');
-    const key = 'order_id_seq';
-    final rows = await SettingsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eq('key', key),
-    );
-    final current = rows.isNotEmpty
-        ? (int.tryParse(rows.first.value ?? '1000') ?? 1000)
-        : 1000;
-    final next = current + 1;
-    await SettingsTable().upsert(
-      {
-        'key': key,
-        ...OrgScope.stamp(),
-        'value': next.toString(),
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      onConflict: 'org_id,key',
-    );
-    return '$prefix-$next';
-  }
 
   /// Item 5: block New Order rather than let it reach an insert the
   /// `(org_id, branch)` FK on `orders` can only reject. Two distinct
@@ -2180,7 +2159,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                         .eq('id', widget.orderId!),
                                   );
                                 } else {
-                                  final newOrderId = await _nextOrderId();
+                                  final newOrderId = await OrderIdAllocator.next();
                                   // Order Details Session 1: this is the one
                                   // real place orders.customer_id should get
                                   // set (find-or-create by phone) — payment

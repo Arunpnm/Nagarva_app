@@ -33,6 +33,7 @@ import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'lead_detail_page_model.dart';
 import '/backend/vendor_identity.dart';
+import '/backend/order_id_allocator.dart';
 export 'lead_detail_page_model.dart';
 
 /// Read-only view of a single lead with convert-to-order action.
@@ -181,27 +182,6 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// (not uuid) and has NOT-NULL / no default, so the insert crashes with
   /// 23502 unless we supply one. Counter lives in the settings table, per-
   /// org, with the same PK convention as _nextInvoiceNo on OrderDetailPage.
-  Future<String> _nextOrderId() async {
-    final prefix = (AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV');
-    const key = 'order_id_seq';
-    final rows = await SettingsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eq('key', key),
-    );
-    final current = rows.isNotEmpty
-        ? (int.tryParse(rows.first.value ?? '1000') ?? 1000)
-        : 1000;
-    final next = current + 1;
-    await SettingsTable().upsert(
-      {
-        'key': key,
-        ...OrgScope.stamp(),
-        'value': next.toString(),
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      onConflict: 'org_id,key',
-    );
-    return '$prefix-$next';
-  }
 
   /// The one place an order is created from a lead.
   ///
@@ -277,7 +257,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         }
       }
 
-      final newOrderId = await _nextOrderId();
+      final newOrderId = await OrderIdAllocator.next();
       final order = await OrdersTable().insert({
         ...OrgScope.stamp(),
         'id': newOrderId,

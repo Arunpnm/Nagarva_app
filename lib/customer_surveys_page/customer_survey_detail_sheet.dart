@@ -13,6 +13,7 @@ import '/backend/survey_queue.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import '/backend/order_id_allocator.dart';
 
 /// DORMANT MODULE — built, correct, and deliberately unreachable.
 ///
@@ -188,25 +189,11 @@ class _CustomerSurveyDetailSheetState
         );
       } catch (_) {}
 
-      final prefix = AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV';
-      const seqKey = 'order_id_seq';
-      final seqRows = await SettingsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).eq('key', seqKey),
-      );
-      final current = seqRows.isNotEmpty
-          ? (int.tryParse(seqRows.first.value ?? '1000') ?? 1000)
-          : 1000;
-      final next = current + 1;
-      await SettingsTable().upsert(
-        {
-          'key': seqKey,
-          ...OrgScope.stamp(),
-          'value': next.toString(),
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        onConflict: 'org_id,key',
-      );
-      final newOrderId = '$prefix-$next';
+      // The fifth copy of the read-modify-write allocator used to
+      // live here. Replaced even though this module is dormant: a
+      // dormant file is the most likely place for the race to be
+      // copied back into a live one.
+      final newOrderId = await OrderIdAllocator.next();
 
       await OrdersTable().insert({
         ...OrgScope.stamp(),

@@ -46,6 +46,7 @@ import 'order_detail_page_model.dart';
 import '/backend/vendor_identity.dart';
 import '/backend/module_navigation.dart';
 import '/backend/invoice_compliance.dart';
+import '/backend/order_id_allocator.dart';
 export 'order_detail_page_model.dart';
 
 /// Read-only view of a single order.
@@ -198,27 +199,6 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   /// Same convention as new_order_page's/lead_detail_page's own
   /// `_nextOrderId` — orders.id is text with no default, must be supplied
   /// on insert or NOT-NULL fires (23502).
-  Future<String> _nextOrderId() async {
-    final prefix = AppSession.instance.currentOrgSlug?.toUpperCase() ?? 'NGV';
-    const key = 'order_id_seq';
-    final rows = await SettingsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).eq('key', key),
-    );
-    final current = rows.isNotEmpty
-        ? (int.tryParse(rows.first.value ?? '1000') ?? 1000)
-        : 1000;
-    final next = current + 1;
-    await SettingsTable().upsert(
-      {
-        'key': key,
-        ...OrgScope.stamp(),
-        'value': next.toString(),
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      onConflict: 'org_id,key',
-    );
-    return '$prefix-$next';
-  }
 
   /// Clones the shipment/pricing fields only — the same field set
   /// new_order_page's own create-payload uses. Transactional/workflow
@@ -293,7 +273,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     setState(() => _duplicating = true);
     try {
       final orgId = OrgScope.currentOrgId!;
-      final newOrderId = await _nextOrderId();
+      final newOrderId = await OrderIdAllocator.next();
       final created = await OrdersTable().insert({
         'id': newOrderId,
         ...OrgScope.stamp(orgId: orgId),
