@@ -117,6 +117,26 @@ begin
     raise exception
       'PREFLIGHT: surveys/document_signatures need org_id for the write guard.';
   end if;
+
+  -- The token columns the resolver reads, BY NAME. All three tables use a
+  -- different one — surveys.token, document_signatures.sign_token,
+  -- orders.tracking_token — and the first draft of this migration assumed
+  -- they were all `token`. It failed on the RUN, mid-file, and was only
+  -- harmless because the whole thing sits in one transaction. Assert them
+  -- so a rename fails here with a sentence instead of there with a 42703.
+  select string_agg(t || '.' || c, ', ') into v_missing
+    from (values ('surveys','token'),
+                 ('document_signatures','sign_token'),
+                 ('orders','tracking_token'),
+                 ('orders','quotation_token')) as x(t, c)
+   where not exists (select 1 from information_schema.columns
+                      where table_schema='public' and table_name = x.t
+                        and column_name = x.c);
+
+  if v_missing is not null then
+    raise exception
+      'PREFLIGHT: token column(s) missing: %. public_org_for_token would not compile.', v_missing;
+  end if;
 end
 $pre$;
 
@@ -140,11 +160,18 @@ stable
 security definer
 set search_path to 'public'
 as $function$
-  select org_id from public.surveys             where token          = p_token
+  -- Three tables, three DIFFERENT column names. The first version of this
+  -- migration assumed all three were `token` and failed on
+  -- `document_signatures.sign_token` — caught by the transaction, nothing
+  -- applied. The preflight above now asserts all four columns by name so
+  -- a rename trips the guard instead of the RUN.
+  select org_id from public.surveys             where token           = p_token
   union all
-  select org_id from public.document_signatures where token          = p_token
+  select org_id from public.document_signatures where sign_token      = p_token
   union all
-  select org_id from public.orders              where tracking_token = p_token
+  select org_id from public.orders              where tracking_token  = p_token
+  union all
+  select org_id from public.orders              where quotation_token = p_token
   limit 1;
 $function$;
 
@@ -321,7 +348,7 @@ begin
       ('public.public_submit_complaint(text,text,text)')
     ) as t(name)
    where to_regprocedure(name) is null
-      or not has_function_privilege('anon', to_regprocedure(name), 'execute')
+      or not has_function_privilege('anon', to_regprocedure(name)::oid, 'execute')
       or position('public_org_serviceable' in pg_get_functiondef(to_regprocedure(name)::oid)) = 0;
 
   if v_bad is not null then
@@ -340,7 +367,7 @@ begin
       ('public.public_submit_review_impl(text,integer,text)'),
       ('public.public_submit_complaint_impl(text,text,text)')
     ) as t(name)
-   where has_function_privilege('anon', to_regprocedure(name), 'execute');
+   where has_function_privilege('anon', to_regprocedure(name)::oid, 'execute');
 
   if v_bad is not null then
     raise exception 'POSTFLIGHT: anon can still call the ungated impl: %', v_bad;
