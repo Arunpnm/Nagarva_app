@@ -1305,10 +1305,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       final rows = await SettingsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eq('key', 'business_profile'),
       );
-      if (rows.isNotEmpty && (rows.first.value ?? '').isNotEmpty) {
-        final decoded = jsonDecode(rows.first.value!);
-        if (decoded is Map) profile = Map<String, dynamic>.from(decoded);
-      }
+      profile = rows.isEmpty ? {} : (rows.first.valueJson ?? {});
     } catch (_) {}
     final logoBytes =
         await PdfBranding.fetchBytes(AppSession.instance.currentOrgLogoUrl);

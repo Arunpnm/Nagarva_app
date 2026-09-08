@@ -78,9 +78,8 @@ Future<UpiPayee?> resolveOrgUpiPayee() async {
       final s = await SettingsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eq('key', 'business_profile'),
       );
-      if (s.isNotEmpty && (s.first.value ?? '').isNotEmpty) {
-        final decoded = jsonDecodeSafe(s.first.value!);
-        vpa = '${decoded?['upi_id'] ?? ''}'.trim();
+      if (s.isNotEmpty) {
+        vpa = '${s.first.valueJson?['upi_id'] ?? ''}'.trim();
       }
     } catch (_) {}
   }

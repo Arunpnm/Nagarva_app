@@ -176,13 +176,15 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
             .inFilter('key', ['business_profile', 'signature_url']),
       );
       for (final r in rows) {
-        if (r.key == 'business_profile' && (r.value ?? '').isNotEmpty) {
-          final decoded = jsonDecode(r.value!);
-          if (decoded is Map) {
-            decoded.forEach((k, v) {
-              if (_ctrl.containsKey(k)) _ctrl[k]!.text = (v ?? '').toString();
-            });
-          }
+        if (r.key == 'business_profile') {
+          // valueJson, not jsonDecode(r.value!): the column may hold a
+          // real object (written from now on) or a jsonb string holding
+          // JSON (every row written before the fix below). The editor
+          // has to load both, or a vendor opens Settings and finds their
+          // own saved terms blank.
+          (r.valueJson ?? const {}).forEach((k, v) {
+            if (_ctrl.containsKey(k)) _ctrl[k]!.text = (v ?? '').toString();
+          });
         }
         if (r.key == 'signature_url') _signatureUrl = r.value;
       }
@@ -230,6 +232,20 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
     } catch (_) {}
   }
 
+  /// For jsonb values that are OBJECTS. See the call site for why
+  /// `jsonEncode` must not be used here.
+  Future<void> _saveSettingJson(String key, Map<String, dynamic> value) =>
+      SettingsTable().upsert(
+        {
+          'key': key,
+          ...OrgScope.stamp(),
+          'value': value,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'org_id,key',
+      );
+
+  /// For jsonb values that are genuinely SCALAR strings (signature_url).
   Future<void> _saveSetting(String key, String value) =>
       SettingsTable().upsert(
         {
@@ -247,7 +263,12 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
       final profile = {
         for (final e in _ctrl.entries) e.key: e.value.text.trim(),
       };
-      await _saveSetting('business_profile', jsonEncode(profile));
+      // The MAP, not jsonEncode(map). `settings.value` is jsonb, so a
+      // Dart String is serialised into it as a jsonb SCALAR STRING —
+      // the column ends up holding "{\"invoice_terms\":\"\"}" instead
+      // of an object, and every `value->>'key'` in SQL returns null.
+      // Passing the map lets the client encode it as a real object.
+      await _saveSettingJson('business_profile', profile);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Terms saved. They will appear on every invoice.')));

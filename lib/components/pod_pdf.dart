@@ -48,10 +48,7 @@ class PodPdf {
       final settings = await SettingsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eq('key', 'business_profile'),
       );
-      if (settings.isNotEmpty && (settings.first.value ?? '').isNotEmpty) {
-        final decoded = jsonDecode(settings.first.value!);
-        if (decoded is Map) profile = Map<String, dynamic>.from(decoded);
-      }
+      profile = settings.isEmpty ? {} : (settings.first.valueJson ?? {});
     } catch (_) {}
 
     // signature_data is a base64 PNG stored inline on the row — no
