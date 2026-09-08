@@ -45,6 +45,7 @@ import 'arrival_code_card.dart';
 import 'order_detail_page_model.dart';
 import '/backend/vendor_identity.dart';
 import '/backend/module_navigation.dart';
+import '/backend/invoice_compliance.dart';
 export 'order_detail_page_model.dart';
 
 /// Read-only view of a single order.
@@ -791,66 +792,43 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     return OrgProfile.resolve(orgRow, businessProfile: profile);
   }
 
-  /// Statutory fields a tax invoice must carry, checked before one is
-  /// issued.
+  /// Shows the most serious Rule 46 problem and returns true to continue.
   ///
-  /// Rule 46 of the CGST Rules requires the supplier's NAME, ADDRESS and
-  /// GSTIN on a tax invoice. Checked live 8 Sept 2026: not one org had an
-  /// address — so every invoice this product has ever issued was missing
-  /// a mandatory field, and nothing anywhere said so.
+  /// Only the FIRST issue is shown. Stacking four dialogs on someone
+  /// trying to issue an invoice trains them to dismiss all of them, and
+  /// `checkInvoiceCompliance` already orders by severity — a false GSTIN
+  /// ahead of an unfinished profile.
   ///
-  /// That is a SaaS problem, not an APC one. A vendor who signs up on
-  /// Sunday and invoices on Monday has no way to know: the document looks
-  /// finished, the total is right, and the omission only surfaces when a
-  /// customer's accountant rejects the input-credit claim months later.
-  ///
-  /// **It warns, it does not block.** Refusing to issue an invoice would
-  /// be this app deciding a vendor cannot bill for work they have done —
-  /// and the vendor may have a reason (an unregistered supplier issuing a
-  /// bill of supply, a field this app does not model). The vendor gets
-  /// the facts and the decision. Same shape as the Close Order balance
-  /// warning.
-  List<String> _missingStatutoryFields(OrgProfile org) => [
-        if ((org.name).trim().isEmpty) 'business name',
-        if ((org.address ?? '').trim().isEmpty) 'address',
-        if ((org.gstin ?? '').trim().isEmpty) 'GSTIN',
-      ];
-
-  /// Returns true if the vendor wants to continue.
-  Future<bool> _confirmIncompleteInvoice(List<String> missing) async {
+  /// The action wording follows the KIND. "Issue anyway" is a reasonable
+  /// thing to offer for an incomplete address; offering it in the same
+  /// words for a GSTIN the vendor does not hold would make asserting a
+  /// false registration a one-tap default. It still permits it — see
+  /// _generateInvoice — but it names what is being done.
+  Future<bool> _confirmInvoiceCompliance(InvoiceComplianceIssue issue) async {
     final theme = FlutterFlowTheme.of(context);
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Invoice is missing required details'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'A tax invoice must show your ${missing.join(', ')}. '
-                  'Without ${missing.length == 1 ? 'it' : 'them'} your '
-                  'customer may not be able to claim input credit on this '
-                  'invoice.',
-                  style: GoogleFonts.inter(fontSize: 13.5),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Add it once in Settings → Business and every document '
-                  'from then on carries it.',
-                  style: GoogleFonts.inter(
-                      fontSize: 12.5, color: theme.secondaryText),
-                ),
-              ],
+            title: Text(issue.title),
+            content: SingleChildScrollView(
+              child: Text(
+                issue.message,
+                style: GoogleFonts.inter(
+                    fontSize: 13.5, color: theme.primaryText),
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Open Settings'),
+                child: Text(issue.isFalseDocument
+                    ? 'Fix in Settings'
+                    : 'Open Settings'),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Issue anyway'),
+                child: Text(issue.isFalseDocument
+                    ? 'Issue with this GSTIN'
+                    : 'Issue anyway'),
               ),
             ],
           ),
@@ -865,9 +843,9 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     // the series must stay gapless, so the vendor decides BEFORE we burn
     // one, not after.
     try {
-      final missing = _missingStatutoryFields(await _resolveOrgProfile());
-      if (missing.isNotEmpty && mounted) {
-        final go = await _confirmIncompleteInvoice(missing);
+      final issues = checkInvoiceCompliance(await _resolveOrgProfile());
+      if (issues.isNotEmpty && mounted) {
+        final go = await _confirmInvoiceCompliance(issues.first);
         if (!go) {
           // openModule, not pushNamed — Settings is a module, and
           // pushNamed would stack a second app shell on top of this

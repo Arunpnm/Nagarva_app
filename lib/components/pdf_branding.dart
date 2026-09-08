@@ -43,6 +43,10 @@ class OrgProfile {
     required this.name,
     this.tagline,
     this.address,
+    this.city,
+    this.state,
+    this.stateCode,
+    this.pincode,
     this.gstin,
     this.pan,
     this.phones = const [],
@@ -65,6 +69,15 @@ class OrgProfile {
   final String name;
   final String? tagline;
   final String? address;
+
+  /// City / state / state code / PIN, kept separate from [address]
+  /// because Rule 46 and the place-of-supply rules need them
+  /// individually, not as one blob. `state_code` is what decides
+  /// CGST+SGST vs IGST.
+  final String? city;
+  final String? state;
+  final int? stateCode;
+  final String? pincode;
   final String? gstin;
   final String? pan;
 
@@ -112,6 +125,12 @@ class OrgProfile {
       name: org?.name ?? '',
       tagline: _s(org?.tagline) ?? bp('tagline'),
       address: _s(org?.address) ?? bp('address'),
+      city: _s(org?.city) ?? bp('city'),
+      state: _s(org?.state) ?? bp('state'),
+      // int, so no trim - but a blank/garbage jsonb value must not become
+      // a wrong state code, which would silently flip CGST/SGST to IGST.
+      stateCode: org?.stateCode ?? int.tryParse(bp('state_code') ?? ''),
+      pincode: _s(org?.pincode) ?? bp('pincode'),
       gstin: _s(org?.gstin) ?? bp('gstin'),
       pan: _s(org?.pan) ?? bp('pan'),
       phones: phones,
