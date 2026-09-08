@@ -127,21 +127,26 @@ const bool kQuotationSurveyIdFkRepointed = true;
 /// to the old path — a fallback would reintroduce the race exactly when
 /// the RPC is failing and retries are most likely.
 ///
-/// FALSE. The migration has NOT run — verified against the database:
-/// `next_order_id` does not exist, `number_series` holds zero
-/// `doc_type='order'` rows, and anon still has EXECUTE on
-/// `next_doc_number`.
-///
-/// This was briefly set true on 8 Sept 2026 on the strength of a message
-/// saying the migration had run, without checking the database. Because
-/// there is deliberately no fallback path, that broke order creation in
-/// every org, including a live business.
-///
 /// **Flip this only after the migration is confirmed committed IN THE
-/// DATABASE.** "The file is ready" and "the migration has run" are
-/// different states. A clean postflight proves the migration was correct
-/// when it ran; it proves nothing about whether it ran.
-const bool kServerSideOrderIds = false;
+/// DATABASE, by querying the database.** "The file is ready", "the
+/// migration ran" and "the objects exist" are three different states.
+/// A clean postflight proves the migration was correct WHEN IT RAN; it
+/// proves nothing about whether it ran.
+///
+/// That is not theoretical. This was set true once on 8 Sept 2026 on the
+/// strength of a message saying the migration had run. It had not — it
+/// had aborted in its own preflight on a 42803 — and because there is
+/// deliberately no fallback path, order creation broke in every org,
+/// including a live business.
+///
+/// TRUE since 8 Sept 2026, verified by direct query rather than by
+/// report: `next_order_id` exists and is SECURITY INVOKER,
+/// `number_series_key_uniq` exists and is unique, all three orgs have
+/// exactly one order counter with `fy IS NULL` / `branch IS NULL` /
+/// `active`, anon has EXECUTE on none of the three allocators while
+/// `authenticated` and `service_role` retain theirs, and
+/// `next_doc_number` carries the `doc_type='order'` guard.
+const bool kServerSideOrderIds = true;
 
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
