@@ -127,16 +127,21 @@ const bool kQuotationSurveyIdFkRepointed = true;
 /// to the old path — a fallback would reintroduce the race exactly when
 /// the RPC is failing and retries are most likely.
 ///
-/// RUN 8 Sept 2026, and the clean commit is the verification: the
-/// migration's postflight asserts — inside the same transaction — that
-/// exactly one counter exists per org, that it is `active` and NOT
-/// FY-scoped, that no counter sits below an issued order id, that two
-/// successive calls return different numbers in the `<SLUG>-<n>` shape,
-/// that `next_doc_number(org, 'order')` now raises, and that the
-/// allocators are unreachable by anon and PUBLIC. Any one of those
-/// failing rolls the whole migration back, so a half-applied state that
-/// this flag could enable on top of is not reachable.
-const bool kServerSideOrderIds = true;
+/// FALSE. The migration has NOT run — verified against the database:
+/// `next_order_id` does not exist, `number_series` holds zero
+/// `doc_type='order'` rows, and anon still has EXECUTE on
+/// `next_doc_number`.
+///
+/// This was briefly set true on 8 Sept 2026 on the strength of a message
+/// saying the migration had run, without checking the database. Because
+/// there is deliberately no fallback path, that broke order creation in
+/// every org, including a live business.
+///
+/// **Flip this only after the migration is confirmed committed IN THE
+/// DATABASE.** "The file is ready" and "the migration has run" are
+/// different states. A clean postflight proves the migration was correct
+/// when it ran; it proves nothing about whether it ran.
+const bool kServerSideOrderIds = false;
 
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
