@@ -1054,6 +1054,30 @@ silently doesn't is the same class of trust damage.
   genuine. Substituting the vendor's name is not automatically right
   either: in the footer it duplicates the header and reads as a
   watermark; in a filename it collides with the customer's own filing.
+- **The platform is NEVER a fallback for the vendor's name. Use
+  `lib/backend/vendor_identity.dart`.** (Arun, 8 Sept 2026: "nagarva is
+  the software vendor using for their business ... once they have
+  subscribed and purchase the plan and using paid version then nagarva
+  should not come in any place only their (vendor) name in all places.")
+  This superseded and generalised the 7 Sept document-only rule below,
+  after a sweep found **fifteen** sites writing
+  `AppSession.instance.currentOrgName ?? 'Nagarva'`. Each reads as
+  reasonable in isolation; together they guarantee a customer eventually
+  sees a company they have never dealt with on their own invoice or
+  WhatsApp message.
+  `VendorIdentity.forDocument` (falls back to **empty** — letterheads,
+  headings, titles) and `VendorIdentity.forSentence` (falls back to
+  **"us"** — running text sent to a customer). Never add a third form
+  that resolves to the platform. Grep for `'Nagarva'` in `lib/` and
+  `public_site/` when touching customer-facing copy; the only legitimate
+  hits are the platform's own surfaces listed below.
+  **The deliberate exceptions, pending Arun's white-labelling call**:
+  login/signup (no org is known yet), Settings -> Help & About, PlanPage,
+  the `/auth` email relay, `public_site/privacy`, the Android app name
+  and launcher icon. These are the platform's legal, support and billing
+  surfaces — the privacy policy is Nagarva's own document and gates Play
+  Store and Meta review. Removing the name there is a product decision
+  with external consequences, not a leak to clean up.
 - **Security migrations get their own commit.** (Arun, 20 Aug 2026.)
   `supabase/20260820_phase_a_device_register.sql` — the device register
   and offboarding — was swept into a commit whose message is entirely
@@ -1826,6 +1850,36 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **8 Sept 2026, white-label sweep + the signature banner became
+  actionable.** Verified: `flutter analyze lib/ test/` — 0 errors, 0
+  warnings; suite **172 passing, 1 skipped**; `flutter build web
+  --release` clean.
+  - 15 `?? 'Nagarva'` fallbacks replaced via the new
+    `VendorIdentity` — see the convention above. This **completed a fix
+    made incompletely on 7 Sept**: `pod_pdf.dart`'s own fallback was
+    corrected while the five identical ones in its calling section were
+    not. A sweep that fixes the file you happen to be reading is not a
+    sweep.
+  - `public_site` 404 and `/quote` told a customer "Delivered by Nagarva
+    on behalf of your moving company" on a link that would not open.
+    `/survey`, `/sign`, `/track` shipped `<title>` containing the
+    platform and rewrote it only on a successful vendor lookup — so the
+    tab named the wrong company for the whole fetch, and permanently if
+    it failed. The name is out of those documents entirely now.
+    **NOT YET DEPLOYED to link.nagarva.in** — these are live customer
+    pages; deploying is Arun's call.
+  - The "Awaiting customer signature" banner now carries the Send/Share
+    link action, and a signed banner carries a refresh that says the
+    invoice must be REGENERATED for the customer's downloadable copy and
+    the stored copy behind the tracking link to carry the signature.
+    A green badge otherwise reads as "the customer's copy shows it".
+  - **The `/sign` link has never been completed by a real customer**
+    (live check): the four signed rows on ARUN-PACKERS-AND-COURIERS-1001
+    share one image and one `signed_at` to the microsecond — the in-app
+    companion capture, not the link. The two link requests (7 Sept, 3
+    Sept) are still pending. The wiring is sound and the two images are
+    genuinely distinct (7,508 vs 6,909 bytes), but the link path is
+    unproven end to end and still owes a live run.
 - **7 Sept 2026, standard terms on every document + two defects the
   render caught.** Verified: `flutter analyze lib/ test/` — **0 errors,
   0 warnings**; full suite **172 passing, 1 skipped**;
