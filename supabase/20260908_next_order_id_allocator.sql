@@ -11,42 +11,59 @@
 -- and that person loses their order.
 --
 -- ==========================================================================
--- BLOCKER A — number_series has no unique constraint on the series key
+-- BLOCKER A — CORRECTED. The series key was already unique.
 -- ==========================================================================
 --
--- Only PRIMARY KEY (id) on a uuid, the prefix CHECK, and the branch FK.
--- Nothing stops two rows sharing (org_id, doc_type, branch, fy), and
--- `next_doc_number`'s `SELECT ... FOR UPDATE ... INTO` would then pick
--- one arbitrarily — repeating or regressing numbers in a series Rule
--- 46(b) requires to be consecutive. **That is a live invoice exposure
--- today, not a risk introduced by the order counter.**
+-- This section originally read "number_series has no unique constraint on
+-- the series key ... a live invoice exposure today", and this file
+-- created `number_series_key_uniq` to close it. **That exposure was never
+-- real, and the index was redundant from the moment it was written.**
 --
--- It also defeated this file's own first postflight, which asserted a
--- counter row EXISTS per org. Two rows pass that. It now asserts exactly
--- one.
+-- `nagarva_migration_006_compliance.sql:292` has created the identical
+-- index since the table itself existed:
 --
--- **Why a coalesce expression index and not `NULLS NOT DISTINCT`.** The
--- server is PostgreSQL 17.6, so both are available — but they do not mean
--- the same thing here. `next_doc_number` matches with
+--     create unique index if not exists number_series_uniq
+--       on number_series (org_id, doc_type, coalesce(branch,''), coalesce(fy,''));
+--
+-- The reasoning error, worth keeping because it will recur: the check was
+-- made against `pg_constraint`, which showed only the PK, the prefix
+-- CHECK and the branch FK. **A unique index created with `CREATE UNIQUE
+-- INDEX` rather than `ALTER TABLE ... ADD CONSTRAINT` never appears in
+-- `pg_constraint`** — it lives only in `pg_index`. "No unique CONSTRAINT"
+-- was true and told us nothing about whether the table was protected.
+--
+-- So this file now ASSERTS the property instead of creating a second
+-- index over it, and `20260908_drop_redundant_duplicate_indexes.sql`
+-- removes the duplicate this one left behind.
+--
+-- The reasoning below still stands and is why `number_series_uniq` is the
+-- right shape — it is kept because a future editor may be tempted to
+-- "simplify" it to a plain unique constraint:
+--
+-- **coalesce expression, not `NULLS NOT DISTINCT`.** The server is
+-- PostgreSQL 17.6, so both are available — but they do not mean the same
+-- thing here. `next_doc_number` matches with
 -- `coalesce(branch,'') = coalesce(p_branch,'')`, so a row with
 -- `branch = NULL` and a row with `branch = ''` BOTH match one lookup and
--- the arbitrary pick is back. `NULLS NOT DISTINCT` would happily permit
+-- the arbitrary pick is back. `NULLS NOT DISTINCT` would permit exactly
 -- that pair. The expression index mirrors the function's own matching
--- semantics exactly, which is the property that actually prevents the
--- bug. Same argument for `fy`.
+-- semantics, which is the property that actually prevents the bug.
 --
--- The index deliberately covers ALL rows, not just `active` ones. A
--- partial `where active` index would allow a duplicate to sit dormant and
--- become live the moment somebody reactivated it — silently. Consequence
--- worth knowing: retiring a series and replacing it means UPDATING the
--- row, not inserting a second one. That is already the established
--- pattern (see `20260902_doc_prefix_identity.sql`, where prefix changes
--- are updates guarded on `last_number = 0`).
+-- **It covers ALL rows, not just `active` ones.** A partial
+-- `where active` index would let a duplicate sit dormant and go live the
+-- moment somebody reactivated it. Consequence: retiring a series and
+-- replacing it means UPDATING the row, not inserting a second one — which
+-- is already the established pattern (see
+-- `20260902_doc_prefix_identity.sql`, where prefix changes are updates
+-- guarded on `last_number = 0`).
 --
--- Bonus, and not incidental: the planned `roll_over_number_series` (see
--- CLAUDE.md's March 2027 section) specifies `ON CONFLICT DO NOTHING`,
--- which needs a unique index to have anything to conflict on. This
--- supplies it.
+-- And the planned `roll_over_number_series` (CLAUDE.md, March 2027)
+-- specifies `ON CONFLICT DO NOTHING`, which needs a unique index to have
+-- anything to conflict on. 006 already supplies it.
+--
+-- What this file DID genuinely fix under this heading: its own first
+-- postflight asserted a counter row EXISTS per org, which two rows would
+-- also satisfy. It now asserts exactly one.
 --
 -- ==========================================================================
 -- BLOCKER B — order ids are NOT financial-year scoped, deliberately
@@ -142,9 +159,11 @@ begin
     raise exception 'PREFLIGHT: next_order_id already exists - this migration has already run.';
   end if;
 
-  -- BLOCKER A: the unique index cannot be created over existing
-  -- duplicates. Fail HERE naming them, rather than erroring out
-  -- mid-migration on an index build with an opaque message.
+  -- BLOCKER A: no two rows may share a series key. `number_series_uniq`
+  -- (migration 006) already enforces this, so a duplicate here would mean
+  -- that index is missing or was dropped — checked explicitly below.
+  -- Named rather than counted, because a count tells you a number is
+  -- wrong without saying which row to go and merge.
   select count(*) into v_dupes from (
     select 1 from public.number_series
      group by org_id, doc_type, coalesce(branch,''), coalesce(fy,'')
@@ -205,19 +224,45 @@ end
 $pre$;
 
 -- ==========================================================================
--- BLOCKER A — one row per series key, enforced
+-- BLOCKER A — one row per series key: ASSERTED, not created
 -- ==========================================================================
-create unique index if not exists number_series_key_uniq
-  on public.number_series (org_id, doc_type, coalesce(branch, ''), coalesce(fy, ''));
-
-comment on index public.number_series_key_uniq is
-  $c$One counter per (org, doc_type, branch, fy). Uses coalesce(x,'')
-rather than NULLS NOT DISTINCT because next_doc_number matches with
-coalesce(branch,'') = coalesce(p_branch,'') — so a NULL row and an
-empty-string row both match one lookup, and the allocator would pick
-between them arbitrarily. NULLS NOT DISTINCT permits exactly that pair;
-this index does not. A duplicate here repeats or regresses a series
-Rule 46(b) requires to be consecutive.$c$;
+-- This block used to `create unique index number_series_key_uniq`. That
+-- was redundant and is now removed, so a replay cannot produce two
+-- indexes over one key.
+--
+-- **The uniqueness already existed**, and has since
+-- `nagarva_migration_006_compliance.sql:292` created it alongside the
+-- table:
+--
+--     create unique index if not exists number_series_uniq
+--       on number_series (org_id, doc_type, coalesce(branch,''), coalesce(fy,''));
+--
+-- byte-identical to what was added here. The reason both of us missed it:
+-- the check was made against `pg_constraint`, which showed only the PK,
+-- the prefix CHECK and the branch FK. **A unique index created with
+-- `CREATE UNIQUE INDEX` rather than `ALTER TABLE ... ADD CONSTRAINT` does
+-- not appear in `pg_constraint` at all** — it exists only in `pg_index`.
+-- So "no unique constraint on the series key" was true and irrelevant,
+-- and the "live invoice exposure" this section originally claimed was
+-- never real.
+--
+-- The property is still a hard dependency of everything below, so it is
+-- asserted BY SHAPE rather than by index name — a rename must not make
+-- this pass silently.
+do $keyuniq$
+begin
+  if not exists (
+    select 1 from pg_index ix join pg_class i on i.oid = ix.indexrelid
+     where ix.indrelid = 'public.number_series'::regclass
+       and ix.indisunique
+       and pg_get_indexdef(i.oid) like '%COALESCE(branch%'
+       and pg_get_indexdef(i.oid) like '%COALESCE(fy%')
+  then
+    raise exception
+      'PREFLIGHT: number_series has no unique index over (org_id, doc_type, coalesce(branch), coalesce(fy)). nagarva_migration_006_compliance.sql creates it as number_series_uniq - run that first. Without it next_doc_number can pick arbitrarily between two rows for one key.';
+  end if;
+end
+$keyuniq$;
 
 -- ==========================================================================
 -- SEED — one counter per org, at or above every id already issued
@@ -463,10 +508,19 @@ begin
     raise exception 'POSTFLIGHT: org(s) without exactly one order counter: %', v_bad;
   end if;
 
-  -- 2. BLOCKER A: the unique index exists and is unique.
-  if not exists (select 1 from pg_class c join pg_index i on i.indexrelid = c.oid
-                  where c.relname = 'number_series_key_uniq' and i.indisunique) then
-    raise exception 'POSTFLIGHT: number_series_key_uniq is missing or not unique.';
+  -- 2. BLOCKER A: uniqueness over the series key still holds. Asserted by
+  --    SHAPE, not by index name — this migration no longer creates one
+  --    (nagarva_migration_006 already did, as number_series_uniq), and
+  --    naming it here would make a rename pass silently.
+  if not exists (
+    select 1 from pg_index ix join pg_class i on i.oid = ix.indexrelid
+     where ix.indrelid = 'public.number_series'::regclass
+       and ix.indisunique
+       and pg_get_indexdef(i.oid) like '%COALESCE(branch%'
+       and pg_get_indexdef(i.oid) like '%COALESCE(fy%')
+  then
+    raise exception
+      'POSTFLIGHT: number_series lost its unique index over the series key.';
   end if;
 
   -- 3. BLOCKER B: the order counter is NOT FY-scoped.
@@ -642,5 +696,4 @@ commit;
 -- begin;
 --   drop function if exists public.next_order_id(uuid);
 --   delete from public.number_series where doc_type = 'order';
---   drop index if exists public.number_series_key_uniq;
 -- commit;
