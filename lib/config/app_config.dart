@@ -108,7 +108,12 @@ String buildTokenLink(String path, String token) =>
 /// Deliberately a compile-time flag rather than a runtime probe: asking
 /// Postgres about its own constraints on every quote save costs a round
 /// trip to answer a question whose answer changes once, ever.
-const bool kQuotationSurveyIdFkRepointed = false;
+// RUN 8 Sept 2026. The migration's postflight asserts, inside the same
+// transaction, that the constraint's confrelid resolves to `surveys` and
+// that the delete action is SET NULL — so a clean commit IS the
+// verification, and a failure would have rolled the whole thing back
+// rather than leaving a half-applied FK.
+const bool kQuotationSurveyIdFkRepointed = true;
 
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
