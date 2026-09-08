@@ -20,6 +20,7 @@
 // Run: flutter test test/invoice_signature_layout_test.dart
 // Output: build/invoice_layout_check.pdf
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -51,6 +52,31 @@ Future<Uint8List?> _fetch(String url) async {
   } catch (_) {
     return null;
   }
+}
+
+/// A drawn mark that is obviously NOT the vendor's signature.
+///
+/// Generated rather than committed: this is a stand-in for whatever the
+/// customer draws on the /sign link, and any fixed image would invite
+/// the same "is that the right person's signature?" question this
+/// function exists to answer.
+Future<Uint8List> _syntheticCustomerMark() async {
+  final recorder = ui.PictureRecorder();
+  final canvas = ui.Canvas(recorder, const ui.Rect.fromLTWH(0, 0, 420, 180));
+  final pen = ui.Paint()
+    ..color = const ui.Color(0xFF1A237E)
+    ..style = ui.PaintingStyle.stroke
+    ..strokeWidth = 6
+    ..strokeCap = ui.StrokeCap.round;
+  // A cursive-ish scrawl, deliberately unlike the vendor's blocky mark.
+  final path = ui.Path()..moveTo(30, 130);
+  path.cubicTo(90, 20, 130, 170, 180, 80);
+  path.cubicTo(215, 20, 240, 150, 290, 100);
+  path.cubicTo(325, 70, 350, 120, 395, 60);
+  canvas.drawPath(path, pen);
+  final img = recorder.endRecording().toImageSync(420, 180);
+  final data = (await img.toByteData(format: ui.ImageByteFormat.png))!;
+  return data.buffer.asUint8List();
 }
 
 void main() {
@@ -103,12 +129,20 @@ void main() {
       gstPct: 18,
       logoBytes: logo,
       signatureBytes: vendorSig,
-      // The CUSTOMER slot deliberately reuses the same image. This is a
-      // layout check: what matters is whether two filled boxes sit level
-      // and under the right captions, and reusing one known-good image
-      // means any difference on the page is the LAYOUT's doing and not
-      // the picture's.
-      customerSignatureBytes: vendorSig,
+      // A DISTINCT mark for the customer slot.
+      //
+      // This used to reuse the vendor's signature, on the reasoning that
+      // an identical image isolates layout differences. Arun looked at
+      // the render and asked why the two signatures were the same — a
+      // fair question, and the harness had no way to answer it. A review
+      // document that cannot be distinguished from a real defect costs
+      // more than the control it buys.
+      //
+      // On a real invoice these come from two unrelated sources:
+      // the right box from `org.signatoryImageUrl` (the vendor's saved
+      // signature), the left from the `document_signatures` row the
+      // customer created on the public /sign link.
+      customerSignatureBytes: await _syntheticCustomerMark(),
       customerSignedByName: 'Meera Krishnan',
       customerSignedByPhone: '9840012345',
       customerSignedAt: DateTime(2026, 9, 7, 14, 30),
