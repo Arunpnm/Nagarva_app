@@ -332,6 +332,76 @@ revoke all on function public.next_order_id(uuid) from anon;
 grant execute on function public.next_order_id(uuid) to authenticated;
 
 -- ==========================================================================
+-- CLOSE THE SECOND PATH INTO THE ORDER COUNTER
+-- ==========================================================================
+-- Arun, 8 Sept 2026, reviewing the expression-index reasoning above and
+-- following it one step further than I did.
+--
+-- The same `coalesce(fy,'') = coalesce(p_fy,'')` matching that justified
+-- the expression index ALSO opens a second door. `p_branch` and `p_fy`
+-- both default to NULL, and the order row is seeded branch NULL / fy
+-- NULL — so `next_doc_number(org, 'order')` matches it exactly, takes the
+-- same row lock, advances `last_number`, and returns
+-- `coalesce(prefix,'') || lpad(...)` = **`ORD-1003`**.
+--
+-- That is worse than a duplicate row: it hands back a DIFFERENT STRING
+-- from the one `next_order_id` composes (`APC-1003`) while burning the
+-- same counter, so the two paths disagree about what the id is *and*
+-- about what the next one will be. Two callable paths to one counter is
+-- precisely the shape this whole migration exists to remove.
+--
+-- The guard is a doc_type check rather than anything cleverer because
+-- the collision is about IDENTITY, not arguments: an order id is not a
+-- document number and must not be reachable through the document
+-- allocator, whatever branch/fy are passed.
+--
+-- Verified before writing: the five live `next_doc_number` call sites
+-- pass invoice, receipt, proforma, voucher and receipt. None passes
+-- 'order', so this guard breaks nothing that exists.
+--
+-- The body below is reproduced verbatim from `pg_get_functiondef` with
+-- ONLY the guard prepended — same signature, same return type, same
+-- SECURITY INVOKER, no `SET search_path` added. `CREATE OR REPLACE`
+-- preserves the existing ACL; the revokes that follow are what change it.
+create or replace function public.next_doc_number(
+  p_org uuid, p_doc_type text, p_branch text default null::text, p_fy text default null::text)
+returns text
+language plpgsql
+as $ndn$
+declare rec record; n int;
+begin
+  -- Order ids are NOT document numbers. See the header above.
+  if p_doc_type = 'order' then
+    raise exception
+      'next_doc_number cannot allocate order ids. Use next_order_id(org) instead - it composes <SLUG>-<n> from organizations.slug, while this function would return the ORD- marker prefix and burn the same counter.'
+      using errcode = 'P0001';
+  end if;
+
+  select * into rec from number_series
+   where org_id = p_org and doc_type = p_doc_type
+     and coalesce(branch,'') = coalesce(p_branch,'')
+     and coalesce(fy,'') = coalesce(p_fy,'')
+     and active
+   for update;
+
+  if not found then
+    raise exception
+      'No active number series configured for org=%, doc_type=%, branch=%, fy=%. '
+      'Configure one in number_series (or reactivate an existing row) before '
+      'generating this document.',
+      p_org, p_doc_type, coalesce(p_branch, '<none>'), coalesce(p_fy, '<none>')
+      using errcode = 'P0001';
+  end if;
+
+  n := rec.last_number + 1;
+  update number_series set last_number = n where id = rec.id;
+
+  return coalesce(rec.prefix,'') || lpad(n::text, coalesce(rec.padding,4), '0')
+         || coalesce(rec.suffix,'');
+end;
+$ndn$;
+
+-- ==========================================================================
 -- Close the anon/PUBLIC grants on the two existing allocators
 -- ==========================================================================
 -- Arun, 8 Sept 2026, after the read-only analysis: RLS on number_series
@@ -365,6 +435,8 @@ declare
   v_seed      bigint;
   v_a         text;
   v_b         text;
+  v_guarded   boolean := false;
+  v_msg       text;
 begin
   -- 1. EXACTLY ONE counter per org. The first version of this asserted
   --    only that a row EXISTS, which two rows also satisfy — the precise
@@ -394,6 +466,16 @@ begin
               where doc_type = 'order' and (fy is not null or branch is not null)) then
     raise exception
       'POSTFLIGHT: an order counter carries an fy or branch. Order ids are not FY-scoped - an fy here breaks order creation at the 2027 rollover.';
+  end if;
+
+  -- 3b. ACTIVE. `next_order_id` inherits next_doc_number's `and active`
+  --     predicate, so a row seeded with active null or false would pass
+  --     every other assertion here and then fail on the very first real
+  --     allocation — at a vendor creating an order, not at review time.
+  if exists (select 1 from public.number_series
+              where doc_type = 'order' and coalesce(active, false) = false) then
+    raise exception
+      'POSTFLIGHT: an order counter is not active. next_order_id filters on `active`, so allocation would fail on the first call.';
   end if;
 
   -- 4. No counter sits below an id already issued.
@@ -452,6 +534,43 @@ begin
 
   update public.number_series set last_number = v_seed
    where org_id = v_test_org and doc_type = 'order';
+
+  -- 6b. THE SECOND PATH IS CLOSED — proven by calling it, not by reading
+  --     the function body. Run AFTER the increment test above, so a
+  --     missing guard would be caught here rather than silently burning
+  --     a number earlier in this block.
+  --
+  --     The flag matters: bare `raise exception` defaults to SQLSTATE
+  --     P0001, so writing this as `perform ...; raise exception 'did not
+  --     raise'; exception when sqlstate 'P0001' then null;` would CATCH
+  --     ITS OWN failure raise and report success. The whole assertion
+  --     would then pass in exactly the case it exists to detect.
+  begin
+    perform public.next_doc_number(v_test_org, 'order');
+  exception
+    when sqlstate 'P0001' then
+      v_guarded := true;
+      get stacked diagnostics v_msg = message_text;
+  end;
+
+  if not v_guarded then
+    raise exception
+      'POSTFLIGHT: next_doc_number(org, ''order'') did not raise. The second path into the order counter is still open - it would return the ORD- marker prefix and burn the same counter next_order_id uses.';
+  end if;
+
+  if position('next_order_id' in coalesce(v_msg, '')) = 0 then
+    raise exception
+      'POSTFLIGHT: the order guard raised but does not name next_order_id as the correct entry point. Message was: %', v_msg;
+  end if;
+
+  -- The guard raises before the SELECT ... FOR UPDATE, so nothing was
+  -- locked or incremented. Re-assert the counter is still where step 6
+  -- left it, rather than assuming.
+  if (select last_number from public.number_series
+       where org_id = v_test_org and doc_type = 'order') <> v_seed then
+    raise exception
+      'POSTFLIGHT: the order counter moved during the guard test - next_doc_number reached the row before raising.';
+  end if;
 
   -- 7. Security model: invoker, and unreachable by anon or PUBLIC.
   if (select prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace
