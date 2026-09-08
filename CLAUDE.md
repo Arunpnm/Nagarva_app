@@ -1071,13 +1071,40 @@ silently doesn't is the same class of trust damage.
   that resolves to the platform. Grep for `'Nagarva'` in `lib/` and
   `public_site/` when touching customer-facing copy; the only legitimate
   hits are the platform's own surfaces listed below.
-  **The deliberate exceptions, pending Arun's white-labelling call**:
-  login/signup (no org is known yet), Settings -> Help & About, PlanPage,
-  the `/auth` email relay, `public_site/privacy`, the Android app name
-  and launcher icon. These are the platform's legal, support and billing
-  surfaces — the privacy policy is Nagarva's own document and gates Play
-  Store and Meta review. Removing the name there is a product decision
-  with external consequences, not a leak to clean up.
+  **THE LINE IS SETTLED — Arun, 8 Sept 2026**, and it is drawn by WHO IS
+  LOOKING, not by which file the string lives in:
+  - **Vendor-facing surfaces KEEP Nagarva.** "If vendor needs support he
+    can contact nagarva with help and support, then the privacy policy
+    all were for vendor only." So: login/signup, Settings -> Help &
+    About, PlanPage, the `/auth` email relay, `public_site/privacy`, the
+    Android app name and launcher icon. The vendor is Nagarva's
+    customer; hiding the name from them would leave them unable to reach
+    support, and the privacy policy is Nagarva's own document gating
+    Play Store and Meta review.
+  - **Anything the vendor hands their own customer carries NO Nagarva at
+    all.** "When a vendor creates an account in nagarva and purchased
+    the license for their company then he share a link to his company a
+    survey or invoice money receipt anything — in no place nagarva
+    should be there in any documents, coz its completely vendor
+    responsibility." Documents, share messages, public pages, filenames,
+    PDF metadata.
+  - **And the vendor's name must be PRESENT there, not merely the
+    platform's absent** (Arun, same day: "in customer path vendor name
+    should present"). `forDocument`'s empty fallback is the last resort
+    for a genuinely unknown org, not the target state.
+  A customer-path change is verified by looking at what the customer
+  receives — the rendered PDF, the page, the filename, the tab — not by
+  grepping the source.
+
+  **OPEN, and it is the one place the platform still reaches a customer:
+  the LINK DOMAIN.** Every share link is
+  `https://link.nagarva.in/<path>?token=...` (`kPublicBaseUrl`), so the
+  platform's name sits in the WhatsApp message, the address bar and any
+  link preview — in front of exactly the person who is deciding whether
+  the link from their mover is genuine. Not fixable in code alone; it
+  needs a domain. The code is ready: `kPublicBaseUrl` is one const, it
+  is overridable per build via `--dart-define`, and `buildPublicLink` is
+  the single place links are constructed.
 - **Security migrations get their own commit.** (Arun, 20 Aug 2026.)
   `supabase/20260820_phase_a_device_register.sql` — the device register
   and offboarding — was swept into a commit whose message is entirely
@@ -1873,6 +1900,11 @@ an inconsistency and is the whole fix.
     invoice must be REGENERATED for the customer's downloadable copy and
     the stored copy behind the tracking link to carry the signature.
     A green badge otherwise reads as "the customer's copy shows it".
+  - **Customer path verified clean by inspecting what the customer
+    receives**, not by grep: rendered PDF text (invoice, LR, receipt,
+    proforma), the ten document filenames, PDF document metadata (empty
+    — no producer/author leak) and the five public pages. The one
+    remaining leak is the link domain; see the convention above.
   - **The `/sign` link has never been completed by a real customer**
     (live check): the four signed rows on ARUN-PACKERS-AND-COURIERS-1001
     share one image and one `signed_at` to the microsecond — the in-app
