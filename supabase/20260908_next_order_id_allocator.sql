@@ -182,9 +182,17 @@ begin
   end if;
 
   -- Two orgs whose uppercased slug is identical would share an id space.
-  select string_agg(upper(slug), ', ') into v_bad
-    from (select slug from public.organizations
-           group by upper(slug) having count(*) > 1) x;
+  --
+  -- The subquery selects the GROUPED EXPRESSION, not the raw column.
+  -- Written as `select slug ... group by upper(slug)` this raises 42803
+  -- ("column organizations.slug must appear in the GROUP BY clause"),
+  -- which aborts the whole migration in preflight — the run Arun saw
+  -- fail on 8 Sept 2026.
+  select string_agg(u, ', ') into v_bad
+    from (select upper(slug) as u
+            from public.organizations
+           group by upper(slug)
+          having count(*) > 1) x;
   if v_bad is not null then
     raise exception 'PREFLIGHT: orgs share an uppercased slug: %.', v_bad;
   end if;
