@@ -140,6 +140,8 @@
   var token = new URLSearchParams(location.search).get("token") || "";
 
   var BLOCKED = {
+    unavailable: ["🔗", "This link isn't available",
+      "Please contact your moving company for an update on your move."],
     not_found: ["🔗", "This link isn't working",
       "The link may have been cut short. Ask your moving company to send it again."],
     invalid:   ["🔗", "This link isn't working",
