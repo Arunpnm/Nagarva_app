@@ -11,10 +11,16 @@ import 'customer_survey_detail_sheet.dart';
 
 /// DORMANT MODULE — built, correct, and deliberately unreachable.
 ///
-/// Arun, 8 Sept 2026, deciding between the two survey tables: "surveys
-/// wins. customer_surveys is NOT a duplicate — it's an item/CFT-based
-/// model with a review workflow. It stays in the schema for a future
-/// module. Do not drop it, do not merge, do not build a writer for it."
+/// **The reason CHANGED on 8 Sept 2026, and this header stated the
+/// superseded one.** The earlier decision kept `customer_surveys` "in
+/// the schema for a future module". That is no longer the plan:
+/// **`customer_surveys` is the NAME that survives; `surveys` is the
+/// TABLE that survives.** `surveys` — which holds the rows, which all
+/// four survey RPCs write, and which `quotations.survey_id` was
+/// repointed at — gains the columns it needs and is then renamed to
+/// `customer_surveys`. **The current, empty `customer_surveys` will be
+/// DROPPED.** See CLAUDE.md, "The two survey tables — DECIDED, and the
+/// decision CHANGED once".
 ///
 /// So this screen and its detail sheet stay in the repo, and stay OUT of
 /// routing: no `FFRoute` in nav.dart, no entry in main.dart's `_tabs`
@@ -22,18 +28,22 @@ import 'customer_survey_detail_sheet.dart';
 /// there would keep the screen reachable after its route was removed),
 /// and no nav item since 3 Sept 2026.
 ///
-/// **Why unreachable rather than merely unlisted.** `customer_surveys`
-/// has zero rows and no writer anywhere in `lib/` or in any of the four
-/// survey RPCs — all of which write `surveys`. The detail sheet has four
-/// update paths. Every one of them can only ever act on a row nothing is
-/// able to create, so the screen could only render empty while offering
-/// actions that cannot fire. A URL-reachable screen in that state is a
-/// trap for whoever finds it next, not a feature waiting to be used.
+/// **The dormancy stands regardless, and the new decision only makes it
+/// firmer.** These screens read a table that is scheduled for deletion.
+/// Today that renders empty — zero rows, and no writer anywhere in
+/// `lib/` or in any of the four survey RPCs, all of which write
+/// `surveys` — while offering four update paths that can only ever act
+/// on a row nothing is able to create. After the drop it would throw
+/// instead. Either way, a URL-reachable screen here is a trap for
+/// whoever finds it next, not a feature waiting to be used.
 ///
-/// To revive: build the writer first, then restore the route, the
-/// `_tabs` entry, the nav item, and `SurveyQueue.instance.refresh()` in
-/// main.dart. In that order — the badge counts rows that must exist
-/// before the count means anything.
+/// **There is no revive recipe, and the old one pointed the wrong way.**
+/// It said to build the writer first; writing to a table that is about
+/// to be dropped is the one thing not to do. Whether these two files are
+/// rewritten against the renamed table or deleted outright belongs to
+/// the survey spec, which has not landed yet. Wait for it — do not
+/// restore the route, the `_tabs` entry, the nav item or
+/// `SurveyQueue.instance.refresh()` ahead of it.
 ///
 /// Customer Surveys (Session 4, Part B1) — was a ComingSoonPage stub.
 /// `customer_surveys` (29 columns, live schema confirmed directly against

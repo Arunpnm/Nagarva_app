@@ -854,8 +854,15 @@ silently doesn't is the same class of trust damage.
   coalesce expression. The claim was false and the index redundant the
   moment it was written; see
   `supabase/20260908_drop_redundant_duplicate_indexes.sql`.
-  **Same failure shape as the `reloptions` note below: the right answer
-  to the wrong catalogue.** To ask whether a key is protected:
+  **The failure shape is asking a narrow catalogue and reading its
+  answer as a broad one.** Since this rule is about naming the right
+  catalogue, name the two that get confused with each other here:
+  **`pg_class.relacl` holds real table-level grants** (expand it with
+  `aclexplode`; grantee `0` is PUBLIC) — that is what to read when the
+  question is "who can actually touch this table". `pg_class.reloptions`
+  is **storage parameters** and has nothing to do with permissions; it
+  is where a view's `security_invoker` lives, which is the separate note
+  below. To ask whether a key is protected:
 
       select i.relname, ix.indisunique, (con.conname is not null) as constraint_backed,
              pg_get_indexdef(i.oid)
