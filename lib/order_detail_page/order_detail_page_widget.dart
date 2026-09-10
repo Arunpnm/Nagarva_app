@@ -845,6 +845,60 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       final existing = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId!),
       );
+      // §52 — a rate the product invents is a rate nobody chose. A null
+      // quote_gst_pct means no person selected one, and an invoice is a
+      // legal document, so this STOPS rather than substituting.
+      //
+      // Until 10 Sept 2026 the read below was `?? 5.0`. Checked against
+      // live data that day: zero orders carry a null rate, so the fallback
+      // had never fired — latent, not live. Recorded values are 0, 5 and
+      // 18, and two orders are genuinely zero-rated through the "Charge
+      // GST" switch. **Zero is a choice; null is the absence of one**, and
+      // the two must not collapse into each other.
+      //
+      // This BLOCKS where the Rule 46 check above only warns, and the
+      // difference is structural rather than a view about severity. Rule
+      // 46 warns because the document is still issuable — a missing
+      // address is a field the vendor can add afterwards. Here there is
+      // nothing to proceed WITH: an "issue anyway" button would have to
+      // pick a percentage, and picking one is the thing being prevented.
+      // Substituting 18 instead of 5 would be a better guess that is
+      // still a guess.
+      //
+      // Positioned before the allocation below so a refusal never burns a
+      // number, and before the reuse branch too — that path issues a
+      // document without allocating, and it must not carry an invented
+      // rate either.
+      if (existing.isEmpty || existing.first.quoteGstPct == null) {
+        if (mounted) {
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('GST rate was never set on this order'),
+              content: Text(
+                existing.isEmpty
+                    ? 'This order could not be read, so its GST rate is '
+                        'unknown. No invoice will be generated from a rate '
+                        'nobody chose.'
+                    : 'No GST rate has been chosen for this order, so there '
+                        'is nothing to put on the invoice.\n\n'
+                        'Set it on the order — Edit Order, then the Charge '
+                        'GST switch — and generate again.\n\n'
+                        'Zero is a valid choice and is not the same as '
+                        'unset: turn Charge GST off to bill without GST.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
       String invoiceNo;
       if (existing.isNotEmpty && (existing.first.invoiceNo ?? '').isNotEmpty) {
         invoiceNo = existing.first.invoiceNo!;
@@ -876,11 +930,14 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       // Fixed (RLS/numbering audit, 12 Aug 2026): was a hardcoded 5.0
       // unconditionally, ignoring orders.quote_gst_pct even when it held
       // the real quoted rate — confirmed live to have wrongly invoiced at
-      // least one order (18% quoted, 5% billed). quote_gst_pct falls back
-      // to 5% only when the order genuinely has no stored rate (24 of 25
-      // live orders today, since this column is rarely populated), never
-      // as a silent override of a real one.
-      final gstPct = existing.isNotEmpty ? (existing.first.quoteGstPct ?? 5.0) : 5.0;
+      // least one order (18% quoted, 5% billed).
+      //
+      // The `?? 5.0` that replaced it is gone too, 10 Sept 2026. Null is
+      // refused above rather than defaulted, so by this line the rate is
+      // always one a person actually chose. The old comment claimed "24 of
+      // 25 live orders" carry no stored rate; the live data says zero do,
+      // so that fallback was never the common path it was written for.
+      final gstPct = existing.first.quoteGstPct!;
       final interstate =
           isInterState(_orderFromCity, _orderToCity);
 

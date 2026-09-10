@@ -169,7 +169,6 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
 
   double _gstPct = kGstDefaultPct.toDouble();
   String _gstType = 'auto'; // auto | intra | inter
-  bool _gstShowInPdf = true;
 
   /// Item 12C — the surveyor's override of the suggested package/vehicle/
   /// crew, null until they actually change something.
@@ -507,7 +506,9 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       };
       charges['_billingMode'] = _billingMode;
       charges['_gstType'] = _gstType;
-      charges['_gstShowInPdf'] = _gstShowInPdf;
+      // `_gstShowInPdf` was written here until 10 Sept 2026. Nothing ever
+      // read the key — see the note at the removed switch. Existing quotes
+      // keep whatever value they were saved with; it is inert either way.
       // Item 12C: the package now lives in real columns (below). This key
       // is still written because existing readers depend on it —
       // quote_pdf.dart and lead_detail_page's order snapshot — and older
@@ -1637,12 +1638,22 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 ),
               ],
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Show GST in PDF'),
-              value: _gstShowInPdf,
-              onChanged: (v) => setState(() => _gstShowInPdf = v),
-            ),
+            // A "Show GST in PDF" switch stood here and was REMOVED on
+            // 10 Sept 2026, not wired up. It had no consumer: it wrote
+            // `charges['_gstShowInPdf']`, and `quote_pdf.dart` never read
+            // that key and carries no GST conditional at all. A vendor
+            // turned it off and the PDF still showed GST — a control that
+            // silently does nothing, the same trust damage as the invented
+            // demo data and the dead "Add Expense" button.
+            //
+            // Deleted rather than implemented deliberately. What a
+            // GST-suppressed document should BE — bill of supply, exempt
+            // supply, reverse charge — is a CA question, still open
+            // alongside the GSTIN and place-of-supply items. Wiring the
+            // switch to hide the GST rows would produce a document headed
+            // "BILL (TAX INVOICE)" with the tax silently omitted, which is
+            // worse than the no-op it replaced. Restore this only with the
+            // answer in hand.
             Text(
               _isInterstate
                   ? 'Interstate → IGST ₹${_gstAmount.toStringAsFixed(0)}'

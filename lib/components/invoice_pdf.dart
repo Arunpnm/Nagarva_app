@@ -415,7 +415,22 @@ class InvoicePdf {
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
                           kv('GST Payable by', gstPayableBy ?? 'Consignee'),
-                          kv('Reverse Charge', reverseCharge ? 'YES' : 'NO'),
+                          // Printed ONLY when reverse charge genuinely
+                          // applies. This used to render
+                          // `reverseCharge ? 'YES' : 'NO'` unconditionally,
+                          // so every invoice ever issued — three of them
+                          // live — asserted "Reverse Charge: NO" as a
+                          // positive tax position, taken from
+                          // `orders.reverse_charge`, a column NO UI writes.
+                          // Verified 10 Sept 2026: it is `false` on all 7
+                          // orders from a column DEFAULT, not null, so a
+                          // null-guard would never have fired — the test
+                          // has to be on the value being true.
+                          // Absent is honest; "NO" is a claim. Whether a
+                          // document should ever assert the negative, and
+                          // on what basis, is a CA question and is open.
+                          if (reverseCharge)
+                            kv('Reverse Charge', 'YES'),
                           kv(
                               'Tax Type',
                               interstate

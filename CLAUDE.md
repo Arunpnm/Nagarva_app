@@ -610,10 +610,25 @@ silently doesn't is the same class of trust damage.
   either direction. See the 2 Sept changelog entry, including the one
   known residual (a non-porter paid source with a forgotten rate reads as
   "no commission", not "unpriced").
-  Related but out of scope: `order_detail_page_widget.dart:631`'s
-  `quoteGstPct ?? 5.0` and `kGstDefaultPct = 5`. GST is a statutory rate,
-  not a vendor price, so it is not this rule — but 5 vs 18 for SAC 996719
-  is worth confirming separately.
+  Related but out of scope: `order_detail_page_widget.dart`'s
+  `quoteGstPct ?? 5.0` fallback and **`kGstDefaultPct`, which is `18`**
+  (`lib/backend/pricing_defaults.dart:476`), alongside
+  `kGstRateOptions = [0, 5, 12, 18]`. GST is a statutory rate, not a
+  vendor price, so it is not this rule — but 5 vs 18 for SAC 996719 is
+  worth confirming separately, and note the two numbers in the code
+  disagree with each other: the const is 18 while the invoice
+  generator's own fallback is 5.
+  **CORRECTED 10 Sept 2026, and the correction has a lesson in it.**
+  This line read `kGstDefaultPct = 5` and had been stale. It was then
+  quoted back at a flow-test report as evidence that an observed 18%
+  pre-fill was a silent change — so a stale doc was presented as a
+  finding, and the report was revised on the strength of it. **The
+  flow-test report had been right.** Arun's call, naming it as his
+  error rather than the report's, which is why it is recorded here:
+  this file is used as evidence, so a stale line in it does not just
+  sit there being wrong, it actively overturns correct work. Grep the
+  constant before citing it — the same rule as "before writing X does
+  not exist, grep for X".
 - **A migration asserts its preconditions and its results. A guard
   RAISES; it never skips.** (Arun, 2 Sept 2026.)
   `20260902_drop_sandbox_org.sql` was run before the migration it
@@ -874,6 +889,226 @@ silently doesn't is the same class of trust damage.
   The `constraint_backed` column matters for a second reason: **`DROP
   INDEX` against a constraint-backed index fails outright.** Check it
   before writing a drop, not during one.
+
+  **SECOND INSTANCE, 9 Sept 2026 — `pg_available_extensions` vs
+  `pg_extension`.** A migration needed `btree_gist` for an exclusion
+  constraint mixing `card_id with =` against a range `with &&`. The
+  report backing it said "confirmed available", from a
+  `pg_available_extensions` query. Arun caught it: **available to
+  install is not installed.**
+  - **`pg_available_extensions` answers "could I".** It lists what the
+    server has files for. It is true on every stock Postgres and proves
+    nothing about this database.
+  - **`pg_extension` answers "did I".** It is the only one that says
+    whether the objects exist.
+  On `hqqcapifefsaqvotqvlt` the two disagreed: btree_gist absent from
+  `pg_extension`, version 1.7 present in `pg_available_extensions`. Core
+  GiST has no operator class for `uuid`, so the ALTER TABLE would have
+  failed naming the opclass rather than the missing extension.
+  **The general rule, now that there are two instances: name the
+  question before picking the catalogue, and check the catalogue answers
+  THAT question and not a neighbouring one.** Every instance so far has
+  been a true answer to a question nobody asked — `pg_constraint` is
+  right about constraints and silent about indexes;
+  `pg_available_extensions` is right about availability and silent about
+  installation; `pg_class.reloptions` is right about storage parameters
+  and silent about grants, which live in `pg_class.relacl`.
+  **Corollary, and it is the stronger half: assert the CONSTRUCT, not
+  the flag.** For an extension that means checking the thing it provides
+  actually resolved — `select count(*) from pg_opclass oc join pg_am am
+  on am.oid = oc.opcmethod where am.amname = 'gist' and oc.opcintype =
+  'uuid'::regtype` returns 0 without btree_gist. Same rule as
+  `security_invoker`: "verify by behaviour, not by the flag".
+  **Extensions also have a SCHEMA, and Supabase's is `extensions`, not
+  `public`** (pg_stat_statements, pgcrypto, uuid-ossp all live there).
+  A bare `create extension` lands in `public` against that convention.
+  The `postgres` role's `search_path` is `"$user", public, extensions`
+  via `pg_db_role_setting`, so the SQL editor resolves it — but a
+  migration runner with a stripped search_path would not. Write
+  `create extension ... with schema extensions` and `set local
+  search_path` in the migration rather than inheriting the runner's.
+
+  **FOURTH INSTANCE, 9 Sept 2026 — and it takes the rule past
+  catalogues entirely. Verifying STATE does not license a claim about
+  CODE you have not read.** (Arun, on his own error, same hour as the
+  one above.)
+  He queried `pg_extension`, correctly found `btree_gist` absent — a
+  real fact, the right catalogue, the right question — and then asserted
+  the consequence: "the ALTER TABLE aborts and the whole migration rolls
+  back." The migration already carried `create extension if not exists
+  btree_gist` at line 132, ahead of the constraint at 194. The state
+  fact was true; the consequence was an inference about a file he had
+  not opened.
+  **Both directions of this happened within one exchange**, which is why
+  it is worth recording as a pair rather than as one person's slip: the
+  report he was reading said "confirmed available", which was the
+  opposite failure — a claim about the database made from a catalogue
+  that answers a different question. One asserted code from verified
+  state; the other asserted state from the wrong catalogue. Neither
+  claim was checked against the thing it was actually about.
+  The distinction to hold: **a verified state fact licenses claims about
+  STATE.** What a specific script will DO with that state is a question
+  about the script, and the only instrument that answers it is reading
+  the script. There is no catalogue for this one — that is exactly what
+  makes it the general case rather than a fourth wrong-table story.
+  **Why it costs something rather than being a technicality:** an
+  inference dressed as a finding spends the same review attention as a
+  real one, and it borrows its confidence from the half that WAS
+  verified. "btree_gist is absent" is checkable in seconds and true;
+  "therefore this migration aborts" rode in on it unexamined. Same shape
+  as the guard that hands back a clean result without doing its job —
+  see the migration-guard convention above. State the verified half as
+  verified, and mark the inferred half as an inference, or open the
+  file.
+
+  **LATEST INSTANCE, 10 Sept 2026 — a string match for a membership
+  question, and the cleanest illustration of the pattern yet, because
+  the check was tripped by a comment its own author had just written.**
+  `20260910_delete_org_after_survey_rename.sql` removed the dead
+  `'surveys'` entry from `delete_org`'s `v_order` array, then asserted
+  the result with
+
+      if position('''surveys''' in v_def) > 0 then raise ...
+
+  over `pg_get_functiondef`. The quoting was deliberate and correct —
+  a bare `surveys` would match inside `customer_surveys`. It still
+  failed, because `pg_get_functiondef` returns the body INCLUDING
+  comments and the migration had added a tombstone comment at the
+  removal site naming the very thing it removed. The array was right;
+  the migration did exactly what it was specified to do and its own
+  assertion rolled it back.
+  **The tell is not that the test is wrong. It is that nobody asked
+  it.** "Does this string appear in the text" is a true and answerable
+  question. The question that mattered was "is this table listed in
+  `v_order`". Quoting the string was a real improvement to the wrong
+  half — the same move as reaching for a narrower catalogue and reading
+  its answer as a broader one.
+  **The fix that generalises: assert the property, not its shadow.**
+  The replacement guard checks that every `v_order` entry resolves to an
+  org-scoped base table, so a dry run that COMPLETES is itself the proof
+  that no dead name is listed. Where text really is the right instrument
+  — `converted_to_order_id` is a column, and no runtime guard reaches it
+  without performing a real delete — strip comment lines first, because
+  a tombstone is written precisely to name what is gone.
+  **Keep the tombstone. It is worth more than the check that tripped on
+  it.**
+
+  **Roll-call, since the numbering above drifted.** The family is:
+  `pg_constraint` asked about uniqueness; `pg_available_extensions`
+  asked about installation; single-target asked about fragment danger;
+  a verified state fact asked to license a claim about unread code; and
+  a string match asked about array membership. Five so far. Do not add
+  a sixth by numbering — add it by naming the question that was actually
+  asked and the one that should have been.
+- **Never run a fragment of a migration on its own to "check" it. The
+  same text can be a different statement outside its block than inside
+  it — and the check can cause the very thing it was checking for.**
+  (Arun, 9 Sept 2026, after doing it.)
+  Supabase's pre-run linter flagged `20260909_cft_slab_defaults.sql` as
+  *"creates a table without enabling Row Level Security ...
+  public.rate_card_rules"*. The file contains no `CREATE TABLE` at all —
+  verified line by line. The trigger was the 14 statements of the form
+
+      select count(*) into v_rules from public.rate_card_rules;
+
+  inside its `do $$ ... $$` blocks. **In plpgsql that assigns a
+  variable. In plain SQL, `SELECT ... INTO` is legacy `CREATE TABLE AS`
+  syntax.** The linter parses the script as plain SQL, so its reading
+  was not stupid — outside the block it is literally correct.
+  **The damaging half was the verification, not the warning.** That
+  single line was then run on its own to find out what it did, and it
+  did exactly what plain SQL says: created a real `public.v_rules`
+  table, **RLS off, `anon` holding full `arwdDxtm`**. Running the
+  fragment to check whether it creates a table created the table — and
+  on this project a new `public` table inherits default grants that make
+  it anon-writable, so the artefact is not a harmless empty relation.
+  Dropped; `public` is back to zero tables without RLS, confirmed by
+  `select count(*) from pg_class c join pg_namespace n on
+  n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r'
+  and not c.relrowsecurity`.
+  **WHICH fragments are dangerous — corrected by Arun the same day,
+  because the first answer here was wrong in a way worth keeping.**
+  The initial reading was that the hazard is a SINGLE-TARGET
+  `SELECT ... INTO` (one name after `INTO` is a valid plain-SQL table
+  name; two is a syntax error). On that basis
+  `20260908_drop_redundant_duplicate_indexes.sql:141-143` was flagged as
+  hazardous. Arun ran it. **It cannot create anything** — it references
+  `r.drop_idx`, and `r` is the loop record, so outside plpgsql it dies at
+  parse with `42P01 missing FROM-clause entry for table "r"`. All three
+  `SELECT ... INTO` fragments in that file reference the loop variable;
+  none is a hazard.
+  **The real test is SELF-CONTAINMENT, not target arity:**
+  - **References anything that exists only inside the block** — a loop
+    record, a `declare`d variable, a function parameter — and it fails at
+    parse. Harmless, whatever its shape.
+  - **Stands entirely on its own** — real table, real columns, nothing
+    block-local — and it executes with plain-SQL semantics, which are not
+    the semantics it had inside the block. `select count(*) into v_rules
+    from public.rate_card_rules` is exactly that: every name in it is
+    real except the target.
+  Single-target is a secondary syntactic filter, not the test. Treating
+  it as the test was the same error family as the wrong-catalogue notes
+  above — a true property that correlates with the danger, mistaken for
+  its cause.
+  Rules: verify a fragment **by reading it in its block**, or by running
+  the WHOLE migration inside a transaction you then roll back — never by
+  executing the line alone. Before running any fragment, ask whether it
+  is self-contained; if it is, do not run it. And after any accidental
+  DDL in `public`, run that RLS count rather than assuming the drop was
+  clean.
+
+- **"It raises" is not "there is one thing wrong". A guard that refuses
+  early can hide a second, independent fault behind it.** (Arun,
+  10 Sept 2026, after `delete_org` turned out to be broken twice over.)
+  `delete_org` was known to be unrunnable because `v_order` still listed
+  `'surveys'` after the 9 Sept rename — both its loops iterate that array
+  through `execute format('… public.%I …')`, so the first call raised
+  42P01, dry runs included. That was true, and it was not the whole
+  truth. **The function had ALREADY been unable to run since 2 Sept**,
+  for an unrelated reason: its completeness guard was refusing on four
+  org-scoped tables missing from the array —
+  `doc_prefix_reservations` (added by `20260902_doc_prefix_identity.sql`,
+  six days after the last `delete_org` update), plus `expense_splits`,
+  `fuel_fills` and `staff_session_events`, none of which appear in any
+  migration file in this repo at all. The completeness guard fires
+  BEFORE the loop, so the 42P01 on the dead name was never reachable.
+  Two faults stacked, the outer hiding the inner, and fixing only the
+  visible one would have produced a second identical debugging session.
+  **What actually revealed the state was running the thing**, not
+  reading it: a behavioural postflight that calls `delete_org` in dry
+  run. A string check over the body would have reported green on a
+  function that cannot execute. Prefer an assertion that EXERCISES the
+  construct over one that describes it — the same rule as
+  `security_invoker` ("verify by behaviour, not by the flag") and the
+  unhandled-error rule for crash reporting.
+  **And it took BOTH directions to see it.** The completeness guard
+  catches a table that EXISTS and is unlisted — a table ADDED. It is
+  structurally incapable of catching a LISTED name that stopped
+  existing, because a missing table cannot appear in a scan of present
+  ones. The resolve guard added 10 Sept covers that opposite direction,
+  written as the EXACT MIRROR (public / BASE TABLE / has `org_id`)
+  rather than a bare `to_regclass` existence test, which would have let
+  through a listed name that became a view or lost its `org_id`.
+  Neither guard alone would have shown the real state.
+  **The pair is complete for set membership and for nothing else.**
+  Two holes remain, and they are different in kind:
+  - **Ordering.** A correctly-listed table in the wrong position
+    relative to a NO ACTION FK still fails mid-loop. Loud, and it rolls
+    back — the function runs in the caller's transaction — but no guard
+    predicts it.
+  - **`v_keep` misclassification.** A table that should be deleted but
+    sits in `v_keep` passes both guards and silently orphans its rows.
+    This is the quiet one.
+  **A dry run does not test ordering either**, and that limit is worth
+  holding onto: it only emits a line for a table with a non-zero count,
+  so the positions of `expense_splits`, `fuel_fills` and
+  `staff_session_events` — all empty today — are UNTESTED. If
+  `fuel_fills` is misplaced relative to `vehicles`, `orders`, `staff`,
+  `vendors` or `expenses`, nothing reveals it until an org holding fuel
+  rows is deleted. Their placement rests on a reading of the FK graph,
+  not on a walk that exercised it. `customer_surveys` at 5 rows on
+  Arun Packers IS walk-proven; those three are not.
+
 - **"The file is ready", "the migration ran" and "the objects exist" are
   three different states.** (Arun, 8 Sept 2026, standing rule, after a
   live outage.)
@@ -1931,6 +2166,45 @@ from.**
   rename carries indexes across — one moves to the new name instead of
   two.
 - **Full spec comes separately. Do not start it.**
+
+**DONE 9 Sept 2026 — `20260909_consolidate_survey_tables.sql` ran and was
+verified against the database.** `surveys` gone, `customer_surveys` holds
+the 7 live rows, ten columns added (`items`, `custom_items`, `photos`,
+`total_cft` numeric, `suggested_vehicle`, `service`, `notes`,
+`customer_email`, `from_city`, `to_city`), `from_floor`/`to_floor` are text,
+`quotations_survey_id_fkey` followed the rename, RLS and the single token
+index carried across. The five functions that name the table were re-created
+in the same transaction — a rename does NOT rewrite function bodies, and
+`public_get_survey_impl`/`public_submit_survey_impl` are the anon-callable
+pair serving the live `/survey` page, so shipping the rename alone would
+have taken it down. Verified by calling `public_get_survey` on a real token.
+
+**`total_cft` IS NULL ON ALL SEVEN ROWS, AND THAT IS THE OPEN GAP.**
+(Arun, 10 Sept 2026.) The column survived the rename but **nothing writes
+it**. The "362 CFT" the 9 Sept flow test displayed is computed in Dart at
+render time and never persisted — which is why quotation pricing cannot yet
+be built on it. Expected while the item picker does not exist, recorded so it
+is not mistaken for a bug later.
+**When the catalogue spec lands, `public_submit_survey_impl` writing
+`total_cft` server-side is what closes it, and it gets EXACTLY ONE WRITER.**
+A second writer in Dart would be the two-sources-one-value shape this file
+keeps recording — the same disease as the duplicate CFT bands and the two
+survey tables.
+
+**`delete_org` was collateral damage and is fixed separately** by
+`20260910_delete_org_after_survey_rename.sql`: `v_order` still listed
+`'surveys'`, and both its loops iterate that array through
+`execute format('... public.%I ...')`, so the first call raised 42P01 —
+including `p_dry_run => true`. Its `update customer_surveys set
+converted_to_order_id = null` line went too; that column belonged to the
+dropped table, Dart never read or wrote it, and the survey→order link it was
+meant to detach already exists as
+`orders.quotation_id -> quotations.survey_id`.
+**Worth knowing: `delete_org`'s completeness guard does not catch this
+class.** It scans `information_schema` for a table that EXISTS with an
+`org_id` and is not listed, so it catches an added table. It cannot catch a
+listed table that stopped existing. Closing that needs an assertion that
+every `v_order` element resolves; not built.
 
 <details><summary>SUPERSEDED, 8 Sept 2026 (earlier the same day) — do not
 act on this</summary>
