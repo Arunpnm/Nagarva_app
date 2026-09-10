@@ -1,8 +1,19 @@
 import '../database.dart';
 
+/// Reads the table formerly called `surveys`, renamed to `customer_surveys`
+/// by `supabase/20260909_consolidate_survey_tables.sql` (9 Sept 2026).
+///
+/// The CLASS keeps its old name deliberately for now — renaming it would
+/// touch 13 call sites across 5 files for no behavioural gain, and folding
+/// it together with the dormant [CustomerSurveysTable] belongs to the survey
+/// spec, not to a fix for a live break. **Until that lands, this is the only
+/// class that may be used to read or write survey rows**: the dormant
+/// `CustomerSurveysTable` names the same table but was built for the dropped
+/// schema (`phone`, `email`, `from_lift`, `to_lift`, `reviewed_by`,
+/// `reviewed_at`, `converted_to_order_id` — none of which exist on it).
 class SurveysTable extends SupabaseTable<SurveysRow> {
   @override
-  String get tableName => 'surveys';
+  String get tableName => 'customer_surveys';
 
   @override
   SurveysRow createRow(Map<String, dynamic> data) => SurveysRow(data);
@@ -70,11 +81,16 @@ class SurveysRow extends SupabaseDataRow {
   set accessRestrictions(bool? value) =>
       setField<bool>('access_restrictions', value);
 
-  int? get fromFloor => getField<int>('from_floor');
-  set fromFloor(int? value) => setField<int>('from_floor', value);
+  // text, not integer, since 20260909_consolidate_survey_tables.sql. A
+  // customer answers "Ground", "Stilt" or "2 (no lift)" as readily as a
+  // number. All seven live rows are null and nothing reads these yet, so
+  // the old `int?` was harmless — but it would have thrown on the first
+  // row that carried a value.
+  String? get fromFloor => getField<String>('from_floor');
+  set fromFloor(String? value) => setField<String>('from_floor', value);
 
-  int? get toFloor => getField<int>('to_floor');
-  set toFloor(int? value) => setField<int>('to_floor', value);
+  String? get toFloor => getField<String>('to_floor');
+  set toFloor(String? value) => setField<String>('to_floor', value);
 
   bool? get fromHasLift => getField<bool>('from_has_lift');
   set fromHasLift(bool? value) => setField<bool>('from_has_lift', value);

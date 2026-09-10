@@ -12,7 +12,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/backend/approval_queue.dart';
-import '/backend/survey_queue.dart';
 import '/backend/auth_deep_link.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/org_resolution.dart';
@@ -1426,21 +1425,16 @@ class _NavBarPageState extends State<NavBarPage>
                                           count: count,
                                         ),
                                       )
-                                    else if (item.name == 'CustomerSurveysPage')
-                                      ValueListenableBuilder<int>(
-                                        valueListenable: SurveyQueue
-                                            .instance.unreviewedCount,
-                                        builder: (context, count, _) =>
-                                            NavBadgeIcon(
-                                          icon: item.icon,
-                                          size: 22,
-                                          color: selected
-                                              ? primary
-                                              : FlutterFlowTheme.of(context)
-                                                  .secondaryText,
-                                          count: count,
-                                        ),
-                                      )
+                                    // The CustomerSurveysPage badge was
+                                    // UNBOUND on 9 Sept 2026 — see the same
+                                    // note in mobile_bottom_nav.dart.
+                                    // `SurveyQueue` reads through
+                                    // `CustomerSurveysTable`, built for the
+                                    // schema dropped by
+                                    // 20260909_consolidate_survey_tables.sql,
+                                    // which now names the LIVE survey table.
+                                    // Unreachable already; unbound so it
+                                    // cannot become reachable by accident.
                                     else
                                       Icon(
                                         item.icon,

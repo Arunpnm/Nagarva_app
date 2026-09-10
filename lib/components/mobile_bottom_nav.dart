@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '/nav_items.dart';
 
 import '/backend/approval_queue.dart';
-import '/backend/survey_queue.dart';
 import '/components/nav_badge.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 
@@ -290,19 +289,17 @@ class _NavItem extends StatelessWidget {
                         count: count,
                       ),
                     )
-                  : item.name == 'CustomerSurveysPage'
-                      ? ValueListenableBuilder<int>(
-                          valueListenable: SurveyQueue.instance.unreviewedCount,
-                          builder: (context, count, _) => NavBadgeIcon(
-                            icon: item.icon,
-                            size: 27,
-                            color: selected
-                                ? theme.primary
-                                : theme.secondaryText,
-                            count: count,
-                          ),
-                        )
-                      : Icon(
+                  // The CustomerSurveysPage badge was UNBOUND on 9 Sept 2026.
+                  // `SurveyQueue` counts unreviewed rows through
+                  // `CustomerSurveysTable`, which was built for the schema
+                  // dropped by 20260909_consolidate_survey_tables.sql and now
+                  // names the LIVE survey table. This branch was already
+                  // unreachable — the page has had no route, no `_tabs` entry
+                  // and no nav item since 3 Sept — but a bound listener is a
+                  // path from a dormant class to live data, which is the
+                  // difference between latent and reachable. Restore only
+                  // when the survey spec lands.
+                  : Icon(
                       item.icon,
                       size: 27,
                       color: selected ? theme.primary : theme.secondaryText,
