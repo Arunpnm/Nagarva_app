@@ -1000,6 +1000,29 @@ silently doesn't is the same class of trust damage.
   a string match asked about array membership. Five so far. Do not add
   a sixth by numbering — add it by naming the question that was actually
   asked and the one that should have been.
+
+  **A NEIGHBOURING FAILURE, and it is worse than staleness: a claim
+  about the data that was never measured.** (Arun, 10 Sept 2026.)
+  `order_detail_page_widget.dart`'s GST fallback carried the
+  justification *"quote_gst_pct falls back to 5% only when the order
+  genuinely has no stored rate (24 of 25 live orders today, since this
+  column is rarely populated)"*. Counted against the database while
+  removing that fallback: **zero orders carry a null rate, and there
+  have never been 25 orders at all.** The order counter runs from a base
+  of 1000 with a high-water mark of 1003; seven orders exist in total,
+  carrying rates 0, 5 and 18. The comment described a state that never
+  existed, and a fallback was written to serve it — a rate substituted
+  onto a legal document to solve a problem that was never occurring.
+  **Hold the distinction: a STALE claim was right once and the world
+  moved; an INVENTED one was never right.** `kGstDefaultPct = 5` in this
+  file was stale — a real value that changed underneath it. "24 of 25"
+  was invented, and no amount of re-reading the comment would have
+  exposed it, because the only thing that contradicts it is `count(*)`.
+  Second time in one week a claim about the data proved untethered from
+  it; the other was `pg_stat_user_tables` read as an audit log.
+  **Any sentence in a comment or a report that quantifies the data —
+  "most rows", "24 of 25", "rarely populated" — is a claim to be
+  counted, not estimated, and dated when written.**
 - **Never run a fragment of a migration on its own to "check" it. The
   same text can be a different statement outside its block than inside
   it — and the check can cause the very thing it was checking for.**
