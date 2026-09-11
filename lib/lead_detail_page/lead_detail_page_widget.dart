@@ -1828,16 +1828,34 @@ class _LostReasonResult {
   final double? competitorPrice;
 }
 
-/// quote_outcomes.reason_code's documented values (migration 004's own
-/// column comment) — not invented here.
+/// `quote_outcomes.reason_code`'s permitted values, and the ONLY place
+/// they are offered to a user.
+///
+/// **Provenance corrected 11 Sept 2026.** This comment used to say the
+/// list came from "migration 004's own column comment — not invented
+/// here". `col_description` on that column returned NULL: the comment
+/// had never existed, so the claim was never true. The column now
+/// carries a real comment, written by
+/// `20260911_status_vocabulary.sql`, and this map must match it.
+///
+/// **Trimmed from eight to six**, both free — `quote_outcomes` has 0
+/// rows, so nothing needed migrating:
+///  * `trust` — a customer will not say "I did not trust you", so the
+///    code would be guessed on their behalf, and a guessed reason in a
+///    reasons report is worse than a blank one.
+///  * `unreachable` — that is a LEAD state and already exists as
+///    `leads.status`. Keeping it here too is the duplication this
+///    codebase keeps removing.
+///
+/// `reason_note` carries the detail that does not fit a code.
+/// A CHECK constraint pins this list in the database; adding a seventh
+/// value here without adding it there will fail at insert.
 const _kLostReasonCodes = <String, String>{
   'price': 'Price',
-  'timing': 'Timing',
-  'trust': 'Trust',
-  'service_scope': 'Service scope',
   'competitor': 'Went with a competitor',
+  'timing': 'Timing',
+  'service_scope': 'Service scope',
   'customer_cancelled': 'Customer cancelled the move',
-  'unreachable': 'Unreachable',
   'other': 'Other',
 };
 
