@@ -1150,9 +1150,38 @@ silently doesn't is the same class of trust damage.
   successful one all reported through the same UI and looked alike; only
   the database distinguishes them. One `select` answers it, and there is
   never a good reason to substitute reasoning for that select.
-- **`CREATE OR REPLACE VIEW` preserves `security_invoker`. `DROP` +
-  `CREATE` silently discards it.** (25 Aug 2026. Standing rule for all
-  15 views in `public`.)
+- **EVERY view statement must RESTATE `with (security_invoker = on)`.
+  `CREATE OR REPLACE` discards it just like `DROP` + `CREATE` does.**
+  (25 Aug 2026, **CORRECTED 11 Sept 2026** — the original rule said
+  "`CREATE OR REPLACE VIEW` preserves `security_invoker`", and that half
+  was WRONG. Standing rule for all 15 views in `public`.)
+  **How the correction was found, because it is the best argument for
+  the postflight convention in this file.**
+  `20260911_dashboard_outstanding_fix.sql` did a bare
+  `create or replace view public.dashboard_kpis_view as ...`, trusting
+  the old rule. Its PREFLIGHT asserted `security_invoker=on` and passed.
+  Its POSTFLIGHT then read the same object and got
+  `reloptions = <null>`, and raised:
+  `P0001: security_invoker was lost during replace`. A bare
+  `CREATE OR REPLACE VIEW` **resets reloptions the new statement does
+  not restate.**
+  The migration runs in one transaction, so the raise aborted it and the
+  live view was untouched — verified afterwards by query: `reloptions`
+  still `["security_invoker=on"]`, old definition intact, rows readable.
+  **Without that postflight this would have shipped as a silent
+  cross-tenant leak on the dashboard KPI view** — no error, no test
+  failure, correct-looking columns and data, every org's row readable
+  with the anon key. Exactly the leak
+  `20260825_view_security_invoker.sql` closed, reopened by following
+  this file's own advice.
+  **The fix is one clause, and it can never be wrong:**
+
+      create or replace view public.some_view
+        with (security_invoker = on) as
+      select ...
+
+  Restating it is harmless when it was already set and load-bearing when
+  it was not. Omitting it is a coin flip on a security property.
   `security_invoker` lives in `pg_class.reloptions`, not in the view
   body. Dropping and recreating a view reverts it to OWNER rights with
   no error, no warning and no test failure — the columns and the data
@@ -1162,12 +1191,26 @@ silently doesn't is the same class of trust damage.
   The trap is that `CREATE OR REPLACE` can only APPEND columns at the
   end and cannot rename or retype existing ones, so any non-trivial
   edit creates real pressure to just drop and recreate. Don't.
-  Rules for editing any view: **append new columns at the end** and use
-  `CREATE OR REPLACE`; if the shape genuinely must change, include an
-  explicit `ALTER VIEW ... SET (security_invoker = on)` in the SAME
-  migration and assert it in POSTFLIGHT. **Verify by behaviour, not by
-  the flag** — `select count(*)` as anon must return 0. A flag that is
-  set but untested proves the catalogue, not the wiring.
+  Rules for editing any view: **append new columns at the end**, use
+  `CREATE OR REPLACE`, and **always write
+  `with (security_invoker = on)` into the statement** — see the
+  correction above; an `ALTER VIEW ... SET` afterwards works too, but a
+  clause that cannot be forgotten beats a second statement that can.
+  **Assert it in POSTFLIGHT either way**, inside the same transaction,
+  so a loss aborts rather than ships. **Verify by behaviour, not by the
+  flag** — `select count(*)` as anon must return 0. A flag that is set
+  but untested proves the catalogue, not the wiring.
+  **All 15 views were re-checked immediately after this correction
+  (11 Sept 2026) and every one carries `security_invoker=on`** — no
+  latent damage from any earlier bare `CREATE OR REPLACE`. That is a
+  dated count, not a standing guarantee: re-run this after any view
+  work, because the whole point of the correction above is that the loss
+  is silent.
+
+      select c.relname, c.reloptions
+        from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'public' and c.relkind = 'v'
+       order by c.relname;
 
   **Field-verified end to end, 25 Aug 2026, and this is the stronger
   evidence.** On the Phase 1 dashboard, Rajesh (a Chennai manager) sees
@@ -2082,6 +2125,142 @@ Consequences worth knowing before touching this:
   editor works on one unified row and writes both lists atomically, so
   the UI can't create drift. A hand-edited config still can, which is
   what `suggestPackage`'s unresolved state reports.
+
+## Per-tenant policy — WHERE SETTINGS LIVE, settled 11 Sept 2026
+(Arun's call, after an audit of all three existing settings stores. Written
+as its own section because the next session needs the rule BEFORE it adds a
+setting, not after. This exists so nobody creates a fourth store in three
+weeks.)
+
+**Vendors work differently, so most product behaviour is a SETTING, not a
+rule.** Some collect 10% before scheduling, some confirm on a promise and
+take payment on the day. Both must work, and neither may be imposed.
+
+### The three stores, and what each one is FOR
+Counted 11 Sept 2026, not estimated:
+- **`settings` — 9 rows, 4 keys. FROZEN. Add nothing here.**
+  `business_profile` (2 rows, holds only `invoice_terms`, the one identity
+  field with no `organizations` column), `signature_url` (3), the
+  `monthly_target` KPI (1), and `order_id_seq` (3) which is **DEAD** —
+  superseded by `next_order_id`/`number_series` on 8 Sept. `inv_seq_2627`
+  and `accounts_opening_balance` already vanished from this table the same
+  way. Flat key space, no audit columns, mixed lifetimes: a dead key is
+  invisible here, which is exactly how three of them died unnoticed.
+  `order_id_seq` should be dropped.
+- **`app_settings` — 24 rows, all `category = 'documents'`. THE POLICY
+  STORE.** Eight document-boilerplate keys x three orgs, seeded by
+  migration. Per-`(org, category, key)` rows, so one policy edit touches
+  one row rather than rewriting a whole jsonb document.
+- **`pricing_config` — 3 rows, one jsonb blob per org.** Catalogue data
+  only (`survey_cats`, `cft_ranges`, `packages`, `storage_rates`). Not a
+  policy store and must not become one — concurrent edits to different
+  sections of one blob collide.
+
+### Why `app_settings`, and the reason that does NOT hold
+It was nearly chosen for the wrong reason: *"it has `updated_by`/
+`updated_at`, so policy changes are attributable."* **Both halves fail.**
+- **`updated_by` is NULL on all 24 rows and has ZERO writers.** Every
+  reference to `AppSettingsTable` in `lib/` is a read; the generated
+  `updatedBy` setter has no call sites. The column exists, the capability
+  does not. (Same pass: "tenant-editable document boilerplate" is
+  storage-true and UI-false — no screen edits it.)
+- **Even populated, `updated_by` is last-writer-wins, and the question is
+  a HISTORY question.** Switch a gate off Monday, lose money Tuesday,
+  switch it back on Wednesday: `updated_by` names Wednesday's person and
+  the row looks untouched. The one event worth catching leaves no trace.
+
+**So policy attribution comes from the audit TRIGGER on `app_settings`,
+never from `updated_by`.** `updated_by`/`updated_at` are a display
+convenience and are explicitly not the record. This is why the audit
+trigger must land BEFORE or WITH the first policy gate — a policy that can
+be switched with no record is the one thing a policy gate cannot be.
+
+### THE CONVENTION — eight rules
+1. **Where.** Per-tenant policy lives in `app_settings`, `category =
+   'policy'`. No fourth store. Nothing new in `settings`.
+2. **Categories name the AREA OF THE PRODUCT a setting governs**, never
+   the screen it is edited on: `documents`, `policy`, `whatsapp`.
+3. **Off by default; ABSENT MEANS DEFAULT.** No rows seeded at org
+   creation. A tenant with zero policy rows behaves exactly like today's
+   product — which is the "a new vendor must not hit a wall on their first
+   order" rule made structural instead of remembered. It also means a
+   policy added in six months needs no backfill.
+4. **No invented numbers (§52).** A policy needing a figure ships with the
+   figure NULL and the gate off, and **refuses to switch ON until the
+   figure is set** — the refusal belongs in Settings, not in front of a
+   customer.
+5. **One reader.** Every policy read goes through a single helper. A
+   hand-written `app_settings` query is the thing to flag in review — same
+   rule, same reason, as `OrgScope`.
+6. **Server-side enforcement wherever money or compliance is at stake**;
+   UI-only for genuine preferences, and say which a policy is when adding
+   it. A UI-only gate is a suggestion, and it drifts. Use a trigger raising
+   P0001 (Item 32's shape), which `extractDbErrorMessage` surfaces as a
+   real sentence.
+7. **Every gate has an escape with a MANDATORY REASON, and the reason is
+   durable on the row it affected** — not only in a log. A gate with no
+   escape gets switched off permanently the first time it is inconvenient;
+   a logged override stays on and hands the vendor a list of exceptions to
+   review (`where <x>_override_reason is not null`).
+8. **Policy changes are audited by the trigger, not by `updated_by`.**
+
+### Policy vs PERMISSION — do not confuse them
+**Policy answers *what this business does*. Permissions answer *who may do
+it*.** "May a supervisor edit prices" is a PERMISSION and belongs in
+`permissions.dart`'s matrix, not in `app_settings` — putting an authority
+question in a settings table is how `permissions.dart` stops being the
+source of truth (see the `StaffPermissions.canActive` convention above).
+
+### Named policies, as specced
+| Policy | Key | Default |
+|---|---|---|
+| Advance gate | `require_advance_to_confirm` | **OFF** |
+| Advance minimum | `minimum_advance_pct` | **NULL — never seeded** |
+| Reason after confirm | `revision_reason_required_after_confirm` | **ON** — the deliberate exception to rule 3: it costs a sentence, not a workflow |
+| GST default | `gst_default_pct` | 18 — allowed to carry a number, because GST is **statutory, not commercial**, so §52 does not bind it |
+| Credit days | `default_credit_days` | NULL — **the default applied to a NEW customer only.** `customers.credit_days` already exists per customer and stays the source for an existing one, or this becomes a second source |
+
+### `orders.advance_paid` — SETTLED 11 Sept 2026: REPLACE, NOT REVIVE
+An advance is money received, and money received has exactly one home:
+`payment_entries`, with `paid_total` trigger-maintained from it.
+**`advance_paid` is not revived, and `order_balances_view` never carries
+the term.** Reviving it would reinstate the second money-in source that the
+outstanding-balance work exists to remove, and would recreate the failure
+already live on the Daily Accounts Register (`collections` reads
+`advance_paid` and never `paid_total`, so a fully-paid order reads Rs0
+collected).
+**If "advance" needs to stay semantically distinct** — money to hold a
+date, possibly refundable — that belongs on the PAYMENT ENTRY as a mode or
+flag, never as a separate column on the order. Same money, one place, with
+a label. The advance gate compares `paid_total` against
+`minimum_advance_pct` x the revenue base, the same base the fixed
+`dashboard_kpis_view` and `order_balances_view` use.
+The column is dropped in its own migration once its eight read sites move.
+
+### OPEN ITEM — audit retention. Not solved, deliberately named.
+`retention_policies` is **EMPTY — zero rows**, and the audit trigger on
+`orders` and `payment_entries` will write continuously. **An audit log with
+no retention policy grows forever and is the first thing to make a tenant's
+database slow.** Recording it here so it is a known open item rather than
+something discovered at two million rows.
+**What the question actually is:** not "how long do we keep rows" but
+**"which rows are evidence and which are exhaust"**. They have different
+answers and must not share a policy:
+- **Evidence** — anything that could settle a dispute about money or
+  authority: payment writes, price and discount changes, permission
+  changes, policy switches, override reasons. A vendor's own retention
+  obligations under Indian tax law reach years, not months, so this class
+  is effectively keep-forever and should be sized, not trimmed.
+- **Exhaust** — high-volume row-level churn on operational columns
+  (status ticks, tracking updates) that nobody will ever read back.
+**What would decide it**, in the order the answers are needed: (1) the
+per-row write RATE once the trigger is live, measured rather than guessed
+— that is the only input that says whether this is urgent or theoretical;
+(2) whether a tenant's export obligation (Item 32b's "a vendor must always
+be able to get their own data out") covers audit rows, which sets the floor;
+(3) whether trimming happens by AGE, by CLASS, or by moving old rows to
+cold storage. **Do not pick a number before (1) is measured** — that would
+be exactly the invented-quantity failure this file already records.
 
 ## Warehouse storage (built 2 Sep 2026) — rates are TENANT DATA
 
