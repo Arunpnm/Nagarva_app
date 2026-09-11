@@ -72,8 +72,22 @@ class OrgProfile {
 
   /// City / state / state code / PIN, kept separate from [address]
   /// because Rule 46 and the place-of-supply rules need them
-  /// individually, not as one blob. `state_code` is what decides
-  /// CGST+SGST vs IGST.
+  /// individually, not as one blob.
+  ///
+  /// **`state_code` does NOT decide CGST+SGST vs IGST.** This comment
+  /// claimed it did until 10 Sept 2026. The split is computed from the
+  /// ORDER's own cities — `isInterState(_orderFromCity, _orderToCity)`,
+  /// `order_detail_page_widget.dart:941` — and never reads this field.
+  /// `state_code` reaches exactly two places: the LR's address line, and
+  /// `invoiceComplianceIssues`, which lists it as a Rule 46 required
+  /// field and cross-checks it against the GSTIN's leading two digits.
+  /// Counted 10 Sept 2026: null on all three orgs, and no tax figure
+  /// moves because of it.
+  ///
+  /// Whether origin-city vs destination-city is the RIGHT test is a tax
+  /// question for Arun's CA, not a code one — place of supply for goods
+  /// transport normally turns on the supplier's registration state
+  /// rather than the pickup city. Flagged 10 Sept 2026, not changed.
   final String? city;
   final String? state;
   final int? stateCode;
@@ -128,7 +142,10 @@ class OrgProfile {
       city: _s(org?.city) ?? bp('city'),
       state: _s(org?.state) ?? bp('state'),
       // int, so no trim - but a blank/garbage jsonb value must not become
-      // a wrong state code, which would silently flip CGST/SGST to IGST.
+      // a wrong state code: it would print the wrong state on the LR's
+      // address line and either silence a real GSTIN mismatch or invent a
+      // false one. It does NOT flip CGST/SGST to IGST — that claim was
+      // wrong here too, corrected 10 Sept 2026; see the note on [city].
       stateCode: org?.stateCode ?? int.tryParse(bp('state_code') ?? ''),
       pincode: _s(org?.pincode) ?? bp('pincode'),
       gstin: _s(org?.gstin) ?? bp('gstin'),
