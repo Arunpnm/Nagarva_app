@@ -1191,12 +1191,41 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                 ),
               ],
             )
+          // Was an OutlinedButton opening the `/quote` link. Removed
+          // 11 Sept 2026 — it told TWO lies at once.
+          //
+          // 1. The link is dead. `/quote` has never been served by
+          //    anything; verified live the same day, it returns the
+          //    "This link isn't available right now" holding page. The
+          //    hub's equivalent button has been gated behind
+          //    kQuoteLinkHosted since 19 Aug; THIS one was missed, so a
+          //    vendor could still hand a customer a link that fails in
+          //    front of them.
+          // 2. "Quote sent" was never a fact. Nothing writes
+          //    quotations.status = 'sent' — the branch only knows the
+          //    quote is NOT accepted. Draft, sent, revised and lost all
+          //    land here, and it asserted the one state it could not
+          //    establish.
+          //
+          // Now a plain status row: the information is real, the dead
+          // action is gone. When a genuine send path exists (see the
+          // 11 Sept trace — the honest candidate is the quote PDF share,
+          // and it would mean ISSUED, not seen) this becomes a button
+          // again and 'sent' gets its writer.
           else
-            OutlinedButton.icon(
-              onPressed: () => _showLinkDialog(
-                  'Quote link', _shareLink('/quote', quotation.token!)),
-              icon: const Icon(Icons.hourglass_top, size: 18),
-              label: const Text('Quote sent — awaiting customer acceptance'),
+            Row(
+              children: [
+                Icon(Icons.hourglass_top, size: 18, color: theme.secondaryText),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    quotation.status == 'lost'
+                        ? 'Quote marked lost'
+                        : 'Quote not yet accepted',
+                    style: TextStyle(color: theme.secondaryText),
+                  ),
+                ),
+              ],
             ),
           // Item 3: e-signature on the quote, alongside the plain view
           // link above. Separate action because accepting a quote and
