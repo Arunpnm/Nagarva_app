@@ -349,6 +349,10 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => SurveyQuotePageWidget(
             // Prefills the builder from a submitted customer survey.
             surveyId: params.getParam('surveyId', ParamType.String),
+            // EDIT MODE. When set, the builder loads that quotation and
+            // saves through revise_quote() instead of inserting a new
+            // row — see the widget's own doc comment.
+            quotationId: params.getParam('quotationId', ParamType.String),
             leadId: params.getParam('leadId', ParamType.String),
             leadCustomer: params.getParam('leadCustomer', ParamType.String),
             leadPhone: params.getParam('leadPhone', ParamType.String),

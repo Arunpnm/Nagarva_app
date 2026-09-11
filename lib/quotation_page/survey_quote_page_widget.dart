@@ -5,6 +5,7 @@ import '/backend/pricing_defaults.dart';
 import '/components/survey_response_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/edge_function_errors.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 // Item 12B-b: the package card links to Settings -> Survey & Pricing when
 // the slab table can't resolve a suggestion.
@@ -36,6 +37,7 @@ class SurveyQuotePageWidget extends StatefulWidget {
   const SurveyQuotePageWidget({
     super.key,
     this.surveyId,
+    this.quotationId,
     this.leadId,
     this.leadCustomer,
     this.leadPhone,
@@ -49,6 +51,26 @@ class SurveyQuotePageWidget extends StatefulWidget {
   /// submitted selections instead of starting empty — so a vendor never
   /// re-keys what the customer already entered on the public page.
   final String? surveyId;
+
+  /// EDIT MODE (Part 1, 11 Sept 2026). When set, the builder loads that
+  /// quotation, seeds every control from it, and saves through the
+  /// `revise_quote()` RPC instead of inserting a new row.
+  ///
+  /// Until this existed the builder was INSERT-ONLY and the whole app
+  /// contained exactly one `quotations` UPDATE — the accept flip at
+  /// conversion. So a vendor renegotiating a price had no path but to
+  /// build a second quote, which is how a lead ends up carrying two rows
+  /// that disagree.
+  ///
+  /// The RPC takes the WHOLE priced snapshot or nothing, which is why
+  /// edit mode lives here rather than as an inline field editor
+  /// somewhere: there is no endpoint that writes items without writing
+  /// price, by construction.
+  ///
+  /// Customer identity (name, phone, addresses) is NOT revisable —
+  /// correcting a name is not a quote revision and must not consume a
+  /// version number. Those fields render read-only in edit mode.
+  final String? quotationId;
 
   final String? leadId;
   final String? leadCustomer;
@@ -184,6 +206,18 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   String? _chosenVehicle;
   int? _chosenCrew;
 
+  // ---- Edit mode (Part 1) ------------------------------------------------
+  /// The quotation being revised, once loaded. Null in create mode.
+  QuotationsRow? _editing;
+
+  /// Set when edit mode could not load its quote. A blank builder is a
+  /// valid NEW quote and a destructive REVISION, so the save button
+  /// refuses while this is set rather than letting an empty form
+  /// overwrite a real one.
+  String? _loadFailed;
+
+  bool get _isEditing => widget.quotationId != null;
+
   bool get _hasOverride =>
       _chosenPackage != null || _chosenVehicle != null || _chosenCrew != null;
 
@@ -228,9 +262,146 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         }
         _loading = false;
       });
-      if (widget.surveyId != null) _seedFromSurvey();
+      // Edit mode wins over survey prefill: a quote being REVISED already
+      // holds the surveyor's adjustments, and re-seeding from the raw
+      // survey on top would silently undo them.
+      if (widget.quotationId != null) {
+        _seedFromQuotation();
+      } else if (widget.surveyId != null) {
+        _seedFromSurvey();
+      }
     });
   }
+
+  /// Loads an existing quotation into the builder for revision.
+  ///
+  /// LOSSLESS BY CONSTRUCTION, and that is not luck: `_chargeValue`
+  /// already persists the full breakdown object (basis, qty, rate,
+  /// declaredValue) for every non-lumpsum charge rather than just the
+  /// computed amount, so a charge entered on a per-CFT rate comes back as
+  /// a per-CFT rate instead of collapsing to a lump sum the vendor can no
+  /// longer explain. Line CFT likewise comes off the stored line, never
+  /// re-resolved against today's catalogue — the same rule that fixed the
+  /// 0-CFT custom-item bug.
+  ///
+  /// UNLIKE `_seedFromSurvey`, A FAILURE HERE IS FATAL TO THE SCREEN.
+  /// An empty builder is a fine starting point for a NEW quote; for a
+  /// revision it is a blank form that, if saved, would wipe the quote it
+  /// was meant to amend. So this sets [_loadFailed] and the save button
+  /// refuses rather than leaving a loaded-looking form holding nothing.
+  Future<void> _seedFromQuotation() async {
+    try {
+      final rows = await QuotationsTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('id', widget.quotationId!),
+      );
+      if (!mounted) return;
+      if (rows.isEmpty) {
+        setState(() => _loadFailed =
+            'That quotation could not be loaded. It may have been deleted.');
+        return;
+      }
+      final q = rows.first;
+
+      setState(() {
+        _editing = q;
+        if ((q.customer ?? '').isNotEmpty) _customer.text = q.customer!;
+        if ((q.phone ?? '').isNotEmpty) _phone.text = q.phone!;
+        if ((q.fromAddress ?? '').isNotEmpty) _fromAddr.text = q.fromAddress!;
+        if ((q.toAddress ?? '').isNotEmpty) _toAddr.text = q.toAddress!;
+
+        // ---- items ----
+        final items = q.items;
+        if (items is List) {
+          for (final raw in items) {
+            if (raw is! Map) continue;
+            final cat = (raw['cat'] ?? '').toString();
+            final item = (raw['item'] ?? '').toString();
+            final sub = (raw['sub'] ?? '').toString();
+            final cft = _num(raw['cft']) ?? 0;
+            final qty = (_num(raw['qty']) ?? 0).toInt();
+            if (item.isEmpty || qty <= 0) continue;
+            _lines['$cat|$item|$sub'] =
+                _QuoteLine(cat: cat, item: item, sub: sub, cft: cft, qty: qty);
+            // Same reasoning as _seedFromSurvey: a line whose category is
+            // no longer in the catalogue must still be visible and
+            // editable, or the vendor cannot change what they quoted.
+            final known = (_config?.surveyCats[cat] ?? const <SurveyItem>[])
+                .any((i) => i.name == item);
+            if (!known && !_customItems.any((c) => c.name == item)) {
+              _customItems.add((name: item, cft: cft));
+            }
+          }
+        }
+
+        // ---- charges ----
+        final charges = q.charges is Map
+            ? Map<String, dynamic>.from(q.charges as Map)
+            : <String, dynamic>{};
+        for (final f in kDefaultChargeFields) {
+          final v = charges[f.key];
+          if (v == null) continue;
+          if (v is Map) {
+            // Full breakdown object — restore the basis inputs too.
+            final m = Map<String, dynamic>.from(v);
+            _amountCtrl[f.key]?.text = _money(_num(m['amount']) ?? 0);
+            final basis = (m['basis'] ?? 'lumpsum').toString();
+            if (_basisAwareKeys.contains(f.key)) {
+              _basis[f.key] = basis;
+              if (basis == 'percent_of_declared_value') {
+                _declaredValueCtrl[f.key]?.text =
+                    _money(_num(m['declaredValue']) ?? 0);
+                _pctCtrl[f.key]?.text = _money(_num(m['rate']) ?? 0);
+              } else {
+                _rateCtrl[f.key]?.text = _money(_num(m['rate']) ?? 0);
+                // per_cft reads _totalCft live, so its qty is derived and
+                // must NOT be restored — writing it would pin a stale CFT.
+                if (basis != 'per_cft') {
+                  _qtyCtrl[f.key]?.text = _money(_num(m['qty']) ?? 0);
+                }
+              }
+            }
+          } else {
+            final n = _num(v);
+            if (n != null && n != 0) _amountCtrl[f.key]?.text = _money(n);
+          }
+        }
+
+        final modes = charges['_billingMode'];
+        if (modes is Map) {
+          for (final e in modes.entries) {
+            _billingMode[e.key.toString()] = e.value.toString();
+          }
+        }
+        final gstType = charges['_gstType'];
+        if (gstType is String && gstType.isNotEmpty) _gstType = gstType;
+        final pct = q.gstPct;
+        if (pct != null) _gstPct = pct.toDouble();
+
+        // ---- package ----
+        // Restored as an OVERRIDE, not as a suggestion. The stored values
+        // are what this quote was actually issued with; re-deriving them
+        // from today's slab table would let a slab edit rewrite a quote
+        // that is already in a customer's hands.
+        _chosenPackage = q.chosenPackage;
+        _chosenVehicle = q.chosenVehicle;
+        _chosenCrew = q.chosenCrew;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loadFailed =
+            'That quotation could not be loaded. Check your connection and '
+            'try again — saving now would overwrite it with an empty quote.');
+      }
+    }
+  }
+
+  /// Controller text for a stored number: trims a pointless `.0` so a
+  /// reloaded field reads the way the vendor typed it.
+  /// Tolerant number read for jsonb that may hold a number or a string.
+  static num? _num(dynamic v) => v is num ? v : num.tryParse('$v');
+
+  static String _money(num v) =>
+      v == v.roundToDouble() ? v.toInt().toString() : v.toString();
 
 
   /// Seeds the item lines from a submitted customer survey.
@@ -441,6 +612,20 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   double get _total => _subtotal + _gstAmount;
 
   Future<void> _save() async {
+    // Edit mode that never loaded must not be saveable: an empty form
+    // written through revise_quote() would replace a real quote's items
+    // and price with nothing, and consume a version number saying so.
+    if (_loadFailed != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(_loadFailed!)));
+      return;
+    }
+    if (_isEditing && _editing == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Still loading this quotation — try again in a '
+              'moment.')));
+      return;
+    }
     if (_customer.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Enter customer name first.')));
@@ -520,6 +705,17 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
 
       final suggestion = _suggestion;
 
+      // ---- EDIT MODE: one action, one version row --------------------
+      // Everything above this point is identical for a new quote and a
+      // revision, deliberately: the snapshot a revision sends is the
+      // same complete priced state a new quote would be saved with.
+      // There is no partial-patch path here and there must not be one —
+      // the RPC takes the whole snapshot or nothing.
+      if (_isEditing) {
+        await _saveRevision(items: items, charges: charges);
+        return;
+      }
+
       await QuotationsTable().insert({
         'id': const Uuid().v4(),
         'token': _hexToken(),
@@ -559,12 +755,121 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not save quotation: $e')));
+        // revise_quote() raises P0001 with a real sentence — "This quote
+        // already has an order against it, so a revision needs a reason."
+        // Surfaced verbatim; anything else falls back, so Postgres
+        // internals never reach a vendor.
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(extractDbErrorMessage(e,
+              fallback: _isEditing
+                  ? 'Could not save the revision: $e'
+                  : 'Could not save quotation: $e')),
+        ));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Saves a revision through `revise_quote()`.
+  ///
+  /// THE RPC OWNS THE RULES, NOT THIS SCREEN. Whether a reason is
+  /// mandatory, what changed, how the change is summarised, which version
+  /// number this becomes and whether the quote's status moves are all
+  /// decided in Postgres. Nothing here re-implements any of them — two
+  /// places deciding one rule is how they come to disagree, and the
+  /// database is the half that cannot be bypassed by a stale build.
+  ///
+  /// So the reason is asked for OPTIONALLY and sent as typed. If the RPC
+  /// requires one and none was given it refuses with a real sentence,
+  /// which is surfaced verbatim.
+  Future<void> _saveRevision({
+    required List<Map<String, dynamic>> items,
+    required Map<String, dynamic> charges,
+  }) async {
+    final reason = await _askReason();
+    // Cancelled the prompt — not an error, just a change of mind.
+    if (reason == null) return;
+
+    final snapshot = <String, dynamic>{
+      'items': items,
+      'charges': charges,
+      'subtotal': _subtotal,
+      'gst_pct': _gstPct,
+      'gst_amount': _gstAmount,
+      'total': _total,
+      'total_cft': _totalCft,
+      'chosen_package': _effectivePackage,
+      'chosen_vehicle': _effectiveVehicle,
+      'chosen_crew': _effectiveCrew,
+    };
+
+    final res = await SupaFlow.client.rpc('revise_quote', params: {
+      'p_quote_id': widget.quotationId,
+      'p_snapshot': snapshot,
+      'p_reason': reason.isEmpty ? null : reason,
+    });
+
+    if (!mounted) return;
+    final map = res is Map ? Map<String, dynamic>.from(res) : const {};
+    final version = map['version'];
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(version == null
+          ? 'Quotation revised.'
+          : 'Saved as v$version. ${map['change_summary'] ?? ''}'.trim()),
+      duration: const Duration(seconds: 4),
+    ));
+    Navigator.of(context).pop(true);
+  }
+
+  /// Asks for the revision reason. Returns null if the vendor backed out,
+  /// '' if they chose to give none.
+  ///
+  /// Always offered, never conditionally shown. The screen cannot know
+  /// whether a reason is required — that depends on whether a live order
+  /// references this quote, which is a database question — and a prompt
+  /// that appears only sometimes trains people to dismiss it.
+  Future<String?> _askReason() async {
+    final ctrl = TextEditingController();
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Why is this quote changing?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Recorded against this revision, permanently. Required once '
+              'the job has been booked.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'e.g. customer added a fridge and a two-wheeler',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(ctrl.text.trim()),
+            child: const Text('Save revision'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    return value;
   }
 
   @override
@@ -574,7 +879,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       backgroundColor: theme.primaryBackground,
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
-        title: Text('Survey & Quote',
+        title: Text(_isEditing ? 'Revise Quotation' : 'Survey & Quote',
             style: GoogleFonts.interTight(
                 fontWeight: FontWeight.w700, color: theme.primaryText)),
         elevation: 0,
@@ -586,6 +891,29 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // A revision that failed to load says so at the top and
+                  // the save button refuses. Silence here would leave a
+                  // blank form that looks ready to save over a real quote.
+                  if (_loadFailed != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.error.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline,
+                              size: 18, color: theme.error),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(_loadFailed!,
+                                  style: TextStyle(color: theme.error))),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                   _customerCard(theme),
                   const SizedBox(height: 14),
                   _packageCard(theme),
@@ -632,7 +960,11 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                           backgroundColor: theme.primary,
                           foregroundColor: Colors.white),
                       child:
-                          Text(_saving ? 'Saving...' : 'Save Quotation'),
+                          Text(_saving
+                              ? 'Saving...'
+                              : _isEditing
+                                  ? 'Save Revision'
+                                  : 'Save Quotation'),
                     ),
                   ),
                 ],
@@ -665,22 +997,47 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         theme,
         'Customer',
         Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // IDENTITY IS READ-ONLY WHILE REVISING, and this is the UI
+            // half of a rule enforced in the database: revise_quote()'s
+            // explicit column list does not include customer, phone or
+            // either address, so a change typed here would be silently
+            // discarded. Showing an editable field that cannot save is
+            // worse than showing a locked one — the vendor would believe
+            // the correction had been made.
+            //
+            // Correcting a customer's name is also not a quote revision
+            // and must not consume a version number. It belongs on the
+            // lead, which is where the fields came from.
+            if (_isEditing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  'Customer details are fixed while revising — change them '
+                  'on the lead.',
+                  style: TextStyle(fontSize: 11.5, color: theme.secondaryText),
+                ),
+              ),
             TextField(
                 controller: _customer,
+                readOnly: _isEditing,
                 decoration: const InputDecoration(labelText: 'Customer name')),
             const SizedBox(height: 10),
             TextField(
                 controller: _phone,
+                readOnly: _isEditing,
                 decoration: const InputDecoration(labelText: 'Phone')),
             const SizedBox(height: 10),
             TextField(
                 controller: _fromAddr,
+                readOnly: _isEditing,
                 decoration:
                     const InputDecoration(labelText: 'From city/address')),
             const SizedBox(height: 10),
             TextField(
                 controller: _toAddr,
+                readOnly: _isEditing,
                 decoration:
                     const InputDecoration(labelText: 'To city/address')),
           ],

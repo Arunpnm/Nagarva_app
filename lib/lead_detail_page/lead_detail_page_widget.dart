@@ -104,6 +104,27 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   // line-item builder), share it, convert once accepted.
   SurveysRow? _survey;
   QuotationsRow? _quotation;
+
+  // ---- Part 1: quote revision history -----------------------------------
+  // Every quote on this lead, newest-first, as loaded. `_quotation` is one
+  // OF these, chosen by _pickBestQuote — which is a silent selection, and
+  // silence is the problem: before this list existed the page showed one
+  // quote and never admitted the others were there. A manager revising
+  // "the quote" with a second one present had no way to know.
+  //
+  // Live count on 11 Sept 2026: 7 quotations, one per lead, none doubled.
+  // So this is prevention, not a fix for something happening today.
+  List<QuotationsRow> _quotesOnLead = const [];
+
+  /// Revision history for `_quotation`, newest version first.
+  ///
+  /// EMPTY MEANS NEVER REVISED, not "history missing" — `revise_quote()`
+  /// writes version 1 lazily at the first revision, so an unrevised quote
+  /// legitimately has no rows at all. Rendered as "no revisions yet",
+  /// never as an error.
+  List<QuoteVersionsRow> _quoteVersions = const [];
+  bool _loadingVersions = false;
+  bool _revisingQuote = false;
   // Session 4, A1/A2: the constructor's leadXxx params are a nav-time
   // snapshot and don't carry every column the field table/auto-creation
   // note need (from_floor/to_floor/package_type/packing_type/notes aren't
@@ -454,9 +475,12 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               quote.chosenPackage ?? charges['_suggestedPackage'],
           'chosen_vehicle': quote.chosenVehicle,
           'chosen_crew': quote.chosenCrew,
-          // Versioning isn't built yet (no quotations.version column), so
-          // this is 1 — which is correct, not a placeholder: the first
-          // quote IS v1.
+          // Versioning IS built as of 11 Sept 2026 — this comment used to
+          // say "no quotations.version column", which was never true.
+          // The column exists and carries a real number, so an order
+          // converted from a revised quote now freezes the version it was
+          // actually confirmed on rather than always claiming v1. The
+          // `?? 1` stays for rows written before the column was populated.
           'quote_version': quote.version ?? 1,
           'quote_snapshot_at': DateTime.now().toUtc().toIso8601String(),
         },
@@ -600,6 +624,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       if (!mounted) return;
       setState(() {
         _survey = surveys.isNotEmpty ? surveys.first : null;
+        _quotesOnLead = quotations;
         _quotation = _pickBestQuote(quotations);
         if (leads.isNotEmpty) {
           _lead = leads.first;
@@ -622,6 +647,11 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         } catch (_) {
           // Supplemental — never blank the page over this.
         }
+
+        // Part 1: revision history. Same shape and same place as the
+        // signature reconcile above — guarded on a quote existing,
+        // best-effort, and never allowed to blank the page.
+        await _loadQuoteVersions(quote.id);
       }
 
       // Item 5.2 auto-transitions, reconciled on every load rather than
@@ -633,6 +663,83 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } catch (_) {
       if (mounted) setState(() => _loadingLinked = false);
     }
+  }
+
+  /// Loads the revision history for [quoteId], newest version first.
+  ///
+  /// Read-only: `quote_versions` has exactly one writer, `revise_quote()`,
+  /// and it is in Postgres. Nothing here ever inserts.
+  ///
+  /// A failure clears nothing and shows nothing — the history is
+  /// supplemental to a page whose primary job is the lead. Losing it must
+  /// not cost the manager the customer's phone number.
+  Future<void> _loadQuoteVersions(String? quoteId) async {
+    if (quoteId == null) return;
+    if (mounted) setState(() => _loadingVersions = true);
+    try {
+      final rows = await QuoteVersionsTable().queryRows(
+        queryFn: (q) => OrgScope
+            .read(q)
+            .eq('quote_id', quoteId)
+            .order('version', ascending: false),
+      );
+      if (mounted) {
+        setState(() {
+          _quoteVersions = rows;
+          _loadingVersions = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingVersions = false);
+    }
+  }
+
+  /// Opens the detailed builder on an EXISTING quote and, if it saved a
+  /// revision, re-reads the row and its history.
+  ///
+  /// Deliberately does not call `revise_quote()` itself. The builder owns
+  /// the snapshot — it is the only thing that knows the complete priced
+  /// state — and the RPC takes the whole snapshot or nothing. A second
+  /// caller assembling a partial one here is exactly the shape the RPC
+  /// was written to make impossible.
+  ///
+  /// After a successful revision the whole row is re-read rather than
+  /// hand-patched: the RPC writes `version` and, on an unaccepted quote,
+  /// `status`, and a trigger may touch more. Listing the fields we think
+  /// changed is a bet that loses quietly.
+  Future<void> _reviseQuote(QuotationsRow quotation) async {
+    setState(() => _revisingQuote = true);
+    try {
+      final saved = await context.pushNamed<bool>(
+        SurveyQuotePageWidget.routeName,
+        queryParameters: {
+          'quotationId': serializeParam(quotation.id, ParamType.String),
+          'leadId': serializeParam(widget.leadId, ParamType.String),
+        }.withoutNulls,
+      );
+      if (saved == true) await _loadLinked();
+    } finally {
+      if (mounted) setState(() => _revisingQuote = false);
+    }
+  }
+
+  /// Switches which quote the page is showing, when a lead carries more
+  /// than one. Re-reads that quote's history — the panel must never show
+  /// one quote's header over another quote's versions.
+  Future<void> _selectQuote(QuotationsRow quote) async {
+    setState(() {
+      _quotation = quote;
+      _quoteVersions = const [];
+      _quoteSignature = null;
+    });
+    await _loadQuoteVersions(quote.id);
+    try {
+      final sig = await SignatureService.find(
+        documentType: 'quote',
+        documentId: quote.id,
+      );
+      if (mounted) setState(() => _quoteSignature = sig);
+    } catch (_) {}
   }
 
   /// Derives the stage implied by the survey/quote rows and advances the
@@ -1227,6 +1334,18 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                 ),
               ],
             ),
+          // Part 1: which quote this is, its revision history, and the
+          // Revise action — collocated with the status row deliberately.
+          // A revision is a RESPONSE to a customer, and the manager is on
+          // the lead when that callback happens: the follow-up log is on
+          // this page, and so is the negotiation context. Putting Revise
+          // in the Survey & Quote hub would mean leaving the conversation
+          // to make a decision that is entirely about the conversation.
+          //
+          // Guarded rather than `quotation!`: this sits AFTER the
+          // if/else chain above, so null promotion does not reach here —
+          // a lead with no quote at all renders nothing.
+          if (quotation != null) _quoteRevisionPanel(context, quotation),
           // Item 3: e-signature on the quote, alongside the plain view
           // link above. Separate action because accepting a quote and
           // signing it are different things — the customer can read the
@@ -1523,6 +1642,164 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 ///
 /// Hidden rather than disabled, matching the quote/track buttons, but
 /// with this note so it does not read as a missing feature.
+  /// Identity line, the other-quotes switcher, Revise, and the version
+  /// list — one block, because they are one question: *which quote is
+  /// this, what has it been through, and do I change it again?*
+  Widget _quoteRevisionPanel(BuildContext context, QuotationsRow quotation) {
+    final theme = FlutterFlowTheme.of(context);
+    final money = NumberFormat.currency(
+        locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final created = quotation.createdAt;
+    final others = _quotesOnLead.where((q) => q.id != quotation.id).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        Divider(height: 1, color: theme.alternate),
+        const SizedBox(height: 8),
+
+        // WHICH QUOTE. Named, not implied. `_pickBestQuote` chooses
+        // silently among however many a lead carries, and a manager about
+        // to revise has to know which row they are about to change.
+        Row(
+          children: [
+            Icon(Icons.receipt_long, size: 16, color: theme.secondaryText),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'v${quotation.version ?? 1} · ${money.format(quotation.total ?? 0)}'
+                '${created == null ? '' : ' · ${DateFormat('d MMM yyyy').format(created.toLocal())}'}',
+                style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: theme.primaryText),
+              ),
+            ),
+          ],
+        ),
+
+        // MORE THAN ONE QUOTE ON THIS LEAD. Read-only, no schema change —
+        // it states the fact and offers the switch. Today every lead
+        // carries exactly one (counted 11 Sept 2026), so this is
+        // prevention: nothing stops a second quote being created, and
+        // before this the page would simply have shown one of them with
+        // no hint the other existed.
+        if (others.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.layers_outlined, size: 15, color: theme.warning),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '${_quotesOnLead.length} quotes on this lead — showing the '
+                  'most detailed one.',
+                  style: GoogleFonts.inter(
+                      fontSize: 11.5, color: theme.secondaryText),
+                ),
+              ),
+              PopupMenuButton<QuotationsRow>(
+                tooltip: 'Switch quote',
+                onSelected: _selectQuote,
+                itemBuilder: (context) => [
+                  for (final q in others)
+                    PopupMenuItem(
+                      value: q,
+                      child: Text(
+                        'v${q.version ?? 1} · ${money.format(q.total ?? 0)}'
+                        '${q.createdAt == null ? '' : ' · ${DateFormat('d MMM').format(q.createdAt!.toLocal())}'}',
+                      ),
+                    ),
+                ],
+                child: Text('Switch',
+                    style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: theme.primary)),
+              ),
+            ],
+          ),
+        ],
+
+        // THE HISTORY. An empty list is "no revisions yet", never an
+        // error — history is written lazily, so a quote that has never
+        // been revised legitimately has no rows.
+        if (_loadingVersions) ...[
+          const SizedBox(height: 8),
+          const SizedBox(
+              height: 14,
+              width: 14,
+              child: CircularProgressIndicator(strokeWidth: 2)),
+        ] else if (_quoteVersions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          for (final v in _quoteVersions)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 2),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: theme.alternate,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text('v${v.version ?? 1}',
+                        style: GoogleFonts.inter(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: theme.primaryText)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          // change_summary already carries the reason
+                          // after ' -- ', because the RPC appends it
+                          // there. One field, so the what and the why
+                          // cannot be shown apart.
+                          v.changeSummary ?? 'Revised',
+                          style: GoogleFonts.inter(
+                              fontSize: 12, color: theme.primaryText),
+                        ),
+                        Text(
+                          [
+                            money.format(v.totalAmount ?? 0),
+                            if (v.createdAt != null)
+                              DateFormat('d MMM yyyy, h:mm a')
+                                  .format(v.createdAt!.toLocal()),
+                          ].join(' · '),
+                          style: GoogleFonts.inter(
+                              fontSize: 11, color: theme.secondaryText),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+
+        // REVISE. Offered whatever the status — a quote can be
+        // renegotiated before acceptance and on job day, and the RPC is
+        // what decides whether a reason is mandatory, not this button.
+        // Never gated on status here: two places deciding one rule is
+        // how they come to disagree.
+        const SizedBox(height: 6),
+        OutlinedButton.icon(
+          onPressed: _revisingQuote ? null : () => _reviseQuote(quotation),
+          icon: const Icon(Icons.edit_note, size: 18),
+          label: Text(_revisingQuote ? 'Opening…' : 'Revise Quote'),
+        ),
+      ],
+    );
+  }
+
   Widget _linkUnavailableNote(BuildContext context, String what, String instead) {
     final theme = FlutterFlowTheme.of(context);
     return Container(

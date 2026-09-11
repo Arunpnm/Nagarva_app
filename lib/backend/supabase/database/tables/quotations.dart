@@ -112,13 +112,24 @@ class QuotationsRow extends SupabaseDataRow {
   set acceptedByName(String? value) =>
       setField<String>('accepted_by_name', value);
 
-  /// Quote version. The column does NOT exist yet — quote versioning is
-  /// specified in nagarva_operational_flow.md 1.2 but not built, so this
-  /// returns null today and the order snapshot records version 1.
+  /// Quote version — the live pointer into `quote_versions`.
   ///
-  /// Present now so that when versioning lands, the snapshot starts
-  /// capturing real version numbers with no further change here. Reading
-  /// an absent column through getField is null-safe, not an error.
+  /// CORRECTED 11 Sept 2026. This comment read "the column does NOT
+  /// exist yet ... so this returns null today" and was wrong on both
+  /// counts: the column is `integer` and every live row carries `1`
+  /// (counted, all 7 quotations). The claim had stood long enough to be
+  /// worth naming — a stale "does not exist" is what sends the next
+  /// session to build something twice.
+  ///
+  /// `revise_quote()` is the only writer. It advances this to the
+  /// version number of the row it just wrote into `quote_versions`, so
+  /// the two can be read together: `version` is where the quote is now,
+  /// `quote_versions` is how it got there.
+  ///
+  /// A quote that has never been revised sits at 1 with NO version rows
+  /// at all — history is written lazily, so an empty history means
+  /// "never revised", not "history lost". See the lazy version-1
+  /// backfill in supabase/20260911_revise_quote_rpc.sql.
   int? get version => getField<int>('version');
 
   // Added by nagarva_migration_009_documents (Session 3) — consignment

@@ -20,6 +20,7 @@ export 'tables/order_tracking.dart';
 export 'tables/orders.dart';
 export 'tables/pricing_config.dart';
 export 'tables/quotations.dart';
+export 'tables/quote_versions.dart';
 export 'tables/reminders.dart';
 export 'tables/settings.dart';
 export 'tables/staff.dart';
