@@ -57,7 +57,18 @@ set local search_path = public, pg_catalog;
 -- ---------------------------------------------------------------------
 do $$
 begin
-  if to_regproc('public.revise_quote(text,jsonb,text)') is null then
+  -- to_regPROCEDURE, not to_regPROC. `to_regproc` takes a function NAME
+  -- and returns NULL when handed an argument list, so
+  -- to_regproc('public.revise_quote(text,jsonb,text)') is NULL whether
+  -- or not the function exists. This preflight used it and refused a
+  -- correct migration on 12 Sept 2026, reporting that a function which
+  -- was demonstrably present did not exist.
+  --
+  -- It is the sixth-instance failure in CLAUDE.md's roll-call, in its
+  -- mirror form: a check that returns the same result in BOTH states.
+  -- Always-passes lets a broken migration through; always-fails blocks
+  -- a correct one. Neither discriminates, and neither is a check.
+  if to_regprocedure('public.revise_quote(text,jsonb,text)') is null then
     raise exception
       'revise_quote(text,jsonb,text) does not exist -- run '
       '20260911_revise_quote_rpc.sql first. This migration REPLACES that '
