@@ -10,6 +10,7 @@ import '/backend/reminders_service.dart';
 import '/backend/signature_service.dart';
 import '/backend/soft_delete.dart';
 import '/components/delete_action.dart';
+import '/backend/lead_stage_evidence.dart';
 import '/components/reminders_section.dart';
 import '/backend/tracking_service.dart';
 import '/components/share_link_sheet.dart';
@@ -125,6 +126,11 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   List<QuoteVersionsRow> _quoteVersions = const [];
   bool _loadingVersions = false;
   bool _revisingQuote = false;
+
+  /// Evidence for the pipeline's ORDER stage: a live order against any of
+  /// this lead's quotes. Read rather than inferred, for the same reason
+  /// the survey and quote stages are — see [LeadStageEvidence].
+  bool _hasOrder = false;
   // Session 4, A1/A2: the constructor's leadXxx params are a nav-time
   // snapshot and don't carry every column the field table/auto-creation
   // note need (from_floor/to_floor/package_type/packing_type/notes aren't
@@ -622,9 +628,29 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       );
 
       if (!mounted) return;
+      // Evidence for the ORDER stage. `orders.quotation_id` is the live
+      // link from a converted quote, so an order exists for this lead
+      // when one references any of its quotes. A cancelled or deleted
+      // order is not evidence the job happened.
+      var hasOrder = false;
+      final quoteIds =
+          quotations.map((q) => q.id).whereType<String>().toList();
+      if (quoteIds.isNotEmpty) {
+        try {
+          final orders = await OrdersTable().queryRows(
+            queryFn: (q) => OrgScope.read(q).inFilter('quotation_id', quoteIds),
+          );
+          hasOrder = orders.any((o) => (o.status ?? '') != 'cancelled');
+        } catch (_) {
+          // Supplemental. A failure understates progress rather than
+          // inventing it — the safe direction, per LeadStageEvidence.
+        }
+      }
+
       setState(() {
         _survey = surveys.isNotEmpty ? surveys.first : null;
         _quotesOnLead = quotations;
+        _hasOrder = hasOrder;
         _quotation = _pickBestQuote(quotations);
         if (leads.isNotEmpty) {
           _lead = leads.first;
@@ -721,6 +747,56 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } finally {
       if (mounted) setState(() => _revisingQuote = false);
     }
+  }
+
+  /// Shows the stored customer signature.
+  ///
+  /// Reads the bytes already held on the loaded request — no fetch, so it
+  /// cannot fail halfway and leave a dialog with a spinner in it. The
+  /// caller only offers this when [SignatureRequest.signatureBytes]
+  /// decodes, so there is no empty state to design.
+  void _showSignature(SignatureRequest sig) {
+    final bytes = sig.signatureBytes;
+    if (bytes == null) return;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Signed by ${sig.customerName ?? 'customer'}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (sig.signedAt != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  DateFormat('d MMM yyyy, h:mm a')
+                      .format(sig.signedAt!.toLocal()),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: FlutterFlowTheme.of(context).alternate),
+                borderRadius: BorderRadius.circular(8),
+                // The pad captures dark ink on white. Painting a white
+                // ground here keeps it legible in dark mode instead of
+                // black-on-black.
+                color: Colors.white,
+              ),
+              child: Image.memory(bytes, fit: BoxFit.contain),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Switches which quote the page is showing, when a lead carries more
@@ -1366,6 +1442,16 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                         color: theme.primaryText),
                   ),
                 ),
+                // Offered ONLY when the stored signature actually decodes.
+                // A "View" that opens an empty box is worse than no View:
+                // it turns a complete record into one the vendor believes
+                // is broken. Same rule as never shipping a contact
+                // affordance that goes nowhere.
+                if (_quoteSignature!.signatureBytes != null)
+                  TextButton(
+                    onPressed: () => _showSignature(_quoteSignature!),
+                    child: const Text('View'),
+                  ),
               ],
             )
           else
@@ -1791,10 +1877,34 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         // Never gated on status here: two places deciding one rule is
         // how they come to disagree.
         const SizedBox(height: 6),
-        OutlinedButton.icon(
-          onPressed: _revisingQuote ? null : () => _reviseQuote(quotation),
-          icon: const Icon(Icons.edit_note, size: 18),
-          label: Text(_revisingQuote ? 'Opening…' : 'Revise Quote'),
+        // VIEW sits beside REVISE because a quote that exists has two
+        // things a vendor wants on a customer call: to read what was
+        // sent, and to change it. View opens the document the customer
+        // actually received, not an editor — reading a quote through the
+        // revise form is how an accidental revision happens.
+        Row(
+          children: [
+            OutlinedButton.icon(
+              onPressed:
+                  _downloadingQuotePdf ? null : () => _downloadQuotePdf(),
+              icon: _downloadingQuotePdf
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.visibility_outlined, size: 18),
+              label: Text(_downloadingQuotePdf ? 'Opening…' : 'View'),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed:
+                    _revisingQuote ? null : () => _reviseQuote(quotation),
+                icon: const Icon(Icons.edit_note, size: 18),
+                label: Text(_revisingQuote ? 'Opening…' : 'Revise Quote'),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -1977,6 +2087,16 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     // lost' link" — Lost is one of the six chips now.
                     LeadStatusStrip(
                       status: _status,
+                      // Each stage now reads its OWN record instead of
+                      // being inferred from the status ordinal. Before
+                      // 12 Sept 2026 reaching `quoted` ticked SURVEY on
+                      // leads that were never surveyed — two of the six
+                      // confirmed leads, in live data.
+                      evidence: LeadStageEvidence(
+                        surveySubmitted: _survey?.submittedAt != null,
+                        hasQuote: _quotation != null,
+                        hasOrder: _hasOrder,
+                      ),
                       busy: _savingStatus,
                       onStageTap: (stage) => _setLeadStatus(stage, force: true),
                     ),

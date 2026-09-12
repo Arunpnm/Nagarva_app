@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '/backend/lead_stage_evidence.dart';
 import '/backend/lead_status.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 
@@ -17,12 +18,26 @@ class LeadStatusStrip extends StatelessWidget {
   const LeadStatusStrip({
     super.key,
     required this.status,
+    this.evidence = const LeadStageEvidence(),
     this.onStageTap,
     this.onMarkLost,
     this.busy = false,
   });
 
   final String? status;
+
+  /// What each stage can point at as PROOF it happened.
+  ///
+  /// Before 12 Sept 2026 the strip had none of this and derived every
+  /// stage from [status] alone, so reaching `quoted` ticked SURVEY on
+  /// leads that were never surveyed — two of the six confirmed leads, in
+  /// live data. See [LeadStageEvidence]; the fix is that each stage reads
+  /// its own record, not that the tick was restyled.
+  ///
+  /// Defaults to empty, which renders evidence-backed stages as skipped
+  /// rather than done. That default is deliberate: a caller that forgets
+  /// to pass evidence understates progress instead of inventing it.
+  final LeadStageEvidence evidence;
 
   /// Manual override (item 5.3). Null makes the strip read-only.
   final ValueChanged<String>? onStageTap;
@@ -83,7 +98,8 @@ class LeadStatusStrip extends StatelessWidget {
             // from the same screen. onStageTap is still accepted (and
             // still used by the Lost banner's Reopen button above) but no
             // longer wired to per-stage taps here.
-            _ProgressRow(currentIdx: currentIdx, onStageTap: null),
+            _ProgressRow(
+                currentIdx: currentIdx, evidence: evidence, onStageTap: null),
           if (!isLost && onMarkLost != null) ...[
             const SizedBox(height: 6),
             Align(
@@ -110,9 +126,11 @@ class LeadStatusStrip extends StatelessWidget {
 }
 
 class _ProgressRow extends StatelessWidget {
-  const _ProgressRow({required this.currentIdx, this.onStageTap});
+  const _ProgressRow(
+      {required this.currentIdx, required this.evidence, this.onStageTap});
 
   final int currentIdx;
+  final LeadStageEvidence evidence;
   final ValueChanged<String>? onStageTap;
 
   @override
@@ -125,8 +143,12 @@ class _ProgressRow extends StatelessWidget {
           Expanded(
             child: _Stage(
               label: leadStageShortLabel(kLeadPipeline[i]),
-              done: i < currentIdx,
-              current: i == currentIdx,
+              state: leadStageState(
+                stage: kLeadPipeline[i],
+                stageIdx: i,
+                currentIdx: currentIdx,
+                evidence: evidence,
+              ),
               color: leadStatusColor(kLeadPipeline[i]),
               onTap: onStageTap == null
                   ? null
@@ -140,7 +162,16 @@ class _ProgressRow extends StatelessWidget {
               child: Container(
                 width: 12,
                 height: 2,
-                color: i < currentIdx
+                // A SKIPPED stage does not draw a solid connector — the
+                // line is the visual claim that the chain is unbroken,
+                // and a skipped stage is exactly where it is not.
+                color: leadStageState(
+                          stage: kLeadPipeline[i],
+                          stageIdx: i,
+                          currentIdx: currentIdx,
+                          evidence: evidence,
+                        ) ==
+                        LeadStageState.done
                     ? leadStatusColor(kLeadPipeline[i])
                     : theme.alternate,
               ),
@@ -154,22 +185,31 @@ class _ProgressRow extends StatelessWidget {
 class _Stage extends StatelessWidget {
   const _Stage({
     required this.label,
-    required this.done,
-    required this.current,
+    required this.state,
     required this.color,
     this.onTap,
   });
 
   final String label;
-  final bool done;
-  final bool current;
+
+  /// Computed from evidence, not from position — see [leadStageState].
+  final LeadStageState state;
   final Color color;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
-    final active = done || current;
+    final done = state == LeadStageState.done;
+    final current = state == LeadStageState.current;
+    final skipped = state == LeadStageState.skipped;
+
+    // A skipped stage reads as PASSED WITHOUT HAPPENING: filled in the
+    // stage colour so it does not look unreached, but hollow-centred with
+    // a dash instead of a tick, and muted. It must not look like a tick
+    // (that was the lie) and must not look like an empty future stage
+    // (that reads as the lead having gone backwards).
+    final active = done || current || skipped;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -183,15 +223,23 @@ class _Stage extends StatelessWidget {
               width: current ? 26 : 20,
               height: current ? 26 : 20,
               decoration: BoxDecoration(
-                color: active ? color : theme.alternate,
+                color: skipped
+                    ? theme.secondaryBackground
+                    : (active ? color : theme.alternate),
                 shape: BoxShape.circle,
                 border: current
                     ? Border.all(color: color.withValues(alpha: 0.35), width: 3)
-                    : null,
+                    : skipped
+                        ? Border.all(
+                            color: color.withValues(alpha: 0.55), width: 2)
+                        : null,
               ),
               child: done
                   ? const Icon(Icons.check, size: 13, color: Colors.white)
-                  : null,
+                  : skipped
+                      ? Icon(Icons.remove,
+                          size: 11, color: color.withValues(alpha: 0.8))
+                      : null,
             ),
             const SizedBox(height: 5),
             Text(
@@ -203,7 +251,9 @@ class _Stage extends StatelessWidget {
                 fontSize: 10.5,
                 height: 1.15,
                 fontWeight: current ? FontWeight.w700 : FontWeight.w500,
-                color: active ? theme.primaryText : theme.secondaryText,
+                color: skipped
+                    ? theme.secondaryText
+                    : (active ? theme.primaryText : theme.secondaryText),
               ),
             ),
           ],
