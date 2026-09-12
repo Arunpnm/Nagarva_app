@@ -45,9 +45,19 @@ begin
   select id into v_id from subscription_plans where code = 'zzz-test';
 
   if v_id is null then
+    -- The expected response to a RE-RUN, not a fault. This raise is
+    -- what stops a second run reporting success over a no-op.
+    --
+    -- The message said "this file can be deleted" until 12 Sept 2026,
+    -- which was wrong and got shown to the operator on the very first
+    -- re-run: applied migrations are KEPT in this repo as the record of
+    -- what was done, and the header above already says APPLIED. Telling
+    -- someone to delete a migration because it succeeded is the
+    -- opposite of what this directory is for.
     raise exception
-      'no plan with code zzz-test exists -- it has already been removed. '
-      'Nothing to do; this file can be deleted.';
+      'no plan with code zzz-test exists, so this migration has ALREADY '
+      'RUN -- see the APPLIED note in the header. Nothing to do, nothing '
+      'is wrong, and nothing was changed by this attempt. Keep the file.';
   end if;
 
   select count(*) into v_orgs from organizations     where plan_id = v_id;
