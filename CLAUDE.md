@@ -29,7 +29,16 @@ before assuming something described below as "not built" is really missing.
 - `lib/backend/supabase/supabase.dart` — **the** connection config (URL + anon key)
 
 ## Environment rules (do not break these)
-1. **Flutter SDK is pinned at 3.35.5** (detached HEAD in `C:\src\flutter`).
+1. **Flutter SDK is pinned at 3.35.5**, installed at
+   **`D:\software\flutter_windows_3.35.5-stable\flutter`**. (This line
+   said `C:\src\flutter` until 12 Sept 2026 and that path does not
+   exist — found while reading the SDK's own
+   `packages/flutter_tools/gradle/src/main/kotlin/FlutterExtension.kt`
+   to establish `minSdkVersion`, which is **24**. The version and the
+   pin were right the whole time; only the path was wrong. Worth the
+   correction because a wrong path makes a checkable fact look
+   uncheckable, and the next session gives up instead of reading the
+   source.)
    **Never run `flutter upgrade`.** Newer Flutter marks `IconData` as `final`,
    which breaks the pinned `font_awesome_flutter 10.x` and `page_transition 2.x`.
    A deliberate modernization (Flutter latest + font_awesome_flutter 11 + patching
@@ -320,6 +329,26 @@ one family is a stated future goal, not scheduled.
    Play Store is the launch target and an iOS set is its own pass.
    Lesson: a stale "not done" note costs as much as a stale "done" one —
    this one put an already-fixed item on a launch-blocker list.
+
+   **iOS DEBT — TWO Info.plist KEYS, OWED BEFORE iOS CAN SHIP AT ALL.**
+   (12 Sept 2026, recorded when `image_picker 1.2.2` was added.)
+   `ios/Runner/Info.plist` carries **no usage descriptions whatsoever**
+   — checked, not assumed. `image_picker` needs
+   **`NSCameraUsageDescription`** and
+   **`NSPhotoLibraryUsageDescription`**, and iOS does not degrade
+   gracefully without them: **the OS terminates the app** the moment
+   the picker is presented. Not a permission denial, not an empty
+   result — a crash, in front of whoever tapped the button.
+   **Deliberately NOT added** (Arun, 12 Sept 2026): iOS is not the
+   launch target, and adding keys for a platform nobody builds means
+   shipping strings nobody can verify — the same disease as a stale
+   "done" note, in a file that is harder to check.
+   So this is a real, dated debt with a known trigger: **the first iOS
+   build, not the first photo feature.** Whoever does the iOS pass adds
+   both keys with copy naming the vendor's own purpose ("to photograph
+   items during a survey"), because App Review rejects a generic one.
+   Android needs nothing — see the reasoning in `pubspec.yaml` beside
+   the pin.
 7. **Phase 1 multi-tenancy groundwork laid 13 Jul 2026; DB migration
    ~~NOT been run yet~~ REPORTED RUN 13 Jul 2026 ("Phase 0b" sync, not
    independently verified from this session).** `org_id` getters were added
@@ -1000,6 +1029,43 @@ silently doesn't is the same class of trust damage.
   a string match asked about array membership. Five so far. Do not add
   a sixth by numbering — add it by naming the question that was actually
   asked and the one that should have been.
+
+  **SIXTH INSTANCE, 12 Sept 2026 (Arun, on his own check) — a marker
+  that exists in BOTH states, asked to tell them apart. This one gives
+  the family a sharper test than any of the five above.**
+  The question was whether
+  `20260911_revise_quote_status_conditional.sql` had been applied. The
+  check was a string match for **`v_reason_required`** over
+  `revise_quote`'s body. It came back true, and it was worthless:
+  `v_reason_required` appears **four times in the already-applied
+  version**, where it is the reason gate. It was there before the
+  conditional was written and it is there after. A marker present on
+  both sides of a change **cannot discriminate between them** — the
+  result is true regardless of the answer, so no reading of it is
+  informative.
+  **State it as the test, because it is checkable before you run
+  anything:** *would this check return the same result in both states?*
+  If yes, it is not a check. That is stronger than "assert the
+  construct, not its shadow", because it catches a marker that IS the
+  construct and still cannot answer — `v_reason_required` is real code
+  doing real work, not a comment or a shadow. The five instances above
+  are all a true answer to a NEIGHBOURING question; this one is a true
+  answer to a question with **only one possible answer**.
+  The discriminating check names something that exists in exactly one
+  state, and ideally tests **both directions**, since they are mutually
+  exclusive: `status = 'revised'` unguarded (before) versus
+  `case when v_reason_required then quotations.status` (after). Run
+  both; exactly one must be true. **And strip comment lines first** —
+  see the `delete_org` tombstone above.
+  **The behavioural version is better still and was written rather than
+  argued for**: `supabase/20260912_probe_revise_quote_status.sql` calls
+  the function on a real accepted quote with a live order, reads the
+  status back, prints the verdict and **rolls the whole transaction
+  away** — no COMMIT in the file. It inspects no text, reports which
+  behaviour is live rather than asserting one (so it is useful before
+  AND after), and refuses outright if no such quote exists rather than
+  returning a verdict it never observed. Keep it; the same file proves
+  both states.
 
   **A NEIGHBOURING FAILURE, and it is worse than staleness: a claim
   about the data that was never measured.** (Arun, 10 Sept 2026.)
