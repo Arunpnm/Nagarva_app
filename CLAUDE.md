@@ -990,6 +990,38 @@ silently doesn't is the same class of trust damage.
   verified, and mark the inferred half as an inference, or open the
   file.
 
+  **SECOND INSTANCE OF THIS EXACT SHAPE, 12 Sept 2026 (Arun, on his own
+  diagnosis) — and the entry above did not prevent it, which is the
+  part worth recording.**
+  `20260911_revise_quote_status_conditional.sql` failed saying
+  `revise_quote` does not exist. The verified fact was real and
+  correctly obtained: `pg_proc` showed the exact signature,
+  `prosecdef = false`, granted to `{postgres, authenticated,
+  service_role}`, created minutes earlier. The cause built on top of it
+  — *"almost certainly a SQL editor tab holding a stale catalogue
+  snapshot"* — was an inference about SQL that had not been read, and
+  it was wrong. A fresh tab would have failed identically.
+  The actual cause was in the migration's own preflight:
+  `to_regproc('public.revise_quote(text,jsonb,text)')` returns NULL
+  **whether or not the function exists**, because `to_regproc` takes a
+  function NAME and is handed an argument list here;
+  `to_regprocedure` is the one that accepts a signature. Opening the
+  file would have found it in seconds. (The bug was written by Claude
+  in the same session — see the sixth-instance entry below, where it is
+  the mirror form of that rule.)
+  **Why record a second instance rather than a line on the first:** the
+  first entry was already in this file, already correct, and already
+  describes precisely this move. It did not help, because **it was not
+  reread before diagnosing** — a rule only fires if someone reaches for
+  it at the moment of the error, and an error feels like the moment for
+  action rather than for reading. So the operational form is a habit,
+  not a principle: **when a migration reports something the catalogue
+  contradicts, open the migration before theorising about the tooling.**
+  The tooling is the suspect of last resort; your own file is the
+  suspect of first resort. "It works but the environment is lying" is
+  the most expensive hypothesis available and should be reached for
+  last, not first.
+
   **LATEST INSTANCE, 10 Sept 2026 — a string match for a membership
   question, and the cleanest illustration of the pattern yet, because
   the check was tripped by a comment its own author had just written.**
@@ -1051,6 +1083,23 @@ silently doesn't is the same class of trust damage.
   doing real work, not a comment or a shadow. The five instances above
   are all a true answer to a NEIGHBOURING question; this one is a true
   answer to a question with **only one possible answer**.
+  **THE MIRROR FORM, and it is why this test outranks the guard rule.**
+  A check that cannot discriminate fails in TWO directions, and this
+  file had only ever recorded one of them:
+  - **Always-passes** lets a broken migration through, reporting
+    success over a no-op. That is the guard convention above
+    (`20260902_drop_sandbox_org.sql`).
+  - **Always-fails** blocks a CORRECT migration, and costs exactly as
+    much. Proven the same day, in this same session: the conditional
+    migration's preflight used `to_regproc` with an argument list,
+    which is NULL in every state, so a correct migration was refused
+    and the failure was then misdiagnosed as a stale editor tab (see
+    the second instance under the btree_gist entry above).
+  *"A guard RAISES; it never skips"* catches only the first. **"Would
+  this return the same result in both states?" catches both**, and
+  catches them before anything is run. Ask it of every guard, every
+  presence check and every "has this been applied?" test — including
+  the ones written to enforce the other rules in this file.
   The discriminating check names something that exists in exactly one
   state, and ideally tests **both directions**, since they are mutually
   exclusive: `status = 'revised'` unguarded (before) versus
