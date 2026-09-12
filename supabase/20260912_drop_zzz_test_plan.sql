@@ -23,7 +23,10 @@
 -- history to preserve -- unlike `starter`, which was UPDATED in place to
 -- Basic precisely because organizations.plan_id referenced it.
 --
--- NOT RUN. File only.
+-- APPLIED 12 Sept 2026. The preflight re-counted both inbound foreign
+-- keys at run time (0 orgs, 0 subscriptions), one row was deleted, and
+-- the postflight passed: survivors are exactly basic, growth, pro,
+-- trial, with exactly one is_default_trial.
 -- =====================================================================
 
 begin;

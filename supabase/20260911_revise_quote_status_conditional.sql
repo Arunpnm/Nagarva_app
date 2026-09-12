@@ -45,7 +45,27 @@
 -- CREATE OR REPLACE FUNCTION cannot patch one line, so the whole body
 -- is restated; this file supersedes that one for the function only.
 --
--- NOT RUN. File only.
+-- APPLIED 12 Sept 2026, and CONFIRMED BY BEHAVIOUR rather than by the
+-- editor's success message. An independent probe afterwards revised a
+-- real accepted quote with a live order and read the status back:
+--   accepted -> accepted, version 2, returned jsonb carries 'status'.
+-- Rolled back; quote_versions 0, statuses still accepted:4 / draft:2,
+-- all four accepted_at intact, zero audit rows written.
+--
+-- THE FIRST ATTEMPT FAILED, and the cause was this file's own
+-- preflight: `to_regproc` handed an ARGUMENT LIST returns NULL whether
+-- or not the function exists, so the guard was NULL in every state and
+-- refused a correct migration. Fixed to `to_regprocedure`. It looked
+-- like a stale SQL-editor catalogue snapshot and was not -- a fresh
+-- tab would have failed identically.
+--
+-- BRANCH 1 IS STILL UNPROVEN BY BEHAVIOUR, and that is not a defect in
+-- the migration -- there is no order-free quotation to exercise it on
+-- (all six live quotes carry a live order). The postflight says so in
+-- a NOTICE rather than pretending otherwise. The branch that CHANGED
+-- is proven; the branch that did not rests on reading the case
+-- expression until someone revises a quote with no order against it,
+-- which is the ordinary path and will exercise it the first time.
 -- =====================================================================
 
 begin;
