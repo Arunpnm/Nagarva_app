@@ -49,7 +49,12 @@
 -- FUNCTION cannot patch one block, so the whole body is restated; this
 -- file supersedes that one for the function only.
 --
--- NOT RUN. File only.
+-- APPLIED 12 Sept 2026. Verified after: the full-outer-join diff is
+-- gone, the submitted-keys diff is live, and the conditional status
+-- from the previous migration is intact (this file restates the whole
+-- body, so that had to be checked rather than assumed). The
+-- postflight's one-field probe passed and unwound -- quote_versions
+-- still holds 3 rows, the quote is still v3 at 40,000.
 -- =====================================================================
 
 begin;
