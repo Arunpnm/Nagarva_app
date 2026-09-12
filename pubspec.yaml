@@ -50,7 +50,42 @@ dependencies:
   # vendor logo picker on the Settings page.
   pdf: ^3.11.1
   printing: ^5.13.2
+  # TWO FILE-SELECTION STACKS, AND THEY ARE NOT INTERCHANGEABLE.
+  # Reach for the wrong one and you get a flow the vendor cannot
+  # complete — a supervisor standing in a customer's front room being
+  # asked to browse a filesystem for a photo that does not exist yet.
+  #
+  #   file_picker   — BROWSE something that already exists on the
+  #                   device. Org logo (logo_upload_card.dart,
+  #                   business_settings_section.dart). Any file type.
+  #
+  #   image_picker  — CAPTURE something that does not exist yet, or pick
+  #                   from the photo library. Job photos, and the survey
+  #                   photos the item-identification work needs. Images
+  #                   only, and the only one of the two with a CAMERA.
+  #
+  # Not duplication in the harmful sense — different jobs — but the
+  # overlap is real (both can return an image from storage), so the rule
+  # is: if a camera could be involved, it is image_picker.
   file_picker: ^8.1.2
+  # EXACT PIN, deliberately, matching this file's FlutterFlow convention.
+  # 1.2.2 is the CEILING under these pins, not a preference: 1.2.3 is
+  # published and does not resolve here. A caret would let a future
+  # `pub get` drift onto it and break a build weeks later for no visible
+  # reason.
+  #
+  # Brings 11 transitives, including four file_selector_* packages (the
+  # desktop implementations are built on them). Android needs nothing:
+  # minSdk is 24 against image_picker_android's 21, and targetSdk 36
+  # routes gallery access through the system Photo Picker, so no
+  # READ_MEDIA_IMAGES. Do NOT declare CAMERA in the manifests — the
+  # capture intent needs no permission, and declaring it converts a
+  # working flow into a runtime request that must then be handled.
+  #
+  # iOS OWES TWO Info.plist KEYS before it can ship — see CLAUDE.md's
+  # "iOS debt" note. Not added here: iOS is not the launch target, and
+  # keys for a platform nobody builds are unverifiable.
+  image_picker: 1.2.2
   google_fonts: 6.3.3
   gotrue: 2.12.0
   hive: 2.2.3
