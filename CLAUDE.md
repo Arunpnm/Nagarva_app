@@ -2738,6 +2738,61 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **15 Sept 2026, survey payload: element-shape validation, and a client
+  ceiling that silently defeated the migration meant to remove it.**
+  - **`supabase/20260915_survey_rooms_shape_check.sql` (handed over
+    unrun; depends on `20260915_drop_ungated_public_rpcs.sql` running
+    first).** `public_submit_survey_impl` checked a token-length floor,
+    that the payload is an ARRAY, and a 150-element cap. **All three are
+    array-level — none looks inside an element**, so `[{"anything":"at
+    all"}] x 150` was written verbatim into a column the quote builder,
+    the survey PDF and the CFT total all read. Not a crash: a survey
+    that renders blank or wrong on the vendor's own quote, from data the
+    customer believes they submitted.
+    Counted live: 5 rows carry a non-empty `rooms` array — 4 of shape
+    `{cat,cft,item,qty,sub}`, 1 of `{items,room}` from the dropped
+    `submit_survey`. The shape is **read off the live writer**
+    (`public_site/survey/index.html:267-270`), not invented. Strict on
+    unknown keys, because permissive accretion is how the column came to
+    hold two shapes; the rejection names the offending key.
+    **Reason code stays `bad_payload`** — the page's `SUBMIT_ERRORS` map
+    already carries it with correct copy, so a server-side hardening
+    cannot degrade the customer's error message while waiting on a
+    `public_site` deploy. The operator's diagnosis goes in a `detail`
+    field the page ignores.
+  - **THE CLIENT CEILING, and it is the sharper find.**
+    `public_site/survey/index.html`'s `MAX_LINES` was **50** while the
+    server refuses above **150**. The client checks first, so the
+    server's ceiling was never reached — a customer selecting 51 item
+    types was refused in the browser, by a message naming a limit that
+    no longer existed. **Live since the 6 Sept deploy.**
+    `20260903_survey_line_cap.sql` raised the server 50 -> 150 for
+    exactly one reason: 50 "refused legitimate lists", the catalogue
+    offering 110 selectable lines (re-counted 15 Sept: 5 categories, 40
+    items, 110 subs, identical in all three orgs). **That migration's
+    own header says "the page-side fix shipped separately and does NOT
+    depend on this."** It did ship — it fixed the error COPY, replacing
+    an unactionable "check your connection" on a request that had
+    succeeded and been refused. It never moved the page's ceiling.
+    **So the fix landed NEXT TO the defect**: a true statement about a
+    neighbouring thing, read as covering the thing that mattered — the
+    same shape as every wrong-catalogue entry in the conventions above,
+    in a client file rather than a catalogue query. A cap enforced in
+    two places is two sources for one value; when either moves, move
+    both. Reported not built: the server could return its cap in
+    `public_get_survey` so the page holds no copy at all.
+    **NOT DEPLOYED** — `public_site/` serves live customer pages.
+  - **Method note.** Both migrations' guard predicates were dry-run
+    **read-only against live before shipping**, which is still the only
+    thing that has ever caught this class. The validator was run as a
+    query over the real rows: it ACCEPTS all 33 elements across the 4
+    real submissions and refuses the 1 free-text element naming
+    `room,items` — the both-directions proof — and every branch was
+    exercised in `pg_temp` (nothing left in `public`; the RLS count is
+    still 0). The postflight's load-bearing half is (3): **a
+    well-formed payload must still succeed**, or a function that refuses
+    everything passes the refusal checks perfectly and takes the live
+    `/survey` page down.
 - **8 Sept 2026 (last), order ids server-side — and a live outage caused
   by flipping a flag on a report instead of a query.**
   - **`next_order_id(uuid)` is LIVE and verified by direct query**:
