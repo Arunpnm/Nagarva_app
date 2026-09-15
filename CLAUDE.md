@@ -2738,6 +2738,82 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **15 Sept 2026 (later), the rooms/items decision executed — one column
+  dropped, one wrong class deleted, and a real customer's survey named as
+  lost rather than left looking fine.**
+  - **`supabase/20260915_drop_dead_survey_items_column.sql` (handed over
+    unrun; independent of the day's other two migrations).** Counted:
+    `customer_surveys` holds 9 rows and `items` is NULL on all nine — as
+    are `custom_items`, `photos`, `total_cft` and `suggested_vehicle`,
+    five of the ten columns the 9 Sept consolidation added for the module
+    the 8 Sept decision then cancelled. `rooms` is NOT NULL and carries
+    the line items on 5 rows. `items` had no writer in SQL, in Dart or on
+    the public page; **it existed only to be mistaken for the real
+    column, which is exactly what happened.**
+    **Only `items` is dropped.** `total_cft` is spoken for — this file
+    commits `public_submit_survey_impl` to writing it as its single
+    writer when the catalogue spec lands — and dropping a column with a
+    scheduled purpose is not cleanup.
+  - **THE LOST ROW, named so it cannot pass as converted.** Survey
+    `035758c7` — **Priya Raghavan**, Arun Packers and Couriers, submitted
+    2 Sept, linked to a lead, **0 quotations built on it**. Its `rooms`
+    holds `[{"room":"Bedroom 1","items":"Queen bed, 2 almirahs, AC unit,
+    6 cartons"}]` from the dropped `submit_survey`. There is **no honest
+    conversion** — it would mean inventing a CFT for "2 almirahs" and a
+    classification nobody chose, which is §52 applied to data recovery.
+    **And it is ALREADY INVISIBLE, today, with no error.** Verified by
+    reading `SurveyLine.tryParse` (`survey_response_section.dart:40-52`)
+    rather than trusting its doc comment: it requires a non-empty
+    **`item`** key and this element carries **`items`** — plural. So
+    `parseSurveyRooms` drops it and the survey renders as ZERO line
+    items, which is precisely the failure `SurveyResponseSection` exists
+    to fix. One real customer filled in a real survey and her mover
+    cannot see it. Re-ask her, or key the four lines in by hand.
+  - **`rooms` deliberately NOT renamed to `items`** (the decision made
+    that conditional — "if the name matters"). It does not, yet: the
+    rename's entire cost is re-creating two SECURITY DEFINER functions
+    that serve the LIVE `/survey` page, the catalogue spec has to rewrite
+    one of them anyway, and an interim where the RPC argument is
+    `p_rooms` and the column is `items` reads worse than today. **Dropping
+    `items` already removes the ambiguity that caused the inversion.**
+    Worth knowing for whoever does it: `public_site` only ever names
+    `p_rooms`, the ARGUMENT — so a column rename needs no customer-facing
+    deploy, provided the signature keeps that name.
+  - **`CustomerSurveysTable` deleted, with its module — 1,133 lines.**
+    It had stopped being merely dormant and become **WRONG**: `tableName`
+    still resolved to `customer_surveys`, but that name now belongs to
+    the RENAMED `surveys` table, so every getter for a column of the
+    dropped schema read null and the detail sheet's four update paths
+    wrote `reviewed_by`/`reviewed_at` and a status vocabulary the live
+    table does not have. Unreachable, so never a live bug — **a landmine,
+    not a fire.** Two classes naming one table, one of them wrong, is the
+    shape that produced the original inversion.
+  - **Found while sweeping, and it was CODE hiding among prose:**
+    `permissions.dart` carried `PermModule('surveys', 'Customer
+    Surveys', 'CustomerSurveysPage')`. `kPermModules` is iterated by
+    `staff_form_sheet`'s matrix, so **a vendor could still tick "Customer
+    Surveys" and grant a screen that had not existed since 3 Sept**, and
+    `allowedPageNames()` carried that name in an authorization allow-list
+    resolving to no route. Removed rather than migrated: all 5 staff rows
+    carry an explicit matrix and **none holds a `surveys` key**, so
+    nothing is orphaned. This is the grep convention earning itself — the
+    identifier appeared in six places and five were comments.
+  - **Two stale notes corrected rather than overwritten.**
+    `nav_items.dart` stated `customer_surveys` had "0 rows, no writer
+    anywhere" and that the RPCs "write to `surveys`, not to this table" —
+    true on 3 Sept, **wrong since 9 Sept**, when the consolidation
+    renamed `surveys` into that name. It read as a settled fact for six
+    days after it stopped being one; `main.dart`'s "the table is empty"
+    said the same. Both replaced with tombstones that name what changed.
+  - **PROCESS — the migration commit swept in the Dart deletions**,
+    because `git rm` had already staged them before `git add
+    supabase/...`; `git commit` takes the whole index, not the paths you
+    just added. Caught by reading `git show --stat` on my own commit
+    before pushing, and rebuilt as two clean commits. This is the
+    "security migrations get their own commit" rule failing by a
+    mechanism that rule does not mention: not a careless `-A`, but a
+    `git rm` staged earlier in the same session. **Check `git show
+    --stat` before pushing a commit you staged by path.**
 - **15 Sept 2026, survey payload: element-shape validation, and a client
   ceiling that silently defeated the migration meant to remove it.**
   - **`supabase/20260915_survey_rooms_shape_check.sql` (handed over
