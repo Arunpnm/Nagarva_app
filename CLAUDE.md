@@ -2334,6 +2334,35 @@ be switched with no record is the one thing a policy gate cannot be.
    review (`where <x>_override_reason is not null`).
 8. **Policy changes are audited by the trigger, not by `updated_by`.**
 
+### `staff.auth_user_id` is EMPTY — the audit actor cannot resolve to a person
+(15 Sept 2026. Counted, not estimated.) `staff` holds **5 rows: all active,
+`auth_user_id` NULL on every one, roles only `helper` and `supervisor`, and
+exactly ONE carries a `pin_hash`.**
+
+The consequence is for attribution, and it is the reason this sits under the
+audit rules rather than with the login flow. Nothing maps a session's
+`auth.uid()` back to a `staff` row, so **no audit row can name a staff member
+as its actor** — every write attributes to the org owner, or to nobody.
+The audit trigger this section requires before the first policy gate will
+therefore record *that* a policy changed and *when*, but not *which person*
+changed it, for as long as this column stays empty. That is most of the value
+of the trigger, missing silently: the log looks complete, and every row names
+the same person.
+
+Two traps worth stating so neither is rediscovered:
+- **Count `pin_hash`, never `pin`.** `staff_hash_pin` bcrypts `pin` into
+  `pin_hash` and then NULLs `pin`, so `pin is not null` reads 0 on a staff
+  table where PIN login works fine. A count of the wrong column here produces
+  "nobody can PIN-login", which sends the next session debugging a
+  non-existent outage.
+- **A NULL `auth_user_id` is not inert.** It makes
+  `staff.auth_user_id = auth.uid()` evaluate to NULL rather than false, and a
+  NULL inside a `not (... or ...)` gate does not fire the `if`. See the
+  `set_staff_pin` finding — that is the same empty column showing up as a
+  broken authorisation check, not merely as missing attribution.
+
+Populating it is the fix for both; it is not scheduled here.
+
 ### Policy vs PERMISSION — do not confuse them
 **Policy answers *what this business does*. Permissions answer *who may do
 it*.** "May a supervisor edit prices" is a PERMISSION and belongs in
