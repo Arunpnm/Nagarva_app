@@ -2738,6 +2738,81 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **15 Sept 2026 (last), Item 5's lost path made atomic — and a guard of
+  mine that was wrong in BOTH directions at once.**
+  - **`supabase/20260915_mark_lead_lost_atomic.sql` (handed over unrun,
+    independent of the day's other three).** Item 5.3 is built in Dart as
+    **two writes with no transaction**, plus a guard that discards the
+    second on purpose and a blanket catch that swallows its failure:
+
+        await _setLeadStatus(kLeadStatusLost, force: true);   // write 1
+        if (!mounted || _canonicalStatus != kLeadStatusLost) return;
+        try { ...insert quote_outcomes... }                   // write 2
+        catch (_) { /* "the status change is the important part" */ }
+
+    **That comment reasons backwards, and it is the whole finding.** The
+    status is one word the vendor can see and set again. The reason, the
+    competitor and their price cannot be reconstructed by anybody —
+    recovering them means phoning a customer who has already gone
+    elsewhere. `quote_outcomes` exists to hold precisely the half being
+    thrown away. Same shape as `quick_payment_section`'s blanket catch,
+    which this file already records as "the worse half".
+    And the `!mounted` guard makes it worse rather than safer: navigate
+    away in the half-second between the two calls and the typed reason is
+    dropped **by design**, with the lead left reading `lost` and the
+    dialog never reappearing — it only opens from a chip the lead no
+    longer shows.
+  - **Counted live:** `leads` 11 rows (confirmed 7, follow_up 2, quoted 1,
+    new 1), **`lost` 0**, **`quote_outcomes` 0**, and **7 of 11 leads
+    already have an order**. So this path has never run end to end, and
+    `price_gap_pct` has never been populated by anything — the Dart
+    insert stops at `recorded_by`.
+  - **Item 5.1 had nothing to do.** The brief says "confirm against
+    existing `leads.status` values in Supabase; migrate/backfill if names
+    differ." `leads_status_check` already carries the full six-value enum
+    and already agrees with `lead_status.dart`. Grepping before building
+    also found Item 5 is **largely built** — `lib/backend/lead_status.dart`
+    (enum, ranking, never-downgrade), `lead_status_strip.dart` (strip,
+    Lost banner, Reopen), implied-status derivation in Lead Details. The
+    queued slice really was just the RPC.
+  - **SECURITY INVOKER, and that is the design.** `leads` carries
+    `org_isolation` AND a RESTRICTIVE `branch_isolation` policy, so
+    running as the caller makes both apply for free. A DEFINER version
+    would have to re-implement org and branch scoping by hand — the
+    fail-open class that cost a day earlier the same morning. Asserted in
+    postflight, because DEFINER would widen it silently.
+  - **Idempotent, because nothing else is:** `quote_outcomes` has only a
+    PK, no unique index on `lead_id` or `quote_id`. A double tap or a
+    retry-after-timeout would file the same loss twice and inflate every
+    later count of why deals are lost. It also **repairs** the state the
+    non-atomic path leaves behind (already lost, no outcome row) rather
+    than refusing.
+  - **Warns, never blocks, on a lead that already has an order** — 7 of
+    11 qualify, and a lead genuinely can be lost after an order (the job
+    was cancelled and went elsewhere). Returns `had_order` and
+    `previous_status`; silently overwriting `confirmed` is how a lead
+    with a live order comes to read `lost` unnoticed. Same posture as
+    `_generateInvoice` warning on a missing Rule 46 address.
+  - **THE LESSON, and it is about my own guard.** The postflight's ACL
+    check was a `LIKE` over the printed ACL. Run over four constructed
+    cases rather than re-read, it proved wrong in **both** mirror
+    directions in one predicate:
+    - **always-fails** — it RAISED on `authenticated=X/postgres`, a
+      perfectly correct ACL, so it would have refused a correct
+      migration;
+    - **always-passes** — it did NOT raise on `=X/postgres,...`, i.e.
+      **PUBLIC actually holding EXECUTE**, the single case it existed to
+      catch.
+    Replaced with `aclexplode` (grantee `0` is PUBLIC) — the catalogue
+    this file's own convention already names for "who can actually touch
+    this" — and verified against live functions whose grants are known:
+    `public_submit_survey` true, `public_submit_survey_impl` false.
+    **Three times today this habit caught something re-reading did not.**
+    Running a predicate over constructed inputs is cheap, needs no write
+    access, and is the only thing that has ever caught this class.
+  - **Confirmed in passing:** `set_staff_pin` still shows PUBLIC and anon
+    holding EXECUTE, so `20260915_set_staff_pin_fail_open.sql` is still
+    unrun.
 - **15 Sept 2026 (later), the rooms/items decision executed — one column
   dropped, one wrong class deleted, and a real customer's survey named as
   lost rather than left looking fine.**
