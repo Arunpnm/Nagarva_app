@@ -1100,6 +1100,21 @@ silently doesn't is the same class of trust damage.
   catches them before anything is run. Ask it of every guard, every
   presence check and every "has this been applied?" test — including
   the ones written to enforce the other rules in this file.
+  **The always-fails half has now bitten twice more, and both were
+  caught BEFORE shipping by running the guard logic read-only against
+  the live catalogue** (15 Sept 2026,
+  `20260915_drop_ungated_public_rpcs.sql`): a preflight built function
+  signatures from `pg_get_function_identity_arguments`, which on this
+  server returns argument NAMES as well as types (`p_token text`), so
+  feeding its output back to `to_regprocedure` raises 42601 in every
+  state; and a `pg_depend` lookup omitted `refclassid = 'pg_proc'`,
+  where oids are unique only WITHIN a catalogue. Each would have
+  refused a correct migration. **So the operational habit is: before
+  shipping a migration, run its preflight and postflight predicates on
+  their own as read-only SELECTs and confirm they return what you
+  expect on the CURRENT state.** That is cheap, it needs no write
+  access, and it is the only thing that has actually caught this class
+  — three instances now, none of them found by re-reading the SQL.
   The discriminating check names something that exists in exactly one
   state, and ideally tests **both directions**, since they are mutually
   exclusive: `status = 'revised'` unguarded (before) versus
