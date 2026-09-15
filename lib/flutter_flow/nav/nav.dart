@@ -718,11 +718,19 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             navLead: params.getParam('navLead', ParamType.String),
           ),
         ),
-        // CustomerSurveysPage is NOT routed. Dormant, not deleted — see
-        // the header of customer_surveys_page_widget.dart. It was pulled
-        // from the nav on 3 Sept 2026 but stayed reachable by URL, and
-        // its detail sheet has four update paths that can only ever act
-        // on rows nothing is able to create.
+        // TOMBSTONE — CustomerSurveysPage was DELETED 15 Sept 2026,
+        // along with CustomerSurveysTable, its detail sheet,
+        // customer_survey_parse.dart and SurveyQueue. Dormant since
+        // 3 Sept; deleted because the class had stopped being merely
+        // unused and become WRONG: `tableName` still resolved to
+        // `customer_surveys`, but that name now belongs to the RENAMED
+        // `surveys` table (20260909_consolidate_survey_tables.sql), so
+        // every getter for a column of the dropped schema read null and
+        // the sheet's four update paths wrote `reviewed_by`/`reviewed_at`
+        // and a status vocabulary the live table does not have.
+        // Unreachable, so never a live bug — a landmine, not a fire.
+        // Read survey rows through SurveysTable. `git show 9febea4` has
+        // the deleted files.
         // Session 4, Part C-2.
         FFRoute(
           name: RateCardsPageWidget.routeName,

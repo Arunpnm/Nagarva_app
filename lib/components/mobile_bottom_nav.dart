@@ -289,16 +289,9 @@ class _NavItem extends StatelessWidget {
                         count: count,
                       ),
                     )
-                  // The CustomerSurveysPage badge was UNBOUND on 9 Sept 2026.
-                  // `SurveyQueue` counts unreviewed rows through
-                  // `CustomerSurveysTable`, which was built for the schema
-                  // dropped by 20260909_consolidate_survey_tables.sql and now
-                  // names the LIVE survey table. This branch was already
-                  // unreachable — the page has had no route, no `_tabs` entry
-                  // and no nav item since 3 Sept — but a bound listener is a
-                  // path from a dormant class to live data, which is the
-                  // difference between latent and reachable. Restore only
-                  // when the survey spec lands.
+                  // The CustomerSurveysPage badge is gone: the whole module,
+                  // SurveyQueue included, was DELETED 15 Sept 2026 (tombstone in
+                  // nav.dart). Unbound since 9 Sept; there is nothing left to bind.
                   : Icon(
                       item.icon,
                       size: 27,

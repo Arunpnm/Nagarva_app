@@ -3,14 +3,16 @@ import '../database.dart';
 /// Reads the table formerly called `surveys`, renamed to `customer_surveys`
 /// by `supabase/20260909_consolidate_survey_tables.sql` (9 Sept 2026).
 ///
-/// The CLASS keeps its old name deliberately for now — renaming it would
-/// touch 13 call sites across 5 files for no behavioural gain, and folding
-/// it together with the dormant [CustomerSurveysTable] belongs to the survey
-/// spec, not to a fix for a live break. **Until that lands, this is the only
-/// class that may be used to read or write survey rows**: the dormant
-/// `CustomerSurveysTable` names the same table but was built for the dropped
-/// schema (`phone`, `email`, `from_lift`, `to_lift`, `reviewed_by`,
-/// `reviewed_at`, `converted_to_order_id` — none of which exist on it).
+/// **This is now the ONLY class that reads or writes survey rows.**
+/// `CustomerSurveysTable` — which named the same table but was built for
+/// the schema the 9 Sept consolidation dropped — was deleted 15 Sept 2026
+/// (tombstone in nav.dart). There is no longer a wrong class to pick.
+///
+/// The CLASS keeps its old name: renaming it touches 13 call sites across
+/// 5 files for no behavioural gain. Worth doing in the pass that renames
+/// the `rooms` COLUMN, since both are the same cosmetic debt from the same
+/// consolidation and both are cheapest when the catalogue spec is already
+/// rewriting these functions. Neither is scheduled.
 class SurveysTable extends SupabaseTable<SurveysRow> {
   @override
   String get tableName => 'customer_surveys';

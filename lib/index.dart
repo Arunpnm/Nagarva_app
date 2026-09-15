@@ -26,8 +26,6 @@ export '/reviews_page/reviews_page_widget.dart' show ReviewsPageWidget;
 export '/wa_inbox_page/wa_inbox_page_widget.dart' show WaInboxPageWidget;
 export '/survey_quote_hub_page/survey_quote_hub_page_widget.dart'
     show SurveyQuoteHubPageWidget;
-export '/customer_surveys_page/customer_surveys_page_widget.dart'
-    show CustomerSurveysPageWidget;
 export '/rate_cards_page/rate_cards_page_widget.dart' show RateCardsPageWidget;
 export '/rate_cards_page/rate_card_detail_page_widget.dart'
     show RateCardDetailPageWidget;
