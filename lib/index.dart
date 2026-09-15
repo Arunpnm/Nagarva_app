@@ -79,10 +79,8 @@ export '/supervisor_earnings_page/supervisor_earnings_page_widget.dart'
     show SupervisorEarningsPageWidget;
 export '/supervisor_attendance_page/supervisor_attendance_page_widget.dart'
     show SupervisorAttendancePageWidget;
-export '/survey_page/survey_page_widget.dart' show SurveyPageWidget;
 export '/sign_page/sign_page_widget.dart' show SignPageWidget;
 export '/track_page/track_page_widget.dart' show TrackPageWidget;
 export '/super_admin_page/super_admin_page_widget.dart'
     show SuperAdminPageWidget;
-export '/quote_page/quote_page_widget.dart' show QuotePageWidget;
 export '/crew_sheet_page/crew_sheet_page_widget.dart' show CrewSheetPageWidget;

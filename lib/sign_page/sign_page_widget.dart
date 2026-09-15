@@ -23,9 +23,12 @@ import '/flutter_flow/flutter_flow_theme.dart';
 /// Public, unauthenticated document-signing page (live-test fix brief #2,
 /// item 3). Reached via a shared link `/sign?token=...` with no login.
 ///
-/// Unlike SurveyPageWidget — which calls its RPCs directly because
-/// `get_survey_by_token`/`submit_survey` are granted to anon — everything
-/// here goes through the `sign-document` Edge Function. The underlying
+/// Everything here goes through the `sign-document` Edge Function. (This
+/// comment used to draw a contrast with SurveyPageWidget, which called
+/// `get_survey_by_token`/`submit_survey` directly because they were
+/// granted to anon. Both RPCs and that page were deleted on 15 Sept 2026
+/// — see supabase/20260915_drop_ungated_public_rpcs.sql. The posture
+/// described below is now the only one in the codebase.) The underlying
 /// RPCs (`get_signature_request` / `submit_signature`, see
 /// supabase/20260728_public_links_sign_and_track.sql) are granted to
 /// service_role ONLY, so the anon key cannot reach quotations or orders

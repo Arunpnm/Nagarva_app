@@ -55,18 +55,33 @@ class AppStateNotifier extends ChangeNotifier {
 // the moment that constant moved off nagarva.in, in exactly the way
 // /quote did.
 //
-// The Flutter pages for all four are DELIBERATELY KEPT, not deleted:
-// SignPage and TrackPage are the only implementations that exist at all,
-// and SurveyPage/QuotePage still work if this build is ever served on a
-// host that owns those paths. They are dead only with respect to the
-// current link base, which is a config choice, not a code fact.
+// UPDATED 15 Sept 2026 — the warning that used to end this block ("if
+// the originals are ever dropped, these pages break silently") came
+// true, deliberately, and is resolved rather than left standing. All four
+// original RPCs were dropped:
+// supabase/20260915_drop_ungated_public_rpcs.sql. They were SECURITY
+// DEFINER with anon holding DIRECT EXECUTE and no wrapper, and their
+// bodies — not merely their missing gate — returned customer phone
+// numbers, skipped every expiry check and let any token holder overwrite
+// a customer's identity fields.
 //
-// Note the Flutter SurveyPage/QuotePage still call the ORIGINAL RPCs
-// (get_survey_by_token / submit_survey / get_quotation_by_token /
-// accept_quotation), not the newer anon-granted public_* family the
-// static site uses. If the originals are ever dropped, these pages break
-// silently — they are not exercised by any current flow, so nothing
-// would catch it.
+// SurveyPage and QuotePage were DELETED with them, routes and exports
+// included. Neither could work without those RPCs, and a page that cannot
+// load while still sitting in the tree reads as alive — the same shape as
+// a share button handing a customer a dead link. Git holds both layouts
+// if the /quote rebuild wants them:
+// `git show 3199ea1:lib/quote_page/quote_page_widget.dart` (3199ea1 is
+// the last commit before this change, so both files are intact there).
+//
+//   /survey — served by public_site/, which calls the public_* pair.
+//   /quote  — never served by anything, ever. kQuoteLinkHosted is false.
+//             When it is built it goes through the WRAPPER PATTERN
+//             (public_get_quotation / public_accept_quotation, each
+//             calling an _impl locked to postgres/service_role), never by
+//             restoring the dropped pair.
+//   /sign   — unaffected; both go through Edge Functions
+//   /track    (sign-document, track-order), not the dropped RPCs, and
+//             their Flutter pages remain the only implementations.
 const _kPublicRoutePrefixes = [
   '/login',
   '/signup',
@@ -636,22 +651,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             orderId: params.getParam('orderId', ParamType.String),
           ),
         ),
-        // Public, unauthenticated pages (item 8, CORE V1) — reached via a
-        // shared /survey?token=... or /quote?token=... link, no login.
-        FFRoute(
-          name: SurveyPageWidget.routeName,
-          path: SurveyPageWidget.routePath,
-          builder: (context, params) => SurveyPageWidget(
-            token: params.getParam('token', ParamType.String),
-          ),
-        ),
-        FFRoute(
-          name: QuotePageWidget.routeName,
-          path: QuotePageWidget.routePath,
-          builder: (context, params) => QuotePageWidget(
-            token: params.getParam('token', ParamType.String),
-          ),
-        ),
+        // The /survey and /quote routes were REMOVED 15 Sept 2026 along
+        // with SurveyPageWidget and QuotePageWidget — see the block at the
+        // top of this file. Their four RPCs were dropped
+        // (supabase/20260915_drop_ungated_public_rpcs.sql). /sign and
+        // /track below are unaffected: they go through Edge Functions.
         // Fix brief #2 items 3 and 6 — same public-link pattern as the two
         // above, but these read/write via the sign-document / track-order
         // Edge Functions rather than anon-granted RPCs.
