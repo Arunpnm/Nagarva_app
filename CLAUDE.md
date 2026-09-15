@@ -1131,6 +1131,58 @@ silently doesn't is the same class of trust damage.
   returning a verdict it never observed. Keep it; the same file proves
   both states.
 
+  **THE SAME QUESTION, ASKED OF A TEST RATHER THAN A GUARD: can this
+  check REACH its own raise?** (Arun, 15 Sept 2026, on the sharper of
+  two finds that day.)
+  `20260915_set_staff_pin_fail_open.sql`'s postflight calls the function
+  and asserts it now DENIES an unauthorised caller. It picks its victim
+  with `select id into v_id from staff where auth_user_id is null`. With
+  no such row `v_id` is NULL, `set_staff_pin` raises *'staff member not
+  found'*, the handler reads any exception as a denial — and **the
+  postflight passes having tested nothing.** An always-passes check
+  inside the migration written to enforce the opposite.
+  Caught by re-reading, not by running, because on today's data the row
+  always exists. That is what makes it worth recording: the hole is
+  invisible in every run you will actually do.
+  So a behavioural check needs its own precondition asserted before the
+  probe — *"refuse rather than report success on an untested fix"* — and
+  the question to ask of any test is the mirror of the guard question:
+  not only *would this return the same result in both states*, but **is
+  there a state in which this check silently tests nothing?**
+
+- **A rule in this file is not a control. Where an invariant can be
+  CHECKED, ship the check.** (Arun, 15 Sept 2026, after it happened to
+  him twice in one week.)
+  He recorded the anon-vs-PUBLIC revoke trap in this project — *"if
+  anyone tries to close a public function by revoking from anon, it will
+  report success and change nothing"* — and then, days later, issued an
+  instruction to revoke `set_staff_pin` from anon. The `to_regproc`
+  diagnosis went the same way: the entry describing that exact move was
+  already here, already correct, and did not fire.
+  **The failure is not the entry's wording and a better-written entry
+  does not fix it.** A rule only helps if somebody rereads it AT THE
+  MOMENT OF THE DECISION, and at that moment everyone is acting rather
+  than reading. Two people, two instances, one week, both authors of the
+  rule they walked past.
+  So the output is `supabase/lint_security_invariants.sql` — read-only,
+  raises on violation, run it after any migration touching a function, a
+  grant, a view or a table. It is the checkable form of four rules that
+  were already written down here and were not consulted:
+    1. a `if not (... auth.uid() ...)` guard with no `coalesce` — the
+       fail-open shape;
+    2. a SECURITY DEFINER function that WRITES with PUBLIC holding
+       EXECUTE — narrowed past the 50-of-81 functions that carry the
+       default PUBLIC grant, and allow-listed so a NEW one is loud;
+    3. a view without `security_invoker=on`;
+    4. a table in `public` with RLS off.
+  **It is red today and that is the design** — `set_staff_pin` trips 1
+  and 2 until its fix is applied. A lint that reads the same before and
+  after a fix is not a check, which is the discriminating-marker rule
+  applied to tooling.
+  When the next invariant gets written down here, ask first whether a
+  catalogue query can decide it. If it can, it belongs in that file, and
+  the paragraph here is the explanation rather than the control.
+
   **A NEIGHBOURING FAILURE, and it is worse than staleness: a claim
   about the data that was never measured.** (Arun, 10 Sept 2026.)
   `order_detail_page_widget.dart`'s GST fallback carried the
@@ -2334,34 +2386,106 @@ be switched with no record is the one thing a policy gate cannot be.
    review (`where <x>_override_reason is not null`).
 8. **Policy changes are audited by the trigger, not by `updated_by`.**
 
-### `staff.auth_user_id` is EMPTY — the audit actor cannot resolve to a person
-(15 Sept 2026. Counted, not estimated.) `staff` holds **5 rows: all active,
-`auth_user_id` NULL on every one, roles only `helper` and `supervisor`, and
-exactly ONE carries a `pin_hash`.**
+### `staff.auth_user_id` is EMPTY — and the reason is NOT a missing writer
+(Scoped 15 Sept 2026. Counted, not estimated. **This section replaces a
+15 Sept note that said "Nothing maps a session's `auth.uid()` back to a
+`staff` row" — that was wrong, and it was wrong in the expensive
+direction: it reads as "build a writer", and two writers already
+exist.**)
 
-The consequence is for attribution, and it is the reason this sits under the
-audit rules rather than with the login flow. Nothing maps a session's
-`auth.uid()` back to a `staff` row, so **no audit row can name a staff member
-as its actor** — every write attributes to the org owner, or to nobody.
-The audit trigger this section requires before the first policy gate will
-therefore record *that* a policy changed and *when*, but not *which person*
-changed it, for as long as this column stays empty. That is most of the value
-of the trigger, missing silently: the log looks complete, and every row names
-the same person.
+`staff` holds **5 rows: all active, `auth_user_id` NULL on every one,
+roles only `helper` and `supervisor`, branch `Head Office` on all five,
+and exactly ONE carries a `pin_hash`.** All five were created 1–3 Sept
+2026 — the cohort that field-verified branch scoping in August
+(Rajesh Kumar, Chennai manager; Vignesh M, Chennai supervisor) is gone,
+so that evidence stands for the policies and not for any row live today.
 
-Two traps worth stating so neither is rediscovered:
-- **Count `pin_hash`, never `pin`.** `staff_hash_pin` bcrypts `pin` into
-  `pin_hash` and then NULLs `pin`, so `pin is not null` reads 0 on a staff
-  table where PIN login works fine. A count of the wrong column here produces
-  "nobody can PIN-login", which sends the next session debugging a
-  non-existent outage.
-- **A NULL `auth_user_id` is not inert.** It makes
-  `staff.auth_user_id = auth.uid()` evaluate to NULL rather than false, and a
-  NULL inside a `not (... or ...)` gate does not fire the `if`. See the
-  `set_staff_pin` finding — that is the same empty column showing up as a
-  broken authorisation check, not merely as missing attribution.
+**The writers.** `supabase/functions/pin-login/index.ts:198` and
+`staff-login/index.ts:152` both do
+`.update({ auth_user_id: authUserId }).eq("id", staffId)`, inside
+`if (!authUserId)`, immediately after minting or finding the shadow auth
+user. So population is **lazy, login-triggered, idempotent and
+per-person** — a staff member's first successful PIN login links their
+row and every later login skips the write. Nothing else writes it:
+`staff-deactivate` and `admin-delete-org` only READ it, and
+`staff-invite-redeem` binds a device without touching it.
 
-Populating it is the fix for both; it is not scheduled here.
+**So the column is empty because no staff member has ever completed a
+PIN login.** Three independent counts agree rather than one being
+extrapolated: `auth.users` holds **1 user** (the owner) and **0** shadow
+users matching `staff-%@staff.nagarva.in`; `org_members` holds **3 rows,
+all `role = 'owner'`, all the same person**, and `pin-login` inserts an
+`org_members` row on that same first login; and four of the five staff
+rows have no `pin_hash` at all, so four of them *cannot* log in yet
+whatever else is true.
+
+**Count `pin_hash`, never `pin`.** `staff_hash_pin` bcrypts `pin` into
+`pin_hash` and then NULLs `pin`, so `pin is not null` reads 0 on a staff
+table where PIN login works fine. Counting the wrong column here
+produces "nobody can PIN-login", which sends the next session debugging
+a non-existent outage.
+
+#### What the emptiness actually costs, by consumer
+Six functions and nine policies read it. They fail in two different
+ways, and only one of them is a defect.
+
+- **Fails CLOSED, correctly, and self-heals at first login.**
+  `current_staff_id()` and `current_staff_branch_or_owner()` both wrap
+  the comparison in `exists(...)`, which returns false rather than NULL.
+  Nine policies ride on them: RESTRICTIVE `branch_isolation` on
+  `orders`, `leads`, `customers`, `tasks`, `trips`, `attendance`,
+  `reviews`, and the two `notifications` policies. A staff session that
+  has not logged in sees nothing; after their first login it sees their
+  branch. That is the fail-closed behaviour Item 30 was built for,
+  arriving as designed.
+- **Failed OPEN, and that is now fixed.** `set_staff_pin`'s guard
+  compared `auth_user_id = auth.uid()` *outside* an `exists()`, so the
+  empty column made the whole condition NULL and the `raise` unreachable
+  — proven by execution 15 Sept 2026, anon included. See
+  `20260915_set_staff_pin_fail_open.sql`. The lesson is not "populate
+  the column": it is that `exists()` never returns NULL and a bare
+  `col = auth.uid()` does.
+- **Loses attribution, permanently for rows already written.**
+  `audit_log` holds **57 rows, 3 distinct actors, 0 resolving to a
+  `staff` row and 53 resolving to `org_members`** — i.e. everything so
+  far attributes to the owner or to nobody. `audit_row()` takes
+  `auth.uid()` and leaves `actor_name`/`actor_role` NULL on purpose, so
+  a staff actor becomes resolvable the moment their row is linked — but
+  **only for rows written after that**. The 57 already logged can never
+  be resolved, because the uid they carry is the owner's.
+
+#### The part that needs a decision, and it is not the writer
+The writer works. What is undecided is the **window before a person's
+first login**, and there are exactly two questions in it:
+
+1. **Is lazy population acceptable for the policy gate?** It is, and
+   deliberately: a staff member who has never signed in has no session,
+   so there is nothing for a policy to admit. The gate is only ever
+   evaluated for someone who has logged in, and logging in is what
+   populates the column. No eager backfill is possible either — the
+   shadow auth user does not exist until the first login creates it.
+2. **Is lazy population acceptable for the audit trail?** This is the
+   real one, and the answer is NO for anything written in that window.
+   The policy-gate audit trigger this file requires before the first
+   policy gate will name the owner for every action a staff member takes
+   until that person has logged in once. That is not visibly missing —
+   the log looks complete and every row names the same plausible person,
+   which is worse than a blank.
+
+**The cheap control, if one is wanted: refuse rather than mis-attribute.**
+An audit row whose `actor` resolves to no `staff` row in an org that HAS
+staff rows is either the owner acting or a staff member acting
+unattributed, and nothing in the row distinguishes them. A report over
+`audit_log` joined to `staff` and `org_members` — "rows whose actor
+resolves to neither" — is a one-query check and belongs beside
+`lint_security_invariants.sql`. Not built.
+
+**Not scheduled, and nothing here needs a migration.** The scope is:
+the writer exists, the gate is correct, the fail-open is fixed, and the
+outstanding item is audit attribution during a window that closes by
+itself per person. The only thing a build could change is making the
+window shorter — an owner-triggered "sign this person in once" step
+during onboarding — and that is a product decision, not a schema one.
 
 ### Policy vs PERMISSION — do not confuse them
 **Policy answers *what this business does*. Permissions answer *who may do
