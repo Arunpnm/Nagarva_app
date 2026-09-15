@@ -2357,6 +2357,43 @@ convenience and are explicitly not the record. This is why the audit
 trigger must land BEFORE or WITH the first policy gate — a policy that can
 be switched with no record is the one thing a policy gate cannot be.
 
+**SATISFIED, 15 Sept 2026 — verified by query, not by a deploy log.**
+`audit_row()` exists and `trg_audit_app_settings` is attached with
+`tgenabled = 'O'`, so `20260911_audit_row_trigger.sql` (Part 3, step 1)
+is live. Part 4's migration asserts this in preflight rather than
+assuming it, and refuses with a sentence naming the file to run first.
+
+### A NINTH RULE, learned the moment the first gate was built: THE STORE
+### ITSELF MUST BE OWNER-ONLY, OR EVERY RULE ABOVE IS DECORATIVE
+(15 Sept 2026.) `app_settings` carried exactly ONE policy —
+`org_isolation FOR ALL` — so **every org member could INSERT, UPDATE and
+DELETE policy rows.** Not inferred from the policy text: proven by
+execution and rolled back, by constructing an `org_members` row with
+role `staff` and watching it write:
+
+    PROBE_ROLLBACK is_owner=f sees=8 NON_OWNER_MEMBER_WROTE_POLICY=t err=-
+
+**A gate the blocked person can switch off is not a gate**, and the
+person an advance gate blocks is exactly the person with a reason to
+switch it off. `20260915_policy_store_first_gate.sql` splits the policy:
+SELECT stays org-scope (document boilerplate must still read for a staff
+session), INSERT/UPDATE/DELETE become owner-only via `is_org_owner()`,
+following the Tier A/B precedent for org-level configuration.
+**Owner, not manager** — `is_org_manager()` matches
+`('owner','admin','manager')`, and policy decides whether money must be
+collected before a job is confirmed. Widening it later is a decision with
+an argument behind it, not a default.
+Nothing live regressed: all 24 rows are category `documents`, every
+`AppSettingsTable` reference in `lib/` is a READ, no Edge Function names
+the table, and the only SQL writer (`seed_org_document_settings`) is
+SECURITY DEFINER and so not subject to RLS at all.
+**The probe had to CONSTRUCT its non-owner member**, because
+`org_members` holds only owners — a probe that looked for one would have
+found nobody and passed having tested nothing, which is the
+`set_staff_pin` postflight hole exactly. And it asserts the owner CAN
+still write, or a policy set refusing *everyone* passes the denial check
+perfectly and breaks the product.
+
 ### THE CONVENTION — eight rules
 1. **Where.** Per-tenant policy lives in `app_settings`, `category =
    'policy'`. No fourth store. Nothing new in `settings`.
@@ -2519,6 +2556,18 @@ a label. The advance gate compares `paid_total` against
 `minimum_advance_pct` x the revenue base, the same base the fixed
 `dashboard_kpis_view` and `order_balances_view` use.
 The column is dropped in its own migration once its eight read sites move.
+
+**COUNTED 15 Sept 2026, and the Daily Accounts failure above is LIVE, not
+hypothetical.** 8 orders exist. `advance_paid` is **0 on all eight**;
+`paid_total` is non-zero on **one**; `payment_entries` holds 2 rows. So
+`accounts_page_widget.dart:171`'s `collections += advancePaid` reports
+**Rs0 collected for the only order that has actually been paid** — today,
+on a real screen, with no error anywhere. Two consequences worth holding
+together: the bug is real and currently misreporting, and retiring the
+column costs **no data migration at all**, because it carries nothing.
+Only the eight read sites have to move. (This section previously rested
+on a 10 Sept count of seven orders; 8 is today's, and a count in this
+file is dated, never standing.)
 
 ### OPEN ITEM — audit retention. Not solved, deliberately named.
 `retention_policies` is **EMPTY — zero rows**, and the audit trigger on
@@ -2738,6 +2787,80 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **15 Sept 2026 (Part 4), the policy store made safe — and a coupling
+  that would have shipped as a silent status change.**
+  - **`supabase/20260915_policy_store_first_gate.sql` (handed over unrun;
+    independent of the day's other five).** Three things, and the first
+    is why the other two are worth anything.
+  - **The store was open to every org member.** See the ninth rule added
+    to the per-tenant policy section above — proven by execution, rolled
+    back, with a CONSTRUCTED non-owner member because `org_members` holds
+    only owners and a probe looking for one would have passed having
+    tested nothing.
+  - **One reader, and the DEFAULT IS AN ARGUMENT.** `org_policy_bool(org,
+    key, default)` / `org_policy_num(org, key, default)` make rule 3
+    ("absent means default") structural instead of remembered at each
+    call site — a single reader with the default baked in would quietly
+    impose one policy's default on the next policy someone adds. Both are
+    SECURITY INVOKER, so `app_settings`' org-scope SELECT applies for free
+    rather than being re-implemented by hand, which is the fail-open class
+    this same day was spent closing.
+    **The fail DIRECTION is stated in the file because it is not the same
+    for every policy**: absent or unreadable yields the default, so the
+    first gate (default ON) fails CLOSED, and a future gate with default
+    OFF would fail OPEN under identical code — such a gate must be
+    enforced where the money is, never by this read alone.
+  - **THE COUPLING, and it is the find.** `revise_quote` computed ONE
+    variable and used it for THREE things: the reason gate, the RETURNED
+    flag, and a status decision —
+    `status = case when v_reason_required then quotations.status else
+    'revised' end`. Gating that variable on the policy would have meant
+    that switching off a *reason requirement* also started flipping
+    quotes with live orders to `'revised'`. Silent, and nothing in the UI
+    reports status. Two questions wearing one name, which is the shape
+    this file already records from the `UNION` alias error. `v_has_order`
+    now keeps the status decision and the policy narrows only the reason
+    gate; **the postflight asserts the status did NOT move when the
+    policy is switched off**, which is the assertion that catches it.
+  - **The first gate changes nothing on the day it ships**, deliberately.
+    `revision_reason_required_after_confirm` defaults ON, and ON is
+    already what the product does, so with no row seeded every tenant is
+    byte-for-byte unchanged. Rule 7 (every gate has an escape with a
+    mandatory reason) is satisfied without a second mechanism: the gate
+    IS a mandatory reason, turning it off IS the escape, and that switch
+    writes an `app_settings` row which `trg_audit_app_settings` records
+    with old and new value.
+  - **Four defects in my own guards, caught by running them read-only
+    against live before shipping — one of them an always-passes.** A
+    variable rename left `p.proname = v_qid` inside a loop over `v_name`;
+    `v_qid` is NULL there, so `proname = NULL` made the `exists` false and
+    **the PUBLIC-EXECUTE assertion could never raise.** Also: a `uuid`
+    selected into a `boolean`; `%%` where a RAISE placeholder was meant
+    (a literal percent, so the two arguments would have been dropped);
+    and a "nothing seeded" check asserting `count = 0`, which is correct
+    today and would refuse a correct re-run the moment one tenant has set
+    one policy — now a before/after comparison.
+    A fifth was replaced rather than fixed: a `position('exists' in
+    pg_get_functiondef(is_org_owner))` check, which is satisfiable by a
+    COMMENT mentioning exists. Replaced with the behavioural form —
+    `is_org_owner('000…0')` must return false, never NULL.
+  - **Every coercion branch of both readers was run over constructed
+    inputs, both directions.** Nine boolean cases and nine numeric ones:
+    absent honours a true default AND a false default; a stored value
+    overrides the default in both directions (so the reader is not
+    always-returns-default); and a garbled value — a number, `"yes"`, an
+    object — falls back to the default rather than being coerced, tested
+    under BOTH a true default and a false default, because a garbled
+    value silently switching a gate is the failure that matters.
+  - **Method note.** Preflight asserts the audit trigger is
+    attached-and-enabled on `app_settings`, and refuses with a sentence
+    naming the migration to run first rather than skipping — the guard
+    convention. It also refuses if no quotation with a live order exists,
+    because the gate probe would otherwise pass without exercising the
+    gate. And the cross-org reader test is described as proving the
+    FUNCTION'S org filter, not RLS: it runs as the migration's role,
+    which bypasses RLS, and claiming otherwise would be the overclaim
+    this file keeps recording.
 - **15 Sept 2026 (last), Item 5's lost path made atomic — and a guard of
   mine that was wrong in BOTH directions at once.**
   - **`supabase/20260915_mark_lead_lost_atomic.sql` (handed over unrun,
