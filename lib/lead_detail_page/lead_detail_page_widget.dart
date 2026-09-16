@@ -312,7 +312,6 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         'status': 'booked',
         'payment_status': 'pending',
         'tracking_status': 'Booked',
-        'advance_paid': 0.0,
       });
 
       // Item 2: freeze the quote figures onto the order.
@@ -401,8 +400,6 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               serializeParam(order.moveDate.toString(), ParamType.String),
           'orderAmount':
               serializeParam(order.amount?.toString(), ParamType.String),
-          'orderAdvancePaid':
-              serializeParam(order.advancePaid?.toString(), ParamType.String),
           'orderStatus': serializeParam(order.status, ParamType.String),
           'orderPaymentStatus':
               serializeParam(order.paymentStatus, ParamType.String),

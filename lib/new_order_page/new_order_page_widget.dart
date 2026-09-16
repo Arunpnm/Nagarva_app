@@ -2141,12 +2141,17 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                               // failure branch can show it instead of the
                               // generic "Failed to save order".
                               String? saveError;
+                              // Set only when the order saved but its
+                              // porter advance could not be recorded —
+                              // two different outcomes that must not read
+                              // as one.
+                              String? porterAdvanceError;
                               try {
                                 if (isEditing) {
                                   // Editing an existing order: only touch
                                   // the fields on this form. status,
                                   // payment_status, tracking_status,
-                                  // advance_paid etc. are left as-is —
+                                  // paid_total etc. are left as-is —
                                   // editing shipment/customer details
                                   // shouldn't silently reset payment
                                   // progress or job status.
@@ -2197,14 +2202,87 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                     if (copiedGstin != null)
                                       'billing_party_gstin': copiedGstin,
                                     'status': 'booked',
-                                    'payment_status':
-                                        isPorterOrder && porterAdvance > 0
-                                            ? 'partial'
-                                            : 'pending',
+                                    // Left at 'pending' unconditionally.
+                                    // The porter advance below is a
+                                    // payment_entries row, and the
+                                    // sync_order_paid_total trigger sets
+                                    // payment_status from those rows - so
+                                    // deciding it here as well would be a
+                                    // second source for one value, free to
+                                    // disagree with the first.
+                                    'payment_status': 'pending',
                                     'tracking_status': 'Booked',
-                                    'advance_paid':
-                                        isPorterOrder ? porterAdvance : 0.0,
                                   });
+
+                                  // The porter's settled cash is MONEY
+                                  // RECEIVED, so it goes where money
+                                  // received lives.
+                                  //
+                                  // This used to write
+                                  // `orders.advance_paid`, a second
+                                  // money-in source that no screen could
+                                  // reconcile against payment_entries -
+                                  // the Daily Accounts Register read one
+                                  // and the order P&L the other. See
+                                  // CLAUDE.md, "orders.advance_paid -
+                                  // SETTLED 11 Sept 2026: REPLACE, NOT
+                                  // REVIVE": same money, one place, with
+                                  // a label. The label is the mode.
+                                  //
+                                  // Guarded on > 0 because
+                                  // payment_entries CHECKs (amount > 0):
+                                  // an unguarded insert would raise 23514
+                                  // and fail the whole order creation for
+                                  // every non-porter job.
+                                  //
+                                  // Caught separately from the order
+                                  // insert on purpose. The order is
+                                  // already in the database by this
+                                  // point, so letting this throw into the
+                                  // outer catch would tell the vendor the
+                                  // order had not saved when it had. It
+                                  // is not swallowed either: the amount
+                                  // is named and the vendor is told where
+                                  // to enter it, because a porter advance
+                                  // dropped in silence is money the books
+                                  // never see.
+                                  final createdId = _model.createdOrder?.id;
+                                  if (isPorterOrder &&
+                                      porterAdvance > 0 &&
+                                      createdId != null) {
+                                    try {
+                                      await PaymentEntriesTable().insert({
+                                        ...OrgScope.stamp(),
+                                        'order_id': createdId,
+                                        'amount': porterAdvance,
+                                        'mode': 'porter',
+                                        'note': 'Settled by porter at '
+                                            'booking; customer pays the '
+                                            'balance on delivery.',
+                                      });
+                                      // Re-read rather than patching the
+                                      // two fields the trigger just moved
+                                      // - paid_total and payment_status
+                                      // are written by
+                                      // sync_order_paid_total AFTER this
+                                      // row lands, so the copy captured
+                                      // by the insert above is already
+                                      // stale.
+                                      final refreshed =
+                                          await OrdersTable().queryRows(
+                                        queryFn: (q) => OrgScope.read(q)
+                                            .eq('id', createdId),
+                                        limit: 1,
+                                      );
+                                      if (refreshed.isNotEmpty) {
+                                        _model.createdOrder = refreshed.first;
+                                      }
+                                    } catch (e) {
+                                      porterAdvanceError =
+                                          extractDbErrorMessage(e,
+                                              fallback: '');
+                                    }
+                                  }
                                 }
                                 _model.ordSaveSuccess = true;
                               } catch (e) {
@@ -2217,12 +2295,20 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      isEditing
-                                          ? 'Order updated successfully!'
-                                          : 'Order saved successfully!',
+                                      porterAdvanceError != null
+                                          ? 'Order saved, but the porter '
+                                              'advance of ₹${porterAdvance.toStringAsFixed(0)} '
+                                              'was NOT recorded. Add it from '
+                                              'Record Payment.'
+                                          : isEditing
+                                              ? 'Order updated successfully!'
+                                              : 'Order saved successfully!',
                                       style: const TextStyle(),
                                     ),
-                                    duration: const Duration(milliseconds: 4000),
+                                    duration: Duration(
+                                        milliseconds: porterAdvanceError != null
+                                            ? 8000
+                                            : 4000),
                                   ),
                                 );
                                 if (isEditing) {

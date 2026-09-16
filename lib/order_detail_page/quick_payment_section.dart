@@ -76,7 +76,11 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
   double get _balance {
     final o = _order;
     if (o == null) return 0;
-    return (o.amount ?? 0) - (o.advancePaid ?? 0) - o.paidTotal;
+    // paid_total is the whole of money-in: the sync_order_paid_total
+    // trigger sums payment_entries onto it. `- advance_paid` was removed
+    // 16 Sept 2026 (see CLAUDE.md) - it was 0 on every live order, so
+    // this is the same number today, and one source instead of two.
+    return (o.amount ?? 0) - o.paidTotal;
   }
 
   @override

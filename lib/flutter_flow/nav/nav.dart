@@ -489,10 +489,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               'orderAmount',
               ParamType.String,
             ),
-            orderAdvancePaid: params.getParam(
-              'orderAdvancePaid',
-              ParamType.String,
-            ),
             orderStatus: params.getParam(
               'orderStatus',
               ParamType.String,

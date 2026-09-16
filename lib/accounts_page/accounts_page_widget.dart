@@ -159,7 +159,20 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         // Follows revenue's tax-exclusive basis, so the Extra column
         // (revenue - quote) stays 0 rather than becoming the GST.
         final orderQuote = amount;
-        final advancePaid = o.advancePaid ?? 0;
+        // Money in, from the ONE source that holds it: payment_entries,
+        // summed onto orders.paid_total by the sync_order_paid_total
+        // trigger.
+        //
+        // This read `orders.advance_paid` until 16 Sept 2026. That column
+        // was 0 on all 8 live orders while paid_total was non-zero on one,
+        // so every cash column below - Collected, Advance, Pending,
+        // Over-collected - was computed from a figure nothing writes:
+        // the one genuinely paid order reported Rs0 collected and its full
+        // gross still pending, on a register an owner reads to decide who
+        // to chase. Not an error state; a wrong number that looks like a
+        // right one. See CLAUDE.md, "orders.advance_paid - SETTLED
+        // 11 Sept 2026: REPLACE, NOT REVIVE".
+        final received = o.paidTotal;
         // Collections are cash actually received, which includes the GST
         // the customer paid - so this stays on the GROSS figure. Only
         // revenue excludes tax; the money in the drawer does not.
@@ -168,8 +181,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
 
         revenue += amount;
         quote += orderQuote;
-        collections += advancePaid;
-        advance += [bookingAdvance, advancePaid]
+        collections += received;
+        advance += [bookingAdvance, received]
             .reduce((a, b) => a < b ? a : b)
             .clamp(0, double.infinity);
         // Both compare against GROSS, not the ex-GST figure. What the
@@ -177,8 +190,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         // the customer pays the tax too. Only `revenue` and `quote` are
         // tax-exclusive; every cash column on this register is gross, or
         // Pending would understate the bill by the GST on it.
-        overCollected += (advancePaid - gross).clamp(0, double.infinity);
-        pending += (gross - advancePaid).clamp(0, double.infinity);
+        overCollected += (received - gross).clamp(0, double.infinity);
+        pending += (gross - received).clamp(0, double.infinity);
 
         salary += orderStaff
             .where((os) => os.orderId == o.id)
@@ -350,7 +363,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                                             fontWeight: FontWeight.w600))),
                             const SizedBox(height: 4),
                             Text(
-                              'Value ${_currency.format(o.amount ?? 0)} · Collected ${_currency.format(o.advancePaid ?? 0)} · Pending ${_currency.format(((o.amount ?? 0) - (o.advancePaid ?? 0)).clamp(0, double.infinity))}',
+                              'Value ${_currency.format(o.amount ?? 0)} · Collected ${_currency.format(o.paidTotal)} · Pending ${_currency.format(((o.amount ?? 0) - o.paidTotal).clamp(0, double.infinity))}',
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
                                   .override(

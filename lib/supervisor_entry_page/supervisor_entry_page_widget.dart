@@ -100,7 +100,6 @@ class _SupervisorEntryPageWidgetState
         'status': 'pending',
         'payment_status': 'pending',
         'tracking_status': 'Pending',
-        'advance_paid': 0.0,
         'supervisor_id': AppSession.instance.currentStaffId,
       });
       if (!mounted) return;

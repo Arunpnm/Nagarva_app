@@ -1291,7 +1291,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       payee = await resolveOrgUpiPayee();
     } catch (_) {}
 
-    final balance = (o.amount ?? 0) - (o.advancePaid ?? 0) - o.paidTotal;
+    final balance = (o.amount ?? 0) - o.paidTotal;
     final String message;
     if (payee != null && isPlausibleVpa(payee.vpa) && balance > 0) {
       message = buildUpiRequestMessage(
