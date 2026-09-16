@@ -1175,10 +1175,14 @@ silently doesn't is the same class of trust damage.
        default PUBLIC grant, and allow-listed so a NEW one is loud;
     3. a view without `security_invoker=on`;
     4. a table in `public` with RLS off.
-  **It is red today and that is the design** — `set_staff_pin` trips 1
-  and 2 until its fix is applied. A lint that reads the same before and
-  after a fix is not a check, which is the discriminating-marker rule
-  applied to tooling.
+  **It was red by design, and on 16 Sept 2026 it went GREEN** —
+  `set_staff_pin` tripped 1 and 2 until its fix was applied; the lint now
+  reports **0 findings across all four checks**. A lint that reads the
+  same before and after a fix is not a check, which is the
+  discriminating-marker rule applied to tooling — and this one
+  discriminated, in both directions, on its first real use.
+  **Re-run it after any migration touching a function, a grant, a view or
+  a table.** Green on 16 Sept is a dated result, not a standing one.
   When the next invariant gets written down here, ask first whether a
   catalogue query can decide it. If it can, it belongs in that file, and
   the paragraph here is the explanation rather than the control.
@@ -2475,13 +2479,23 @@ ways, and only one of them is a defect.
   has not logged in sees nothing; after their first login it sees their
   branch. That is the fail-closed behaviour Item 30 was built for,
   arriving as designed.
-- **Failed OPEN, and that is now fixed.** `set_staff_pin`'s guard
-  compared `auth_user_id = auth.uid()` *outside* an `exists()`, so the
-  empty column made the whole condition NULL and the `raise` unreachable
-  — proven by execution 15 Sept 2026, anon included. See
-  `20260915_set_staff_pin_fail_open.sql`. The lesson is not "populate
-  the column": it is that `exists()` never returns NULL and a bare
-  `col = auth.uid()` does.
+- **Failed OPEN. FIXED, APPLIED AND VERIFIED LIVE — 16 Sept 2026.**
+  `set_staff_pin`'s guard compared `auth_user_id = auth.uid()` *outside*
+  an `exists()`, so the empty column made the whole condition NULL and
+  the `raise` unreachable — proven by execution 15 Sept 2026, anon
+  included. `20260915_set_staff_pin_fail_open.sql` was run by Arun in the
+  SQL editor on 16 Sept and **verified against the database rather than
+  from the editor's "Success" message**, per the three-states rule:
+    * **ACL** — `anon` false, `PUBLIC` false, `authenticated` true;
+      grantees now exactly `authenticated, postgres, service_role`.
+    * **Behaviour** — the same call that minted a credential yesterday
+      now returns `denied=t err=[not authorized to set this PIN]`, with
+      `staff` unchanged at 5 rows / 1 `pin_hash`. The raise fired for the
+      first time in its life.
+    * **The lint** — `lint_security_invariants.sql` went from two
+      findings to **0 across all four checks**.
+  The lesson is not "populate the column": it is that `exists()` never
+  returns NULL and a bare `col = auth.uid()` does.
 - **Loses attribution, permanently for rows already written.**
   `audit_log` holds **57 rows, 3 distinct actors, 0 resolving to a
   `staff` row and 53 resolving to `org_members`** — i.e. everything so
@@ -2787,6 +2801,38 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **16 Sept 2026, the fail-open PIN guard is LIVE — and verified against
+  the database, not against the editor's "Success".**
+  `supabase/20260915_set_staff_pin_fail_open.sql` was run by Arun in the
+  SQL editor (project `hqqcapifefsaqvotqvlt`, shown as `nagarva-demo`)
+  and returned *Success. No rows returned*. **That message was not
+  treated as the verification** — this file's own three-states rule says
+  "the file is ready", "the migration ran" and "the objects exist" are
+  different claims, and only a query answers the third. Three checks,
+  all read-only:
+  - **ACL**: `anon` false, `PUBLIC` false, `authenticated` true.
+    Grantees are now exactly `authenticated, postgres, service_role`.
+    The PUBLIC revoke was the load-bearing half — revoking only `anon`
+    would have reported success and changed nothing.
+  - **Behaviour**, which is the one that matters: calling
+    `set_staff_pin` as a caller who is neither owner nor the staff
+    member now returns
+    `denied=t err=[not authorized to set this PIN] staff_rows=5
+    pin_hashes=1`. **The exact inverse of yesterday's probe**, which
+    returned `ANON_SET_A_CREDENTIAL=t` on the same function with the
+    same operands. The raise fired for the first time since it was
+    written, and `staff` is untouched.
+  - **The lint went GREEN.** `lint_security_invariants.sql` reported two
+    findings before (checks 1 and 2, both `set_staff_pin`) and now
+    reports **0 across all four**. That is the whole argument for the
+    file made good on its first real use: it discriminated in both
+    directions, which a paragraph in this document cannot do.
+  **Five migrations remain handed over and unrun** — the drop, the shape
+  check (which depends on the drop), the dead-column drop, the atomic
+  lead-lost RPC and Part 4's policy store. The PR body's run-order table
+  was corrected to mark this one applied; a table that still says
+  "handed over unrun" for a migration now live is exactly the stale note
+  this file keeps paying for.
 - **15 Sept 2026 (Part 4), the policy store made safe — and a coupling
   that would have shipped as a silent status change.**
   - **`supabase/20260915_policy_store_first_gate.sql` (handed over unrun;
@@ -2935,7 +2981,8 @@ an inconsistency and is the whole fix.
     access, and is the only thing that has ever caught this class.
   - **Confirmed in passing:** `set_staff_pin` still shows PUBLIC and anon
     holding EXECUTE, so `20260915_set_staff_pin_fail_open.sql` is still
-    unrun.
+    unrun. **(True on 15 Sept; APPLIED 16 Sept 2026 — see that day's
+    entry. Left as written because it dates the exposure window.)**
 - **15 Sept 2026 (later), the rooms/items decision executed — one column
   dropped, one wrong class deleted, and a real customer's survey named as
   lost rather than left looking fine.**
