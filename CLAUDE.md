@@ -2837,6 +2837,66 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **16 Sept 2026 (last), ALL SIX MIGRATIONS ARE LIVE — the lead-lost path
+  is atomic, and `price_gap_pct` has a writer for the first time.**
+  - **`20260915_mark_lead_lost_atomic.sql` — APPLIED** (16 Sept, 23:40
+    IST). `mark_lead_lost(uuid,text,text,text,numeric,text,numeric,text)`
+    exists once, is **SECURITY INVOKER** (`prosecdef = false`), and grants
+    EXECUTE to exactly `postgres, authenticated, service_role` — PUBLIC
+    and anon hold nothing, read with `aclexplode`. Invoker is
+    load-bearing here rather than incidental: `leads` carries
+    `org_isolation` AND a RESTRICTIVE `branch_isolation`, and a DEFINER
+    version would have to re-implement both by hand.
+  - **Exercised on a real lead, everything rolled back**, with a probe
+    built here rather than the migration's own:
+
+        prev=confirmed -> status=lost | outcome_rows=1 | price_gap_pct=10.00
+        call1 ok=true already=false had_order=true
+        call2 ok=true already=true  rows_still=1
+        bad reason code -> P0001 "Unknown reason code made_up_code.
+                                  Pick one of the listed reasons."
+        null lead id    -> P0001 "A lead must be chosen before it can be
+                                  marked lost."
+
+    Four things that proves, three of which the migration's own postflight
+    does not test: the status and the reason land **together**;
+    a second call is **idempotent** (`already=true`, still one outcome
+    row) where the old Dart path would have filed the loss twice, since
+    `quote_outcomes` has only a PK and no unique index; a bad reason code
+    and a null id both come back as **P0001 sentences**, which is what
+    `extractDbErrorMessage` surfaces, rather than a raw 23514 of Postgres
+    internals; and `had_order=true` **warns without blocking** on a lead
+    that already has an order — 7 of 11 do.
+  - **`price_gap_pct = 10.00` is the first value anything has ever
+    computed for that column.** The Dart insert stopped at `recorded_by`,
+    so the field existed and was never written. One writer, guarded
+    against division by zero rather than trusting the caller.
+  - **THE CONSTRAINT QUESTION, and the answer is three columns, not
+    two.** Confirmed by WRITING the exact values and rolling back rather
+    than by reading the CHECK definitions: `leads.status = 'lost'`
+    accepted; `quote_outcomes(outcome='lost', reason_code='price')`
+    accepted; **all six reason codes accepted**, and the RPC's own
+    validator list is byte-identical to
+    `quote_outcomes_reason_code_check`. Two corrections worth keeping:
+    the RPC writes **`leads.status`**, not `quotations.status` — both
+    tables happen to permit `'lost'`, but `quotations` is untouched here;
+    and **`quote_outcomes.outcome` has NO CHECK constraint at all**, so
+    the third written value is unconstrained `text NOT NULL`. Reported,
+    not fixed — a schema change is Arun's call.
+  - **Clean afterwards**: `quote_outcomes` 0, leads at `lost` 0, 11 leads
+    unchanged (confirmed 7, follow_up 2, quoted 1, new 1). **Lint GREEN**,
+    0 findings across all four checks.
+  - **One caveat stated before it was run**: the postflight asserts
+    EXACTLY 1 outcome row during its probe, which holds only while the
+    table is empty. It was, so it passed — but a single real lost-lead
+    recorded first would have refused a correct migration. Same dated-
+    literal shape as the drop migration's exact row counts.
+  - **The six-migration sequence is closed.** Next is retiring
+    `orders.advance_paid` — Arun's call, and the reason he gave is the
+    right one: it misreports on the Daily Accounts Register **today**
+    (0 on all 8 orders while `paid_total` is non-zero on one), it costs
+    no data migration because the column carries nothing, and Part 4's
+    advance gate needs `paid_total` as the single money-in source.
 - **16 Sept 2026 (last), PART 4 IS LIVE — the policy store is owner-only,
   and the coupling stayed broken under an independent probe.**
   - **`20260915_policy_store_first_gate.sql` — APPLIED** (16 Sept, 23:32
@@ -2885,11 +2945,12 @@ an inconsistency and is the whole fix.
     `aclexplode`). `revise_quote` is still `prosecdef = false`, so org and
     branch isolation continue to apply to its host.
   - **Lint GREEN**: 0 findings across all four checks.
-  - **ONE MIGRATION REMAINS**: `20260915_mark_lead_lost_atomic.sql`.
-    Arun's sequencing call, and the reason is worth keeping: the policy
-    store had to go first because *every policy after it is decorative
-    until writes are owner-only*, while the lead-lost fix is a
-    correctness fix with nothing queued behind it.
+  - **ONE MIGRATION REMAINED** when this was written:
+    `20260915_mark_lead_lost_atomic.sql`, which went live the same
+    evening (see the entry above). Arun's sequencing call, and the reason
+    is worth keeping: the policy store had to go first because *every
+    policy after it is decorative until writes are owner-only*, while the
+    lead-lost fix is a correctness fix with nothing queued behind it.
 - **16 Sept 2026 (last), `customer_surveys.items` dropped — and the
   tombstone trap sprung harmlessly on the way in.**
   - **`20260915_drop_dead_survey_items_column.sql` — APPLIED**, verified
@@ -2930,7 +2991,8 @@ an inconsistency and is the whole fix.
   - **Lint still GREEN**: 0 findings across all four checks, re-run after
     the drop. Two migrations remained handed over and unrun when this was
     written — Part 4's policy store went live the same evening (see the
-    entry above), leaving only `20260915_mark_lead_lost_atomic.sql`.
+    entry above), leaving only `20260915_mark_lead_lost_atomic.sql` —
+    which went live the same evening too. **All six are applied.**
 - **16 Sept 2026 (later), the ungated RPCs are gone and the survey
   payload is validated — both verified by CALLING them, and the second
   one proved its own load-bearing half.**
@@ -2982,8 +3044,10 @@ an inconsistency and is the whole fix.
     the always-passes shape, in the tooling written to catch it.
   - **Three migrations remained handed over and unrun when this was
     written**; the dead-column drop and Part 4's policy store both went
-    live the same day (see the entries above), leaving only the atomic
-    lead-lost RPC (`20260915_mark_lead_lost_atomic.sql`).
+    live the same day (see the entries above), as did the atomic
+    lead-lost RPC (`20260915_mark_lead_lost_atomic.sql`). **All six of
+    the day's migrations were applied and verified within 24 hours of
+    being written.**
 - **16 Sept 2026, the fail-open PIN guard is LIVE — and verified against
   the database, not against the editor's "Success".**
   `supabase/20260915_set_staff_pin_fail_open.sql` was run by Arun in the
@@ -3096,7 +3160,8 @@ an inconsistency and is the whole fix.
     this file keeps recording.
 - **15 Sept 2026 (last), Item 5's lost path made atomic — and a guard of
   mine that was wrong in BOTH directions at once.**
-  - **`supabase/20260915_mark_lead_lost_atomic.sql` (handed over unrun,
+  - **`supabase/20260915_mark_lead_lost_atomic.sql` (handed over unrun
+    at the time; **APPLIED 16 Sept 2026** — see that day's entry;
     independent of the day's other three).** Item 5.3 is built in Dart as
     **two writes with no transaction**, plus a guard that discards the
     second on purpose and a blanket catch that swallows its failure:
