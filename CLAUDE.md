@@ -2410,7 +2410,10 @@ role `staff` and watching it write:
 
 **A gate the blocked person can switch off is not a gate**, and the
 person an advance gate blocks is exactly the person with a reason to
-switch it off. `20260915_policy_store_first_gate.sql` splits the policy:
+switch it off. `20260915_policy_store_first_gate.sql` — **APPLIED 16 Sept
+2026, and re-proven by an independent probe: `member_insert=f
+member_update=f member_delete=f` against `owner_insert=t`** — splits the
+policy:
 SELECT stays org-scope (document boilerplate must still read for a staff
 session), INSERT/UPDATE/DELETE become owner-only via `is_org_owner()`,
 following the Tier A/B precedent for org-level configuration.
@@ -2834,6 +2837,59 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **16 Sept 2026 (last), PART 4 IS LIVE — the policy store is owner-only,
+  and the coupling stayed broken under an independent probe.**
+  - **`20260915_policy_store_first_gate.sql` — APPLIED** (16 Sept, 23:32
+    IST), verified by query and by execution, never from the editor's
+    *Success*. `app_settings` now carries exactly **four** policies and no
+    `FOR ALL`: SELECT is the org-scope expression **byte-identical to the
+    one `org_isolation` carried**, and INSERT/UPDATE/DELETE each name
+    `is_org_owner(org_id)`.
+  - **PROVEN WITH MY OWN PROBE, not the migration's.** A separately
+    constructed non-owner member (a different uuid, inserted as role
+    `staff`, impersonated via `request.jwt.claims` + `set local role
+    authenticated`, rolled back):
+
+        member_reads=8  member_insert=f  member_update=f  member_delete=f
+        owner_reads=24  owner_insert=t
+
+    **The exact inverse of 15 Sept's `NON_OWNER_MEMBER_WROTE_POLICY=t`.**
+    Two things that probe adds over the migration's own: it tests UPDATE
+    and DELETE, not only INSERT — a policy set that blocked inserts and
+    left updates open would have passed the migration's check — and it
+    confirms the owner still writes, without which a policy set refusing
+    *everyone* passes the denial half perfectly.
+  - **The 24 document rows are untouched and still readable by a staff
+    session** — `member_reads=8` is that org's boilerplate, read by a
+    member who cannot write a single policy row. All five
+    `AppSettingsTable` references in `lib/` are `queryRows`, no Edge
+    Function names the table, and the only SQL writer
+    (`seed_org_document_settings`) is SECURITY DEFINER, so org creation
+    still seeds.
+  - **THE COUPLING, verified independently and in both directions.** On a
+    real quotation with a live order, rolled back:
+    with **no policy row** the reason gate fired (default ON); with the
+    policy switched **OFF** the same call succeeded; and
+    **`status` went `draft` -> `draft`.** Before the split, switching off
+    a *reason requirement* would also have flipped that quote to
+    `'revised'` — silently, with nothing in the UI reporting status.
+    `has_order` reported true throughout.
+  - **Nothing was seeded and nothing survived**: 0 rows at `category =
+    'policy'`, 24 at `documents`, `org_members` back to 3, and neither
+    probe's constructed member left behind. The audit trigger is still
+    attached and enabled, so the first switch of this gate will be
+    recorded.
+  - **All three readers are SECURITY INVOKER with PUBLIC and anon holding
+    nothing** — `org_policy`, `org_policy_bool`, `org_policy_num`, each
+    granted to exactly `postgres, authenticated, service_role` (read with
+    `aclexplode`). `revise_quote` is still `prosecdef = false`, so org and
+    branch isolation continue to apply to its host.
+  - **Lint GREEN**: 0 findings across all four checks.
+  - **ONE MIGRATION REMAINS**: `20260915_mark_lead_lost_atomic.sql`.
+    Arun's sequencing call, and the reason is worth keeping: the policy
+    store had to go first because *every policy after it is decorative
+    until writes are owner-only*, while the lead-lost fix is a
+    correctness fix with nothing queued behind it.
 - **16 Sept 2026 (last), `customer_surveys.items` dropped — and the
   tombstone trap sprung harmlessly on the way in.**
   - **`20260915_drop_dead_survey_items_column.sql` — APPLIED**, verified
@@ -2872,9 +2928,9 @@ an inconsistency and is the whole fix.
     with it, and it is dated — one new survey and it refuses a correct
     migration. It happened to be run while the counts held.
   - **Lint still GREEN**: 0 findings across all four checks, re-run after
-    the drop. Two migrations remain handed over and unrun, independent of
-    each other: `20260915_mark_lead_lost_atomic.sql` and
-    `20260915_policy_store_first_gate.sql` (Part 4).
+    the drop. Two migrations remained handed over and unrun when this was
+    written — Part 4's policy store went live the same evening (see the
+    entry above), leaving only `20260915_mark_lead_lost_atomic.sql`.
 - **16 Sept 2026 (later), the ungated RPCs are gone and the survey
   payload is validated — both verified by CALLING them, and the second
   one proved its own load-bearing half.**
@@ -2925,11 +2981,9 @@ an inconsistency and is the whole fix.
     not surface: a check whose pass is indistinguishable from silence is
     the always-passes shape, in the tooling written to catch it.
   - **Three migrations remained handed over and unrun when this was
-    written**; the dead-column drop went live later the same day (see the
-    entry above), leaving the atomic lead-lost RPC
-    (`20260915_mark_lead_lost_atomic.sql`) and Part 4's policy store
-    (`20260915_policy_store_first_gate.sql`), which are independent of
-    each other.
+    written**; the dead-column drop and Part 4's policy store both went
+    live the same day (see the entries above), leaving only the atomic
+    lead-lost RPC (`20260915_mark_lead_lost_atomic.sql`).
 - **16 Sept 2026, the fail-open PIN guard is LIVE — and verified against
   the database, not against the editor's "Success".**
   `supabase/20260915_set_staff_pin_fail_open.sql` was run by Arun in the
@@ -2967,7 +3021,8 @@ an inconsistency and is the whole fix.
   as a count.
 - **15 Sept 2026 (Part 4), the policy store made safe — and a coupling
   that would have shipped as a silent status change.**
-  - **`supabase/20260915_policy_store_first_gate.sql` (handed over unrun;
+  - **`supabase/20260915_policy_store_first_gate.sql` (handed over unrun
+    at the time; **APPLIED 16 Sept 2026** — see that day's entry;
     independent of the day's other five).** Three things, and the first
     is why the other two are worth anything.
   - **The store was open to every org member.** See the ninth rule added
