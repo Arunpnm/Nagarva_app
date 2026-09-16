@@ -1059,6 +1059,32 @@ silently doesn't is the same class of trust damage.
   **Keep the tombstone. It is worth more than the check that tripped on
   it.**
 
+  **SECOND INSTANCE, 16 Sept 2026 — and it did not trip anything, which
+  is why it is worth recording.** Dropping `customer_surveys.items`, a
+  pre-check asked which functions name both `items` and
+  `customer_surveys`. Exactly one did: `public_submit_survey_impl`. All
+  three matches are COMMENT lines written the day before, by the
+  shape-check migration, describing the very confusion being removed —
+  *"a free-text {room, items} row was accepted"*, *"40 items, 110 subs"*,
+  *"qty is a count of identical items"*. **No code reads the column.**
+  A naive *"is this column referenced anywhere?"* check would have
+  refused a correct migration on prose about the thing it was removing.
+  **PROSE DESCRIBING A REMOVED OBJECT IS NOT A REFERENCE TO IT, and a
+  text-based "is this used anywhere" check cannot tell the difference** —
+  in either direction. It cannot, because the two are the same bytes.
+  **The fix is not a better regex; it is a different instrument.** That
+  migration's preflight asks `information_schema.columns` whether the
+  column exists, which is a question about the SCHEMA and cannot be
+  answered by a comment. So: **for "does this object exist / is it still
+  listed / is it still used", ask the catalogue — `information_schema`,
+  `pg_attribute`, `pg_depend` (with `refclassid`) — never
+  `pg_get_functiondef`.** Where text genuinely is the only instrument,
+  strip comment lines first, exactly as the `delete_org` entry says.
+  The two instances differ in outcome and that is the point: the first
+  tripped and rolled back a correct migration, the second was caught
+  before it was written. Same defect, four days apart, on a column
+  instead of an array element.
+
   **Roll-call, since the numbering above drifted.** The family is:
   `pg_constraint` asked about uniqueness; `pg_available_extensions`
   asked about installation; single-target asked about fragment danger;
