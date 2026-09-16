@@ -250,15 +250,20 @@ that part stands regardless of how the survey/sign recovery resolves,
 since the `/auth` relay page needs to move off root either way once
 anything else is deployed there again.
 
-Two RPC families do overlapping jobs (survey get/submit, signature
+Two RPC families did overlapping jobs (survey get/submit, signature
 get/submit) with real security-posture differences neither side
-strictly wins on — full comparison given to Arun 17 Aug 2026, not
-reproduced here since it's a live discussion, not a settled fact; ask
-him or re-derive from `pg_get_functiondef()` on `get_survey_by_token`/
-`submit_survey`/`public_get_survey`/`public_submit_survey`/
-`get_signature_request`/`submit_signature`/`public_get_signature_request`/
-`public_submit_signature` if this note has gone stale. Consolidating to
-one family is a stated future goal, not scheduled.
+strictly won on — full comparison given to Arun 17 Aug 2026.
+**HALF-RESOLVED 16 Sept 2026: the SURVEY duplicate is gone.**
+`20260915_drop_ungated_public_rpcs.sql` dropped `get_survey_by_token`
+and `submit_survey` (with `get_quotation_by_token`/`accept_quotation`),
+leaving `public_get_survey`/`public_submit_survey` as the only survey
+path — which is also the one the live page calls and the stricter of
+the two on disclosure. **Do not `pg_get_functiondef()` the dropped
+names; they no longer exist.** The SIGNATURE pair is untouched and the
+comparison still stands there: `get_signature_request`/
+`submit_signature` versus `public_get_signature_request`/
+`public_submit_signature`. Consolidating that half is a stated future
+goal, not scheduled.
 
 ## Known bugs / immediate issues
 1. **~~dashboard_kpis_view (and likely all 6 views) missing in Nagarva project~~
@@ -2801,6 +2806,60 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **16 Sept 2026 (later), the ungated RPCs are gone and the survey
+  payload is validated — both verified by CALLING them, and the second
+  one proved its own load-bearing half.**
+  - **`20260915_drop_ungated_public_rpcs.sql` — APPLIED.** The four
+    unwrapped functions (`get_survey_by_token`, `submit_survey`,
+    `get_quotation_by_token`, `accept_quotation`) are gone: 0 targets
+    surviving, 7 wrappers still anon-callable, **0 of 7 `_impl`s
+    reachable by anon or PUBLIC**, read with `aclexplode` rather than a
+    `LIKE` over the printed ACL. The evidence that matters is not the
+    count: `public_get_survey` called **as anon** on a real pending
+    token returned `ok` with `[customer_name, from_address, move_date,
+    ok, rooms, special_instructions, survey_cats, to_address,
+    vendor_name]` — `phone=f org_id=f lead_id=f uuid=f token_echoed=f`,
+    i.e. strictly LESS disclosure than the function that was dropped.
+    Removing an ungated path is only safe if the gated one still serves
+    the live `/survey` page, and that is the call that shows it does.
+  - **`20260915_survey_rooms_shape_check.sql` — APPLIED.**
+    `public_submit_survey_impl` now validates every ELEMENT, not just
+    the array. Verified on the live function against a real pending
+    token, all three directions, the whole probe rolled back:
+    * a `cft` sent as a STRING →
+      `false/bad_payload`, detail *"element 1: cft must be a number, got
+      string"*;
+    * the free-text `{room, items}` shape →
+      `false/bad_payload`, detail *"element 1 has unexpected key 'room';
+      expected exactly cat,item,sub,cft,qty"*;
+    * **a well-formed two-line payload → `ok=true`.** That third one is
+      the load-bearing half: a validator that refuses everything passes
+      both refusal checks perfectly and takes the live `/survey` page
+      down. Afterwards `customer_surveys` was unchanged at 9 rows, 3
+      pending tokens, and Priya Raghavan's row hashed identical — the
+      probe consumed no customer's token.
+  - **The ACL survived `CREATE OR REPLACE`, as predicted rather than as
+    hoped.** `public_submit_survey_impl` still grants EXECUTE to exactly
+    `postgres, service_role`; the wrapper still carries `PUBLIC, anon,
+    authenticated, postgres, service_role`. Worth stating because the
+    migration's own postflight check (4) uses `v_acl like '%anon=X%'`,
+    which is the weak form this file keeps recording — a NULL `proacl`
+    renders `<default>` and PASSES while actually meaning PUBLIC holds
+    EXECUTE, and it never tests PUBLIC at all. It was safe to run
+    because the real property was read with `aclexplode` minutes
+    earlier; **it is not safe to rely on, and should be replaced with
+    `aclexplode` before that file is used as a template.**
+  - **The lint is still GREEN** — `lint_security_invariants.sql`'s four
+    predicates re-run after the two migrations report **0 findings**.
+    Run with its final raise made UNCONDITIONAL, so "clean" arrives as a
+    result that names the count rather than as a `notice` the client may
+    not surface: a check whose pass is indistinguishable from silence is
+    the always-passes shape, in the tooling written to catch it.
+  - **Three migrations remain handed over and unrun**, all independent
+    of each other: the dead-column drop
+    (`20260915_drop_dead_survey_items_column.sql`), the atomic lead-lost
+    RPC (`20260915_mark_lead_lost_atomic.sql`) and Part 4's policy store
+    (`20260915_policy_store_first_gate.sql`).
 - **16 Sept 2026, the fail-open PIN guard is LIVE — and verified against
   the database, not against the editor's "Success".**
   `supabase/20260915_set_staff_pin_fail_open.sql` was run by Arun in the
@@ -2827,12 +2886,15 @@ an inconsistency and is the whole fix.
     reports **0 across all four**. That is the whole argument for the
     file made good on its first real use: it discriminated in both
     directions, which a paragraph in this document cannot do.
-  **Five migrations remain handed over and unrun** — the drop, the shape
-  check (which depends on the drop), the dead-column drop, the atomic
-  lead-lost RPC and Part 4's policy store. The PR body's run-order table
-  was corrected to mark this one applied; a table that still says
-  "handed over unrun" for a migration now live is exactly the stale note
-  this file keeps paying for.
+  **Five migrations remained handed over and unrun at the time this was
+  written** — the drop, the shape check (which depends on the drop), the
+  dead-column drop, the atomic lead-lost RPC and Part 4's policy store.
+  **Two of those five went live within the hour; see the entry above.**
+  The PR body's run-order table was corrected to mark this one applied;
+  a table that still says "handed over unrun" for a migration now live
+  is exactly the stale note this file keeps paying for — which is why
+  this paragraph is dated and pointed forward rather than left standing
+  as a count.
 - **15 Sept 2026 (Part 4), the policy store made safe — and a coupling
   that would have shipped as a silent status change.**
   - **`supabase/20260915_policy_store_first_gate.sql` (handed over unrun;
