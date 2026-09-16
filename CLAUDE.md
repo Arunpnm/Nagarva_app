@@ -1085,6 +1085,35 @@ silently doesn't is the same class of trust damage.
   before it was written. Same defect, four days apart, on a column
   instead of an array element.
 
+  **THIRD INSTANCE, 16 Sept 2026 — and this one is NOT a comment. The
+  false positive came from the INSTRUMENT itself, which makes it the
+  cleanest case in the family.**
+  Sweeping for readers of `orders.advance_paid` before dropping it, a
+  scan with `pg_get_functiondef(...) ilike '%advance_paid%'` returned
+  five objects. One was `default_pricing_config()`, which does not
+  contain the column, has nothing to do with orders, and would have been
+  rewritten for nothing. What it contains is the label string
+  `{"key":"advanceOnQuote","label":"Advance Paid"}` — and **`_` in LIKE
+  is a single-character wildcard**, so the pattern `advance_paid`
+  matches `Advance Paid`, space and all. Verified rather than assumed:
+
+      'Advance Paid' ilike '%advance_paid%'   -> true
+      'Advance Paid' ~* '\yadvance_paid\y'    -> false
+      'x_advance_paid_y' ~* '\yadvance_paid\y' -> false
+
+  **Every snake_case identifier in this schema is an unintended LIKE
+  pattern.** `paid_total`, `org_id`, `move_date`, `quote_total` — each
+  one silently matches its own words separated by any character, so
+  every "is this column used anywhere?" sweep written with LIKE over a
+  snake_case name has been over-reporting, in a way that reads as
+  thoroughness. The direction of the error is the dangerous one here:
+  it produces EXTRA hits, which look like diligence and cost a rewrite
+  of something that was never involved.
+  **Use `~* '\y<name>\y'` for identifier searches, never LIKE**, and
+  strip comment lines as the two instances above require. Both fixes are
+  in `supabase/20260916_advance_paid_retire_db_readers.sql`, whose
+  preflight and postflight are a matched 4-before / 0-after pair.
+
   **Roll-call, since the numbering above drifted.** The family is:
   `pg_constraint` asked about uniqueness; `pg_available_extensions`
   asked about installation; single-target asked about fragment danger;
@@ -2603,7 +2632,60 @@ flag, never as a separate column on the order. Same money, one place, with
 a label. The advance gate compares `paid_total` against
 `minimum_advance_pct` x the revenue base, the same base the fixed
 `dashboard_kpis_view` and `order_balances_view` use.
-The column is dropped in its own migration once its eight read sites move.
+The column is dropped in its own migration once its read sites move.
+
+**DONE IN DART, 16 Sept 2026 — and the scope was bigger than "eight read
+sites", in a way that matters.** Every Dart reader and writer is off the
+column (15 files touched; the generated `OrdersRow.advancePaid`
+getter/setter is deleted, so nothing in the app *can* touch it), and two
+migrations are handed over: `20260916_advance_paid_retire_db_readers.sql`
+then `20260916_advance_paid_drop_column.sql`.
+**THE DATABASE READ IT TOO, in four places, and one of them decides
+`payment_status`:**
+- **`sync_order_paid_total()`** — the AFTER trigger on `payment_entries`
+  that maintains `paid_total` — added `advance_paid` into BOTH the
+  `'paid'` and the `'partial'` test. So the drop was never a Dart-only
+  change; a Dart-only pass would have left the column load-bearing in the
+  one function that decides whether a job is paid, and the drop would
+  then have broken it.
+- **`can_delete_order()`** — `(v_paid + v_advance) > 0`. Redundant: the
+  same function already refuses on a live `payment_entries` row.
+- **`branch_kpis_view.outstanding`** = `sum(amount - advance_paid)`,
+  which **never subtracts `paid_total`** — the Daily Accounts bug again,
+  on a second surface, in SQL. `dashboard_kpis_view.outstanding` is
+  `greatest(coalesce(nullif(quote_total,0), amount, 0) + addons -
+  paid_total, 0)`, i.e. correct. **A third surface where those two views
+  disagree**, after net profit. Only the money-in term is fixed here; the
+  revenue base stays `amount` because reconciling THAT is NG-046's job
+  and would move a branch card's revenue under cover of a cleanup.
+- **`customer_360_view.total_advance`** = `sum(advance_paid)`, 0 for
+  every customer, sitting beside `total_collected` which is already
+  `sum(paid_total)`. Removed rather than redefined.
+
+**The one real writer was the porter path**, not a literal `0.0`:
+`new_order_page_widget.dart` wrote `amount - cashCollect` — the cash the
+porter has already settled — into `advance_paid`. Deleting that write
+would have thrown away money the vendor has received, so it is
+**redirected into a `payment_entries` row with `mode: 'porter'`**, which
+is what this section already prescribed ("that belongs on the PAYMENT
+ENTRY as a mode or flag"). Three details that are not incidental: the
+insert is guarded on `> 0` because `payment_entries` CHECKs
+`(amount > 0)` and an unguarded insert would 23514 and fail order
+creation for *every non-porter job*; the hand-written
+`payment_status: partial` is gone, because the trigger decides that from
+the entries and two deciders drift; and the row is **re-read** after the
+insert rather than patched, since the trigger moves `paid_total` and
+`payment_status` after the returned copy was taken.
+
+**RUN ORDER, and the hazard.** Ship the app build, then run the
+readers migration (safe any time — the column still exists), then drop
+the column only once no device runs an older build. **An installed older
+build sends `'advance_paid': 0.0` in its order INSERT; after the drop
+that is a 42703 and the vendor cannot create orders** — the
+`kServerSideOrderIds` shape exactly. No query can tell you which builds
+are installed, so the drop migration does not pretend to check: it
+refuses unless the operator sets
+`nagarva.old_builds_retired = 'yes'`.
 
 **COUNTED 15 Sept 2026, and the Daily Accounts failure above is LIVE, not
 hypothetical.** 8 orders exist. `advance_paid` is **0 on all eight**;
@@ -2837,6 +2919,83 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **16 Sept 2026 (last), `orders.advance_paid` retired in Dart — and the
+  database turned out to be reading it in four places, one of which
+  decides `payment_status`.**
+  - **Counted live before anything was written, not carried from the
+    15 Sept note:** 8 orders, `advance_paid` **0 on all eight and NULL on
+    none**, `paid_total` non-zero on **one** (sum 37,800),
+    `payment_entries` 2 live rows. So there is no data migration — the
+    column carries nothing. Only readers move.
+  - **Dart is off the column entirely.** 15 files. The Daily Accounts
+    Register was the live misreport and it was **four columns, not one**:
+    `collections`, `advance`, `pending` and `overCollected` were all
+    computed from `advancePaid`, so the one genuinely paid order showed
+    Rs0 collected AND its full gross still pending. Order Details' Payment
+    card said "Advance Paid Rs0" on that same order and now reads
+    **"Received"** from `paid_total`. Record Payment lost its **Advance**
+    column, and the remaining three now add up: Total − Collected =
+    Balance Due, which they did not while a third figure sat between them.
+    The `orderAdvancePaid` nav param is gone from all four callers and
+    from `nav.dart`, and `OrdersRow.advancePaid` is **deleted**, so
+    nothing in the app can reach the column at all.
+  - **THE ONE REAL WRITER WAS THE PORTER PATH.** Three sites wrote a
+    literal `0.0`; the fourth, `new_order_page`, wrote
+    `amount - cashCollect` — money the porter has already settled to the
+    vendor. Deleting that would have discarded received money, so it is
+    **redirected into a `payment_entries` row with `mode: 'porter'`**,
+    which is exactly what this file already prescribed. Guarded on `> 0`
+    (`payment_entries` CHECKs `amount > 0`; an unguarded insert would
+    23514 and fail order creation for every NON-porter job), caught
+    separately from the order insert (the order is already saved by then,
+    so the outer catch would have reported a failure that did not
+    happen), and **not swallowed** — the failure names the amount and
+    sends the vendor to Record Payment. The row is re-read after the
+    insert rather than patched, because the trigger moves `paid_total`
+    and `payment_status` after the returned copy was taken.
+  - **The four DB readers, and the one that mattered:**
+    `sync_order_paid_total()` added `advance_paid` into both the `'paid'`
+    and `'partial'` tests, so the column was load-bearing in the function
+    that decides whether a job is paid; `can_delete_order()`'s advance
+    term was redundant; **`branch_kpis_view.outstanding` was
+    `sum(amount - advance_paid)` and never subtracted `paid_total`** —
+    the same bug on a second surface, and a third place where that view
+    disagrees with `dashboard_kpis_view`; `customer_360_view
+    .total_advance` was 0 for every customer beside a correct
+    `total_collected`. All four rewritten in
+    `supabase/20260916_advance_paid_retire_db_readers.sql`.
+  - **TWO DEFECTS IN MY OWN GUARDS, both always-fails, both caught by
+    running the predicates read-only against live before shipping.**
+    (1) The branch-view check picked "an order with `paid_total > 0`" and
+    asserted the view's outstanding DIFFERED from the old figure — but
+    the only such order has `payment_status = 'paid'`, which the view's
+    own filter excludes, so old and new are identical and the check would
+    have **rolled back a correct migration**. The discriminating state is
+    now CONSTRUCTED (one payment entry makes an order partly-paid) and
+    rolled back, so it exercises on any database. (2) The grant-restore
+    check compared the ACL after a DROP + CREATE against an enumerated
+    `grant select, insert, ...` of seven privileges — this server's ACL
+    carries **32 entries, 4 roles x 8 privileges including MAINTAIN**, so
+    four would have been missing and the check would have raised. Now
+    `grant all privileges`. Neither was visible by re-reading.
+  - **RUN ORDER IS LOAD-BEARING.** Ship the build, run the readers
+    migration (safe any time — the column still exists), and drop the
+    column only once no device runs an older build: an installed older
+    build sends `'advance_paid': 0.0` in its order INSERT and gets 42703
+    after the drop, i.e. **it cannot create orders**. The drop migration
+    does not pretend a query can check that; it refuses unless the
+    operator sets `nagarva.old_builds_retired = 'yes'`.
+  - **A new instance in the wrong-instrument family** — `_` in LIKE is a
+    wildcard, so `ilike '%advance_paid%'` matched the label string
+    `"Advance Paid"` in an unrelated function. See the third instance
+    under the catalogue conventions above; every snake_case identifier in
+    this schema is an unintended LIKE pattern.
+  - **Not fixed, deliberately:** `branch_kpis_view` keeps `amount` as its
+    revenue base where the dashboard uses `quote_total`/addons — that is
+    NG-046's reconciliation, and moving it here would change a branch
+    card's revenue under cover of a cleanup.
+  - **Not verified:** `flutter analyze` — no Flutter toolchain in this
+    session. CI runs it.
 - **16 Sept 2026 (last), ALL SIX MIGRATIONS ARE LIVE — the lead-lost path
   is atomic, and `price_gap_pct` has a writer for the first time.**
   - **`20260915_mark_lead_lost_atomic.sql` — APPLIED** (16 Sept, 23:40
