@@ -2722,7 +2722,9 @@ from.**
 
 **DONE 9 Sept 2026 — `20260909_consolidate_survey_tables.sql` ran and was
 verified against the database.** `surveys` gone, `customer_surveys` holds
-the 7 live rows, ten columns added (`items`, `custom_items`, `photos`,
+the 7 live rows, ten columns added (`items` — **DROPPED 16 Sept 2026, see
+the changelog; it never held a value and existed only to be mistaken for
+`rooms`** — `custom_items`, `photos`,
 `total_cft` numeric, `suggested_vehicle`, `service`, `notes`,
 `customer_email`, `from_city`, `to_city`), `from_floor`/`to_floor` are text,
 `quotations_survey_id_fkey` followed the rename, RLS and the single token
@@ -2806,6 +2808,47 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **16 Sept 2026 (last), `customer_surveys.items` dropped — and the
+  tombstone trap sprung harmlessly on the way in.**
+  - **`20260915_drop_dead_survey_items_column.sql` — APPLIED**, verified
+    by query rather than from the editor's *Success*: `items` gone,
+    `rooms` present, **9 rows / 5 carrying line items**, RLS still on with
+    its one policy, and **the other four dead columns untouched** —
+    `custom_items`, `photos`, `suggested_vehicle` and `total_cft`. That
+    last one is the point of the check: `total_cft` is SPOKEN FOR as
+    `public_submit_survey_impl`'s future single writer, and a drop that
+    took it along would have looked like a tidier cleanup.
+  - **Priya Raghavan's row survives byte for byte** —
+    `[{"room": "Bedroom 1", "items": "Queen bed, 2 almirahs, AC unit,
+    6 cartons"}]`, read back verbatim. Still unreadable by
+    `parseSurveyRooms`, still owed a re-ask or four hand-keyed lines.
+    Unchanged is the correct outcome, not a missed conversion.
+  - **Verified by behaviour, not by the catalogue:** `public_get_survey`
+    called **as anon** on a real pending token returns `ok` with the
+    identical nine keys it returned before the drop. A column drop cannot
+    break a function that never named the column — but that is a claim
+    about code, and the call is what settles it.
+  - **THE TOMBSTONE TRAP, and it was live.** A pre-check for functions
+    naming both `items` and `customer_surveys` returned **one hit** —
+    `public_submit_survey_impl`. All three matches are COMMENT lines
+    written the day before ("a free-text {room, items} row was accepted",
+    "40 items, 110 subs", "qty is a count of identical items"). No code
+    reads the column. This migration's preflight tests the
+    `information_schema` column, not the text, so it could not trip — but
+    a naive *"is this column referenced anywhere?"* grep would have
+    refused a correct migration on prose describing the very thing being
+    removed. Same shape as the `delete_org` tombstone, four days later,
+    on a different object. **Strip comment lines first, or ask the
+    catalogue instead of the text.**
+  - **One caveat stated before it was run, and it still stands for
+    anyone re-reading the file:** the postflight asserts EXACT counts
+    (9 rows, 5 with line items). That catches a drop that took `rooms`
+    with it, and it is dated — one new survey and it refuses a correct
+    migration. It happened to be run while the counts held.
+  - **Lint still GREEN**: 0 findings across all four checks, re-run after
+    the drop. Two migrations remain handed over and unrun, independent of
+    each other: `20260915_mark_lead_lost_atomic.sql` and
+    `20260915_policy_store_first_gate.sql` (Part 4).
 - **16 Sept 2026 (later), the ungated RPCs are gone and the survey
   payload is validated — both verified by CALLING them, and the second
   one proved its own load-bearing half.**
@@ -2855,11 +2898,12 @@ an inconsistency and is the whole fix.
     result that names the count rather than as a `notice` the client may
     not surface: a check whose pass is indistinguishable from silence is
     the always-passes shape, in the tooling written to catch it.
-  - **Three migrations remain handed over and unrun**, all independent
-    of each other: the dead-column drop
-    (`20260915_drop_dead_survey_items_column.sql`), the atomic lead-lost
-    RPC (`20260915_mark_lead_lost_atomic.sql`) and Part 4's policy store
-    (`20260915_policy_store_first_gate.sql`).
+  - **Three migrations remained handed over and unrun when this was
+    written**; the dead-column drop went live later the same day (see the
+    entry above), leaving the atomic lead-lost RPC
+    (`20260915_mark_lead_lost_atomic.sql`) and Part 4's policy store
+    (`20260915_policy_store_first_gate.sql`), which are independent of
+    each other.
 - **16 Sept 2026, the fail-open PIN guard is LIVE — and verified against
   the database, not against the editor's "Success".**
   `supabase/20260915_set_staff_pin_fail_open.sql` was run by Arun in the
