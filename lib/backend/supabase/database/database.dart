@@ -49,7 +49,6 @@ export 'tables/warehouses.dart';
 export 'tables/low_stock_view.dart';
 export 'tables/wa_contacts.dart';
 export 'tables/wa_messages.dart';
-export 'tables/customer_surveys.dart';
 export 'tables/rate_cards.dart';
 export 'tables/rate_card_charges.dart';
 export 'tables/rate_card_rules.dart';

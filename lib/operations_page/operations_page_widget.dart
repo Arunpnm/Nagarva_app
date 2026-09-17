@@ -168,7 +168,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
 
     // Balance due deliberately uses Close Order's OWN formula
     // (quote_total + non-cancelled addons - paid_total), not the
-    // amount/advance_paid one QuickPaymentSection uses. The whole point of
+    // plain-amount one QuickPaymentSection uses. The whole point of
     // showing it here is that the owner sees the same number Close Order
     // will hard-warn about, so the queue can't set up a surprise at the
     // dialog. If those two formulas are ever reconciled, reconcile this

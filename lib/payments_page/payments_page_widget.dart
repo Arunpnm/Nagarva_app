@@ -65,7 +65,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
         .toList()
         .cast<OrdersRow>()
         .where(
-            (o) => ((o.amount ?? 0) - (o.advancePaid ?? 0) - o.paidTotal) > 0)
+            (o) => ((o.amount ?? 0) - o.paidTotal) > 0)
         .toList();
     safeSetState(() {});
     // Live 'Received (Month)' tile — the old one was a hardcoded
@@ -187,7 +187,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                   Text(
                                     // Live: Σ balance due across the
                                     // pending list below.
-                                    '₹${_model.pendingList.fold<double>(0.0, (s, o) => s + ((o.amount ?? 0) - (o.advancePaid ?? 0) - o.paidTotal)).toStringAsFixed(0)}',
+                                    '₹${_model.pendingList.fold<double>(0.0, (s, o) => s + ((o.amount ?? 0) - o.paidTotal)).toStringAsFixed(0)}',
                                     style: FlutterFlowTheme.of(context)
                                         .headlineMedium
                                         .override(
@@ -460,7 +460,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                             Text(
                                               // Balance due, not gross amount:
                                               // amount - advance - collected.
-                                              '₹${((pendingListItemItem.amount ?? 0) - (pendingListItemItem.advancePaid ?? 0) - pendingListItemItem.paidTotal).toStringAsFixed(0)} due',
+                                              '₹${((pendingListItemItem.amount ?? 0) - pendingListItemItem.paidTotal).toStringAsFixed(0)} due',
                                               style: FlutterFlowTheme.of(
                                                       context)
                                                   .titleMedium

@@ -64,7 +64,6 @@ class OrderDetailPageWidget extends StatefulWidget {
     this.orderToFloor,
     this.orderMoveDate,
     this.orderAmount,
-    this.orderAdvancePaid,
     this.orderStatus,
     this.orderPaymentStatus,
     this.orderTrackingStatus,
@@ -85,7 +84,6 @@ class OrderDetailPageWidget extends StatefulWidget {
   final String? orderToFloor;
   final String? orderMoveDate;
   final String? orderAmount;
-  final String? orderAdvancePaid;
   final String? orderStatus;
   final String? orderPaymentStatus;
   final String? orderTrackingStatus;
@@ -202,8 +200,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
 
   /// Clones the shipment/pricing fields only — the same field set
   /// new_order_page's own create-payload uses. Transactional/workflow
-  /// state (status, payment_status, tracking_status, advance_paid,
-  /// paid_total) always resets to fresh-order defaults, never carried
+  /// state (status, payment_status, tracking_status, paid_total)
+  /// always resets to fresh-order defaults, never carried
   /// over, so a duplicate never inherits the source order's payment
   /// history or job progress.
   Future<void> _duplicateOrder() async {
@@ -321,15 +319,14 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
         // original notes.
         'notes': 'Copy of ${o.id}',
         // Brief §3 "Reset": pending, not new_order_page's usual 'booked' —
-        // a duplicate starts one stage earlier, before advance_paid/
-        // paid_total/payment_status all reset to their own zero/pending
-        // defaults below. vehicle_no/driver/supervisor_id/invoice_no/
+        // a duplicate starts one stage earlier, before paid_total and
+        // payment_status reset to their own zero/pending defaults
+        // below. vehicle_no/driver/supervisor_id/invoice_no/
         // lr_id/job_otp/supervisor_status are satisfied by omission (a
         // fresh insert starts every unlisted column at its own default).
         'status': 'pending',
         'payment_status': 'pending',
         'tracking_status': 'Pending',
-        'advance_paid': 0.0,
       });
       await AuditLogService.log(
         entityType: 'orders',
@@ -362,8 +359,6 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
               created.moveDateOrNull?.toString(), ParamType.String),
           'orderAmount':
               serializeParam(created.amount?.toString(), ParamType.String),
-          'orderAdvancePaid': serializeParam(
-              created.advancePaid?.toString(), ParamType.String),
           'orderStatus': serializeParam(created.status, ParamType.String),
           'orderPaymentStatus':
               serializeParam(created.paymentStatus, ParamType.String),
@@ -450,7 +445,17 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   String? get _orderToFloor => widget.orderToFloor ?? _fromRow('to_floor');
   String? get _orderMoveDate => widget.orderMoveDate ?? _fromRow('move_date');
   String? get _orderAmount => widget.orderAmount ?? _fromRow('amount');
-  String? get _orderAdvancePaid => widget.orderAdvancePaid ?? _fromRow('advance_paid');
+  /// Money actually received, from orders.paid_total - the sum of this
+  /// order's payment_entries, maintained by trigger.
+  ///
+  /// Was `orderAdvancePaid` / `advance_paid` until 16 Sept 2026. That
+  /// column is 0 on every live order and nothing writes it, so the
+  /// Payment card reported "Advance Paid Rs0" on an order against which
+  /// Rs37,800 had been received. There is no nav param for this one on
+  /// purpose: the value changes every time a payment is recorded, so it
+  /// is read from the row rather than carried in a URL that can go
+  /// stale. Renders as an em dash until the row arrives.
+  String? get _orderPaidTotal => _fromRow('paid_total');
   String? get _orderStatus => widget.orderStatus ?? _fromRow('status');
   String? get _orderPaymentStatus => widget.orderPaymentStatus ?? _fromRow('payment_status');
   String? get _orderTrackingStatus => widget.orderTrackingStatus ?? _fromRow('tracking_status');
@@ -1582,8 +1587,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                           value: _money(_orderAmount),
                         ),
                         DetailRow(
-                          label: 'Advance Paid',
-                          value: _money(_orderAdvancePaid),
+                          label: 'Received',
+                          value: _money(_orderPaidTotal),
                         ),
                         DetailRow(
                           label: 'Payment Status',

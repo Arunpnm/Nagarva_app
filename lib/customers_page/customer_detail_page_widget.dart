@@ -435,7 +435,6 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
         'orderToFloor': serializeParam(o.toFloor?.toString(), ParamType.String),
         'orderMoveDate': serializeParam(o.moveDateOrNull?.toString(), ParamType.String),
         'orderAmount': serializeParam(o.amount?.toString(), ParamType.String),
-        'orderAdvancePaid': serializeParam(o.advancePaid?.toString(), ParamType.String),
         'orderStatus': serializeParam(o.status, ParamType.String),
         'orderPaymentStatus': serializeParam(o.paymentStatus, ParamType.String),
         'orderTrackingStatus': serializeParam(o.trackingStatus, ParamType.String),

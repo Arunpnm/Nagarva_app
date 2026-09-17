@@ -250,15 +250,20 @@ that part stands regardless of how the survey/sign recovery resolves,
 since the `/auth` relay page needs to move off root either way once
 anything else is deployed there again.
 
-Two RPC families do overlapping jobs (survey get/submit, signature
+Two RPC families did overlapping jobs (survey get/submit, signature
 get/submit) with real security-posture differences neither side
-strictly wins on — full comparison given to Arun 17 Aug 2026, not
-reproduced here since it's a live discussion, not a settled fact; ask
-him or re-derive from `pg_get_functiondef()` on `get_survey_by_token`/
-`submit_survey`/`public_get_survey`/`public_submit_survey`/
-`get_signature_request`/`submit_signature`/`public_get_signature_request`/
-`public_submit_signature` if this note has gone stale. Consolidating to
-one family is a stated future goal, not scheduled.
+strictly won on — full comparison given to Arun 17 Aug 2026.
+**HALF-RESOLVED 16 Sept 2026: the SURVEY duplicate is gone.**
+`20260915_drop_ungated_public_rpcs.sql` dropped `get_survey_by_token`
+and `submit_survey` (with `get_quotation_by_token`/`accept_quotation`),
+leaving `public_get_survey`/`public_submit_survey` as the only survey
+path — which is also the one the live page calls and the stricter of
+the two on disclosure. **Do not `pg_get_functiondef()` the dropped
+names; they no longer exist.** The SIGNATURE pair is untouched and the
+comparison still stands there: `get_signature_request`/
+`submit_signature` versus `public_get_signature_request`/
+`public_submit_signature`. Consolidating that half is a stated future
+goal, not scheduled.
 
 ## Known bugs / immediate issues
 1. **~~dashboard_kpis_view (and likely all 6 views) missing in Nagarva project~~
@@ -518,16 +523,48 @@ backstop (see "Multi-tenancy status" above) and are not superseded by this.
   policy page live on nagarva.in (also needed for Meta/WhatsApp API).
 
 ## Dev workflow
+**The working copy is `D:\nagarva_app`** (Arun, 17 Sept 2026). This line
+read `C:\Android project\nagarva_app` until today and was wrong — the
+same shape as the Flutter SDK path that said `C:\src\flutter` for
+months. Worth correcting for the same reason given there: **a wrong path
+makes a checkable fact look uncheckable**, and the next session either
+guesses or gives up instead of looking.
 ```
-cd "C:\Android project\nagarva_app"
-flutter run            # choose 1 = Chrome for quick testing
+cd /d D:\nagarva_app          # /d because this switches DRIVE as well as
+                              # directory; a bare `cd` from a C: prompt
+                              # changes neither
+flutter pub get               # MANDATORY after any fresh clone or pull —
+                              # see below
+flutter run                   # choose 1 = Chrome for quick testing
 # r = hot reload, R = hot restart, q = quit
 flutter build apk --release   # Android build (licenses accepted, cmdline-tools OK)
 ```
-Backup of the previous working build: `C:\Android project\nagarva_app_old`
-(May snapshot; delete once confident). Old FlutterFlow DSL workspace (reference
-docs only, do not edit): `C:\Users\Arun\ArunPKRS2` — its context/pages.md and
-dsl/edit.dart are useful specs of intended behaviour.
+**`flutter pub get` is not optional after a pull.** `lib/l10n/gen/` is
+gitignored — only the four `.arb` files are tracked — so a fresh checkout
+has no generated `AppLocalizations` and the IDE shows a wall of
+unresolved-symbol errors that read as a broken pull. It is not broken;
+the five files regenerate from `l10n.yaml`.
+
+**APK builds, AAB refuses** (verified 17 Sept 2026, and it is deliberate
+— see the 8 Sept launch pass): `android/key.properties` does not exist,
+so `assembleRelease` falls back to debug signing and an APK builds fine
+for on-device testing, while `bundleRelease` throws a GradleException
+naming the missing file rather than producing a debug-signed AAB that
+Play would reject on upload. The upload keystore still does not exist.
+
+**Work lands on a branch, not `main`.** As of 17 Sept 2026 the active
+branch is `claude/nice-thompson-sc3qk3`, **26 commits ahead of `main`**,
+in an unmerged draft PR #1. Pulling `main` gets a build from before all
+of it, silently and with no error — check out the branch, or merge
+first.
+
+Old FlutterFlow DSL workspace (reference docs only, do not edit):
+`C:\Users\Arun\ArunPKRS2` — its context/pages.md and dsl/edit.dart are
+useful specs of intended behaviour. **Both remaining `C:\Users\Arun\...`
+paths in this file are UNVERIFIED as of 17 Sept**; only the working-copy
+path was corrected, and the old `C:\Android project\nagarva_app_old`
+backup reference was dropped because it described a location that is no
+longer where the project lives. Do not treat either as confirmed.
 
 ## Hardcoded demo data — how to sweep for it properly
 (18 Aug 2026. Recorded here rather than in the changelog because the
@@ -568,6 +605,124 @@ enough; look at what renders.
 "Add Expense" still on FlutterFlow's stub — `print('AddExpenseBtn
 pressed ...')` and nothing else. A button that looks like it works and
 silently doesn't is the same class of trust damage.
+
+## BUILT vs USED — the category, and the one that would have caught
+## this month's bugs
+(Arun, 17 Sept 2026, after a seven-module audit. Written as a CATEGORY
+rather than a bug list, because the individual bugs below have nothing
+in common except this.)
+
+**A module can be complete, routed, permission-gated, reachable from the
+drawer and in the permissions matrix, and still be entirely unproven.**
+"Built" and "used" are two different columns and this file has spent
+months conflating them — a page inventory answers the first question and
+is routinely read as answering the second.
+
+**ZERO ROWS IS NOT A NEUTRAL STATE. It means nothing has ever been
+proven here.** A table at 0 is not "clean" or "ready"; it is the loudest
+available signal that every line of code pointing at it is a hypothesis.
+
+**Arun's list, 17 Sept 2026 — every real bug this month was code that
+had never met data:** `/quote` (a page and a share button for a path
+nothing has ever served, and no `public_*` RPC to serve it),
+`_gstShowInPdf`, `set_staff_pin` (a fail-open guard whose `raise` was
+unreachable — it had never fired once in its life until the fix),
+`advance_paid` (0 on all 8 orders while `paid_total` was non-zero on
+one, so the Daily Accounts Register reported Rs0 collected on the only
+paid order), and the leads pipeline strip (invented funnel counts
+sitting under a real, working list).
+
+### The worked example: Trips, found 17 Sept 2026 by this frame alone
+`trips` carries a RESTRICTIVE `branch_isolation` policy whose **qual and
+with_check are both** `current_staff_branch_or_owner(org_id, branch)`,
+and that function tests `branch = p_branch`, where NULL matches nobody.
+`lib/trips_page/trips_page_widget.dart:143` never mentions `branch` —
+not in the form, not in the insert, nowhere in the file. So:
+- a manager or supervisor creating a trip gets **"new row violates
+  row-level security policy"** on Save, every time;
+- the owner saves fine and the trip is then **invisible to every staff
+  session, permanently**.
+
+**Verified as a fact about the schema, not inferred from the widget** —
+which is the half that matters, and the half Arun asked for before
+letting "will fail" be said: `trips.branch` has **no column default**,
+`is_generated = NEVER`, **no rules**, `relkind = r` (a real table, no
+INSTEAD OF), and its two triggers — `enforce_org_writable` BEFORE INSERT
+and `set_updated_at` BEFORE UPDATE — **neither names `branch`**
+(`pg_get_functiondef ~* '\ybranch\y'` false on both). Nothing fills it.
+That is the difference between *"should fail"* and *"will fail"*, and it
+cost one query.
+
+**Two causes, same symptom, and fixing one does not reveal the other.**
+`staff.auth_user_id` is NULL on all 5 staff rows, so the policy's
+`exists(...)` is false for every staff session **regardless of branch**
+today. Populate it via a first PIN login and the branch reason takes
+over — the insert still fails, because the app still sends NULL.
+
+### The second worked example: the Crew Sheet has NEVER been able to save
+(17 Sept 2026, found by RUNNING the seed rather than reading anything —
+which is this section's own point 4 proving itself within the hour.)
+
+`order_staff.ac_amount` is
+**`GENERATED ALWAYS AS ((ac_units)::numeric * ac_rate) STORED`**. A
+generated column cannot be written, so any INSERT or UPDATE naming it
+raises **`428C9 cannot insert a non-DEFAULT value into column
+"ac_amount"`** before anything lands.
+
+**`crew_sheet_page_widget.dart:507` puts `'ac_amount': l.acAmount` in
+its upsert payload.** So every save the Crew Sheet has ever attempted
+has failed, at the database, in full. That is why `order_staff` holds 8
+rows with `is_driver` false on every one: none of them came from the
+Crew Sheet, and none ever could.
+
+**The audit that preceded this had it exactly BACKWARDS**, and the
+inversion is the part worth keeping. It reported `ac_units`/`ac_rate` as
+"dead columns — no Dart getter, no writer, nothing reads them" and
+`ac_amount` as the one the app writes. The truth is the reverse:
+`ac_units` and `ac_rate` are `NOT NULL DEFAULT 0` and are the ONLY
+writable inputs; `ac_amount` is not writable at all.
+
+**A NEW INSTANCE OF THE WRONG-INSTRUMENT FAMILY, and the sharpest yet,
+because the right instrument was in hand.** The sweep asked
+`information_schema.columns` for `data_type, is_nullable,
+column_default`. For `ac_amount` that returns **nullable, no default** —
+byte-for-byte indistinguishable from an ordinary optional column. The
+discriminating field is **`is_generated`**, which the sweep did not
+select. It was selected an hour later for `trips.branch`, in the same
+session, to prove nothing filled that column. Same catalogue, same
+question shape, asked properly once and improperly once.
+**When asking "can I write this column?", select `is_generated` and
+`generation_expression`. `column_default` and `is_nullable` answer a
+neighbouring question and answer it truthfully.**
+
+**The fix is a product decision, not a cleanup — see §12.1.** The schema
+says A/C is **units x rate**; the app implements a flat per-man amount
+in one field. Two honest ways out, and they are not equivalent:
+- **Decision-free**: write `ac_units = 1, ac_rate = <the typed amount>`,
+  so the generated `ac_amount` equals today's typed figure exactly. No
+  UX change, no invented number, the save starts working.
+- **Schema-faithful**: give the sheet a units field and a rate field,
+  which is what the column pair was built for and what §12.1 asks.
+Either way `ac_amount` comes out of every write payload.
+
+### What this changes about how work is reported
+1. **Report two columns, never one.** "Built" and "has ever run against
+   a row" are separate claims. A status line that gives only the first
+   is the stale-note disease in a new costume.
+2. **Count the backing tables before auditing the code.** `count(*)` on
+   what a module reads is one query and it tells you whether you are
+   reviewing code or reviewing a hypothesis.
+3. **A module at zero rows gets a seed, not a sign-off.**
+   `supabase/20260917_seed_unused_modules.sql` (handed over unrun) does
+   this for the seven modules that had never met a row: Salary &
+   advances, Crew sheet, Trips, Vendors & bills, Contracts, Reviews,
+   Insurance & claims. It does not work around the Trips finding — it
+   inserts the trip with exactly the app's column set, branch absent,
+   and demonstrates the consequence.
+4. **A seed is not a test.** It runs as `postgres` in the SQL editor,
+   which bypasses RLS, so a write the app itself would be refused still
+   succeeds there. A seed puts a row on the screen; only a device pass
+   says the screen is right.
 
 ## Conventions for Claude Code sessions
 - **Changing a function's return type or a view's column type needs an
@@ -1054,6 +1209,61 @@ silently doesn't is the same class of trust damage.
   **Keep the tombstone. It is worth more than the check that tripped on
   it.**
 
+  **SECOND INSTANCE, 16 Sept 2026 — and it did not trip anything, which
+  is why it is worth recording.** Dropping `customer_surveys.items`, a
+  pre-check asked which functions name both `items` and
+  `customer_surveys`. Exactly one did: `public_submit_survey_impl`. All
+  three matches are COMMENT lines written the day before, by the
+  shape-check migration, describing the very confusion being removed —
+  *"a free-text {room, items} row was accepted"*, *"40 items, 110 subs"*,
+  *"qty is a count of identical items"*. **No code reads the column.**
+  A naive *"is this column referenced anywhere?"* check would have
+  refused a correct migration on prose about the thing it was removing.
+  **PROSE DESCRIBING A REMOVED OBJECT IS NOT A REFERENCE TO IT, and a
+  text-based "is this used anywhere" check cannot tell the difference** —
+  in either direction. It cannot, because the two are the same bytes.
+  **The fix is not a better regex; it is a different instrument.** That
+  migration's preflight asks `information_schema.columns` whether the
+  column exists, which is a question about the SCHEMA and cannot be
+  answered by a comment. So: **for "does this object exist / is it still
+  listed / is it still used", ask the catalogue — `information_schema`,
+  `pg_attribute`, `pg_depend` (with `refclassid`) — never
+  `pg_get_functiondef`.** Where text genuinely is the only instrument,
+  strip comment lines first, exactly as the `delete_org` entry says.
+  The two instances differ in outcome and that is the point: the first
+  tripped and rolled back a correct migration, the second was caught
+  before it was written. Same defect, four days apart, on a column
+  instead of an array element.
+
+  **THIRD INSTANCE, 16 Sept 2026 — and this one is NOT a comment. The
+  false positive came from the INSTRUMENT itself, which makes it the
+  cleanest case in the family.**
+  Sweeping for readers of `orders.advance_paid` before dropping it, a
+  scan with `pg_get_functiondef(...) ilike '%advance_paid%'` returned
+  five objects. One was `default_pricing_config()`, which does not
+  contain the column, has nothing to do with orders, and would have been
+  rewritten for nothing. What it contains is the label string
+  `{"key":"advanceOnQuote","label":"Advance Paid"}` — and **`_` in LIKE
+  is a single-character wildcard**, so the pattern `advance_paid`
+  matches `Advance Paid`, space and all. Verified rather than assumed:
+
+      'Advance Paid' ilike '%advance_paid%'   -> true
+      'Advance Paid' ~* '\yadvance_paid\y'    -> false
+      'x_advance_paid_y' ~* '\yadvance_paid\y' -> false
+
+  **Every snake_case identifier in this schema is an unintended LIKE
+  pattern.** `paid_total`, `org_id`, `move_date`, `quote_total` — each
+  one silently matches its own words separated by any character, so
+  every "is this column used anywhere?" sweep written with LIKE over a
+  snake_case name has been over-reporting, in a way that reads as
+  thoroughness. The direction of the error is the dangerous one here:
+  it produces EXTRA hits, which look like diligence and cost a rewrite
+  of something that was never involved.
+  **Use `~* '\y<name>\y'` for identifier searches, never LIKE**, and
+  strip comment lines as the two instances above require. Both fixes are
+  in `supabase/20260916_advance_paid_retire_db_readers.sql`, whose
+  preflight and postflight are a matched 4-before / 0-after pair.
+
   **Roll-call, since the numbering above drifted.** The family is:
   `pg_constraint` asked about uniqueness; `pg_available_extensions`
   asked about installation; single-target asked about fragment danger;
@@ -1100,6 +1310,21 @@ silently doesn't is the same class of trust damage.
   catches them before anything is run. Ask it of every guard, every
   presence check and every "has this been applied?" test — including
   the ones written to enforce the other rules in this file.
+  **The always-fails half has now bitten twice more, and both were
+  caught BEFORE shipping by running the guard logic read-only against
+  the live catalogue** (15 Sept 2026,
+  `20260915_drop_ungated_public_rpcs.sql`): a preflight built function
+  signatures from `pg_get_function_identity_arguments`, which on this
+  server returns argument NAMES as well as types (`p_token text`), so
+  feeding its output back to `to_regprocedure` raises 42601 in every
+  state; and a `pg_depend` lookup omitted `refclassid = 'pg_proc'`,
+  where oids are unique only WITHIN a catalogue. Each would have
+  refused a correct migration. **So the operational habit is: before
+  shipping a migration, run its preflight and postflight predicates on
+  their own as read-only SELECTs and confirm they return what you
+  expect on the CURRENT state.** That is cheap, it needs no write
+  access, and it is the only thing that has actually caught this class
+  — three instances now, none of them found by re-reading the SQL.
   The discriminating check names something that exists in exactly one
   state, and ideally tests **both directions**, since they are mutually
   exclusive: `status = 'revised'` unguarded (before) versus
@@ -1115,6 +1340,62 @@ silently doesn't is the same class of trust damage.
   AND after), and refuses outright if no such quote exists rather than
   returning a verdict it never observed. Keep it; the same file proves
   both states.
+
+  **THE SAME QUESTION, ASKED OF A TEST RATHER THAN A GUARD: can this
+  check REACH its own raise?** (Arun, 15 Sept 2026, on the sharper of
+  two finds that day.)
+  `20260915_set_staff_pin_fail_open.sql`'s postflight calls the function
+  and asserts it now DENIES an unauthorised caller. It picks its victim
+  with `select id into v_id from staff where auth_user_id is null`. With
+  no such row `v_id` is NULL, `set_staff_pin` raises *'staff member not
+  found'*, the handler reads any exception as a denial — and **the
+  postflight passes having tested nothing.** An always-passes check
+  inside the migration written to enforce the opposite.
+  Caught by re-reading, not by running, because on today's data the row
+  always exists. That is what makes it worth recording: the hole is
+  invisible in every run you will actually do.
+  So a behavioural check needs its own precondition asserted before the
+  probe — *"refuse rather than report success on an untested fix"* — and
+  the question to ask of any test is the mirror of the guard question:
+  not only *would this return the same result in both states*, but **is
+  there a state in which this check silently tests nothing?**
+
+- **A rule in this file is not a control. Where an invariant can be
+  CHECKED, ship the check.** (Arun, 15 Sept 2026, after it happened to
+  him twice in one week.)
+  He recorded the anon-vs-PUBLIC revoke trap in this project — *"if
+  anyone tries to close a public function by revoking from anon, it will
+  report success and change nothing"* — and then, days later, issued an
+  instruction to revoke `set_staff_pin` from anon. The `to_regproc`
+  diagnosis went the same way: the entry describing that exact move was
+  already here, already correct, and did not fire.
+  **The failure is not the entry's wording and a better-written entry
+  does not fix it.** A rule only helps if somebody rereads it AT THE
+  MOMENT OF THE DECISION, and at that moment everyone is acting rather
+  than reading. Two people, two instances, one week, both authors of the
+  rule they walked past.
+  So the output is `supabase/lint_security_invariants.sql` — read-only,
+  raises on violation, run it after any migration touching a function, a
+  grant, a view or a table. It is the checkable form of four rules that
+  were already written down here and were not consulted:
+    1. a `if not (... auth.uid() ...)` guard with no `coalesce` — the
+       fail-open shape;
+    2. a SECURITY DEFINER function that WRITES with PUBLIC holding
+       EXECUTE — narrowed past the 50-of-81 functions that carry the
+       default PUBLIC grant, and allow-listed so a NEW one is loud;
+    3. a view without `security_invoker=on`;
+    4. a table in `public` with RLS off.
+  **It was red by design, and on 16 Sept 2026 it went GREEN** —
+  `set_staff_pin` tripped 1 and 2 until its fix was applied; the lint now
+  reports **0 findings across all four checks**. A lint that reads the
+  same before and after a fix is not a check, which is the
+  discriminating-marker rule applied to tooling — and this one
+  discriminated, in both directions, on its first real use.
+  **Re-run it after any migration touching a function, a grant, a view or
+  a table.** Green on 16 Sept is a dated result, not a standing one.
+  When the next invariant gets written down here, ask first whether a
+  catalogue query can decide it. If it can, it belongs in that file, and
+  the paragraph here is the explanation rather than the control.
 
   **A NEIGHBOURING FAILURE, and it is worse than staleness: a claim
   about the data that was never measured.** (Arun, 10 Sept 2026.)
@@ -1194,6 +1475,51 @@ silently doesn't is the same class of trust damage.
   is self-contained; if it is, do not run it. And after any accidental
   DDL in `public`, run that RLS count rather than assuming the drop was
   clean.
+
+- **A CHECK WITH SEVERAL CONJUNCTS AND ONE UNIVERSALLY-FALSE OPERAND
+  HIDES EVERY OTHER FAULT BEHIND IT. Fixing it reveals the next failure,
+  not success.** (Arun, 17 Sept 2026, recorded as a rule on the THIRD
+  instance rather than left as three anecdotes.)
+  The three, all the same shape:
+  1. **`delete_org`** (10 Sept) — its completeness guard refused on four
+     unlisted tables, and fired BEFORE the loop, so the 42P01 on the dead
+     `'surveys'` name was never reachable. Two faults stacked, the outer
+     hiding the inner; fixing only the visible one would have produced a
+     second identical debugging session.
+  2. **`set_staff_pin`** (15-16 Sept) — the fail-open guard, where the
+     empty `auth_user_id` made the whole condition NULL and the `raise`
+     unreachable. It had never fired once in its life.
+  3. **`current_staff_branch_or_owner`** (17 Sept) — it requires BOTH
+     `auth_user_id = auth.uid()` AND `branch = p_branch` inside ONE
+     `exists()`. `auth_user_id` is NULL on all 5 staff rows, so the first
+     conjunct is false and the whole thing is false **regardless of
+     branch**. That is a second, independent cause of the same symptom as
+     the Trips finding: populate `auth_user_id` via a first PIN login and
+     the branch reason takes over, because the app still sends NULL.
+  **The operational form:** when a guard has several conjuncts and one of
+  them is false for every row today, the others are UNTESTED, not
+  correct. Establish which conjunct is doing the refusing before
+  concluding anything about the rest, and expect a second failure after
+  the first fix rather than reading a green run as done.
+
+  **THE DIRECTION CONTRAST, and it is the half worth keeping.** The same
+  NULL in the same column produced OPPOSITE outcomes, and only one was a
+  vulnerability:
+  - **`set_staff_pin` used OR** — `is_org_owner(...) or auth_user_id =
+    auth.uid()`. `false or NULL` is **NULL**, `not NULL` is NULL, the
+    `if` is not taken, and execution **falls through to the UPDATE**.
+    NULL failed **OPEN**: anon minted a working credential.
+  - **`current_staff_branch_or_owner` uses AND, inside `exists()`** —
+    `exists(select 1 from staff where auth_user_id = auth.uid() and
+    branch = p_branch)`. `exists()` never returns NULL, and an AND with a
+    NULL conjunct matches no row. NULL failed **CLOSED**: staff see
+    nothing, which is what Item 30 wanted.
+  So "`auth_user_id` is NULL on all 5 rows" is the same fact in both, and
+  it is a critical vulnerability in one and correct-by-design in the
+  other. **The fact alone tells you nothing — the operator and the
+  `exists()` wrapper decide the direction.** Read those before deciding
+  whether an empty column is a bug, and never generalise from one site to
+  its neighbour.
 
 - **"It raises" is not "there is one thing wrong". A guard that refuses
   early can hide a second, independent fault behind it.** (Arun,
@@ -2290,6 +2616,46 @@ convenience and are explicitly not the record. This is why the audit
 trigger must land BEFORE or WITH the first policy gate — a policy that can
 be switched with no record is the one thing a policy gate cannot be.
 
+**SATISFIED, 15 Sept 2026 — verified by query, not by a deploy log.**
+`audit_row()` exists and `trg_audit_app_settings` is attached with
+`tgenabled = 'O'`, so `20260911_audit_row_trigger.sql` (Part 3, step 1)
+is live. Part 4's migration asserts this in preflight rather than
+assuming it, and refuses with a sentence naming the file to run first.
+
+### A NINTH RULE, learned the moment the first gate was built: THE STORE
+### ITSELF MUST BE OWNER-ONLY, OR EVERY RULE ABOVE IS DECORATIVE
+(15 Sept 2026.) `app_settings` carried exactly ONE policy —
+`org_isolation FOR ALL` — so **every org member could INSERT, UPDATE and
+DELETE policy rows.** Not inferred from the policy text: proven by
+execution and rolled back, by constructing an `org_members` row with
+role `staff` and watching it write:
+
+    PROBE_ROLLBACK is_owner=f sees=8 NON_OWNER_MEMBER_WROTE_POLICY=t err=-
+
+**A gate the blocked person can switch off is not a gate**, and the
+person an advance gate blocks is exactly the person with a reason to
+switch it off. `20260915_policy_store_first_gate.sql` — **APPLIED 16 Sept
+2026, and re-proven by an independent probe: `member_insert=f
+member_update=f member_delete=f` against `owner_insert=t`** — splits the
+policy:
+SELECT stays org-scope (document boilerplate must still read for a staff
+session), INSERT/UPDATE/DELETE become owner-only via `is_org_owner()`,
+following the Tier A/B precedent for org-level configuration.
+**Owner, not manager** — `is_org_manager()` matches
+`('owner','admin','manager')`, and policy decides whether money must be
+collected before a job is confirmed. Widening it later is a decision with
+an argument behind it, not a default.
+Nothing live regressed: all 24 rows are category `documents`, every
+`AppSettingsTable` reference in `lib/` is a READ, no Edge Function names
+the table, and the only SQL writer (`seed_org_document_settings`) is
+SECURITY DEFINER and so not subject to RLS at all.
+**The probe had to CONSTRUCT its non-owner member**, because
+`org_members` holds only owners — a probe that looked for one would have
+found nobody and passed having tested nothing, which is the
+`set_staff_pin` postflight hole exactly. And it asserts the owner CAN
+still write, or a policy set refusing *everyone* passes the denial check
+perfectly and breaks the product.
+
 ### THE CONVENTION — eight rules
 1. **Where.** Per-tenant policy lives in `app_settings`, `category =
    'policy'`. No fourth store. Nothing new in `settings`.
@@ -2318,6 +2684,117 @@ be switched with no record is the one thing a policy gate cannot be.
    a logged override stays on and hands the vendor a list of exceptions to
    review (`where <x>_override_reason is not null`).
 8. **Policy changes are audited by the trigger, not by `updated_by`.**
+
+### `staff.auth_user_id` is EMPTY — and the reason is NOT a missing writer
+(Scoped 15 Sept 2026. Counted, not estimated. **This section replaces a
+15 Sept note that said "Nothing maps a session's `auth.uid()` back to a
+`staff` row" — that was wrong, and it was wrong in the expensive
+direction: it reads as "build a writer", and two writers already
+exist.**)
+
+`staff` holds **5 rows: all active, `auth_user_id` NULL on every one,
+roles only `helper` and `supervisor`, branch `Head Office` on all five,
+and exactly ONE carries a `pin_hash`.** All five were created 1–3 Sept
+2026 — the cohort that field-verified branch scoping in August
+(Rajesh Kumar, Chennai manager; Vignesh M, Chennai supervisor) is gone,
+so that evidence stands for the policies and not for any row live today.
+
+**The writers.** `supabase/functions/pin-login/index.ts:198` and
+`staff-login/index.ts:152` both do
+`.update({ auth_user_id: authUserId }).eq("id", staffId)`, inside
+`if (!authUserId)`, immediately after minting or finding the shadow auth
+user. So population is **lazy, login-triggered, idempotent and
+per-person** — a staff member's first successful PIN login links their
+row and every later login skips the write. Nothing else writes it:
+`staff-deactivate` and `admin-delete-org` only READ it, and
+`staff-invite-redeem` binds a device without touching it.
+
+**So the column is empty because no staff member has ever completed a
+PIN login.** Three independent counts agree rather than one being
+extrapolated: `auth.users` holds **1 user** (the owner) and **0** shadow
+users matching `staff-%@staff.nagarva.in`; `org_members` holds **3 rows,
+all `role = 'owner'`, all the same person**, and `pin-login` inserts an
+`org_members` row on that same first login; and four of the five staff
+rows have no `pin_hash` at all, so four of them *cannot* log in yet
+whatever else is true.
+
+**Count `pin_hash`, never `pin`.** `staff_hash_pin` bcrypts `pin` into
+`pin_hash` and then NULLs `pin`, so `pin is not null` reads 0 on a staff
+table where PIN login works fine. Counting the wrong column here
+produces "nobody can PIN-login", which sends the next session debugging
+a non-existent outage.
+
+#### What the emptiness actually costs, by consumer
+Six functions and nine policies read it. They fail in two different
+ways, and only one of them is a defect.
+
+- **Fails CLOSED, correctly, and self-heals at first login.**
+  `current_staff_id()` and `current_staff_branch_or_owner()` both wrap
+  the comparison in `exists(...)`, which returns false rather than NULL.
+  Nine policies ride on them: RESTRICTIVE `branch_isolation` on
+  `orders`, `leads`, `customers`, `tasks`, `trips`, `attendance`,
+  `reviews`, and the two `notifications` policies. A staff session that
+  has not logged in sees nothing; after their first login it sees their
+  branch. That is the fail-closed behaviour Item 30 was built for,
+  arriving as designed.
+- **Failed OPEN. FIXED, APPLIED AND VERIFIED LIVE — 16 Sept 2026.**
+  `set_staff_pin`'s guard compared `auth_user_id = auth.uid()` *outside*
+  an `exists()`, so the empty column made the whole condition NULL and
+  the `raise` unreachable — proven by execution 15 Sept 2026, anon
+  included. `20260915_set_staff_pin_fail_open.sql` was run by Arun in the
+  SQL editor on 16 Sept and **verified against the database rather than
+  from the editor's "Success" message**, per the three-states rule:
+    * **ACL** — `anon` false, `PUBLIC` false, `authenticated` true;
+      grantees now exactly `authenticated, postgres, service_role`.
+    * **Behaviour** — the same call that minted a credential yesterday
+      now returns `denied=t err=[not authorized to set this PIN]`, with
+      `staff` unchanged at 5 rows / 1 `pin_hash`. The raise fired for the
+      first time in its life.
+    * **The lint** — `lint_security_invariants.sql` went from two
+      findings to **0 across all four checks**.
+  The lesson is not "populate the column": it is that `exists()` never
+  returns NULL and a bare `col = auth.uid()` does.
+- **Loses attribution, permanently for rows already written.**
+  `audit_log` holds **57 rows, 3 distinct actors, 0 resolving to a
+  `staff` row and 53 resolving to `org_members`** — i.e. everything so
+  far attributes to the owner or to nobody. `audit_row()` takes
+  `auth.uid()` and leaves `actor_name`/`actor_role` NULL on purpose, so
+  a staff actor becomes resolvable the moment their row is linked — but
+  **only for rows written after that**. The 57 already logged can never
+  be resolved, because the uid they carry is the owner's.
+
+#### The part that needs a decision, and it is not the writer
+The writer works. What is undecided is the **window before a person's
+first login**, and there are exactly two questions in it:
+
+1. **Is lazy population acceptable for the policy gate?** It is, and
+   deliberately: a staff member who has never signed in has no session,
+   so there is nothing for a policy to admit. The gate is only ever
+   evaluated for someone who has logged in, and logging in is what
+   populates the column. No eager backfill is possible either — the
+   shadow auth user does not exist until the first login creates it.
+2. **Is lazy population acceptable for the audit trail?** This is the
+   real one, and the answer is NO for anything written in that window.
+   The policy-gate audit trigger this file requires before the first
+   policy gate will name the owner for every action a staff member takes
+   until that person has logged in once. That is not visibly missing —
+   the log looks complete and every row names the same plausible person,
+   which is worse than a blank.
+
+**The cheap control, if one is wanted: refuse rather than mis-attribute.**
+An audit row whose `actor` resolves to no `staff` row in an org that HAS
+staff rows is either the owner acting or a staff member acting
+unattributed, and nothing in the row distinguishes them. A report over
+`audit_log` joined to `staff` and `org_members` — "rows whose actor
+resolves to neither" — is a one-query check and belongs beside
+`lint_security_invariants.sql`. Not built.
+
+**Not scheduled, and nothing here needs a migration.** The scope is:
+the writer exists, the gate is correct, the fail-open is fixed, and the
+outstanding item is audit attribution during a window that closes by
+itself per person. The only thing a build could change is making the
+window shorter — an owner-triggered "sign this person in once" step
+during onboarding — and that is a product decision, not a schema one.
 
 ### Policy vs PERMISSION — do not confuse them
 **Policy answers *what this business does*. Permissions answer *who may do
@@ -2350,7 +2827,149 @@ flag, never as a separate column on the order. Same money, one place, with
 a label. The advance gate compares `paid_total` against
 `minimum_advance_pct` x the revenue base, the same base the fixed
 `dashboard_kpis_view` and `order_balances_view` use.
-The column is dropped in its own migration once its eight read sites move.
+The column is dropped in its own migration once its read sites move.
+
+**DONE IN DART, 16 Sept 2026 — and the scope was bigger than "eight read
+sites", in a way that matters.** Every Dart reader and writer is off the
+column (15 files touched; the generated `OrdersRow.advancePaid`
+getter/setter is deleted, so nothing in the app *can* touch it), and two
+migrations were written: `20260916_advance_paid_retire_db_readers.sql`
+(**applied 17 Sept**) and `20260916_advance_paid_drop_column.sql`
+(**deliberately never run — see the decision below**).
+**THE DATABASE READ IT TOO, in four places, and one of them decides
+`payment_status`:**
+- **`sync_order_paid_total()`** — the AFTER trigger on `payment_entries`
+  that maintains `paid_total` — added `advance_paid` into BOTH the
+  `'paid'` and the `'partial'` test. So the drop was never a Dart-only
+  change; a Dart-only pass would have left the column load-bearing in the
+  one function that decides whether a job is paid, and the drop would
+  then have broken it.
+- **`can_delete_order()`** — `(v_paid + v_advance) > 0`. Redundant: the
+  same function already refuses on a live `payment_entries` row.
+- **`branch_kpis_view.outstanding`** = `sum(amount - advance_paid)`,
+  which **never subtracts `paid_total`** — the Daily Accounts bug again,
+  on a second surface, in SQL. `dashboard_kpis_view.outstanding` is
+  `greatest(coalesce(nullif(quote_total,0), amount, 0) + addons -
+  paid_total, 0)`, i.e. correct. **A third surface where those two views
+  disagree**, after net profit. Only the money-in term is fixed here; the
+  revenue base stays `amount` because reconciling THAT is NG-046's job
+  and would move a branch card's revenue under cover of a cleanup.
+- **`customer_360_view.total_advance`** = `sum(advance_paid)`, 0 for
+  every customer, sitting beside `total_collected` which is already
+  `sum(paid_total)`. Removed rather than redefined.
+
+**The one real writer was the porter path**, not a literal `0.0`:
+`new_order_page_widget.dart` wrote `amount - cashCollect` — the cash the
+porter has already settled — into `advance_paid`. Deleting that write
+would have thrown away money the vendor has received, so it is
+**redirected into a `payment_entries` row with `mode: 'porter'`**, which
+is what this section already prescribed ("that belongs on the PAYMENT
+ENTRY as a mode or flag"). Three details that are not incidental: the
+insert is guarded on `> 0` because `payment_entries` CHECKs
+`(amount > 0)` and an unguarded insert would 23514 and fail order
+creation for *every non-porter job*; the hand-written
+`payment_status: partial` is gone, because the trigger decides that from
+the entries and two deciders drift; and the row is **re-read** after the
+insert rather than patched, since the trigger moves `paid_total` and
+`payment_status` after the returned copy was taken.
+
+**STEP 1 APPLIED 17 Sept 2026, verified against the database.**
+`20260916_advance_paid_retire_db_readers.sql` is live: **0 objects name
+`advance_paid`** (the mirror of its preflight's 4), the column itself is
+still present — this migration is step 1 of 2 and does not drop it —
+both views still carry `security_invoker=on` (and all 15 views in
+`public` do), `customer_360_view` came back with its **32 ACL entries
+and the same four grantees**, `total_advance` gone with
+`total_collected` intact, `can_delete_order` still SECURITY DEFINER,
+and `trg_sync_order_paid_total` still attached with `tgenabled = 'O'`.
+**Proven by behaviour, not only by catalogue**, on a real order and
+rolled back: a half payment moved
+`ARUN-PACKERS-AND-COURIERS-1002` to `partial` with
+`paid_total = 12,000`, the top-up moved it to `paid` (so the rewritten
+function is not hardcoding `partial`), and the branch card's
+outstanding read **30,354,561 — equal to the new expression and
+different from the old `advance_paid` one at 30,366,561**, by exactly
+the 12,000 just paid. Those two figures are the same ones the
+read-only simulation predicted before the file shipped. Nothing was
+left behind: 0 probe rows, 0 `_c360_acl_before` in `public`, 0 tables
+in `public` without RLS, `payment_entries` back to 2.
+
+### THE COLUMN STAYS. DECIDED 17 Sept 2026 — this is not a pending item.
+**Arun's call: `orders.advance_paid` is left in place permanently.**
+`20260916_advance_paid_drop_column.sql` is written, correct, and
+**deliberately not run**. A later session must not read "drop migration
+written, not run" as outstanding work. It is not a TODO; it is a
+decision with a reason.
+
+**The reason.** Step 1 removed every database reader, and the Dart
+change removes every app reader, so the column is **inert**: zero
+readers, zero non-zero values, nothing that can misreport. Dropping it
+therefore buys **tidiness and nothing else**, while the risk it carries
+is a morning on which nobody at any tenant can create an order — an
+older installed build still sends `'advance_paid': 0.0` in its order
+INSERT, and after the drop that is a 42703. **That trade does not
+favour tidiness.** An inert column costs nothing; a broken order form
+costs a working day at every vendor at once.
+
+**If it is ever revisited**, the order is: merge the PR, build,
+distribute, and only then decide — and the drop still refuses unless
+the operator sets `nagarva.old_builds_retired = 'yes'`, which is a
+claim no query can verify for a distributed APK. That irreducible
+uncertainty is itself part of why the answer is "leave it".
+
+**Do not "finish the job" by running it.**
+
+### `sync_order_paid_total` still NAMES it, in a COMMENT — not in code
+(17 Sept 2026. Recorded because it was read as a missed rewrite, and it
+is the fourth instance of the tombstone family — the first that cost an
+operator rather than a migration.)
+After step 1 the function contains exactly one line matching
+`advance_paid`, and it is a comment at the removal site:
+
+    line 22  is_comment_line = true
+      -- advance_paid used to be added to v_paid on both branches below.
+
+    names_it_raw     = true    <- a raw text match sees it
+    names_it_in_code = false   <- comments stripped, it is gone
+
+The live body declares only `v_order_id, v_paid, v_amount` and derives
+`payment_status` from `v_paid` alone. **The trigger does not read the
+column.**
+**And the mechanism people infer from the sighting is wrong too, which
+matters more than the comment**: the trigger never needed to read
+`advance_paid` for older builds to keep working. An old build *writes*
+the column in its INSERT; a trigger deciding `payment_status` from
+`paid_total` is correct whatever value sits there. The two are
+independent — which is why step 1 was safe to run *before* shipping the
+build, and why nothing broke when it did.
+So there is **no function dependency blocking the drop**, and the drop
+file correctly does not rewrite this function. Its dependency predicate
+strips comment lines before matching and reads 0.
+**Keep the tombstone** — the `delete_org` entry's judgement holds, since
+any prose naming the column trips a raw text match. The fix is the
+instrument, not the wording: strip comments, or ask the catalogue.
+
+**RUN ORDER, if the decision above is ever reversed.** Ship the app
+build, then run the readers migration (safe any time — the column still
+exists), then drop the column only once no device runs an older build. **An installed older
+build sends `'advance_paid': 0.0` in its order INSERT; after the drop
+that is a 42703 and the vendor cannot create orders** — the
+`kServerSideOrderIds` shape exactly. No query can tell you which builds
+are installed, so the drop migration does not pretend to check: it
+refuses unless the operator sets
+`nagarva.old_builds_retired = 'yes'`.
+
+**COUNTED 15 Sept 2026, and the Daily Accounts failure above is LIVE, not
+hypothetical.** 8 orders exist. `advance_paid` is **0 on all eight**;
+`paid_total` is non-zero on **one**; `payment_entries` holds 2 rows. So
+`accounts_page_widget.dart:171`'s `collections += advancePaid` reports
+**Rs0 collected for the only order that has actually been paid** — today,
+on a real screen, with no error anywhere. Two consequences worth holding
+together: the bug is real and currently misreporting, and retiring the
+column costs **no data migration at all**, because it carries nothing.
+Only the eight read sites have to move. (This section previously rested
+on a 10 Sept count of seven orders; 8 is today's, and a count in this
+file is dated, never standing.)
 
 ### OPEN ITEM — audit retention. Not solved, deliberately named.
 `retention_policies` is **EMPTY — zero rows**, and the audit trigger on
@@ -2486,7 +3105,9 @@ from.**
 
 **DONE 9 Sept 2026 — `20260909_consolidate_survey_tables.sql` ran and was
 verified against the database.** `surveys` gone, `customer_surveys` holds
-the 7 live rows, ten columns added (`items`, `custom_items`, `photos`,
+the 7 live rows, ten columns added (`items` — **DROPPED 16 Sept 2026, see
+the changelog; it never held a value and existed only to be mistaken for
+`rooms`** — `custom_items`, `photos`,
 `total_cft` numeric, `suggested_vehicle`, `service`, `notes`,
 `customer_email`, `from_city`, `to_city`), `from_floor`/`to_floor` are text,
 `quotations_survey_id_fkey` followed the rename, RLS and the single token
@@ -2570,6 +3191,705 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **17 Sept 2026 (later), the column STAYS — and a tombstone read as a
+  missed rewrite.**
+  - **DECISION, Arun: `orders.advance_paid` is left in place
+    permanently.** `20260916_advance_paid_drop_column.sql` is written,
+    correct, and deliberately never run. Recorded in the section above as
+    a decision rather than a pending item, precisely so a later session
+    does not read "drop migration written, not run" as work outstanding.
+    The reasoning is the whole of it: with zero readers the column is
+    inert and cannot misreport, so the drop buys tidiness, while the risk
+    is a morning on which no vendor can create an order. **An inert
+    column costs nothing; a broken order form costs a working day at
+    every tenant at once.**
+  - **`sync_order_paid_total` was reported as still naming the column.
+    It does — in a COMMENT, on one line, at the removal site.** Verified
+    line by line rather than argued: `names_it_raw = true`,
+    `names_it_in_code = false`; the live body declares only
+    `v_order_id, v_paid, v_amount` and derives `payment_status` from
+    `v_paid` alone. Neither deliberate nor missed — **rewritten**, with
+    prose left behind describing what was removed.
+  - **The inferred mechanism was wrong too, and that half mattered
+    more.** The reading was "the trigger must keep reading the column
+    while older builds still write it, so the drop has a second
+    precondition." It does not. An old build *writes* `advance_paid` in
+    its order INSERT; a trigger computing `payment_status` from
+    `paid_total` is correct whatever value sits in that column. The two
+    are independent — which is exactly why step 1 was safe to run
+    **before** the app build shipped, and why nothing broke when it did.
+    No function dependency blocks the drop; the drop file correctly does
+    not rewrite the trigger, and its dependency predicate strips comments
+    and reads 0.
+  - **Fourth instance of the tombstone family, and the first to cost an
+    OPERATOR rather than a migration.** `delete_org` tripped its own
+    assertion on a comment; `customer_surveys.items` would have refused a
+    correct migration; the LIKE-wildcard case produced a phantom reader.
+    This one made a **correct and completed rewrite look unfinished to
+    the person reviewing it**, which is a new cost: not a false failure,
+    a false doubt.
+    **Keep the tombstone anyway.** Any prose naming a removed column
+    trips a raw text match, so rewording cannot fix it — the fix is the
+    instrument. Strip comment lines, or ask the catalogue. That is what
+    every guard in these two migrations already does, which is why they
+    read 0 while a naive check reads 1.
+- **17 Sept 2026, `advance_paid` step 1 is LIVE — and the Supabase
+  linter flagged it for a reason that looks like the 9 Sept incident and
+  is not.**
+  - **`20260916_advance_paid_retire_db_readers.sql` — APPLIED**, verified
+    against the database rather than from the editor's *Success*. Full
+    result in the `orders.advance_paid` section above; the headline is
+    **4 readers before, 0 after**, the column deliberately still present
+    (this is step 1 of 2), both views still `security_invoker=on`, and
+    `customer_360_view`'s **32 ACL entries restored across the same four
+    grantees** after a DROP + CREATE that cannot carry grants.
+  - **The behavioural half is what a catalogue query cannot give.** On a
+    real order, rolled back: half payment → `partial` with
+    `paid_total = 12,000`; top-up → `paid`, which is the direction that
+    rules out a function hardcoding `partial`; and branch outstanding
+    read **30,354,561**, equal to the new expression and **different from
+    the old `advance_paid` figure of 30,366,561** by exactly the amount
+    just paid. Both numbers match what the read-only simulation predicted
+    before the file was ever sent — the dry run and the live run agreeing
+    to the rupee is the strongest evidence in this pass.
+  - **THE LINTER WARNING, and the distinction worth keeping.** Supabase's
+    pre-run linter raised two things. *"Destructive operations"* was true
+    and intended — the one `drop view public.customer_360_view`,
+    recreated four lines later in the same transaction. *"Creates a table
+    without enabling RLS: `_c360_acl_before`"* named the migration's
+    **`create temporary table … on commit drop`**, which captures the
+    view's grants before the drop so the postflight can prove they came
+    back.
+    That warning's own wording — "clients using anon or authenticated
+    keys may be able to access" — **is false for a temporary table**: it
+    lands in `pg_temp_N`, not `public`, it is visible only to the session
+    that created it, and `on commit drop` destroys it at COMMIT.
+    Confirmed after the run: 0 rows named `_c360_acl_before` in `public`,
+    and `public` still holds **0 tables without RLS**.
+    **This is NOT the 9 Sept `rate_card_rules` incident repeating, and
+    conflating them would teach the wrong lesson.** There the linter
+    *misparsed* — a plpgsql `select … into v_rules` read as plain-SQL
+    `CREATE TABLE AS`, so its premise was wrong. Here the linter parses
+    correctly (it really is a `CREATE TABLE`); what it lacks is the
+    distinction between a temporary table and a permanent one. Same
+    button, different reason.
+    **"Run without RLS" was the correct choice, and "Run and enable RLS"
+    would have been the wrong one** — that button rewrites the SQL, and
+    this migration's guards assert exact constructs inside the
+    transaction. Never let a linter edit a migration whose postflight you
+    verified line by line. And the 9 Sept rule still governs how you
+    check: do not run the flagged line on its own to see what it does.
+  - **Still to come**: `20260916_advance_paid_drop_column.sql`, only once
+    no device runs an older build — an older APK still sends
+    `'advance_paid': 0.0` in its order INSERT and would get 42703, i.e.
+    that vendor cannot create orders. It refuses unless the operator sets
+    `nagarva.old_builds_retired = 'yes'`.
+- **16 Sept 2026 (last), `orders.advance_paid` retired in Dart — and the
+  database turned out to be reading it in four places, one of which
+  decides `payment_status`.**
+  - **Counted live before anything was written, not carried from the
+    15 Sept note:** 8 orders, `advance_paid` **0 on all eight and NULL on
+    none**, `paid_total` non-zero on **one** (sum 37,800),
+    `payment_entries` 2 live rows. So there is no data migration — the
+    column carries nothing. Only readers move.
+  - **Dart is off the column entirely.** 15 files. The Daily Accounts
+    Register was the live misreport and it was **four columns, not one**:
+    `collections`, `advance`, `pending` and `overCollected` were all
+    computed from `advancePaid`, so the one genuinely paid order showed
+    Rs0 collected AND its full gross still pending. Order Details' Payment
+    card said "Advance Paid Rs0" on that same order and now reads
+    **"Received"** from `paid_total`. Record Payment lost its **Advance**
+    column, and the remaining three now add up: Total − Collected =
+    Balance Due, which they did not while a third figure sat between them.
+    The `orderAdvancePaid` nav param is gone from all four callers and
+    from `nav.dart`, and `OrdersRow.advancePaid` is **deleted**, so
+    nothing in the app can reach the column at all.
+  - **THE ONE REAL WRITER WAS THE PORTER PATH.** Three sites wrote a
+    literal `0.0`; the fourth, `new_order_page`, wrote
+    `amount - cashCollect` — money the porter has already settled to the
+    vendor. Deleting that would have discarded received money, so it is
+    **redirected into a `payment_entries` row with `mode: 'porter'`**,
+    which is exactly what this file already prescribed. Guarded on `> 0`
+    (`payment_entries` CHECKs `amount > 0`; an unguarded insert would
+    23514 and fail order creation for every NON-porter job), caught
+    separately from the order insert (the order is already saved by then,
+    so the outer catch would have reported a failure that did not
+    happen), and **not swallowed** — the failure names the amount and
+    sends the vendor to Record Payment. The row is re-read after the
+    insert rather than patched, because the trigger moves `paid_total`
+    and `payment_status` after the returned copy was taken.
+  - **The four DB readers, and the one that mattered:**
+    `sync_order_paid_total()` added `advance_paid` into both the `'paid'`
+    and `'partial'` tests, so the column was load-bearing in the function
+    that decides whether a job is paid; `can_delete_order()`'s advance
+    term was redundant; **`branch_kpis_view.outstanding` was
+    `sum(amount - advance_paid)` and never subtracted `paid_total`** —
+    the same bug on a second surface, and a third place where that view
+    disagrees with `dashboard_kpis_view`; `customer_360_view
+    .total_advance` was 0 for every customer beside a correct
+    `total_collected`. All four rewritten in
+    `supabase/20260916_advance_paid_retire_db_readers.sql`.
+  - **TWO DEFECTS IN MY OWN GUARDS, both always-fails, both caught by
+    running the predicates read-only against live before shipping.**
+    (1) The branch-view check picked "an order with `paid_total > 0`" and
+    asserted the view's outstanding DIFFERED from the old figure — but
+    the only such order has `payment_status = 'paid'`, which the view's
+    own filter excludes, so old and new are identical and the check would
+    have **rolled back a correct migration**. The discriminating state is
+    now CONSTRUCTED (one payment entry makes an order partly-paid) and
+    rolled back, so it exercises on any database. (2) The grant-restore
+    check compared the ACL after a DROP + CREATE against an enumerated
+    `grant select, insert, ...` of seven privileges — this server's ACL
+    carries **32 entries, 4 roles x 8 privileges including MAINTAIN**, so
+    four would have been missing and the check would have raised. Now
+    `grant all privileges`. Neither was visible by re-reading.
+  - **RUN ORDER IS LOAD-BEARING.** Ship the build, run the readers
+    migration (safe any time — the column still exists), and drop the
+    column only once no device runs an older build: an installed older
+    build sends `'advance_paid': 0.0` in its order INSERT and gets 42703
+    after the drop, i.e. **it cannot create orders**. The drop migration
+    does not pretend a query can check that; it refuses unless the
+    operator sets `nagarva.old_builds_retired = 'yes'`.
+  - **A new instance in the wrong-instrument family** — `_` in LIKE is a
+    wildcard, so `ilike '%advance_paid%'` matched the label string
+    `"Advance Paid"` in an unrelated function. See the third instance
+    under the catalogue conventions above; every snake_case identifier in
+    this schema is an unintended LIKE pattern.
+  - **Not fixed, deliberately:** `branch_kpis_view` keeps `amount` as its
+    revenue base where the dashboard uses `quote_total`/addons — that is
+    NG-046's reconciliation, and moving it here would change a branch
+    card's revenue under cover of a cleanup.
+  - **Not verified:** `flutter analyze` — no Flutter toolchain in this
+    session. CI runs it.
+- **16 Sept 2026 (last), ALL SIX MIGRATIONS ARE LIVE — the lead-lost path
+  is atomic, and `price_gap_pct` has a writer for the first time.**
+  - **`20260915_mark_lead_lost_atomic.sql` — APPLIED** (16 Sept, 23:40
+    IST). `mark_lead_lost(uuid,text,text,text,numeric,text,numeric,text)`
+    exists once, is **SECURITY INVOKER** (`prosecdef = false`), and grants
+    EXECUTE to exactly `postgres, authenticated, service_role` — PUBLIC
+    and anon hold nothing, read with `aclexplode`. Invoker is
+    load-bearing here rather than incidental: `leads` carries
+    `org_isolation` AND a RESTRICTIVE `branch_isolation`, and a DEFINER
+    version would have to re-implement both by hand.
+  - **Exercised on a real lead, everything rolled back**, with a probe
+    built here rather than the migration's own:
+
+        prev=confirmed -> status=lost | outcome_rows=1 | price_gap_pct=10.00
+        call1 ok=true already=false had_order=true
+        call2 ok=true already=true  rows_still=1
+        bad reason code -> P0001 "Unknown reason code made_up_code.
+                                  Pick one of the listed reasons."
+        null lead id    -> P0001 "A lead must be chosen before it can be
+                                  marked lost."
+
+    Four things that proves, three of which the migration's own postflight
+    does not test: the status and the reason land **together**;
+    a second call is **idempotent** (`already=true`, still one outcome
+    row) where the old Dart path would have filed the loss twice, since
+    `quote_outcomes` has only a PK and no unique index; a bad reason code
+    and a null id both come back as **P0001 sentences**, which is what
+    `extractDbErrorMessage` surfaces, rather than a raw 23514 of Postgres
+    internals; and `had_order=true` **warns without blocking** on a lead
+    that already has an order — 7 of 11 do.
+  - **`price_gap_pct = 10.00` is the first value anything has ever
+    computed for that column.** The Dart insert stopped at `recorded_by`,
+    so the field existed and was never written. One writer, guarded
+    against division by zero rather than trusting the caller.
+  - **THE CONSTRAINT QUESTION, and the answer is three columns, not
+    two.** Confirmed by WRITING the exact values and rolling back rather
+    than by reading the CHECK definitions: `leads.status = 'lost'`
+    accepted; `quote_outcomes(outcome='lost', reason_code='price')`
+    accepted; **all six reason codes accepted**, and the RPC's own
+    validator list is byte-identical to
+    `quote_outcomes_reason_code_check`. Two corrections worth keeping:
+    the RPC writes **`leads.status`**, not `quotations.status` — both
+    tables happen to permit `'lost'`, but `quotations` is untouched here;
+    and **`quote_outcomes.outcome` has NO CHECK constraint at all**, so
+    the third written value is unconstrained `text NOT NULL`. Reported,
+    not fixed — a schema change is Arun's call.
+  - **Clean afterwards**: `quote_outcomes` 0, leads at `lost` 0, 11 leads
+    unchanged (confirmed 7, follow_up 2, quoted 1, new 1). **Lint GREEN**,
+    0 findings across all four checks.
+  - **One caveat stated before it was run**: the postflight asserts
+    EXACTLY 1 outcome row during its probe, which holds only while the
+    table is empty. It was, so it passed — but a single real lost-lead
+    recorded first would have refused a correct migration. Same dated-
+    literal shape as the drop migration's exact row counts.
+  - **The six-migration sequence is closed.** Next is retiring
+    `orders.advance_paid` — Arun's call, and the reason he gave is the
+    right one: it misreports on the Daily Accounts Register **today**
+    (0 on all 8 orders while `paid_total` is non-zero on one), it costs
+    no data migration because the column carries nothing, and Part 4's
+    advance gate needs `paid_total` as the single money-in source.
+- **16 Sept 2026 (last), PART 4 IS LIVE — the policy store is owner-only,
+  and the coupling stayed broken under an independent probe.**
+  - **`20260915_policy_store_first_gate.sql` — APPLIED** (16 Sept, 23:32
+    IST), verified by query and by execution, never from the editor's
+    *Success*. `app_settings` now carries exactly **four** policies and no
+    `FOR ALL`: SELECT is the org-scope expression **byte-identical to the
+    one `org_isolation` carried**, and INSERT/UPDATE/DELETE each name
+    `is_org_owner(org_id)`.
+  - **PROVEN WITH MY OWN PROBE, not the migration's.** A separately
+    constructed non-owner member (a different uuid, inserted as role
+    `staff`, impersonated via `request.jwt.claims` + `set local role
+    authenticated`, rolled back):
+
+        member_reads=8  member_insert=f  member_update=f  member_delete=f
+        owner_reads=24  owner_insert=t
+
+    **The exact inverse of 15 Sept's `NON_OWNER_MEMBER_WROTE_POLICY=t`.**
+    Two things that probe adds over the migration's own: it tests UPDATE
+    and DELETE, not only INSERT — a policy set that blocked inserts and
+    left updates open would have passed the migration's check — and it
+    confirms the owner still writes, without which a policy set refusing
+    *everyone* passes the denial half perfectly.
+  - **The 24 document rows are untouched and still readable by a staff
+    session** — `member_reads=8` is that org's boilerplate, read by a
+    member who cannot write a single policy row. All five
+    `AppSettingsTable` references in `lib/` are `queryRows`, no Edge
+    Function names the table, and the only SQL writer
+    (`seed_org_document_settings`) is SECURITY DEFINER, so org creation
+    still seeds.
+  - **THE COUPLING, verified independently and in both directions.** On a
+    real quotation with a live order, rolled back:
+    with **no policy row** the reason gate fired (default ON); with the
+    policy switched **OFF** the same call succeeded; and
+    **`status` went `draft` -> `draft`.** Before the split, switching off
+    a *reason requirement* would also have flipped that quote to
+    `'revised'` — silently, with nothing in the UI reporting status.
+    `has_order` reported true throughout.
+  - **Nothing was seeded and nothing survived**: 0 rows at `category =
+    'policy'`, 24 at `documents`, `org_members` back to 3, and neither
+    probe's constructed member left behind. The audit trigger is still
+    attached and enabled, so the first switch of this gate will be
+    recorded.
+  - **All three readers are SECURITY INVOKER with PUBLIC and anon holding
+    nothing** — `org_policy`, `org_policy_bool`, `org_policy_num`, each
+    granted to exactly `postgres, authenticated, service_role` (read with
+    `aclexplode`). `revise_quote` is still `prosecdef = false`, so org and
+    branch isolation continue to apply to its host.
+  - **Lint GREEN**: 0 findings across all four checks.
+  - **ONE MIGRATION REMAINED** when this was written:
+    `20260915_mark_lead_lost_atomic.sql`, which went live the same
+    evening (see the entry above). Arun's sequencing call, and the reason
+    is worth keeping: the policy store had to go first because *every
+    policy after it is decorative until writes are owner-only*, while the
+    lead-lost fix is a correctness fix with nothing queued behind it.
+- **16 Sept 2026 (last), `customer_surveys.items` dropped — and the
+  tombstone trap sprung harmlessly on the way in.**
+  - **`20260915_drop_dead_survey_items_column.sql` — APPLIED**, verified
+    by query rather than from the editor's *Success*: `items` gone,
+    `rooms` present, **9 rows / 5 carrying line items**, RLS still on with
+    its one policy, and **the other four dead columns untouched** —
+    `custom_items`, `photos`, `suggested_vehicle` and `total_cft`. That
+    last one is the point of the check: `total_cft` is SPOKEN FOR as
+    `public_submit_survey_impl`'s future single writer, and a drop that
+    took it along would have looked like a tidier cleanup.
+  - **Priya Raghavan's row survives byte for byte** —
+    `[{"room": "Bedroom 1", "items": "Queen bed, 2 almirahs, AC unit,
+    6 cartons"}]`, read back verbatim. Still unreadable by
+    `parseSurveyRooms`, still owed a re-ask or four hand-keyed lines.
+    Unchanged is the correct outcome, not a missed conversion.
+  - **Verified by behaviour, not by the catalogue:** `public_get_survey`
+    called **as anon** on a real pending token returns `ok` with the
+    identical nine keys it returned before the drop. A column drop cannot
+    break a function that never named the column — but that is a claim
+    about code, and the call is what settles it.
+  - **THE TOMBSTONE TRAP, and it was live.** A pre-check for functions
+    naming both `items` and `customer_surveys` returned **one hit** —
+    `public_submit_survey_impl`. All three matches are COMMENT lines
+    written the day before ("a free-text {room, items} row was accepted",
+    "40 items, 110 subs", "qty is a count of identical items"). No code
+    reads the column. This migration's preflight tests the
+    `information_schema` column, not the text, so it could not trip — but
+    a naive *"is this column referenced anywhere?"* grep would have
+    refused a correct migration on prose describing the very thing being
+    removed. Same shape as the `delete_org` tombstone, four days later,
+    on a different object. **Strip comment lines first, or ask the
+    catalogue instead of the text.**
+  - **One caveat stated before it was run, and it still stands for
+    anyone re-reading the file:** the postflight asserts EXACT counts
+    (9 rows, 5 with line items). That catches a drop that took `rooms`
+    with it, and it is dated — one new survey and it refuses a correct
+    migration. It happened to be run while the counts held.
+  - **Lint still GREEN**: 0 findings across all four checks, re-run after
+    the drop. Two migrations remained handed over and unrun when this was
+    written — Part 4's policy store went live the same evening (see the
+    entry above), leaving only `20260915_mark_lead_lost_atomic.sql` —
+    which went live the same evening too. **All six are applied.**
+- **16 Sept 2026 (later), the ungated RPCs are gone and the survey
+  payload is validated — both verified by CALLING them, and the second
+  one proved its own load-bearing half.**
+  - **`20260915_drop_ungated_public_rpcs.sql` — APPLIED.** The four
+    unwrapped functions (`get_survey_by_token`, `submit_survey`,
+    `get_quotation_by_token`, `accept_quotation`) are gone: 0 targets
+    surviving, 7 wrappers still anon-callable, **0 of 7 `_impl`s
+    reachable by anon or PUBLIC**, read with `aclexplode` rather than a
+    `LIKE` over the printed ACL. The evidence that matters is not the
+    count: `public_get_survey` called **as anon** on a real pending
+    token returned `ok` with `[customer_name, from_address, move_date,
+    ok, rooms, special_instructions, survey_cats, to_address,
+    vendor_name]` — `phone=f org_id=f lead_id=f uuid=f token_echoed=f`,
+    i.e. strictly LESS disclosure than the function that was dropped.
+    Removing an ungated path is only safe if the gated one still serves
+    the live `/survey` page, and that is the call that shows it does.
+  - **`20260915_survey_rooms_shape_check.sql` — APPLIED.**
+    `public_submit_survey_impl` now validates every ELEMENT, not just
+    the array. Verified on the live function against a real pending
+    token, all three directions, the whole probe rolled back:
+    * a `cft` sent as a STRING →
+      `false/bad_payload`, detail *"element 1: cft must be a number, got
+      string"*;
+    * the free-text `{room, items}` shape →
+      `false/bad_payload`, detail *"element 1 has unexpected key 'room';
+      expected exactly cat,item,sub,cft,qty"*;
+    * **a well-formed two-line payload → `ok=true`.** That third one is
+      the load-bearing half: a validator that refuses everything passes
+      both refusal checks perfectly and takes the live `/survey` page
+      down. Afterwards `customer_surveys` was unchanged at 9 rows, 3
+      pending tokens, and Priya Raghavan's row hashed identical — the
+      probe consumed no customer's token.
+  - **The ACL survived `CREATE OR REPLACE`, as predicted rather than as
+    hoped.** `public_submit_survey_impl` still grants EXECUTE to exactly
+    `postgres, service_role`; the wrapper still carries `PUBLIC, anon,
+    authenticated, postgres, service_role`. Worth stating because the
+    migration's own postflight check (4) uses `v_acl like '%anon=X%'`,
+    which is the weak form this file keeps recording — a NULL `proacl`
+    renders `<default>` and PASSES while actually meaning PUBLIC holds
+    EXECUTE, and it never tests PUBLIC at all. It was safe to run
+    because the real property was read with `aclexplode` minutes
+    earlier; **it is not safe to rely on, and should be replaced with
+    `aclexplode` before that file is used as a template.**
+  - **The lint is still GREEN** — `lint_security_invariants.sql`'s four
+    predicates re-run after the two migrations report **0 findings**.
+    Run with its final raise made UNCONDITIONAL, so "clean" arrives as a
+    result that names the count rather than as a `notice` the client may
+    not surface: a check whose pass is indistinguishable from silence is
+    the always-passes shape, in the tooling written to catch it.
+  - **Three migrations remained handed over and unrun when this was
+    written**; the dead-column drop and Part 4's policy store both went
+    live the same day (see the entries above), as did the atomic
+    lead-lost RPC (`20260915_mark_lead_lost_atomic.sql`). **All six of
+    the day's migrations were applied and verified within 24 hours of
+    being written.**
+- **16 Sept 2026, the fail-open PIN guard is LIVE — and verified against
+  the database, not against the editor's "Success".**
+  `supabase/20260915_set_staff_pin_fail_open.sql` was run by Arun in the
+  SQL editor (project `hqqcapifefsaqvotqvlt`, shown as `nagarva-demo`)
+  and returned *Success. No rows returned*. **That message was not
+  treated as the verification** — this file's own three-states rule says
+  "the file is ready", "the migration ran" and "the objects exist" are
+  different claims, and only a query answers the third. Three checks,
+  all read-only:
+  - **ACL**: `anon` false, `PUBLIC` false, `authenticated` true.
+    Grantees are now exactly `authenticated, postgres, service_role`.
+    The PUBLIC revoke was the load-bearing half — revoking only `anon`
+    would have reported success and changed nothing.
+  - **Behaviour**, which is the one that matters: calling
+    `set_staff_pin` as a caller who is neither owner nor the staff
+    member now returns
+    `denied=t err=[not authorized to set this PIN] staff_rows=5
+    pin_hashes=1`. **The exact inverse of yesterday's probe**, which
+    returned `ANON_SET_A_CREDENTIAL=t` on the same function with the
+    same operands. The raise fired for the first time since it was
+    written, and `staff` is untouched.
+  - **The lint went GREEN.** `lint_security_invariants.sql` reported two
+    findings before (checks 1 and 2, both `set_staff_pin`) and now
+    reports **0 across all four**. That is the whole argument for the
+    file made good on its first real use: it discriminated in both
+    directions, which a paragraph in this document cannot do.
+  **Five migrations remained handed over and unrun at the time this was
+  written** — the drop, the shape check (which depends on the drop), the
+  dead-column drop, the atomic lead-lost RPC and Part 4's policy store.
+  **Two of those five went live within the hour; see the entry above.**
+  The PR body's run-order table was corrected to mark this one applied;
+  a table that still says "handed over unrun" for a migration now live
+  is exactly the stale note this file keeps paying for — which is why
+  this paragraph is dated and pointed forward rather than left standing
+  as a count.
+- **15 Sept 2026 (Part 4), the policy store made safe — and a coupling
+  that would have shipped as a silent status change.**
+  - **`supabase/20260915_policy_store_first_gate.sql` (handed over unrun
+    at the time; **APPLIED 16 Sept 2026** — see that day's entry;
+    independent of the day's other five).** Three things, and the first
+    is why the other two are worth anything.
+  - **The store was open to every org member.** See the ninth rule added
+    to the per-tenant policy section above — proven by execution, rolled
+    back, with a CONSTRUCTED non-owner member because `org_members` holds
+    only owners and a probe looking for one would have passed having
+    tested nothing.
+  - **One reader, and the DEFAULT IS AN ARGUMENT.** `org_policy_bool(org,
+    key, default)` / `org_policy_num(org, key, default)` make rule 3
+    ("absent means default") structural instead of remembered at each
+    call site — a single reader with the default baked in would quietly
+    impose one policy's default on the next policy someone adds. Both are
+    SECURITY INVOKER, so `app_settings`' org-scope SELECT applies for free
+    rather than being re-implemented by hand, which is the fail-open class
+    this same day was spent closing.
+    **The fail DIRECTION is stated in the file because it is not the same
+    for every policy**: absent or unreadable yields the default, so the
+    first gate (default ON) fails CLOSED, and a future gate with default
+    OFF would fail OPEN under identical code — such a gate must be
+    enforced where the money is, never by this read alone.
+  - **THE COUPLING, and it is the find.** `revise_quote` computed ONE
+    variable and used it for THREE things: the reason gate, the RETURNED
+    flag, and a status decision —
+    `status = case when v_reason_required then quotations.status else
+    'revised' end`. Gating that variable on the policy would have meant
+    that switching off a *reason requirement* also started flipping
+    quotes with live orders to `'revised'`. Silent, and nothing in the UI
+    reports status. Two questions wearing one name, which is the shape
+    this file already records from the `UNION` alias error. `v_has_order`
+    now keeps the status decision and the policy narrows only the reason
+    gate; **the postflight asserts the status did NOT move when the
+    policy is switched off**, which is the assertion that catches it.
+  - **The first gate changes nothing on the day it ships**, deliberately.
+    `revision_reason_required_after_confirm` defaults ON, and ON is
+    already what the product does, so with no row seeded every tenant is
+    byte-for-byte unchanged. Rule 7 (every gate has an escape with a
+    mandatory reason) is satisfied without a second mechanism: the gate
+    IS a mandatory reason, turning it off IS the escape, and that switch
+    writes an `app_settings` row which `trg_audit_app_settings` records
+    with old and new value.
+  - **Four defects in my own guards, caught by running them read-only
+    against live before shipping — one of them an always-passes.** A
+    variable rename left `p.proname = v_qid` inside a loop over `v_name`;
+    `v_qid` is NULL there, so `proname = NULL` made the `exists` false and
+    **the PUBLIC-EXECUTE assertion could never raise.** Also: a `uuid`
+    selected into a `boolean`; `%%` where a RAISE placeholder was meant
+    (a literal percent, so the two arguments would have been dropped);
+    and a "nothing seeded" check asserting `count = 0`, which is correct
+    today and would refuse a correct re-run the moment one tenant has set
+    one policy — now a before/after comparison.
+    A fifth was replaced rather than fixed: a `position('exists' in
+    pg_get_functiondef(is_org_owner))` check, which is satisfiable by a
+    COMMENT mentioning exists. Replaced with the behavioural form —
+    `is_org_owner('000…0')` must return false, never NULL.
+  - **Every coercion branch of both readers was run over constructed
+    inputs, both directions.** Nine boolean cases and nine numeric ones:
+    absent honours a true default AND a false default; a stored value
+    overrides the default in both directions (so the reader is not
+    always-returns-default); and a garbled value — a number, `"yes"`, an
+    object — falls back to the default rather than being coerced, tested
+    under BOTH a true default and a false default, because a garbled
+    value silently switching a gate is the failure that matters.
+  - **Method note.** Preflight asserts the audit trigger is
+    attached-and-enabled on `app_settings`, and refuses with a sentence
+    naming the migration to run first rather than skipping — the guard
+    convention. It also refuses if no quotation with a live order exists,
+    because the gate probe would otherwise pass without exercising the
+    gate. And the cross-org reader test is described as proving the
+    FUNCTION'S org filter, not RLS: it runs as the migration's role,
+    which bypasses RLS, and claiming otherwise would be the overclaim
+    this file keeps recording.
+- **15 Sept 2026 (last), Item 5's lost path made atomic — and a guard of
+  mine that was wrong in BOTH directions at once.**
+  - **`supabase/20260915_mark_lead_lost_atomic.sql` (handed over unrun
+    at the time; **APPLIED 16 Sept 2026** — see that day's entry;
+    independent of the day's other three).** Item 5.3 is built in Dart as
+    **two writes with no transaction**, plus a guard that discards the
+    second on purpose and a blanket catch that swallows its failure:
+
+        await _setLeadStatus(kLeadStatusLost, force: true);   // write 1
+        if (!mounted || _canonicalStatus != kLeadStatusLost) return;
+        try { ...insert quote_outcomes... }                   // write 2
+        catch (_) { /* "the status change is the important part" */ }
+
+    **That comment reasons backwards, and it is the whole finding.** The
+    status is one word the vendor can see and set again. The reason, the
+    competitor and their price cannot be reconstructed by anybody —
+    recovering them means phoning a customer who has already gone
+    elsewhere. `quote_outcomes` exists to hold precisely the half being
+    thrown away. Same shape as `quick_payment_section`'s blanket catch,
+    which this file already records as "the worse half".
+    And the `!mounted` guard makes it worse rather than safer: navigate
+    away in the half-second between the two calls and the typed reason is
+    dropped **by design**, with the lead left reading `lost` and the
+    dialog never reappearing — it only opens from a chip the lead no
+    longer shows.
+  - **Counted live:** `leads` 11 rows (confirmed 7, follow_up 2, quoted 1,
+    new 1), **`lost` 0**, **`quote_outcomes` 0**, and **7 of 11 leads
+    already have an order**. So this path has never run end to end, and
+    `price_gap_pct` has never been populated by anything — the Dart
+    insert stops at `recorded_by`.
+  - **Item 5.1 had nothing to do.** The brief says "confirm against
+    existing `leads.status` values in Supabase; migrate/backfill if names
+    differ." `leads_status_check` already carries the full six-value enum
+    and already agrees with `lead_status.dart`. Grepping before building
+    also found Item 5 is **largely built** — `lib/backend/lead_status.dart`
+    (enum, ranking, never-downgrade), `lead_status_strip.dart` (strip,
+    Lost banner, Reopen), implied-status derivation in Lead Details. The
+    queued slice really was just the RPC.
+  - **SECURITY INVOKER, and that is the design.** `leads` carries
+    `org_isolation` AND a RESTRICTIVE `branch_isolation` policy, so
+    running as the caller makes both apply for free. A DEFINER version
+    would have to re-implement org and branch scoping by hand — the
+    fail-open class that cost a day earlier the same morning. Asserted in
+    postflight, because DEFINER would widen it silently.
+  - **Idempotent, because nothing else is:** `quote_outcomes` has only a
+    PK, no unique index on `lead_id` or `quote_id`. A double tap or a
+    retry-after-timeout would file the same loss twice and inflate every
+    later count of why deals are lost. It also **repairs** the state the
+    non-atomic path leaves behind (already lost, no outcome row) rather
+    than refusing.
+  - **Warns, never blocks, on a lead that already has an order** — 7 of
+    11 qualify, and a lead genuinely can be lost after an order (the job
+    was cancelled and went elsewhere). Returns `had_order` and
+    `previous_status`; silently overwriting `confirmed` is how a lead
+    with a live order comes to read `lost` unnoticed. Same posture as
+    `_generateInvoice` warning on a missing Rule 46 address.
+  - **THE LESSON, and it is about my own guard.** The postflight's ACL
+    check was a `LIKE` over the printed ACL. Run over four constructed
+    cases rather than re-read, it proved wrong in **both** mirror
+    directions in one predicate:
+    - **always-fails** — it RAISED on `authenticated=X/postgres`, a
+      perfectly correct ACL, so it would have refused a correct
+      migration;
+    - **always-passes** — it did NOT raise on `=X/postgres,...`, i.e.
+      **PUBLIC actually holding EXECUTE**, the single case it existed to
+      catch.
+    Replaced with `aclexplode` (grantee `0` is PUBLIC) — the catalogue
+    this file's own convention already names for "who can actually touch
+    this" — and verified against live functions whose grants are known:
+    `public_submit_survey` true, `public_submit_survey_impl` false.
+    **Three times today this habit caught something re-reading did not.**
+    Running a predicate over constructed inputs is cheap, needs no write
+    access, and is the only thing that has ever caught this class.
+  - **Confirmed in passing:** `set_staff_pin` still shows PUBLIC and anon
+    holding EXECUTE, so `20260915_set_staff_pin_fail_open.sql` is still
+    unrun. **(True on 15 Sept; APPLIED 16 Sept 2026 — see that day's
+    entry. Left as written because it dates the exposure window.)**
+- **15 Sept 2026 (later), the rooms/items decision executed — one column
+  dropped, one wrong class deleted, and a real customer's survey named as
+  lost rather than left looking fine.**
+  - **`supabase/20260915_drop_dead_survey_items_column.sql` (handed over
+    unrun; independent of the day's other two migrations).** Counted:
+    `customer_surveys` holds 9 rows and `items` is NULL on all nine — as
+    are `custom_items`, `photos`, `total_cft` and `suggested_vehicle`,
+    five of the ten columns the 9 Sept consolidation added for the module
+    the 8 Sept decision then cancelled. `rooms` is NOT NULL and carries
+    the line items on 5 rows. `items` had no writer in SQL, in Dart or on
+    the public page; **it existed only to be mistaken for the real
+    column, which is exactly what happened.**
+    **Only `items` is dropped.** `total_cft` is spoken for — this file
+    commits `public_submit_survey_impl` to writing it as its single
+    writer when the catalogue spec lands — and dropping a column with a
+    scheduled purpose is not cleanup.
+  - **THE LOST ROW, named so it cannot pass as converted.** Survey
+    `035758c7` — **Priya Raghavan**, Arun Packers and Couriers, submitted
+    2 Sept, linked to a lead, **0 quotations built on it**. Its `rooms`
+    holds `[{"room":"Bedroom 1","items":"Queen bed, 2 almirahs, AC unit,
+    6 cartons"}]` from the dropped `submit_survey`. There is **no honest
+    conversion** — it would mean inventing a CFT for "2 almirahs" and a
+    classification nobody chose, which is §52 applied to data recovery.
+    **And it is ALREADY INVISIBLE, today, with no error.** Verified by
+    reading `SurveyLine.tryParse` (`survey_response_section.dart:40-52`)
+    rather than trusting its doc comment: it requires a non-empty
+    **`item`** key and this element carries **`items`** — plural. So
+    `parseSurveyRooms` drops it and the survey renders as ZERO line
+    items, which is precisely the failure `SurveyResponseSection` exists
+    to fix. One real customer filled in a real survey and her mover
+    cannot see it. Re-ask her, or key the four lines in by hand.
+  - **`rooms` deliberately NOT renamed to `items`** (the decision made
+    that conditional — "if the name matters"). It does not, yet: the
+    rename's entire cost is re-creating two SECURITY DEFINER functions
+    that serve the LIVE `/survey` page, the catalogue spec has to rewrite
+    one of them anyway, and an interim where the RPC argument is
+    `p_rooms` and the column is `items` reads worse than today. **Dropping
+    `items` already removes the ambiguity that caused the inversion.**
+    Worth knowing for whoever does it: `public_site` only ever names
+    `p_rooms`, the ARGUMENT — so a column rename needs no customer-facing
+    deploy, provided the signature keeps that name.
+  - **`CustomerSurveysTable` deleted, with its module — 1,133 lines.**
+    It had stopped being merely dormant and become **WRONG**: `tableName`
+    still resolved to `customer_surveys`, but that name now belongs to
+    the RENAMED `surveys` table, so every getter for a column of the
+    dropped schema read null and the detail sheet's four update paths
+    wrote `reviewed_by`/`reviewed_at` and a status vocabulary the live
+    table does not have. Unreachable, so never a live bug — **a landmine,
+    not a fire.** Two classes naming one table, one of them wrong, is the
+    shape that produced the original inversion.
+  - **Found while sweeping, and it was CODE hiding among prose:**
+    `permissions.dart` carried `PermModule('surveys', 'Customer
+    Surveys', 'CustomerSurveysPage')`. `kPermModules` is iterated by
+    `staff_form_sheet`'s matrix, so **a vendor could still tick "Customer
+    Surveys" and grant a screen that had not existed since 3 Sept**, and
+    `allowedPageNames()` carried that name in an authorization allow-list
+    resolving to no route. Removed rather than migrated: all 5 staff rows
+    carry an explicit matrix and **none holds a `surveys` key**, so
+    nothing is orphaned. This is the grep convention earning itself — the
+    identifier appeared in six places and five were comments.
+  - **Two stale notes corrected rather than overwritten.**
+    `nav_items.dart` stated `customer_surveys` had "0 rows, no writer
+    anywhere" and that the RPCs "write to `surveys`, not to this table" —
+    true on 3 Sept, **wrong since 9 Sept**, when the consolidation
+    renamed `surveys` into that name. It read as a settled fact for six
+    days after it stopped being one; `main.dart`'s "the table is empty"
+    said the same. Both replaced with tombstones that name what changed.
+  - **PROCESS — the migration commit swept in the Dart deletions**,
+    because `git rm` had already staged them before `git add
+    supabase/...`; `git commit` takes the whole index, not the paths you
+    just added. Caught by reading `git show --stat` on my own commit
+    before pushing, and rebuilt as two clean commits. This is the
+    "security migrations get their own commit" rule failing by a
+    mechanism that rule does not mention: not a careless `-A`, but a
+    `git rm` staged earlier in the same session. **Check `git show
+    --stat` before pushing a commit you staged by path.**
+- **15 Sept 2026, survey payload: element-shape validation, and a client
+  ceiling that silently defeated the migration meant to remove it.**
+  - **`supabase/20260915_survey_rooms_shape_check.sql` (handed over
+    unrun; depends on `20260915_drop_ungated_public_rpcs.sql` running
+    first).** `public_submit_survey_impl` checked a token-length floor,
+    that the payload is an ARRAY, and a 150-element cap. **All three are
+    array-level — none looks inside an element**, so `[{"anything":"at
+    all"}] x 150` was written verbatim into a column the quote builder,
+    the survey PDF and the CFT total all read. Not a crash: a survey
+    that renders blank or wrong on the vendor's own quote, from data the
+    customer believes they submitted.
+    Counted live: 5 rows carry a non-empty `rooms` array — 4 of shape
+    `{cat,cft,item,qty,sub}`, 1 of `{items,room}` from the dropped
+    `submit_survey`. The shape is **read off the live writer**
+    (`public_site/survey/index.html:267-270`), not invented. Strict on
+    unknown keys, because permissive accretion is how the column came to
+    hold two shapes; the rejection names the offending key.
+    **Reason code stays `bad_payload`** — the page's `SUBMIT_ERRORS` map
+    already carries it with correct copy, so a server-side hardening
+    cannot degrade the customer's error message while waiting on a
+    `public_site` deploy. The operator's diagnosis goes in a `detail`
+    field the page ignores.
+  - **THE CLIENT CEILING, and it is the sharper find.**
+    `public_site/survey/index.html`'s `MAX_LINES` was **50** while the
+    server refuses above **150**. The client checks first, so the
+    server's ceiling was never reached — a customer selecting 51 item
+    types was refused in the browser, by a message naming a limit that
+    no longer existed. **Live since the 6 Sept deploy.**
+    `20260903_survey_line_cap.sql` raised the server 50 -> 150 for
+    exactly one reason: 50 "refused legitimate lists", the catalogue
+    offering 110 selectable lines (re-counted 15 Sept: 5 categories, 40
+    items, 110 subs, identical in all three orgs). **That migration's
+    own header says "the page-side fix shipped separately and does NOT
+    depend on this."** It did ship — it fixed the error COPY, replacing
+    an unactionable "check your connection" on a request that had
+    succeeded and been refused. It never moved the page's ceiling.
+    **So the fix landed NEXT TO the defect**: a true statement about a
+    neighbouring thing, read as covering the thing that mattered — the
+    same shape as every wrong-catalogue entry in the conventions above,
+    in a client file rather than a catalogue query. A cap enforced in
+    two places is two sources for one value; when either moves, move
+    both. Reported not built: the server could return its cap in
+    `public_get_survey` so the page holds no copy at all.
+    **NOT DEPLOYED** — `public_site/` serves live customer pages.
+  - **Method note.** Both migrations' guard predicates were dry-run
+    **read-only against live before shipping**, which is still the only
+    thing that has ever caught this class. The validator was run as a
+    query over the real rows: it ACCEPTS all 33 elements across the 4
+    real submissions and refuses the 1 free-text element naming
+    `room,items` — the both-directions proof — and every branch was
+    exercised in `pg_temp` (nothing left in `public`; the RLS count is
+    still 0). The postflight's load-bearing half is (3): **a
+    well-formed payload must still succeed**, or a function that refuses
+    everything passes the refusal checks perfectly and takes the live
+    `/survey` page down.
 - **8 Sept 2026 (last), order ids server-side — and a live outage caused
   by flipping a flag on a report instead of a query.**
   - **`next_order_id(uuid)` is LIVE and verified by direct query**:

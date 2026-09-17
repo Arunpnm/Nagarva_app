@@ -318,11 +318,6 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                                           ordersListItemItem.amount?.toString(),
                                           ParamType.String,
                                         ),
-                                        'orderAdvancePaid': serializeParam(
-                                          ordersListItemItem.advancePaid
-                                              ?.toString(),
-                                          ParamType.String,
-                                        ),
                                         'orderStatus': serializeParam(
                                           ordersListItemItem.status,
                                           ParamType.String,

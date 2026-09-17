@@ -94,14 +94,30 @@ List<NavItem> primaryNavItems(List<NavItem> all) {
   return primary.isEmpty ? all : primary;
 }
 
-/// The 19 owner/manager destinations (Users Kickoff Step 2.1). Six of
-/// these route to `ComingSoonPage` today — `surveys`, `inbox`, `survey`
-/// and `reviews` are genuinely unbuilt. **`materials`, `reports` and
-/// `calendar` are NOT unbuilt** despite the kickoff brief listing them
-/// as placeholder candidates — `MaterialsPage`, `ReportsPage` and
-/// `CalendarPage` all already exist and are wired to real pages here.
-/// (Corrected against the actual routed pages in `nav.dart`, not copied
-/// from the brief — see report.)
+/// The 27 owner/manager destinations. **EVERY ONE ROUTES TO A REAL
+/// PAGE** — verified 17 Sept 2026 against `nav.dart`, not assumed.
+///
+/// CORRECTED 17 Sept 2026. This said "the 19 owner/manager destinations
+/// … six of these route to `ComingSoonPage` today — `surveys`, `inbox`,
+/// `survey` and `reviews` are genuinely unbuilt", and every clause of
+/// that was wrong by the time anyone read it:
+///   * the list is **27**, not 19;
+///   * **none** of them is a `ComingSoonPage`. The only two such routes
+///     left in `nav.dart` are `MyAttComingSoon` and `MySalComingSoon`,
+///     which are FIELD-STAFF destinations and are not in this list;
+///   * `surveys` was deleted outright on 15 Sept 2026 — see the
+///     tombstone below — so it is not unbuilt, it is gone;
+///   * `inbox` is `WaInboxPage`, `survey` is `SurveyQuoteHubPage` and
+///     `reviews` is `ReviewsPage`. All three are built, routed and in
+///     the permissions matrix.
+///
+/// The half it got right is kept because it is still true: `materials`,
+/// `reports` and `calendar` are NOT unbuilt, despite the kickoff brief
+/// listing them as placeholder candidates.
+///
+/// **Being routed is not the same as having ever run against a row** —
+/// see CLAUDE.md's "BUILT vs USED". Several of these 27 are reachable,
+/// permission-gated and backed by a table with zero rows.
 ///
 /// `'staff'`'s label is computed at read time, not stored here — see
 /// [navItemsForCurrentSession].
@@ -119,24 +135,23 @@ const kOwnerManagerNavItems = <NavItem>[
   (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM',
     group: 'Sales',
   ),
-  // REMOVED FROM NAV 3 Sept 2026. `CustomerSurveysPage` reads
-  // `customer_surveys`, and NOTHING HAS EVER WRITTEN A ROW TO THAT
-  // TABLE. Verified against the live database: 0 rows, no writer
-  // anywhere in `lib/`, and all four survey RPCs -- `submit_survey`,
-  // `get_survey_by_token`, and the two `public_*` ones the live
-  // link.nagarva.in site calls -- write to `surveys`, not to this
-  // table.
+  // TOMBSTONE — the Customer Surveys module was removed from the nav on
+  // 3 Sept 2026 ("there is two survey it is creating confusion" — Arun)
+  // and DELETED outright on 15 Sept 2026: page, detail sheet,
+  // CustomerSurveysTable, customer_survey_parse.dart, SurveyQueue and
+  // its permission module. Full reasoning in nav.dart's tombstone.
   //
-  // So it occupied a top-level slot with a screen that could only ever
-  // be empty, one character away from 'Survey & Quote' (the real
-  // staff-side builder, which reads `surveys`). Arun, 3 Sept 2026:
-  // "there is two survey it is creating confusion".
+  // The 3 Sept note that stood here said `customer_surveys` had "0 rows,
+  // no writer anywhere" and that the survey RPCs "write to `surveys`,
+  // not to this table". True when written; WRONG SINCE 9 SEPT, when
+  // 20260909_consolidate_survey_tables.sql dropped the old
+  // customer_surveys and RENAMED `surveys` to take its name. That table
+  // now holds 9 live rows and every survey RPC writes it. Recorded
+  // rather than quietly overwritten, because the note read as a settled
+  // fact for six days after it stopped being one.
   //
-  // The page, its detail sheet and `survey_queue.dart` are LEFT IN
-  // PLACE and the route stays registered -- the 29-column shape may
-  // have been intended for something, and an unrouted page costs
-  // nothing. Only the nav entry is gone. The real path is Leads ->
-  // "Request Survey" -> customer fills -> Survey & Quote.
+  // The real path is Leads -> "Request Survey" -> customer fills ->
+  // Survey & Quote, which reads the same table through SurveysTable.
   (name: 'WaInboxPage', icon: Icons.inbox, label: 'Inbox',
     group: 'Sales',
   ),

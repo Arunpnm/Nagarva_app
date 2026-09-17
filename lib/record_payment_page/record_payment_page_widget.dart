@@ -40,8 +40,11 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
-  double _balance(OrdersRow o) =>
-      (o.amount ?? 0) - (o.advancePaid ?? 0) - o.paidTotal;
+  // paid_total alone: money received lives in payment_entries and is
+  // summed onto it by trigger. The `- advance_paid` term was dropped
+  // 16 Sept 2026 (CLAUDE.md, "REPLACE, NOT REVIVE") - that column was 0
+  // on every live order, so no balance on this screen moves.
+  double _balance(OrdersRow o) => (o.amount ?? 0) - o.paidTotal;
 
   @override
   void initState() {
@@ -327,8 +330,6 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                             children: [
                               _sumCol('Total',
                                   '₹${(selected.amount ?? 0).toStringAsFixed(0)}'),
-                              _sumCol('Advance',
-                                  '₹${(selected.advancePaid ?? 0).toStringAsFixed(0)}'),
                               _sumCol('Collected',
                                   '₹${selected.paidTotal.toStringAsFixed(0)}'),
                               _sumCol(

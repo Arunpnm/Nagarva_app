@@ -643,12 +643,11 @@ class _NavBarPageState extends State<NavBarPage>
     // its nav set, so the count would render nowhere.
     if (isOwnerOrManagerSession) {
       ApprovalQueue.instance.refresh();
-      // SurveyQueue.refresh() is NOT called. It counts unreviewed
-      // `customer_surveys` rows, and that module is dormant: no writer
-      // exists, the table is empty, its screen is unrouted, and the nav
-      // item its badge would decorate was removed on 3 Sept 2026. So the
-      // call was a network round-trip on every owner login to render a
-      // count nowhere. Restore it with the module, not before.
+      // TOMBSTONE — SurveyQueue was DELETED 15 Sept 2026 with the rest
+      // of the dormant customer-surveys module. Nothing to call. (Its
+      // old comment here also claimed "the table is empty", which had
+      // been wrong since 9 Sept: `customer_surveys` is the renamed
+      // `surveys` and holds live rows.)
     }
     // Fire-and-forget, same style as the SharedPreferences load above —
     // no-ops immediately if activeStaffPages is already populated (the
@@ -783,10 +782,8 @@ class _NavBarPageState extends State<NavBarPage>
       'ReviewsPage': const ReviewsPageWidget(),
       'WaInboxPage': const WaInboxPageWidget(),
       'SurveyQuoteHubPage': const SurveyQuoteHubPageWidget(),
-      // 'CustomerSurveysPage' is deliberately absent — dormant module,
-      // see customer_surveys_page_widget.dart's header. _tabs is the real
-      // router for bottom-bar taps, so leaving it here would keep the
-      // screen reachable after its route was removed.
+      // 'CustomerSurveysPage' is absent because the module was DELETED
+      // 15 Sept 2026 — see the tombstone in nav.dart.
       'RateCardsPage': const RateCardsPageWidget(),
       'LrRegisterPage': const LrRegisterPageWidget(),
       'OperationsStandalonePage': const OperationsStandalonePageWidget(),
@@ -1425,16 +1422,9 @@ class _NavBarPageState extends State<NavBarPage>
                                           count: count,
                                         ),
                                       )
-                                    // The CustomerSurveysPage badge was
-                                    // UNBOUND on 9 Sept 2026 — see the same
-                                    // note in mobile_bottom_nav.dart.
-                                    // `SurveyQueue` reads through
-                                    // `CustomerSurveysTable`, built for the
-                                    // schema dropped by
-                                    // 20260909_consolidate_survey_tables.sql,
-                                    // which now names the LIVE survey table.
-                                    // Unreachable already; unbound so it
-                                    // cannot become reachable by accident.
+                                    // The CustomerSurveysPage badge is gone: the whole module,
+                                    // SurveyQueue included, was DELETED 15 Sept 2026 (tombstone
+                                    // in nav.dart). Unbound since 9 Sept; nothing left to bind.
                                     else
                                       Icon(
                                         item.icon,
