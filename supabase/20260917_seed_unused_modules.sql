@@ -524,19 +524,34 @@ begin
   -- This is the first driver-flagged row in the database.
   --
   -- team_type 'labour' is what the crew sheet itself writes.
-  -- ac_amount is left at 0: A/C is a real charge the vendor enters, and
-  -- `ac_units`/`ac_rate` (NOT NULL default 0) have no Dart getter and no
-  -- writer at all, so seeding them would assert an A/C model the app
-  -- does not implement.
+  --
+  -- **`ac_amount` IS NOT WRITABLE AND MUST NOT APPEAR HERE.** It is
+  -- `GENERATED ALWAYS AS ((ac_units)::numeric * ac_rate) STORED`, so any
+  -- INSERT naming it raises 428C9 *cannot insert a non-DEFAULT value into
+  -- column "ac_amount"* — which is exactly how the first run of this file
+  -- failed, and exactly why the CREW SHEET HAS NEVER SAVED:
+  -- `crew_sheet_page_widget.dart:507` puts `'ac_amount'` in its upsert
+  -- payload, so every save it has ever attempted raised 428C9.
+  --
+  -- `ac_units` and `ac_rate` are the real inputs, NOT NULL DEFAULT 0, and
+  -- are LEFT AT THEIR DEFAULTS here rather than seeded: A/C is a real
+  -- charge the vendor enters, so inventing units and a rate would be the
+  -- suggested-money failure in a new place. The generated `ac_amount`
+  -- therefore computes 0, which is the truth — no A/C on this job.
+  --
+  -- The audit that preceded this file had it BACKWARDS, and the reason is
+  -- worth keeping: an `information_schema.columns` read of
+  -- `data_type, is_nullable, column_default` shows `ac_amount` as
+  -- nullable with no default, which is indistinguishable from an ordinary
+  -- optional column. `is_generated` is the discriminating field.
   insert into public.order_staff (
-    org_id, order_id, staff_id, salary_amount, is_driver, team_type, ac_amount)
+    org_id, order_id, staff_id, salary_amount, is_driver, team_type)
   values (v_org, v_order_crew, v_staff,
           600,      -- arbitrary. NB: the app itself opens this at 0 by
                     -- design ("No suggested money") — 600 here is the
                     -- operator supplying data, not the app suggesting it.
           true,
-          'labour',
-          0);
+          'labour');
 
   -- ===================================================================
   -- POSTFLIGHT. Asserts the CONSTRUCT, not a printed row. Token-scoped

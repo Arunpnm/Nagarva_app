@@ -659,6 +659,52 @@ cost one query.
 today. Populate it via a first PIN login and the branch reason takes
 over — the insert still fails, because the app still sends NULL.
 
+### The second worked example: the Crew Sheet has NEVER been able to save
+(17 Sept 2026, found by RUNNING the seed rather than reading anything —
+which is this section's own point 4 proving itself within the hour.)
+
+`order_staff.ac_amount` is
+**`GENERATED ALWAYS AS ((ac_units)::numeric * ac_rate) STORED`**. A
+generated column cannot be written, so any INSERT or UPDATE naming it
+raises **`428C9 cannot insert a non-DEFAULT value into column
+"ac_amount"`** before anything lands.
+
+**`crew_sheet_page_widget.dart:507` puts `'ac_amount': l.acAmount` in
+its upsert payload.** So every save the Crew Sheet has ever attempted
+has failed, at the database, in full. That is why `order_staff` holds 8
+rows with `is_driver` false on every one: none of them came from the
+Crew Sheet, and none ever could.
+
+**The audit that preceded this had it exactly BACKWARDS**, and the
+inversion is the part worth keeping. It reported `ac_units`/`ac_rate` as
+"dead columns — no Dart getter, no writer, nothing reads them" and
+`ac_amount` as the one the app writes. The truth is the reverse:
+`ac_units` and `ac_rate` are `NOT NULL DEFAULT 0` and are the ONLY
+writable inputs; `ac_amount` is not writable at all.
+
+**A NEW INSTANCE OF THE WRONG-INSTRUMENT FAMILY, and the sharpest yet,
+because the right instrument was in hand.** The sweep asked
+`information_schema.columns` for `data_type, is_nullable,
+column_default`. For `ac_amount` that returns **nullable, no default** —
+byte-for-byte indistinguishable from an ordinary optional column. The
+discriminating field is **`is_generated`**, which the sweep did not
+select. It was selected an hour later for `trips.branch`, in the same
+session, to prove nothing filled that column. Same catalogue, same
+question shape, asked properly once and improperly once.
+**When asking "can I write this column?", select `is_generated` and
+`generation_expression`. `column_default` and `is_nullable` answer a
+neighbouring question and answer it truthfully.**
+
+**The fix is a product decision, not a cleanup — see §12.1.** The schema
+says A/C is **units x rate**; the app implements a flat per-man amount
+in one field. Two honest ways out, and they are not equivalent:
+- **Decision-free**: write `ac_units = 1, ac_rate = <the typed amount>`,
+  so the generated `ac_amount` equals today's typed figure exactly. No
+  UX change, no invented number, the save starts working.
+- **Schema-faithful**: give the sheet a units field and a rate field,
+  which is what the column pair was built for and what §12.1 asks.
+Either way `ac_amount` comes out of every write payload.
+
 ### What this changes about how work is reported
 1. **Report two columns, never one.** "Built" and "has ever run against
    a row" are separate claims. A status line that gives only the first
