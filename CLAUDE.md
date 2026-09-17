@@ -2638,8 +2638,9 @@ The column is dropped in its own migration once its read sites move.
 sites", in a way that matters.** Every Dart reader and writer is off the
 column (15 files touched; the generated `OrdersRow.advancePaid`
 getter/setter is deleted, so nothing in the app *can* touch it), and two
-migrations are handed over: `20260916_advance_paid_retire_db_readers.sql`
-then `20260916_advance_paid_drop_column.sql`.
+migrations were written: `20260916_advance_paid_retire_db_readers.sql`
+(**applied 17 Sept**) and `20260916_advance_paid_drop_column.sql`
+(**deliberately never run — see the decision below**).
 **THE DATABASE READ IT TOO, in four places, and one of them decides
 `payment_status`:**
 - **`sync_order_paid_total()`** — the AFTER trigger on `payment_entries`
@@ -2698,9 +2699,64 @@ read-only simulation predicted before the file shipped. Nothing was
 left behind: 0 probe rows, 0 `_c360_acl_before` in `public`, 0 tables
 in `public` without RLS, `payment_entries` back to 2.
 
-**RUN ORDER, and the hazard.** Ship the app build, then run the
-readers migration (safe any time — the column still exists), then drop
-the column only once no device runs an older build. **An installed older
+### THE COLUMN STAYS. DECIDED 17 Sept 2026 — this is not a pending item.
+**Arun's call: `orders.advance_paid` is left in place permanently.**
+`20260916_advance_paid_drop_column.sql` is written, correct, and
+**deliberately not run**. A later session must not read "drop migration
+written, not run" as outstanding work. It is not a TODO; it is a
+decision with a reason.
+
+**The reason.** Step 1 removed every database reader, and the Dart
+change removes every app reader, so the column is **inert**: zero
+readers, zero non-zero values, nothing that can misreport. Dropping it
+therefore buys **tidiness and nothing else**, while the risk it carries
+is a morning on which nobody at any tenant can create an order — an
+older installed build still sends `'advance_paid': 0.0` in its order
+INSERT, and after the drop that is a 42703. **That trade does not
+favour tidiness.** An inert column costs nothing; a broken order form
+costs a working day at every vendor at once.
+
+**If it is ever revisited**, the order is: merge the PR, build,
+distribute, and only then decide — and the drop still refuses unless
+the operator sets `nagarva.old_builds_retired = 'yes'`, which is a
+claim no query can verify for a distributed APK. That irreducible
+uncertainty is itself part of why the answer is "leave it".
+
+**Do not "finish the job" by running it.**
+
+### `sync_order_paid_total` still NAMES it, in a COMMENT — not in code
+(17 Sept 2026. Recorded because it was read as a missed rewrite, and it
+is the fourth instance of the tombstone family — the first that cost an
+operator rather than a migration.)
+After step 1 the function contains exactly one line matching
+`advance_paid`, and it is a comment at the removal site:
+
+    line 22  is_comment_line = true
+      -- advance_paid used to be added to v_paid on both branches below.
+
+    names_it_raw     = true    <- a raw text match sees it
+    names_it_in_code = false   <- comments stripped, it is gone
+
+The live body declares only `v_order_id, v_paid, v_amount` and derives
+`payment_status` from `v_paid` alone. **The trigger does not read the
+column.**
+**And the mechanism people infer from the sighting is wrong too, which
+matters more than the comment**: the trigger never needed to read
+`advance_paid` for older builds to keep working. An old build *writes*
+the column in its INSERT; a trigger deciding `payment_status` from
+`paid_total` is correct whatever value sits there. The two are
+independent — which is why step 1 was safe to run *before* shipping the
+build, and why nothing broke when it did.
+So there is **no function dependency blocking the drop**, and the drop
+file correctly does not rewrite this function. Its dependency predicate
+strips comment lines before matching and reads 0.
+**Keep the tombstone** — the `delete_org` entry's judgement holds, since
+any prose naming the column trips a raw text match. The fix is the
+instrument, not the wording: strip comments, or ask the catalogue.
+
+**RUN ORDER, if the decision above is ever reversed.** Ship the app
+build, then run the readers migration (safe any time — the column still
+exists), then drop the column only once no device runs an older build. **An installed older
 build sends `'advance_paid': 0.0` in its order INSERT; after the drop
 that is a 42703 and the vendor cannot create orders** — the
 `kServerSideOrderIds` shape exactly. No query can tell you which builds
@@ -2940,6 +2996,48 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **17 Sept 2026 (later), the column STAYS — and a tombstone read as a
+  missed rewrite.**
+  - **DECISION, Arun: `orders.advance_paid` is left in place
+    permanently.** `20260916_advance_paid_drop_column.sql` is written,
+    correct, and deliberately never run. Recorded in the section above as
+    a decision rather than a pending item, precisely so a later session
+    does not read "drop migration written, not run" as work outstanding.
+    The reasoning is the whole of it: with zero readers the column is
+    inert and cannot misreport, so the drop buys tidiness, while the risk
+    is a morning on which no vendor can create an order. **An inert
+    column costs nothing; a broken order form costs a working day at
+    every tenant at once.**
+  - **`sync_order_paid_total` was reported as still naming the column.
+    It does — in a COMMENT, on one line, at the removal site.** Verified
+    line by line rather than argued: `names_it_raw = true`,
+    `names_it_in_code = false`; the live body declares only
+    `v_order_id, v_paid, v_amount` and derives `payment_status` from
+    `v_paid` alone. Neither deliberate nor missed — **rewritten**, with
+    prose left behind describing what was removed.
+  - **The inferred mechanism was wrong too, and that half mattered
+    more.** The reading was "the trigger must keep reading the column
+    while older builds still write it, so the drop has a second
+    precondition." It does not. An old build *writes* `advance_paid` in
+    its order INSERT; a trigger computing `payment_status` from
+    `paid_total` is correct whatever value sits in that column. The two
+    are independent — which is exactly why step 1 was safe to run
+    **before** the app build shipped, and why nothing broke when it did.
+    No function dependency blocks the drop; the drop file correctly does
+    not rewrite the trigger, and its dependency predicate strips comments
+    and reads 0.
+  - **Fourth instance of the tombstone family, and the first to cost an
+    OPERATOR rather than a migration.** `delete_org` tripped its own
+    assertion on a comment; `customer_surveys.items` would have refused a
+    correct migration; the LIKE-wildcard case produced a phantom reader.
+    This one made a **correct and completed rewrite look unfinished to
+    the person reviewing it**, which is a new cost: not a false failure,
+    a false doubt.
+    **Keep the tombstone anyway.** Any prose naming a removed column
+    trips a raw text match, so rewording cannot fix it — the fix is the
+    instrument. Strip comment lines, or ask the catalogue. That is what
+    every guard in these two migrations already does, which is why they
+    read 0 while a naive check reads 1.
 - **17 Sept 2026, `advance_paid` step 1 is LIVE — and the Supabase
   linter flagged it for a reason that looks like the 9 Sept incident and
   is not.**
