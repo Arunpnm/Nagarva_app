@@ -94,14 +94,30 @@ List<NavItem> primaryNavItems(List<NavItem> all) {
   return primary.isEmpty ? all : primary;
 }
 
-/// The 19 owner/manager destinations (Users Kickoff Step 2.1). Six of
-/// these route to `ComingSoonPage` today — `surveys`, `inbox`, `survey`
-/// and `reviews` are genuinely unbuilt. **`materials`, `reports` and
-/// `calendar` are NOT unbuilt** despite the kickoff brief listing them
-/// as placeholder candidates — `MaterialsPage`, `ReportsPage` and
-/// `CalendarPage` all already exist and are wired to real pages here.
-/// (Corrected against the actual routed pages in `nav.dart`, not copied
-/// from the brief — see report.)
+/// The 27 owner/manager destinations. **EVERY ONE ROUTES TO A REAL
+/// PAGE** — verified 17 Sept 2026 against `nav.dart`, not assumed.
+///
+/// CORRECTED 17 Sept 2026. This said "the 19 owner/manager destinations
+/// … six of these route to `ComingSoonPage` today — `surveys`, `inbox`,
+/// `survey` and `reviews` are genuinely unbuilt", and every clause of
+/// that was wrong by the time anyone read it:
+///   * the list is **27**, not 19;
+///   * **none** of them is a `ComingSoonPage`. The only two such routes
+///     left in `nav.dart` are `MyAttComingSoon` and `MySalComingSoon`,
+///     which are FIELD-STAFF destinations and are not in this list;
+///   * `surveys` was deleted outright on 15 Sept 2026 — see the
+///     tombstone below — so it is not unbuilt, it is gone;
+///   * `inbox` is `WaInboxPage`, `survey` is `SurveyQuoteHubPage` and
+///     `reviews` is `ReviewsPage`. All three are built, routed and in
+///     the permissions matrix.
+///
+/// The half it got right is kept because it is still true: `materials`,
+/// `reports` and `calendar` are NOT unbuilt, despite the kickoff brief
+/// listing them as placeholder candidates.
+///
+/// **Being routed is not the same as having ever run against a row** —
+/// see CLAUDE.md's "BUILT vs USED". Several of these 27 are reachable,
+/// permission-gated and backed by a table with zero rows.
 ///
 /// `'staff'`'s label is computed at read time, not stored here — see
 /// [navItemsForCurrentSession].

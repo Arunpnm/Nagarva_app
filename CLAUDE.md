@@ -1430,6 +1430,51 @@ over — the insert still fails, because the app still sends NULL.
   DDL in `public`, run that RLS count rather than assuming the drop was
   clean.
 
+- **A CHECK WITH SEVERAL CONJUNCTS AND ONE UNIVERSALLY-FALSE OPERAND
+  HIDES EVERY OTHER FAULT BEHIND IT. Fixing it reveals the next failure,
+  not success.** (Arun, 17 Sept 2026, recorded as a rule on the THIRD
+  instance rather than left as three anecdotes.)
+  The three, all the same shape:
+  1. **`delete_org`** (10 Sept) — its completeness guard refused on four
+     unlisted tables, and fired BEFORE the loop, so the 42P01 on the dead
+     `'surveys'` name was never reachable. Two faults stacked, the outer
+     hiding the inner; fixing only the visible one would have produced a
+     second identical debugging session.
+  2. **`set_staff_pin`** (15-16 Sept) — the fail-open guard, where the
+     empty `auth_user_id` made the whole condition NULL and the `raise`
+     unreachable. It had never fired once in its life.
+  3. **`current_staff_branch_or_owner`** (17 Sept) — it requires BOTH
+     `auth_user_id = auth.uid()` AND `branch = p_branch` inside ONE
+     `exists()`. `auth_user_id` is NULL on all 5 staff rows, so the first
+     conjunct is false and the whole thing is false **regardless of
+     branch**. That is a second, independent cause of the same symptom as
+     the Trips finding: populate `auth_user_id` via a first PIN login and
+     the branch reason takes over, because the app still sends NULL.
+  **The operational form:** when a guard has several conjuncts and one of
+  them is false for every row today, the others are UNTESTED, not
+  correct. Establish which conjunct is doing the refusing before
+  concluding anything about the rest, and expect a second failure after
+  the first fix rather than reading a green run as done.
+
+  **THE DIRECTION CONTRAST, and it is the half worth keeping.** The same
+  NULL in the same column produced OPPOSITE outcomes, and only one was a
+  vulnerability:
+  - **`set_staff_pin` used OR** — `is_org_owner(...) or auth_user_id =
+    auth.uid()`. `false or NULL` is **NULL**, `not NULL` is NULL, the
+    `if` is not taken, and execution **falls through to the UPDATE**.
+    NULL failed **OPEN**: anon minted a working credential.
+  - **`current_staff_branch_or_owner` uses AND, inside `exists()`** —
+    `exists(select 1 from staff where auth_user_id = auth.uid() and
+    branch = p_branch)`. `exists()` never returns NULL, and an AND with a
+    NULL conjunct matches no row. NULL failed **CLOSED**: staff see
+    nothing, which is what Item 30 wanted.
+  So "`auth_user_id` is NULL on all 5 rows" is the same fact in both, and
+  it is a critical vulnerability in one and correct-by-design in the
+  other. **The fact alone tells you nothing — the operator and the
+  `exists()` wrapper decide the direction.** Read those before deciding
+  whether an empty column is a bug, and never generalise from one site to
+  its neighbour.
+
 - **"It raises" is not "there is one thing wrong". A guard that refuses
   early can hide a second, independent fault behind it.** (Arun,
   10 Sept 2026, after `delete_org` turned out to be broken twice over.)
