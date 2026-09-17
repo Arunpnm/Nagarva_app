@@ -2677,6 +2677,27 @@ the entries and two deciders drift; and the row is **re-read** after the
 insert rather than patched, since the trigger moves `paid_total` and
 `payment_status` after the returned copy was taken.
 
+**STEP 1 APPLIED 17 Sept 2026, verified against the database.**
+`20260916_advance_paid_retire_db_readers.sql` is live: **0 objects name
+`advance_paid`** (the mirror of its preflight's 4), the column itself is
+still present — this migration is step 1 of 2 and does not drop it —
+both views still carry `security_invoker=on` (and all 15 views in
+`public` do), `customer_360_view` came back with its **32 ACL entries
+and the same four grantees**, `total_advance` gone with
+`total_collected` intact, `can_delete_order` still SECURITY DEFINER,
+and `trg_sync_order_paid_total` still attached with `tgenabled = 'O'`.
+**Proven by behaviour, not only by catalogue**, on a real order and
+rolled back: a half payment moved
+`ARUN-PACKERS-AND-COURIERS-1002` to `partial` with
+`paid_total = 12,000`, the top-up moved it to `paid` (so the rewritten
+function is not hardcoding `partial`), and the branch card's
+outstanding read **30,354,561 — equal to the new expression and
+different from the old `advance_paid` one at 30,366,561**, by exactly
+the 12,000 just paid. Those two figures are the same ones the
+read-only simulation predicted before the file shipped. Nothing was
+left behind: 0 probe rows, 0 `_c360_acl_before` in `public`, 0 tables
+in `public` without RLS, `payment_entries` back to 2.
+
 **RUN ORDER, and the hazard.** Ship the app build, then run the
 readers migration (safe any time — the column still exists), then drop
 the column only once no device runs an older build. **An installed older
@@ -2919,6 +2940,57 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **17 Sept 2026, `advance_paid` step 1 is LIVE — and the Supabase
+  linter flagged it for a reason that looks like the 9 Sept incident and
+  is not.**
+  - **`20260916_advance_paid_retire_db_readers.sql` — APPLIED**, verified
+    against the database rather than from the editor's *Success*. Full
+    result in the `orders.advance_paid` section above; the headline is
+    **4 readers before, 0 after**, the column deliberately still present
+    (this is step 1 of 2), both views still `security_invoker=on`, and
+    `customer_360_view`'s **32 ACL entries restored across the same four
+    grantees** after a DROP + CREATE that cannot carry grants.
+  - **The behavioural half is what a catalogue query cannot give.** On a
+    real order, rolled back: half payment → `partial` with
+    `paid_total = 12,000`; top-up → `paid`, which is the direction that
+    rules out a function hardcoding `partial`; and branch outstanding
+    read **30,354,561**, equal to the new expression and **different from
+    the old `advance_paid` figure of 30,366,561** by exactly the amount
+    just paid. Both numbers match what the read-only simulation predicted
+    before the file was ever sent — the dry run and the live run agreeing
+    to the rupee is the strongest evidence in this pass.
+  - **THE LINTER WARNING, and the distinction worth keeping.** Supabase's
+    pre-run linter raised two things. *"Destructive operations"* was true
+    and intended — the one `drop view public.customer_360_view`,
+    recreated four lines later in the same transaction. *"Creates a table
+    without enabling RLS: `_c360_acl_before`"* named the migration's
+    **`create temporary table … on commit drop`**, which captures the
+    view's grants before the drop so the postflight can prove they came
+    back.
+    That warning's own wording — "clients using anon or authenticated
+    keys may be able to access" — **is false for a temporary table**: it
+    lands in `pg_temp_N`, not `public`, it is visible only to the session
+    that created it, and `on commit drop` destroys it at COMMIT.
+    Confirmed after the run: 0 rows named `_c360_acl_before` in `public`,
+    and `public` still holds **0 tables without RLS**.
+    **This is NOT the 9 Sept `rate_card_rules` incident repeating, and
+    conflating them would teach the wrong lesson.** There the linter
+    *misparsed* — a plpgsql `select … into v_rules` read as plain-SQL
+    `CREATE TABLE AS`, so its premise was wrong. Here the linter parses
+    correctly (it really is a `CREATE TABLE`); what it lacks is the
+    distinction between a temporary table and a permanent one. Same
+    button, different reason.
+    **"Run without RLS" was the correct choice, and "Run and enable RLS"
+    would have been the wrong one** — that button rewrites the SQL, and
+    this migration's guards assert exact constructs inside the
+    transaction. Never let a linter edit a migration whose postflight you
+    verified line by line. And the 9 Sept rule still governs how you
+    check: do not run the flagged line on its own to see what it does.
+  - **Still to come**: `20260916_advance_paid_drop_column.sql`, only once
+    no device runs an older build — an older APK still sends
+    `'advance_paid': 0.0` in its order INSERT and would get 42703, i.e.
+    that vendor cannot create orders. It refuses unless the operator sets
+    `nagarva.old_builds_retired = 'yes'`.
 - **16 Sept 2026 (last), `orders.advance_paid` retired in Dart — and the
   database turned out to be reading it in four places, one of which
   decides `payment_status`.**
