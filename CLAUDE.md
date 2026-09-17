@@ -606,6 +606,78 @@ enough; look at what renders.
 pressed ...')` and nothing else. A button that looks like it works and
 silently doesn't is the same class of trust damage.
 
+## BUILT vs USED — the category, and the one that would have caught
+## this month's bugs
+(Arun, 17 Sept 2026, after a seven-module audit. Written as a CATEGORY
+rather than a bug list, because the individual bugs below have nothing
+in common except this.)
+
+**A module can be complete, routed, permission-gated, reachable from the
+drawer and in the permissions matrix, and still be entirely unproven.**
+"Built" and "used" are two different columns and this file has spent
+months conflating them — a page inventory answers the first question and
+is routinely read as answering the second.
+
+**ZERO ROWS IS NOT A NEUTRAL STATE. It means nothing has ever been
+proven here.** A table at 0 is not "clean" or "ready"; it is the loudest
+available signal that every line of code pointing at it is a hypothesis.
+
+**Arun's list, 17 Sept 2026 — every real bug this month was code that
+had never met data:** `/quote` (a page and a share button for a path
+nothing has ever served, and no `public_*` RPC to serve it),
+`_gstShowInPdf`, `set_staff_pin` (a fail-open guard whose `raise` was
+unreachable — it had never fired once in its life until the fix),
+`advance_paid` (0 on all 8 orders while `paid_total` was non-zero on
+one, so the Daily Accounts Register reported Rs0 collected on the only
+paid order), and the leads pipeline strip (invented funnel counts
+sitting under a real, working list).
+
+### The worked example: Trips, found 17 Sept 2026 by this frame alone
+`trips` carries a RESTRICTIVE `branch_isolation` policy whose **qual and
+with_check are both** `current_staff_branch_or_owner(org_id, branch)`,
+and that function tests `branch = p_branch`, where NULL matches nobody.
+`lib/trips_page/trips_page_widget.dart:143` never mentions `branch` —
+not in the form, not in the insert, nowhere in the file. So:
+- a manager or supervisor creating a trip gets **"new row violates
+  row-level security policy"** on Save, every time;
+- the owner saves fine and the trip is then **invisible to every staff
+  session, permanently**.
+
+**Verified as a fact about the schema, not inferred from the widget** —
+which is the half that matters, and the half Arun asked for before
+letting "will fail" be said: `trips.branch` has **no column default**,
+`is_generated = NEVER`, **no rules**, `relkind = r` (a real table, no
+INSTEAD OF), and its two triggers — `enforce_org_writable` BEFORE INSERT
+and `set_updated_at` BEFORE UPDATE — **neither names `branch`**
+(`pg_get_functiondef ~* '\ybranch\y'` false on both). Nothing fills it.
+That is the difference between *"should fail"* and *"will fail"*, and it
+cost one query.
+
+**Two causes, same symptom, and fixing one does not reveal the other.**
+`staff.auth_user_id` is NULL on all 5 staff rows, so the policy's
+`exists(...)` is false for every staff session **regardless of branch**
+today. Populate it via a first PIN login and the branch reason takes
+over — the insert still fails, because the app still sends NULL.
+
+### What this changes about how work is reported
+1. **Report two columns, never one.** "Built" and "has ever run against
+   a row" are separate claims. A status line that gives only the first
+   is the stale-note disease in a new costume.
+2. **Count the backing tables before auditing the code.** `count(*)` on
+   what a module reads is one query and it tells you whether you are
+   reviewing code or reviewing a hypothesis.
+3. **A module at zero rows gets a seed, not a sign-off.**
+   `supabase/20260917_seed_unused_modules.sql` (handed over unrun) does
+   this for the seven modules that had never met a row: Salary &
+   advances, Crew sheet, Trips, Vendors & bills, Contracts, Reviews,
+   Insurance & claims. It does not work around the Trips finding — it
+   inserts the trip with exactly the app's column set, branch absent,
+   and demonstrates the consequence.
+4. **A seed is not a test.** It runs as `postgres` in the SQL editor,
+   which bypasses RLS, so a write the app itself would be refused still
+   succeeds there. A seed puts a row on the screen; only a device pass
+   says the screen is right.
+
 ## Conventions for Claude Code sessions
 - **Changing a function's return type or a view's column type needs an
   explicit `DROP` first — `CREATE OR REPLACE` will not do it.** Postgres
