@@ -523,16 +523,48 @@ backstop (see "Multi-tenancy status" above) and are not superseded by this.
   policy page live on nagarva.in (also needed for Meta/WhatsApp API).
 
 ## Dev workflow
+**The working copy is `D:\nagarva_app`** (Arun, 17 Sept 2026). This line
+read `C:\Android project\nagarva_app` until today and was wrong — the
+same shape as the Flutter SDK path that said `C:\src\flutter` for
+months. Worth correcting for the same reason given there: **a wrong path
+makes a checkable fact look uncheckable**, and the next session either
+guesses or gives up instead of looking.
 ```
-cd "C:\Android project\nagarva_app"
-flutter run            # choose 1 = Chrome for quick testing
+cd /d D:\nagarva_app          # /d because this switches DRIVE as well as
+                              # directory; a bare `cd` from a C: prompt
+                              # changes neither
+flutter pub get               # MANDATORY after any fresh clone or pull —
+                              # see below
+flutter run                   # choose 1 = Chrome for quick testing
 # r = hot reload, R = hot restart, q = quit
 flutter build apk --release   # Android build (licenses accepted, cmdline-tools OK)
 ```
-Backup of the previous working build: `C:\Android project\nagarva_app_old`
-(May snapshot; delete once confident). Old FlutterFlow DSL workspace (reference
-docs only, do not edit): `C:\Users\Arun\ArunPKRS2` — its context/pages.md and
-dsl/edit.dart are useful specs of intended behaviour.
+**`flutter pub get` is not optional after a pull.** `lib/l10n/gen/` is
+gitignored — only the four `.arb` files are tracked — so a fresh checkout
+has no generated `AppLocalizations` and the IDE shows a wall of
+unresolved-symbol errors that read as a broken pull. It is not broken;
+the five files regenerate from `l10n.yaml`.
+
+**APK builds, AAB refuses** (verified 17 Sept 2026, and it is deliberate
+— see the 8 Sept launch pass): `android/key.properties` does not exist,
+so `assembleRelease` falls back to debug signing and an APK builds fine
+for on-device testing, while `bundleRelease` throws a GradleException
+naming the missing file rather than producing a debug-signed AAB that
+Play would reject on upload. The upload keystore still does not exist.
+
+**Work lands on a branch, not `main`.** As of 17 Sept 2026 the active
+branch is `claude/nice-thompson-sc3qk3`, **26 commits ahead of `main`**,
+in an unmerged draft PR #1. Pulling `main` gets a build from before all
+of it, silently and with no error — check out the branch, or merge
+first.
+
+Old FlutterFlow DSL workspace (reference docs only, do not edit):
+`C:\Users\Arun\ArunPKRS2` — its context/pages.md and dsl/edit.dart are
+useful specs of intended behaviour. **Both remaining `C:\Users\Arun\...`
+paths in this file are UNVERIFIED as of 17 Sept**; only the working-copy
+path was corrected, and the old `C:\Android project\nagarva_app_old`
+backup reference was dropped because it described a location that is no
+longer where the project lives. Do not treat either as confirmed.
 
 ## Hardcoded demo data — how to sweep for it properly
 (18 Aug 2026. Recorded here rather than in the changelog because the
