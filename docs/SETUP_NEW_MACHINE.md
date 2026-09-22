@@ -32,7 +32,10 @@ code and are not.
 
 ## 2. Flutter version — 3.35.5, pinned, do not upgrade
 
-The dev machine runs **3.35.5** (detached HEAD in `C:\src\flutter`).
+The dev machine runs **3.35.5**. `CLAUDE.md`'s environment rules give
+the current pinned SDK path and working-copy path — both have moved at
+least once (this file previously said `C:\src\flutter`, which was
+wrong; check `CLAUDE.md` rather than trusting a path cached here).
 
 **Newer Flutter marks `IconData` as `final`, which breaks the pinned
 `font_awesome_flutter 10.x` and `page_transition 2.x`.** This is the
@@ -42,17 +45,10 @@ first rule in `CLAUDE.md` and it is not advisory — the build fails.
 flutter --version    # must say 3.35.5
 ```
 
-**Watch for a second Flutter install.** The dev machine has two:
-
-```
-C:\src\flutter\bin                                  <- 3.35.5 (pinned)
-C:\dev\flutter_windows_3.44.2-stable\flutter\bin    <- 3.44.2
-```
-
-Only PATH order keeps the right one in front. If the new machine has
-more than one, **check `flutter --version` in the same shell you build
-from** — not in a different terminal, since PATH can differ between
-them. See `NAGARVA_MODULE_STATUS.md` section 12.1.
+**Watch for a second Flutter install** if the machine has more than
+one SDK on disk — only PATH order keeps the right one in front. If in
+doubt, **check `flutter --version` in the same shell you build from**
+— not in a different terminal, since PATH can differ between them.
 
 Never run `flutter upgrade` in this repo. Avoid `flutter pub upgrade` —
 `pubspec.yaml` pins exact versions FlutterFlow-style, on purpose.
@@ -126,16 +122,21 @@ Cost an hour once. Full detail, including the two false trails
 ## 8. Know the baseline before you blame yourself
 
 ```
-flutter analyze lib/   ->   177 issues, 0 errors
+flutter analyze lib/
 ```
 
-**10 warnings and 167 infos are pre-existing** — unused imports, the
-Supabase `Provider` hidden-name pair, two unreachable switch defaults, a
-dead null-aware. If you see 177/0, you have changed nothing. Anything
-above 177, or any error at all, is yours.
+The pre-existing baseline is **0 errors, a couple hundred warnings/infos**
+(mostly `deprecated_member_use` from Flutter framework churn, plus a
+handful of `unused_import`/`avoid_unnecessary_containers`/
+`use_build_context_synchronously` infos). The exact count drifts as the
+Flutter SDK's own deprecations change — don't hardcode a number here,
+compare against `git stash` / a clean checkout if you need to know
+whether YOUR change introduced something. **Any `error •` line is always
+yours to fix.**
 
 `flutter analyze` exits **non-zero whenever it reports anything**, so a
-non-zero exit does not mean failure. Read the count.
+non-zero exit does not mean failure — check for `error •` lines, not the
+exit code.
 
 ## 9. Line endings
 
@@ -156,10 +157,12 @@ your edit, stop and check before committing.
 
 ## Where the project state actually lives
 
-- **`NAGARVA_MODULE_STATUS.md`** — the single tracker. Verified state
-  per module, unrun migrations, open decisions, environment hazards.
-  Read this first.
-- **`CLAUDE.md`** — conventions, architecture, and a changelog of why
-  things are the way they are.
+- **`CLAUDE.md`** (project root) — the single source of truth: brief,
+  architecture, conventions, known issues, roadmap, and a dated
+  changelog of why things are the way they are. Read this first.
+  (The separate module-status tracker this section used to point at
+  was folded into `CLAUDE.md` and removed — everything it tracked is
+  now recorded there, kept current.)
 - **`supabase/*.sql`** — migrations. **Handed over, never auto-run.**
-  Check section 2 of the status doc for which are still unrun.
+  Check `CLAUDE.md`'s "Known bugs" / roadmap sections for which are
+  still unrun.
