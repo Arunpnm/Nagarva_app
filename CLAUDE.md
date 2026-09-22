@@ -705,6 +705,26 @@ in one field. Two honest ways out, and they are not equivalent:
   which is what the column pair was built for and what §12.1 asks.
 Either way `ac_amount` comes out of every write payload.
 
+**THE DECISION-FREE ONE IS TAKEN, 17 Sept 2026 (Arun).** The upsert
+writes `ac_units: acDone ? 1 : 0` and `ac_rate: <the typed amount>`, so
+the generated column equals what the vendor typed and the save starts
+working on a screen that has never saved once. Not ticked writes **0
+units**, not one unit at a zero rate — the arithmetic is identical and
+the row does not claim an A/C job that nobody did.
+**`OrdersStaffRow.acAmount`'s SETTER is deleted** in the same change,
+with `acUnits`/`acRate` getters added in its place. That is the
+structural half: a setter for a generated column can only ever raise,
+and one sitting in the generated class beside an ordinary-looking
+getter is what made writing the column look available in the first
+place. The getter stays — a generated column reads normally.
+**This does not pre-empt §12.1.** If A/C turns out to be genuinely
+per-unit, that changes what the FORM asks for, and the two writable
+columns are already the ones it would write to.
+**UNPROVEN ON DEVICE.** `ac_units`/`ac_rate` have never held a non-zero
+value, so the first real save is the first time the generated column
+computes anything. `order_staff`'s 8 rows still have `is_driver` false
+on every one; none came from this sheet.
+
 ### What this changes about how work is reported
 1. **Report two columns, never one.** "Built" and "has ever run against
    a row" are separate claims. A status line that gives only the first
@@ -1419,6 +1439,38 @@ Either way `ac_amount` comes out of every write payload.
   **Any sentence in a comment or a report that quantifies the data —
   "most rows", "24 of 25", "rarely populated" — is a claim to be
   counted, not estimated, and dated when written.**
+
+  **THE SAME FAILURE ON AN IDENTIFIER, 17 Sept 2026 — A VALUE OF THE
+  RIGHT SHAPE IS NOT A VALUE YOU HAVE READ.** (Arun, pairing it here
+  deliberately: both passed an eyeball test and only an external check
+  caught them.)
+  Merging PR #1 needed the head commit's SHA. The short SHA `1f03fb4`
+  was in hand, correctly, from `git log --oneline`. The full SHA was
+  **not** — so it was padded out to
+  `1f03fb413d5d7e16e7f0a0ba0c4a8b8c9d0e1f2a`: forty hex characters,
+  correct prefix, correct length, entirely invented after the seventh.
+  GitHub refused it with `409 Head branch was modified`, which is a
+  misleading error for a fabricated value and would have read as a race
+  against a concurrent push. `git rev-parse` returned the real one
+  (`1f03fb4bef9677b1a97596a8a9901c53aeaa0211`) and the merge went
+  through.
+  **The tell is that padding looks like FORMATTING.** Expanding a short
+  SHA, filling a uuid, completing a version string, widening a
+  truncated id — each feels like presenting a value already held, and
+  each is producing one. "24 of 25 live orders" is the same move on a
+  quantity: a plausible figure generated rather than counted. Neither
+  is a guess anyone would defend if asked; both arrive because the
+  shape is known and the content is assumed to follow from it.
+  **It is worse than the quantity case in one respect**, which is why
+  it earns its own paragraph rather than a clause: a wrong count
+  misleads a reader, while a wrong identifier is handed to a MACHINE,
+  which rejects it with an error about something else. The invented
+  half is never named in the failure.
+  Rule: an identifier is copied from the tool that emits it —
+  `git rev-parse HEAD`, the API response, the catalogue row — never
+  reconstructed, never extended, never completed from a prefix. If the
+  full value has not been read in this session, read it. It is one
+  command, and it is the same command either way.
 - **Never run a fragment of a migration on its own to "check" it. The
   same text can be a different statement outside its block than inside
   it — and the check can cause the very thing it was checking for.**

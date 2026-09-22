@@ -50,8 +50,28 @@ class OrderStaffRow extends SupabaseDataRow {
   /// additive amount on top of the wage, never absorbed into it, so a man
   /// who drove and also uninstalled an A/C earns both and both report
   /// separately.
+  ///
+  /// READ-ONLY, and the column says so:
+  /// `GENERATED ALWAYS AS ((ac_units)::numeric * ac_rate) STORED`. A write
+  /// naming it raises `428C9 cannot insert a non-DEFAULT value into column
+  /// "ac_amount"` before anything lands — which is exactly what the crew
+  /// sheet did, for its whole life, until 17 Sept 2026. The setter is
+  /// deleted rather than left unused: it could only ever fail, and one
+  /// sitting here is what made writing this column look available.
+  ///
+  /// `information_schema.columns` reports this column as nullable with no
+  /// default — indistinguishable from an ordinary optional column. The
+  /// discriminating fields are `is_generated` and `generation_expression`.
+  /// Write `acUnits`/`acRate` instead; this reads normally.
   double get acAmount => getField<double>('ac_amount') ?? 0;
-  set acAmount(double value) => setField<double>('ac_amount', value);
+
+  /// The two writable halves of the A/C charge, `NOT NULL DEFAULT 0` both.
+  /// `ac_amount` above is their product, maintained by Postgres.
+  int get acUnits => getField<int>('ac_units') ?? 0;
+  set acUnits(int value) => setField<int>('ac_units', value);
+
+  double get acRate => getField<double>('ac_rate') ?? 0;
+  set acRate(double value) => setField<double>('ac_rate', value);
 
   DateTime? get createdAt => getField<DateTime>('created_at');
   set createdAt(DateTime? value) => setField<DateTime>('created_at', value);
