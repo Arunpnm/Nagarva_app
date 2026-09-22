@@ -3243,6 +3243,60 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **22 Sept 2026, closed-beta invite-code gate turned OFF and the field
+  removed from SignupPage.** Arun's call — the gate existed only because
+  the CFT catalogue was still APC-shaped (see "closed-beta invite-code
+  gate", 17 Aug 2026); Item 12 (per-tenant catalogue + slabs) has been
+  live and verified since 24 Aug 2026, so the precondition this gate was
+  waiting on is satisfied.
+  - **DB**: `update platform_settings set value = 'false'::jsonb where
+    key = 'signup_requires_invite'` — run live against `hqqcapifefsaqvotqvlt`.
+    This is the real gate; `create-org`'s own header already documented
+    this as the one-line turn-off, read fresh per request, no redeploy
+    needed. Confirmed unchanged (`requires_invite = false`) after the
+    update.
+  - **Dart**: removed the Invite Code field from
+    `signup_page_widget.dart` entirely (not just made optional), plus the
+    pre-`signUp()` `is_invite_code_valid` RPC check, the `invite_code`
+    stash in `auth.signUp()`'s metadata, and the `invite_code` sent to
+    `create-org`. `signup_page_model.dart`'s
+    `inviteCodeController`/`inviteCodeFocusNode` removed with it.
+    `flutter analyze lib/` — 0 errors, unchanged baseline info/warning
+    count.
+    **`vendor_org_resolver.dart`'s `metaInviteCode` read is deliberately
+    left in place** — it's the confirmation-gap recovery path for any
+    account that signed up before this change with a code stashed in
+    auth metadata; reads null now for anyone signing up after, which
+    `create-org` already accepts (empty invite_code + gate off = normal
+    signup). No behavior to fix there.
+  - **Smoke test, run against the live project, no shortcuts**: real
+    `auth.signup` (anon key) with no `invite_code` in the body or
+    metadata → email-confirmed via direct SQL (Confirm-email is ON, same
+    technique the 17 Aug Item 11 pass used) → password sign-in for a real
+    JWT → `create-org` called with `{org_name, owner_name}` only, exactly
+    the new client payload. **Result: HTTP 201, `ok:true,
+    caller_role:"owner"`**, a real trial-plan org created
+    (`zzz-claude-invite-gate-test`, Trial plan, 5 users/50 orders/50
+    WhatsApp, features on). Proves both halves together — the flag flip
+    and the field removal — produce a working signup with zero invite
+    code anywhere in the flow.
+  - **Cleanup, fully reversed**: `delete_org()` refused (correctly — it
+    doesn't yet know about `cft_catalogue`, an org-scoped table added
+    since it was last updated; same completeness-guard shape this file
+    already documents, left unfixed since patching that function wasn't
+    in scope here). Cleaned up manually instead: a DO block deleting from
+    every `public` base table carrying an `org_id` column, looped to
+    convergence so FK order didn't have to be known by hand, then the
+    `organizations` row, then the test `auth.users` row. Verified 0 rows
+    across `organizations`/`org_members`/`number_series`/
+    `pricing_config`/`app_settings`/`audit_log`/`cft_catalogue` and
+    `auth.users` back to its pre-test count of 2.
+  - **NOT done, flagged rather than fixed blind**: `delete_org()` is now
+    confirmed still out of date on `cft_catalogue` (and possibly other
+    tables added since its last update) — this was already knowable from
+    its own guard, just re-confirmed here. Worth a pass adding it to
+    `v_order` before the next time someone needs a real org deleted
+    through that function rather than by hand.
 - **17 Sept 2026 (later), the column STAYS — and a tombstone read as a
   missed rewrite.**
   - **DECISION, Arun: `orders.advance_paid` is left in place
