@@ -504,7 +504,22 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
             'order_id': orderId,
             'staff_id': l.staffId,
             'salary_amount': l.wageAmount,
-            'ac_amount': l.acAmount,
+            // `order_staff.ac_amount` is
+            // `GENERATED ALWAYS AS ((ac_units)::numeric * ac_rate) STORED`,
+            // so naming it in any write raises 428C9 before anything lands.
+            // It was named here, which is why every save this sheet has ever
+            // attempted failed at the database — see CLAUDE.md, "the Crew
+            // Sheet has NEVER been able to save". `ac_units`/`ac_rate` are
+            // the only writable inputs.
+            //
+            // The sheet asks for a flat per-man A/C amount, so units = 1 and
+            // rate = the typed figure: the generated column then equals what
+            // the vendor typed, exactly. Not ticked -> 0 units, not 1 unit at
+            // a zero rate. If A/C turns out to be genuinely per-unit (brief
+            // §12.1) that changes what the FORM asks for; this does not stand
+            // in the way of it.
+            'ac_units': l.acDone ? 1 : 0,
+            'ac_rate': l.acAmount,
             'is_driver': l.isDriver,
             'team_type': 'labour',
           }
