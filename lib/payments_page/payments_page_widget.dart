@@ -2,11 +2,13 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/index.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/components/keyboard_scroll_view.dart';
+import '/backend/detail_navigation.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/config/app_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'payments_page_model.dart';
@@ -90,8 +92,221 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
     super.dispose();
   }
 
+  static double _due(OrdersRow o) => (o.amount ?? 0) - o.paidTotal;
+
+  void _record(OrdersRow o) => context.pushNamed(
+        RecordPaymentPageWidget.routeName,
+        queryParameters: {
+          'orderId': serializeParam(o.id, ParamType.String),
+        }.withoutNulls,
+      );
+
+  /// WhatsApp reminder with a ready-made message. buildWhatsAppLink adds
+  /// the India country code to a bare 10-digit number.
+  void _remind(OrdersRow o) {
+    final phone = (o.phone ?? '').trim();
+    if (phone.isEmpty) return;
+    launchURL(buildWhatsAppLink(
+      phone: phone,
+      message: 'Dear ${o.customer}, '
+          'greetings from ${AppSession.instance.currentOrgName ?? 'us'}! '
+          'A payment of Rs.${_due(o).toStringAsFixed(0)} '
+          'is pending for your shifting (${o.fromCity ?? ''} to ${o.toCity ?? ''}). '
+          'Kindly arrange the payment. Thank you!',
+    ));
+  }
+
+  Widget _summaryCard(BuildContext context) {
+    final c = NgPalette.of(context);
+    final outstanding =
+        _model.pendingList.fold<double>(0.0, (s, o) => s + _due(o));
+    final received = _model.receivedThisMonth;
+    final total = outstanding + received;
+    final colShare = total <= 0 ? 0.0 : received / total;
+    Widget legend(Color dot, String label, String value) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                  color: dot, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(width: 7),
+            Text(label, style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+            const SizedBox(width: 6),
+            Text(value,
+                style: NgFonts.geist(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: c.text)),
+          ],
+        );
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(AppLocalizations.of(context).paymentsPageOutstanding,
+              style: NgFonts.geist(fontSize: 13, color: c.mute)),
+          const SizedBox(height: 4),
+          // Live: Σ balance due across the pending list below.
+          Text(
+            '₹${outstanding.toStringAsFixed(0)}',
+            style: NgFonts.geist(
+              fontSize: 30,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.6,
+              color: c.text,
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Collected this month (green) against what is still owed
+          // (accent), the handoff's split bar.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: SizedBox(
+              height: 8,
+              child: Row(
+                children: [
+                  if (colShare > 0)
+                    Expanded(
+                      flex: (colShare * 1000).round(),
+                      child: ColoredBox(color: c.green),
+                    ),
+                  if (colShare > 0 && colShare < 1) const SizedBox(width: 2),
+                  if (colShare < 1)
+                    Expanded(
+                      flex: ((1 - colShare) * 1000).round(),
+                      child: ColoredBox(color: c.accBtn),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 18,
+            runSpacing: 6,
+            children: [
+              legend(c.green, AppLocalizations.of(context).receivedMonth,
+                  '₹${received.toStringAsFixed(0)}'),
+              legend(c.accBtn, 'To collect', '₹${outstanding.toStringAsFixed(0)}'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dueCard(BuildContext context, OrdersRow o) {
+    final c = NgPalette.of(context);
+    final partial = o.paidTotal > 0;
+    final tone = partial ? NgStatus.amber : NgStatus.red;
+    final hasPhone = (o.phone ?? '').trim().isNotEmpty;
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => openOrderDetail(context, o),
+            child: Row(
+              children: [
+                NgAvatar(o.customer, status: tone, size: 40),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        o.customer,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NgFonts.geist(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: c.text),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '${o.fromCity ?? '-'} → ${o.toCity ?? '-'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NgFonts.geist(fontSize: 12.5, color: c.mute),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Balance due, not gross amount: amount - collected.
+                    Text(
+                      '₹${_due(o).toStringAsFixed(0)}',
+                      style: NgFonts.geist(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: c.text),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      partial ? 'Part paid' : 'Unpaid',
+                      style: NgFonts.geist(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: c.status(tone).fg),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: NgSecondaryButton(
+                  label: 'Remind',
+                  icon: Icons.chat_rounded,
+                  iconColor: c.green,
+                  height: 40,
+                  onPressed: hasPhone ? () => _remind(o) : null,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: NgSecondaryButton(
+                  label: 'Record',
+                  icon: Icons.price_check_rounded,
+                  iconColor: c.acc,
+                  height: 40,
+                  onPressed: () => _record(o),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    // The handoff groups what is owed by urgency: moves already done
+    // (move date before today) are overdue; the rest are upcoming.
+    final today = DateTime.now();
+    final t0 = DateTime(today.year, today.month, today.day);
+    final overdue = <OrdersRow>[];
+    final upcoming = <OrdersRow>[];
+    for (final o in _model.pendingList) {
+      final d = o.moveDateOrNull;
+      (d != null && d.isBefore(t0) ? overdue : upcoming).add(o);
+    }
+    final groups = [
+      ('Overdue', c.red, overdue),
+      ('Upcoming', c.amber, upcoming),
+    ];
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -99,515 +314,73 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).payments,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
+        backgroundColor: c.bg,
+        appBar: const NgTopBar(),
+        body: RefreshIndicator(
+          onRefresh: _loadPayments,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              NgScreenTitle(AppLocalizations.of(context).payments),
+              const SizedBox(height: 14),
+              _summaryCard(context),
+              const SizedBox(height: 14),
+              if (_model.pendingList.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 36),
+                  child: Column(
+                    children: [
+                      Icon(Icons.task_alt_rounded, size: 42, color: c.green),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Nothing to collect',
+                        style: NgFonts.geist(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: c.text),
+                      ),
+                    ],
                   ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: const [],
-          centerTitle: true,
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: KeyboardScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          flex: 1,
-                          child: Container(
-                            width: double.infinity,
+                )
+              else
+                for (final (title, dot, rows) in groups)
+                  if (rows.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
-                              color: FlutterFlowTheme.of(context)
-                                  .secondaryBackground,
-                              borderRadius: BorderRadius.circular(12.0),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(context).paymentsPageOutstanding,
-                                    style: FlutterFlowTheme.of(context)
-                                        .labelMedium
-                                        .override(
-                                          font: NgFonts.geist(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    // Live: Σ balance due across the
-                                    // pending list below.
-                                    '₹${_model.pendingList.fold<double>(0.0, (s, o) => s + ((o.amount ?? 0) - o.paidTotal)).toStringAsFixed(0)}',
-                                    style: FlutterFlowTheme.of(context)
-                                        .headlineMedium
-                                        .override(
-                                          font: NgFonts.geist(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .headlineMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .headlineMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .error,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .headlineMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .headlineMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ].divide(const SizedBox(height: 4.0)),
-                              ),
-                            ),
+                                color: dot, shape: BoxShape.circle),
                           ),
-                        ),
-                        Flexible(
-                          flex: 1,
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: FlutterFlowTheme.of(context)
-                                  .secondaryBackground,
-                              borderRadius: BorderRadius.circular(12.0),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(context).receivedMonth,
-                                    style: FlutterFlowTheme.of(context)
-                                        .labelMedium
-                                        .override(
-                                          font: NgFonts.geist(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .labelMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    '₹${_model.receivedThisMonth.toStringAsFixed(0)}',
-                                    style: FlutterFlowTheme.of(context)
-                                        .headlineMedium
-                                        .override(
-                                          font: NgFonts.geist(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .headlineMedium
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .headlineMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .primary,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .headlineMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .headlineMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ].divide(const SizedBox(height: 4.0)),
-                              ),
-                            ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(title,
+                                style: NgFonts.geist(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: c.text)),
                           ),
-                        ),
-                      ].divide(const SizedBox(width: 12.0)),
+                          Text(
+                            '₹${rows.fold<double>(0, (s, o) => s + _due(o)).toStringAsFixed(0)}',
+                            style: NgFonts.geist(fontSize: 13, color: c.mute),
+                          ),
+                        ],
+                      ),
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context).pendingPaymentsLive,
-                          style:
-                              FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: NgFonts.geist(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontStyle,
-                                    ),
-                                    color: FlutterFlowTheme.of(context).primary,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontStyle,
-                                  ),
-                        ),
-                        Builder(
-                          builder: (context) {
-                            final pendingListItem = _model.pendingList.toList();
-
-                            return ListView.separated(
-                              padding: EdgeInsets.zero,
-                              primary: false,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              scrollDirection: Axis.vertical,
-                              itemCount: pendingListItem.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12.0),
-                              itemBuilder: (context, pendingListItemIndex) {
-                                final pendingListItemItem =
-                                    pendingListItem[pendingListItemIndex];
-                                return Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(12.0),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              pendingListItemItem.customer,
-                                              style: FlutterFlowTheme.of(
-                                                      context)
-                                                  .titleSmall
-                                                  .override(
-                                                    font:
-                                                        NgFonts.geist(
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .fontStyle,
-                                                    ),
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .primaryText,
-                                                    letterSpacing: 0.0,
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleSmall
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleSmall
-                                                            .fontStyle,
-                                                  ),
-                                            ),
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryBackground,
-                                                borderRadius:
-                                                    BorderRadius.circular(8.0),
-                                              ),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsetsDirectional
-                                                        .fromSTEB(
-                                                        8.0, 2.0, 8.0, 2.0),
-                                                child: Text(
-                                                  pendingListItemItem.status ??
-                                                      '-',
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .labelSmall
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .primaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .labelSmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .labelSmall
-                                                                .fontStyle,
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          ].divide(const SizedBox(height: 4.0)),
-                                        ),
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              // Balance due, not gross amount:
-                                              // amount - advance - collected.
-                                              '₹${((pendingListItemItem.amount ?? 0) - pendingListItemItem.paidTotal).toStringAsFixed(0)} due',
-                                              style: FlutterFlowTheme.of(
-                                                      context)
-                                                  .titleMedium
-                                                  .override(
-                                                    font:
-                                                        NgFonts.geist(
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleMedium
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleMedium
-                                                              .fontStyle,
-                                                    ),
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .error,
-                                                    letterSpacing: 0.0,
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleMedium
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleMedium
-                                                            .fontStyle,
-                                                  ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            InkWell(
-                                              onTap: () {
-                                                context.pushNamed(
-                                                  RecordPaymentPageWidget
-                                                      .routeName,
-                                                  queryParameters: {
-                                                    'orderId': serializeParam(
-                                                        pendingListItemItem.id,
-                                                        ParamType.String),
-                                                  }.withoutNulls,
-                                                );
-                                              },
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 5),
-                                                margin: const EdgeInsets.only(
-                                                    bottom: 6),
-                                                decoration: BoxDecoration(
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .primary,
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Text('Record',
-                                                    style: NgFonts.geist(
-                                                        fontSize: 11,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        color: FlutterFlowTheme
-                                                                .of(context)
-                                                            .primaryBackground)),
-                                              ),
-                                            ),
-                                            InkWell(
-                                              onTap: () {
-                                                // WhatsApp reminder with a
-                                                // ready-made message. wa.me
-                                                // needs country code; assume
-                                                // India for 10-digit numbers.
-                                                final raw = (pendingListItemItem
-                                                            .phone ??
-                                                        '')
-                                                    .replaceAll(
-                                                        RegExp(r'[^0-9]'), '');
-                                                if (raw.isEmpty) return;
-                                                final phone = raw.length == 10
-                                                    ? '91$raw'
-                                                    : raw;
-                                                final msg = Uri.encodeComponent(
-                                                    'Dear ${pendingListItemItem.customer}, '
-                                                    'greetings from ${AppSession.instance.currentOrgName ?? 'us'}! '
-                                                    'A payment of Rs.${(pendingListItemItem.amount ?? 0).toStringAsFixed(0)} '
-                                                    'is pending for your shifting (${pendingListItemItem.fromCity ?? ''} to ${pendingListItemItem.toCity ?? ''}). '
-                                                    'Kindly arrange the payment. Thank you!');
-                                                launchURL(
-                                                    'https://wa.me/$phone?text=$msg');
-                                              },
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 5),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xFF25D366),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    const Icon(Icons.chat,
-                                                        size: 13,
-                                                        color: Colors.white),
-                                                    const SizedBox(width: 4),
-                                                    Text('Remind',
-                                                        style:
-                                                            NgFonts.geist(
-                                                                fontSize: 11,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                                color: Colors
-                                                                    .white)),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ].divide(const SizedBox(height: 12.0)),
-                    ),
-                    // The 'Pending Invoices' block that used to sit here
-                    // was FlutterFlow placeholder decoration (INV-045…048,
-                    // Rajesh Kumar / Priya Sharma / …) — fake data that made
-                    // recorded payments look ignored. Removed; the live
-                    // Pending Payments list above is the real one.
-                  ].divide(const SizedBox(height: 16.0)),
-                ),
-              ),
-            ),
+                    for (var i = 0; i < rows.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 8),
+                      _dueCard(context, rows[i]),
+                    ],
+                    const SizedBox(height: 14),
+                  ],
+              // The 'Pending Invoices' block that used to sit here was
+              // FlutterFlow placeholder decoration (INV-045…048) — fake
+              // data that made recorded payments look ignored. Removed;
+              // the live list above is the real one.
+            ],
           ),
         ),
       ),
