@@ -642,7 +642,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
         // Quick Entry and the module menu MOVED TO THE SHELL, 3 Sept
-        // 2026 (main.dart's NavBarPage + components/app_nav_drawer.dart).
+        // 2026 (main.dart's NavBarPage + components/more_sheet.dart).
         // Both used to hang off this Scaffold, which meant they existed
         // on the Dashboard and nowhere else - the Quick Entry FAB was
         // unreachable from Orders or Leads, and so were the twenty-odd

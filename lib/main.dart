@@ -25,7 +25,7 @@ import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
 import 'components/coming_soon_page.dart';
-import 'components/app_nav_drawer.dart';
+import 'components/more_sheet.dart';
 import 'components/quick_entry_dialog.dart';
 import 'components/load_error_state.dart';
 import 'components/mobile_bottom_nav.dart';
@@ -1166,7 +1166,8 @@ class _NavBarPageState extends State<NavBarPage>
         // Dashboard and nowhere else - from Orders or Leads the other
         // twenty-odd modules could not be reached at all. Opened from the
         // bar's pinned Menu button, within thumb reach.
-        drawer: AppNavDrawer(currentPageName: _currentPageName),
+        // The module menu moved from this drawer to MoreSheet (the
+        // redesign's "More" slot); see components/more_sheet.dart.
         body: NotificationListener<UserScrollNotification>(
           onNotification: (notification) {
             // Scroll-aware only — no idle timer anywhere, so the nav can
@@ -1212,30 +1213,25 @@ class _NavBarPageState extends State<NavBarPage>
                 bottomItems.indexWhere((e) => e.name == _currentPageName);
             return MobileBottomNav(
               items: bottomItems,
-              currentIndex: idx < 0 ? 0 : idx,
+              // -1 when the current screen is a module reached from More:
+              // the bar then highlights More instead of a wrong tab.
+              currentIndex: idx,
               // By name: an index into bottomItems is NOT an index into
               // _navItems.
               onTap: (i) => _selectTabNamed(bottomItems[i].name),
-              // Pinned right, on every screen the shell renders. Offered
-              // only to owner/manager: a supervisor's four destinations
-              // are already all in the bar, so a Menu there would open a
-              // drawer listing what is under their thumb already, and
-              // most Quick tiles are permission-gated away from them.
+              // Pinned right, on every screen the shell renders: the
+              // redesign's "More", opening the grouped module sheet (which
+              // also carries Quick entry). Offered only to owner/manager —
+              // a supervisor's four destinations are all in the bar
+              // already, so a sheet would list what is under their thumb.
               actions: isOwnerOrManagerSession
                   ? [
                       (
-                        icon: Icons.add_circle_outline,
-                        label: 'Quick',
-                        onTap: () => QuickEntryDialog.show(context),
-                      ),
-                      (
-                        icon: Icons.menu,
-                        label: 'Menu',
-                        // Scaffold.of finds the SHELL scaffold: this
-                        // builder sits in its bottomNavigationBar slot,
-                        // and the page bodies with their own Scaffolds
-                        // are below it in the tree, not above.
-                        onTap: () => Scaffold.of(context).openDrawer(),
+                        icon: Icons.apps_rounded,
+                        label: 'More',
+                        badge: 0,
+                        onTap: () => MoreSheet.show(context,
+                            currentPageName: _currentPageName),
                       ),
                     ]
                   : const [],

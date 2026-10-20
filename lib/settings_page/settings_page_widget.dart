@@ -1103,7 +1103,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                     // in top somewhere or in menu directly not inside
                     // settings modules"). It is now the header of the
                     // bottom-bar Menu drawer, next to the org's own name -
-                    // see components/app_nav_drawer.dart. The switch
+                    // see components/more_sheet.dart. The switch
                     // itself lives in backend/org_switch.dart so there is
                     // still exactly one implementation.
                     Padding(
