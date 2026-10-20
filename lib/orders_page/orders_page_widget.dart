@@ -84,6 +84,16 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
 
   static const _tabs = ['All', 'Pending', 'Completed', 'Cancelled'];
 
+  static String _tabLabel(BuildContext context, String tab) {
+    final l = AppLocalizations.of(context);
+    return switch (tab) {
+      'Pending' => l.ngTabPending,
+      'Completed' => l.ngTabCompleted,
+      'Cancelled' => l.ngTabCancelled,
+      _ => l.ngTabAll,
+    };
+  }
+
   /// Filter by the top tab. Statuses live lowercase in the DB
   /// (pending/confirmed/transit/delivered|done/cancelled). Completed =
   /// delivered/done/completed/closed — 'closed' is Mark Order Complete's
@@ -129,12 +139,13 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
       if (cur == null || day != cur) {
         cur = day;
         final diff = day.difference(t0).inDays;
+        final l = AppLocalizations.of(context);
         final title = diff == 0
-            ? 'Today'
+            ? l.ngToday
             : diff == 1
-                ? 'Tomorrow'
+                ? l.ngTomorrow
                 : diff == -1
-                    ? 'Yesterday'
+                    ? l.ngYesterday
                     : DateFormat('EEE, d MMM').format(day);
         out.add((
           title: title,
@@ -147,19 +158,25 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
     }
     final undated = orders.where((o) => o.moveDateOrNull == null).toList();
     if (undated.isNotEmpty) {
-      out.add((title: 'No move date', sub: '', dot: c.faint, items: undated));
+      out.add((
+        title: AppLocalizations.of(context).ngNoMoveDate,
+        sub: '',
+        dot: c.faint,
+        items: undated,
+      ));
     }
     return out;
   }
 
-  ({String label, Color color}) _payLook(NgPalette c, OrdersRow o) {
+  ({String label, Color color}) _payLook(
+      AppLocalizations l, NgPalette c, OrdersRow o) {
     switch ((o.paymentStatus ?? '').toLowerCase()) {
       case 'paid':
-        return (label: 'Paid', color: c.green);
+        return (label: l.ngPaid, color: c.green);
       case 'partial':
-        return (label: 'Part paid', color: c.amber);
+        return (label: l.ngPartPaid, color: c.amber);
       default:
-        return (label: 'Due', color: c.red);
+        return (label: l.ngDue, color: c.red);
     }
   }
 
@@ -171,8 +188,10 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
     final idx = orderStageIndex(o.trackingStatus, o.status);
     final stageColor =
         cancelled ? c.red : c.status(orderStageTone(idx)).fg;
-    final stageLabel = cancelled ? 'Cancelled' : orderStageLabel(kOrderStages[idx]);
-    final pay = _payLook(c, o);
+    final l = AppLocalizations.of(context);
+    final stageLabel =
+        cancelled ? l.ngTabCancelled : orderStageLabel(kOrderStages[idx]);
+    final pay = _payLook(l, c, o);
     final svc = (o.service ?? '').trim();
     return Material(
       color: c.s1,
@@ -297,7 +316,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                     NgPrimaryButton(
                       compact: true,
                       icon: Icons.add_rounded,
-                      label: 'New order',
+                      label: AppLocalizations.of(context).ngNewOrder,
                       onPressed: () =>
                           context.pushNamed(NewOrderPageWidget.routeName),
                     ),
@@ -310,7 +329,9 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                 chips: [
                   for (final tab in _tabs)
                     NgChip(
-                      label: tab,
+                      // `tab` stays the English state key; only the
+                      // label is localised.
+                      label: _tabLabel(context, tab),
                       count: _model.ordersList
                           .where((o) => _inTab(o, tab))
                           .length,
@@ -329,7 +350,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                       Icon(Icons.assignment_outlined, size: 42, color: c.mute),
                       const SizedBox(height: 12),
                       Text(
-                        'No orders here',
+                        AppLocalizations.of(context).ngNoOrdersHere,
                         style: NgFonts.geist(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

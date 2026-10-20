@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '/app_session.dart';
 import '/index.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/permissions.dart';
 
 /// Navigation model — Users Kickoff Step 2 (1 Aug 2026).
@@ -397,4 +398,65 @@ List<NavItem> navItemsForCurrentSession() {
     ));
   }
   return items;
+}
+
+/// The menu label for [item] in the app's language (More sheet, bottom
+/// bar). `name` stays the router key and `label` the English source; this
+/// only picks the ARB string. An item missing here falls back to its
+/// English label rather than to nothing.
+String localizedNavLabel(BuildContext context, NavItem item) {
+  final l = AppLocalizations.of(context);
+  return switch (item.name) {
+    'HomePage' => l.ngMenuDashboard,
+    'LeadsPage' => l.ngMenuLeads,
+    'WaInboxPage' => l.ngMenuInbox,
+    'SurveyQuoteHubPage' => l.ngMenuSurveyQuote,
+    'CalendarPage' => l.ngMenuCalendar,
+    'OrdersPage' => l.ngMenuOrders,
+    'OperationsPage' => l.ngMenuOperations,
+    'ReviewsPage' => l.ngMenuReviews,
+    'PaymentsPage' => l.ngMenuPayments,
+    'ExpensePage' => l.ngMenuExpenses,
+    'UsersPage' =>
+      item.label == 'Staff' ? l.ngMenuStaff : l.ngMenuTeamAttendance,
+    'FleetPage' => l.ngMenuFleet,
+    'MaterialsPage' => l.ngMenuMaterials,
+    'WarehousesPage' => l.ngMenuWarehouses,
+    'RateCardsPage' => l.ngMenuRateCards,
+    'LrRegisterPage' => l.ngMenuLrRegister,
+    'OperationsStandalonePage' => l.ngMenuOpsLog,
+    'VendorsPage' => l.ngMenuVendors,
+    'CustomersPage' => l.ngMenuCustomers,
+    'InsuranceClaimsPage' => l.ngMenuInsurance,
+    'TripsPage' => l.ngMenuTrips,
+    'TasksPage' => l.ngMenuTasks,
+    'AccountsPage' => l.ngMenuAccounts,
+    'PLReportPage' => l.ngMenuPnl,
+    'ReportsPage' => l.ngMenuReports,
+    'SalaryPage' => l.ngMenuSalary,
+    'SettingsPage' => l.ngMenuSettings,
+    'SupervisorJobsListPage' => l.ngMenuMyJobs,
+    'SupervisorTeamPage' => l.ngMenuMyTeam,
+    'SupervisorEarningsPage' || 'MySalComingSoon' => l.ngMenuMyEarnings,
+    'SupervisorAttendancePage' || 'MyAttComingSoon' => l.ngMenuMyAttendance,
+    _ when item.name == SuperAdminPageWidget.routeName =>
+      l.ngMenuPlatformAdmin,
+    _ => item.label,
+  };
+}
+
+/// [kNavGroups] / [kNavGroupOther] name in the app's language.
+String localizedNavGroup(BuildContext context, String group) {
+  final l = AppLocalizations.of(context);
+  return switch (group) {
+    'Sales' => l.ngGroupSales,
+    'Operations' => l.ngGroupOperations,
+    'Money' => l.ngGroupMoney,
+    'People' => l.ngGroupPeople,
+    'Assets' => l.ngGroupAssets,
+    'Partners' => l.ngGroupPartners,
+    'Setup' => l.ngGroupSetup,
+    'Field' => l.ngGroupField,
+    _ => l.ngGroupOther,
+  };
 }

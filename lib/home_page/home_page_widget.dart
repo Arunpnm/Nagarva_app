@@ -661,7 +661,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
             icon: Icons.local_shipping_rounded,
             color: c.acc,
             value: functions.numStr(_activeMoves)!,
-            label: 'Moves',
+            label: AppLocalizations.of(context).ngTodayMoves,
             onTap: go('OperationsPage'),
           ),
         ),
@@ -671,7 +671,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
             icon: Icons.phone_in_talk_rounded,
             color: c.blue,
             value: functions.numStr(_remindersToday)!,
-            label: 'Follow-ups',
+            label: AppLocalizations.of(context).ngTodayFollowUps,
             onTap: go('CalendarPage'),
           ),
         ),
@@ -682,14 +682,14 @@ class _HomePageWidgetState extends State<HomePageWidget>
                   icon: Icons.account_balance_wallet_rounded,
                   color: c.green,
                   value: functions.inrFormat(_outstandingAmount)!,
-                  label: 'To collect',
+                  label: AppLocalizations.of(context).ngToCollect,
                   onTap: go('PaymentsPage'),
                 )
               : NgStatTile(
                   icon: Icons.person_search_rounded,
                   color: c.amber,
                   value: functions.numStr(_activeLeads)!,
-                  label: 'Open leads',
+                  label: AppLocalizations.of(context).ngOpenLeads,
                   onTap: go('LeadsPage'),
                 ),
         ),
@@ -714,8 +714,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
             child: _dashboardEmptyState(
               context,
               icon: Icons.event_available_outlined,
-              message: 'No moves scheduled yet',
-              actionLabel: 'Create your first order',
+              message: AppLocalizations.of(context).ngNoMovesYet,
+              actionLabel: AppLocalizations.of(context).ngCreateFirstOrder,
               onAction: () => context.pushNamed(NewOrderPageWidget.routeName),
             ),
           )
@@ -813,8 +813,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
             child: _dashboardEmptyState(
               context,
               icon: Icons.person_add_alt_1_outlined,
-              message: 'No leads yet',
-              actionLabel: 'Add a lead',
+              message: AppLocalizations.of(context).ngNoLeadsYet,
+              actionLabel: AppLocalizations.of(context).ngAddLead,
               onAction: () => context.pushNamed(NewLeadPageWidget.routeName),
             ),
           )
