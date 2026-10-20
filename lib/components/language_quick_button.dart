@@ -13,6 +13,11 @@ import '/main.dart' show MyApp;
 /// gone away — it is simply his call to make, and he has made it twice.
 /// Recorded here so nobody later reads this as an oversight:
 ///
+/// **UPDATE Oct 2026: the ARB files are now filled** (hi, ta, kn, te, ml;
+/// Claude-written, pending native-speaker review), so `_untranslated` is
+/// empty and the menu's caveat line no longer shows. The history below
+/// is kept because the rule it records still applies to any new locale.
+///
 /// **`app_ta.arb`, `app_hi.arb` and `app_kn.arb` contain ZERO message
 /// keys against `app_en.arb`'s 487** (counted 3 Sept 2026, not carried
 /// over from the earlier note). Every lookup falls through to English by
@@ -41,11 +46,15 @@ class LanguageQuickButton extends StatelessWidget {
     ('ta', 'தமிழ்'),
     ('hi', 'हिन्दी'),
     ('kn', 'ಕನ್ನಡ'),
+    ('te', 'తెలుగు'),
+    ('ml', 'മലയാളം'),
   ];
 
-  /// The three that have no strings yet. When one is translated, take it
-  /// out of this set in the same change.
-  static const _untranslated = {'ta', 'hi', 'kn'};
+  /// Locales with no strings yet. Empty since Oct 2026: every ARB now
+  /// carries all of app_en.arb's messages (Claude-written, pending
+  /// native-speaker review — see each file's @@x-nagarva-note). A locale
+  /// added later without strings goes back in here in the same change.
+  static const _untranslated = <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -98,8 +107,8 @@ class LanguageQuickButton extends StatelessWidget {
             child: SizedBox(
               width: 190,
               child: Text(
-                'Tamil, Hindi and Kannada are not translated yet — '
-                'the app stays in English.',
+                'Some languages are not translated yet — '
+                'the app stays in English for those.',
                 style: TextStyle(
                     fontSize: 10.5, height: 1.25, color: theme.secondaryText),
               ),

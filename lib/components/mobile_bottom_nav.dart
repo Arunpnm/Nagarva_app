@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '/l10n/gen/app_localizations.dart';
 import '/nav_items.dart';
 
 import '/backend/approval_queue.dart';
@@ -69,13 +71,27 @@ class MobileBottomNav extends StatelessWidget {
   /// Short bar labels and outlined/filled icon pairs for the everyday
   /// destinations. Anything not listed keeps its NavItem label and icon
   /// (supervisor and field-staff sets).
-  static const _barLook = <String, (String, IconData, IconData)>{
-    'HomePage': ('Home', Icons.home_outlined, Icons.home_rounded),
-    'LeadsPage': ('Leads', Icons.person_search_outlined, Icons.person_search_rounded),
-    'OrdersPage': ('Orders', Icons.assignment_outlined, Icons.assignment_rounded),
-    'OperationsPage': ('Ops', Icons.local_shipping_outlined, Icons.local_shipping_rounded),
-    'PaymentsPage': ('Pay', Icons.payments_outlined, Icons.payments_rounded),
+  static const _barLook = <String, (IconData, IconData)>{
+    'HomePage': (Icons.home_outlined, Icons.home_rounded),
+    'LeadsPage': (Icons.person_search_outlined, Icons.person_search_rounded),
+    'OrdersPage': (Icons.assignment_outlined, Icons.assignment_rounded),
+    'OperationsPage': (Icons.local_shipping_outlined, Icons.local_shipping_rounded),
+    'PaymentsPage': (Icons.payments_outlined, Icons.payments_rounded),
   };
+
+  /// Short bar labels for the everyday destinations; anything else uses
+  /// its menu label.
+  static String _barLabel(BuildContext context, NavItem item) {
+    final l = AppLocalizations.of(context);
+    return switch (item.name) {
+      'HomePage' => l.ngNavHome,
+      'LeadsPage' => l.ngNavLeads,
+      'OrdersPage' => l.ngNavOrders,
+      'OperationsPage' => l.ngNavOps,
+      'PaymentsPage' => l.ngNavPay,
+      _ => localizedNavLabel(context, item),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,8 +122,8 @@ class MobileBottomNav extends StatelessWidget {
                   final selected = i == currentIndex;
                   return _NavSlot(
                     width: slot,
-                    label: look?.$1 ?? item.label,
-                    icon: selected ? (look?.$3 ?? item.icon) : (look?.$2 ?? item.icon),
+                    label: _barLabel(context, item),
+                    icon: selected ? (look?.$2 ?? item.icon) : (look?.$1 ?? item.icon),
                     selected: selected,
                     // Awaiting-approval count on the Operations slot only
                     // — the nav site owns which item gets which count.

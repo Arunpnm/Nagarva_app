@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '/l10n/gen/app_localizations.dart';
+
 import '/app_session.dart';
 import '/components/global_search_delegate.dart';
 import '/components/language_quick_button.dart';
@@ -29,12 +31,13 @@ class NgTopBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(56);
 
-  static String _roleLabel() {
+  static String _roleLabel(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final s = AppSession.instance;
-    if (s.currentStaffId == null) return 'Owner';
+    if (s.currentStaffId == null) return l.ngRoleOwner;
     final role = s.currentStaffRole ?? '';
     final pretty =
-        role.isEmpty ? 'Staff' : role[0].toUpperCase() + role.substring(1);
+        role.isEmpty ? l.ngRoleStaff : role[0].toUpperCase() + role.substring(1);
     final name = (s.currentStaffName ?? '').trim();
     return name.isEmpty ? pretty : '$name · $pretty';
   }
@@ -99,7 +102,7 @@ class NgTopBar extends StatelessWidget implements PreferredSizeWidget {
                           ),
                         ),
                       Text(
-                        _roleLabel(),
+                        _roleLabel(context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: NgFonts.geist(fontSize: 11.5, color: c.faint),

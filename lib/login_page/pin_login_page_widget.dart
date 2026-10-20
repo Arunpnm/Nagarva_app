@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '/l10n/gen/app_localizations.dart';
+
 import '/app_session.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/edge_function_errors.dart';
@@ -285,7 +287,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                         size: 16, color: c.green),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text('Linked device',
+                      child: Text(AppLocalizations.of(context).ngLinkedDevice,
                           style: NgFonts.geist(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w500,
@@ -321,7 +323,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                         letterSpacing: -0.21,
                         color: c.text)),
                 const SizedBox(height: 6),
-                Text('Enter your 4-digit PIN',
+                Text(AppLocalizations.of(context).ngEnterPin,
                     style: NgFonts.geist(fontSize: 14, color: c.mute)),
                 const SizedBox(height: 24),
                 AnimatedBuilder(
@@ -368,7 +370,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                               ),
                             ),
                             const SizedBox(width: 10),
-                            Text('Verifying…',
+                            Text(AppLocalizations.of(context).ngVerifying,
                                 style: TextStyle(
                                     color: c.mute,
                                     fontSize: 13,
@@ -446,7 +448,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                 const SizedBox(height: 24),
                 TextButton(
                   onPressed: () => context.pushNamed(LoginPageWidget.routeName),
-                  child: Text('Use email login instead',
+                  child: Text(AppLocalizations.of(context).ngUseEmail,
                       style: NgFonts.geist(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -459,7 +461,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                       context.pushNamed(OrgBindingPageWidget.routeName);
                     }
                   },
-                  child: Text('Not your organization? Switch device',
+                  child: Text(AppLocalizations.of(context).ngSwitchDevice,
                       style: NgFonts.geist(fontSize: 13, color: c.mute)),
                 ),
                 const SizedBox(height: 4),
@@ -468,7 +470,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                   children: [
                     Icon(Icons.lock_rounded, size: 14, color: c.faint),
                     const SizedBox(width: 5),
-                    Text('Secured by Nagarva',
+                    Text(AppLocalizations.of(context).ngSecuredBy,
                         style: NgFonts.geist(fontSize: 12, color: c.faint)),
                   ],
                 ),

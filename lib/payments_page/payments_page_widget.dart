@@ -190,7 +190,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
             children: [
               legend(c.green, AppLocalizations.of(context).receivedMonth,
                   '₹${received.toStringAsFixed(0)}'),
-              legend(c.accBtn, 'To collect', '₹${outstanding.toStringAsFixed(0)}'),
+              legend(c.accBtn, AppLocalizations.of(context).ngToCollect, '₹${outstanding.toStringAsFixed(0)}'),
             ],
           ),
         ],
@@ -250,7 +250,9 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      partial ? 'Part paid' : 'Unpaid',
+                      partial
+                          ? AppLocalizations.of(context).ngPartPaid
+                          : AppLocalizations.of(context).ngUnpaid,
                       style: NgFonts.geist(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -266,7 +268,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
             children: [
               Expanded(
                 child: NgSecondaryButton(
-                  label: 'Remind',
+                  label: AppLocalizations.of(context).ngRemind,
                   icon: Icons.chat_rounded,
                   iconColor: c.green,
                   height: 40,
@@ -276,7 +278,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
               const SizedBox(width: 6),
               Expanded(
                 child: NgSecondaryButton(
-                  label: 'Record',
+                  label: AppLocalizations.of(context).ngRecord,
                   icon: Icons.price_check_rounded,
                   iconColor: c.acc,
                   height: 40,
@@ -304,8 +306,8 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
       (d != null && d.isBefore(t0) ? overdue : upcoming).add(o);
     }
     final groups = [
-      ('Overdue', c.red, overdue),
-      ('Upcoming', c.amber, upcoming),
+      (AppLocalizations.of(context).ngOverdue, c.red, overdue),
+      (AppLocalizations.of(context).ngUpcoming, c.amber, upcoming),
     ];
     return GestureDetector(
       onTap: () {
@@ -333,7 +335,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                       Icon(Icons.task_alt_rounded, size: 42, color: c.green),
                       const SizedBox(height: 12),
                       Text(
-                        'Nothing to collect',
+                        AppLocalizations.of(context).ngNothingToCollect,
                         style: NgFonts.geist(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
