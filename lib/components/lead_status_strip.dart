@@ -109,7 +109,7 @@ class LeadStatusStrip extends StatelessWidget {
                 style: TextButton.styleFrom(
                   minimumSize: const Size(0, 40),
                   padding: const EdgeInsets.symmetric(horizontal: 10),
-                  foregroundColor: leadStatusColor(kLeadStatusLost),
+                  foregroundColor: leadStatusColor(kLeadStatusLost, context),
                 ),
                 child: Text(
                   'Mark as lost',
@@ -149,7 +149,7 @@ class _ProgressRow extends StatelessWidget {
                 currentIdx: currentIdx,
                 evidence: evidence,
               ),
-              color: leadStatusColor(kLeadPipeline[i]),
+              color: leadStatusColor(kLeadPipeline[i], context),
               onTap: onStageTap == null
                   ? null
                   : () => onStageTap!(kLeadPipeline[i]),
@@ -172,7 +172,7 @@ class _ProgressRow extends StatelessWidget {
                           evidence: evidence,
                         ) ==
                         LeadStageState.done
-                    ? leadStatusColor(kLeadPipeline[i])
+                    ? leadStatusColor(kLeadPipeline[i], context)
                     : theme.alternate,
               ),
             ),
@@ -270,7 +270,7 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = leadStatusColor(status);
+    final color = leadStatusColor(status, context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -296,7 +296,7 @@ class _LostBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = leadStatusColor(kLeadStatusLost);
+    final color = leadStatusColor(kLeadStatusLost, context);
     return Row(
       children: [
         Icon(Icons.cancel_outlined, size: 17, color: color),
