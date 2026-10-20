@@ -3,8 +3,8 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 /// Session 2 Part C — My Attendance (`sup-att`). This supervisor's own
@@ -89,7 +89,7 @@ class _SupervisorAttendancePageWidgetState
         centerTitle: true,
         title: Text('My Attendance',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                font: NgFonts.geist(fontWeight: FontWeight.w600))),
         actions: const [SupervisorMenuButton()],
       ),
       body: SafeArea(
@@ -99,13 +99,13 @@ class _SupervisorAttendancePageWidgetState
                 padding: const EdgeInsets.all(16),
                 children: [
                   Text(DateFormat('MMMM y').format(DateTime.now()),
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: theme.primaryText)),
                   const SizedBox(height: 4),
                   Text('$presentCount of $daysInMonth days marked present',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 12.5, color: theme.secondaryText)),
                   const SizedBox(height: 12),
                   for (var d = 1; d <= daysInMonth; d++)
@@ -124,7 +124,7 @@ class _SupervisorAttendancePageWidgetState
                             SizedBox(
                                 width: 90,
                                 child: Text(DateFormat('EEE, d MMM').format(date),
-                                    style: GoogleFonts.inter(
+                                    style: NgFonts.geist(
                                         fontSize: 12.5,
                                         color: theme.primaryText))),
                             Container(
@@ -137,7 +137,7 @@ class _SupervisorAttendancePageWidgetState
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(status ?? 'Not marked',
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                       fontSize: 11.5,
                                       color: _statusColor(
                                           theme, status ?? 'unmarked'))),

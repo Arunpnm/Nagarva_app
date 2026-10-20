@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class VendorDetailPageWidget extends StatefulWidget {
@@ -378,7 +378,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
             padding: const EdgeInsets.all(16),
             children: [
               Text(bill.billNo ?? '(no bill no)',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 17, fontWeight: FontWeight.w700, color: theme.primaryText)),
               _statusChip(theme, bill.status),
               const SizedBox(height: 10),
@@ -397,7 +397,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Payments',
-                      style: GoogleFonts.interTight(fontSize: 13, fontWeight: FontWeight.w700)),
+                      style: NgFonts.geist(fontSize: 13, fontWeight: FontWeight.w700)),
                   if (_billBalance(bill) > 0.01)
                     TextButton.icon(
                       icon: const Icon(Icons.add, size: 16),
@@ -413,7 +413,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text('No payments recorded.',
-                      style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                      style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
                 )
               else
                 for (final p in payments)
@@ -424,11 +424,11 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                         Expanded(
                           child: Text(
                             '${p.mode ?? '—'} ${(p.reference ?? '').isNotEmpty ? '· ${p.reference}' : ''}',
-                            style: GoogleFonts.inter(fontSize: 12),
+                            style: NgFonts.geist(fontSize: 12),
                           ),
                         ),
                         Text(_rupees(p.amount),
-                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                            style: NgFonts.geist(fontSize: 12, fontWeight: FontWeight.w600)),
                         IconButton(
                           tooltip: 'Delete payment',
                           visualDensity: VisualDensity.compact,
@@ -618,8 +618,8 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
           children: [
-            SizedBox(width: 120, child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey))),
-            Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 12.5))),
+            SizedBox(width: 120, child: Text(label, style: NgFonts.geist(fontSize: 12, color: Colors.grey))),
+            Expanded(child: Text(value, style: NgFonts.geist(fontSize: 12.5))),
           ],
         ),
       );
@@ -635,7 +635,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-      child: Text(status, style: GoogleFonts.inter(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
+      child: Text(status, style: NgFonts.geist(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
     );
   }
 
@@ -655,7 +655,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
           backgroundColor: theme.primaryBackground,
           title: Text(v?.name ?? 'Vendor',
               style: theme.titleLarge.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600),
                   fontSize: 20,
                   fontWeight: FontWeight.w600)),
           centerTitle: true,
@@ -705,13 +705,13 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                       ),
                       const SizedBox(height: 16),
                       Text('Bills',
-                          style: GoogleFonts.interTight(fontSize: 14, fontWeight: FontWeight.w700)),
+                          style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 8),
                       if (_bills.isEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           child: Text('No bills yet.',
-                              style: GoogleFonts.inter(color: theme.secondaryText)),
+                              style: NgFonts.geist(color: theme.secondaryText)),
                         )
                       else
                         for (final b in _bills) _billRow(theme, b),
@@ -760,10 +760,10 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(b.billNo ?? '(no bill no)',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                   Text(
                     b.billDate == null ? '—' : DateFormat('d MMM yyyy').format(b.billDate!),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
@@ -772,7 +772,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(_rupees(b.totalAmount),
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
                 _statusChip(theme, b.status),
               ],
             ),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'rate_card_detail_page_widget.dart';
 
@@ -122,7 +122,7 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
         automaticallyImplyLeading: true,
         title: Text('Rate Cards',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
         centerTitle: true,
@@ -144,7 +144,7 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       child: Text('No rate cards yet.',
-                          style: GoogleFonts.inter(color: theme.secondaryText)),
+                          style: NgFonts.geist(color: theme.secondaryText)),
                     )
                   else
                     for (final c in _cards) _cardRow(theme, c),
@@ -192,14 +192,14 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(c.name,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                   Text(
                     [
                       if ((c.code ?? '').isNotEmpty) c.code,
                       c.cardType,
                       if ((c.branch ?? '').isNotEmpty) c.branch,
                     ].whereType<String>().join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
@@ -213,7 +213,7 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text('Default',
-                    style: GoogleFonts.inter(fontSize: 10, color: theme.primary)),
+                    style: NgFonts.geist(fontSize: 10, color: theme.primary)),
               ),
             if (!c.active)
               Container(
@@ -223,7 +223,7 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text('Inactive',
-                    style: GoogleFonts.inter(fontSize: 10, color: theme.error)),
+                    style: NgFonts.geist(fontSize: 10, color: theme.error)),
               ),
             IconButton(
               tooltip: 'Delete rate card',

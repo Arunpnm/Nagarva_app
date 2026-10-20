@@ -6,6 +6,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/notification_bell.dart';
 import '/main.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -13,7 +14,6 @@ import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'business_settings_section.dart';
 import 'settings_page_model.dart';
 export 'settings_page_model.dart';
@@ -168,7 +168,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           title: Text(
             AppLocalizations.of(context).settings,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -237,7 +237,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .titleMedium
                                       .override(
-                                        font: GoogleFonts.interTight(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleMedium
@@ -264,7 +264,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodySmall
@@ -310,7 +310,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                             style: FlutterFlowTheme.of(context)
                                 .titleSmall
                                 .override(
-                                  font: GoogleFonts.interTight(),
+                                  font: NgFonts.geist(),
                                   letterSpacing: 0.0,
                                 ),
                           ),
@@ -320,7 +320,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                             style: FlutterFlowTheme.of(context)
                                 .bodySmall
                                 .override(
-                                  font: GoogleFonts.inter(),
+                                  font: NgFonts.geist(),
                                   color: FlutterFlowTheme.of(context)
                                       .secondaryText,
                                   letterSpacing: 0.0,
@@ -374,7 +374,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                             color: FlutterFlowTheme.of(context).primary),
                         title: Text(
                           'Survey & Pricing',
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
                             color: FlutterFlowTheme.of(context).primaryText,
@@ -382,7 +382,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                         ),
                         subtitle: Text(
                           'CFT item catalogue and vehicle/crew slabs',
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                             fontSize: 12,
                             color: FlutterFlowTheme.of(context).secondaryText,
                           ),
@@ -425,7 +425,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                               color: FlutterFlowTheme.of(context).primary),
                           title: Text(
                             'Deleted Items',
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
                               color: FlutterFlowTheme.of(context).primaryText,
@@ -433,7 +433,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                           ),
                           subtitle: Text(
                             'Restore anything deleted in the last 90 days',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               fontSize: 12,
                               color: FlutterFlowTheme.of(context).secondaryText,
                             ),
@@ -460,7 +460,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                             color: FlutterFlowTheme.of(context).primary),
                         title: Text(
                           'Help & About',
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
                             color: FlutterFlowTheme.of(context).primaryText,
@@ -468,7 +468,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                         ),
                         subtitle: Text(
                           'Support, privacy policy, terms and app version',
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                             fontSize: 12,
                             color: FlutterFlowTheme.of(context).secondaryText,
                           ),
@@ -500,7 +500,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .labelMedium
@@ -556,7 +556,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             style: FlutterFlowTheme.of(context)
                                                 .bodyMedium
                                                 .override(
-                                                  font: GoogleFonts.inter(
+                                                  font: NgFonts.geist(
                                                     fontWeight:
                                                         FlutterFlowTheme.of(
                                                                 context)
@@ -592,7 +592,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             style: FlutterFlowTheme.of(context)
                                                 .bodySmall
                                                 .override(
-                                                  font: GoogleFonts.inter(
+                                                  font: NgFonts.geist(
                                                     fontWeight:
                                                         FlutterFlowTheme.of(
                                                                 context)
@@ -666,7 +666,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             style: FlutterFlowTheme.of(context)
                                                 .bodyMedium
                                                 .override(
-                                                  font: GoogleFonts.inter(
+                                                  font: NgFonts.geist(
                                                     fontWeight:
                                                         FlutterFlowTheme.of(
                                                                 context)
@@ -700,7 +700,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             style: FlutterFlowTheme.of(context)
                                                 .bodySmall
                                                 .override(
-                                                  font: GoogleFonts.inter(
+                                                  font: NgFonts.geist(
                                                     fontWeight:
                                                         FlutterFlowTheme.of(
                                                                 context)
@@ -774,7 +774,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             style: FlutterFlowTheme.of(context)
                                                 .bodyMedium
                                                 .override(
-                                                  font: GoogleFonts.inter(
+                                                  font: NgFonts.geist(
                                                     fontWeight:
                                                         FlutterFlowTheme.of(
                                                                 context)
@@ -808,7 +808,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             style: FlutterFlowTheme.of(context)
                                                 .bodySmall
                                                 .override(
-                                                  font: GoogleFonts.inter(
+                                                  font: NgFonts.geist(
                                                     fontWeight:
                                                         FlutterFlowTheme.of(
                                                                 context)
@@ -875,7 +875,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .labelMedium
@@ -937,7 +937,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             style: FlutterFlowTheme.of(context)
                                                 .bodyMedium
                                                 .override(
-                                                  font: GoogleFonts.inter(
+                                                  font: NgFonts.geist(
                                                     fontWeight:
                                                         FlutterFlowTheme.of(
                                                                 context)
@@ -957,7 +957,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                             style: FlutterFlowTheme.of(context)
                                                 .bodySmall
                                                 .override(
-                                                  font: GoogleFonts.inter(),
+                                                  font: NgFonts.geist(),
                                                   color: FlutterFlowTheme.of(
                                                           context)
                                                       .secondaryText,
@@ -1006,7 +1006,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
-                                              font: GoogleFonts.inter(
+                                              font: NgFonts.geist(
                                                 fontWeight:
                                                     FlutterFlowTheme.of(
                                                             context)
@@ -1064,7 +1064,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                         style: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .override(
-                                              font: GoogleFonts.inter(
+                                              font: NgFonts.geist(
                                                 fontWeight:
                                                     FlutterFlowTheme.of(
                                                             context)
@@ -1207,14 +1207,14 @@ class _PinSettingCardState extends State<_PinSettingCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('App PIN',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontWeight: FontWeight.w700, color: theme.primaryText)),
           const SizedBox(height: 4),
           Text(
             'Set or change the 4-digit PIN used to sign in on this and '
             'other devices.',
             style:
-                GoogleFonts.inter(fontSize: 12.5, color: theme.secondaryText),
+                NgFonts.geist(fontSize: 12.5, color: theme.secondaryText),
           ),
           const SizedBox(height: 10),
           Row(
@@ -1246,7 +1246,7 @@ class _PinSettingCardState extends State<_PinSettingCard> {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(_message!,
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 12, color: theme.secondaryText)),
             ),
         ],

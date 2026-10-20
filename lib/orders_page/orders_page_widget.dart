@@ -2,13 +2,13 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'orders_page_model.dart';
 export 'orders_page_model.dart';
 
@@ -108,7 +108,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
               label,
               textAlign: TextAlign.center,
               style: theme.labelMedium.override(
-                font: GoogleFonts.inter(),
+                font: NgFonts.geist(),
                 color: selected ? theme.primaryBackground : theme.primaryText,
                 letterSpacing: 0.0,
               ),
@@ -143,7 +143,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
           title: Text(
             AppLocalizations.of(context).orders,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -192,7 +192,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                           AppLocalizations.of(context).orders,
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: GoogleFonts.interTight(
+                                    font: NgFonts.geist(
                                       fontWeight: FlutterFlowTheme.of(context)
                                           .titleSmall
                                           .fontWeight,
@@ -382,8 +382,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                                                     FlutterFlowTheme.of(context)
                                                         .titleSmall
                                                         .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
+                                                          font: NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)
@@ -433,7 +432,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                                                         .labelSmall
                                                         .override(
                                                           font:
-                                                              GoogleFonts.inter(
+                                                              NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)
@@ -486,7 +485,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                                                         context)
                                                     .bodySmall
                                                     .override(
-                                                      font: GoogleFonts.inter(
+                                                      font: NgFonts.geist(
                                                         fontWeight:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -529,7 +528,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                                                         context)
                                                     .bodySmall
                                                     .override(
-                                                      font: GoogleFonts.inter(
+                                                      font: NgFonts.geist(
                                                         fontWeight:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -577,7 +576,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                                                         context)
                                                     .bodySmall
                                                     .override(
-                                                      font: GoogleFonts.inter(
+                                                      font: NgFonts.geist(
                                                         fontWeight:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -613,8 +612,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                                                     FlutterFlowTheme.of(context)
                                                         .titleSmall
                                                         .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
+                                                          font: NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)

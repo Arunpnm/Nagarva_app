@@ -1,9 +1,9 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'quick_entry_page_model.dart';
 export 'quick_entry_page_model.dart';
 
@@ -54,7 +54,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
           title: Text(
             AppLocalizations.of(context).quickEntry,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -85,7 +85,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                   Text(
                     AppLocalizations.of(context).whatWouldYouLikeToDo,
                     style: FlutterFlowTheme.of(context).bodySmall.override(
-                          font: GoogleFonts.inter(
+                          font: NgFonts.geist(
                             fontWeight: FlutterFlowTheme.of(context)
                                 .bodySmall
                                 .fontWeight,
@@ -142,7 +142,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
                                         .override(
-                                          font: GoogleFonts.inter(
+                                          font: NgFonts.geist(
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
                                                     .labelMedium
@@ -207,7 +207,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
                                         .override(
-                                          font: GoogleFonts.inter(
+                                          font: NgFonts.geist(
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
                                                     .labelMedium
@@ -280,7 +280,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
                                         .override(
-                                          font: GoogleFonts.inter(
+                                          font: NgFonts.geist(
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
                                                     .labelMedium
@@ -345,7 +345,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
                                         .override(
-                                          font: GoogleFonts.inter(
+                                          font: NgFonts.geist(
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
                                                     .labelMedium

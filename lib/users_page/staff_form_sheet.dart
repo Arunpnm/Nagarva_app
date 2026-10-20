@@ -7,6 +7,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/staff_pay_types.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -379,7 +380,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                 'Single use, and it expires. Send it to $name — they enter '
                 'it on their own phone, then set their PIN.\n\n'
                 'You will not be able to see this code again.',
-                style: GoogleFonts.inter(fontSize: 12.5, height: 1.4),
+                style: NgFonts.geist(fontSize: 12.5, height: 1.4),
               ),
             ],
           ),
@@ -427,8 +428,8 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: GoogleFonts.inter(color: theme.secondaryText, fontSize: 13),
-      hintStyle: GoogleFonts.inter(
+      labelStyle: NgFonts.geist(color: theme.secondaryText, fontSize: 13),
+      hintStyle: NgFonts.geist(
           color: theme.secondaryText.withOpacity(0.6), fontSize: 13),
       filled: true,
       fillColor: theme.primaryBackground,
@@ -494,7 +495,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
             children: [
               Text(
                 'Module Access',
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                   color: theme.primaryText,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -509,7 +510,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   child: Text(
                     'Reset to role defaults',
                     style:
-                        GoogleFonts.inter(color: theme.primary, fontSize: 12),
+                        NgFonts.geist(color: theme.primary, fontSize: 12),
                   ),
                 ),
             ],
@@ -519,7 +520,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
             Text(
               'Owner has full access to everything. This can\'t be '
               'restricted here.',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   color: theme.secondaryText,
                   fontSize: 11.5,
                   fontStyle: FontStyle.italic),
@@ -537,7 +538,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                       width: labelColWidth,
                       child: Text(
                         'PERMISSION',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             color: theme.secondaryText,
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
@@ -550,7 +551,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                         child: Text(
                           kPermActionLabels[a] ?? a,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               color: theme.secondaryText,
                               fontSize: 11,
                               fontWeight: FontWeight.w600),
@@ -573,7 +574,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                               child: Text(
                                 m.label,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
+                                style: NgFonts.geist(
                                     color: theme.primaryText,
                                     fontSize: 12.5),
                               ),
@@ -583,7 +584,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                                 padding: const EdgeInsets.only(left: 4),
                                 child: Text(
                                   '₹',
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                       color: theme.primary,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700),
@@ -621,7 +622,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
             'in defaults; fine-tune any box after. ₹ = money module — off '
             'for all non-admin roles unless you enable it here.',
             style:
-                GoogleFonts.inter(color: theme.secondaryText, fontSize: 11),
+                NgFonts.geist(color: theme.secondaryText, fontSize: 11),
           ),
         ],
       ),
@@ -649,7 +650,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     final textStyle =
-        GoogleFonts.inter(color: theme.primaryText, fontSize: 14);
+        NgFonts.geist(color: theme.primaryText, fontSize: 14);
 
     return Padding(
       // Keep the sheet above the keyboard.
@@ -688,7 +689,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   children: [
                     Text(
                       isEdit ? 'Edit Staff' : 'Add Staff',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                         color: theme.primaryText,
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
@@ -817,7 +818,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                 const SizedBox(height: 6),
                 Text(
                   _payTypeHint(_payType),
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 11,
                       color: FlutterFlowTheme.of(context).secondaryText),
                 ),
@@ -865,7 +866,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   title: Text('Active', style: textStyle),
                   subtitle: Text(
                     'Inactive staff cannot log in with their PIN',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         color: theme.secondaryText, fontSize: 11.5),
                   ),
                   value: _active,
@@ -877,7 +878,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   Text(
                     _error!,
                     style:
-                        GoogleFonts.inter(color: theme.error, fontSize: 12.5),
+                        NgFonts.geist(color: theme.error, fontSize: 12.5),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -900,7 +901,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                           )
                         : Text(
                             isEdit ? 'Save Changes' : 'Add Staff',
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                                 fontSize: 15, fontWeight: FontWeight.w700),
                           ),
                   ),

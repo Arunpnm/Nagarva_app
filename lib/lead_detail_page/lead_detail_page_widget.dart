@@ -23,13 +23,13 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/issued_documents.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'lead_detail_page_model.dart';
@@ -1071,7 +1071,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         ),
         child: Text(
           _chipLabels[key]!,
-          style: GoogleFonts.inter(
+          style: NgFonts.geist(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: current ? Colors.white : color,
@@ -1205,7 +1205,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       ),
       child: Text(
         note,
-        style: GoogleFonts.inter(
+        style: NgFonts.geist(
           fontSize: 12.5,
           fontStyle: FontStyle.italic,
           height: 1.4,
@@ -1234,7 +1234,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             children: [
               Expanded(
                 child: Text('Survey & Quote',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                         color: theme.primaryText)),
@@ -1433,7 +1433,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                   child: Text(
                     'Signed by ${_quoteSignature!.customerName ?? 'customer'}'
                     '${_quoteSignature!.signedAt == null ? '' : ' on ${DateFormat('d MMM yyyy').format(_quoteSignature!.signedAt!.toLocal())}'}',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                         color: theme.primaryText),
@@ -1753,7 +1753,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               child: Text(
                 'v${quotation.version ?? 1} · ${money.format(quotation.total ?? 0)}'
                 '${created == null ? '' : ' · ${DateFormat('d MMM yyyy').format(created.toLocal())}'}',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: theme.primaryText),
@@ -1778,7 +1778,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                 child: Text(
                   '${_quotesOnLead.length} quotes on this lead — showing the '
                   'most detailed one.',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 11.5, color: theme.secondaryText),
                 ),
               ),
@@ -1796,7 +1796,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     ),
                 ],
                 child: Text('Switch',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
                         color: theme.primary)),
@@ -1831,7 +1831,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text('v${v.version ?? 1}',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             color: theme.primaryText)),
@@ -1847,7 +1847,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                           // there. One field, so the what and the why
                           // cannot be shown apart.
                           v.changeSummary ?? 'Revised',
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               fontSize: 12, color: theme.primaryText),
                         ),
                         Text(
@@ -1857,7 +1857,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                               DateFormat('d MMM yyyy, h:mm a')
                                   .format(v.createdAt!.toLocal()),
                           ].join(' · '),
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               fontSize: 11, color: theme.secondaryText),
                         ),
                       ],
@@ -1925,7 +1925,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             child: Text(
               '$what links are switched off — the customer page is not '
               'live right now, so a link would open a dead page. $instead',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 11.5, color: theme.primaryText),
             ),
           ),
@@ -1950,7 +1950,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           title: Text(
             AppLocalizations.of(context).leadDetails,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -2001,7 +2001,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                                     style: FlutterFlowTheme.of(context)
                                         .titleMedium
                                         .override(
-                                          font: GoogleFonts.interTight(
+                                          font: NgFonts.geist(
                                             fontWeight: FlutterFlowTheme.of(
                                                     context)
                                                 .titleMedium
@@ -2034,7 +2034,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                                             const EdgeInsets.only(top: 2),
                                         child: Text(
                                           widget.leadPhone!,
-                                          style: GoogleFonts.inter(
+                                          style: NgFonts.geist(
                                             fontSize: 13,
                                             color: FlutterFlowTheme.of(
                                                     context)

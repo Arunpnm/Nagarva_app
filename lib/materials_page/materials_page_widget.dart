@@ -4,13 +4,13 @@ import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/components/load_error_state.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'material_detail_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'materials_page_model.dart';
 export 'materials_page_model.dart';
 
@@ -172,7 +172,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
               Text(
                 label,
                 style: FlutterFlowTheme.of(context).labelMedium.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).secondaryText,
                       letterSpacing: 0.0,
                     ),
@@ -180,7 +180,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
               Text(
                 value,
                 style: FlutterFlowTheme.of(context).headlineMedium.override(
-                      font: GoogleFonts.interTight(),
+                      font: NgFonts.geist(),
                       color: danger
                           ? FlutterFlowTheme.of(context).error
                           : FlutterFlowTheme.of(context).primaryText,
@@ -222,7 +222,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                     Text(
                       m.name,
                       style: FlutterFlowTheme.of(context).bodyMedium.override(
-                            font: GoogleFonts.inter(),
+                            font: NgFonts.geist(),
                             color: FlutterFlowTheme.of(context).primaryText,
                             letterSpacing: 0.0,
                           ),
@@ -235,7 +235,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                             : 'OK',
                       ].whereType<String>().join(' · '),
                       style: FlutterFlowTheme.of(context).bodySmall.override(
-                            font: GoogleFonts.inter(),
+                            font: NgFonts.geist(),
                             color: low
                                 ? FlutterFlowTheme.of(context).error
                                 : FlutterFlowTheme.of(context).secondaryText,
@@ -256,7 +256,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                   child: Text(
                     qtyLabel,
                     style: FlutterFlowTheme.of(context).labelMedium.override(
-                          font: GoogleFonts.inter(),
+                          font: NgFonts.geist(),
                           color: low
                               ? FlutterFlowTheme.of(context).error
                               : FlutterFlowTheme.of(context).primaryText,
@@ -301,7 +301,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
           title: Text(
             AppLocalizations.of(context).materials,
             style: theme.titleLarge.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600),
                   fontSize: 22.0,
                   letterSpacing: 0.0,
                   fontWeight: FontWeight.w600,
@@ -363,7 +363,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                                     size: 16, color: theme.error),
                                 const SizedBox(width: 6),
                                 Text('Reorder soon',
-                                    style: GoogleFonts.interTight(
+                                    style: NgFonts.geist(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w700,
                                         color: theme.error)),
@@ -377,7 +377,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                                   '${l.name}: ${(l.quantity ?? 0).toStringAsFixed(0)} '
                                   '${l.unit ?? ''} left'
                                   '${l.reorderQty != null && l.reorderQty! > 0 ? ' — reorder ${l.reorderQty!.toStringAsFixed(0)}' : ''}',
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                       fontSize: 12, color: theme.secondaryText),
                                 ),
                               ),
@@ -391,7 +391,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                         Text(
                           _showLowStockOnly ? 'Inventory (low stock)' : 'Inventory',
                           style: theme.titleMedium.override(
-                                font: GoogleFonts.interTight(),
+                                font: NgFonts.geist(),
                                 color: theme.primaryText,
                                 letterSpacing: 0.0,
                               ),
@@ -415,7 +415,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                                 ? 'Nothing low on stock.'
                                 : 'No materials tracked yet for this org.',
                         style: theme.bodySmall.override(
-                              font: GoogleFonts.inter(),
+                              font: NgFonts.geist(),
                               color: theme.secondaryText,
                             ),
                       )

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Extra charges on an order: anything billed on top of the quote.
 ///
@@ -256,7 +256,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
               Icon(Icons.handyman_outlined, size: 18, color: theme.primary),
               const SizedBox(width: 8),
               Text('Extra Charges',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText)),
@@ -276,7 +276,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text('$_pendingCount PENDING',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.5,
@@ -309,7 +309,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                 'customer bought. Pending items count toward the balance '
                 'until they are done.',
                 style:
-                    GoogleFonts.inter(fontSize: 12, color: theme.secondaryText),
+                    NgFonts.geist(fontSize: 12, color: theme.secondaryText),
               ),
             )
           else ...[
@@ -326,7 +326,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                   '$_pendingCount pending · '
                   '₹${_pendingTotal.toStringAsFixed(0)} still to be done. '
                   'This is included in the balance due.',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: theme.primaryText),
@@ -337,7 +337,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!,
-                style: GoogleFonts.inter(fontSize: 12, color: theme.error)),
+                style: NgFonts.geist(fontSize: 12, color: theme.error)),
           ],
         ],
       ),
@@ -382,7 +382,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
               children: [
                 Text(
                   '${r['description'] ?? ''}',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: cancelled ? theme.secondaryText : theme.primaryText,
@@ -396,7 +396,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                   done && r['completed_at'] != null
                       ? '$chipLabel · ${'${r['completed_at']}'.split('T').first}'
                       : chipLabel,
-                  style: GoogleFonts.inter(fontSize: 11, color: chipColor),
+                  style: NgFonts.geist(fontSize: 11, color: chipColor),
                 ),
               ],
             ),
@@ -404,7 +404,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
           const SizedBox(width: 8),
           Text(
             '₹${amount.toStringAsFixed(0)}',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
               fontSize: 13,
               fontWeight: FontWeight.w700,
               color: cancelled ? theme.secondaryText : theme.primaryText,

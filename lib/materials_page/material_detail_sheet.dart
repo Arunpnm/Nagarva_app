@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '/app_session.dart';
@@ -7,6 +6,7 @@ import '/backend/audit_log_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Material detail + stock movement actions (Session 4 Materials rebuild).
 ///
@@ -278,7 +278,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                         ),
                       ),
                       Text(m.name,
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                               color: theme.primaryText)),
@@ -313,13 +313,13 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text('Current Stock (read-only)',
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                           fontSize: 11,
                                           color: theme.secondaryText)),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${(m.quantity ?? 0).toStringAsFixed((m.quantity ?? 0) == (m.quantity ?? 0).roundToDouble() ? 0 : 1)} ${m.unit ?? ''}',
-                                    style: GoogleFonts.interTight(
+                                    style: NgFonts.geist(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w700,
                                         color: theme.primaryText),
@@ -332,11 +332,11 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text('Cost/Unit',
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                           fontSize: 11,
                                           color: theme.secondaryText)),
                                   Text(_rupees(m.costPerUnit!),
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600)),
                                 ],
@@ -347,11 +347,11 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text('Selling Price',
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                           fontSize: 11,
                                           color: theme.secondaryText)),
                                   Text(_rupees(m.sellingPrice!),
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600)),
                                 ],
@@ -392,7 +392,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                       ),
                       const SizedBox(height: 18),
                       Text('Movement History',
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: theme.primaryText)),
@@ -401,7 +401,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           child: Text('No movements recorded yet.',
-                              style: GoogleFonts.inter(
+                              style: NgFonts.geist(
                                   fontSize: 12.5, color: theme.secondaryText)),
                         )
                       else
@@ -420,7 +420,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
         ),
         child: Text(text,
             style:
-                GoogleFonts.inter(fontSize: 10.5, color: theme.secondaryText)),
+                NgFonts.geist(fontSize: 10.5, color: theme.secondaryText)),
       );
 
   Widget _historyRow(StockMovementsRow h, FlutterFlowTheme theme) {
@@ -445,7 +445,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
               children: [
                 Text(
                   '${_movementLabel(h.movementType)} · ${h.quantity > 0 ? '+' : ''}${h.quantity.toStringAsFixed(h.quantity == h.quantity.roundToDouble() ? 0 : 1)}',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                       color: theme.primaryText),
@@ -457,7 +457,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                     if ((h.orderId ?? '').isNotEmpty) 'Order ${h.orderId}',
                     if ((h.note ?? '').isNotEmpty) h.note,
                   ].whereType<String>().join(' · '),
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 11, color: theme.secondaryText),
                 ),
               ],
@@ -466,7 +466,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
           if (h.balanceAfter != null)
             Text(
               'Bal: ${h.balanceAfter!.toStringAsFixed(h.balanceAfter == h.balanceAfter!.roundToDouble() ? 0 : 1)}',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
                   color: theme.secondaryText),

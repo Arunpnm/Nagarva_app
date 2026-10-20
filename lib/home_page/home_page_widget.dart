@@ -7,6 +7,7 @@ import '/backend/supabase/org_scope.dart';
 import '/backend/margin_availability.dart';
 import '/components/dashboard_kpi_grid.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -23,7 +24,6 @@ import '/nav_items.dart';
 import '/permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'home_page_model.dart';
 export 'home_page_model.dart';
 
@@ -282,14 +282,14 @@ class _HomePageWidgetState extends State<HomePageWidget>
           const SizedBox(height: 10),
           Text(
             message,
-            style: GoogleFonts.inter(color: theme.secondaryText, fontSize: 13),
+            style: NgFonts.geist(color: theme.secondaryText, fontSize: 13),
           ),
           const SizedBox(height: 10),
           TextButton(
             onPressed: onAction,
             child: Text(
               actionLabel,
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                 color: theme.primary,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
@@ -588,7 +588,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                 horizontal: 14, vertical: 8),
                             child: Text(
                               label,
-                              style: GoogleFonts.inter(
+                              style: NgFonts.geist(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
                                 color: isSelected(key)
@@ -674,7 +674,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
               Text(
                 AppLocalizations.of(context).dashboard,
                 style: FlutterFlowTheme.of(context).titleLarge.override(
-                      font: GoogleFonts.interTight(
+                      font: NgFonts.geist(
                         fontWeight: FontWeight.w600,
                         fontStyle:
                             FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -692,7 +692,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: FlutterFlowTheme.of(context).bodySmall.override(
-                        font: GoogleFonts.inter(),
+                        font: NgFonts.geist(),
                         fontSize: 12.0,
                         letterSpacing: 0.0,
                         color: FlutterFlowTheme.of(context).secondaryText,
@@ -768,7 +768,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .titleLarge
                                       .override(
-                                        font: GoogleFonts.interTight(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleLarge
@@ -794,7 +794,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodySmall
@@ -868,7 +868,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                       2, 0, 0, 8),
                                   child: Text(
                                     _periodLabel(),
-                                    style: GoogleFonts.inter(
+                                    style: NgFonts.geist(
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
@@ -924,7 +924,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                             style: FlutterFlowTheme.of(context)
                                                 .labelSmall
                                                 .override(
-                                                  font: GoogleFonts.inter(
+                                                  font: NgFonts.geist(
                                                     fontWeight:
                                                         FlutterFlowTheme.of(
                                                                 context)
@@ -1020,8 +1020,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                     FlutterFlowTheme.of(context)
                                                         .headlineMedium
                                                         .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
+                                                          font: NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)
@@ -1097,7 +1096,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                 ? 'Target met — ${functions.inrFormat(done)} profit ($pct%)'
                                                                 : '${functions.inrFormat(done)} profit of ${functions.inrFormat(target)} · ${functions.inrFormat(left)} to go ($pct%)'),
                                                         style: theme.bodySmall.override(
-                                                          font: GoogleFonts.inter(),
+                                                          font: NgFonts.geist(),
                                                           color: theme.secondaryText,
                                                           letterSpacing: 0.0,
                                                         ),
@@ -1116,7 +1115,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                         context)
                                                     .bodySmall
                                                     .override(
-                                                      font: GoogleFonts.inter(
+                                                      font: NgFonts.geist(
                                                         fontWeight:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -1336,7 +1335,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                       style: FlutterFlowTheme.of(context)
                                           .titleSmall
                                           .override(
-                                            font: GoogleFonts.interTight(
+                                            font: NgFonts.geist(
                                               fontWeight:
                                                   FlutterFlowTheme.of(context)
                                                       .titleSmall
@@ -1451,8 +1450,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                     context)
                                                                 .titleSmall
                                                                 .override(
-                                                                  font: GoogleFonts
-                                                                      .interTight(
+                                                                  font: NgFonts.geist(
                                                                     fontWeight: FlutterFlowTheme.of(
                                                                             context)
                                                                         .titleSmall
@@ -1491,8 +1489,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                 .bodySmall
                                                                 .override(
                                                                   font:
-                                                                      GoogleFonts
-                                                                          .inter(
+                                                                      NgFonts.geist(
                                                                     fontWeight: FlutterFlowTheme.of(
                                                                             context)
                                                                         .bodySmall
@@ -1539,8 +1536,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                               .bodySmall
                                                               .override(
                                                                 font:
-                                                                    GoogleFonts
-                                                                        .inter(
+                                                                    NgFonts.geist(
                                                                   fontWeight: FlutterFlowTheme.of(
                                                                           context)
                                                                       .bodySmall
@@ -1588,8 +1584,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                               .labelSmall
                                                               .override(
                                                                 font:
-                                                                    GoogleFonts
-                                                                        .inter(
+                                                                    NgFonts.geist(
                                                                   fontWeight: FlutterFlowTheme.of(
                                                                           context)
                                                                       .labelSmall
@@ -1651,7 +1646,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                       style: FlutterFlowTheme.of(context)
                                           .titleSmall
                                           .override(
-                                            font: GoogleFonts.interTight(
+                                            font: NgFonts.geist(
                                               fontWeight:
                                                   FlutterFlowTheme.of(context)
                                                       .titleSmall
@@ -1763,8 +1758,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                     context)
                                                                 .titleSmall
                                                                 .override(
-                                                                  font: GoogleFonts
-                                                                      .interTight(
+                                                                  font: NgFonts.geist(
                                                                     fontWeight: FlutterFlowTheme.of(
                                                                             context)
                                                                         .titleSmall
@@ -1799,8 +1793,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                 .bodySmall
                                                                 .override(
                                                                   font:
-                                                                      GoogleFonts
-                                                                          .inter(
+                                                                      NgFonts.geist(
                                                                     fontWeight: FlutterFlowTheme.of(
                                                                             context)
                                                                         .bodySmall
@@ -1851,8 +1844,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                               .labelSmall
                                                               .override(
                                                                 font:
-                                                                    GoogleFonts
-                                                                        .inter(
+                                                                    NgFonts.geist(
                                                                   fontWeight: FlutterFlowTheme.of(
                                                                           context)
                                                                       .labelSmall
@@ -1911,7 +1903,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                     style: FlutterFlowTheme.of(context)
                                         .titleSmall
                                         .override(
-                                          font: GoogleFonts.interTight(
+                                          font: NgFonts.geist(
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
                                                     .titleSmall
@@ -1986,8 +1978,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                     context)
                                                                 .titleSmall
                                                                 .override(
-                                                                  font: GoogleFonts
-                                                                      .interTight(
+                                                                  font: NgFonts.geist(
                                                                     fontWeight: FlutterFlowTheme.of(
                                                                             context)
                                                                         .titleSmall
@@ -2022,8 +2013,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                 .bodySmall
                                                                 .override(
                                                                   font:
-                                                                      GoogleFonts
-                                                                          .inter(
+                                                                      NgFonts.geist(
                                                                     fontWeight: FlutterFlowTheme.of(
                                                                             context)
                                                                         .bodySmall
@@ -2068,8 +2058,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                     context)
                                                                 .titleSmall
                                                                 .override(
-                                                                  font: GoogleFonts
-                                                                      .interTight(
+                                                                  font: NgFonts.geist(
                                                                     fontWeight: FlutterFlowTheme.of(
                                                                             context)
                                                                         .titleSmall
@@ -2146,8 +2135,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                                                 .bodySmall
                                                                 .override(
                                                                   font:
-                                                                      GoogleFonts
-                                                                          .inter(
+                                                                      NgFonts.geist(
                                                                     fontWeight: FlutterFlowTheme.of(
                                                                             context)
                                                                         .bodySmall

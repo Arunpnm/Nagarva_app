@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/order_picker_dialog.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 class TripDetailPageWidget extends StatefulWidget {
@@ -445,8 +445,8 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
           children: [
-            SizedBox(width: 120, child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey))),
-            Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 12.5))),
+            SizedBox(width: 120, child: Text(label, style: NgFonts.geist(fontSize: 12, color: Colors.grey))),
+            Expanded(child: Text(value, style: NgFonts.geist(fontSize: 12.5))),
           ],
         ),
       );
@@ -462,7 +462,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
         backgroundColor: theme.primaryBackground,
         title: Text(t?.tripNo ?? 'Trip',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 20,
                 fontWeight: FontWeight.w600)),
         centerTitle: true,
@@ -522,7 +522,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Orders on this Trip',
-                            style: GoogleFonts.interTight(fontSize: 14, fontWeight: FontWeight.w700)),
+                            style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
                         TextButton.icon(
                             icon: const Icon(Icons.add, size: 16),
                             label: const Text('Add'),
@@ -533,7 +533,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Text('No orders added yet.',
-                            style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                            style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
                       )
                     else
                       for (final to in _tripOrders) _tripOrderRow(theme, to),
@@ -542,7 +542,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Trip Expenses',
-                            style: GoogleFonts.interTight(fontSize: 14, fontWeight: FontWeight.w700)),
+                            style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
                         TextButton.icon(
                             icon: const Icon(Icons.add, size: 16),
                             label: const Text('Add'),
@@ -553,7 +553,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Text('No expenses logged yet.',
-                            style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                            style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
                       )
                     else
                       for (final e in _expenses) _expenseRow(theme, e),
@@ -568,9 +568,9 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: GoogleFonts.inter(fontSize: 10.5, color: theme.secondaryText)),
+            Text(label, style: NgFonts.geist(fontSize: 10.5, color: theme.secondaryText)),
             const SizedBox(height: 2),
-            Text(value, style: GoogleFonts.interTight(fontSize: 15, fontWeight: FontWeight.w700)),
+            Text(value, style: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w700)),
           ],
         ),
       );
@@ -586,14 +586,14 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(to.orderId ?? '—',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
                   Text(
                     [
                       if (to.cftShare != null) '${to.cftShare} CFT',
                       if (to.allocationPct != null) '${to.allocationPct}%',
                       if (to.allocatedCost != null) _rupees(to.allocatedCost!),
                     ].join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
@@ -616,18 +616,18 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(e.expenseType ?? '—',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
                   Text(
                     [
                       if (e.expenseDate != null) DateFormat('d MMM').format(e.expenseDate!),
                       if ((e.location ?? '').isNotEmpty) e.location,
                     ].whereType<String>().join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
             ),
-            Text(_rupees(e.amount), style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+            Text(_rupees(e.amount), style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
             IconButton(
                 icon: const Icon(Icons.delete_outline, size: 18),
                 onPressed: () => _removeExpense(e)),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '/backend/audit_log_service.dart';
@@ -9,6 +8,7 @@ import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/load_error_state.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/permissions.dart';
 
 /// Day-close crew sheet — the per-job staff record from the staff-pay
@@ -313,7 +313,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                 'Paid for this job and settled the same day. If he keeps '
                 'coming back, change his pay type to Dynamic on the Staff '
                 'page — same person, history kept.',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 11.5, color: theme.secondaryText),
               ),
             ],
@@ -592,7 +592,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
         foregroundColor: theme.primaryText,
         elevation: 0,
         title: Text('Crew Sheet',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
                 color: theme.primaryText)),
@@ -636,7 +636,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Crew (${_present.length} present)',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText)),
@@ -678,7 +678,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(o.customer,
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w700,
                   color: theme.primaryText)),
@@ -690,7 +690,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
               DateFormat('d MMM yyyy').format(o.moveDate),
             ].where((s) => s.isNotEmpty).join('  ·  '),
             style:
-                GoogleFonts.inter(fontSize: 12.5, color: theme.secondaryText),
+                NgFonts.geist(fontSize: 12.5, color: theme.secondaryText),
           ),
         ],
       ),
@@ -715,7 +715,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
           Expanded(
             child: Text(text,
                 style:
-                    GoogleFonts.inter(fontSize: 12, color: theme.primaryText)),
+                    NgFonts.geist(fontSize: 12, color: theme.primaryText)),
           ),
         ],
       ),
@@ -760,7 +760,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                           child: Text(
                             l.staff.name,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               fontSize: 14,
                               fontWeight:
                                   l.present ? FontWeight.w600 : FontWeight.w400,
@@ -782,7 +782,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
               if (l.present)
                 Text(
                   '₹${money.format(l.total)}',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText),
@@ -859,7 +859,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                     Expanded(
                       child: Text(
                         'Added on top of the wage, and reported as its own line.',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 11, color: theme.secondaryText),
                       ),
                     ),
@@ -880,7 +880,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(text,
-          style: GoogleFonts.inter(
+          style: NgFonts.geist(
               fontSize: 9.5, fontWeight: FontWeight.w700, color: color)),
     );
   }
@@ -910,7 +910,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
             Icon(icon, size: 15, color: color),
             const SizedBox(width: 5),
             Text(label,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     color: color)),
@@ -935,7 +935,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Not paid per job',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
                   color: theme.primaryText)),
@@ -946,7 +946,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
             "count as labour cost in this job's profit — remove them if they "
             'were added by mistake.',
             style:
-                GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
           ),
           for (final r in _ineligible)
             Padding(
@@ -957,7 +957,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                     child: Text(
                       '${_staffById[r.staffId]?.name ?? 'Staff'}  ·  '
                       '₹${money.format((r.salaryAmount ?? 0) + r.acAmount)}',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 13, color: theme.primaryText),
                     ),
                   ),
@@ -995,7 +995,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                 children: [
                   Text(
                     '₹${money.format(_wageTotal + _acTotal)}',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText),
@@ -1007,7 +1007,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                     '${_acTotal > 0 ? '  ·  A/C ₹${money.format(_acTotal)}' : ''}'
                     '  ·  ${_present.length} present'
                     '  ·  ${driver == null ? 'no driver tagged' : 'driver ${driver.staff.name}'}',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                       fontSize: 11.5,
                       color: driver == null && _present.isNotEmpty
                           ? theme.error

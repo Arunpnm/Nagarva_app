@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/commission_pricing.dart';
 import '/backend/margin_availability.dart';
 import '/backend/supabase/database/tables/dashboard_kpis_view.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/permissions.dart';
 
@@ -337,7 +337,7 @@ class _KpiCard extends StatelessWidget {
                 tile.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.3,
@@ -350,7 +350,7 @@ class _KpiCard extends StatelessWidget {
                   tile.emptyTitle ?? '',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     height: 1.2,
@@ -363,7 +363,7 @@ class _KpiCard extends StatelessWidget {
                     tile.emptyBody!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                       fontSize: 10.5,
                       height: 1.25,
                       color: tile.onEmptyTap != null
@@ -377,7 +377,7 @@ class _KpiCard extends StatelessWidget {
                   tile.value!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                     fontSize: 21,
                     fontWeight: FontWeight.w700,
                     color: theme.primaryText,

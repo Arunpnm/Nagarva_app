@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/commission_pricing.dart';
 import '/backend/field_expenses.dart';
@@ -7,6 +6,7 @@ import '/backend/storage_billing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Order P&L card — Order Details Session 1, item 1.
 ///
@@ -349,12 +349,12 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: large ? 14 : 12.5,
                   fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
                   color: theme.secondaryText)),
           Text(display,
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: large ? 17 : 13,
                   fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
                   color: resolvedColor ?? theme.primaryText)),
@@ -414,7 +414,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           Row(
             children: [
               Text('Profit & Loss',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                       color: theme.primaryText)),
@@ -430,7 +430,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
               ),
               const SizedBox(width: 5),
               Text(margin == null ? '--' : '${margin.toStringAsFixed(0)}%',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 12, fontWeight: FontWeight.w700, color: dot)),
             ],
           ),
@@ -549,19 +549,19 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Commission',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                         color: theme.secondaryText)),
                 Text(kCommissionUnpricedBody,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11, color: theme.warning)),
               ],
             ),
           ),
           const SizedBox(width: 10),
           Text(kCommissionUnpricedLabel,
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: theme.warning)),
@@ -583,19 +583,19 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Net Profit',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: theme.secondaryText)),
                 Text('Set the commission % to see profit',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11, color: theme.secondaryText)),
               ],
             ),
           ),
           const SizedBox(width: 10),
           Text('Unavailable',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: theme.warning)),

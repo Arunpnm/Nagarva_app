@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/module_navigation.dart';
 import '/backend/org_switch.dart';
 import '/backend/session_logout.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/nav_items.dart';
 import '/permissions.dart';
@@ -90,7 +90,7 @@ class AppNavDrawer extends StatelessWidget {
                             orgName,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: theme.primaryText,
@@ -99,7 +99,7 @@ class AppNavDrawer extends StatelessWidget {
                           if (multi)
                             Text(
                               'Tap to switch organisation',
-                              style: GoogleFonts.inter(
+                              style: NgFonts.geist(
                                   fontSize: 11, color: theme.secondaryText),
                             ),
                         ],
@@ -145,7 +145,7 @@ class AppNavDrawer extends StatelessWidget {
                           const EdgeInsetsDirectional.only(bottom: 4),
                       title: Text(
                         group.toUpperCase(),
-                        style: GoogleFonts.interTight(
+                        style: NgFonts.geist(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.1,

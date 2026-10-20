@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '/backend/soft_delete.dart';
@@ -7,6 +6,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Payment history + delete, for a single order (Item 11 sweep, 16 Aug
 /// 2026 — `payment_entries` had soft-delete columns and a working
@@ -91,7 +91,7 @@ class PaymentHistorySectionState extends State<PaymentHistorySection> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Payment History',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: theme.primaryText)),
@@ -114,23 +114,23 @@ class PaymentHistorySectionState extends State<PaymentHistorySection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('₹${e.amount.toStringAsFixed(0)} · ${e.mode.toUpperCase()}',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,
                         color: theme.primaryText)),
                 if (when != null)
                   Text(DateFormat('d MMM yyyy, h:mm a').format(when.toLocal()),
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 11.5, color: theme.secondaryText)),
                 if ((e.note ?? '').trim().isNotEmpty)
                   Text(e.note!.trim(),
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 11.5,
                           fontStyle: FontStyle.italic,
                           color: theme.secondaryText)),
                 if (e.receiptId != null)
                   Text('Receipted',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 11, color: theme.primary)),
               ],
             ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/audit_log_service.dart';
@@ -11,6 +10,7 @@ import '/backend/supabase/org_scope.dart';
 import '/backend/upi_payment.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
@@ -341,7 +341,7 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                       selected ? theme.primaryBackground : theme.secondaryText),
               const SizedBox(width: 5),
               Text(label,
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: selected
@@ -454,13 +454,13 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text('Request payment by UPI',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: theme.primaryText)),
                   const SizedBox(height: 4),
                   Text('Paid to ${payee.vpa}',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 12, color: theme.secondaryText)),
                   const SizedBox(height: 14),
                   TextField(
@@ -468,12 +468,12 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setSheet(() {}),
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         color: theme.primaryText, fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'Amount to request (₹)',
                       helperText: 'Balance due ₹${_balance.toStringAsFixed(0)}',
-                      labelStyle: GoogleFonts.inter(
+                      labelStyle: NgFonts.geist(
                           color: theme.secondaryText, fontSize: 12),
                       isDense: true,
                       filled: true,
@@ -525,7 +525,7 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                     'Opens in the customer\'s UPI app. Payments are not '
                     'detected automatically — record it above once you '
                     'receive it.',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11, color: theme.secondaryText),
                   ),
                 ],
@@ -611,12 +611,12 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Quick Payment',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText)),
               Text('Balance ₹${_balance.toStringAsFixed(0)}',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                       color: theme.primary)),
@@ -630,11 +630,11 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                   controller: _amountCtrl,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       color: theme.primaryText, fontSize: 14),
                   decoration: InputDecoration(
                     labelText: 'Amount received (₹)',
-                    labelStyle: GoogleFonts.inter(
+                    labelStyle: NgFonts.geist(
                         color: theme.secondaryText, fontSize: 12),
                     isDense: true,
                     filled: true,
@@ -662,11 +662,11 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
           const SizedBox(height: 10),
           TextField(
             controller: _noteCtrl,
-            style: GoogleFonts.inter(color: theme.primaryText, fontSize: 13),
+            style: NgFonts.geist(color: theme.primaryText, fontSize: 13),
             decoration: InputDecoration(
               labelText: 'Note (optional)',
               labelStyle:
-                  GoogleFonts.inter(color: theme.secondaryText, fontSize: 12),
+                  NgFonts.geist(color: theme.secondaryText, fontSize: 12),
               isDense: true,
               filled: true,
               fillColor: theme.primaryBackground,
@@ -701,7 +701,7 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
             icon: Icon(Icons.qr_code_2, size: 18, color: theme.primary),
             label: Text(
               _requesting ? 'Preparing…' : 'Request payment by UPI',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 13, fontWeight: FontWeight.w600, color: theme.primary),
             ),
           ),

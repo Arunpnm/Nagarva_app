@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/org_resolution.dart';
 import '/backend/owner_pin.dart';
@@ -12,7 +13,6 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'login_page_model.dart';
 export 'login_page_model.dart';
 
@@ -263,7 +263,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             content: Text(
               'Password reset link sent to $email. Check your inbox '
               '(and spam folder).',
-              style: GoogleFonts.inter(),
+              style: NgFonts.geist(),
             ),
             backgroundColor: const Color(0xFF2E7D32),
             duration: const Duration(seconds: 5),
@@ -346,7 +346,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                             // SettingsPage / AppSession.currentOrgName).
                             'Nagarva',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -355,7 +355,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                           const SizedBox(height: 4),
                           Text(
                             'Industry ERP for packers & movers',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: Colors.white54,
                               fontSize: 13,
                             ),
@@ -415,7 +415,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                           const SizedBox(width: 6),
                           Text(
                             'Secured & Encrypted',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: const Color(0xFF888899),
                               fontSize: 12,
                             ),
@@ -446,12 +446,12 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         onTap: onTap,
         child: RichText(
           text: TextSpan(
-            style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+            style: NgFonts.geist(color: Colors.white54, fontSize: 13),
             children: [
               if (prefix.isNotEmpty) TextSpan(text: prefix),
               TextSpan(
                 text: action,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                   color: kBrandGold,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -505,7 +505,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             onTap: _model.isLoading ? null : _handleForgotPassword,
             child: Text(
               'Forgot password?',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                 color: kBrandGold,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -525,7 +525,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             width: double.infinity,
             height: 52,
             color: kBrandGold,
-            textStyle: GoogleFonts.interTight(
+            textStyle: NgFonts.geist(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -541,13 +541,13 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           children: [
             Text(
               "New here? ",
-              style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+              style: NgFonts.geist(color: Colors.white54, fontSize: 13),
             ),
             GestureDetector(
               onTap: () => context.go(SignupPageWidget.routePath),
               child: Text(
                 'Create an account',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                   color: kBrandGold,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -569,7 +569,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       ),
       child: Text(
         message,
-        style: GoogleFonts.inter(color: Colors.redAccent, fontSize: 13),
+        style: NgFonts.geist(color: Colors.redAccent, fontSize: 13),
       ),
     );
   }
@@ -589,12 +589,12 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       focusNode: focusNode,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      style: GoogleFonts.inter(color: Colors.white),
+      style: NgFonts.geist(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: GoogleFonts.inter(color: Colors.white54),
-        hintStyle: GoogleFonts.inter(color: Colors.white24),
+        labelStyle: NgFonts.geist(color: Colors.white54),
+        hintStyle: NgFonts.geist(color: Colors.white24),
         prefixIcon: Icon(icon, color: Colors.white38, size: 20),
         suffixIcon: suffixIcon,
         filled: true,

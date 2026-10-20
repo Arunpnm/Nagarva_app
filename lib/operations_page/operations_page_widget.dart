@@ -5,6 +5,7 @@ import '/backend/supabase/org_scope.dart';
 import '/backend/field_expenses.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 // kNotAvailableReasons — the same labels the supervisor chose from, so
 // the owner reads exactly what the supervisor selected.
 import '/supervisor_job_page/supervisor_job_page_model.dart';
@@ -13,7 +14,6 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'operations_page_model.dart';
 export 'operations_page_model.dart';
 
@@ -310,7 +310,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Text(s,
-          style: GoogleFonts.interTight(
+          style: NgFonts.geist(
               fontSize: 14.5,
               fontWeight: FontWeight.w700,
               color: theme.primaryText)),
@@ -339,7 +339,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
               children: [
                 Expanded(
                   child: Text(o.customer,
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w700,
                           color: theme.primaryText)),
@@ -352,7 +352,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(st,
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w800,
                           color: color)),
@@ -367,7 +367,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                 if ((o.phone ?? '').isNotEmpty) o.phone!,
               ].join('  ·  '),
               style:
-                  GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
             ),
           ],
         ),
@@ -406,7 +406,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                 Expanded(
                   child: Text('${o.id} · ${o.customer}',
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: theme.primaryText)),
@@ -419,7 +419,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text('⏳ AWAITING',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w800,
                           color: gold)),
@@ -451,7 +451,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                             ? 'Completed — ${kNotAvailableReasons[reason] ?? 'no signature'}'
                             : 'Completed — signed by customer',
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 11.5,
                             fontWeight:
                                 unsigned ? FontWeight.w700 : FontWeight.w500,
@@ -466,7 +466,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
             Text(
               '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}',
               style:
-                  GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
             ),
             const SizedBox(height: 2),
             Text(
@@ -476,18 +476,18 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                   'Finished ${dateTimeFormat('d MMM, h:mm a', o.jobEndTime)}',
               ].join('  ·  '),
               style:
-                  GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Balance due',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11.5, color: theme.secondaryText)),
                 Text(
                   '₹${balance.toStringAsFixed(0)}',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w800,
                     // Non-zero balance is the thing worth chasing before
@@ -509,10 +509,10 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                   Text(
                       'Spent by supervisor  ·  '
                       '${spend.count} item${spend.count == 1 ? '' : 's'}',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 11.5, color: theme.secondaryText)),
                   Text('₹${spend.total.toStringAsFixed(0)}',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w800,
                           color: theme.warning)),
@@ -524,7 +524,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
               // seeing on a job that ran all day - a blank row would read
               // as "not loaded" instead.
               Text('No expenses claimed on this job',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 11.5, color: theme.secondaryText)),
             ],
           ],
@@ -552,7 +552,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
               children: [
                 Text(
                   '${t.vehicleNo ?? '—'} · ${t.driverName ?? '—'}',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText),
@@ -561,7 +561,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                   '${t.fromLoc ?? '—'} to ${t.toLoc ?? '—'}'
                   '${t.tripDate == null ? '' : ' · ${t.tripDate}'}'
                   '${(t.tripType ?? '').isEmpty ? '' : ' · ${t.tripType}'}',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 11.5, color: theme.secondaryText),
                 ),
               ],
@@ -588,7 +588,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
           automaticallyImplyLeading: true,
           title: Text('Operations',
               style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22.0,
                 letterSpacing: 0.0,
               )),
@@ -623,14 +623,14 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                       _sectionTitle('Active Shifting (${_active.length})'),
                       if (_active.isEmpty)
                         Text('No jobs currently in progress.',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 fontSize: 12.5, color: theme.secondaryText))
                       else
                         ..._active.map(_orderCard),
                       _sectionTitle('Upcoming (${_upcoming.length})'),
                       if (_upcoming.isEmpty)
                         Text('No upcoming orders.',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 fontSize: 12.5, color: theme.secondaryText))
                       else
                         ..._upcoming.map(_orderCard),
@@ -639,7 +639,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                         Text(
                           'No trips logged yet. Use "Log New Trip" to '
                           'record vehicle movements (fuel, tolls, driver bata).',
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               fontSize: 12.5, color: theme.secondaryText),
                         )
                       else

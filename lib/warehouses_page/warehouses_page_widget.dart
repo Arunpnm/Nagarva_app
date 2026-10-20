@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/load_error_state.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Warehouses / godowns.
 ///
@@ -113,7 +113,7 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
         ),
         title: Text('Warehouses',
             style: theme.headlineSmall.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                font: NgFonts.geist(fontWeight: FontWeight.w600))),
         centerTitle: true,
       ),
       body: _loading
@@ -151,14 +151,14 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
                             const SizedBox(height: 10),
                             Text('No warehouses yet.',
                                 style: theme.bodyMedium
-                                    .override(font: GoogleFonts.inter())),
+                                    .override(font: NgFonts.geist())),
                             const SizedBox(height: 4),
                             Text(
                               'Add the godown you store customer goods in, '
                               'then you can move an order into it.',
                               textAlign: TextAlign.center,
                               style: theme.bodySmall.override(
-                                  font: GoogleFonts.inter(),
+                                  font: NgFonts.geist(),
                                   color: theme.secondaryText),
                             ),
                           ]),
@@ -192,11 +192,11 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
           children: [
             Text(label,
                 style: theme.bodySmall.override(
-                    font: GoogleFonts.inter(), color: theme.secondaryText)),
+                    font: NgFonts.geist(), color: theme.secondaryText)),
             const SizedBox(height: 6),
             Text(value,
                 style: theme.headlineSmall.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w700))),
+                    font: NgFonts.geist(fontWeight: FontWeight.w700))),
           ],
         ),
       );
@@ -231,7 +231,7 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
                         ? w.name
                         : '${w.name}  ·  ${w.code}',
                     style: theme.bodyLarge.override(
-                        font: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                        font: NgFonts.geist(fontWeight: FontWeight.w600)),
                   ),
                 ),
                 if (!w.active)
@@ -244,7 +244,7 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
                     ),
                     child: Text('Inactive',
                         style: theme.bodySmall.override(
-                            font: GoogleFonts.inter(),
+                            font: NgFonts.geist(),
                             color: theme.secondaryText)),
                   ),
               ]),
@@ -255,13 +255,13 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
                   if ((w.branch ?? '').isNotEmpty) w.branch!,
                 ].join(' · '),
                 style: theme.bodySmall.override(
-                    font: GoogleFonts.inter(), color: theme.secondaryText),
+                    font: NgFonts.geist(), color: theme.secondaryText),
               ),
               if ((w.address ?? '').isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text(w.address!,
                     style: theme.bodySmall.override(
-                        font: GoogleFonts.inter(), color: theme.secondaryText)),
+                        font: NgFonts.geist(), color: theme.secondaryText)),
               ],
               if ((w.contactPerson ?? '').isNotEmpty ||
                   (w.contactPhone ?? '').isNotEmpty) ...[
@@ -272,7 +272,7 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
                     if ((w.contactPhone ?? '').isNotEmpty) w.contactPhone!,
                   ].join(' · '),
                   style: theme.bodySmall.override(
-                      font: GoogleFonts.inter(), color: theme.secondaryText),
+                      font: NgFonts.geist(), color: theme.secondaryText),
                 ),
               ],
               const SizedBox(height: 10),
@@ -294,7 +294,7 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
                     ? '${used.toStringAsFixed(0)} of ${cap.toStringAsFixed(0)} CFT used · $stays in store'
                     : '${used.toStringAsFixed(0)} CFT in store · $stays ${stays == 1 ? 'stay' : 'stays'}',
                 style: theme.bodySmall.override(
-                    font: GoogleFonts.inter(), color: theme.secondaryText),
+                    font: NgFonts.geist(), color: theme.secondaryText),
               ),
             ],
           ),
@@ -449,7 +449,7 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
           children: [
             Text(isNew ? 'New Warehouse' : 'Edit Warehouse',
                 style: theme.headlineSmall.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                    font: NgFonts.geist(fontWeight: FontWeight.w600))),
             const SizedBox(height: 12),
             _field(_name, 'Name *'),
             Row(children: [
@@ -479,7 +479,7 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
                 'Inactive godowns stay on past storage records but cannot '
                 'take new goods.',
                 style: theme.bodySmall.override(
-                    font: GoogleFonts.inter(), color: theme.secondaryText),
+                    font: NgFonts.geist(), color: theme.secondaryText),
               ),
               value: _active,
               onChanged: (v) => setState(() => _active = v),
@@ -488,7 +488,7 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
               const SizedBox(height: 6),
               Text(_error!,
                   style: theme.bodySmall
-                      .override(font: GoogleFonts.inter(), color: theme.error)),
+                      .override(font: NgFonts.geist(), color: theme.error)),
             ],
             const SizedBox(height: 12),
             Row(

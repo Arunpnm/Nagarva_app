@@ -2,9 +2,9 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _kNotificationsEnabledKey = '__notifications_enabled__';
@@ -217,7 +217,7 @@ class _NotificationBellState extends State<NotificationBell> {
                   children: [
                     Text(
                       'Notifications',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText,
@@ -231,7 +231,7 @@ class _NotificationBellState extends State<NotificationBell> {
                     if (_unread > 0)
                       Text(
                         'Marked read on close',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 11, color: theme.secondaryText),
                       ),
                   ],
@@ -243,7 +243,7 @@ class _NotificationBellState extends State<NotificationBell> {
                           child: Text(
                             'No notifications yet.',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 color: theme.secondaryText, fontSize: 13),
                           ),
                         )
@@ -271,7 +271,7 @@ class _NotificationBellState extends State<NotificationBell> {
                               ),
                               title: Text(
                                 n.title,
-                                style: GoogleFonts.inter(
+                                style: NgFonts.geist(
                                   fontSize: 13.5,
                                   fontWeight: n.read
                                       ? FontWeight.w500
@@ -285,7 +285,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                   if (n.createdAt != null)
                                     dateTimeFormat('relative', n.createdAt),
                                 ].join(' · '),
-                                style: GoogleFonts.inter(
+                                style: NgFonts.geist(
                                   fontSize: 11.5,
                                   color: theme.secondaryText,
                                 ),

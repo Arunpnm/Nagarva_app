@@ -9,6 +9,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/backend/vendor_org_resolver.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import '/permissions.dart';
@@ -253,7 +254,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
           child: Center(
             child: icon ??
                 Text(label,
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
                         color: theme.primaryText)),
@@ -281,13 +282,13 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                 Icon(Icons.local_shipping, size: 48, color: theme.primary),
                 const SizedBox(height: 12),
                 Text(orgName,
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText)),
                 const SizedBox(height: 4),
                 Text('Enter your 4-digit PIN',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 13, color: theme.secondaryText)),
                 const SizedBox(height: 28),
                 // Same fragile-hardcode class as the keypad below: 4x58px

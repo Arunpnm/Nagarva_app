@@ -2,13 +2,13 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'quick_expense_page_model.dart';
 export 'quick_expense_page_model.dart';
 
@@ -80,7 +80,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
           title: Text(
             AppLocalizations.of(context).quickExpense,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -134,7 +134,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        font: GoogleFonts.interTight(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleSmall
@@ -236,7 +236,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   textStyle: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodyMedium
@@ -343,12 +343,12 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   isExpanded: true,
                                   dropdownColor:
                                       FlutterFlowTheme.of(context).secondaryBackground,
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                       color: FlutterFlowTheme.of(context).primaryText,
                                       fontSize: 13.5),
                                   decoration: InputDecoration(
                                     labelText: 'Linked Order (optional)',
-                                    labelStyle: GoogleFonts.inter(
+                                    labelStyle: NgFonts.geist(
                                         color: FlutterFlowTheme.of(context).secondaryText,
                                         fontSize: 12.5),
                                     filled: true,
@@ -370,7 +370,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                     ),
                                   ),
                                   hint: Text('No linked order',
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                           color: FlutterFlowTheme.of(context).secondaryText,
                                           fontSize: 13)),
                                   items: [

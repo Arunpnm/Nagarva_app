@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Shared "here is a customer link" sheet — WhatsApp first, copy as
 /// fallback (fix brief #2, items 3 and 6).
@@ -82,7 +82,7 @@ class ShareLinkSheet extends StatelessWidget {
             ),
             Text(
               title,
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
                 color: theme.primaryText,
@@ -92,7 +92,7 @@ class ShareLinkSheet extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 subtitle!,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5, height: 1.4, color: theme.secondaryText),
               ),
             ],
@@ -106,7 +106,7 @@ class ShareLinkSheet extends StatelessWidget {
               ),
               child: SelectableText(
                 link,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5, color: theme.primaryText),
               ),
             ),

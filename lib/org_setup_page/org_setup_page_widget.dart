@@ -4,13 +4,13 @@ import '/backend/doc_prefix.dart';
 import '/backend/edge_function_errors.dart';
 import '/components/logo_upload_card.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
 import '/users_page/staff_form_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'org_setup_page_model.dart';
 export 'org_setup_page_model.dart';
 
@@ -240,7 +240,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
           backgroundColor: theme.primaryBackground,
           title: Text(
             'Business Setup',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
               color: theme.primaryText,
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -253,7 +253,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
               onPressed: () => context.go(HomePageWidget.routePath),
               child: Text(
                 'Skip',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                   color: theme.secondaryText,
                   fontSize: 14,
                 ),
@@ -346,7 +346,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                       Text(
                         'No staff added yet — you can add drivers, packers, '
                         'and supervisors now or later from Users.',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             color: theme.secondaryText, fontSize: 13),
                       )
                     else
@@ -360,7 +360,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                                 Expanded(
                                   child: Text(
                                     '${s.name ?? ''} · ${s.role ?? ''}',
-                                    style: GoogleFonts.inter(
+                                    style: NgFonts.geist(
                                         color: theme.primaryText,
                                         fontSize: 13),
                                   ),
@@ -385,7 +385,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                       ),
                       child: Text(
                         _model.errorMessage!,
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                           color: theme.error,
                           fontSize: 13,
                         ),
@@ -399,7 +399,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                     options: FFButtonOptions(
                       height: 52,
                       color: theme.primary,
-                      textStyle: GoogleFonts.interTight(
+                      textStyle: NgFonts.geist(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -421,7 +421,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
 
   Widget _sectionHeader(FlutterFlowTheme theme, String title) => Text(
         title,
-        style: GoogleFonts.interTight(
+        style: NgFonts.geist(
           color: theme.primaryText,
           fontSize: 15,
           fontWeight: FontWeight.w600,
@@ -456,13 +456,13 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
       focusNode: focusNode,
       maxLines: maxLines,
       validator: validator,
-      style: GoogleFonts.inter(color: theme.primaryText, fontSize: 14),
+      style: NgFonts.geist(color: theme.primaryText, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: GoogleFonts.inter(color: theme.secondaryText, fontSize: 13),
+        labelStyle: NgFonts.geist(color: theme.secondaryText, fontSize: 13),
         hintStyle:
-            GoogleFonts.inter(color: theme.secondaryText.withOpacity(0.5), fontSize: 13),
+            NgFonts.geist(color: theme.secondaryText.withOpacity(0.5), fontSize: 13),
         prefixIcon: Icon(icon, color: theme.secondaryText, size: 18),
         filled: true,
         fillColor: theme.primaryBackground,

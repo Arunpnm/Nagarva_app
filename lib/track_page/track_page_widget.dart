@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '/backend/order_stages.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Public, unauthenticated order-tracking page (live-test fix brief #2,
 /// item 6). Reached via `/track?token=...` with no login.
@@ -108,7 +108,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
                 ? 'This tracking link is not valid'
                 : 'Could not load tracking',
             textAlign: TextAlign.center,
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
                 color: theme.primaryText),
@@ -119,7 +119,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
                 ? 'It may have expired. Please ask for a fresh link.'
                 : 'Pull down to try again.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 14, height: 1.45, color: theme.secondaryText),
           ),
         ],
@@ -150,13 +150,13 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
       children: [
         Text(
           (d['orgName'] as String?) ?? 'Your move',
-          style: GoogleFonts.interTight(
+          style: NgFonts.geist(
               fontSize: 13, fontWeight: FontWeight.w600, color: theme.primary),
         ),
         const SizedBox(height: 4),
         Text(
           'Order ${d['orderRef']}',
-          style: GoogleFonts.interTight(
+          style: NgFonts.geist(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: theme.primaryText),
@@ -179,7 +179,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
         const SizedBox(height: 22),
         Text(
           'Progress',
-          style: GoogleFonts.interTight(
+          style: NgFonts.geist(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: theme.primaryText),
@@ -201,7 +201,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
           const SizedBox(height: 22),
           Text(
             'Your crew',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: theme.primaryText),
@@ -227,7 +227,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
           child: Text(
             'Pull down to refresh',
             style:
-                GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
           ),
         ),
         const SizedBox(height: 20),
@@ -291,7 +291,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                       fontSize: 14,
                       fontWeight: current ? FontWeight.w700 : FontWeight.w500,
                       color:
@@ -301,7 +301,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
                   if (at != null)
                     Text(
                       DateFormat('d MMM, h:mm a').format(at.toLocal()),
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 11.5, color: theme.secondaryText),
                     ),
                 ],
@@ -323,7 +323,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
           Expanded(
             flex: 4,
             child: Text(label,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 13, color: theme.secondaryText)),
           ),
           const SizedBox(width: 10),
@@ -332,7 +332,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
             child: Text(
               (value == null || value.trim().isEmpty) ? '—' : value.trim(),
               textAlign: TextAlign.right,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                   color: theme.primaryText),

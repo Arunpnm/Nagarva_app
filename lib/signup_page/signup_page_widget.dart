@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
@@ -11,7 +12,6 @@ import '/widgets/signup_success_dialog.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'signup_page_model.dart';
 export 'signup_page_model.dart';
@@ -317,7 +317,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                           const SizedBox(height: 16),
                           Text(
                             'Create your account',
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                               color: Colors.white,
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -326,7 +326,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                           const SizedBox(height: 4),
                           Text(
                             'Start your free trial today',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: Colors.white54,
                               fontSize: 14,
                             ),
@@ -383,7 +383,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               controller: _model.passwordController!,
                               focusNode: _model.passwordFocusNode!,
                               obscureText: !_model.passwordVisible,
-                              style: GoogleFonts.inter(color: Colors.white),
+                              style: NgFonts.geist(color: Colors.white),
                               validator: (v) => (v == null || v.length < 8)
                                   ? 'Password must be at least 8 characters'
                                   : null,
@@ -411,7 +411,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               controller: _model.confirmPasswordController!,
                               focusNode: _model.confirmPasswordFocusNode!,
                               obscureText: !_model.confirmPasswordVisible,
-                              style: GoogleFonts.inter(color: Colors.white),
+                              style: NgFonts.geist(color: Colors.white),
                               // §3: validated client-side before submit via
                               // the Form's own validate() — an inline error
                               // right at this field, never a network round
@@ -466,7 +466,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                     padding: const EdgeInsets.only(top: 12),
                                     child: RichText(
                                       text: TextSpan(
-                                        style: GoogleFonts.inter(
+                                        style: NgFonts.geist(
                                           color: Colors.white54,
                                           fontSize: 13,
                                         ),
@@ -475,7 +475,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                               text: 'I agree to the '),
                                           TextSpan(
                                             text: 'Terms & Conditions',
-                                            style: GoogleFonts.inter(
+                                            style: NgFonts.geist(
                                               color: kBrandGold,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
@@ -489,7 +489,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                           const TextSpan(text: ' and '),
                                           TextSpan(
                                             text: 'Privacy Policy',
-                                            style: GoogleFonts.inter(
+                                            style: NgFonts.geist(
                                               color: kBrandGold,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
@@ -517,7 +517,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                 ),
                                 child: Text(
                                   _model.errorMessage!,
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                     color: Colors.redAccent,
                                     fontSize: 13,
                                   ),
@@ -534,7 +534,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               options: FFButtonOptions(
                                 height: 52,
                                 color: kBrandGold,
-                                textStyle: GoogleFonts.interTight(
+                                textStyle: NgFonts.geist(
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -555,7 +555,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                         children: [
                           Text(
                             'Already have an account? ',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: Colors.white54,
                               fontSize: 14,
                             ),
@@ -564,7 +564,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             onTap: () => context.go(LoginPageWidget.routePath),
                             child: Text(
                               'Log in',
-                              style: GoogleFonts.inter(
+                              style: NgFonts.geist(
                                 color: kBrandGold,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -597,7 +597,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
-      style: GoogleFonts.inter(color: Colors.white),
+      style: NgFonts.geist(color: Colors.white),
       keyboardType: keyboardType,
       validator: validator,
       textCapitalization: textCapitalization,
@@ -613,8 +613,8 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: GoogleFonts.inter(color: Colors.white54),
-      hintStyle: GoogleFonts.inter(color: Colors.white24),
+      labelStyle: NgFonts.geist(color: Colors.white54),
+      hintStyle: NgFonts.geist(color: Colors.white24),
       prefixIcon: Icon(icon, color: Colors.white38, size: 20),
       filled: true,
       fillColor: const Color(0xFF2A2D45),
@@ -634,7 +634,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
-      errorStyle: GoogleFonts.inter(color: Colors.redAccent, fontSize: 12),
+      errorStyle: NgFonts.geist(color: Colors.redAccent, fontSize: 12),
     );
   }
 }

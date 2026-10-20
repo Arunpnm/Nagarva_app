@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/app_session.dart';
@@ -8,6 +7,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/backend/vendor_identity.dart';
 
@@ -181,7 +181,7 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
         automaticallyImplyLeading: true,
         title: Text('Reviews',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
         centerTitle: true,
@@ -207,7 +207,7 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
                   if (_dueOrders.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Text('Due for review request',
-                        style: GoogleFonts.interTight(
+                        style: NgFonts.geist(
                             fontSize: 14, fontWeight: FontWeight.w700, color: theme.primaryText)),
                     const SizedBox(height: 8),
                     ..._dueOrders.map((o) => _dueOrderRow(theme, o)),
@@ -216,7 +216,7 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
                   Row(
                     children: [
                       Text('Collected Reviews',
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                               fontSize: 14, fontWeight: FontWeight.w700, color: theme.primaryText)),
                       const Spacer(),
                       DropdownButton<int?>(
@@ -249,7 +249,7 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       child: Text('No reviews yet.',
-                          style: GoogleFonts.inter(color: theme.secondaryText)),
+                          style: NgFonts.geist(color: theme.secondaryText)),
                     )
                   else
                     ..._filteredReviews.map((r) => _reviewRow(theme, r)),
@@ -270,9 +270,9 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: GoogleFonts.inter(fontSize: 11, color: theme.secondaryText)),
+            Text(label, style: NgFonts.geist(fontSize: 11, color: theme.secondaryText)),
             Text(value,
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: danger ? theme.error : theme.primaryText)),
@@ -298,10 +298,10 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(o.customer,
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                 Text(
                     'Order ${o.id} · ${at == null ? '—' : DateFormat('d MMM').format(at)}',
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText)),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText)),
               ],
             ),
           ),
@@ -339,21 +339,21 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
                 )
               else
                 Text('Awaiting response',
-                    style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                    style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
               const Spacer(),
               if ((r['branch'] as String?)?.isNotEmpty ?? false)
                 Text(r['branch'] as String,
-                    style: GoogleFonts.inter(fontSize: 11, color: theme.secondaryText)),
+                    style: NgFonts.geist(fontSize: 11, color: theme.secondaryText)),
             ],
           ),
           if ((comment ?? '').isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(comment!, style: GoogleFonts.inter(fontSize: 12.5)),
+            Text(comment!, style: NgFonts.geist(fontSize: 12.5)),
           ],
           if (orderId != null) ...[
             const SizedBox(height: 4),
             Text('Order $orderId',
-                style: GoogleFonts.inter(fontSize: 11, color: theme.secondaryText)),
+                style: NgFonts.geist(fontSize: 11, color: theme.secondaryText)),
           ],
         ],
       ),

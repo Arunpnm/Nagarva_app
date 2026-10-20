@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Shared placeholder for nav destinations that don't have a real screen
 /// yet (Users Kickoff Step 2: "Wiring nav once is better than revisiting
@@ -26,7 +26,7 @@ class ComingSoonPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
         title: Text(title,
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 color: theme.primaryText, fontWeight: FontWeight.w600)),
         centerTitle: true,
         elevation: 0,
@@ -43,7 +43,7 @@ class ComingSoonPage extends StatelessWidget {
               Text(
                 '$title is coming soon',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: theme.primaryText,
@@ -54,7 +54,7 @@ class ComingSoonPage extends StatelessWidget {
                 Text(
                   note!,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 13, color: theme.secondaryText, height: 1.4),
                 ),
               ],

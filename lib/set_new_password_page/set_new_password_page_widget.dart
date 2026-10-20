@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 import '/backend/pending_password_reset.dart';
 import '/backend/supabase/supabase.dart';
@@ -92,8 +92,8 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: GoogleFonts.inter(color: Colors.white54),
-      hintStyle: GoogleFonts.inter(color: Colors.white24),
+      labelStyle: NgFonts.geist(color: Colors.white54),
+      hintStyle: NgFonts.geist(color: Colors.white24),
       prefixIcon: Icon(icon, color: Colors.white38, size: 20),
       filled: true,
       fillColor: const Color(0xFF2A2D45),
@@ -113,7 +113,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
-      errorStyle: GoogleFonts.inter(color: Colors.redAccent, fontSize: 12),
+      errorStyle: NgFonts.geist(color: Colors.redAccent, fontSize: 12),
     );
   }
 
@@ -151,7 +151,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                           Text(
                             'Set a new password',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                               color: Colors.white,
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -161,7 +161,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                           Text(
                             'Choose a new password to finish resetting your account.',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: Colors.white54,
                               fontSize: 13,
                             ),
@@ -173,7 +173,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         controller: _passwordController,
                         focusNode: _passwordFocusNode,
                         obscureText: !_passwordVisible,
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: NgFonts.geist(color: Colors.white),
                         // Same rule as SignupPageWidget's own password field.
                         validator: (v) => (v == null || v.length < 8)
                             ? 'Password must be at least 8 characters'
@@ -201,7 +201,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         controller: _confirmController,
                         focusNode: _confirmFocusNode,
                         obscureText: !_confirmVisible,
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: NgFonts.geist(color: Colors.white),
                         // Same rule as SignupPageWidget's confirm-password
                         // field — validated client-side, no round trip.
                         validator: (v) => (v != _passwordController.text)
@@ -235,7 +235,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                           ),
                           child: Text(
                             _errorMessage!,
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 color: Colors.redAccent, fontSize: 13),
                           ),
                         ),
@@ -247,7 +247,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         options: FFButtonOptions(
                           height: 52,
                           color: kBrandGold,
-                          textStyle: GoogleFonts.interTight(
+                          textStyle: NgFonts.geist(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

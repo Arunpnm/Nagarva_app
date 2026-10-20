@@ -3,12 +3,12 @@ import '/backend/supabase/supabase.dart';
 import '/index.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'payments_page_model.dart';
 export 'payments_page_model.dart';
 
@@ -106,7 +106,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
           title: Text(
             AppLocalizations.of(context).payments,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -161,7 +161,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
                                         .override(
-                                          font: GoogleFonts.inter(
+                                          font: NgFonts.geist(
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
                                                     .labelMedium
@@ -191,7 +191,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                     style: FlutterFlowTheme.of(context)
                                         .headlineMedium
                                         .override(
-                                          font: GoogleFonts.interTight(
+                                          font: NgFonts.geist(
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
                                                     .headlineMedium
@@ -240,7 +240,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                     style: FlutterFlowTheme.of(context)
                                         .labelMedium
                                         .override(
-                                          font: GoogleFonts.inter(
+                                          font: NgFonts.geist(
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
                                                     .labelMedium
@@ -268,7 +268,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                     style: FlutterFlowTheme.of(context)
                                         .headlineMedium
                                         .override(
-                                          font: GoogleFonts.interTight(
+                                          font: NgFonts.geist(
                                             fontWeight:
                                                 FlutterFlowTheme.of(context)
                                                     .headlineMedium
@@ -307,7 +307,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                           AppLocalizations.of(context).pendingPaymentsLive,
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: GoogleFonts.interTight(
+                                    font: NgFonts.geist(
                                       fontWeight: FlutterFlowTheme.of(context)
                                           .titleSmall
                                           .fontWeight,
@@ -371,7 +371,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                                   .titleSmall
                                                   .override(
                                                     font:
-                                                        GoogleFonts.interTight(
+                                                        NgFonts.geist(
                                                       fontWeight:
                                                           FlutterFlowTheme.of(
                                                                   context)
@@ -419,7 +419,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                                           context)
                                                       .labelSmall
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -466,7 +466,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                                   .titleMedium
                                                   .override(
                                                     font:
-                                                        GoogleFonts.interTight(
+                                                        NgFonts.geist(
                                                       fontWeight:
                                                           FlutterFlowTheme.of(
                                                                   context)
@@ -522,7 +522,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                                       BorderRadius.circular(8),
                                                 ),
                                                 child: Text('Record',
-                                                    style: GoogleFonts.inter(
+                                                    style: NgFonts.geist(
                                                         fontSize: 11,
                                                         fontWeight:
                                                             FontWeight.w700,
@@ -576,7 +576,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                                     const SizedBox(width: 4),
                                                     Text('Remind',
                                                         style:
-                                                            GoogleFonts.inter(
+                                                            NgFonts.geist(
                                                                 fontSize: 11,
                                                                 fontWeight:
                                                                     FontWeight

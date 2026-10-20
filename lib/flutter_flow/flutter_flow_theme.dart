@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'ng_tokens.dart';
+
 const kThemeModeKey = '__theme_mode__';
 // Parity brief Part 2b: a third "Midnight" option alongside Light/Dark.
 // Midnight is still ThemeMode.dark under the hood (same brightness, same
@@ -100,11 +102,19 @@ abstract class FlutterFlowTheme {
   ThemeData toThemeData() {
     final brightness =
         this is LightModeTheme ? Brightness.light : Brightness.dark;
-    final onPrimary =
-        primary.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    // Redesign: text on the orange accent is near-black in the dark
+    // variants (handoff: "text on an accent button is always #0A0C10").
+    // Light keeps the luminance rule — its primary is the darker
+    // text-orange, which needs white.
+    final onPrimary = brightness == Brightness.dark
+        ? NgPalette.onAcc
+        : primary.computeLuminance() > 0.5
+            ? Colors.black
+            : Colors.white;
     return ThemeData(
       brightness: brightness,
       useMaterial3: false,
+      fontFamily: NgFonts.family,
       scaffoldBackgroundColor: primaryBackground,
       canvasColor: primaryBackground,
       cardColor: secondaryBackground,
@@ -167,6 +177,7 @@ abstract class FlutterFlowTheme {
       // without these the typed query stayed near-black on the dark navy
       // search bar.
       textTheme: ThemeData(brightness: brightness).textTheme.apply(
+            fontFamily: NgFonts.family,
             bodyColor: primaryText,
             displayColor: primaryText,
           ),
@@ -285,23 +296,26 @@ class LightModeTheme extends FlutterFlowTheme {
   @Deprecated('Use tertiary instead')
   Color get tertiaryColor => tertiary;
 
-  // Brand rebrand (parity brief Part 2b, 27 Jul 2026): navy #0F2A47,
-  // gold #E3B23C, teal #1FA98C, applied to every theme's accent triad.
-  late Color primary = const Color(0xFFE3B23C);
-  late Color secondary = const Color(0xFFC79A32);
-  late Color tertiary = const Color(0xFF1FA98C);
-  late Color alternate = const Color(0xFFE0E3E7);
-  late Color primaryText = const Color(0xFF0F172A);
-  late Color secondaryText = const Color(0xFF64748B);
-  late Color primaryBackground = const Color(0xFFF1F5F9);
-  late Color secondaryBackground = const Color(0xFFFFFFFF);
-  late Color accent1 = const Color(0x4C4B39EF);
-  late Color accent2 = const Color(0x4D39D2C0);
-  late Color accent3 = const Color(0x4DEE8B60);
+  // Redesign (Claude Design handoff, 20 Oct 2026): every slot now reads
+  // from NgPalette.light — warm off-white page, white cards, orange
+  // accent. `primary` is the TEXT orange (darker, readable on white);
+  // filled buttons that follow the redesign use NgPalette.accBtn.
+  // Replaces the 27 Jul navy/gold/teal triad.
+  late Color primary = NgPalette.light.acc;
+  late Color secondary = NgPalette.light.accBtn;
+  late Color tertiary = NgPalette.light.green;
+  late Color alternate = const Color(0xFFE2E0DA);
+  late Color primaryText = NgPalette.light.text;
+  late Color secondaryText = NgPalette.light.mute;
+  late Color primaryBackground = NgPalette.light.bg;
+  late Color secondaryBackground = NgPalette.light.s1;
+  late Color accent1 = const Color(0x24EF7926);
+  late Color accent2 = NgPalette.light.greenBg;
+  late Color accent3 = NgPalette.light.amberBg;
   late Color accent4 = const Color(0xCCFFFFFF);
-  late Color success = const Color(0xFF249689);
-  late Color warning = const Color(0xFFF9CF58);
-  late Color error = const Color(0xFFDC2626);
+  late Color success = NgPalette.light.green;
+  late Color warning = NgPalette.light.amber;
+  late Color error = NgPalette.light.red;
   late Color info = const Color(0xFFFFFFFF);
 }
 
@@ -358,107 +372,107 @@ class ThemeTypography extends Typography {
 
   final FlutterFlowTheme theme;
 
-  String get displayLargeFamily => 'Inter Tight';
+  String get displayLargeFamily => NgFonts.family;
   bool get displayLargeIsCustom => false;
-  TextStyle get displayLarge => GoogleFonts.interTight(
+  TextStyle get displayLarge => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 64.0,
       );
-  String get displayMediumFamily => 'Inter Tight';
+  String get displayMediumFamily => NgFonts.family;
   bool get displayMediumIsCustom => false;
-  TextStyle get displayMedium => GoogleFonts.interTight(
+  TextStyle get displayMedium => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 44.0,
       );
-  String get displaySmallFamily => 'Inter Tight';
+  String get displaySmallFamily => NgFonts.family;
   bool get displaySmallIsCustom => false;
-  TextStyle get displaySmall => GoogleFonts.interTight(
+  TextStyle get displaySmall => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 36.0,
       );
-  String get headlineLargeFamily => 'Inter Tight';
+  String get headlineLargeFamily => NgFonts.family;
   bool get headlineLargeIsCustom => false;
-  TextStyle get headlineLarge => GoogleFonts.interTight(
+  TextStyle get headlineLarge => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 32.0,
       );
-  String get headlineMediumFamily => 'Inter Tight';
+  String get headlineMediumFamily => NgFonts.family;
   bool get headlineMediumIsCustom => false;
-  TextStyle get headlineMedium => GoogleFonts.interTight(
+  TextStyle get headlineMedium => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 28.0,
       );
-  String get headlineSmallFamily => 'Inter Tight';
+  String get headlineSmallFamily => NgFonts.family;
   bool get headlineSmallIsCustom => false;
-  TextStyle get headlineSmall => GoogleFonts.interTight(
+  TextStyle get headlineSmall => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 24.0,
       );
-  String get titleLargeFamily => 'Inter Tight';
+  String get titleLargeFamily => NgFonts.family;
   bool get titleLargeIsCustom => false;
-  TextStyle get titleLarge => GoogleFonts.interTight(
+  TextStyle get titleLarge => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 20.0,
       );
-  String get titleMediumFamily => 'Inter Tight';
+  String get titleMediumFamily => NgFonts.family;
   bool get titleMediumIsCustom => false;
-  TextStyle get titleMedium => GoogleFonts.interTight(
+  TextStyle get titleMedium => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 18.0,
       );
-  String get titleSmallFamily => 'Inter Tight';
+  String get titleSmallFamily => NgFonts.family;
   bool get titleSmallIsCustom => false;
-  TextStyle get titleSmall => GoogleFonts.interTight(
+  TextStyle get titleSmall => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 16.0,
       );
-  String get labelLargeFamily => 'Inter';
+  String get labelLargeFamily => NgFonts.family;
   bool get labelLargeIsCustom => false;
-  TextStyle get labelLarge => GoogleFonts.inter(
+  TextStyle get labelLarge => NgFonts.geist(
         color: theme.secondaryText,
         fontWeight: FontWeight.normal,
         fontSize: 16.0,
       );
-  String get labelMediumFamily => 'Inter';
+  String get labelMediumFamily => NgFonts.family;
   bool get labelMediumIsCustom => false;
-  TextStyle get labelMedium => GoogleFonts.inter(
+  TextStyle get labelMedium => NgFonts.geist(
         color: theme.secondaryText,
         fontWeight: FontWeight.normal,
         fontSize: 14.0,
       );
-  String get labelSmallFamily => 'Inter';
+  String get labelSmallFamily => NgFonts.family;
   bool get labelSmallIsCustom => false;
-  TextStyle get labelSmall => GoogleFonts.inter(
+  TextStyle get labelSmall => NgFonts.geist(
         color: theme.secondaryText,
         fontWeight: FontWeight.normal,
         fontSize: 12.0,
       );
-  String get bodyLargeFamily => 'Inter';
+  String get bodyLargeFamily => NgFonts.family;
   bool get bodyLargeIsCustom => false;
-  TextStyle get bodyLarge => GoogleFonts.inter(
+  TextStyle get bodyLarge => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 16.0,
       );
-  String get bodyMediumFamily => 'Inter';
+  String get bodyMediumFamily => NgFonts.family;
   bool get bodyMediumIsCustom => false;
-  TextStyle get bodyMedium => GoogleFonts.inter(
+  TextStyle get bodyMedium => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 14.0,
       );
-  String get bodySmallFamily => 'Inter';
+  String get bodySmallFamily => NgFonts.family;
   bool get bodySmallIsCustom => false;
-  TextStyle get bodySmall => GoogleFonts.inter(
+  TextStyle get bodySmall => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 12.0,
@@ -473,25 +487,24 @@ class DarkModeTheme extends FlutterFlowTheme {
   @Deprecated('Use tertiary instead')
   Color get tertiaryColor => tertiary;
 
-  // Brand rebrand (parity brief Part 2b, 27 Jul 2026): navy #0F2A47,
-  // gold #E3B23C, teal #1FA98C. primaryBackground is the brand navy
-  // itself; secondaryBackground is a lighter navy tint for card surfaces
-  // to read as distinct from the page background.
-  late Color primary = const Color(0xFFE3B23C);
-  late Color secondary = const Color(0xFFC79A32);
-  late Color tertiary = const Color(0xFF1FA98C);
-  late Color alternate = const Color(0xFF262D34);
-  late Color primaryText = const Color(0xFFFFFFFF);
-  late Color secondaryText = const Color(0xFF94A3B8);
-  late Color primaryBackground = const Color(0xFF0F2A47);
-  late Color secondaryBackground = const Color(0xFF17395E);
-  late Color accent1 = const Color(0x4C4B39EF);
-  late Color accent2 = const Color(0x4D39D2C0);
-  late Color accent3 = const Color(0x4DEE8B60);
-  late Color accent4 = const Color(0xB2262D34);
-  late Color success = const Color(0xFF249689);
-  late Color warning = const Color(0xFFF9CF58);
-  late Color error = const Color(0xFFEF4444);
+  // Redesign (20 Oct 2026): the navy "Dark" variant, from
+  // NgPalette.dark. Orange accent replaces the 27 Jul gold; status
+  // colours are the redesign's green / amber / red.
+  late Color primary = NgPalette.dark.acc;
+  late Color secondary = const Color(0xFFD9701C);
+  late Color tertiary = NgPalette.dark.green;
+  late Color alternate = NgPalette.dark.s3;
+  late Color primaryText = NgPalette.dark.text;
+  late Color secondaryText = NgPalette.dark.mute;
+  late Color primaryBackground = NgPalette.dark.bg;
+  late Color secondaryBackground = NgPalette.dark.s1;
+  late Color accent1 = const Color(0x24F68C36);
+  late Color accent2 = NgPalette.dark.greenBg;
+  late Color accent3 = NgPalette.dark.amberBg;
+  late Color accent4 = const Color(0xB21F3550);
+  late Color success = NgPalette.dark.green;
+  late Color warning = NgPalette.dark.amber;
+  late Color error = NgPalette.dark.red;
   late Color info = const Color(0xFFFFFFFF);
 }
 
@@ -499,9 +512,16 @@ class DarkModeTheme extends FlutterFlowTheme {
 /// distinct from Dark. Same brand accent triad as Dark, but backgrounds
 /// drop to near-black for AMOLED/low-light preference (the "Dim vs Lights
 /// Out" pattern) instead of the brand-navy background Dark uses.
+///
+/// Redesign (20 Oct 2026): Midnight is the DEFAULT look of the handoff —
+/// neutral near-black surfaces from NgPalette.midnight, not navy-tinted.
 class MidnightModeTheme extends DarkModeTheme {
-  late Color primaryBackground = const Color(0xFF07121D);
-  late Color secondaryBackground = const Color(0xFF0F1F30);
+  late Color alternate = NgPalette.midnight.s3;
+  late Color primaryText = NgPalette.midnight.text;
+  late Color secondaryText = NgPalette.midnight.mute;
+  late Color primaryBackground = NgPalette.midnight.bg;
+  late Color secondaryBackground = NgPalette.midnight.s1;
+  late Color accent4 = const Color(0xB21F232B);
 }
 
 class FFDesignTokens {
@@ -569,7 +589,13 @@ extension TextStyleHelper on TextStyle {
     List<Shadow>? shadows,
     String? package,
   }) {
-    if (useGoogleFonts && fontFamily != null && fontFamily.isNotEmpty) {
+    // Geist is a bundled asset, not a Google Fonts download — getFont()
+    // would throw for it, so a Geist family falls through to copyWith.
+    if (useGoogleFonts &&
+        fontFamily != null &&
+        fontFamily.isNotEmpty &&
+        fontFamily != NgFonts.family &&
+        fontFamily != NgFonts.monoFamily) {
       font = GoogleFonts.getFont(fontFamily,
           fontWeight: fontWeight ?? this.fontWeight,
           fontStyle: fontStyle ?? this.fontStyle);

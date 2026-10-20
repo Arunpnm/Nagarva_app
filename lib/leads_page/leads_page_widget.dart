@@ -6,6 +6,7 @@ import '/backend/reminders_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
@@ -15,7 +16,6 @@ import '/components/language_quick_button.dart';
 import '/components/theme_quick_button.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 import 'leads_page_model.dart';
 export 'leads_page_model.dart';
@@ -233,7 +233,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
               Text(
                 value,
                 style: FlutterFlowTheme.of(context).titleMedium.override(
-                      font: GoogleFonts.interTight(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).primary,
                       letterSpacing: 0.0,
                     ),
@@ -241,7 +241,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
               Text(
                 label,
                 style: FlutterFlowTheme.of(context).labelSmall.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).secondaryText,
                       letterSpacing: 0.0,
                     ),
@@ -277,7 +277,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
           title: Text(
             AppLocalizations.of(context).leadsCrm,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -380,7 +380,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
-                                                font: GoogleFonts.inter(
+                                                font: NgFonts.geist(
                                                   fontWeight:
                                                       FlutterFlowTheme.of(
                                                               context)
@@ -450,7 +450,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
-                                                font: GoogleFonts.inter(
+                                                font: NgFonts.geist(
                                                   fontWeight:
                                                       FlutterFlowTheme.of(
                                                               context)
@@ -520,7 +520,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
-                                                font: GoogleFonts.inter(
+                                                font: NgFonts.geist(
                                                   fontWeight:
                                                       FlutterFlowTheme.of(
                                                               context)
@@ -590,7 +590,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
-                                                font: GoogleFonts.inter(
+                                                font: NgFonts.geist(
                                                   fontWeight:
                                                       FlutterFlowTheme.of(
                                                               context)
@@ -660,7 +660,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
-                                                font: GoogleFonts.inter(
+                                                font: NgFonts.geist(
                                                   fontWeight:
                                                       FlutterFlowTheme.of(
                                                               context)
@@ -730,7 +730,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                           style: FlutterFlowTheme.of(context)
                                               .labelMedium
                                               .override(
-                                                font: GoogleFonts.inter(
+                                                font: NgFonts.geist(
                                                   fontWeight:
                                                       FlutterFlowTheme.of(
                                                               context)
@@ -768,7 +768,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                           AppLocalizations.of(context).leads,
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: GoogleFonts.interTight(
+                                    font: NgFonts.geist(
                                       fontWeight: FlutterFlowTheme.of(context)
                                           .titleSmall
                                           .fontWeight,
@@ -814,7 +814,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                     const SizedBox(height: 12),
                                     Text(
                                       'No leads yet',
-                                      style: GoogleFonts.interTight(
+                                      style: NgFonts.geist(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
                                         color: FlutterFlowTheme.of(context)
@@ -826,7 +826,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                       'Add your first enquiry with the + button '
                                       'and it will show up here.',
                                       textAlign: TextAlign.center,
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                         fontSize: 12.5,
                                         height: 1.4,
                                         color: FlutterFlowTheme.of(context)
@@ -939,8 +939,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                                     FlutterFlowTheme.of(context)
                                                         .titleSmall
                                                         .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
+                                                          font: NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)
@@ -974,7 +973,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                                         context)
                                                     .bodySmall
                                                     .override(
-                                                      font: GoogleFonts.inter(
+                                                      font: NgFonts.geist(
                                                         fontWeight:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -1019,7 +1018,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                                         .bodySmall
                                                         .override(
                                                           font:
-                                                              GoogleFonts.inter(
+                                                              NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)
@@ -1062,7 +1061,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                                         .bodySmall
                                                         .override(
                                                           font:
-                                                              GoogleFonts.inter(
+                                                              NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)
@@ -1164,7 +1163,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                                               child: Text(
                                                 leadStatusLabel(
                                                     leadsListItemItem.status),
-                                                style: GoogleFonts.inter(
+                                                style: NgFonts.geist(
                                                   fontSize: 11.0,
                                                   fontWeight: FontWeight.w700,
                                                   color: leadStatusColor(

@@ -3,8 +3,8 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Session 2 Part C — My Team (`sup-team`). Staff in the supervisor's own
 /// branch, with today's attendance state and a mark-present action.
@@ -102,7 +102,7 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
         centerTitle: true,
         title: Text('My Team',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                font: NgFonts.geist(fontWeight: FontWeight.w600))),
         actions: const [SupervisorMenuButton()],
       ),
       body: SafeArea(
@@ -111,7 +111,7 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
             : _team.isEmpty
                 ? Center(
                     child: Text('No staff found for your branch.',
-                        style: GoogleFonts.inter(color: theme.secondaryText)))
+                        style: NgFonts.geist(color: theme.secondaryText)))
                 : ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: _team.length,
@@ -133,12 +133,12 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(s.name,
-                                      style: GoogleFonts.interTight(
+                                      style: NgFonts.geist(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13.5,
                                           color: theme.primaryText)),
                                   Text(s.role ?? '—',
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                           fontSize: 11.5,
                                           color: theme.secondaryText)),
                                 ],

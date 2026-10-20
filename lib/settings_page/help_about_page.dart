@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Settings → Help & About (18 Aug 2026).
 ///
@@ -74,7 +74,7 @@ class HelpAboutPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text('Nagarva',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText)),
@@ -84,7 +84,7 @@ class HelpAboutPage extends StatelessWidget {
                   child: Text(
                     kNagarvaTagline,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12.5,
                         height: 1.45,
                         color: theme.secondaryText),
@@ -92,7 +92,7 @@ class HelpAboutPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text('Version $kAppVersion',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12, color: theme.secondaryText)),
               ],
             ),
@@ -152,7 +152,7 @@ class HelpAboutPage extends StatelessWidget {
             child: Text(
               '© ${DateTime.now().year} Nagarva',
               style:
-                  GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
             ),
           ),
         ],
@@ -164,7 +164,7 @@ class HelpAboutPage extends StatelessWidget {
         padding: const EdgeInsets.only(left: 4, bottom: 8),
         child: Text(
           text.toUpperCase(),
-          style: GoogleFonts.interTight(
+          style: NgFonts.geist(
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
@@ -198,14 +198,14 @@ class HelpAboutPage extends StatelessWidget {
       ListTile(
         leading: Icon(icon, size: 21, color: theme.primary),
         title: Text(title,
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: theme.primaryText)),
         subtitle: subtitle == null
             ? null
             : Text(subtitle,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12, color: theme.secondaryText)),
         trailing: Icon(Icons.open_in_new, size: 16, color: theme.secondaryText),
         onTap: onTap,

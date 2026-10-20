@@ -6,6 +6,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -14,7 +15,6 @@ import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'new_order_page_model.dart';
 import '/backend/order_id_allocator.dart';
 export 'new_order_page_model.dart';
@@ -446,7 +446,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                 ? 'Edit Order'
                 : AppLocalizations.of(context).newOrder,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -504,7 +504,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        font: GoogleFonts.interTight(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleSmall
@@ -665,7 +665,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        font: GoogleFonts.interTight(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleSmall
@@ -1065,7 +1065,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -1103,7 +1103,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                           context)
                                                       .bodyMedium
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -1145,7 +1145,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                           context)
                                                       .bodyMedium
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -1217,8 +1217,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                     headerTextStyle: theme
                                                         .headlineLarge
                                                         .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
+                                                          font: NgFonts.geist(
                                                             fontWeight:
                                                                 FontWeight.w600,
                                                           ),
@@ -1317,7 +1316,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        font: GoogleFonts.interTight(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleSmall
@@ -1420,7 +1419,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   textStyle: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodyMedium
@@ -1485,7 +1484,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   textStyle: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodyMedium
@@ -1545,7 +1544,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   textStyle: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodyMedium
@@ -2386,15 +2385,15 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
           Text(label,
               style: bold
                   ? FlutterFlowTheme.of(context).bodyMedium.override(
-                      font: GoogleFonts.inter(fontWeight: FontWeight.w600))
+                      font: NgFonts.geist(fontWeight: FontWeight.w600))
                   : FlutterFlowTheme.of(context).bodySmall.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).secondaryText)),
           Text('₹${value.toStringAsFixed(0)}',
               style: FlutterFlowTheme.of(context)
                   .bodyMedium
                   .override(
-                      font: GoogleFonts.interTight(
+                      font: NgFonts.geist(
                           fontWeight: FontWeight.w600),
                       color: FlutterFlowTheme.of(context).primary)),
         ],

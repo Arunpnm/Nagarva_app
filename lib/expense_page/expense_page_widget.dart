@@ -3,6 +3,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -10,7 +11,6 @@ import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'expense_page_model.dart';
 export 'expense_page_model.dart';
 
@@ -175,7 +175,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
         ),
         child: Text(
           label,
-          style: GoogleFonts.inter(
+          style: NgFonts.geist(
             fontSize: 12.5,
             fontWeight: FontWeight.w600,
             color: selected ? Colors.white : theme.primaryText,
@@ -201,7 +201,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
           title: Text(
             AppLocalizations.of(context).homePageExpenses,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -260,12 +260,12 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('$_periodLabel Total',
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                       fontSize: 12.5,
                                       color: theme.secondaryText)),
                               const SizedBox(height: 6),
                               Text(_money(total),
-                                  style: GoogleFonts.interTight(
+                                  style: NgFonts.geist(
                                       fontSize: 26,
                                       fontWeight: FontWeight.w700,
                                       color: theme.primaryText)),
@@ -275,7 +275,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                                     ? 'No expenses in this period'
                                     : '$count expense${count == 1 ? '' : 's'}'
                                         '${delta == null ? '' : '  ·  $delta'}',
-                                style: GoogleFonts.inter(
+                                style: NgFonts.geist(
                                   fontSize: 12,
                                   color: delta == null
                                       ? theme.secondaryText
@@ -296,7 +296,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                           AppLocalizations.of(context).liveExpenses,
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: GoogleFonts.interTight(
+                                    font: NgFonts.geist(
                                       fontWeight: FlutterFlowTheme.of(context)
                                           .titleSmall
                                           .fontWeight,
@@ -406,7 +406,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                                                   FlutterFlowTheme.of(context)
                                                       .bodyMedium
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -444,7 +444,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -486,7 +486,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                                                   .titleSmall
                                                   .override(
                                                     font:
-                                                        GoogleFonts.interTight(
+                                                        NgFonts.geist(
                                                       fontWeight:
                                                           FlutterFlowTheme.of(
                                                                   context)
@@ -554,7 +554,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('By Category',
-                              style: GoogleFonts.interTight(
+                              style: NgFonts.geist(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: theme.primaryText)),
@@ -573,7 +573,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                                       size: 34, color: theme.secondaryText),
                                   const SizedBox(height: 10),
                                   Text('Nothing to break down yet',
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                           color: theme.primaryText)),
@@ -581,7 +581,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                                   Text('Categories appear here once you record '
                                       'an expense.',
                                       textAlign: TextAlign.center,
-                                      style: GoogleFonts.inter(
+                                      style: NgFonts.geist(
                                           fontSize: 12,
                                           color: theme.secondaryText)),
                                 ],
@@ -604,7 +604,7 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                                       children: [
                                         Expanded(
                                           child: Text(c.name,
-                                              style: GoogleFonts.inter(
+                                              style: NgFonts.geist(
                                                   fontSize: 13.5,
                                                   fontWeight: FontWeight.w600,
                                                   color: theme.primaryText)),
@@ -613,13 +613,13 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                                           total <= 0
                                               ? '0%'
                                               : '${((c.amount / total) * 100).toStringAsFixed(0)}%',
-                                          style: GoogleFonts.inter(
+                                          style: NgFonts.geist(
                                               fontSize: 12.5,
                                               color: theme.secondaryText),
                                         ),
                                         const SizedBox(width: 12),
                                         Text(_money(c.amount),
-                                            style: GoogleFonts.interTight(
+                                            style: NgFonts.geist(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w700,
                                                 color: theme.primaryText)),
