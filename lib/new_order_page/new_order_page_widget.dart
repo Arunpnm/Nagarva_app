@@ -1401,7 +1401,12 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   controller: _model
                                           .ordServiceDropdownValueController ??=
                                       FormFieldController<String>(null),
-                                  options: [
+                                  // Saved VALUES stay the English strings already in the
+                                  // database; only the labels follow the app language.
+                                  // Localising `options` itself would write translated text
+                                  // into the column (Oct 2026, when the ARBs were filled).
+                                  options: const ['House Shifting', 'Office Shifting', 'Vehicle Transport', 'Storage', 'Packing Only', 'Long Distance'],
+                                  optionLabels: [
                                     AppLocalizations.of(context).houseShifting,
                                     AppLocalizations.of(context).officeShifting,
                                     AppLocalizations.of(context).vehicleTransport,
@@ -1530,7 +1535,12 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   controller:
                                       _model.ordTypeDropdownValueController ??=
                                           FormFieldController<String>(null),
-                                  options: [
+                                  // Saved VALUES stay the English strings already in the
+                                  // database; only the labels follow the app language.
+                                  // Localising `options` itself would write translated text
+                                  // into the column (Oct 2026, when the ARBs were filled).
+                                  options: const ['Direct', 'Porter'],
+                                  optionLabels: [
                                     AppLocalizations.of(context).direct,
                                     AppLocalizations.of(context).newOrderPagePorter
                                   ],

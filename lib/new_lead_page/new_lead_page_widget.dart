@@ -862,7 +862,12 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                     _model.ldServiceDropdownValue ??=
                                         _model.ldService,
                                   ),
-                                  options: [
+                                  // Saved VALUES stay the English strings already in the
+                                  // database; only the labels follow the app language.
+                                  // Localising `options` itself would write translated text
+                                  // into the column (Oct 2026, when the ARBs were filled).
+                                  options: const ['House Shifting', 'Office Shifting', 'Vehicle Transport', 'Storage', 'Packing Only', 'Long Distance'],
+                                  optionLabels: [
                                     AppLocalizations.of(context).houseShifting,
                                     AppLocalizations.of(context).officeShifting,
                                     AppLocalizations.of(context).vehicleTransport,
@@ -973,7 +978,12 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                     _model.ldStatusDropdownValue ??=
                                         _model.ldStatus,
                                   ),
-                                  options: [
+                                  // Saved VALUES stay the English strings already in the
+                                  // database; only the labels follow the app language.
+                                  // Localising `options` itself would write translated text
+                                  // into the column (Oct 2026, when the ARBs were filled).
+                                  options: const ['new', 'contacted', 'survey_done', 'quoted', 'converted', 'lost'],
+                                  optionLabels: [
                                     AppLocalizations.of(context).newLeadPageNew,
                                     AppLocalizations.of(context).newLeadPageContacted,
                                     AppLocalizations.of(context).surveyDone,
@@ -1040,7 +1050,12 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                     _model.ldSourceDropdownValue ??=
                                         _model.ldSource,
                                   ),
-                                  options: [
+                                  // Saved VALUES stay the English strings already in the
+                                  // database; only the labels follow the app language.
+                                  // Localising `options` itself would write translated text
+                                  // into the column (Oct 2026, when the ARBs were filled).
+                                  options: const ['WhatsApp', 'Phone Call', 'Website', 'Porter', 'Referral', 'Walk-in', 'Google', 'JustDial', 'Other'],
+                                  optionLabels: [
                                     AppLocalizations.of(context).whatsapp,
                                     AppLocalizations.of(context).phoneCall,
                                     AppLocalizations.of(context).website,
