@@ -102,7 +102,6 @@ class _SupervisorJobsListPageWidgetState
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
         elevation: 0,
-        centerTitle: true,
         title: Text('My Jobs',
             style: theme.titleLarge.override(
                 font: NgFonts.geist(fontWeight: FontWeight.w600))),

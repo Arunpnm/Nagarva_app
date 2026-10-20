@@ -1962,7 +1962,6 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

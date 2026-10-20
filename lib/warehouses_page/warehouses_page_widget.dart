@@ -114,7 +114,6 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
         title: Text('Warehouses',
             style: theme.headlineSmall.override(
                 font: NgFonts.geist(fontWeight: FontWeight.w600))),
-        centerTitle: true,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

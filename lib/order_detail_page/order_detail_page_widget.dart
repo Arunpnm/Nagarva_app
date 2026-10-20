@@ -1424,7 +1424,6 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

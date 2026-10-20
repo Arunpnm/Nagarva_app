@@ -182,7 +182,6 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
                 font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
       ),
       floatingActionButton: FloatingActionButton.extended(

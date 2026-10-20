@@ -257,7 +257,6 @@ class _OperationsStandalonePageWidgetState
                 font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
         bottom: TabBar(controller: _tabs, tabs: const [
           Tab(text: 'Tracking'),

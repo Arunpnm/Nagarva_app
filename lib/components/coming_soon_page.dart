@@ -28,7 +28,6 @@ class ComingSoonPage extends StatelessWidget {
         title: Text(title,
             style: NgFonts.geist(
                 color: theme.primaryText, fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
       ),
       body: Center(

@@ -212,7 +212,6 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
               fontSize: 22,
               fontWeight: FontWeight.w600),
         ),
-        centerTitle: true,
         elevation: 0,
       ),
       body: _loading

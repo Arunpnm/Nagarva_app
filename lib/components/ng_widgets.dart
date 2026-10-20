@@ -101,7 +101,8 @@ class NgIconTile extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: s?.bg ?? c.s3,
-        borderRadius: BorderRadius.circular(size >= 38 ? 12 : NgRadius.iconTile),
+        borderRadius:
+            BorderRadius.circular(size >= 38 ? 12 : NgRadius.iconTile),
       ),
       child: Icon(icon, size: iconSize, color: s?.fg ?? color ?? c.soft),
     );
@@ -110,7 +111,8 @@ class NgIconTile extends StatelessWidget {
 
 /// Status pill: 20–22px tall, radius 999, 11px semibold.
 class NgPill extends StatelessWidget {
-  const NgPill(this.label, {super.key, this.status = NgStatus.neutral, this.icon});
+  const NgPill(this.label,
+      {super.key, this.status = NgStatus.neutral, this.icon});
 
   final String label;
   final NgStatus status;
@@ -530,6 +532,7 @@ class NgSearchField extends StatelessWidget {
               style: NgFonts.geist(fontSize: 14, color: c.text),
               decoration: InputDecoration(
                 isCollapsed: true,
+                filled: false,
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -546,7 +549,8 @@ class NgSearchField extends StatelessWidget {
 
 /// Circle initial avatar tinted by status (lead cards, hot leads).
 class NgAvatar extends StatelessWidget {
-  const NgAvatar(this.name, {super.key, this.status = NgStatus.neutral, this.size = 34});
+  const NgAvatar(this.name,
+      {super.key, this.status = NgStatus.neutral, this.size = 34});
 
   final String name;
   final NgStatus status;
@@ -614,7 +618,8 @@ class NgCountBadge extends StatelessWidget {
 
 /// Thin progress bar (plan card, month target, order progress).
 class NgProgressBar extends StatelessWidget {
-  const NgProgressBar({super.key, required this.value, this.color, this.height = 6});
+  const NgProgressBar(
+      {super.key, required this.value, this.color, this.height = 6});
 
   /// 0..1
   final double value;

@@ -86,7 +86,6 @@ class _SupervisorAttendancePageWidgetState
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
         elevation: 0,
-        centerTitle: true,
         title: Text('My Attendance',
             style: theme.titleLarge.override(
                 font: NgFonts.geist(fontWeight: FontWeight.w600))),

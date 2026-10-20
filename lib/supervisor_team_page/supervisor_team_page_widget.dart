@@ -99,7 +99,6 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
         elevation: 0,
-        centerTitle: true,
         title: Text('My Team',
             style: theme.titleLarge.override(
                 font: NgFonts.geist(fontWeight: FontWeight.w600))),

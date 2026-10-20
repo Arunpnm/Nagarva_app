@@ -208,7 +208,6 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         // Parity brief Part 2c: there was previously no way to add a
@@ -218,8 +217,8 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
             final saved = await VehicleDetailSheet.show(context);
             if (saved) _loadVehicles();
           },
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          child: const Icon(Icons.add, color: Colors.white),
+          // Colours from the app's FAB theme (redesign accent, Oct 2026).
+          child: const Icon(Icons.add),
         ),
         body: SafeArea(
           top: true,

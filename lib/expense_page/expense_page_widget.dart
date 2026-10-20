@@ -213,7 +213,6 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

@@ -237,7 +237,6 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
               letterSpacing: 0.0,
             ),
           ),
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

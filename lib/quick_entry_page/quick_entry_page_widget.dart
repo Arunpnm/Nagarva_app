@@ -66,7 +66,6 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

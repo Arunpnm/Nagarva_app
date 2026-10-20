@@ -212,7 +212,6 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
         title: Text('LR Register',
             style: theme.titleLarge.override(
                 font: NgFonts.geist(fontWeight: FontWeight.w600), fontSize: 22, fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
       ),
       body: _loading

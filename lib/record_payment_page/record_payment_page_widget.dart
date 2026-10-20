@@ -270,7 +270,6 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                   letterSpacing: 0.0,
                 ),
           ),
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

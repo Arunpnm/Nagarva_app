@@ -671,7 +671,6 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                 font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 20,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
         bottom: TabBar(
           controller: _tabs,

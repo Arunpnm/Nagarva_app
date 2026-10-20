@@ -106,7 +106,6 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
                 font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
         actions: [
           // The catalogue editor moved to Settings -> Survey & Pricing
