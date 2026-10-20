@@ -30,9 +30,10 @@ const kMidnightKey = '__theme_midnight__';
 // Everywhere else inside the app, read from FlutterFlowTheme.of(context)
 // instead of reaching for these.
 // ---------------------------------------------------------------------------
-const Color kBrandGold = Color(0xFFE3B23C);
-const Color kBrandTeal = Color(0xFF1FA98C);
-const Color kBrandNavy = Color(0xFF0F2A47);
+// Redesign (Oct 2026): the accent is the handoff's orange — the gold,
+// teal and navy triad of 27 Jul is retired. Renamed from kBrandGold so
+// the name stops describing a colour it no longer is.
+const Color kBrandAccent = Color(0xFFF68C36);
 
 /// WhatsApp's own brand green. Not part of the Nagarva palette and
 /// deliberately never themed — a WhatsApp button that isn't WhatsApp green
@@ -111,6 +112,11 @@ abstract class FlutterFlowTheme {
         : primary.computeLuminance() > 0.5
             ? Colors.black
             : Colors.white;
+    final c = this is MidnightModeTheme
+        ? NgPalette.midnight
+        : this is LightModeTheme
+            ? NgPalette.light
+            : NgPalette.dark;
     return ThemeData(
       brightness: brightness,
       useMaterial3: false,
@@ -133,39 +139,195 @@ abstract class FlutterFlowTheme {
         surface: secondaryBackground,
         onSurface: primaryText,
       ),
+      // ---- Redesign component themes (Claude Design handoff, Oct 2026).
+      // Most module pages are built from stock Material widgets — Card,
+      // FilledButton, AlertDialog, TextField, ChoiceChip — so theming them
+      // here restyles every screen at once without touching page code:
+      // s1 cards with a hairline and no shadow, 14px-radius accent
+      // buttons with near-black labels, inset fields with 12px corners,
+      // sheet-coloured dialogs and sheets. Values come from NgPalette.
       drawerTheme: DrawerThemeData(
-        backgroundColor: primaryBackground,
-        scrimColor: Colors.black.withValues(alpha: 0.5),
+        backgroundColor: c.sheet,
+        scrimColor: Colors.black.withValues(alpha: 0.6),
       ),
       listTileTheme: ListTileThemeData(
-        iconColor: secondaryText,
-        textColor: primaryText,
+        iconColor: c.soft,
+        textColor: c.text,
+        titleTextStyle: NgFonts.geist(
+            fontSize: 14.5, fontWeight: FontWeight.w500, color: c.text),
+        subtitleTextStyle: NgFonts.geist(fontSize: 12.5, color: c.mute),
       ),
-      iconTheme: IconThemeData(color: secondaryText),
+      iconTheme: IconThemeData(color: c.soft),
+      // Left-aligned 20px title on the page colour, as the handoff's
+      // screen headers are; no elevation or M3 tint when content scrolls.
       appBarTheme: AppBarTheme(
-        backgroundColor: primaryBackground,
-        foregroundColor: primaryText,
-        iconTheme: IconThemeData(color: primaryText),
+        backgroundColor: c.bg,
+        foregroundColor: c.text,
+        iconTheme: IconThemeData(color: c.soft),
+        actionsIconTheme: IconThemeData(color: c.soft),
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: false,
+        titleTextStyle: NgFonts.geist(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.3,
+          color: c.text,
+        ),
       ),
-      dialogTheme: DialogThemeData(backgroundColor: secondaryBackground),
-      bottomSheetTheme:
-          BottomSheetThemeData(backgroundColor: secondaryBackground),
-      popupMenuTheme: PopupMenuThemeData(color: secondaryBackground),
+      cardTheme: CardThemeData(
+        color: c.s1,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(NgRadius.card),
+          side: BorderSide(color: c.w06),
+        ),
+      ),
+      dividerTheme: DividerThemeData(color: c.w06, thickness: 1, space: 1),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: c.accBtn,
+        foregroundColor: NgPalette.onAcc,
+        elevation: 0,
+        focusElevation: 0,
+        hoverElevation: 0,
+        highlightElevation: 0,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NgRadius.tile)),
+      ),
+      filledButtonTheme: FilledButtonThemeData(style: _filledStyle(c)),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: _filledStyle(c)),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: c.text,
+          minimumSize: const Size(0, 44),
+          side: BorderSide(color: c.w15),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(NgRadius.button)),
+          textStyle: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: c.acc,
+          textStyle: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: c.sheet,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: c.w08),
+        ),
+        titleTextStyle: NgFonts.geist(
+            fontSize: 18, fontWeight: FontWeight.w600, color: c.text),
+        contentTextStyle:
+            NgFonts.geist(fontSize: 14, height: 1.4, color: c.soft),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.sheet,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(NgRadius.sheet)),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: c.sheet,
+        elevation: 2,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: c.w08),
+        ),
+        textStyle: NgFonts.geist(fontSize: 14, color: c.text),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: c.s1,
+        selectedColor: c.inv,
+        disabledColor: c.s2,
+        side: BorderSide(color: c.w06),
+        shape: const StadiumBorder(),
+        labelStyle: NgFonts.geist(
+            fontSize: 13, fontWeight: FontWeight.w600, color: c.soft),
+        secondaryLabelStyle: NgFonts.geist(
+            fontSize: 13, fontWeight: FontWeight.w600, color: c.invText),
+        checkmarkColor: c.invText,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: c.text,
+        unselectedLabelColor: c.mute,
+        indicatorColor: c.accBtn,
+        dividerColor: c.w06,
+        labelStyle: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600),
+        unselectedLabelStyle:
+            NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w500),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.all(Colors.white),
+        trackColor: WidgetStateProperty.resolveWith((s) =>
+            s.contains(WidgetState.selected) ? c.accBtn : c.w15),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((s) =>
+            s.contains(WidgetState.selected) ? c.accBtn : Colors.transparent),
+        checkColor: WidgetStateProperty.all(NgPalette.onAcc),
+        side: BorderSide(color: c.hairline(0.25), width: 1.5),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.selected) ? c.accBtn : c.mute),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: c.accBtn,
+        linearTrackColor: c.w07,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: c.inv,
+        contentTextStyle: NgFonts.geist(fontSize: 14, color: c.invText),
+        actionTextColor: c.isLight ? c.accBtn : c.acc,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NgRadius.button)),
+      ),
+      // Fields: inset surface, 12px corners, w1 hairline, accent when
+      // focused. Pages that pass their own borders keep them.
       inputDecorationTheme: InputDecorationTheme(
-        hintStyle: TextStyle(color: secondaryText),
-        labelStyle: TextStyle(color: secondaryText),
-        iconColor: secondaryText,
-        prefixIconColor: secondaryText,
-        suffixIconColor: secondaryText,
-        border: UnderlineInputBorder(
-          borderSide: BorderSide(color: alternate),
+        filled: true,
+        fillColor: c.inset,
+        hintStyle: NgFonts.geist(fontSize: 14, color: c.faint),
+        labelStyle: NgFonts.geist(fontSize: 14, color: c.mute),
+        floatingLabelStyle: NgFonts.geist(fontSize: 14, color: c.acc),
+        iconColor: c.mute,
+        prefixIconColor: c.mute,
+        suffixIconColor: c.mute,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.w1),
         ),
-        enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: alternate),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.w1),
         ),
-        focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: primary),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.acc, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.red),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.red, width: 1.5),
         ),
       ),
       textSelectionTheme: TextSelectionThemeData(
@@ -183,6 +345,20 @@ abstract class FlutterFlowTheme {
           ),
     );
   }
+
+  /// Filled/elevated button style shared by both themes above.
+  static ButtonStyle _filledStyle(NgPalette c) => FilledButton.styleFrom(
+        backgroundColor: c.accBtn,
+        foregroundColor: NgPalette.onAcc,
+        disabledBackgroundColor: c.s2,
+        disabledForegroundColor: c.faint,
+        elevation: 0,
+        minimumSize: const Size(0, 46),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NgRadius.button)),
+        textStyle: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600),
+      );
 
   @Deprecated('Use primary instead')
   Color get primaryColor => primary;

@@ -183,7 +183,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
       await showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Survey link created'),
+          title: Text(AppLocalizations.of(context).ngSurveyLinkCreated),
           content: SelectableText(link),
           actions: [
             TextButton(
@@ -191,11 +191,11 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                 Clipboard.setData(ClipboardData(text: link));
                 Navigator.of(context).pop();
               },
-              child: const Text('Copy & close'),
+              child: Text(AppLocalizations.of(context).ngCopyClose),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
+              child: Text(AppLocalizations.of(context).ngClose),
             ),
           ],
         ),
@@ -284,7 +284,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
     final bySource = <String, int>{};
     for (final l in all) {
       final src = (l.source ?? '').trim();
-      final k = src.isEmpty ? 'Other' : src;
+      final k = src.isEmpty ? AppLocalizations.of(context).ngOther : src;
       bySource[k] = (bySource[k] ?? 0) + 1;
     }
     final ranked = bySource.entries.toList()
@@ -293,7 +293,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
     final rest = ranked.skip(4).fold<int>(0, (s, e) => s + e.value);
     final segs = [
       for (final e in top) (e.key, e.value),
-      if (rest > 0) ('Other', rest),
+      if (rest > 0) (AppLocalizations.of(context).ngOther, rest),
     ];
     final segColors = [c.acc, c.blue, c.green, c.amber, c.faint];
 
@@ -322,14 +322,14 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('All leads',
+          Text(AppLocalizations.of(context).ngAllLeads,
               style: NgFonts.geist(fontSize: 13, color: c.mute)),
           const SizedBox(height: 14),
           Row(
             children: [
-              stat('Conversion', conv == null ? '—' : '$conv%'),
+              stat(AppLocalizations.of(context).ngConversion, conv == null ? '—' : '$conv%'),
               const SizedBox(width: 10),
-              stat('Open', '$open'),
+              stat(AppLocalizations.of(context).ngOpen, '$open'),
               const SizedBox(width: 10),
               stat(AppLocalizations.of(context).won, '$won'),
             ],
@@ -434,7 +434,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                   Padding(
                     padding: const EdgeInsets.only(right: 6),
                     child: Tooltip(
-                      message: 'Survey response received',
+                      message: AppLocalizations.of(context).ngSurveyResponse,
                       child: Icon(Icons.assignment_turned_in_rounded,
                           size: 18, color: c.green),
                     ),
@@ -492,7 +492,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                 children: [
                   Icon(Icons.alarm_rounded, size: 16, color: c.amber),
                   const SizedBox(width: 6),
-                  Text('Follow-up overdue',
+                  Text(AppLocalizations.of(context).ngFollowUpOverdue,
                       style: NgFonts.geist(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w500,
@@ -506,7 +506,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
             children: [
               Expanded(
                 child: NgSecondaryButton(
-                  label: 'Call',
+                  label: AppLocalizations.of(context).ngCall,
                   icon: Icons.call_rounded,
                   iconColor: c.green,
                   height: 40,
@@ -516,7 +516,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
               const SizedBox(width: 6),
               Expanded(
                 child: NgSecondaryButton(
-                  label: 'WhatsApp',
+                  label: AppLocalizations.of(context).ngWhatsApp,
                   icon: Icons.chat_rounded,
                   iconColor: c.green,
                   height: 40,
@@ -543,7 +543,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                         ),
                       )
                     : NgSecondaryButton(
-                        label: 'Survey',
+                        label: AppLocalizations.of(context).ngSurvey,
                         icon: Icons.assignment_rounded,
                         iconColor: c.acc,
                         height: 40,
@@ -583,7 +583,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                 action: NgPrimaryButton(
                   compact: true,
                   icon: Icons.add_rounded,
-                  label: 'New lead',
+                  label: AppLocalizations.of(context).ngNewLead,
                   onPressed: () =>
                       context.pushNamed(NewLeadPageWidget.routeName),
                 ),
@@ -593,7 +593,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
               const SizedBox(height: 14),
               NgSearchField(
                 controller: _searchCtrl,
-                hint: 'Name or phone',
+                hint: AppLocalizations.of(context).ngNameOrPhone,
                 onChanged: (_) => safeSetState(() {}),
               ),
               const SizedBox(height: 14),
@@ -623,8 +623,8 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                       const SizedBox(height: 12),
                       Text(
                         _searchCtrl.text.trim().isEmpty
-                            ? 'No leads yet'
-                            : 'No leads match',
+                            ? AppLocalizations.of(context).ngNoLeadsYet
+                            : AppLocalizations.of(context).ngNoLeadsMatch,
                         style: NgFonts.geist(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -632,7 +632,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Add an enquiry with New lead and it will show up here.',
+                        AppLocalizations.of(context).ngLeadsEmptyHint,
                         textAlign: TextAlign.center,
                         style: NgFonts.geist(
                             fontSize: 12.5, height: 1.4, color: c.mute),

@@ -58,7 +58,6 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        centerTitle: true,
         elevation: 0,
       ),
       body: SafeArea(

@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arun_p_k_r_s/components/mobile_bottom_nav.dart';
+import 'package:arun_p_k_r_s/l10n/gen/app_localizations.dart';
 import 'package:arun_p_k_r_s/nav_items.dart';
 
 const _items = <NavItem>[
@@ -72,6 +73,9 @@ Future<void> _pumpBar(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(MaterialApp(
+    // The bar's labels come from the ARB files since Oct 2026.
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
       bottomNavigationBar: MobileBottomNav(
         items: items,

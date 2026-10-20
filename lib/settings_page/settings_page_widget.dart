@@ -109,23 +109,24 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     'ta': 'தமிழ்',
     'hi': 'हिन्दी',
     'kn': 'ಕನ್ನಡ',
+    'te': 'తెలుగు',
+    'ml': 'മലയാളം',
   };
 
   /// Same segmented-chip pattern as [_themeVariantChip] above.
   ///
   /// Note this switches the app locale immediately and persists it via
-  /// `FFLocalizations.storeLocale`, so it survives a restart. Coverage is
-  /// currently partial by construction — only the 18 FlutterFlow-export
-  /// pages read from the translation map, and none of its non-English
-  /// slots are filled yet, so today every locale renders English via the
-  /// fallback added in internationalization.dart. That is the intended
-  /// interim state: the control and the plumbing land first, the strings
-  /// follow. It must never render blank, which is what the fallback fix
-  /// guarantees.
-  Widget _languageChip(BuildContext context, String code) {
+  /// `FFLocalizations.storeLocale`, so it survives a restart. The ARB
+  /// files carry every message for all six locales since Oct 2026
+  /// (Claude-written, pending native-speaker review); text that is still
+  /// a hard-coded English literal in a page stays English until that page
+  /// is moved onto AppLocalizations. It must never render blank, which is
+  /// what the fallback in internationalization.dart guarantees.
+  Widget _languageChip(BuildContext context, String code, double width) {
     final selected = FFLocalizations.of(context).languageCode == code;
     final theme = FlutterFlowTheme.of(context);
-    return Expanded(
+    return SizedBox(
+      width: width,
       child: GestureDetector(
         onTap: () => MyApp.of(context).setLocale(code),
         child: Container(
@@ -180,7 +181,6 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -1080,16 +1080,22 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                                     ],
                                   ),
                                   const SizedBox(height: 10.0),
-                                  Row(
-                                    children: [
-                                      for (final code
-                                          in FFLocalizations.languages()) ...[
-                                        _languageChip(context, code),
-                                        if (code !=
-                                            FFLocalizations.languages().last)
-                                          const SizedBox(width: 6),
-                                      ],
-                                    ],
+                                  // Six languages since Oct 2026: three per
+                                  // row, so names in their own script fit
+                                  // without truncating on a 360dp phone.
+                                  LayoutBuilder(
+                                    builder: (context, box) {
+                                      final w = (box.maxWidth - 12) / 3;
+                                      return Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: [
+                                          for (final code
+                                              in FFLocalizations.languages())
+                                            _languageChip(context, code, w),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ],
                               ),

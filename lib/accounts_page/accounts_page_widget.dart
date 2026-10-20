@@ -483,7 +483,6 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
               label: const Text('CSV'),
             ),
           ],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

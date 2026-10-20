@@ -361,7 +361,6 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
         title: Text(_card?.name ?? 'Rate Card'),
-        centerTitle: true,
         elevation: 0,
         bottom: TabBar(controller: _tabs, isScrollable: true, tabs: const [
           Tab(text: 'Charges'),

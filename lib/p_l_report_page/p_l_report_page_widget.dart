@@ -231,7 +231,6 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

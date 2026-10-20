@@ -465,7 +465,6 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                 font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 20,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
         actions: [
           if (t != null)

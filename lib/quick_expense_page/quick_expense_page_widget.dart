@@ -92,7 +92,6 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -218,7 +217,12 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   controller: _model
                                           .expCategoryDropdownValueController ??=
                                       FormFieldController<String>(null),
-                                  options: [
+                                  // Saved VALUES stay the English strings already in the
+                                  // database; only the labels follow the app language.
+                                  // Localising `options` itself would write translated text
+                                  // into the column (Oct 2026, when the ARBs were filled).
+                                  options: const ['Fuel', 'Vehicle Maintenance', 'Office', 'Material', 'Salary', 'Other'],
+                                  optionLabels: [
                                     AppLocalizations.of(context).fuel,
                                     AppLocalizations.of(context).vehicleMaintenance,
                                     AppLocalizations.of(context).office,

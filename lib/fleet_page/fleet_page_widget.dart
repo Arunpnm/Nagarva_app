@@ -98,7 +98,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
     final days = date.difference(DateTime(now.year, now.month, now.day)).inDays;
     if (days > 30) return const SizedBox.shrink();
     final expired = days < 0;
-    final color = expired ? const Color(0xFFC62828) : const Color(0xFFE6A400);
+    final color = expired ? NgPalette.of(context).red : NgPalette.of(context).amber;
     final text =
         expired ? '$label expired ${-days}d ago' : '$label expires in ${days}d';
     return Container(
@@ -208,7 +208,6 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         // Parity brief Part 2c: there was previously no way to add a
@@ -218,8 +217,8 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
             final saved = await VehicleDetailSheet.show(context);
             if (saved) _loadVehicles();
           },
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          child: const Icon(Icons.add, color: Colors.white),
+          // Colours from the app's FAB theme (redesign accent, Oct 2026).
+          child: const Icon(Icons.add),
         ),
         body: SafeArea(
           top: true,

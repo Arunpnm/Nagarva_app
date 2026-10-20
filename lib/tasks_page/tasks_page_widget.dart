@@ -471,7 +471,6 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
                 font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 19,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
         bottom: TabBar(
           controller: _tabs,

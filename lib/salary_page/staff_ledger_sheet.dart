@@ -479,8 +479,8 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
             Row(
               children: [
                 _chip('MONTH EARNINGS', earned,
-                    color: const Color(0xFF2E7D32)),
-                _chip('PAID OUT', paid, color: const Color(0xFF1565C0)),
+                    color: NgPalette.of(context).green),
+                _chip('PAID OUT', paid, color: NgPalette.of(context).blue),
                 _chip('BALANCE TO PAY', balance,
                     color: balance > 0 ? theme.primary : null),
                 _chip('ADVANCE BALANCE', advance,
@@ -492,12 +492,12 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
               children: [
                 _actionBtn('Pay Salary', Icons.payments, _paySalary),
                 _actionBtn('Give Advance', Icons.trending_up, _giveAdvance,
-                    color: const Color(0xFF1565C0)),
+                    color: NgPalette.of(context).blue),
                 _actionBtn(
                     'Settle Advance',
                     Icons.check_circle,
                     advance > 0 ? _settleAdvance : null,
-                    color: const Color(0xFF2E7D32)),
+                    color: NgPalette.of(context).green),
               ],
             ),
             const SizedBox(height: 18),
@@ -538,7 +538,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                           style: NgFonts.geist(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF2E7D32))),
+                              color: NgPalette.of(context).green)),
                     ],
                   ),
                 );
@@ -579,7 +579,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                             style: NgFonts.geist(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1565C0))),
+                                color: NgPalette.of(context).blue)),
                       ],
                     ),
                   )),

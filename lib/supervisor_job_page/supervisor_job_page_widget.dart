@@ -723,7 +723,6 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          centerTitle: true,
           elevation: 0.0,
           actions: const [SupervisorMenuButton()],
         ),

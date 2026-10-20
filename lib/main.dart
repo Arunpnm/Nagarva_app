@@ -467,6 +467,8 @@ class _MyAppState extends State<MyApp> {
         Locale('ta'),
         Locale('hi'),
         Locale('kn'),
+        Locale('te'),
+        Locale('ml'),
       ],
       // Item 9: these used to be bare `ThemeData(brightness: ...)` with no
       // brand colours at all, so every Material-themed widget that
@@ -1228,7 +1230,7 @@ class _NavBarPageState extends State<NavBarPage>
                   ? [
                       (
                         icon: Icons.apps_rounded,
-                        label: 'More',
+                        label: AppLocalizations.of(context).ngNavMore,
                         badge: 0,
                         onTap: () => MoreSheet.show(context,
                             currentPageName: _currentPageName),

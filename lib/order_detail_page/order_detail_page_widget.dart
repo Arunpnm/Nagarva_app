@@ -1424,7 +1424,6 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -1441,6 +1440,13 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Redesign: the journey strip — every stage of this
+                    // order on one screen. See OrderJourneyPageWidget.
+                    if (widget.orderId != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: JourneyEntryCard(orderId: widget.orderId),
+                      ),
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(

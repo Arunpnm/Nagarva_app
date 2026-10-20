@@ -308,7 +308,6 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
             style: theme.titleLarge.override(
                 font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22)),
-        centerTitle: true,
         elevation: 0,
         bottom: TabBar(
           controller: _tabs,

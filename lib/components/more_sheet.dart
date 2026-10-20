@@ -69,7 +69,12 @@ class _MoreSheetState extends State<MoreSheet> {
     final q = _query.text.trim().toLowerCase();
     return navItemsForCurrentSession()
         .where((e) => allowed == null || allowed.contains(e.name))
-        .where((e) => q.isEmpty || e.label.toLowerCase().contains(q))
+        // Matches the English name or the label in the app's language,
+        // so a Tamil user can type either.
+        .where((e) =>
+            q.isEmpty ||
+            e.label.toLowerCase().contains(q) ||
+            localizedNavLabel(context, e).toLowerCase().contains(q))
         .toList();
   }
 
@@ -83,8 +88,11 @@ class _MoreSheetState extends State<MoreSheet> {
     final c = NgPalette.of(context);
     final items = _visibleItems();
     final q = _query.text.trim().toLowerCase();
+    final l = AppLocalizations.of(context);
     final showQuick = isOwnerOrManagerSession &&
-        (q.isEmpty || 'quick entry'.contains(q));
+        (q.isEmpty ||
+            'quick entry'.contains(q) ||
+            l.ngQuickEntry.toLowerCase().contains(q));
 
     final groups = <({String name, List<_Tile> tiles})>[];
     for (final group in [...kNavGroups, kNavGroupOther]) {
@@ -94,7 +102,7 @@ class _MoreSheetState extends State<MoreSheet> {
               : group == kNavGroupOther)
           .map((e) => _Tile(
                 icon: e.icon,
-                label: e.label,
+                label: localizedNavLabel(context, e),
                 badge: e.name == 'OperationsPage',
                 onTap: () => _open(e.name),
               ))
@@ -104,7 +112,7 @@ class _MoreSheetState extends State<MoreSheet> {
           0,
           _Tile(
             icon: Icons.add_circle_outline_rounded,
-            label: 'Quick entry',
+            label: l.ngQuickEntry,
             onTap: () {
               Navigator.of(context).pop();
               QuickEntryDialog.show(context);
@@ -158,10 +166,11 @@ class _MoreSheetState extends State<MoreSheet> {
                         style: NgFonts.geist(fontSize: 14, color: c.text),
                         decoration: InputDecoration(
                           isCollapsed: true,
+                          filled: false,
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
-                          hintText: 'Search modules',
+                          hintText: l.ngSearchModules,
                           hintStyle:
                               NgFonts.geist(fontSize: 14, color: c.faint),
                         ),
@@ -179,7 +188,7 @@ class _MoreSheetState extends State<MoreSheet> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
                       child: Text(
-                        g.name.toUpperCase(),
+                        localizedNavGroup(context, g.name).toUpperCase(),
                         style: NgFonts.geist(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -204,7 +213,7 @@ class _MoreSheetState extends State<MoreSheet> {
                       padding: const EdgeInsets.only(top: 40),
                       child: Center(
                         child: Text(
-                          'No module matches',
+                          l.ngNoModuleMatches,
                           style: NgFonts.geist(fontSize: 13.5, color: c.mute),
                         ),
                       ),
@@ -224,7 +233,7 @@ class _MoreSheetState extends State<MoreSheet> {
                     Expanded(
                       child: _FooterButton(
                         icon: Icons.settings_rounded,
-                        label: 'Settings',
+                        label: l.ngMenuSettings,
                         onTap: () => _open('SettingsPage'),
                       ),
                     ),
@@ -233,7 +242,7 @@ class _MoreSheetState extends State<MoreSheet> {
                   Expanded(
                     child: _FooterButton(
                       icon: Icons.support_agent_rounded,
-                      label: 'Help',
+                      label: l.ngHelp,
                       onTap: () {
                         Navigator.of(context).pop();
                         context.pushNamed(HelpAboutPage.routeName);
@@ -304,7 +313,7 @@ class _MoreSheetState extends State<MoreSheet> {
                       Icon(Icons.swap_horiz_rounded, size: 15, color: c.mute),
                       const SizedBox(width: 4),
                       Text(
-                        '$orgs orgs · tap to switch',
+                        AppLocalizations.of(context).ngOrgsSwitch('$orgs'),
                         style: NgFonts.geist(fontSize: 12.5, color: c.mute),
                       ),
                     ],
