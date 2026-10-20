@@ -1947,5 +1947,440 @@
   "leaveBlankIfNoneCollectedYet": "Leave blank if none collected yet",
   "@leaveBlankIfNoneCollectedYet": {
     "description": "NewOrderPage — porter section hint. Same recovery as cashCollectedByPorter (old key: porcashcol2)."
+  },
+  "jrTitle": "Order journey",
+  "@jrTitle": {
+    "description": "OrderJourneyPage — screen title, and the button that opens it from Lead/Order details"
+  },
+  "jrStageLead": "Lead",
+  "@jrStageLead": {
+    "description": "OrderJourneyPage — stage 1"
+  },
+  "jrStageFollowUp": "Follow-up",
+  "@jrStageFollowUp": {
+    "description": "OrderJourneyPage — stage 2"
+  },
+  "jrStageSurvey": "Survey",
+  "@jrStageSurvey": {
+    "description": "OrderJourneyPage — stage 3"
+  },
+  "jrStageQuote": "Quote & confirm",
+  "@jrStageQuote": {
+    "description": "OrderJourneyPage — stage 4"
+  },
+  "jrStageSupervisor": "Supervisor",
+  "@jrStageSupervisor": {
+    "description": "OrderJourneyPage — stage 5"
+  },
+  "jrStageMoveDay": "Move day",
+  "@jrStageMoveDay": {
+    "description": "OrderJourneyPage — stage 6"
+  },
+  "jrStageInvoice": "Invoice",
+  "@jrStageInvoice": {
+    "description": "OrderJourneyPage — stage 7"
+  },
+  "jrStagePayment": "Payment & issues",
+  "@jrStagePayment": {
+    "description": "OrderJourneyPage — stage 8"
+  },
+  "jrStageClosed": "Closed",
+  "@jrStageClosed": {
+    "description": "OrderJourneyPage — stage 9"
+  },
+  "jrStateDone": "Done",
+  "@jrStateDone": {
+    "description": "OrderJourneyPage — stage state pill"
+  },
+  "jrStateSkipped": "Skipped",
+  "@jrStateSkipped": {
+    "description": "OrderJourneyPage — stage state pill"
+  },
+  "jrStateCurrent": "Now",
+  "@jrStateCurrent": {
+    "description": "OrderJourneyPage — stage state pill for the current stage"
+  },
+  "jrStatePending": "Later",
+  "@jrStatePending": {
+    "description": "OrderJourneyPage — stage state pill for a stage not reached yet"
+  },
+  "jrDirectOrder": "Skipped · direct order",
+  "@jrDirectOrder": {
+    "description": "OrderJourneyPage — follow-up/survey summary on an order booked without a lead"
+  },
+  "jrMoveDate": "Move date",
+  "@jrMoveDate": {
+    "description": "OrderJourneyPage — header tile"
+  },
+  "jrRoute": "Route",
+  "@jrRoute": {
+    "description": "OrderJourneyPage — header tile"
+  },
+  "jrOrderValue": "Order value",
+  "@jrOrderValue": {
+    "description": "OrderJourneyPage — header tile"
+  },
+  "jrNotSet": "Not set",
+  "@jrNotSet": {
+    "description": "OrderJourneyPage — header tile with no value"
+  },
+  "jrDocuments": "Documents",
+  "@jrDocuments": {
+    "description": "OrderJourneyPage — documents panel title"
+  },
+  "jrDocQuote": "Quotation",
+  "@jrDocQuote": {
+    "description": "OrderJourneyPage — document card"
+  },
+  "jrDocInvoice": "Tax invoice",
+  "@jrDocInvoice": {
+    "description": "OrderJourneyPage — document card"
+  },
+  "jrDocReceipts": "Money receipts",
+  "@jrDocReceipts": {
+    "description": "OrderJourneyPage — document card"
+  },
+  "jrDocLr": "Lorry receipt",
+  "@jrDocLr": {
+    "description": "OrderJourneyPage — document card"
+  },
+  "jrDocReady": "Ready · tap to view",
+  "@jrDocReady": {
+    "description": "OrderJourneyPage — document card state"
+  },
+  "jrDocAfter": "After {stage}",
+  "@jrDocAfter": {
+    "description": "OrderJourneyPage — document card state; {stage} is a stage name",
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "jrCreated": "Created {date}",
+  "@jrCreated": {
+    "description": "OrderJourneyPage — lead stage line",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "jrSource": "Source: {source}",
+  "@jrSource": {
+    "description": "OrderJourneyPage — lead stage line",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "jrService": "Service: {service}",
+  "@jrService": {
+    "description": "OrderJourneyPage — lead stage line",
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "jrNoCalls": "No calls logged yet",
+  "@jrNoCalls": {
+    "description": "OrderJourneyPage — follow-up summary"
+  },
+  "jrCallsLogged": "{count} calls logged",
+  "@jrCallsLogged": {
+    "description": "OrderJourneyPage — follow-up summary",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "jrOutcomeQ": "How did the call go?",
+  "@jrOutcomeQ": {
+    "description": "OrderJourneyPage — follow-up form label"
+  },
+  "jrOutNoAnswer": "Not reachable",
+  "@jrOutNoAnswer": {
+    "description": "OrderJourneyPage — call outcome chip"
+  },
+  "jrOutCallback": "Call back",
+  "@jrOutCallback": {
+    "description": "OrderJourneyPage — call outcome chip"
+  },
+  "jrOutInterested": "Interested",
+  "@jrOutInterested": {
+    "description": "OrderJourneyPage — call outcome chip"
+  },
+  "jrOutNotInterested": "Not interested",
+  "@jrOutNotInterested": {
+    "description": "OrderJourneyPage — call outcome chip"
+  },
+  "jrCallNotes": "Notes from the call",
+  "@jrCallNotes": {
+    "description": "OrderJourneyPage — follow-up notes hint"
+  },
+  "jrNextFollowUp": "Next follow-up",
+  "@jrNextFollowUp": {
+    "description": "OrderJourneyPage — follow-up date label"
+  },
+  "jrToday": "Today",
+  "@jrToday": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrTomorrow": "Tomorrow",
+  "@jrTomorrow": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrIn2Days": "In 2 days",
+  "@jrIn2Days": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrNextWeek": "Next week",
+  "@jrNextWeek": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrPickDate": "Pick date",
+  "@jrPickDate": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrNoNext": "None",
+  "@jrNoNext": {
+    "description": "OrderJourneyPage — no next follow-up"
+  },
+  "jrLogCall": "Log call",
+  "@jrLogCall": {
+    "description": "OrderJourneyPage — button"
+  },
+  "jrCallLogged": "Call logged",
+  "@jrCallLogged": {
+    "description": "OrderJourneyPage — snackbar"
+  },
+  "jrPickOutcome": "Pick how the call went",
+  "@jrPickOutcome": {
+    "description": "OrderJourneyPage — validation"
+  },
+  "jrSurveyWaiting": "Survey link sent · waiting for the customer",
+  "@jrSurveyWaiting": {
+    "description": "OrderJourneyPage — survey summary"
+  },
+  "jrSurveyDone": "Customer submitted the survey",
+  "@jrSurveyDone": {
+    "description": "OrderJourneyPage — survey summary"
+  },
+  "jrNoSurvey": "No survey yet",
+  "@jrNoSurvey": {
+    "description": "OrderJourneyPage — survey summary"
+  },
+  "jrOpenSurveyQuote": "Open survey & quote",
+  "@jrOpenSurveyQuote": {
+    "description": "OrderJourneyPage — button opening Lead details"
+  },
+  "jrNoQuote": "No quote yet",
+  "@jrNoQuote": {
+    "description": "OrderJourneyPage — quote summary"
+  },
+  "jrQuoteLine": "Quote {amount}",
+  "@jrQuoteLine": {
+    "description": "OrderJourneyPage — quote version line; {amount} is formatted money",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "jrOrderConfirmed": "Order {id} confirmed",
+  "@jrOrderConfirmed": {
+    "description": "OrderJourneyPage — quote stage summary",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "jrLeadLost": "Lead marked lost",
+  "@jrLeadLost": {
+    "description": "OrderJourneyPage — shown instead of a current stage"
+  },
+  "jrNoSupervisor": "No supervisor yet",
+  "@jrNoSupervisor": {
+    "description": "OrderJourneyPage — supervisor summary"
+  },
+  "jrSupervisorIs": "Supervisor: {name}",
+  "@jrSupervisorIs": {
+    "description": "OrderJourneyPage — supervisor summary",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "jrCrew": "Crew on the job: {count}",
+  "@jrCrew": {
+    "description": "OrderJourneyPage — supervisor/move line",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "jrAssignInOrder": "Assign supervisor",
+  "@jrAssignInOrder": {
+    "description": "OrderJourneyPage — button opening Order details crew section"
+  },
+  "jrNotStarted": "Not started",
+  "@jrNotStarted": {
+    "description": "OrderJourneyPage — move day summary"
+  },
+  "jrMoveStarted": "Started {time}",
+  "@jrMoveStarted": {
+    "description": "OrderJourneyPage — move day summary",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "jrMoveFinished": "Finished {time}",
+  "@jrMoveFinished": {
+    "description": "OrderJourneyPage — move day summary",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "jrOpenFieldJob": "Open field job",
+  "@jrOpenFieldJob": {
+    "description": "OrderJourneyPage — button opening the supervisor job screen"
+  },
+  "jrNoInvoice": "Invoice not generated",
+  "@jrNoInvoice": {
+    "description": "OrderJourneyPage — invoice summary and close blocker"
+  },
+  "jrInvoiceNo": "Invoice {no}",
+  "@jrInvoiceNo": {
+    "description": "OrderJourneyPage — invoice summary",
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "jrSigned": "Customer signed",
+  "@jrSigned": {
+    "description": "OrderJourneyPage — invoice line"
+  },
+  "jrNotSigned": "Customer signature missing",
+  "@jrNotSigned": {
+    "description": "OrderJourneyPage — invoice line and close blocker"
+  },
+  "jrOpenOrder": "Open order",
+  "@jrOpenOrder": {
+    "description": "OrderJourneyPage — button opening Order details"
+  },
+  "jrTotal": "Total",
+  "@jrTotal": {
+    "description": "OrderJourneyPage — payment tile"
+  },
+  "jrPaid": "Paid",
+  "@jrPaid": {
+    "description": "OrderJourneyPage — payment tile"
+  },
+  "jrBalance": "Balance",
+  "@jrBalance": {
+    "description": "OrderJourneyPage — payment tile"
+  },
+  "jrRecordPayment": "Record payment",
+  "@jrRecordPayment": {
+    "description": "OrderJourneyPage — button"
+  },
+  "jrTickets": "Tickets",
+  "@jrTickets": {
+    "description": "OrderJourneyPage — section label"
+  },
+  "jrNoTickets": "No tickets",
+  "@jrNoTickets": {
+    "description": "OrderJourneyPage — tickets empty"
+  },
+  "jrTicketHint": "e.g. AC fitting pending",
+  "@jrTicketHint": {
+    "description": "OrderJourneyPage — new ticket hint"
+  },
+  "jrRaiseTicket": "Raise ticket",
+  "@jrRaiseTicket": {
+    "description": "OrderJourneyPage — button"
+  },
+  "jrResolve": "Resolve",
+  "@jrResolve": {
+    "description": "OrderJourneyPage — button"
+  },
+  "jrTicketRaised": "Ticket raised",
+  "@jrTicketRaised": {
+    "description": "OrderJourneyPage — snackbar"
+  },
+  "jrTicketResolved": "Ticket resolved",
+  "@jrTicketResolved": {
+    "description": "OrderJourneyPage — snackbar"
+  },
+  "jrBlockTicket": "A ticket is still open",
+  "@jrBlockTicket": {
+    "description": "OrderJourneyPage — close blocker"
+  },
+  "jrBlockBalance": "Balance of {amount} is due",
+  "@jrBlockBalance": {
+    "description": "OrderJourneyPage — close blocker",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "jrCloseOrder": "Close order",
+  "@jrCloseOrder": {
+    "description": "OrderJourneyPage — button opening the audited close on Order details"
+  },
+  "jrClosedOn": "Closed {date}",
+  "@jrClosedOn": {
+    "description": "OrderJourneyPage — closed summary",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "jrNotClosed": "Open",
+  "@jrNotClosed": {
+    "description": "OrderJourneyPage — closed stage summary while open"
+  },
+  "jrPaymentLine": "{amount} · {mode}",
+  "@jrPaymentLine": {
+    "description": "OrderJourneyPage — payment history line",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "jrCouldNotLoad": "Could not load this journey",
+  "@jrCouldNotLoad": {
+    "description": "OrderJourneyPage — error"
+  },
+  "jrRetry": "Retry",
+  "@jrRetry": {
+    "description": "OrderJourneyPage — error action"
+  },
+  "jrCouldNotSave": "Could not save: {error}",
+  "@jrCouldNotSave": {
+    "description": "OrderJourneyPage — error snackbar",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

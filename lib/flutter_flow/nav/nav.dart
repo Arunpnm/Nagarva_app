@@ -429,6 +429,17 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             orderId: params.getParam('orderId', ParamType.String),
           ),
         ),
+        // Redesign (20 Oct 2026): the order journey — a read model over the
+        // lead and order, opened from Lead/Order Details. Either id is
+        // enough; see JourneyLoader.
+        FFRoute(
+          name: OrderJourneyPageWidget.routeName,
+          path: OrderJourneyPageWidget.routePath,
+          builder: (context, params) => OrderJourneyPageWidget(
+            leadId: params.getParam('leadId', ParamType.String),
+            orderId: params.getParam('orderId', ParamType.String),
+          ),
+        ),
         FFRoute(
           name: QuickExpensePageWidget.routeName,
           path: QuickExpensePageWidget.routePath,

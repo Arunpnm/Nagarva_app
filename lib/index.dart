@@ -46,6 +46,8 @@ export '/trips_page/trip_detail_page_widget.dart' show TripDetailPageWidget;
 export '/tasks_page/tasks_page_widget.dart' show TasksPageWidget;
 export '/reports_page/reports_page_widget.dart' show ReportsPageWidget;
 export '/users_page/users_page_widget.dart' show UsersPageWidget;
+export '/order_journey_page/order_journey_page_widget.dart'
+    show OrderJourneyPageWidget, JourneyEntryCard;
 export '/record_payment_page/record_payment_page_widget.dart'
     show RecordPaymentPageWidget;
 export '/quick_expense_page/quick_expense_page_widget.dart'
