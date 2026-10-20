@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 /// Per-staff ledger sheet (Week 3b), modelled on the APC "Salary & Staff"
@@ -283,12 +283,12 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('$day',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: theme.primaryText)),
             Text(mark.isEmpty ? '·' : mark,
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 10, fontWeight: FontWeight.w700, color: colour)),
           ],
         ),
@@ -304,7 +304,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Attendance — ${DateFormat('MMMM yyyy').format(month)}',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: theme.primaryText)),
@@ -313,7 +313,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
           'Auto-derived from orders. Present = assigned to at least one '
           'order that day.',
           style:
-              GoogleFonts.inter(fontSize: 11, color: theme.secondaryText),
+              NgFonts.geist(fontSize: 11, color: theme.secondaryText),
         ),
         const SizedBox(height: 8),
         Row(
@@ -322,7 +322,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
               Expanded(
                 child: Center(
                   child: Text(d,
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: theme.secondaryText)),
@@ -344,7 +344,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
             Icon(Icons.check_circle, size: 14, color: theme.success),
             const SizedBox(width: 4),
             Text('Present: $present day${present == 1 ? '' : 's'}',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: theme.primaryText)),
@@ -352,7 +352,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
             Icon(Icons.cancel, size: 14, color: theme.error),
             const SizedBox(width: 4),
             Text('Absent: $absent day${absent == 1 ? '' : 's'}',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: theme.primaryText)),
@@ -377,14 +377,14 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
         child: Column(
           children: [
             Text('₹${value.toStringAsFixed(0)}',
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
                     color: color ?? theme.primaryText)),
             const SizedBox(height: 2),
             Text(label,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 9.5, color: theme.secondaryText)),
           ],
         ),
@@ -409,7 +409,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
           ),
           icon: Icon(icon, size: 15),
           label: Text(label,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 11.5, fontWeight: FontWeight.w700)),
         ),
       ),
@@ -452,7 +452,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(widget.staff.name,
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: theme.primaryText)),
@@ -462,7 +462,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                             widget.staff.role!,
                           DateFormat('MMMM yyyy').format(widget.month),
                         ].join(' · '),
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 12, color: theme.secondaryText),
                       ),
                     ],
@@ -504,14 +504,14 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
             _attendanceCalendar(context),
             const SizedBox(height: 18),
             Text('Orders This Month (${widget.monthOrderStaff.length})',
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: theme.primaryText)),
             const SizedBox(height: 6),
             if (widget.monthOrderStaff.isEmpty)
               Text('No job earnings this month.',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 12, color: theme.secondaryText))
             else
               ...widget.monthOrderStaff.map((e) {
@@ -530,12 +530,12 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                               : '${o.customer} · ${dateTimeFormat('d MMM', o.moveDateOrNull)}'
                                   '${(e.isHalfDay ?? false) ? ' · half day' : ''}',
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               fontSize: 12.5, color: theme.primaryText),
                         ),
                       ),
                       Text('₹${(e.salaryAmount ?? 0).toStringAsFixed(0)}',
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF2E7D32))),
@@ -545,14 +545,14 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
               }),
             const SizedBox(height: 14),
             Text('Payouts This Month (${widget.monthPayments.length})',
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: theme.primaryText)),
             const SizedBox(height: 6),
             if (widget.monthPayments.isEmpty)
               Text('Nothing paid out yet this month.',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 12, color: theme.secondaryText))
             else
               ...widget.monthPayments.map((p) => Padding(
@@ -570,13 +570,13 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                               if ((p.note ?? '').isNotEmpty) p.note!,
                             ].join(' · '),
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 fontSize: 12.5,
                                 color: theme.primaryText),
                           ),
                         ),
                         Text('₹${p.amount.toStringAsFixed(0)}',
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFF1565C0))),

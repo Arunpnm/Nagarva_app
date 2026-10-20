@@ -1,10 +1,10 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'reports_page_model.dart';
 export 'reports_page_model.dart';
 
@@ -222,7 +222,7 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
           title: Text(
             'Reports',
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600),
                   fontSize: 22.0,
                   fontWeight: FontWeight.w600,
                 ),
@@ -291,7 +291,7 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
                                       .override(
-                                          font: GoogleFonts.inter(),
+                                          font: NgFonts.geist(),
                                           color: FlutterFlowTheme.of(context)
                                               .secondaryText)),
                             )
@@ -353,10 +353,10 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
             children: [
               Text(b.branch,
                   style: FlutterFlowTheme.of(context).bodyMedium.override(
-                      font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+                      font: NgFonts.geist(fontWeight: FontWeight.w600))),
               Text('${b.orderCount} orders',
                   style: FlutterFlowTheme.of(context).bodySmall.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).secondaryText)),
             ],
           ),
@@ -366,12 +366,12 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
             children: [
               Text('Revenue ${_currency.format(b.revenue)}',
                   style: FlutterFlowTheme.of(context).bodySmall.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).secondaryText)),
               Text(
                 '${_currency.format(b.profit.abs())} ${b.profit >= 0 ? 'profit' : 'loss'} · ${b.margin.toStringAsFixed(0)}%',
                 style: FlutterFlowTheme.of(context).titleSmall.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                    font: NgFonts.geist(fontWeight: FontWeight.w600),
                     color: b.profit >= 0
                         ? FlutterFlowTheme.of(context).primary
                         : FlutterFlowTheme.of(context).error),
@@ -409,7 +409,7 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
                     width: 64,
                     child: Text(m.label,
                         style: FlutterFlowTheme.of(context).bodySmall.override(
-                            font: GoogleFonts.inter(),
+                            font: NgFonts.geist(),
                             color:
                                 FlutterFlowTheme.of(context).secondaryText))),
                 Expanded(
@@ -427,7 +427,7 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
                 const SizedBox(width: 8),
                 Text('${m.orderCount}',
                     style: FlutterFlowTheme.of(context).bodySmall.override(
-                        font: GoogleFonts.inter(),
+                        font: NgFonts.geist(),
                         color: FlutterFlowTheme.of(context).secondaryText)),
               ],
             ),
@@ -454,18 +454,18 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
               children: [
                 Text(c.customer,
                     style: FlutterFlowTheme.of(context).bodyMedium.override(
-                        font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+                        font: NgFonts.geist(fontWeight: FontWeight.w600))),
                 Text(
                     '${c.orderCount} order${c.orderCount == 1 ? '' : 's'} · last ${_dayFormat.format(c.lastDate)}',
                     style: FlutterFlowTheme.of(context).bodySmall.override(
-                        font: GoogleFonts.inter(),
+                        font: NgFonts.geist(),
                         color: FlutterFlowTheme.of(context).secondaryText)),
               ],
             ),
           ),
           Text(_currency.format(c.revenue),
               style: FlutterFlowTheme.of(context).titleSmall.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600))),
         ],
       ),
     );
@@ -489,10 +489,10 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
             Text(s.service,
                 style: FlutterFlowTheme.of(context)
                     .bodyMedium
-                    .override(font: GoogleFonts.inter())),
+                    .override(font: NgFonts.geist())),
             Text('${s.count} · ${pct.toStringAsFixed(0)}%',
                 style: FlutterFlowTheme.of(context).titleSmall.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                    font: NgFonts.geist(fontWeight: FontWeight.w600))),
           ],
         ),
       );

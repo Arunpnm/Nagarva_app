@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/order_stages.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 /// Operations standalone (Session 4, Part C-4) — two tabs over
@@ -254,7 +254,7 @@ class _OperationsStandalonePageWidgetState
         backgroundColor: theme.primaryBackground,
         title: Text('Operations',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
         centerTitle: true,
@@ -282,7 +282,7 @@ class _OperationsStandalonePageWidgetState
     if (_tracking.isEmpty) {
       return Center(
           child: Text('No tracking entries yet.',
-              style: GoogleFonts.inter(color: theme.secondaryText)));
+              style: NgFonts.geist(color: theme.secondaryText)));
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -327,7 +327,7 @@ class _OperationsStandalonePageWidgetState
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: Text('No complaints logged.',
-                  style: GoogleFonts.inter(color: theme.secondaryText)),
+                  style: NgFonts.geist(color: theme.secondaryText)),
             )
           else
             for (final c in _filteredComplaints)
@@ -343,15 +343,15 @@ class _OperationsStandalonePageWidgetState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(c.type?.isNotEmpty == true ? c.type! : 'Complaint',
-                              style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                              style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                           if ((c.description ?? '').isNotEmpty)
-                            Text(c.description!, style: GoogleFonts.inter(fontSize: 12)),
+                            Text(c.description!, style: NgFonts.geist(fontSize: 12)),
                           Text(
                             [
                               if (c.orderId != null) 'Order ${c.orderId}',
                               c.status,
                             ].join(' · '),
-                            style: GoogleFonts.inter(fontSize: 11, color: theme.secondaryText),
+                            style: NgFonts.geist(fontSize: 11, color: theme.secondaryText),
                           ),
                         ],
                       ),

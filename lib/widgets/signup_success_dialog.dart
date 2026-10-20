@@ -1,7 +1,7 @@
 import 'dart:async';
+import '/flutter_flow/ng_tokens.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart' show AuthApiException;
 import '/flutter_flow/flutter_flow_theme.dart' show kBrandGold;
@@ -169,7 +169,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
             Text(
               'Account created!',
               textAlign: TextAlign.center,
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                 color: Colors.white,
                 fontSize: 19,
                 fontWeight: FontWeight.w700,
@@ -178,7 +178,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
             const SizedBox(height: 10),
             Text.rich(
               TextSpan(
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     color: Colors.white70, fontSize: 14, height: 1.4),
                 children: [
                   const TextSpan(text: "We've sent a confirmation link to "),
@@ -210,7 +210,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                   icon: const Icon(Icons.mail_outline, size: 18),
                   label: Text('Open Email App',
                       style:
-                          GoogleFonts.interTight(fontWeight: FontWeight.w600)),
+                          NgFonts.geist(fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -230,7 +230,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text('Go to Login',
-                    style: GoogleFonts.interTight(fontWeight: FontWeight.w600)),
+                    style: NgFonts.geist(fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(height: 14),
@@ -248,7 +248,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                         _secondsRemaining == 0
                             ? "Didn't get it? Resend email"
                             : 'Resend email in ${_secondsRemaining}s',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                           color: _secondsRemaining == 0
                               ? kBrandGold
                               : Colors.white38,
@@ -263,7 +263,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
               Center(
                 child: Text(
                   _resendMessage!,
-                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+                  style: NgFonts.geist(color: Colors.white54, fontSize: 12),
                 ),
               ),
             ],

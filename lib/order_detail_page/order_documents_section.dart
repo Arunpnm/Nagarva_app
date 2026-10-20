@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,6 +23,7 @@ import '/components/pod_pdf.dart';
 import '/components/simple_document_pdf.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/backend/vendor_identity.dart';
 
 /// Order Details Session 1, item 4 — the documents grid + signature
@@ -1403,7 +1403,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             const SizedBox(height: 6),
             Text(isPending ? 'Working…' : label,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w600,
                     color: theme.primaryText)),
@@ -1421,7 +1421,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       onPressed: onTap,
       icon: Icon(icon, size: 16, color: c),
       label: Text(label,
-          style: GoogleFonts.inter(fontSize: 11.5, color: c)),
+          style: NgFonts.geist(fontSize: 11.5, color: c)),
       style: OutlinedButton.styleFrom(
         side: BorderSide(color: c),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1447,7 +1447,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Documents',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: theme.primaryText)),
@@ -1470,7 +1470,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                       '✅ Customer signature captured'
                       '${_heldSignatureAt == null ? '' : ' at ${TimeOfDay.fromDateTime(_heldSignatureAt!).format(context)}'}'
                       ' — will appear on next document',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 11.5, color: theme.primaryText),
                     ),
                   ),

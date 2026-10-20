@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/soft_delete.dart';
@@ -8,6 +7,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/components/entity_picker_dialog.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 /// Tasks & Activities (Session 4, Part C-12; entity picker generalized in
@@ -454,7 +454,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-      child: Text(priority, style: GoogleFonts.inter(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
+      child: Text(priority, style: NgFonts.geist(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
     );
   }
 
@@ -468,7 +468,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
         automaticallyImplyLeading: true,
         title: Text('Tasks & Activities',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 19,
                 fontWeight: FontWeight.w600)),
         centerTitle: true,
@@ -505,7 +505,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           child: Text('No tasks found.',
-                              style: GoogleFonts.inter(color: theme.secondaryText)),
+                              style: NgFonts.geist(color: theme.secondaryText)),
                         )
                       else
                         for (final t in _filteredTasks) _taskRow(theme, t),
@@ -521,7 +521,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           child: Text('No activities logged yet.',
-                              style: GoogleFonts.inter(color: theme.secondaryText)),
+                              style: NgFonts.geist(color: theme.secondaryText)),
                         )
                       else
                         for (final a in _activities) _activityRow(theme, a),
@@ -546,7 +546,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(t.title,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                         decoration: done ? TextDecoration.lineThrough : null)),
@@ -556,7 +556,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
                     if (t.dueAt != null) DateFormat('d MMM, h:mm a').format(t.dueAt!.toLocal()),
                     if ((t.entityId ?? '').isNotEmpty) '${t.entityType} ${t.entityId}',
                   ].join(' · '),
-                  style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                  style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                 ),
               ],
             ),
@@ -590,17 +590,17 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
         children: [
           Text(
             '${a.activityType ?? '—'}${(a.subject ?? '').isNotEmpty ? ' — ${a.subject}' : ''}',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5),
+            style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5),
           ),
           if ((a.body ?? '').isNotEmpty)
-            Text(a.body!, style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText)),
+            Text(a.body!, style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText)),
           Text(
             [
               if (a.occurredAt != null)
                 DateFormat('d MMM yyyy, h:mm a').format(a.occurredAt!.toLocal()),
               if ((a.entityId ?? '').isNotEmpty) '${a.entityType} ${a.entityId}',
             ].join(' · '),
-            style: GoogleFonts.inter(fontSize: 10.5, color: theme.secondaryText),
+            style: NgFonts.geist(fontSize: 10.5, color: theme.secondaryText),
           ),
         ],
       ),

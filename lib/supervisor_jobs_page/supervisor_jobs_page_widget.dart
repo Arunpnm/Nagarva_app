@@ -3,10 +3,10 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/nav/nav.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 /// Session 2 Part B1 — "My Jobs": every open order assigned to the
@@ -105,7 +105,7 @@ class _SupervisorJobsListPageWidgetState
         centerTitle: true,
         title: Text('My Jobs',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                font: NgFonts.geist(fontWeight: FontWeight.w600))),
         actions: const [SupervisorMenuButton()],
       ),
       body: SafeArea(
@@ -114,7 +114,7 @@ class _SupervisorJobsListPageWidgetState
             : _jobs.isEmpty
                 ? Center(
                     child: Text('No open jobs assigned to you.',
-                        style: GoogleFonts.inter(color: theme.secondaryText)))
+                        style: NgFonts.geist(color: theme.secondaryText)))
                 : RefreshIndicator(
                     onRefresh: _load,
                     child: ListView(
@@ -143,7 +143,7 @@ class _SupervisorJobsListPageWidgetState
                                 Text(
                                     'Recently Delivered '
                                     '(${_recentlyDelivered.length})',
-                                    style: GoogleFonts.interTight(
+                                    style: NgFonts.geist(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
                                         color: theme.secondaryText)),
@@ -179,7 +179,7 @@ class _SupervisorJobsListPageWidgetState
       Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Text('$label ($count)',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: theme.secondaryText)),
@@ -208,20 +208,20 @@ class _SupervisorJobsListPageWidgetState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('${o.id} · ${o.customer}',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontWeight: FontWeight.w700,
                           fontSize: 13.5,
                           color: theme.primaryText)),
                   const SizedBox(height: 3),
                   Text('${o.fromCity ?? '—'} → ${o.toCity ?? '—'}',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 12, color: theme.secondaryText)),
                   const SizedBox(height: 2),
                   Text(
                       o.moveDateOrNull == null
                           ? 'No date'
                           : DateFormat('d MMM y').format(o.moveDateOrNull!),
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 11.5, color: theme.secondaryText)),
                 ],
               ),
@@ -237,7 +237,7 @@ class _SupervisorJobsListPageWidgetState
               ),
               child: Text(
                 awaiting ? '⏳ Awaiting' : (o.status ?? '—'),
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: awaiting ? const Color(0xFFE0A82E) : theme.primary),

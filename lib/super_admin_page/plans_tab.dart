@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import 'plan_edit_sheet.dart';
 
 /// Step 1 (super-admin console): subscription_plans management. Was
@@ -94,7 +94,7 @@ class _PlansTabState extends State<PlansTab> {
                     Expanded(
                       child: Text(
                         p.name ?? p.code ?? p.id ?? '(unnamed)',
-                        style: GoogleFonts.interTight(
+                        style: NgFonts.geist(
                             color: theme.primaryText,
                             fontSize: 15,
                             fontWeight: FontWeight.w700),
@@ -109,7 +109,7 @@ class _PlansTabState extends State<PlansTab> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text('default trial',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 color: theme.primary, fontSize: 11)),
                       ),
                   ],
@@ -118,7 +118,7 @@ class _PlansTabState extends State<PlansTab> {
                 Text(
                   '₹${p.priceInr?.toStringAsFixed(0) ?? '—'} / ${p.billingPeriod ?? '—'}'
                   '${p.code != null ? ' · ${p.code}' : ''}',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       color: theme.secondaryText, fontSize: 12.5),
                 ),
                 const SizedBox(height: 6),
@@ -129,14 +129,14 @@ class _PlansTabState extends State<PlansTab> {
                   'Limits: max_users=${limits['max_users'] ?? '—'}, '
                   'max_orders_per_month=${limits['max_orders_per_month'] ?? '—'}, '
                   'max_whatsapp_per_month=${limits['max_whatsapp_per_month'] ?? '—'}',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       color: theme.primaryText, fontSize: 12),
                 ),
                 if (activeFeatures.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text('Features: $activeFeatures',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             color: theme.primaryText, fontSize: 12)),
                   ),
                 const SizedBox(height: 8),

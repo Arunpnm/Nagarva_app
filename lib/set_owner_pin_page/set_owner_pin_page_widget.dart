@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/owner_pin.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 
 /// First-run owner PIN bootstrap (28 Aug 2026).
@@ -120,7 +120,7 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
                   Text(
                     'Set your PIN',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText,
@@ -131,7 +131,7 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
                     'A 4-digit PIN lets you sign in to $orgName without '
                     'typing your email and password every time.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 14, color: theme.secondaryText),
                   ),
                   const SizedBox(height: 28),
@@ -165,7 +165,7 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
                     const SizedBox(height: 12),
                     Text(
                       _error!,
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 13, color: theme.error),
                     ),
                   ],
@@ -192,7 +192,7 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
                   Text(
                     'You can set it later from Settings → App PIN.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12, color: theme.secondaryText),
                   ),
                 ],

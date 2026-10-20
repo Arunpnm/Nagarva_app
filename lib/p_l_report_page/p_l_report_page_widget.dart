@@ -3,10 +3,10 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/margin_availability.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'p_l_report_page_model.dart';
 export 'p_l_report_page_model.dart';
 
@@ -226,7 +226,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
           title: Text(
             'P&L Report',
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600),
                   fontSize: 22.0,
                   fontWeight: FontWeight.w600,
                 ),
@@ -331,7 +331,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .bodySmall
                                       .override(
-                                          font: GoogleFonts.inter(),
+                                          font: NgFonts.geist(),
                                           color: FlutterFlowTheme.of(context)
                                               .secondaryText)),
                             )
@@ -404,22 +404,22 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
             if (suppressed) ...[
               Text(kMarginUnavailableTitle,
                   style: FlutterFlowTheme.of(context).titleSmall.override(
-                      font: GoogleFonts.interTight(
+                      font: NgFonts.geist(
                           fontWeight: FontWeight.w600),
                       color: FlutterFlowTheme.of(context).secondaryText)),
               Text(kMarginUnavailableBody,
                   style: FlutterFlowTheme.of(context).labelSmall.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).secondaryText)),
             ] else
               Text(_currency.format(value.abs()),
                   style: FlutterFlowTheme.of(context).headlineSmall.override(
-                      font: GoogleFonts.interTight(
+                      font: NgFonts.geist(
                           fontWeight: FontWeight.w600),
                       color: FlutterFlowTheme.of(context).primaryText)),
             Text(label,
                 style: FlutterFlowTheme.of(context).labelMedium.override(
-                    font: GoogleFonts.inter(),
+                    font: NgFonts.geist(),
                     color: FlutterFlowTheme.of(context).secondaryText)),
           ],
         ),
@@ -453,16 +453,16 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
               Text('${_model.margin.toStringAsFixed(1)}%',
                   style: FlutterFlowTheme.of(context).headlineSmall.override(
                       font:
-                          GoogleFonts.interTight(fontWeight: FontWeight.w600)))
+                          NgFonts.geist(fontWeight: FontWeight.w600)))
             else
               Text(kMarginUnavailableTitle,
                   style: FlutterFlowTheme.of(context).titleSmall.override(
-                      font: GoogleFonts.interTight(
+                      font: NgFonts.geist(
                           fontWeight: FontWeight.w600),
                       color: FlutterFlowTheme.of(context).secondaryText)),
             Text('Margin',
                 style: FlutterFlowTheme.of(context).labelMedium.override(
-                    font: GoogleFonts.inter(),
+                    font: NgFonts.geist(),
                     color: FlutterFlowTheme.of(context).secondaryText)),
           ],
         ),
@@ -496,11 +496,11 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
               children: [
                 Text(b.branch,
                     style: FlutterFlowTheme.of(context).bodyMedium.override(
-                        font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+                        font: NgFonts.geist(fontWeight: FontWeight.w600))),
                 Text(
                   '${_currency.format(b.profit.abs())} ${b.profit >= 0 ? 'profit' : 'loss'} · ${b.margin.toStringAsFixed(0)}%',
                   style: FlutterFlowTheme.of(context).bodySmall.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: b.profit >= 0
                           ? FlutterFlowTheme.of(context).primary
                           : FlutterFlowTheme.of(context).error),
@@ -521,7 +521,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
             const SizedBox(height: 4),
             Text('Rev ${_currency.format(b.revenue)}',
                 style: FlutterFlowTheme.of(context).bodySmall.override(
-                    font: GoogleFonts.inter(),
+                    font: NgFonts.geist(),
                     color: FlutterFlowTheme.of(context).secondaryText)),
           ],
         ),
@@ -543,10 +543,10 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
           Text(s.source,
               style: FlutterFlowTheme.of(context)
                   .bodyMedium
-                  .override(font: GoogleFonts.inter())),
+                  .override(font: NgFonts.geist())),
           Text('${s.converted}/${s.total} · ${s.rate.toStringAsFixed(0)}%',
               style: FlutterFlowTheme.of(context).titleSmall.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600))),
         ],
       ),
     );
@@ -583,7 +583,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
               style: bold
                   ? FlutterFlowTheme.of(context).titleSmall
                   : FlutterFlowTheme.of(context).bodyMedium.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).secondaryText)),
           Text(_currency.format(value),
               style: (bold
@@ -591,7 +591,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
                       : FlutterFlowTheme.of(context).bodyMedium)
                   .override(
                       font:
-                          GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                          NgFonts.geist(fontWeight: FontWeight.w600))),
         ],
       ),
     );

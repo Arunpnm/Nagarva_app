@@ -3,8 +3,8 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 /// Session 2 Part C — My Earnings (`sup-sal`). This supervisor's own
@@ -93,7 +93,7 @@ class _SupervisorEarningsPageWidgetState
         centerTitle: true,
         title: Text('My Earnings',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                font: NgFonts.geist(fontWeight: FontWeight.w600))),
         actions: const [SupervisorMenuButton()],
       ),
       body: SafeArea(
@@ -115,11 +115,11 @@ class _SupervisorEarningsPageWidgetState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Total earned',
-                                style: GoogleFonts.inter(
+                                style: NgFonts.geist(
                                     fontSize: 11.5,
                                     color: theme.secondaryText)),
                             Text('₹${total.toStringAsFixed(0)}',
-                                style: GoogleFonts.interTight(
+                                style: NgFonts.geist(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
                                     color: theme.primaryText)),
@@ -129,11 +129,11 @@ class _SupervisorEarningsPageWidgetState
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text('Advance balance',
-                                style: GoogleFonts.inter(
+                                style: NgFonts.geist(
                                     fontSize: 11.5,
                                     color: theme.secondaryText)),
                             Text('₹${_advanceBalance.toStringAsFixed(0)}',
-                                style: GoogleFonts.interTight(
+                                style: NgFonts.geist(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
                                     color: theme.error)),
@@ -149,7 +149,7 @@ class _SupervisorEarningsPageWidgetState
                       child: Center(
                         child: Text('No job-staff earnings on record yet.',
                             style:
-                                GoogleFonts.inter(color: theme.secondaryText)),
+                                NgFonts.geist(color: theme.secondaryText)),
                       ),
                     )
                   else
@@ -165,10 +165,10 @@ class _SupervisorEarningsPageWidgetState
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(e.key,
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                       fontSize: 13, color: theme.primaryText)),
                               Text('₹${e.value.toStringAsFixed(0)}',
-                                  style: GoogleFonts.interTight(
+                                  style: NgFonts.geist(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 13,
                                       color: theme.primaryText)),

@@ -17,6 +17,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 const String kLeadStatusNew = 'new';
 const String kLeadStatusFollowUp = 'follow_up';
@@ -123,6 +124,26 @@ Color leadStatusColor(String? raw) {
       return const Color(0xFFEF4444);
     default:
       return const Color(0xFF6B7280);
+  }
+}
+
+/// Redesign status hue for a lead (theme-aware via [NgPalette.status]):
+/// new is blue, follow-up amber, survey blue, quoted accent, confirmed
+/// green, lost red. [leadStatusColor] stays for the pre-redesign callers.
+NgStatus leadStatusTone(String? raw) {
+  switch (canonicalLeadStatus(raw)) {
+    case kLeadStatusFollowUp:
+      return NgStatus.amber;
+    case kLeadStatusSurveyDone:
+      return NgStatus.blue;
+    case kLeadStatusQuoted:
+      return NgStatus.accent;
+    case kLeadStatusConfirmed:
+      return NgStatus.green;
+    case kLeadStatusLost:
+      return NgStatus.red;
+    default:
+      return NgStatus.blue;
   }
 }
 

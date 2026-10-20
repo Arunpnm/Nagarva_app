@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '/components/language_quick_button.dart';
 import '/components/theme_quick_button.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 
@@ -208,7 +208,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
               ? 'WA Inbox'
               : (_selected!.displayName ?? _selected!.phone),
           style: theme.titleLarge.override(
-              font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+              font: NgFonts.geist(fontWeight: FontWeight.w600),
               fontSize: 22,
               fontWeight: FontWeight.w600),
         ),
@@ -247,7 +247,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
               const SizedBox(height: 12),
               Text(
                 'Select a conversation',
-                style: GoogleFonts.inter(color: theme.secondaryText, fontSize: 13.5),
+                style: NgFonts.geist(color: theme.secondaryText, fontSize: 13.5),
               ),
             ],
           ),
@@ -262,7 +262,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
           child: Text(
             'No WhatsApp conversations yet.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(color: theme.secondaryText),
+            style: NgFonts.geist(color: theme.secondaryText),
           ),
         ),
       );
@@ -282,7 +282,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
               children: [
                 Expanded(
                   child: Text(c.displayName ?? c.phone,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13.5),
+                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13.5),
                       overflow: TextOverflow.ellipsis),
                 ),
                 if (c.leadId != null)
@@ -294,7 +294,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text('Lead',
-                        style: GoogleFonts.inter(fontSize: 9.5, color: theme.primary)),
+                        style: NgFonts.geist(fontSize: 9.5, color: theme.primary)),
                   ),
                 if (c.muted)
                   Padding(
@@ -306,7 +306,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
             subtitle: Text(c.lastMessageText ?? '—',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
             trailing: c.unreadCount > 0
                 ? CircleAvatar(
                     radius: 10,
@@ -316,7 +316,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
                   )
                 : (c.lastMessageAt != null
                     ? Text(DateFormat('d MMM').format(c.lastMessageAt!),
-                        style: GoogleFonts.inter(fontSize: 10.5, color: theme.secondaryText))
+                        style: NgFonts.geist(fontSize: 10.5, color: theme.secondaryText))
                     : null),
           );
         },
@@ -336,7 +336,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
             children: [
               Expanded(
                 child: Text(contact.phone,
-                    style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                    style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
               ),
               if (contact.leadId != null)
                 TextButton(
@@ -421,7 +421,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
           children: [
             Text(
               isUnsupported ? '[unsupported]' : (m.body ?? ''),
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                 fontSize: 13,
                 fontStyle: isUnsupported ? FontStyle.italic : FontStyle.normal,
                 color: inbound ? theme.primaryText : Colors.white,
@@ -432,7 +432,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
                 padding: const EdgeInsets.only(top: 3),
                 child: Text(
                   DateFormat('d MMM, h:mm a').format(m.sentAt!.toLocal()),
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 9.5,
                       color: inbound
                           ? theme.secondaryText

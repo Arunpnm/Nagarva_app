@@ -2,8 +2,8 @@ import '/app_session.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'plans_tab.dart';
 import 'tenant_detail_page.dart';
 
@@ -201,7 +201,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                 Text(
                   'This account is not a platform administrator.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(color: theme.secondaryText),
+                  style: NgFonts.geist(color: theme.secondaryText),
                 ),
               ],
             ),
@@ -256,7 +256,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                                     Expanded(
                                       child: Text(
                                         org.name,
-                                        style: GoogleFonts.interTight(
+                                        style: NgFonts.geist(
                                             color: theme.primaryText,
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700),
@@ -272,7 +272,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                                               BorderRadius.circular(6),
                                         ),
                                         child: Text('suspended',
-                                            style: GoogleFonts.inter(
+                                            style: NgFonts.geist(
                                                 color: theme.error,
                                                 fontSize: 11)),
                                       ),
@@ -282,14 +282,14 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                                 Text(
                                   '${org.slug} · plan: ${planNameById[org.planId] ?? '—'} '
                                   '(${org.planStatus ?? '—'})',
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                       color: theme.secondaryText,
                                       fontSize: 12.5),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   '${usage['orders'] ?? 0} orders · ${usage['leads'] ?? 0} leads · ${usage['staff'] ?? 0} staff',
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                       color: theme.primaryText, fontSize: 12.5),
                                 ),
                                 const SizedBox(height: 8),

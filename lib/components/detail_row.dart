@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Shared label/value row for detail screens (live-test fix brief #2,
 /// item 4).
@@ -60,7 +60,7 @@ class DetailRow extends StatelessWidget {
             child: Text(
               label,
               maxLines: 2,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                 fontSize: 13,
                 height: 1.3,
                 color: theme.secondaryText,
@@ -75,7 +75,7 @@ class DetailRow extends StatelessWidget {
               textAlign: TextAlign.right,
               maxLines: maxValueLines,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                 fontSize: 13.5,
                 height: 1.3,
                 fontWeight: FontWeight.w500,
@@ -121,7 +121,7 @@ class DetailCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
               fontWeight: FontWeight.w700,
               fontSize: 13,
               color: theme.primary,
@@ -156,7 +156,7 @@ class DetailNote extends StatelessWidget {
       padding: const EdgeInsets.only(top: 6),
       child: Text(
         empty ? emptyLabel : text!.trim(),
-        style: GoogleFonts.inter(
+        style: NgFonts.geist(
           fontSize: 13.5,
           height: 1.4,
           fontStyle: empty ? FontStyle.italic : FontStyle.normal,

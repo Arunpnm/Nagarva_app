@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/pricing_defaults.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Itemized quotation breakdown, embedded in Order Details (parity brief
 /// Part 3e — "an order shows a bare total with no itemisation... the
@@ -143,7 +143,7 @@ class QuotationBreakdownSectionState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Quotation Breakdown',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                   color: theme.primary)),
@@ -158,7 +158,7 @@ class QuotationBreakdownSectionState
             Row(
               children: [
                 Text('Items',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 12.5,
                         color: theme.primaryText)),
@@ -166,7 +166,7 @@ class QuotationBreakdownSectionState
                 Text(
                   '${items.length} line(s)'
                   '${charges['_totalCft'] != null ? ' · ${charges['_totalCft']} CFT' : ''}',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 11.5, color: theme.secondaryText),
                 ),
               ],
@@ -207,7 +207,7 @@ class QuotationBreakdownSectionState
                       '${_zeroCftCount(items)} item line(s) on this quote have '
                       'no CFT, so the total CFT and suggested vehicle may be '
                       'under-sized. Re-quote before dispatch if it matters.',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 11.5,
                           height: 1.35,
                           color: theme.primaryText),
@@ -230,7 +230,7 @@ class QuotationBreakdownSectionState
                   Expanded(
                     child: Text(line.$1,
                         style:
-                            GoogleFonts.inter(color: theme.secondaryText)),
+                            NgFonts.geist(color: theme.secondaryText)),
                   ),
                   if (_billingMode(charges, line.$3) == 'included')
                     Container(
@@ -242,13 +242,13 @@ class QuotationBreakdownSectionState
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text('included',
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: theme.tertiary)),
                     ),
                   Text('₹${line.$2.toStringAsFixed(0)}',
-                      style: GoogleFonts.inter(color: theme.primaryText)),
+                      style: NgFonts.geist(color: theme.primaryText)),
                 ],
               ),
             ),
@@ -257,9 +257,9 @@ class QuotationBreakdownSectionState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Subtotal',
-                  style: GoogleFonts.inter(color: theme.secondaryText)),
+                  style: NgFonts.geist(color: theme.secondaryText)),
               Text('₹${(subtotal ?? 0).toStringAsFixed(0)}',
-                  style: GoogleFonts.inter(color: theme.primaryText)),
+                  style: NgFonts.geist(color: theme.primaryText)),
             ],
           ),
           // Item 2: GST mode (IGST vs CGST+SGST) as well as the amount.
@@ -271,10 +271,10 @@ class QuotationBreakdownSectionState
               Text(
                 'GST (${(gstPct ?? 0).toStringAsFixed(0)}%)'
                 '${_gstModeSuffix(gstMode)}',
-                style: GoogleFonts.inter(color: theme.secondaryText),
+                style: NgFonts.geist(color: theme.secondaryText),
               ),
               Text('₹${(gstAmount ?? 0).toStringAsFixed(0)}',
-                  style: GoogleFonts.inter(color: theme.primaryText)),
+                  style: NgFonts.geist(color: theme.primaryText)),
             ],
           ),
           const SizedBox(height: 4),
@@ -282,10 +282,10 @@ class QuotationBreakdownSectionState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Total',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontWeight: FontWeight.w700, color: theme.primaryText)),
               Text('₹${(total ?? 0).toStringAsFixed(0)}',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontWeight: FontWeight.w700, color: theme.primary)),
             ],
           ),
@@ -344,7 +344,7 @@ Widget _itemLine(FlutterFlowTheme theme, Map<String, dynamic> m) {
         Expanded(
           child: Text(
             '${name.isEmpty ? 'Item' : name}${qty > 1 ? '  x$qty' : ''}',
-            style: GoogleFonts.inter(fontSize: 12.5, color: theme.primaryText),
+            style: NgFonts.geist(fontSize: 12.5, color: theme.primaryText),
           ),
         ),
         const SizedBox(width: 8),
@@ -352,7 +352,7 @@ Widget _itemLine(FlutterFlowTheme theme, Map<String, dynamic> m) {
           cft == null || cft == 0
               ? 'no CFT'
               : '${total ?? cft} CFT',
-          style: GoogleFonts.inter(
+          style: NgFonts.geist(
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
             color: (cft == null || cft == 0)
@@ -370,9 +370,9 @@ Widget _kv(FlutterFlowTheme theme, String k, String v) => Padding(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(k, style: GoogleFonts.inter(fontSize: 12.5, color: theme.secondaryText)),
+          Text(k, style: NgFonts.geist(fontSize: 12.5, color: theme.secondaryText)),
           Text(v,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                   color: theme.primaryText)),

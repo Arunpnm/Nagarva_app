@@ -1,10 +1,10 @@
 import '/app_session.dart';
 import '/permissions.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Quick Entry as a bottom sheet (NG-FIX brief, bug 1 — 7 Aug 2026).
 ///
@@ -137,7 +137,7 @@ class QuickEntryDialog extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 label,
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                   color: theme.primaryText,
                   fontSize: 14.5,
                   fontWeight: FontWeight.w700,
@@ -146,7 +146,7 @@ class QuickEntryDialog extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 steps,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                   color: theme.secondaryText,
                   fontSize: 11.5,
                 ),
@@ -187,7 +187,7 @@ class QuickEntryDialog extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Quick Entry',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                       color: theme.primaryText,
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
@@ -212,7 +212,7 @@ class QuickEntryDialog extends StatelessWidget {
                 child: Text(
                   'No quick actions available for your role.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                     fontSize: 13,
                     color: theme.secondaryText,
                   ),

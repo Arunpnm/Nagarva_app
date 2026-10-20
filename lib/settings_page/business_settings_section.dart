@@ -4,12 +4,12 @@ import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Vendor self-service branding & business identity (Settings page).
 ///
@@ -412,8 +412,8 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
       labelText: label,
       hintText: hint.isEmpty ? null : hint,
       labelStyle:
-          GoogleFonts.inter(color: theme.secondaryText, fontSize: 12.5),
-      hintStyle: GoogleFonts.inter(
+          NgFonts.geist(color: theme.secondaryText, fontSize: 12.5),
+      hintStyle: NgFonts.geist(
           color: theme.secondaryText.withOpacity(0.5), fontSize: 12.5),
       filled: true,
       fillColor: theme.primaryBackground,
@@ -452,13 +452,13 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title,
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontSize: 15.5,
                 fontWeight: FontWeight.w700,
                 color: theme.primaryText)),
         const SizedBox(height: 2),
         Text(subtitle,
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 11.5, color: theme.secondaryText)),
         const SizedBox(height: 12),
       ],
@@ -477,7 +477,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
             width: 22, height: 22, child: CircularProgressIndicator()),
       )));
     }
-    final textStyle = GoogleFonts.inter(color: theme.primaryText, fontSize: 13.5);
+    final textStyle = NgFonts.geist(color: theme.primaryText, fontSize: 13.5);
     return Column(
       children: [
         // ---- 1. Business identity & letterhead (writes to organizations) --
@@ -492,7 +492,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8, top: 4),
                   child: Text(group.$1,
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: theme.secondaryText)),
@@ -673,7 +673,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                     child: (_signatureUrl ?? '').isEmpty
                         ? Center(
                             child: Text('No signature yet',
-                                style: GoogleFonts.inter(
+                                style: NgFonts.geist(
                                     fontSize: 11,
                                     color: Colors.grey.shade500)))
                         : Image.network(_signatureUrl!,

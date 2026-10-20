@@ -7,12 +7,12 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/edge_function_errors.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 // Item 12B-b: the package card links to Settings -> Survey & Pricing when
 // the slab table can't resolve a suggestion.
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 import '/config/app_config.dart';
 
@@ -880,7 +880,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
         title: Text(_isEditing ? 'Revise Quotation' : 'Survey & Quote',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontWeight: FontWeight.w700, color: theme.primaryText)),
         elevation: 0,
       ),
@@ -933,7 +933,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                       child: Column(
                         children: [
                           Text('No items match "$_search"',
-                              style: GoogleFonts.inter(
+                              style: NgFonts.geist(
                                   fontSize: 13.5,
                                   color: theme.secondaryText)),
                           const SizedBox(height: 8),
@@ -983,7 +983,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(title,
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                     color: theme.primary)),
@@ -1071,7 +1071,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               ],
               Expanded(
                 child: Text('$_totalItems items · $_totalCft CFT',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: theme.primaryText)),
@@ -1090,7 +1090,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           const SizedBox(height: 4),
           if (s.empty)
             Text('Add items to see a suggested package',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5, color: theme.secondaryText))
           else if (isError) ...[
             Text(
@@ -1098,7 +1098,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               '"${s.unresolvedPackageName}", but no vehicle and crew are '
               'defined for it. This quote can still be saved — it just '
               'won\'t carry a suggestion.',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 12.5, height: 1.35, color: theme.primaryText),
             ),
             const SizedBox(height: 8),
@@ -1125,7 +1125,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           ] else ...[
             Text(
               'Suggested: ${s.info!.type} · ${s.info!.crew} crew · ${s.info!.vehicle}',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 12.5,
                   color: theme.secondaryText,
                   decoration:
@@ -1143,7 +1143,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                     'Using: ${_effectivePackage ?? '—'} · '
                     '${_effectiveCrew ?? '—'} crew · '
                     '${_effectiveVehicle?.isNotEmpty == true ? _effectiveVehicle : '—'}',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                         color: theme.primaryText),
@@ -1190,7 +1190,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               'Overrides the suggestion for this quote only. The suggested '
               'values are kept alongside, so the vendor can see where the '
               'slabs need adjusting.',
-              style: GoogleFonts.inter(fontSize: 12, height: 1.35),
+              style: NgFonts.geist(fontSize: 12, height: 1.35),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -1309,7 +1309,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Text(_kCustomCat,
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontWeight: FontWeight.w700, color: theme.primaryText)),
           ),
           for (final c in visible)
@@ -1350,7 +1350,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   child: Text('${c.name} (${c.cft} cft)',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 12.5, color: theme.primaryText)),
                 ),
                 // Make a 0-CFT line obvious at the point of entry, not
@@ -1498,7 +1498,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           key: ValueKey('$cat-${_search.isNotEmpty}'),
           initiallyExpanded: _search.isNotEmpty,
           title: Text(cat,
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontWeight: FontWeight.w700, color: theme.primaryText)),
           children: [
             for (final item in visibleItems) _itemRow(theme, cat, item),
@@ -1520,7 +1520,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(item.name,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                   color: theme.primaryText)),
@@ -1564,7 +1564,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style:
-                  GoogleFonts.inter(fontSize: 12.5, color: theme.primaryText),
+                  NgFonts.geist(fontSize: 12.5, color: theme.primaryText),
             ),
           ),
           const SizedBox(width: 8),
@@ -1624,7 +1624,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             width: 22,
             child: Text('$qty',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontWeight: FontWeight.w700, color: theme.primaryText)),
           ),
           SizedBox(
@@ -1670,7 +1670,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Freight / Transport',
-              style: GoogleFonts.inter(fontSize: 13, color: theme.primaryText)),
+              style: NgFonts.geist(fontSize: 13, color: theme.primaryText)),
           const SizedBox(height: 6),
           _basisRow(theme, 'transport'),
           const SizedBox(height: 10),
@@ -1683,7 +1683,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           // was invisible unless you already knew to go looking for it -
           // and the only label saying otherwise was 11.5px grey text.
           Text('Packing & Labour',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: theme.primaryText)),
@@ -1691,7 +1691,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           Text(
             'Each line is bundled into the freight price unless you switch '
             'it to "Bill separately", which opens its own price field.',
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 11.5, color: theme.secondaryText, height: 1.35),
           ),
           const SizedBox(height: 10),
@@ -1702,7 +1702,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               '$_separatelyBilledCount of ${billable.length} billed '
               'separately${_separatelyBilledUnpriced > 0 ? ' · '
                   '$_separatelyBilledUnpriced still to price' : ''}',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: _separatelyBilledUnpriced > 0
@@ -1712,7 +1712,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           ],
           const SizedBox(height: 14),
           Text('Other Charges',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                   color: theme.secondaryText)),
@@ -1726,7 +1726,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             ),
           const SizedBox(height: 6),
           Text('Add-on Services',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
                   color: theme.secondaryText)),
@@ -1791,7 +1791,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(f.label,
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 13, color: theme.primaryText)),
                     // The figure, on the row, once there is one. Without
                     // it a priced line looks exactly like an unpriced one
@@ -1799,7 +1799,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                     if (!included)
                       Text(
                         _chargeAmountLabel(f.key),
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           color: _chargeAmount(f.key) > 0
@@ -1882,7 +1882,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           children: [
             Expanded(
               child: Text('$_totalCft CFT',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 12.5, color: theme.secondaryText)),
             ),
             const SizedBox(width: 6),
@@ -2016,7 +2016,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   ? 'Interstate → IGST ₹${_gstAmount.toStringAsFixed(0)}'
                   : 'Intrastate → CGST ₹${(_gstAmount / 2).toStringAsFixed(0)} '
                       '+ SGST ₹${(_gstAmount / 2).toStringAsFixed(0)}',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                   color: theme.primary),
@@ -2045,9 +2045,9 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(r.$1, style: GoogleFonts.inter(color: theme.secondaryText)),
+                  Text(r.$1, style: NgFonts.geist(color: theme.secondaryText)),
                   Text('₹${r.$2.toStringAsFixed(0)}',
-                      style: GoogleFonts.inter(color: theme.primaryText)),
+                      style: NgFonts.geist(color: theme.primaryText)),
                 ],
               ),
             ),
@@ -2056,12 +2056,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Total',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                       color: theme.primaryText)),
               Text('₹${_total.toStringAsFixed(0)}',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                       color: theme.primary)),

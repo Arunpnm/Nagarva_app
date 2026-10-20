@@ -5,17 +5,16 @@ import '/backend/lead_status.dart';
 import '/backend/reminders_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/components/keyboard_scroll_view.dart';
+import '/backend/detail_navigation.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import '/components/language_quick_button.dart';
-import '/components/theme_quick_button.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 import 'leads_page_model.dart';
 export 'leads_page_model.dart';
@@ -151,6 +150,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
   @override
   void dispose() {
     _model.dispose();
+    _searchCtrl.dispose();
 
     super.dispose();
   }
@@ -211,50 +211,356 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
     }
   }
 
-  /// Corrections session, B3 (7 Aug 2026): was a bare hardcoded stat
-  /// value/label pair — see the class doc comment for the fake-numbers
-  /// history this replaces.
-  Widget _statTile(BuildContext context, String value, String label) {
-    return Flexible(
-      flex: 1,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(0.0, 10.0, 0.0, 10.0),
+  final _searchCtrl = TextEditingController();
+
+  /// Filter chips, in the order the redesign shows them. Each maps to one
+  /// of the lists [_loadLeads] already fetches — the same buckets the old
+  /// tab row used ('contacted' is the follow-up bucket, 'qualified' is
+  /// survey done + quoted).
+  List<(String, String, List<LeadsRow>)> _filters(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return [
+      ('all', l10n.all, _model.allLeadsList),
+      ('new', l10n.statusNew, _model.newLeadsList),
+      ('contacted', l10n.contacted, _model.contactedLeadsList),
+      ('qualified', l10n.qualified, _model.qualifiedLeadsList),
+      ('won', l10n.won, _model.wonLeadsList),
+      ('lost', l10n.lost, _model.lostLeadsList),
+    ];
+  }
+
+  void _setFilter(String key, List<LeadsRow> rows) {
+    _model.leadsFilter = key;
+    _model.leadsList = rows.toList().cast<LeadsRow>();
+    safeSetState(() {});
+  }
+
+  /// Name or phone, case-insensitive, over the current chip's list.
+  ///
+  /// Reads the chip's bucket fresh rather than `_model.leadsList`, which
+  /// [_loadLeads] resets to ALL on every refresh — that left a "Won" chip
+  /// highlighted over the full list after returning from a detail page.
+  List<LeadsRow> _visibleLeads(BuildContext context) {
+    final q = _searchCtrl.text.trim().toLowerCase();
+    final rows = _filters(context)
+        .firstWhere((f) => f.$1 == _model.leadsFilter,
+            orElse: () => _filters(context).first)
+        .$3
+        .toList();
+    if (q.isEmpty) return rows;
+    final digits = q.replaceAll(RegExp(r'\D'), '');
+    return rows.where((l) {
+      if (l.customer.toLowerCase().contains(q)) return true;
+      final phone = (l.phone ?? '').replaceAll(RegExp(r'\D'), '');
+      return digits.isNotEmpty && phone.contains(digits);
+    }).toList();
+  }
+
+  static String _ago(DateTime? t) {
+    if (t == null) return '';
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
+    if (d.inHours < 24) return '${d.inHours} h ago';
+    if (d.inDays < 30) return '${d.inDays} d ago';
+    return DateFormat('d MMM').format(t);
+  }
+
+  /// The redesign's statistics card on Leads. Every figure is computed
+  /// from rows already loaded — counts per bucket, conversion as won over
+  /// all leads, and the lead-source mix from `leads.source`. The handoff's
+  /// mock also showed pipeline value and first-reply time; leads carry no
+  /// amount and no reply timestamp, so those two are left out rather than
+  /// invented (CLAUDE.md: a plausible wrong number is worse than none).
+  Widget _statsCard(BuildContext context) {
+    final c = NgPalette.of(context);
+    final all = _model.allLeadsList;
+    final open = _model.newLeadsList.length +
+        _model.contactedLeadsList.length +
+        _model.qualifiedLeadsList.length;
+    final won = _model.wonLeadsList.length;
+    final conv = all.isEmpty ? null : (won * 100 / all.length).round();
+
+    final bySource = <String, int>{};
+    for (final l in all) {
+      final src = (l.source ?? '').trim();
+      final k = src.isEmpty ? 'Other' : src;
+      bySource[k] = (bySource[k] ?? 0) + 1;
+    }
+    final ranked = bySource.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final top = ranked.take(4).toList();
+    final rest = ranked.skip(4).fold<int>(0, (s, e) => s + e.value);
+    final segs = [
+      for (final e in top) (e.key, e.value),
+      if (rest > 0) ('Other', rest),
+    ];
+    final segColors = [c.acc, c.blue, c.green, c.amber, c.faint];
+
+    Widget stat(String label, String value) => Expanded(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                value,
-                style: FlutterFlowTheme.of(context).titleMedium.override(
-                      font: GoogleFonts.interTight(),
-                      color: FlutterFlowTheme.of(context).primary,
-                      letterSpacing: 0.0,
-                    ),
-              ),
-              Text(
-                label,
-                style: FlutterFlowTheme.of(context).labelSmall.override(
-                      font: GoogleFonts.inter(),
-                      color: FlutterFlowTheme.of(context).secondaryText,
-                      letterSpacing: 0.0,
-                    ),
-              ),
-            ].divide(const SizedBox(height: 2.0)),
+              Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NgFonts.geist(fontSize: 12, color: c.mute)),
+              const SizedBox(height: 3),
+              Text(value,
+                  style: NgFonts.geist(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.4,
+                      color: c.text)),
+            ],
           ),
-        ),
+        );
+
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('All leads',
+              style: NgFonts.geist(fontSize: 13, color: c.mute)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              stat('Conversion', conv == null ? '—' : '$conv%'),
+              const SizedBox(width: 10),
+              stat('Open', '$open'),
+              const SizedBox(width: 10),
+              stat(AppLocalizations.of(context).won, '$won'),
+            ],
+          ),
+          if (segs.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                height: 8,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < segs.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 2),
+                      Expanded(
+                        flex: segs[i].$2,
+                        child: ColoredBox(color: segColors[i]),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                for (var i = 0; i < segs.length; i++)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: segColors[i],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${segs[i].$1} ${(segs[i].$2 * 100 / all.length).round()}%',
+                        style: NgFonts.geist(fontSize: 11.5, color: c.mute),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _leadCard(BuildContext context, LeadsRow l) {
+    final c = NgPalette.of(context);
+    final tone = leadStatusTone(l.status);
+    final st = c.status(tone);
+    final phone = (l.phone ?? '').trim();
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => openLeadDetail(context, l),
+            child: Row(
+              children: [
+                NgAvatar(l.customer, status: tone, size: 40),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.customer,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NgFonts.geist(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: c.text),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        [
+                          if ((l.service ?? '').trim().isNotEmpty)
+                            l.service!.trim(),
+                          if (phone.isNotEmpty) phone,
+                        ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NgFonts.geist(fontSize: 12.5, color: c.mute),
+                      ),
+                    ],
+                  ),
+                ),
+                // Survey response waiting to be quoted.
+                if (_surveyRespondedLeadIds.contains(l.id))
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Tooltip(
+                      message: 'Survey response received',
+                      child: Icon(Icons.assignment_turned_in_rounded,
+                          size: 18, color: c.green),
+                    ),
+                  ),
+                Container(
+                  height: 24,
+                  padding: const EdgeInsets.symmetric(horizontal: 9),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: st.bg,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    leadStatusLabel(l.status),
+                    style: NgFonts.geist(
+                        fontSize: 12, fontWeight: FontWeight.w600, color: st.fg),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 11),
+          Row(
+            children: [
+              Icon(Icons.route_rounded, size: 16, color: c.faint),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  '${l.fromCity ?? '-'} → ${l.toCity ?? '-'}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NgFonts.geist(fontSize: 13, color: c.mute),
+                ),
+              ),
+              if (l.createdAt != null) ...[
+                Text('  ·  ', style: NgFonts.geist(fontSize: 13, color: c.faint)),
+                Text(_ago(l.createdAt),
+                    style: NgFonts.geist(fontSize: 13, color: c.mute)),
+              ],
+            ],
+          ),
+          // Item 10.5: overdue follow-up, so the list itself shows which
+          // leads are going quiet.
+          if (_overdueLeadIds.contains(l.id)) ...[
+            const SizedBox(height: 11),
+            Container(
+              height: 28,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: c.amberBg,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.alarm_rounded, size: 16, color: c.amber),
+                  const SizedBox(width: 6),
+                  Text('Follow-up overdue',
+                      style: NgFonts.geist(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                          color: c.amber)),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 11),
+          Row(
+            children: [
+              Expanded(
+                child: NgSecondaryButton(
+                  label: 'Call',
+                  icon: Icons.call_rounded,
+                  iconColor: c.green,
+                  height: 40,
+                  onPressed: phone.isEmpty ? null : () => launchURL('tel:$phone'),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: NgSecondaryButton(
+                  label: 'WhatsApp',
+                  icon: Icons.chat_rounded,
+                  iconColor: c.green,
+                  height: 40,
+                  onPressed: phone.isEmpty
+                      ? null
+                      : () => launchURL(buildWhatsAppLink(
+                          phone: phone, message: 'Hi ${l.customer},')),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Parity brief Part 4b: quick "Generate Survey Link" right on
+              // the card — LeadDetailPage's "Request Survey" covers the
+              // detail-page half.
+              Expanded(
+                child: _generatingSurveyFor(l.id)
+                    ? const SizedBox(
+                        height: 40,
+                        child: Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      )
+                    : NgSecondaryButton(
+                        label: 'Survey',
+                        icon: Icons.assignment_rounded,
+                        iconColor: c.acc,
+                        height: 40,
+                        onPressed: () => _quickSurveyLink(l),
+                      ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final leads = _visibleLeads(context);
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -262,964 +568,84 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            context.pushNamed(NewLeadPageWidget.routeName);
-          },
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          tooltip: 'New Lead',
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).leadsCrm,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: [
-            LanguageQuickButton(iconColor: IconTheme.of(context).color),
-            ThemeQuickButton(iconColor: IconTheme.of(context).color),
-          ],
-          centerTitle: true,
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: KeyboardScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Corrections session, B3: New/Contacted/Qualified/Won
-                    // is this page's OWN already-established bucket
-                    // vocabulary — not invented here. _loadLeads() above
-                    // already runs the exact same New/FollowUp/(SurveyDone+
-                    // Quoted)/Confirmed queries for the tab lists below;
-                    // these cards just read the lengths of those
-                    // already-loaded lists instead of the old hardcoded
-                    // 8/5/3/2.
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _statTile(
-                            context, '${_model.newLeadsList.length}', 'New'),
-                        _statTile(context, '${_model.contactedLeadsList.length}',
-                            'Contacted'),
-                        _statTile(context, '${_model.qualifiedLeadsList.length}',
-                            'Qualified'),
-                        _statTile(
-                            context, '${_model.wonLeadsList.length}', 'Won'),
-                      ].divide(const SizedBox(width: 10.0)),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Flexible(
-                              flex: 1,
-                              child: InkWell(
-                                splashColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                hoverColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                                onTap: () async {
-                                  _model.leadsFilter = 'all';
-                                  safeSetState(() {});
-                                  _model.leadsList = _model.allLeadsList
-                                      .toList()
-                                      .cast<LeadsRow>();
-                                  safeSetState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(10.0),
-                                  ),
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 10.0, 0.0, 10.0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context).all,
-                                          style: FlutterFlowTheme.of(context)
-                                              .labelMedium
-                                              .override(
-                                                font: GoogleFonts.inter(
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                      ].divide(const SizedBox(height: 2.0)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              flex: 1,
-                              child: InkWell(
-                                splashColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                hoverColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                                onTap: () async {
-                                  _model.leadsFilter = 'new';
-                                  safeSetState(() {});
-                                  _model.leadsList = _model.newLeadsList
-                                      .toList()
-                                      .cast<LeadsRow>();
-                                  safeSetState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(10.0),
-                                  ),
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 10.0, 0.0, 10.0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context).statusNew,
-                                          style: FlutterFlowTheme.of(context)
-                                              .labelMedium
-                                              .override(
-                                                font: GoogleFonts.inter(
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                      ].divide(const SizedBox(height: 2.0)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              flex: 1,
-                              child: InkWell(
-                                splashColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                hoverColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                                onTap: () async {
-                                  _model.leadsFilter = 'contacted';
-                                  safeSetState(() {});
-                                  _model.leadsList = _model.contactedLeadsList
-                                      .toList()
-                                      .cast<LeadsRow>();
-                                  safeSetState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(10.0),
-                                  ),
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 10.0, 0.0, 10.0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context).contacted,
-                                          style: FlutterFlowTheme.of(context)
-                                              .labelMedium
-                                              .override(
-                                                font: GoogleFonts.inter(
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                      ].divide(const SizedBox(height: 2.0)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              flex: 1,
-                              child: InkWell(
-                                splashColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                hoverColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                                onTap: () async {
-                                  _model.leadsFilter = 'qualified';
-                                  safeSetState(() {});
-                                  _model.leadsList = _model.qualifiedLeadsList
-                                      .toList()
-                                      .cast<LeadsRow>();
-                                  safeSetState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(10.0),
-                                  ),
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 10.0, 0.0, 10.0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context).qualified,
-                                          style: FlutterFlowTheme.of(context)
-                                              .labelMedium
-                                              .override(
-                                                font: GoogleFonts.inter(
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                      ].divide(const SizedBox(height: 2.0)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              flex: 1,
-                              child: InkWell(
-                                splashColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                hoverColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                                onTap: () async {
-                                  _model.leadsFilter = 'won';
-                                  safeSetState(() {});
-                                  _model.leadsList = _model.wonLeadsList
-                                      .toList()
-                                      .cast<LeadsRow>();
-                                  safeSetState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(10.0),
-                                  ),
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 10.0, 0.0, 10.0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context).won,
-                                          style: FlutterFlowTheme.of(context)
-                                              .labelMedium
-                                              .override(
-                                                font: GoogleFonts.inter(
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                      ].divide(const SizedBox(height: 2.0)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              flex: 1,
-                              child: InkWell(
-                                splashColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                hoverColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                                onTap: () async {
-                                  _model.leadsFilter = 'lost';
-                                  safeSetState(() {});
-                                  _model.leadsList = _model.lostLeadsList
-                                      .toList()
-                                      .cast<LeadsRow>();
-                                  safeSetState(() {});
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(10.0),
-                                  ),
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 10.0, 0.0, 10.0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          AppLocalizations.of(context).lost,
-                                          style: FlutterFlowTheme.of(context)
-                                              .labelMedium
-                                              .override(
-                                                font: GoogleFonts.inter(
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .labelMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                      ].divide(const SizedBox(height: 2.0)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ].divide(const SizedBox(width: 6.0)),
-                        ),
-                        Text(
-                          AppLocalizations.of(context).leads,
-                          style:
-                              FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: GoogleFonts.interTight(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontStyle,
-                                    ),
-                                    color: FlutterFlowTheme.of(context).primary,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontStyle,
-                                  ),
-                        ),
-                        Builder(
-                          builder: (context) {
-                            final leadsListItem = _model.leadsList.toList();
-
-                            // Empty state (18 Aug 2026). Until now this
-                            // builder rendered nothing at all for an empty
-                            // list — and directly below it sat four
-                            // hardcoded FlutterFlow mockup cards (Ravi
-                            // Menon, Deepa Nair, Karthik S., Meena Raj)
-                            // that were never removed when the real list
-                            // was wired. A brand-new vendor therefore saw
-                            // four invented customers with invented phone
-                            // numbers on their first visit to Leads, while
-                            // the KPI row above correctly read 0/0/0/0.
-                            // Mockup block deleted; this replaces it.
-                            if (leadsListItem.isEmpty) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 36, horizontal: 16),
-                                child: Column(
-                                  children: [
-                                    Icon(Icons.person_search_outlined,
-                                        size: 42,
-                                        color: FlutterFlowTheme.of(context)
-                                            .secondaryText),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'No leads yet',
-                                      style: GoogleFonts.interTight(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: FlutterFlowTheme.of(context)
-                                            .primaryText,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'Add your first enquiry with the + button '
-                                      'and it will show up here.',
-                                      textAlign: TextAlign.center,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12.5,
-                                        height: 1.4,
-                                        color: FlutterFlowTheme.of(context)
-                                            .secondaryText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            return ListView.separated(
-                              padding: EdgeInsets.zero,
-                              primary: false,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              scrollDirection: Axis.vertical,
-                              itemCount: leadsListItem.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12.0),
-                              itemBuilder: (context, leadsListItemIndex) {
-                                final leadsListItemItem =
-                                    leadsListItem[leadsListItemIndex];
-                                return InkWell(
-                                  splashColor: Colors.transparent,
-                                  focusColor: Colors.transparent,
-                                  hoverColor: Colors.transparent,
-                                  highlightColor: Colors.transparent,
-                                  onTap: () async {
-                                    context.pushNamed(
-                                      LeadDetailPageWidget.routeName,
-                                      queryParameters: {
-                                        'leadId': serializeParam(
-                                          leadsListItemItem.id,
-                                          ParamType.String,
-                                        ),
-                                        'leadCustomer': serializeParam(
-                                          leadsListItemItem.customer,
-                                          ParamType.String,
-                                        ),
-                                        'leadPhone': serializeParam(
-                                          leadsListItemItem.phone,
-                                          ParamType.String,
-                                        ),
-                                        'leadEmail': serializeParam(
-                                          leadsListItemItem.email,
-                                          ParamType.String,
-                                        ),
-                                        'leadFromCity': serializeParam(
-                                          leadsListItemItem.fromCity,
-                                          ParamType.String,
-                                        ),
-                                        'leadToCity': serializeParam(
-                                          leadsListItemItem.toCity,
-                                          ParamType.String,
-                                        ),
-                                        'leadApproxDate': serializeParam(
-                                          leadsListItemItem.approxDate,
-                                          ParamType.String,
-                                        ),
-                                        'leadService': serializeParam(
-                                          leadsListItemItem.service,
-                                          ParamType.String,
-                                        ),
-                                        'leadSource': serializeParam(
-                                          leadsListItemItem.source,
-                                          ParamType.String,
-                                        ),
-                                        'leadStatus': serializeParam(
-                                          leadsListItemItem.status,
-                                          ParamType.String,
-                                        ),
-                                        'leadBranch': serializeParam(
-                                          leadsListItemItem.branch,
-                                          ParamType.String,
-                                        ),
-                                        'leadNotes': serializeParam(
-                                          leadsListItemItem.notes,
-                                          ParamType.String,
-                                        ),
-                                      }.withoutNulls,
-                                    );
-                                  },
-                                  child: Container(
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: FlutterFlowTheme.of(context)
-                                          .secondaryBackground,
-                                      borderRadius: BorderRadius.circular(12.0),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.max,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                leadsListItemItem.customer,
-                                                style:
-                                                    FlutterFlowTheme.of(context)
-                                                        .titleSmall
-                                                        .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontStyle,
-                                                          ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .primaryText,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .titleSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .titleSmall
-                                                                  .fontStyle,
-                                                        ),
-                                              ),
-                                              Text(
-                                                leadsListItemItem.phone ?? '-',
-                                                style: FlutterFlowTheme.of(
-                                                        context)
-                                                    .bodySmall
-                                                    .override(
-                                                      font: GoogleFonts.inter(
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .secondaryText,
-                                                      letterSpacing: 0.0,
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontStyle,
-                                                    ),
-                                              ),
-                                              Row(
-                                                mainAxisSize: MainAxisSize.max,
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  Text(
-                                                    leadsListItemItem
-                                                            .fromCity ??
-                                                        '-',
-                                                    style: FlutterFlowTheme.of(
-                                                            context)
-                                                        .bodySmall
-                                                        .override(
-                                                          font:
-                                                              GoogleFonts.inter(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodySmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodySmall
-                                                                    .fontStyle,
-                                                          ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .secondaryText,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                  ),
-                                                  Icon(
-                                                    Icons.arrow_forward,
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .secondaryText,
-                                                    size: 12.0,
-                                                  ),
-                                                  Text(
-                                                    leadsListItemItem.toCity ??
-                                                        '-',
-                                                    style: FlutterFlowTheme.of(
-                                                            context)
-                                                        .bodySmall
-                                                        .override(
-                                                          font:
-                                                              GoogleFonts.inter(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodySmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .bodySmall
-                                                                    .fontStyle,
-                                                          ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .secondaryText,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                  ),
-                                                ].divide(
-                                                    const SizedBox(width: 4.0)),
-                                              ),
-                                            ].divide(
-                                                const SizedBox(height: 4.0)),
-                                          ),
-                                          // Item 10.5: overdue follow-up
-                                          // badge, so the list itself
-                                          // shows which leads are going
-                                          // quiet.
-                                          // Survey response waiting to
-                                          // be quoted.
-                                          if (_surveyRespondedLeadIds
-                                              .contains(leadsListItemItem.id))
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsetsDirectional
-                                                      .fromSTEB(0, 0, 6, 0),
-                                              child: Tooltip(
-                                                message:
-                                                    'Survey response received',
-                                                child: Icon(
-                                                  Icons
-                                                      .assignment_turned_in,
-                                                  size: 18,
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .tertiary,
-                                                ),
-                                              ),
-                                            ),
-                                          if (_overdueLeadIds
-                                              .contains(leadsListItemItem.id))
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsetsDirectional
-                                                      .fromSTEB(
-                                                      0, 0, 6, 0),
-                                              child: Tooltip(
-                                                message:
-                                                    'Follow-up overdue',
-                                                child: Icon(
-                                                  Icons
-                                                      .notification_important,
-                                                  size: 18,
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .error,
-                                                ),
-                                              ),
-                                            ),
-                                          // Item 5.5: was a raw
-                                          // `status ?? '-'` in a single
-                                          // flat colour. Now canonicalised
-                                          // (so legacy 'contacted'/
-                                          // 'converted' rows read
-                                          // correctly) and tinted per
-                                          // stage.
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              color: leadStatusColor(
-                                                      leadsListItemItem.status)
-                                                  .withValues(alpha: 0.14),
-                                              borderRadius:
-                                                  BorderRadius.circular(12.0),
-                                            ),
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsetsDirectional
-                                                      .fromSTEB(
-                                                      10.0, 4.0, 10.0, 4.0),
-                                              child: Text(
-                                                leadStatusLabel(
-                                                    leadsListItemItem.status),
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 11.0,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: leadStatusColor(
-                                                      leadsListItemItem.status),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          // Parity brief Part 4b: quick
-                                          // "Generate Survey Link" right on
-                                          // the card — LeadDetailPage's
-                                          // "Request Survey" already
-                                          // covered the detail-page half.
-                                          SizedBox(
-                                            width: 48,
-                                            height: 48,
-                                            child:
-                                                _generatingSurveyFor(
-                                                        leadsListItemItem.id)
-                                                    ? const Padding(
-                                                        padding:
-                                                            EdgeInsets.all(
-                                                                14),
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                                strokeWidth:
-                                                                    2),
-                                                      )
-                                                    : IconButton(
-                                                        tooltip:
-                                                            'Generate Survey Link',
-                                                        icon: const Icon(
-                                                            Icons
-                                                                .assignment_outlined,
-                                                            size: 20),
-                                                        onPressed: () =>
-                                                            _quickSurveyLink(
-                                                                leadsListItemItem),
-                                                      ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ].divide(const SizedBox(height: 12.0)),
-                    ),
-                  ].divide(const SizedBox(height: 16.0)),
+        backgroundColor: c.bg,
+        // Redesign: the shared top bar, and "New lead" moves from a FAB
+        // into the screen header (handoff: each page has its own "new"
+        // button in its header).
+        appBar: const NgTopBar(),
+        body: RefreshIndicator(
+          onRefresh: _loadLeads,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              NgScreenTitle(
+                AppLocalizations.of(context).leadsCrm,
+                action: NgPrimaryButton(
+                  compact: true,
+                  icon: Icons.add_rounded,
+                  label: 'New lead',
+                  onPressed: () =>
+                      context.pushNamed(NewLeadPageWidget.routeName),
                 ),
               ),
-            ),
+              const SizedBox(height: 14),
+              _statsCard(context),
+              const SizedBox(height: 14),
+              NgSearchField(
+                controller: _searchCtrl,
+                hint: 'Name or phone',
+                onChanged: (_) => safeSetState(() {}),
+              ),
+              const SizedBox(height: 14),
+              NgChipRow(
+                edge: 0,
+                chips: [
+                  for (final (key, label, rows) in _filters(context))
+                    NgChip(
+                      label: label,
+                      count: rows.length,
+                      selected: _model.leadsFilter == key,
+                      onTap: () => _setFilter(key, rows),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              // Empty state (18 Aug 2026): a brand-new vendor once saw four
+              // invented FlutterFlow mockup customers here; an empty list
+              // must read as empty.
+              if (leads.isEmpty)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+                  child: Column(
+                    children: [
+                      Icon(Icons.person_search_outlined, size: 42, color: c.mute),
+                      const SizedBox(height: 12),
+                      Text(
+                        _searchCtrl.text.trim().isEmpty
+                            ? 'No leads yet'
+                            : 'No leads match',
+                        style: NgFonts.geist(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: c.text),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Add an enquiry with New lead and it will show up here.',
+                        textAlign: TextAlign.center,
+                        style: NgFonts.geist(
+                            fontSize: 12.5, height: 1.4, color: c.mute),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                for (var i = 0; i < leads.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _leadCard(context, leads[i]),
+                ],
+            ],
           ),
         ),
       ),

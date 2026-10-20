@@ -1,14 +1,17 @@
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/components/keyboard_scroll_view.dart';
+import '/backend/detail_navigation.dart';
+import '/backend/order_stages.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'orders_page_model.dart';
 export 'orders_page_model.dart';
 
@@ -79,40 +82,176 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
         st == 'closed';
   }
 
-  /// Top filter tab (All / Pending / Completed / Cancelled). These four
-  /// were static FlutterFlow decoration with no onTap — now wired to
-  /// _model.selectedTab and the live list below filters accordingly.
-  /// (The four duplicated non-clickable chip blocks and the hardcoded
-  /// ORD-001 placeholder cards that used to follow the list were removed
-  /// in the same pass — the page went from 12,696 to ~800 lines.)
-  Widget _topTab(String label) {
-    final selected = _model.selectedTab == label;
-    final theme = FlutterFlowTheme.of(context);
-    return Flexible(
-      flex: 1,
+  static const _tabs = ['All', 'Pending', 'Completed', 'Cancelled'];
+
+  /// Filter by the top tab. Statuses live lowercase in the DB
+  /// (pending/confirmed/transit/delivered|done/cancelled). Completed =
+  /// delivered/done/completed/closed — 'closed' is Mark Order Complete's
+  /// financial close (Order Details Session 1, item 5) and must land here,
+  /// not fall through to Pending by omission. Cancelled = cancelled;
+  /// Pending = everything still in progress.
+  static bool _inTab(OrdersRow o, String tab) {
+    final st = (o.status ?? '').toLowerCase();
+    final done = st == 'delivered' ||
+        st == 'done' ||
+        st == 'completed' ||
+        st == 'closed';
+    switch (tab) {
+      case 'Completed':
+        return done;
+      case 'Cancelled':
+        return st == 'cancelled';
+      case 'Pending':
+        return !done && st != 'cancelled';
+      default:
+        return true;
+    }
+  }
+
+  /// The redesign shows Orders as a schedule grouped by move day. Upcoming
+  /// days run soonest first; on the Completed tab the most recent day
+  /// leads instead, since that is the one being looked for. Orders with no
+  /// move date sit in their own group at the end.
+  List<({String title, String sub, Color dot, List<OrdersRow> items})>
+      _groups(BuildContext context, List<OrdersRow> orders) {
+    final c = NgPalette.of(context);
+    final today = DateTime.now();
+    final t0 = DateTime(today.year, today.month, today.day);
+    final dated = orders.where((o) => o.moveDateOrNull != null).toList()
+      ..sort((a, b) => _model.selectedTab == 'Completed'
+          ? b.moveDateOrNull!.compareTo(a.moveDateOrNull!)
+          : a.moveDateOrNull!.compareTo(b.moveDateOrNull!));
+    final out = <({String title, String sub, Color dot, List<OrdersRow> items})>[];
+    DateTime? cur;
+    for (final o in dated) {
+      final d = o.moveDateOrNull!;
+      final day = DateTime(d.year, d.month, d.day);
+      if (cur == null || day != cur) {
+        cur = day;
+        final diff = day.difference(t0).inDays;
+        final title = diff == 0
+            ? 'Today'
+            : diff == 1
+                ? 'Tomorrow'
+                : diff == -1
+                    ? 'Yesterday'
+                    : DateFormat('EEE, d MMM').format(day);
+        out.add((
+          title: title,
+          sub: diff.abs() <= 1 ? DateFormat('d MMM').format(day) : '',
+          dot: diff == 0 ? c.acc : (diff > 0 ? c.blue : c.faint),
+          items: [],
+        ));
+      }
+      out.last.items.add(o);
+    }
+    final undated = orders.where((o) => o.moveDateOrNull == null).toList();
+    if (undated.isNotEmpty) {
+      out.add((title: 'No move date', sub: '', dot: c.faint, items: undated));
+    }
+    return out;
+  }
+
+  ({String label, Color color}) _payLook(NgPalette c, OrdersRow o) {
+    switch ((o.paymentStatus ?? '').toLowerCase()) {
+      case 'paid':
+        return (label: 'Paid', color: c.green);
+      case 'partial':
+        return (label: 'Part paid', color: c.amber);
+      default:
+        return (label: 'Due', color: c.red);
+    }
+  }
+
+  Widget _orderCard(BuildContext context, OrdersRow o) {
+    final c = NgPalette.of(context);
+    final hidden = _hideCustomerFor(o);
+    final st = (o.status ?? '').toLowerCase();
+    final cancelled = st == 'cancelled';
+    final idx = orderStageIndex(o.trackingStatus, o.status);
+    final stageColor =
+        cancelled ? c.red : c.status(orderStageTone(idx)).fg;
+    final stageLabel = cancelled ? 'Cancelled' : orderStageLabel(kOrderStages[idx]);
+    final pay = _payLook(c, o);
+    final svc = (o.service ?? '').trim();
+    return Material(
+      color: c.s1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(NgRadius.tile),
+        side: BorderSide(color: c.w06),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        splashColor: Colors.transparent,
-        focusColor: Colors.transparent,
-        hoverColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        onTap: () => safeSetState(() => _model.selectedTab = label),
+        onTap: () => openOrderDetail(context, o, hideCustomer: hidden),
         child: Container(
-          width: double.infinity,
           decoration: BoxDecoration(
-            color: selected ? theme.primary : theme.secondaryBackground,
-            borderRadius: BorderRadius.circular(20.0),
+            border: Border(left: BorderSide(color: stageColor, width: 3)),
           ),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(0.0, 10.0, 0.0, 10.0),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: theme.labelMedium.override(
-                font: GoogleFonts.inter(),
-                color: selected ? theme.primaryBackground : theme.primaryText,
-                letterSpacing: 0.0,
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      hidden ? 'Customer (hidden)' : o.customer,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: NgFonts.geist(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: c.text),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    stageLabel,
+                    style: NgFonts.geist(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: stageColor),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 6),
+              Text(
+                '${o.fromCity ?? '-'} → ${o.toCity ?? '-'}${svc.isEmpty ? '' : ' · $svc'}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: NgFonts.geist(fontSize: 12.5, color: c.mute),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      functions.inrFormat(o.amount ?? 0)!,
+                      style: NgFonts.geist(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: c.text),
+                    ),
+                  ),
+                  if (!cancelled) ...[
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration:
+                          BoxDecoration(color: pay.color, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      pay.label,
+                      style: NgFonts.geist(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: pay.color),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -121,6 +260,12 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
 
   @override
   Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final orders =
+        _model.ordersList
+        .where((o) => _inTab(o, _model.selectedTab ?? 'All'))
+        .toList();
+    final groups = _groups(context, orders);
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -128,537 +273,110 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            context.pushNamed(NewOrderPageWidget.routeName);
-          },
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          tooltip: 'New Order',
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).orders,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: const [],
-          centerTitle: true,
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: KeyboardScrollView(
-                child: Column(
+        backgroundColor: c.bg,
+        // Redesign: shared top bar; "new order" moves from the FAB into
+        // the screen header beside a calendar shortcut.
+        appBar: const NgTopBar(),
+        body: RefreshIndicator(
+          onRefresh: _loadOrders,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              NgScreenTitle(
+                AppLocalizations.of(context).orders,
+                action: Row(
                   mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _topTab('All'),
-                        _topTab('Pending'),
-                        _topTab('Completed'),
-                        _topTab('Cancelled'),
-                      ].divide(const SizedBox(width: 8.0)),
+                    NgHeaderButton(
+                      onTap: () =>
+                          context.pushNamed(CalendarPageWidget.routeName),
+                      child: Icon(Icons.calendar_month_rounded,
+                          size: 20, color: c.soft),
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context).orders,
-                          style:
-                              FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: GoogleFonts.interTight(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontStyle,
-                                    ),
-                                    color: FlutterFlowTheme.of(context).primary,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontStyle,
-                                  ),
-                        ),
-                        Builder(
-                          builder: (context) {
-                            // Filter by the top tab. Statuses live lowercase in the DB
-                            // (pending/confirmed/transit/delivered|done/cancelled).
-                            // Completed = delivered/done/completed; Cancelled =
-                            // cancelled; Pending = everything still in progress.
-                            final ordersListItem = _model.ordersList.where((o) {
-                              final st = (o.status ?? '').toLowerCase();
-                              switch (_model.selectedTab) {
-                                case 'Completed':
-                                  // Order Details Session 1, item 5: Mark
-                                  // Order Complete introduces status
-                                  // 'closed' (financial close, distinct
-                                  // from 'delivered'/job-complete) — must
-                                  // land here, not fall through to
-                                  // Pending by omission.
-                                  return st == 'delivered' ||
-                                      st == 'done' ||
-                                      st == 'completed' ||
-                                      st == 'closed';
-                                case 'Cancelled':
-                                  return st == 'cancelled';
-                                case 'Pending':
-                                  return st != 'delivered' &&
-                                      st != 'done' &&
-                                      st != 'completed' &&
-                                      st != 'cancelled' &&
-                                      st != 'closed';
-                                default:
-                                  return true;
-                              }
-                            }).toList();
-
-                            return ListView.separated(
-                              padding: EdgeInsets.zero,
-                              primary: false,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              scrollDirection: Axis.vertical,
-                              itemCount: ordersListItem.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12.0),
-                              itemBuilder: (context, ordersListItemIndex) {
-                                final ordersListItemItem =
-                                    ordersListItem[ordersListItemIndex];
-                                return InkWell(
-                                  splashColor: Colors.transparent,
-                                  focusColor: Colors.transparent,
-                                  hoverColor: Colors.transparent,
-                                  highlightColor: Colors.transparent,
-                                  onTap: () async {
-                                    context.pushNamed(
-                                      OrderDetailPageWidget.routeName,
-                                      queryParameters: {
-                                        'orderId': serializeParam(
-                                          ordersListItemItem.id,
-                                          ParamType.String,
-                                        ),
-                                        // Masked for supervisors on
-                                        // completed orders — the detail
-                                        // page renders its own fallback.
-                                        'orderCustomer': serializeParam(
-                                          _hideCustomerFor(ordersListItemItem)
-                                              ? 'Customer (hidden)'
-                                              : ordersListItemItem.customer,
-                                          ParamType.String,
-                                        ),
-                                        'orderPhone': serializeParam(
-                                          _hideCustomerFor(ordersListItemItem)
-                                              ? null
-                                              : ordersListItemItem.phone,
-                                          ParamType.String,
-                                        ),
-                                        'orderFromCity': serializeParam(
-                                          ordersListItemItem.fromCity,
-                                          ParamType.String,
-                                        ),
-                                        'orderToCity': serializeParam(
-                                          ordersListItemItem.toCity,
-                                          ParamType.String,
-                                        ),
-                                        'orderFromAddress': serializeParam(
-                                          ordersListItemItem.fromAddress,
-                                          ParamType.String,
-                                        ),
-                                        'orderToAddress': serializeParam(
-                                          ordersListItemItem.toAddress,
-                                          ParamType.String,
-                                        ),
-                                        'orderFromFloor': serializeParam(
-                                          ordersListItemItem.fromFloor
-                                              ?.toString(),
-                                          ParamType.String,
-                                        ),
-                                        'orderToFloor': serializeParam(
-                                          ordersListItemItem.toFloor
-                                              ?.toString(),
-                                          ParamType.String,
-                                        ),
-                                        'orderMoveDate': serializeParam(
-                                          ordersListItemItem.moveDateOrNull
-                                              ?.toString(),
-                                          ParamType.String,
-                                        ),
-                                        'orderAmount': serializeParam(
-                                          ordersListItemItem.amount?.toString(),
-                                          ParamType.String,
-                                        ),
-                                        'orderStatus': serializeParam(
-                                          ordersListItemItem.status,
-                                          ParamType.String,
-                                        ),
-                                        'orderPaymentStatus': serializeParam(
-                                          ordersListItemItem.paymentStatus,
-                                          ParamType.String,
-                                        ),
-                                        'orderTrackingStatus': serializeParam(
-                                          ordersListItemItem.trackingStatus,
-                                          ParamType.String,
-                                        ),
-                                        'orderService': serializeParam(
-                                          ordersListItemItem.service,
-                                          ParamType.String,
-                                        ),
-                                        'orderBranch': serializeParam(
-                                          ordersListItemItem.branch,
-                                          ParamType.String,
-                                        ),
-                                        'orderType': serializeParam(
-                                          ordersListItemItem.orderType,
-                                          ParamType.String,
-                                        ),
-                                        'orderNotes': serializeParam(
-                                          ordersListItemItem.notes,
-                                          ParamType.String,
-                                        ),
-                                      }.withoutNulls,
-                                    );
-                                  },
-                                  child: Container(
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: FlutterFlowTheme.of(context)
-                                          .secondaryBackground,
-                                      borderRadius: BorderRadius.circular(12.0),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisSize: MainAxisSize.max,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                _hideCustomerFor(
-                                                        ordersListItemItem)
-                                                    ? 'Customer (hidden)'
-                                                    : ordersListItemItem
-                                                        .customer,
-                                                style:
-                                                    FlutterFlowTheme.of(context)
-                                                        .titleSmall
-                                                        .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontStyle,
-                                                          ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .primaryText,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .titleSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .titleSmall
-                                                                  .fontStyle,
-                                                        ),
-                                              ),
-                                              Container(
-                                                decoration: BoxDecoration(
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .primaryBackground,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          12.0),
-                                                ),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(
-                                                          10.0, 4.0, 10.0, 4.0),
-                                                  child: Text(
-                                                    ordersListItemItem.status ??
-                                                        '-',
-                                                    style: FlutterFlowTheme.of(
-                                                            context)
-                                                        .labelSmall
-                                                        .override(
-                                                          font:
-                                                              GoogleFonts.inter(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .labelSmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .labelSmall
-                                                                    .fontStyle,
-                                                          ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .primaryText,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontStyle,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.max,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.place,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .secondaryText,
-                                                size: 14.0,
-                                              ),
-                                              Text(
-                                                ordersListItemItem.fromCity ??
-                                                    '-',
-                                                style: FlutterFlowTheme.of(
-                                                        context)
-                                                    .bodySmall
-                                                    .override(
-                                                      font: GoogleFonts.inter(
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .secondaryText,
-                                                      letterSpacing: 0.0,
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontStyle,
-                                                    ),
-                                              ),
-                                              Icon(
-                                                Icons.arrow_forward,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .secondaryText,
-                                                size: 14.0,
-                                              ),
-                                              Text(
-                                                ordersListItemItem.toCity ??
-                                                    '-',
-                                                style: FlutterFlowTheme.of(
-                                                        context)
-                                                    .bodySmall
-                                                    .override(
-                                                      font: GoogleFonts.inter(
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .secondaryText,
-                                                      letterSpacing: 0.0,
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontStyle,
-                                                    ),
-                                              ),
-                                            ].divide(
-                                                const SizedBox(width: 4.0)),
-                                          ),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.max,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                ordersListItemItem
-                                                        .moveDateOrNull
-                                                        ?.toString() ??
-                                                    '—',
-                                                style: FlutterFlowTheme.of(
-                                                        context)
-                                                    .bodySmall
-                                                    .override(
-                                                      font: GoogleFonts.inter(
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .secondaryText,
-                                                      letterSpacing: 0.0,
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontStyle,
-                                                    ),
-                                              ),
-                                              Text(
-                                                (ordersListItemItem.amount ?? 0)
-                                                    .toString(),
-                                                style:
-                                                    FlutterFlowTheme.of(context)
-                                                        .titleSmall
-                                                        .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontStyle,
-                                                          ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .primary,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .titleSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .titleSmall
-                                                                  .fontStyle,
-                                                        ),
-                                              ),
-                                            ],
-                                          ),
-                                        ].divide(const SizedBox(height: 8.0)),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ].divide(const SizedBox(height: 12.0)),
+                    const SizedBox(width: 6),
+                    NgPrimaryButton(
+                      compact: true,
+                      icon: Icons.add_rounded,
+                      label: 'New order',
+                      onPressed: () =>
+                          context.pushNamed(NewOrderPageWidget.routeName),
                     ),
-                  ].divide(const SizedBox(height: 16.0)),
+                  ],
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+              NgChipRow(
+                edge: 0,
+                chips: [
+                  for (final tab in _tabs)
+                    NgChip(
+                      label: tab,
+                      count: _model.ordersList
+                          .where((o) => _inTab(o, tab))
+                          .length,
+                      selected: _model.selectedTab == tab,
+                      onTap: () =>
+                          safeSetState(() => _model.selectedTab = tab),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (orders.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      Icon(Icons.assignment_outlined, size: 42, color: c.mute),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No orders here',
+                        style: NgFonts.geist(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: c.text),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                for (final g in groups) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                              color: g.dot, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          g.title,
+                          style: NgFonts.geist(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: c.text),
+                        ),
+                        if (g.sub.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Text(g.sub,
+                              style:
+                                  NgFonts.geist(fontSize: 13, color: c.faint)),
+                        ],
+                        const Spacer(),
+                        Text('${g.items.length}',
+                            style: NgFonts.mono(fontSize: 12, color: c.faint)),
+                      ],
+                    ),
+                  ),
+                  for (var i = 0; i < g.items.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 8),
+                    _orderCard(context, g.items[i]),
+                  ],
+                  const SizedBox(height: 16),
+                ],
+            ],
           ),
         ),
       ),

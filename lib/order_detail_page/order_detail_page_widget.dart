@@ -33,6 +33,7 @@ import '/backend/supabase/org_scope.dart';
 import '/backend/issued_documents.dart';
 import '/components/pdf_view_page.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -40,7 +41,6 @@ import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:google_fonts/google_fonts.dart';
 import 'arrival_code_card.dart';
 import 'order_detail_page_model.dart';
 import '/backend/vendor_identity.dart';
@@ -232,7 +232,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
               Text(
                 'Creates a new order for ${o.customer} with the same '
                 'shipment details. Payment and job status start fresh.',
-                style: GoogleFonts.inter(fontSize: 12.5),
+                style: NgFonts.geist(fontSize: 12.5),
               ),
               const SizedBox(height: 14),
               InkWell(
@@ -611,7 +611,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                   ? 'Signed by ${sig.customerName ?? 'customer'}'
                       '${sig.signedAt == null ? '' : ' on ${DateFormat('d MMM yyyy').format(sig.signedAt!.toLocal())}'}'
                   : 'Awaiting customer signature',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
                 color: theme.primaryText,
@@ -637,7 +637,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
               ),
               child: Text(
                 sig.link.isEmpty ? 'Send link' : 'Share link',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: color,
@@ -795,7 +795,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
             content: SingleChildScrollView(
               child: Text(
                 issue.message,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 13.5, color: theme.primaryText),
               ),
             ),
@@ -1412,7 +1412,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
           title: Text(
             AppLocalizations.of(context).orderDetails,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -1461,7 +1461,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                               style: FlutterFlowTheme.of(context)
                                   .titleMedium
                                   .override(
-                                    font: GoogleFonts.interTight(
+                                    font: NgFonts.geist(
                                       fontWeight: FlutterFlowTheme.of(context)
                                           .titleMedium
                                           .fontWeight,
@@ -1494,7 +1494,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .labelMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .labelMedium
@@ -1736,7 +1736,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                             'customer signing page is not live. Use '
                             'Capture Signature in Documents below to take '
                             'the signature in person.',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 fontSize: 11.5,
                                 color: FlutterFlowTheme.of(context)
                                     .primaryText),

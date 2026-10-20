@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/nav_items.dart';
 
 /// The arrival code, shown to the OFFICE — 19 Aug 2026.
@@ -120,14 +121,14 @@ class ArrivalCodeCardState extends State<ArrivalCodeCard> {
                   size: 18, color: accent),
               const SizedBox(width: 8),
               Text('Arrival code',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText)),
               const Spacer(),
               if (muted)
                 Text('Already used',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11, color: theme.secondaryText)),
             ],
           ),
@@ -167,7 +168,7 @@ class ArrivalCodeCardState extends State<ArrivalCodeCard> {
                     'address. The supervisor types it in to start the job — '
                     'they cannot see it themselves, which is what makes it '
                     'proof the crew actually arrived.',
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 11.5, color: theme.secondaryText, height: 1.35),
           ),
         ],

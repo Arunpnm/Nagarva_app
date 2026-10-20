@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Step 2 (super-admin console): tenant detail view. Pushed from the
 /// tenant list in super_admin_page_widget.dart — same platform-admin gate
@@ -272,12 +272,12 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
             SizedBox(
               width: 120,
               child: Text(label,
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       color: theme.secondaryText, fontSize: 13)),
             ),
             Expanded(
               child: Text(value,
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       color: theme.primaryText,
                       fontSize: 13,
                       fontWeight: FontWeight.w600)),
@@ -320,7 +320,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                         Icon(Icons.block, color: theme.error, size: 18),
                         const SizedBox(width: 8),
                         Text('This tenant is suspended',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 color: theme.error,
                                 fontWeight: FontWeight.w600)),
                       ],
@@ -396,7 +396,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Usage',
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                               color: theme.primaryText,
                               fontSize: 14,
                               fontWeight: FontWeight.w700)),

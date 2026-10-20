@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/material_usage.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Materials used on this order, recorded FROM the order.
 ///
@@ -170,7 +170,7 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
               Icon(Icons.inventory_2_outlined, size: 18, color: theme.primary),
               const SizedBox(width: 8),
               Text('Materials Used',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText)),
@@ -199,7 +199,7 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
                 'it counts as a cost on this order — and if the customer is '
                 'buying them, it is charged to them too.',
                 style:
-                    GoogleFonts.inter(fontSize: 12, color: theme.secondaryText),
+                    NgFonts.geist(fontSize: 12, color: theme.secondaryText),
               ),
             )
           else ...[
@@ -211,13 +211,13 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
                   children: [
                     Expanded(
                       child: Text('${_qty(r.qty)} × ${r.name}',
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: theme.primaryText)),
                     ),
                     Text('₹${r.value.toStringAsFixed(0)}',
-                        style: GoogleFonts.interTight(
+                        style: NgFonts.geist(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: theme.primaryText)),
@@ -229,11 +229,11 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
               children: [
                 Expanded(
                   child: Text('Material cost on this job',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 12, color: theme.secondaryText)),
                 ),
                 Text('₹${_totalCost.toStringAsFixed(0)}',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText)),
@@ -243,7 +243,7 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!,
-                style: GoogleFonts.inter(fontSize: 12, color: theme.error)),
+                style: NgFonts.geist(fontSize: 12, color: theme.error)),
           ],
         ],
       ),
