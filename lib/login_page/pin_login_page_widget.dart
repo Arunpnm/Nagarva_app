@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/device_org_binding.dart';
@@ -8,9 +7,11 @@ import '/backend/org_resolution.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_session_loader.dart';
 import '/backend/vendor_org_resolver.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/components/language_quick_button.dart';
+import '/components/ng_top_bar.dart';
+import '/components/theme_quick_button.dart';
 import '/index.dart';
 import '/permissions.dart';
 
@@ -212,52 +213,47 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
     }
   }
 
-  Widget _digitBox(int i, {double width = 58}) {
-    final theme = FlutterFlowTheme.of(context);
+  /// Redesign ("LOGIN B: PIN-first, device bound"): a 16px dot per digit
+  /// instead of a box — filled accent once entered, the next position
+  /// ringed in accent, the rest a w25 ring.
+  Widget _pinDot(int i) {
+    final c = NgPalette.of(context);
     final filled = _digits[i].isNotEmpty;
-    final active = _focusedBox == i;
+    final next = !filled && _focusedBox == i;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      width: width,
-      height: 66,
-      alignment: Alignment.center,
+      width: 16,
+      height: 16,
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
+        shape: BoxShape.circle,
+        color: filled ? c.accBtn : Colors.transparent,
         border: Border.all(
-          color: filled || active ? theme.primary : theme.secondaryText,
-          width: 2,
+          color: filled || next ? c.accBtn : c.hairline(0.25),
+          width: 1.5,
         ),
-      ),
-      child: Text(
-        filled ? '•' : '',
-        style: GoogleFonts.jetBrainsMono(
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            color: theme.primaryText),
       ),
     );
   }
 
   Widget _numKey(String label,
       {VoidCallback? onTap, Widget? icon, double width = 72}) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     return SizedBox(
       width: width,
-      height: 56,
+      height: 66,
       child: Material(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
+        color: c.s1,
+        borderRadius: BorderRadius.circular(20),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           child: Center(
             child: icon ??
                 Text(label,
                     style: NgFonts.geist(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: theme.primaryText)),
+                        fontSize: 28,
+                        fontWeight: FontWeight.w500,
+                        color: c.text)),
           ),
         ),
       ),
@@ -266,66 +262,89 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     // The org this device is bound to — never the platform. A person
     // signing in should see who they are signing in to.
     final orgName = (DeviceOrgBinding.boundOrgName ?? '').trim();
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: c.bg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 26),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.local_shipping, size: 48, color: theme.primary),
-                const SizedBox(height: 12),
+                // Redesign top row: the device-binding state on the left
+                // (this screen only ever shows on a bound device), theme
+                // and language on the right — both reachable before
+                // signing in, as in the handoff.
+                Row(
+                  children: [
+                    Icon(Icons.verified_user_rounded,
+                        size: 16, color: c.green),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text('Linked device',
+                          style: NgFonts.geist(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                              color: c.green)),
+                    ),
+                    NgHeaderButton(
+                        child: ThemeQuickButton(iconColor: c.soft)),
+                    const SizedBox(width: 8),
+                    NgHeaderButton(
+                        child: LanguageQuickButton(iconColor: c.soft)),
+                  ],
+                ),
+                const SizedBox(height: 44),
+                Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: c.w04, width: 6,
+                        strokeAlign: BorderSide.strokeAlignOutside),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.asset('assets/images/nagarva_logo.png',
+                      fit: BoxFit.cover),
+                ),
+                const SizedBox(height: 14),
                 Text(orgName,
+                    textAlign: TextAlign.center,
                     style: NgFonts.geist(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: theme.primaryText)),
-                const SizedBox(height: 4),
+                        fontSize: 21,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.21,
+                        color: c.text)),
+                const SizedBox(height: 6),
                 Text('Enter your 4-digit PIN',
-                    style: NgFonts.geist(
-                        fontSize: 13, color: theme.secondaryText)),
-                const SizedBox(height: 28),
-                // Same fragile-hardcode class as the keypad below: 4x58px
-                // + 3x12px gaps + 48px outer padding = 316px needed, only
-                // ~4dp of headroom on a 320dp-wide phone. Computed from
-                // available space instead (58px cap, 44px floor — these
-                // are static indicators, not tap targets, so Material's
-                // 48dp touch-target minimum doesn't apply here the way it
-                // does to _numKey).
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    const gap = 12.0;
-                    final boxWidth = ((constraints.maxWidth - 3 * gap) / 4)
-                        .clamp(44.0, 58.0);
-                    return AnimatedBuilder(
-                      animation: _shakeCtrl,
-                      builder: (context, child) {
-                        final t = _shakeCtrl.value;
-                        final dx = (t == 0 || t == 1)
-                            ? 0.0
-                            : 10 *
-                                (t < 0.5 ? 1 : -1) *
-                                (1 - (t - 0.5).abs() * 2);
-                        return Transform.translate(
-                            offset: Offset(dx, 0), child: child);
-                      },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (var i = 0; i < 4; i++) ...[
-                            _digitBox(i, width: boxWidth),
-                            if (i < 3) const SizedBox(width: gap),
-                          ],
-                        ],
-                      ),
-                    );
+                    style: NgFonts.geist(fontSize: 14, color: c.mute)),
+                const SizedBox(height: 24),
+                AnimatedBuilder(
+                  animation: _shakeCtrl,
+                  builder: (context, child) {
+                    final t = _shakeCtrl.value;
+                    final dx = (t == 0 || t == 1)
+                        ? 0.0
+                        : 10 *
+                            (t < 0.5 ? 1 : -1) *
+                            (1 - (t - 0.5).abs() * 2);
+                    return Transform.translate(
+                        offset: Offset(dx, 0), child: child);
                   },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var i = 0; i < 4; i++) ...[
+                        _pinDot(i),
+                        if (i < 3) const SizedBox(width: 18),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -345,13 +364,13 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.5,
-                                color: theme.primary,
+                                color: c.acc,
                               ),
                             ),
                             const SizedBox(width: 10),
                             Text('Verifying…',
                                 style: TextStyle(
-                                    color: theme.secondaryText,
+                                    color: c.mute,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500)),
                           ],
@@ -359,7 +378,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                       : (_error != null
                           ? Text(_error!,
                               style: TextStyle(
-                                  color: theme.error,
+                                  color: c.red,
                                   fontWeight: FontWeight.w600))
                           : null),
                 ),
@@ -381,9 +400,11 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                 // with a different number.
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    const gap = 10.0;
+                    // Redesign: keys fill the width (3 equal columns,
+                    // 12px gaps), 66 tall, radius 20.
+                    const gap = 12.0;
                     final keyWidth = ((constraints.maxWidth - 2 * gap) / 3)
-                        .clamp(48.0, 72.0);
+                        .clamp(48.0, 120.0);
                     return Column(
                       children: [
                         for (final row in [
@@ -406,15 +427,15 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(width: keyWidth, height: 56),
+                            SizedBox(width: keyWidth, height: 66),
                             const SizedBox(width: gap),
                             _numKey('0',
                                 width: keyWidth, onTap: () => _tapDigit('0')),
                             const SizedBox(width: gap),
                             _numKey('',
                                 width: keyWidth,
-                                icon: const Icon(Icons.backspace_outlined,
-                                    size: 20),
+                                icon: Icon(Icons.backspace_outlined,
+                                    size: 24, color: c.text),
                                 onTap: _tapBackspace),
                           ],
                         ),
@@ -425,7 +446,11 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                 const SizedBox(height: 24),
                 TextButton(
                   onPressed: () => context.pushNamed(LoginPageWidget.routeName),
-                  child: const Text('Use email login instead'),
+                  child: Text('Use email login instead',
+                      style: NgFonts.geist(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: c.acc)),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -434,7 +459,18 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                       context.pushNamed(OrgBindingPageWidget.routeName);
                     }
                   },
-                  child: const Text('Not your organization? Switch device'),
+                  child: Text('Not your organization? Switch device',
+                      style: NgFonts.geist(fontSize: 13, color: c.mute)),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock_rounded, size: 14, color: c.faint),
+                    const SizedBox(width: 5),
+                    Text('Secured by Nagarva',
+                        style: NgFonts.geist(fontSize: 12, color: c.faint)),
+                  ],
                 ),
               ],
             ),
