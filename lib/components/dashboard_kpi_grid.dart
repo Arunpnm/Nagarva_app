@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '/backend/commission_pricing.dart';
 import '/backend/margin_availability.dart';
 import '/backend/supabase/database/tables/dashboard_kpis_view.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/permissions.dart';
@@ -81,41 +80,41 @@ class DashboardKpiGrid extends StatelessWidget {
     final row = kpi;
     if (row == null) return const SizedBox.shrink();
 
-    final theme = FlutterFlowTheme.of(context);
     final tiles = _visibleTiles(row);
     if (tiles.isEmpty) return const SizedBox.shrink();
 
+    // Redesign: the handoff's month-KPI block — one rounded panel whose
+    // cells are separated by 1px w06 gaps (the panel colour showing
+    // through), s1b cells, muted label over an 18px figure.
+    final c = NgPalette.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Two columns on a phone, three once there is room. Driven by
-        // available width rather than a device check, so it behaves in a
-        // split-screen or a foldable without a separate code path.
         final columns = constraints.maxWidth >= 620 ? 3 : 2;
-        const gap = 10.0;
+        const gap = 1.0;
         final tileWidth =
-            (constraints.maxWidth - (gap * (columns - 1))) / columns;
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final t in tiles)
-              SizedBox(
-                width: tileWidth,
-                child: _KpiCard(tile: t, theme: theme, onTapTile: onTapTile),
-              ),
-          ],
+            ((constraints.maxWidth - (gap * (columns - 1))) / columns)
+                .floorToDouble();
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            color: c.w06,
+            child: Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final t in tiles)
+                  SizedBox(
+                    width: tileWidth,
+                    child: _KpiCard(tile: t, onTapTile: onTapTile),
+                  ),
+              ],
+            ),
+          ),
         );
       },
     );
   }
 
-  /// Builds the tile list, dropping anything this session may not see.
-  ///
-  /// Absent, not disabled: a greyed-out Revenue tile still tells a
-  /// driver what the org tracks and invites them to ask why it is
-  /// locked. The matrix decides visibility, so the tile simply is not
-  /// built.
   List<_Tile> _visibleTiles(DashboardKpisViewRow row) {
     final out = <_Tile>[];
 
@@ -128,29 +127,21 @@ class DashboardKpiGrid extends StatelessWidget {
       id: 'enquiries',
       label: 'Enquiries',
       value: _count(row.activeLeads),
-      icon: Icons.people_alt_outlined,
-      color: const Color(0xFF4F5FE0),
     ));
     add('reports', _Tile(
       id: 'quotes',
       label: 'Quotes',
       value: _count(row.quotesThisMonth),
-      icon: Icons.request_quote_outlined,
-      color: const Color(0xFF12B5C9),
     ));
     add('reports', _Tile(
       id: 'bookings',
       label: 'Bookings',
       value: _count(row.ordersThisMonth),
-      icon: Icons.event_available_outlined,
-      color: const Color(0xFF22B573),
     ));
     add('reports', _Tile(
       id: 'active_moves',
       label: 'Active Moves',
       value: _count(row.activeMoves),
-      icon: Icons.local_shipping_outlined,
-      color: const Color(0xFF3B6FF6),
     ));
     // Not in the mockup, but live and working today, so it survives —
     // see the class doc. Same for Labour below.
@@ -158,8 +149,6 @@ class DashboardKpiGrid extends StatelessWidget {
       id: 'reminders',
       label: 'Reminders',
       value: _count(row.remindersToday),
-      icon: Icons.notifications_active_outlined,
-      color: const Color(0xFFF5A524),
     ));
 
     // ---- money -------------------------------------------------------
@@ -167,15 +156,13 @@ class DashboardKpiGrid extends StatelessWidget {
       id: 'revenue',
       label: 'Revenue',
       value: functions.inrFormat(row.revenueThisMonth) ?? '-',
-      icon: Icons.trending_up,
-      color: const Color(0xFF8B5CF6),
+      tone: NgStatus.green,
     ));
     add('financials', _Tile(
       id: 'outstanding',
       label: 'Outstanding',
       value: functions.inrFormat(row.outstandingAmount) ?? '-',
-      icon: Icons.account_balance_wallet_outlined,
-      color: const Color(0xFFF97316),
+      tone: NgStatus.amber,
     ));
 
     // ---- margin ------------------------------------------------------
@@ -201,8 +188,6 @@ class DashboardKpiGrid extends StatelessWidget {
       id: 'labour',
       label: 'Labour',
       value: functions.inrFormat(row.labourThisMonth) ?? '-',
-      icon: Icons.groups_outlined,
-      color: const Color(0xFF64748B),
     ));
 
     add('financials_margin', _Tile(
@@ -221,8 +206,7 @@ class DashboardKpiGrid extends StatelessWidget {
       emptyBody: commissionPriced
           ? kMarginUnavailableBody
           : commissionIncompleteNote(unpricedCommissionCount),
-      icon: Icons.savings_outlined,
-      color: const Color(0xFF22B573),
+      tone: NgStatus.green,
     ));
 
     add('financials_margin', _Tile(
@@ -240,8 +224,7 @@ class DashboardKpiGrid extends StatelessWidget {
       emptyTitle: kNoExpensesTitle,
       emptyBody: kNoExpensesBody,
       onEmptyTap: onAddExpense,
-      icon: Icons.receipt_long_outlined,
-      color: const Color(0xFFEF4444),
+      tone: NgStatus.red,
     ));
 
     return out;
@@ -258,8 +241,7 @@ class _Tile {
     required this.id,
     required this.label,
     required this.value,
-    required this.icon,
-    required this.color,
+    this.tone,
     this.emptyTitle,
     this.emptyBody,
     this.onEmptyTap,
@@ -272,8 +254,9 @@ class _Tile {
   /// [emptyBody] instead.
   final String? value;
 
-  final IconData icon;
-  final Color color;
+  /// Hue of the figure: money in green, money owed amber, costs red.
+  /// Null for plain counts, which read in the text colour.
+  final NgStatus? tone;
   final String? emptyTitle;
   final String? emptyBody;
   final VoidCallback? onEmptyTap;
@@ -284,67 +267,37 @@ class _Tile {
 class _KpiCard extends StatelessWidget {
   const _KpiCard({
     required this.tile,
-    required this.theme,
     required this.onTapTile,
   });
 
   final _Tile tile;
-  final FlutterFlowTheme theme;
   final void Function(String tileId)? onTapTile;
 
   @override
   Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
     final empty = tile.isEmpty;
-    // An empty tile's tap opens the thing that fills it; a populated
-    // tile's tap navigates to its detail. A tile with neither is inert
-    // rather than falsely interactive.
     final onTap = empty
         ? tile.onEmptyTap
         : (onTapTile == null ? null : () => onTapTile!(tile.id));
 
     return Material(
-      color: theme.secondaryBackground,
-      borderRadius: BorderRadius.circular(14),
+      color: c.s1b,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.all(13),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  // Desaturated when there is nothing to report, so the
-                  // grid reads at a glance as "these two need input"
-                  // without the tile looking broken or disabled.
-                  color: empty
-                      ? theme.secondaryText.withValues(alpha: 0.18)
-                      : tile.color,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(
-                  tile.icon,
-                  size: 18,
-                  color: empty ? theme.secondaryText : Colors.white,
-                ),
-              ),
-              const SizedBox(height: 9),
               Text(
                 tile.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: NgFonts.geist(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
-                  color: theme.secondaryText,
-                ),
+                style: NgFonts.geist(fontSize: 12.5, color: c.mute),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               if (empty) ...[
                 Text(
                   tile.emptyTitle ?? '',
@@ -354,7 +307,7 @@ class _KpiCard extends StatelessWidget {
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     height: 1.2,
-                    color: theme.secondaryText,
+                    color: c.soft,
                   ),
                 ),
                 if ((tile.emptyBody ?? '').isNotEmpty) ...[
@@ -364,11 +317,9 @@ class _KpiCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: NgFonts.geist(
-                      fontSize: 10.5,
+                      fontSize: 11,
                       height: 1.25,
-                      color: tile.onEmptyTap != null
-                          ? theme.primary
-                          : theme.secondaryText,
+                      color: tile.onEmptyTap != null ? c.acc : c.mute,
                     ),
                   ),
                 ],
@@ -378,9 +329,11 @@ class _KpiCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: NgFonts.geist(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w700,
-                    color: theme.primaryText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: tile.tone == null
+                        ? c.text
+                        : c.status(tile.tone!).fg,
                   ),
                 ),
             ],
