@@ -458,7 +458,6 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: (_model.branchesLoaded &&

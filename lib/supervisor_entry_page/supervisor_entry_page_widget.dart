@@ -128,7 +128,6 @@ class _SupervisorEntryPageWidgetState
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
         elevation: 0,
-        centerTitle: true,
         title: Text('Job Entry',
             style: theme.titleLarge.override(
                 font: NgFonts.geist(fontWeight: FontWeight.w600))),

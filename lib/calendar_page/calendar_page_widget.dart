@@ -602,7 +602,6 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
             LanguageQuickButton(iconColor: IconTheme.of(context).color),
             ThemeQuickButton(iconColor: IconTheme.of(context).color),
           ],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

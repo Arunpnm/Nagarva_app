@@ -592,7 +592,6 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                 fontSize: 22.0,
                 letterSpacing: 0.0,
               )),
-          centerTitle: true,
           elevation: 0.0,
           actions: [
             IconButton(

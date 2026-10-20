@@ -308,7 +308,6 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

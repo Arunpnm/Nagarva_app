@@ -246,7 +246,6 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          centerTitle: true,
           elevation: 0,
           actions: [
             TextButton(

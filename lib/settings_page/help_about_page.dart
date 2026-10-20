@@ -52,7 +52,6 @@ class HelpAboutPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
         title: const Text('Help & About'),
-        centerTitle: true,
         elevation: 0,
       ),
       body: ListView(

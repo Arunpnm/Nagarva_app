@@ -181,7 +181,6 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

@@ -166,6 +166,7 @@ class _MoreSheetState extends State<MoreSheet> {
                         style: NgFonts.geist(fontSize: 14, color: c.text),
                         decoration: InputDecoration(
                           isCollapsed: true,
+                          filled: false,
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,

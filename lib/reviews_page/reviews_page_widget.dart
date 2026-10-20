@@ -184,7 +184,6 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
                 font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
       ),
       body: _loading

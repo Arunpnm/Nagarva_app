@@ -92,7 +92,6 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(

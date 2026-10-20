@@ -227,7 +227,6 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
