@@ -263,12 +263,12 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     switch (st.toLowerCase()) {
       case 'transit':
       case 'in_transit':
-        return const Color(0xFF1565C0);
+        return NgPalette.of(context).blue;
       case 'shifting_started':
-        return const Color(0xFFE6A400);
+        return NgPalette.of(context).amber;
       case 'accepted':
       case 'team_assigned':
-        return const Color(0xFF2E7D32);
+        return NgPalette.of(context).green;
       case 'confirmed':
       case 'booked':
       case 'pending':
@@ -381,7 +381,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   /// still owed.
   Widget _approvalCard(OrdersRow o) {
     final theme = FlutterFlowTheme.of(context);
-    const gold = Color(0xFFE0A82E);
+    final gold = NgPalette.of(context).amber;
     final balance = _awaitingBalances[o.id] ?? 0;
     final spend = _awaitingSpend[o.id];
     final supervisor = o.supervisorId == null

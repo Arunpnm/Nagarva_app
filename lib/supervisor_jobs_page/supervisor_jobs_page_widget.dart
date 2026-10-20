@@ -230,7 +230,7 @@ class _SupervisorJobsListPageWidgetState
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: awaiting
-                    ? const Color(0xFFE0A82E).withValues(alpha: 0.15)
+                    ? NgPalette.of(context).amber.withValues(alpha: 0.15)
                     : theme.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -239,7 +239,7 @@ class _SupervisorJobsListPageWidgetState
                 style: NgFonts.geist(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: awaiting ? const Color(0xFFE0A82E) : theme.primary),
+                    color: awaiting ? NgPalette.of(context).amber : theme.primary),
               ),
             ),
           ],

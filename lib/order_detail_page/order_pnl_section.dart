@@ -395,7 +395,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
     } else if (margin >= 25) {
       dot = theme.success;
     } else if (margin >= 10) {
-      dot = const Color(0xFFE0A82E);
+      dot = NgPalette.of(context).amber;
     } else {
       dot = theme.error;
     }
