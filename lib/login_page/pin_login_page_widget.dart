@@ -449,6 +449,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                 TextButton(
                   onPressed: () => context.pushNamed(LoginPageWidget.routeName),
                   child: Text(AppLocalizations.of(context).ngUseEmail,
+                      textAlign: TextAlign.center,
                       style: NgFonts.geist(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -462,6 +463,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                     }
                   },
                   child: Text(AppLocalizations.of(context).ngSwitchDevice,
+                      textAlign: TextAlign.center,
                       style: NgFonts.geist(fontSize: 13, color: c.mute)),
                 ),
                 const SizedBox(height: 4),
