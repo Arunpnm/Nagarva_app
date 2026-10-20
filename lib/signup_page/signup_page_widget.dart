@@ -278,7 +278,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F1117),
+        backgroundColor: const Color(0xFF0A0C10),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -298,7 +298,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2A1200),
+                              color: const Color(0x24F68C36),
                               borderRadius: BorderRadius.circular(40),
                             ),
                             clipBehavior: Clip.antiAlias,
@@ -309,7 +309,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.local_shipping,
-                                color: kBrandGold,
+                                color: kBrandAccent,
                                 size: 44,
                               ),
                             ),
@@ -338,7 +338,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                       // Form card
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E2035),
+                          color: const Color(0xFF12151B),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         padding: const EdgeInsets.all(20),
@@ -457,7 +457,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               children: [
                                 Checkbox(
                                   value: _model.agreedToTerms,
-                                  activeColor: kBrandGold,
+                                  activeColor: kBrandAccent,
                                   onChanged: (v) => safeSetState(
                                       () => _model.agreedToTerms = v ?? false),
                                 ),
@@ -476,7 +476,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                           TextSpan(
                                             text: 'Terms & Conditions',
                                             style: NgFonts.geist(
-                                              color: kBrandGold,
+                                              color: kBrandAccent,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -490,7 +490,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                           TextSpan(
                                             text: 'Privacy Policy',
                                             style: NgFonts.geist(
-                                              color: kBrandGold,
+                                              color: kBrandAccent,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -533,7 +533,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                       : _handleSignup,
                               options: FFButtonOptions(
                                 height: 52,
-                                color: kBrandGold,
+                                color: kBrandAccent,
                                 textStyle: NgFonts.geist(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -565,7 +565,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             child: Text(
                               'Log in',
                               style: NgFonts.geist(
-                                color: kBrandGold,
+                                color: kBrandAccent,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -617,14 +617,14 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
       hintStyle: NgFonts.geist(color: Colors.white24),
       prefixIcon: Icon(icon, color: Colors.white38, size: 20),
       filled: true,
-      fillColor: const Color(0xFF2A2D45),
+      fillColor: const Color(0xFF1A1E26),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF3A3D55)),
+        borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: kBrandGold, width: 1.5),
+        borderSide: const BorderSide(color: kBrandAccent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),

@@ -3,7 +3,7 @@ import '/flutter_flow/ng_tokens.dart';
 
 import '/backend/pending_password_reset.dart';
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart' show kBrandGold;
+import '/flutter_flow/flutter_flow_theme.dart' show kBrandAccent;
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
@@ -96,14 +96,14 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
       hintStyle: NgFonts.geist(color: Colors.white24),
       prefixIcon: Icon(icon, color: Colors.white38, size: 20),
       filled: true,
-      fillColor: const Color(0xFF2A2D45),
+      fillColor: const Color(0xFF1A1E26),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF3A3D55)),
+        borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: kBrandGold, width: 1.5),
+        borderSide: const BorderSide(color: kBrandAccent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
@@ -122,7 +122,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F1117),
+        backgroundColor: const Color(0xFF0A0C10),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -141,11 +141,11 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2A1200),
+                              color: const Color(0x24F68C36),
                               borderRadius: BorderRadius.circular(40),
                             ),
                             child: const Icon(Icons.lock_reset,
-                                color: kBrandGold, size: 36),
+                                color: kBrandAccent, size: 36),
                           ),
                           const SizedBox(height: 20),
                           Text(
@@ -246,7 +246,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         onPressed: _isLoading ? null : _handleSubmit,
                         options: FFButtonOptions(
                           height: 52,
-                          color: kBrandGold,
+                          color: kBrandAccent,
                           textStyle: NgFonts.geist(
                             color: Colors.white,
                             fontSize: 16,

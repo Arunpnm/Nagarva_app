@@ -30,9 +30,10 @@ const kMidnightKey = '__theme_midnight__';
 // Everywhere else inside the app, read from FlutterFlowTheme.of(context)
 // instead of reaching for these.
 // ---------------------------------------------------------------------------
-const Color kBrandGold = Color(0xFFE3B23C);
-const Color kBrandTeal = Color(0xFF1FA98C);
-const Color kBrandNavy = Color(0xFF0F2A47);
+// Redesign (Oct 2026): the accent is the handoff's orange — the gold,
+// teal and navy triad of 27 Jul is retired. Renamed from kBrandGold so
+// the name stops describing a colour it no longer is.
+const Color kBrandAccent = Color(0xFFF68C36);
 
 /// WhatsApp's own brand green. Not part of the Nagarva palette and
 /// deliberately never themed — a WhatsApp button that isn't WhatsApp green
