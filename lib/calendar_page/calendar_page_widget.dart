@@ -293,8 +293,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                           width: 5,
                           height: 5,
                           margin: const EdgeInsets.symmetric(horizontal: 1),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE6A400),
+                          decoration: BoxDecoration(
+                            color: NgPalette.of(context).amber,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -403,11 +403,11 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
         case 'delivered':
         case 'closed':
         case 'done':
-          return const Color(0xFF2E7D32);
+          return NgPalette.of(context).green;
         case 'cancelled':
           return theme.error;
         case 'transit':
-          return const Color(0xFF1565C0);
+          return NgPalette.of(context).blue;
         default:
           return theme.primary;
       }
@@ -557,8 +557,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                 Container(
                     width: 6,
                     height: 6,
-                    decoration: const BoxDecoration(
-                        color: Color(0xFFE6A400), shape: BoxShape.circle)),
+                    decoration: BoxDecoration(
+                        color: NgPalette.of(context).amber,
+                        shape: BoxShape.circle)),
                 const SizedBox(width: 4),
                 Text('Follow-up',
                     style: NgFonts.geist(

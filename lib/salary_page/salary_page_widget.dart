@@ -192,7 +192,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
                 ],
               ),
             ),
-            mini('EARNED', earned, const Color(0xFF2E7D32)),
+            mini('EARNED', earned, NgPalette.of(context).green),
             const SizedBox(width: 12),
             mini('TO PAY', balance,
                 balance > 0 ? theme.primary : theme.secondaryText),
@@ -286,9 +286,9 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 _totalCol('Earned', totalEarned,
-                                    const Color(0xFF2E7D32)),
+                                    NgPalette.of(context).green),
                                 _totalCol('Paid Out', totalPaid,
-                                    const Color(0xFF1565C0)),
+                                    NgPalette.of(context).blue),
                                 _totalCol('To Pay', totalEarned - totalPaid,
                                     theme.primary),
                                 _totalCol(

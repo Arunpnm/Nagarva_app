@@ -98,7 +98,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
     final days = date.difference(DateTime(now.year, now.month, now.day)).inDays;
     if (days > 30) return const SizedBox.shrink();
     final expired = days < 0;
-    final color = expired ? const Color(0xFFC62828) : const Color(0xFFE6A400);
+    final color = expired ? NgPalette.of(context).red : NgPalette.of(context).amber;
     final text =
         expired ? '$label expired ${-days}d ago' : '$label expires in ${days}d';
     return Container(

@@ -1000,19 +1000,9 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   }
 
   // ---- Session 4, A3: freely-tappable status chips -----------------------
-  // Brief-specified colours, distinct from lead_status.dart's own
-  // leadStatusColor() (used elsewhere — the LeadsPage list badges, the
-  // pipeline strip below) — scoped to just this row rather than changing
-  // that shared function and rippling into screens this brief didn't ask
-  // to touch.
-  static const _chipColors = <String, Color>{
-    kLeadStatusNew: Color(0xFF95A5A6),
-    kLeadStatusFollowUp: Color(0xFF3498DB),
-    kLeadStatusSurveyDone: Color(0xFF9B59B6),
-    kLeadStatusQuoted: Color(0xFFE67E22),
-    kLeadStatusConfirmed: Color(0xFF2ECC71),
-    kLeadStatusLost: Color(0xFFE74C3C),
-  };
+  // Colours: the brief's own hex set was retired with the redesign (Oct
+  // 2026); chips now use leadStatusColor(key, context) like the strip
+  // below, so they follow the theme and read in Light.
   static const _chipLabels = <String, String>{
     kLeadStatusNew: 'New Lead',
     kLeadStatusFollowUp: 'Follow Up',
@@ -1044,7 +1034,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 
   Widget _statusChip(BuildContext context, String key, {required bool canEdit}) {
     final current = key == _canonicalStatus;
-    final color = _chipColors[key]!;
+    final color = leadStatusColor(key, context);
     final tappable = canEdit && !current;
     return InkWell(
       onTap: !tappable
@@ -1146,8 +1136,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           child: OutlinedButton.icon(
             onPressed: _hasUsablePhone ? _callLead : null,
             style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF3498DB),
-                side: const BorderSide(color: Color(0xFF3498DB))),
+                foregroundColor: NgPalette.of(context).blue,
+                side: BorderSide(color: NgPalette.of(context).blue)),
             icon: const Icon(Icons.call, size: 18),
             label: const Text('Call'),
           ),

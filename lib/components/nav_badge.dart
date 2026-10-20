@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '/flutter_flow/ng_tokens.dart';
+
 /// An icon with an optional unread-style count badge on its top-right.
 ///
 /// Deliberately generic — it takes a [count] and knows nothing about what
@@ -39,10 +41,10 @@ class NavBadgeIcon extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             constraints: const BoxConstraints(minWidth: 15),
             decoration: BoxDecoration(
-              // Gold, matching the "⏳ Awaiting" badge the supervisor sees
+              // Amber, matching the "⏳ Awaiting" badge the supervisor sees
               // on the same job in My Jobs — the two ends of one workflow
-              // should read as the same state.
-              color: const Color(0xFFE0A82E),
+              // should read as the same state. (Redesign palette, Oct 2026.)
+              color: NgPalette.of(context).amber,
               borderRadius: BorderRadius.circular(9),
             ),
             child: Text(
