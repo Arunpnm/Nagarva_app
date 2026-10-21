@@ -3243,6 +3243,25 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **21 Oct 2026 (later), Tier B's column REVOKE was a no-op — fix
+  handed over.** Checked live after Tier B ran: its row policies took
+  (owner-only `org_update`, `org_insert` gone, billing tables
+  SELECT-only), but `has_column_privilege` still read UPDATE = true on
+  `plan_id`/`plan_status`/`trial_ends_at`/`active`/`trial_fallback_plan_id`
+  for `authenticated` AND `anon`. **A column-level REVOKE does nothing
+  while the role holds table-level UPDATE**, so the statement succeeded
+  and an owner could still self-upgrade or extend a trial.
+  `supabase/20261021_org_plan_column_lockdown.sql` (handed over, not
+  run) revokes table-level UPDATE from both roles and re-grants
+  `authenticated` every column except those five plus `id`/`created_at`.
+  Its postflight asserts all three directions with
+  `has_column_privilege`; dry-run read-only against live, it fails
+  today (7 protected columns updatable, anon on all 43), which is the
+  state it exists to change. **Future columns on `organizations` are not
+  app-writable until granted** — add the grant with the column.
+  Lesson for the "name the right catalogue" family: to ask "can this
+  role write this column?", ask `has_column_privilege`, not whether a
+  REVOKE statement ran.
 - **21 Oct 2026, vendor self-signup — mobile OTP, approval first, Pro
   trial or Free** (Claude Design handoff, App screen `signup` + Admin ›
   Approvals). Arun's three calls: Supabase phone OTP; the org is created
