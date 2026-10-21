@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '/backend/pricing_defaults.dart';
@@ -301,33 +302,36 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: Text('Survey & Pricing',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 22)),
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabs,
-          tabs: const [
-            Tab(text: 'Vehicle & Crew Slabs'),
-            Tab(text: 'Item Catalogue'),
-            Tab(text: 'Storage Rates'),
-          ],
-        ),
-      ),
+      backgroundColor: NgPalette.of(context).bg,
+      appBar: const NgSimpleBar(title: 'CFT & packages'),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null
               ? _errorState(theme)
-              : TabBarView(
-                  controller: _tabs,
+              : Column(
                   children: [
-                    _slabsTab(theme),
-                    _catalogueTab(theme),
-                    _storageTab(theme),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                      child: NgTabBar(
+                        controller: _tabs,
+                        scrollable: true,
+                        labels: const [
+                          'Vehicle & crew slabs',
+                          'Item catalogue',
+                          'Storage rates',
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabs,
+                        children: [
+                          _slabsTab(theme),
+                          _catalogueTab(theme),
+                          _storageTab(theme),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
     );

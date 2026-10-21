@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -136,10 +137,7 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
     if (!SoftDeleteService.isOwner) {
       return Scaffold(
         backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          title: const Text('Deleted Items'),
-        ),
+        appBar: NgSimpleBar(title: 'Deleted Items'),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(28),

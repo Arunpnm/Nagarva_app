@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '/app_session.dart';
@@ -358,17 +359,7 @@ class _BranchesPageState extends State<BranchesPage> {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primary,
-        iconTheme: IconThemeData(color: theme.info),
-        title: Text(
-          'Branches',
-          style: theme.headlineMedium.override(
-            fontFamily: 'Inter',
-            color: theme.info,
-          ),
-        ),
-      ),
+      appBar: NgSimpleBar(title: 'Branches'),
       floatingActionButton: _isOwner
           ? FloatingActionButton.extended(
               onPressed: _busy ? null : _addBranch,

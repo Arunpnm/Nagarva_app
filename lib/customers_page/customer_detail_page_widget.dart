@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '/backend/soft_delete.dart';
@@ -469,19 +470,10 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
       },
       child: Scaffold(
         backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          title: Text(c?.name ?? 'Customer',
-              style: theme.titleLarge.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600)),
-          elevation: 0,
-          actions: [
+        appBar: NgSimpleBar(title: c?.name ?? 'Customer', actions: [
             if (c != null)
               IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _editCustomer),
-          ],
-        ),
+          ]),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : c == null

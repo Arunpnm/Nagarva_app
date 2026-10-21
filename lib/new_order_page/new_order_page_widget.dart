@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/customer_lookup.dart';
 import '/backend/edge_function_errors.dart';
@@ -438,28 +439,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            widget.orderId != null
+        appBar: NgSimpleBar(title: widget.orderId != null
                 ? 'Edit Order'
-                : AppLocalizations.of(context).newOrder,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: const [],
-          elevation: 0.0,
-        ),
+                : AppLocalizations.of(context).newOrder, close: true),
         body: (_model.branchesLoaded &&
                 _model.availableBranches.isEmpty &&
                 widget.orderId == null)

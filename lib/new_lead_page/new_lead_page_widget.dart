@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -177,28 +178,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            widget.leadId != null
+        appBar: NgSimpleBar(title: widget.leadId != null
                 ? 'Edit Lead'
-                : AppLocalizations.of(context).newLead,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: const [],
-          elevation: 0.0,
-        ),
+                : AppLocalizations.of(context).newLead, close: true),
         body: SafeArea(
           top: true,
           child: Container(

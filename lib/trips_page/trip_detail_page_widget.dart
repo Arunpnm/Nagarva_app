@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '/backend/supabase/supabase.dart';
@@ -458,19 +459,10 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
     final pnl = _pnl;
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: Text(t?.tripNo ?? 'Trip',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 20,
-                fontWeight: FontWeight.w600)),
-        elevation: 0,
-        actions: [
+      appBar: NgSimpleBar(title: t?.tripNo ?? 'Trip', actions: [
           if (t != null)
             IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _editTrip),
-        ],
-      ),
+        ]),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : t == null

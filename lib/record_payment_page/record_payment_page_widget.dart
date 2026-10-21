@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -259,19 +260,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            'Record Payment',
-            style: theme.titleLarge.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                ),
-          ),
-          elevation: 0.0,
-        ),
+        appBar: NgSimpleBar(title: 'Record Payment', close: true),
         body: SafeArea(
           top: true,
           child: _model.loading

@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
@@ -74,26 +75,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).quickExpense,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: const [],
-          elevation: 0.0,
-        ),
+        appBar: NgSimpleBar(title: AppLocalizations.of(context).quickExpense, close: true),
         body: SafeArea(
           top: true,
           child: Container(

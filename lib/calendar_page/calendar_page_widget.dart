@@ -1,16 +1,15 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/reminders_service.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import '/components/language_quick_button.dart';
-import '/components/theme_quick_button.dart';
 import 'package:flutter/scheduler.dart';
 import 'calendar_page_model.dart';
 export 'calendar_page_model.dart';
@@ -582,29 +581,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).calendarPageCalendar,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: [
-            LanguageQuickButton(iconColor: IconTheme.of(context).color),
-            ThemeQuickButton(iconColor: IconTheme.of(context).color),
-          ],
-          elevation: 0.0,
-        ),
+        appBar: NgTopBar(onRefresh: _loadCalendarData),
         body: SafeArea(
           top: true,
           child: Container(
@@ -624,6 +601,19 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                     // left-clustered week Rows). Month nav works, today is
                     // highlighted, days with reminders get a dot, and
                     // tapping a day filters the reminders list below.
+                    NgModuleHeader(
+                      AppLocalizations.of(context).calendarPageCalendar,
+                      actions: [
+                        NgPrimaryButton(
+                          compact: true,
+                          height: 40,
+                          icon: Icons.alarm_add_outlined,
+                          label: AppLocalizations.of(context).addReminder,
+                          onPressed: _addReminder,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
                     _monthGrid(context),
                     // Day panel — reference-app behaviour: tap a date to see
                     // what its dots mean (orders moving that day, tappable
@@ -1005,33 +995,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                         ),
                       ].divide(const SizedBox(height: 10.0)),
                     ),
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          0.0, 16.0, 0.0, 16.0),
-                      child: FFButtonWidget(
-                        onPressed: _addReminder,
-                        text: AppLocalizations.of(context).addReminder,
-                        icon: const Icon(
-                          Icons.add_alarm,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor:
-                              FlutterFlowTheme.of(context).primaryBackground,
-                          color: FlutterFlowTheme.of(context).primary,
-                          textStyle: TextStyle(
-                            color:
-                                FlutterFlowTheme.of(context).primaryBackground,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                    ),
+
                   ].divide(const SizedBox(height: 16.0)),
                 ),
               ),

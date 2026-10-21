@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '/backend/soft_delete.dart';
@@ -651,19 +652,10 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
       },
       child: Scaffold(
         backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          title: Text(v?.name ?? 'Vendor',
-              style: theme.titleLarge.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600)),
-          elevation: 0,
-          actions: [
+        appBar: NgSimpleBar(title: v?.name ?? 'Vendor', actions: [
             if (v != null)
               IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _editVendor),
-          ],
-        ),
+          ]),
         floatingActionButton: v == null
             ? null
             : FloatingActionButton.extended(

@@ -1,3 +1,5 @@
+import '/flutter_flow/ng_tokens.dart';
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '/backend/supabase/supabase.dart';
@@ -357,25 +359,32 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: Text(_card?.name ?? 'Rate Card'),
-        elevation: 0,
-        bottom: TabBar(controller: _tabs, isScrollable: true, tabs: const [
-          Tab(text: 'Charges'),
-          Tab(text: 'Distance/CFT Rules'),
-          Tab(text: 'Floor Charges'),
-          Tab(text: 'Multipliers'),
-        ]),
-      ),
+      backgroundColor: NgPalette.of(context).bg,
+      appBar: NgSimpleBar(title: _card?.name ?? 'Rate card'),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(controller: _tabs, children: [
-              _chargesTab(theme),
-              _rulesTab(theme),
-              _floorsTab(theme),
-              _multipliersTab(theme),
+          : Column(children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: NgTabBar(
+                  controller: _tabs,
+                  scrollable: true,
+                  labels: const [
+                    'Charges',
+                    'Distance / CFT rules',
+                    'Floor charges',
+                    'Multipliers',
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(controller: _tabs, children: [
+                  _chargesTab(theme),
+                  _rulesTab(theme),
+                  _floorsTab(theme),
+                  _multipliersTab(theme),
+                ]),
+              ),
             ]),
     );
   }

@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'dart:math';
 
 import '/backend/gst_state_codes.dart';
@@ -877,13 +878,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: Text(_isEditing ? 'Revise Quotation' : 'Survey & Quote',
-            style: NgFonts.geist(
-                fontWeight: FontWeight.w700, color: theme.primaryText)),
-        elevation: 0,
-      ),
+      appBar: NgSimpleBar(title: _isEditing ? 'Revise Quotation' : 'Survey & Quote', close: true),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

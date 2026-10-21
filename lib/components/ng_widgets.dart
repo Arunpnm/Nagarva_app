@@ -967,3 +967,148 @@ class NgHeaderButtonBox extends StatelessWidget {
     return tooltip == null ? box : Tooltip(message: tooltip!, child: box);
   }
 }
+
+/// Top bar for detail and form screens (the handoff's Lead / Order detail
+/// and New lead / New order): a 40×40 back (or close) button, a centred
+/// title, and the screen's own actions on the right.
+class NgSimpleBar extends StatelessWidget implements PreferredSizeWidget {
+  const NgSimpleBar({
+    super.key,
+    this.title,
+    this.titleWidget,
+    this.actions = const [],
+    this.close = false,
+    this.mono = false,
+    this.onBack,
+  });
+
+  final String? title;
+  final Widget? titleWidget;
+  final List<Widget> actions;
+
+  /// Close (×) instead of back, for create forms.
+  final bool close;
+
+  /// Render the title in Geist Mono (record ids such as LD-1041).
+  final bool mono;
+  final VoidCallback? onBack;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(60);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final style = mono
+        ? NgFonts.mono(fontSize: 13, color: c.mute)
+        : NgFonts.geist(
+            fontSize: 17, fontWeight: FontWeight.w600, color: c.text);
+    return Material(
+      color: c.bg,
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: preferredSize.height,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Material(
+                    color: c.s1,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: onBack ?? () => Navigator.of(context).maybePop(),
+                      child: Icon(
+                          close ? Icons.close_rounded : Icons.arrow_back_rounded,
+                          size: 21,
+                          color: c.soft),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: DefaultTextStyle.merge(
+                      style: style,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      child: titleWidget ??
+                          Text(title ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: style),
+                    ),
+                  ),
+                ),
+                if (actions.isEmpty)
+                  const SizedBox(width: 40)
+                else
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final a in actions)
+                        IconTheme.merge(
+                            data: IconThemeData(color: c.soft, size: 21),
+                            child: a),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A [TabBar] dressed as the handoff's segmented control, for screens
+/// that keep a [TabController] (swipe between tabs still works).
+class NgTabBar extends StatelessWidget {
+  const NgTabBar({
+    super.key,
+    required this.controller,
+    required this.labels,
+    this.scrollable = false,
+  });
+
+  final TabController controller;
+  final List<String> labels;
+  final bool scrollable;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: c.s1,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: TabBar(
+        controller: controller,
+        isScrollable: scrollable,
+        tabAlignment: scrollable ? TabAlignment.start : TabAlignment.fill,
+        dividerHeight: 0,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          color: c.sel,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        labelColor: c.text,
+        unselectedLabelColor: c.mute,
+        labelStyle:
+            NgFonts.geist(fontSize: 13, fontWeight: FontWeight.w600),
+        unselectedLabelStyle:
+            NgFonts.geist(fontSize: 13, fontWeight: FontWeight.w600),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+        splashBorderRadius: BorderRadius.circular(10),
+        tabs: [
+          for (final l in labels) Tab(height: 36, text: l),
+        ],
+      ),
+    );
+  }
+}
