@@ -1,3 +1,4 @@
+import '/backend/fy_numbering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -193,12 +194,12 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
         // One org-wide series per doc type per FY, not per-branch — see
         // order_detail_page_widget.dart's _nextInvoiceNo for the reasoning
         // (12 Aug 2026 numbering-scheme decision).
-        receiptNo = await SupaFlow.client.rpc('next_doc_number', params: {
+        receiptNo = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_doc_number', params: {
           'p_org': orgId,
           'p_doc_type': 'receipt',
           'p_branch': null,
           'p_fy': _currentFy(),
-        }) as String?;
+        }) as String?);
       } catch (e) {
         // Was a blanket `catch (_) { receiptNo = null; }`: it recorded the
         // payment with NO receipt number and still showed a success

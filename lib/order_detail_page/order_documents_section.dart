@@ -1,3 +1,4 @@
+import '/backend/fy_numbering.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -611,12 +612,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           // One org-wide series per doc type per FY, not per-branch (12
           // Aug 2026 numbering-scheme decision — see
           // order_detail_page_widget.dart's _nextInvoiceNo).
-          receiptNo = await SupaFlow.client.rpc('next_doc_number', params: {
+          receiptNo = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_doc_number', params: {
             'p_org': orgId,
             'p_doc_type': 'receipt',
             'p_branch': null,
             'p_fy': _currentFy(),
-          }) as String;
+          }) as String);
           receiptDate = DateTime.now();
           amount = toReceipt.fold<num>(0, (s, p) => s + p.amount);
           final modes = toReceipt.map((p) => p.mode).toSet();
@@ -762,12 +763,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final orgId = OrgScope.currentOrgId!;
         // One org-wide series per doc type per FY, not per-branch (12 Aug
         // 2026 numbering-scheme decision).
-        final docNo = await SupaFlow.client.rpc('next_doc_number', params: {
+        final docNo = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_doc_number', params: {
           'p_org': orgId,
           'p_doc_type': 'proforma',
           'p_branch': null,
           'p_fy': _currentFy(),
-        }) as String;
+        }) as String);
         final amount = o.quoteTotal ?? o.amount ?? 0;
         final (profile, logoBytes) = await _loadBranding();
         await _showDocDialog('Proforma $docNo', 'Proforma_$docNo.pdf',
@@ -824,11 +825,11 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         // under doc_type 'lr' so a future consolidation is a no-op). One
         // org-wide series per FY, not per-branch — same 12 Aug 2026
         // numbering-scheme decision as every other doc type here.
-        final lrNo = await SupaFlow.client.rpc('next_lr_number', params: {
+        final lrNo = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_lr_number', params: {
           'p_org': orgId,
           'p_branch': null,
           'p_fy': fy,
-        }) as String;
+        }) as String);
 
         // Consignee from the linked customer record when available;
         // falls back to the order's own plain fields otherwise.
@@ -1202,12 +1203,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final orgId = OrgScope.currentOrgId!;
         // One org-wide series per doc type per FY, not per-branch (12 Aug
         // 2026 numbering-scheme decision).
-        final docNo = await SupaFlow.client.rpc('next_doc_number', params: {
+        final docNo = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_doc_number', params: {
           'p_org': orgId,
           'p_doc_type': 'voucher',
           'p_branch': null,
           'p_fy': _currentFy(),
-        }) as String;
+        }) as String);
         final (profile, logoBytes) = await _loadBranding();
         await _showDocDialog('Voucher $docNo', 'Voucher_$docNo.pdf',
             () async {

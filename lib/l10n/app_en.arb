@@ -4378,5 +4378,13 @@
   "noPricing": "Price & source",
   "@noPricing": {
     "description": "Dashboard redesign"
+  },
+  "ngSetFy": "Financial year & numbering",
+  "@ngSetFy": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetFySub": "Start next year's invoice and receipt numbers",
+  "@ngSetFySub": {
+    "description": "Dashboard redesign"
   }
 }
