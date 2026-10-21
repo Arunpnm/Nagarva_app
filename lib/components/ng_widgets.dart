@@ -787,11 +787,16 @@ class NgModuleHeader extends StatelessWidget {
     super.key,
     this.subtitle,
     this.actions = const [],
+    this.onBack,
   });
 
   final String title;
   final String? subtitle;
   final List<Widget> actions;
+
+  /// Overrides the default pop-or-go-home, for an in-page level such as
+  /// a conversation opened from a list.
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -806,7 +811,8 @@ class NgModuleHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: () {
+              onTap: onBack ??
+                  () {
                 final nav = Navigator.of(context);
                 if (nav.canPop()) {
                   nav.pop();

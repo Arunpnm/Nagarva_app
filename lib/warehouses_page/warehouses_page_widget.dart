@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/load_error_state.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
@@ -97,24 +100,33 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     final activeCount = _rows.where((w) => w.active).length;
-    final totalCapacity =
-        _rows.where((w) => w.active).fold<double>(0, (s, w) => s + (w.capacityCft ?? 0));
-
+    final totalCapacity = _rows
+        .where((w) => w.active)
+        .fold<double>(0, (s, w) => s + (w.capacityCft ?? 0));
+    Widget tile(String value, String label) => Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+                color: c.s1, borderRadius: BorderRadius.circular(14)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value,
+                    style: NgFonts.mono(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w600,
+                        color: c.acc)),
+                const SizedBox(height: 3),
+                Text(label, style: NgFonts.geist(fontSize: 12, color: c.mute)),
+              ],
+            ),
+          ),
+        );
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: theme.primaryText),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text('Warehouses',
-            style: theme.headlineSmall.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600))),
-      ),
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -125,82 +137,63 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                     children: [
-                      Row(children: [
-                        Expanded(
-                            child: _statTile(
-                                theme, '$activeCount', 'Active godowns')),
-                        const SizedBox(width: 10),
-                        Expanded(
-                            child: _statTile(
-                                theme,
-                                totalCapacity <= 0
-                                    ? '—'
-                                    : totalCapacity.toStringAsFixed(0),
-                                'Total CFT capacity')),
+                      NgModuleHeader('Warehouses', actions: [
+                        NgPrimaryButton(
+                          compact: true,
+                          height: 40,
+                          icon: Icons.add_rounded,
+                          label: 'New warehouse',
+                          onPressed: () => _edit(),
+                        ),
                       ]),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
+                      Row(children: [
+                        tile('$activeCount', 'Active warehouses'),
+                        const SizedBox(width: 8),
+                        tile(
+                            totalCapacity <= 0
+                                ? '—'
+                                : functions
+                                    .inrFull(totalCapacity)
+                                    .replaceFirst('₹', ''),
+                            'Total CFT capacity'),
+                      ]),
+                      const SizedBox(height: 14),
                       if (_rows.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
+                        NgCard(
                           child: Column(children: [
                             Icon(Icons.warehouse_outlined,
-                                size: 40, color: theme.secondaryText),
-                            const SizedBox(height: 10),
+                                size: 32, color: c.faint),
+                            const SizedBox(height: 8),
                             Text('No warehouses yet.',
-                                style: theme.bodyMedium
-                                    .override(font: NgFonts.geist())),
+                                style: NgFonts.geist(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: c.text)),
                             const SizedBox(height: 4),
                             Text(
                               'Add the godown you store customer goods in, '
                               'then you can move an order into it.',
                               textAlign: TextAlign.center,
-                              style: theme.bodySmall.override(
-                                  font: NgFonts.geist(),
-                                  color: theme.secondaryText),
+                              style:
+                                  NgFonts.geist(fontSize: 12.5, color: c.mute),
                             ),
                           ]),
                         )
                       else
-                        ..._rows.map((w) => _card(theme, w)),
-                      const SizedBox(height: 14),
-                      FilledButton.icon(
-                        onPressed: () => _edit(),
-                        icon: const Icon(Icons.add),
-                        label: const Text('New Warehouse'),
-                        style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(46)),
-                      ),
-                      const SizedBox(height: 40),
+                        NgCardList(children: [
+                          for (final w in _rows) _card(w),
+                        ]),
                     ],
                   ),
                 ),
     );
   }
 
-  Widget _statTile(FlutterFlowTheme theme, String value, String label) =>
-      Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: theme.bodySmall.override(
-                    font: NgFonts.geist(), color: theme.secondaryText)),
-            const SizedBox(height: 6),
-            Text(value,
-                style: theme.headlineSmall.override(
-                    font: NgFonts.geist(fontWeight: FontWeight.w700))),
-          ],
-        ),
-      );
-
-  Widget _card(FlutterFlowTheme theme, WarehousesRow w) {
+  Widget _card(WarehousesRow w) {
+    final c = NgPalette.of(context);
     final id = w.id ?? '';
     final used = _usedCft[id] ?? 0;
     final cap = w.capacityCft ?? 0;
@@ -208,95 +201,68 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
     // Only meaningful when a capacity was actually entered; otherwise the
     // bar would imply a limit the vendor never set.
     final frac = cap > 0 ? (used / cap).clamp(0.0, 1.0) : null;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: InkWell(
-        onTap: () => _edit(w),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: theme.secondaryBackground,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Expanded(
-                  child: Text(
-                    w.code == null || w.code!.isEmpty
-                        ? w.name
-                        : '${w.name}  ·  ${w.code}',
-                    style: theme.bodyLarge.override(
-                        font: NgFonts.geist(fontWeight: FontWeight.w600)),
-                  ),
-                ),
-                if (!w.active)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: theme.alternate,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text('Inactive',
-                        style: theme.bodySmall.override(
-                            font: NgFonts.geist(),
-                            color: theme.secondaryText)),
-                  ),
-              ]),
-              const SizedBox(height: 4),
-              Text(
-                [
-                  if ((w.city ?? '').isNotEmpty) w.city!,
-                  if ((w.branch ?? '').isNotEmpty) w.branch!,
-                ].join(' · '),
-                style: theme.bodySmall.override(
-                    font: NgFonts.geist(), color: theme.secondaryText),
+    final muted = !w.active;
+    return InkWell(
+      onTap: () => _edit(w),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(
+                child: Text(w.name,
+                    style: NgFonts.geist(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: muted ? c.mute : c.text)),
               ),
-              if ((w.address ?? '').isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(w.address!,
-                    style: theme.bodySmall.override(
-                        font: NgFonts.geist(), color: theme.secondaryText)),
-              ],
-              if ((w.contactPerson ?? '').isNotEmpty ||
-                  (w.contactPhone ?? '').isNotEmpty) ...[
-                const SizedBox(height: 4),
+              if (muted) const NgPill('Inactive', status: NgStatus.red),
+            ]),
+            const SizedBox(height: 3),
+            Text(
+              [
+                if ((w.code ?? '').isNotEmpty) w.code!,
+                if ((w.branch ?? '').isNotEmpty) w.branch!,
+                if ((w.city ?? '').isNotEmpty) w.city!,
+              ].join(' · '),
+              style: NgFonts.geist(fontSize: 12.5, color: c.mute),
+            ),
+            if ((w.address ?? '').isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(w.address!,
+                  style: NgFonts.geist(fontSize: 13, color: c.soft)),
+            ],
+            const SizedBox(height: 8),
+            if (frac != null) ...[
+              NgProgressBar(
+                  value: frac,
+                  color: frac >= 0.9 ? c.red : c.accBtn,
+                  height: 5),
+              const SizedBox(height: 5),
+            ],
+            Text(
+              cap > 0
+                  ? '${used.toStringAsFixed(0)} / ${cap.toStringAsFixed(0)} CFT used · ${(frac! * 100).round()}% · $stays in store'
+                  : '${used.toStringAsFixed(0)} CFT in store · $stays ${stays == 1 ? 'stay' : 'stays'}',
+              style: NgFonts.mono(fontSize: 12, color: c.mute),
+            ),
+            if ((w.contactPerson ?? '').isNotEmpty ||
+                (w.contactPhone ?? '').isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Row(children: [
+                Icon(Icons.person_outline_rounded, size: 15, color: c.mute),
+                const SizedBox(width: 4),
                 Text(
                   [
                     if ((w.contactPerson ?? '').isNotEmpty) w.contactPerson!,
                     if ((w.contactPhone ?? '').isNotEmpty) w.contactPhone!,
                   ].join(' · '),
-                  style: theme.bodySmall.override(
-                      font: NgFonts.geist(), color: theme.secondaryText),
+                  style: NgFonts.geist(fontSize: 12.5, color: c.mute),
                 ),
-              ],
-              const SizedBox(height: 10),
-              if (frac != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: frac,
-                    minHeight: 7,
-                    backgroundColor: theme.alternate,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                        frac >= 1 ? theme.error : theme.primary),
-                  ),
-                ),
-                const SizedBox(height: 5),
-              ],
-              Text(
-                cap > 0
-                    ? '${used.toStringAsFixed(0)} of ${cap.toStringAsFixed(0)} CFT used · $stays in store'
-                    : '${used.toStringAsFixed(0)} CFT in store · $stays ${stays == 1 ? 'stay' : 'stays'}',
-                style: theme.bodySmall.override(
-                    font: NgFonts.geist(), color: theme.secondaryText),
-              ),
+              ]),
             ],
-          ),
+          ],
         ),
       ),
     );
