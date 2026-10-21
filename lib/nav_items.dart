@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '/app_session.dart';
+import '/backend/business_modules.dart';
 import '/index.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/permissions.dart';
@@ -410,6 +411,10 @@ List<NavItem> navItemsForCurrentSession() {
       else
         item,
   ];
+  // Business type (Settings › Modules): a transport-only company does not
+  // see survey/storage modules, a packers-only one does not see trips/LR.
+  // Hidden, not removed — the routes stay registered and the data stays.
+  items.removeWhere((i) => !BusinessModules.instance.isOn(i.name));
   // Platform Admin (16 Aug 2026): /super-admin had no in-app path on
   // Android — no nav link anywhere, and typing a URL isn't something a
   // phone can do. AppSession.isPlatformAdmin is resolved once at login

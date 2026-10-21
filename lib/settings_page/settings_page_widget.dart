@@ -377,6 +377,9 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               onTap: () => _openSub(l.ngSetFy, (_) => [const FyNumberingCard()])),
         // The `whatsapp` function refuses anyone else, so staff don't see it.
         if (isOwnerOrManagerSession) ...[
+          _row(Icons.widgets_outlined, l.mdTitle,
+              sub: l.mdSettingsSub,
+              onTap: () => context.pushNamed(ModulesPage.routeName)),
           _row(Icons.chat_outlined, l.ngSetWa,
               sub: l.ngSetWaSub,
               onTap: () => context.pushNamed(WhatsAppPage.routeName)),

@@ -4402,5 +4402,115 @@
   "ngSetAutoWaSub": "Messages sent to the customer at each stage",
   "@ngSetAutoWaSub": {
     "description": "Settings row subtitle (design pf_s_wa)"
+  },
+  "mdTitle": "Modules",
+  "@mdTitle": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "mdSettingsSub": "Packers & movers, transport or both",
+  "@mdSettingsSub": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "mdType": "Your business",
+  "@mdType": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "mdAdv": "Advanced",
+  "@mdAdv": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "mdCount": "{count} of {total} modules on",
+  "@mdCount": {
+    "description": "Business type / Settings › Modules (design bt_/md_)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mdGroupOn": "{count} of {total} on",
+  "@mdGroupOn": {
+    "description": "Business type / Settings › Modules (design bt_/md_)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mdNote": "Turned-off modules disappear from the menu. Your data stays saved and comes back when you turn the module on again.",
+  "@mdNote": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "mdReset": "Reset to recommended for this business type",
+  "@mdReset": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "mdResetDone": "Modules reset for {type}",
+  "@mdResetDone": {
+    "description": "Business type / Settings › Modules (design bt_/md_)",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mdTypeSet": "{type} selected · menu updated",
+  "@mdTypeSet": {
+    "description": "Business type / Settings › Modules (design bt_/md_)",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mdOwnerOnly": "Only the owner can change modules",
+  "@mdOwnerOnly": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "mdSaveFailed": "Could not save. Check your connection and try again.",
+  "@mdSaveFailed": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "btPm": "Packers & Movers",
+  "@btPm": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "btPmS": "House, office and vehicle shifting",
+  "@btPmS": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "btTr": "Transport / Logistics",
+  "@btTr": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "btTrS": "Trucks, trips, freight and drivers",
+  "@btTrS": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "btBoth": "Both",
+  "@btBoth": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "btBothS": "Shifting and transport, everything on",
+  "@btBothS": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "btTitle": "What does your business do?",
+  "@btTitle": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "btSub": "We will show only the modules you need. You can change this any time in Settings › Modules.",
+  "@btSub": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "btLater": "You can change this later in Settings › Modules",
+  "@btLater": {
+    "description": "Business type / Settings › Modules (design bt_/md_)"
   }
 }
