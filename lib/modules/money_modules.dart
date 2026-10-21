@@ -1,3 +1,4 @@
+import '/backend/fy_numbering.dart';
 import 'package:flutter/material.dart';
 
 import '/app_session.dart';
@@ -149,12 +150,12 @@ class CreditNotesPage extends StatelessWidget {
         ],
         prepare: (v) async {
           if (rmNum(v['total_amount']) <= 0) throw 'Enter an amount above zero.';
-          final no = await SupaFlow.client.rpc('next_doc_number', params: {
+          final no = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_doc_number', params: {
             'p_org': AppSession.instance.currentOrgId,
             'p_doc_type': 'credit_note',
             'p_branch': null,
             'p_fy': rmCurrentFy(),
-          });
+          }));
           return {...v, 'note_no': no};
         },
       ),

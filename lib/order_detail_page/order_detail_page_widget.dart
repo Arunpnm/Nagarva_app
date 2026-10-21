@@ -1,3 +1,4 @@
+import '/backend/fy_numbering.dart';
 import '/components/ng_widgets.dart';
 import '/order_detail_page/order_overview_section.dart';
 import 'dart:typed_data';
@@ -715,12 +716,12 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   /// have doubled up into `'APC/2526/2026/0013'`. Fixed: return the RPC's
   /// result as-is.
   Future<String> _nextInvoiceNo({String? branch}) async {
-    return await SupaFlow.client.rpc('next_doc_number', params: {
+    return await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_doc_number', params: {
       'p_org': OrgScope.currentOrgId!,
       'p_doc_type': 'invoice',
       'p_branch': branch,
       'p_fy': currentFy(),
-    }) as String;
+    }) as String);
   }
 
   /// The org exactly as the invoice will render it.

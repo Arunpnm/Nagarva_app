@@ -2262,6 +2262,26 @@ part — Arun's instinct to reject the cron holds.
 **Ship before 1 April 2027; target March 2027** to leave room to test a
 rollover against a real org before the boundary.
 
+**BUILT 21 Oct 2026** — `supabase/20261021_fy_numbering_rollover.sql`
+(`roll_over_number_series(org, to_fy, dry_run)`), `lib/backend/fy_numbering.dart`
+(`allocateWithRollover` wraps all seven allocator call sites, including
+Quick Payment's), and Settings › Financial year & numbering
+(`fy_numbering_card.dart`, owner/admin/manager). The preview IS the
+function in dry-run mode, so the card cannot disagree with what Start does.
+
+**One deliberate change to the design above: yearless series do not reset
+to 0.** `lr_register`, `claims`, `purchase_orders`, `grn`, `storage_jobs`,
+`payslips` and `contracts` each have a unique index on (org_id, number),
+and their prefixes (`LR`, `BLR-LR`, `CLM-`, `PO-`, `STG-` …) carry no
+year — so a reset would make 2027-28's LR0001 collide with 2026-27's and
+the save would fail. Those series CONTINUE the counter, and are only
+created once the new FY has started (IST): copied in March, the old row
+would keep issuing after the copy and the new one would start inside the
+used range. Year-bearing prefixes (`BLR/2026-27/`, APC's `2026/`) advance
+and restart at 0, and can be started any time. Dry run reports the
+yearless ones as `waits` until 1 April; the first document that needs
+one then offers to start it.
+
 ## Item 13 (public enquiry link) — BLOCKED, do not start
 (New section, 18 Aug 2026. Item 13 was sequenced right after Item 12
 because it needs the org's own CFT catalogue. Item 12 landed, but 13 is

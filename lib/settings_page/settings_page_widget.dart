@@ -1,3 +1,5 @@
+import 'fy_numbering_card.dart';
+import '/nav_items.dart';
 import '/app_session.dart';
 import '/backend/owner_pin.dart';
 import '/backend/session_logout.dart';
@@ -362,6 +364,12 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         _row(Icons.view_in_ar_outlined, l.ngSetCft,
             sub: l.ngSetCftSub,
             onTap: () => context.pushNamed(SurveyPricingPage.routeName)),
+        // Owner/admin/manager, the same people roll_over_number_series
+        // accepts — offering it to staff would only end in a refusal.
+        if (isOwnerOrManagerSession)
+          _row(Icons.event_repeat_outlined, l.ngSetFy,
+              sub: l.ngSetFySub,
+              onTap: () => _openSub(l.ngSetFy, (_) => [const FyNumberingCard()])),
       ]),
       if (_isOwner)
         _group(l.ngSetSecurity, [
