@@ -264,6 +264,8 @@ const kOwnerManagerNavItems = <NavItem>[
   (name: 'DieselAdvancePage', icon: Icons.currency_rupee_rounded, label: 'Diesel advance', group: 'Transport'),
   (name: 'HiredTrucksPage', icon: Icons.local_shipping_rounded, label: 'Hired trucks', group: 'Transport'),
   (name: 'BackupPage', icon: Icons.cloud_sync_rounded, label: 'Backup & offline', group: 'Setup'),
+  (name: 'WhatsAppPage', icon: Icons.chat_rounded, label: 'WhatsApp', group: 'Setup'),
+  (name: 'AutoWhatsAppPage', icon: Icons.mark_chat_read_outlined, label: 'Auto WhatsApp', group: 'Setup'),
   (name: 'LeavePage', icon: Icons.event_busy_rounded, label: 'Leave', group: 'People'),
   (name: 'IncentivesPage', icon: Icons.emoji_events_rounded, label: 'Overtime & incentives', group: 'People'),
   (name: 'SettingsPage', icon: Icons.settings_rounded, label: 'Settings',

@@ -1,5 +1,6 @@
 import '/components/ng_widgets.dart';
 import '/backend/detail_navigation.dart';
+import '/backend/whatsapp_cloud.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -279,6 +280,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
           ...OrgScope.stamp(),
           ...payload,
         });
+        WhatsAppCloud.leadCreated(_model.createdLead);
       }
       _model.ldSaveSuccess = true;
     } catch (_) {

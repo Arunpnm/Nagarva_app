@@ -17,7 +17,7 @@ Legend: **Built** = a screen exists (visual match still to be checked) ·
 | Customers | Built | CustomersPage |
 | Reviews | Built | ReviewsPage |
 | Business accounts | Built | BusinessAccountsPage — GSTIN / company customers + contracts |
-| Customer portal & GPS | Missing | `/track` page exists but is not hosted; no GPS |
+| Customer portal & GPS | Missing | `/track` is live (`kTrackLinkHosted`); there is no GPS source |
 | Coupons & referrals | Built | ReferralsPage — referrals (add) + discount rules (read-only) |
 | Lead rules & lost report | Built | LostReportPage — `quote_outcomes` + `lead_source_performance_view` |
 
@@ -48,16 +48,16 @@ Legend: **Built** = a screen exists (visual match still to be checked) ·
 | GST, TDS & exports | Built | GstPage — GSTR-1 B2B/B2C views + TDS; filing/export not built |
 | Credit notes & refunds | Built | CreditNotesPage — numbered from the `credit_note` series |
 | Bank & UPI match | Built (read-only) | BankMatchPage — statement import not built |
-| Cash book | Built | CashBookPage — cash out needs `20261021_expenses_payment_mode.sql` |
+| Cash book | Built | CashBookPage — cash out live since 21 Oct (`kExpensePaymentModeLive`) |
 
 ## People
 | Design module | App | Notes |
 |---|---|---|
 | Staff | Built | UsersPage |
 | Salary | Built | |
-| Leave | Built, awaiting migration | LeavePage — `20261021_staff_leave_and_incentives.sql`, flag `kStaffLeaveIncentivesLive` |
+| Leave | Built | LeavePage — migration live 21 Oct, `kStaffLeaveIncentivesLive` true |
 | Payslips, PF & ESI | Built (read-only) | PayslipsPage — generating a payroll run is not built |
-| Overtime & incentives | Built, awaiting migration | IncentivesPage — same migration and flag as Leave |
+| Overtime & incentives | Built | IncentivesPage — same migration and flag as Leave |
 | Staff documents | Built (read-only) | StaffDocumentsPage — `documents` where entity_type = staff |
 | Labour contractors | Built | LabourContractorsPage — Vendors of type labour |
 
@@ -91,7 +91,7 @@ Legend: **Built** = a screen exists (visual match still to be checked) ·
 | Modules | Missing | |
 | Plan & billing | Built | PlanPage; payment is on hold (Item 31) |
 | CFT & packages | Built | SurveyPricingPage |
-| WhatsApp | Missing | no send path exists yet (Phase 4) |
+| WhatsApp | Built, awaiting migration + deploy | WhatsAppPage — vendor's own Meta Cloud API number; `20261021_whatsapp_cloud_api.sql`, functions `whatsapp` + `whatsapp-webhook`, flag `kWhatsAppCloudLive` |
 | Quote design | Missing | |
 | Services & sources | Built | LeadSourcesPage — add sources and their commission |
 | Business details | Built | inside Settings |
@@ -102,7 +102,7 @@ Legend: **Built** = a screen exists (visual match still to be checked) ·
 | Design module | App | Notes |
 |---|---|---|
 | Branches | Built | |
-| Auto WhatsApp | Missing | no send path exists yet |
+| Auto WhatsApp | Built, awaiting migration + deploy | AutoWhatsAppPage — five automatic messages, same flag |
 | Approvals (rules) | Missing | |
 | Backup & offline | Built (read-only) | BackupPage — starting a backup needs a server job |
 | Dashboard widgets | Missing | |
@@ -121,7 +121,6 @@ so these screens are BUILT but not yet USED — none has met real data.
 | Customer portal & GPS | `/track` is live; there is no GPS source |
 | Driver app | needs its own role and session type |
 | Modules, Dashboard widgets | a switch nothing reads would be a decoy; needs a policy reader first |
-| WhatsApp, Auto WhatsApp | no send path exists yet (AiSensy, Phase 4) |
 | Quote design | quote PDF theming is its own piece of work |
 | Permissions & alerts | `notification_prefs` exists but nothing reads it |
 | Approvals (rules) | `discount_policies` exists but nothing enforces it |

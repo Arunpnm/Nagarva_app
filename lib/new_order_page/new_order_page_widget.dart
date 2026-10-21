@@ -1,5 +1,6 @@
 import '/components/ng_widgets.dart';
 import '/app_session.dart';
+import '/backend/whatsapp_cloud.dart';
 import '/backend/customer_lookup.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/pricing_defaults.dart';
@@ -811,6 +812,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                   }
                                 }
                                 _model.ordSaveSuccess = true;
+                                if (!isEditing) {
+                                  WhatsAppCloud.orderBooked(_model.createdOrder);
+                                }
                               } catch (e) {
                                 _model.ordSaveSuccess = false;
                                 saveError = extractDbErrorMessage(e,

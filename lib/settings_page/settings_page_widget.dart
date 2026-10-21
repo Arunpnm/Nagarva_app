@@ -370,6 +370,15 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           _row(Icons.event_repeat_outlined, l.ngSetFy,
               sub: l.ngSetFySub,
               onTap: () => _openSub(l.ngSetFy, (_) => [const FyNumberingCard()])),
+        // The `whatsapp` function refuses anyone else, so staff don't see it.
+        if (isOwnerOrManagerSession) ...[
+          _row(Icons.chat_outlined, l.ngSetWa,
+              sub: l.ngSetWaSub,
+              onTap: () => context.pushNamed(WhatsAppPage.routeName)),
+          _row(Icons.mark_chat_read_outlined, l.ngSetAutoWa,
+              sub: l.ngSetAutoWaSub,
+              onTap: () => context.pushNamed(AutoWhatsAppPage.routeName)),
+        ],
       ]),
       if (_isOwner)
         _group(l.ngSetSecurity, [

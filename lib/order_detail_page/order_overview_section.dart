@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '/backend/order_journey.dart';
+import '/backend/whatsapp_cloud.dart';
 import '/backend/order_stages.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -179,10 +180,28 @@ class OrderOverviewSectionState extends State<OrderOverviewSection> {
     launchURL(uri.toString());
   }
 
-  void _remind() {
+  /// From the vendor's own WhatsApp number when the reminder template is
+  /// approved; otherwise WhatsApp on this phone, as before.
+  Future<void> _remind() async {
     final o = _order;
     if (o == null) return;
     final l = AppLocalizations.of(context);
+    try {
+      if (await WhatsAppCloud.remindBalance(
+          orderId: o.id, customer: o.customer, phone: o.phone, balance: _balance)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Reminder sent from your WhatsApp number.')));
+        }
+        return;
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+      return;
+    }
+    if (!mounted) return;
     launchURL(buildWhatsAppLink(
       phone: o.phone,
       message: l.odRemindMsg(o.customer, functions.inrFull(_balance),

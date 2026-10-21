@@ -107,6 +107,8 @@ const kPermModules = <PermModule>[
   PermModule('diesel_advance', 'Diesel advance', 'DieselAdvancePage', moneyModule: true),
   PermModule('hired_trucks', 'Hired trucks', 'HiredTrucksPage'),
   PermModule('backup', 'Backup & offline', 'BackupPage'),
+  PermModule('whatsapp', 'WhatsApp', 'WhatsAppPage'),
+  PermModule('auto_whatsapp', 'Auto WhatsApp', 'AutoWhatsAppPage'),
   PermModule('lost_report', 'Lead rules & lost report', 'LostReportPage'),
   PermModule('referrals', 'Coupons & referrals', 'ReferralsPage'),
   PermModule('daily_summary', 'Daily summary', 'DailySummaryPage'),

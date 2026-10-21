@@ -1210,9 +1210,12 @@ class NgInput extends StatelessWidget {
     this.mono = false,
     this.maxLines = 1,
     this.onChanged,
+    this.obscure = false,
   });
 
   final TextEditingController controller;
+  /// Hide what is typed (access tokens, secrets).
+  final bool obscure;
   final String? hint;
   final FocusNode? focusNode;
   final TextInputType? keyboardType;
@@ -1236,7 +1239,10 @@ class NgInput extends StatelessWidget {
       controller: controller,
       focusNode: focusNode,
       keyboardType: keyboardType,
-      maxLines: maxLines,
+      maxLines: obscure ? 1 : maxLines,
+      obscureText: obscure,
+      enableSuggestions: !obscure,
+      autocorrect: !obscure,
       onChanged: onChanged,
       style: style,
       cursorColor: c.acc,

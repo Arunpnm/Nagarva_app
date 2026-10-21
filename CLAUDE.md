@@ -3262,6 +3262,57 @@ reported as "back is not redirecting to dashboard".
 **Do not "simplify" this back to a uniform `pushNamed`.** It reads like
 an inconsistency and is the whole fix.
 
+## WhatsApp — each vendor's own Meta Cloud API number (built 21 Oct 2026)
+Arun, 21 Oct 2026: "as of Nagarva it's a SaaS product so we give the
+template they will fill accordingly." This replaces the AiSensy plan
+that Phase 4 and several notes below still mention.
+
+- **Each vendor connects THEIR OWN WhatsApp Business number**: phone
+  number ID, WhatsApp Business Account ID, permanent access token, and
+  (for replies) their Meta app secret. Messages go out under the vendor's
+  number and name; Meta bills the vendor. Settings › WhatsApp
+  (`lib/whatsapp/whatsapp_page.dart`), owner/admin/manager only.
+- **Nagarva supplies the wording**: `wa_template_library`, eight utility
+  templates. On connect each org gets its own copy in `wa_templates`,
+  which the app submits to Meta on the vendor's WABA. Nothing sends until
+  Meta approves it. **`business_name` is a template variable filled
+  server-side from `organizations.name`** — never from the client, never
+  the platform's name.
+- **Secrets live in Supabase Vault**, never in a readable table.
+  `wa_vault_put`/`wa_vault_get` are service_role only; the app can write
+  exactly one column, `wa_templates.enabled`.
+- **Two kinds of message**: AUTOMATIC (`kWaAutoKeys` — new enquiry, order
+  booked, move started, delivered, payment received; switched on per
+  message in Setup › Auto WhatsApp, fired by `WhatsAppCloud.auto` and
+  never blocking or failing the event) and ON DEMAND (survey link from
+  the share sheet, balance reminder from Payments/Order Details; no
+  switch, because a switch over a button the user is already pressing
+  would be a decoy). Without a connected number every on-demand path
+  falls back to opening WhatsApp on the phone, as before.
+- **Plan gating is enforced in the `whatsapp` function** (features
+  `whatsapp`, `max_whatsapp_per_month`); failed sends do not count.
+- **Inbound** (`whatsapp-webhook`, deploy `--no-verify-jwt`): delivery
+  ticks and customer replies into `wa_contacts`/`wa_messages`. Nothing is
+  written unless X-Hub-Signature-256 verifies under that org's app secret
+  — tested in `supabase/functions/_shared/wa_util_test.ts`, which caught
+  landlines being accepted as mobiles on its first run.
+- **Run order**: `supabase/20261021_whatsapp_cloud_api.sql` → deploy
+  `whatsapp` and `whatsapp-webhook` → confirm by query → flip
+  `kWhatsAppCloudLive`. Until then every screen says so and every send
+  falls back to the phone.
+- **LIVE 21 Oct 2026**: migration run by Arun and confirmed by query
+  (8 library rows, RLS on, Vault wrappers service_role only, app can
+  toggle `enabled` and nothing else, 0 public tables without RLS); both
+  functions deployed ACTIVE (`whatsapp` with JWT, `whatsapp-webhook`
+  without); `kWhatsAppCloudLive` true.
+- **NOT VERIFIED against Meta.** No real number has connected, no
+  template has been submitted, no message sent or received. The
+  migration was dry-run against live in a rolled-back transaction; the
+  functions type-check; the screens were rendered from fixtures.
+- Not built: free-form replies from the Inbox within the 24-hour window,
+  media messages, Embedded Signup (needs Nagarva to be a Meta Tech
+  Provider), the `quote_shared` send (no public `/quote` page exists).
+
 ## Changelog
 - **21 Oct 2026 (later), Tier B's column REVOKE was a no-op — fix
   handed over.** Checked live after Tier B ran: its row policies took
