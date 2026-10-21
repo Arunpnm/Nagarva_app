@@ -49,9 +49,12 @@ String? inrFormat(double? amount) {
   final amt = amount ?? 0.0;
   final a = amt.abs();
   final sign = amt < 0 ? '-' : '';
-  if (a < 1000) return '${sign}Rs${a.toStringAsFixed(0)}';
-  if (a < 100000) return '${sign}Rs${(a / 1000).toStringAsFixed(1)}K';
-  return '${sign}Rs${(a / 100000).toStringAsFixed(1)}L';
+  // The handoff writes on-screen money as "₹23.4k" / "₹1.85L". Geist
+  // carries the ₹ glyph (checked 21 Oct 2026). PDFs do not use this
+  // helper, so their "Rs" formatting is unaffected.
+  if (a < 1000) return '$sign₹${a.toStringAsFixed(0)}';
+  if (a < 100000) return '$sign₹${(a / 1000).toStringAsFixed(1)}k';
+  return '$sign₹${(a / 100000).toStringAsFixed(2)}L';
 }
 
 /// Converts a double to integer string for count display.
@@ -80,9 +83,9 @@ String? progressLabel(
   if (cur >= tgt) return 'Target achieved!';
   final remaining = tgt - cur;
   final a = remaining.abs();
-  if (a < 1000) return 'Rs${a.toStringAsFixed(0)} to go';
-  if (a < 100000) return 'Rs${(a / 1000).toStringAsFixed(1)}K to go';
-  return 'Rs${(a / 100000).toStringAsFixed(1)}L to go';
+  if (a < 1000) return '₹${a.toStringAsFixed(0)} to go';
+  if (a < 100000) return '₹${(a / 1000).toStringAsFixed(1)}k to go';
+  return '₹${(a / 100000).toStringAsFixed(2)}L to go';
 }
 
 /// Parses a string to double, defaults to 200000.

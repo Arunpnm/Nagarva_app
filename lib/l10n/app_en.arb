@@ -3316,5 +3316,210 @@
   "suAgreeLead": "I agree to the",
   "@suAgreeLead": {
     "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "ngGreetMorning": "Good morning",
+  "@ngGreetMorning": {
+    "description": "Dashboard redesign"
+  },
+  "ngGreetAfternoon": "Good afternoon",
+  "@ngGreetAfternoon": {
+    "description": "Dashboard redesign"
+  },
+  "ngGreetEvening": "Good evening",
+  "@ngGreetEvening": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanName": "{plan} plan",
+  "@ngPlanName": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "ngPlanActive": "Active",
+  "@ngPlanActive": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanTrial": "Trial",
+  "@ngPlanTrial": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanEndingSoon": "Ending soon",
+  "@ngPlanEndingSoon": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanEnded": "Ended",
+  "@ngPlanEnded": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanTrialEnds": "Trial ends {date} · {days} days left",
+  "@ngPlanTrialEnds": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "ngPlanReadOnlyIn": "Trial ended · view only in {days} days",
+  "@ngPlanReadOnlyIn": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "ngPlanReadOnly": "Trial ended · view only",
+  "@ngPlanReadOnly": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanNoExpiry": "No expiry date",
+  "@ngPlanNoExpiry": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanSee": "Plans",
+  "@ngPlanSee": {
+    "description": "Dashboard redesign"
+  },
+  "ngPaymentsDue": "Payments due",
+  "@ngPaymentsDue": {
+    "description": "Dashboard redesign"
+  },
+  "ngPaymentsDueSub": "{n} orders not fully paid",
+  "@ngPaymentsDueSub": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngOverdueFollowUps": "Overdue follow-ups",
+  "@ngOverdueFollowUps": {
+    "description": "Dashboard redesign"
+  },
+  "ngOverdueFollowUpsSub": "Call these first",
+  "@ngOverdueFollowUpsSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngTodaysPlan": "Today's plan",
+  "@ngTodaysPlan": {
+    "description": "Dashboard redesign"
+  },
+  "ngNothingToday": "Nothing planned for today",
+  "@ngNothingToday": {
+    "description": "Dashboard redesign"
+  },
+  "ngComingUp": "Coming up",
+  "@ngComingUp": {
+    "description": "Dashboard redesign"
+  },
+  "ngAgendaMove": "Move · {name}",
+  "@ngAgendaMove": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ngAllDay": "All day",
+  "@ngAllDay": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriodThisMonth": "This month",
+  "@ngPeriodThisMonth": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriodLastMonth": "Last month",
+  "@ngPeriodLastMonth": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriod3m": "Last 3 months",
+  "@ngPeriod3m": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriodFy": "This financial year",
+  "@ngPeriodFy": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriodAll": "All time",
+  "@ngPeriodAll": {
+    "description": "Dashboard redesign"
+  },
+  "ngPickPeriod": "Show figures for",
+  "@ngPickPeriod": {
+    "description": "Dashboard redesign"
+  },
+  "ngProfitTarget": "Profit target",
+  "@ngProfitTarget": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetTarget": "Set a monthly profit target",
+  "@ngSetTarget": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetTargetSub": "Tap to set the number you want to reach",
+  "@ngSetTargetSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngProfit": "Profit",
+  "@ngProfit": {
+    "description": "Dashboard redesign"
+  },
+  "ngProfitAfter": "After labour {labour} and expenses {expenses}",
+  "@ngProfitAfter": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "labour": {
+        "type": "String"
+      },
+      "expenses": {
+        "type": "String"
+      }
+    }
+  },
+  "ngAddExpense": "Add expense",
+  "@ngAddExpense": {
+    "description": "Dashboard redesign"
+  },
+  "ngSeeAll": "See all",
+  "@ngSeeAll": {
+    "description": "Dashboard redesign"
+  },
+  "ngHotLeads": "Hot leads",
+  "@ngHotLeads": {
+    "description": "Dashboard redesign"
+  },
+  "ngBranches": "Branches",
+  "@ngBranches": {
+    "description": "Dashboard redesign"
+  },
+  "ngOrdersN": "{n} orders",
+  "@ngOrdersN": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngTargetDone": "Target met",
+  "@ngTargetDone": {
+    "description": "Dashboard redesign"
+  },
+  "ngNoProfitYet": "No profit yet this period",
+  "@ngNoProfitYet": {
+    "description": "Dashboard redesign"
+  },
+  "ngEditTarget": "Monthly profit target",
+  "@ngEditTarget": {
+    "description": "Dashboard redesign"
   }
 }

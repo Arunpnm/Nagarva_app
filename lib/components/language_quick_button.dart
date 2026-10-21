@@ -62,8 +62,24 @@ class LanguageQuickButton extends StatelessWidget {
     final current = FFLocalizations.of(context).languageCode;
     return PopupMenuButton<String>(
       tooltip: 'Language',
-      icon: Icon(Icons.language,
-          color: iconColor ?? IconTheme.of(context).color),
+      // The handoff's header shows the active language as its short code
+      // ("EN", "TA") rather than a globe, so the current choice is
+      // readable without opening the menu.
+      child: SizedBox(
+        width: 36,
+        height: 40,
+        child: Center(
+          child: Text(
+            current.toUpperCase(),
+            style: TextStyle(
+              fontFamily: 'Geist',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: iconColor ?? IconTheme.of(context).color,
+            ),
+          ),
+        ),
+      ),
       onSelected: (code) => MyApp.of(context).setLocale(code),
       itemBuilder: (context) => [
         PopupMenuItem<String>(

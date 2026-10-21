@@ -122,7 +122,11 @@ class DashboardKpiGrid extends StatelessWidget {
       if (StaffPermissions.canActive(module, 'view')) out.add(tile);
     }
 
-    // ---- operational counts -----------------------------------------
+    // Handoff order (21 Oct 2026): Enquiries, Quotes, Bookings,
+    // Outstanding, then Revenue and Expenses. Active moves and reminders
+    // are the Moves / Follow-ups tiles at the top of the dashboard, and
+    // profit (with labour folded into its note) is the row under this
+    // grid, so nothing that was here is lost.
     add('reports', _Tile(
       id: 'enquiries',
       label: 'Enquiries',
@@ -138,87 +142,30 @@ class DashboardKpiGrid extends StatelessWidget {
       label: 'Bookings',
       value: _count(row.ordersThisMonth),
     ));
-    add('reports', _Tile(
-      id: 'active_moves',
-      label: 'Active Moves',
-      value: _count(row.activeMoves),
+    add('financials', _Tile(
+      id: 'outstanding',
+      label: 'Outstanding',
+      value: functions.inrFormat(row.outstandingAmount) ?? '-',
+      accent: true,
     ));
-    // Not in the mockup, but live and working today, so it survives —
-    // see the class doc. Same for Labour below.
-    add('reports', _Tile(
-      id: 'reminders',
-      label: 'Reminders',
-      value: _count(row.remindersToday),
-    ));
-
-    // ---- money -------------------------------------------------------
     add('financials', _Tile(
       id: 'revenue',
       label: 'Revenue',
       value: functions.inrFormat(row.revenueThisMonth) ?? '-',
       tone: NgStatus.green,
     ));
-    add('financials', _Tile(
-      id: 'outstanding',
-      label: 'Outstanding',
-      value: functions.inrFormat(row.outstandingAmount) ?? '-',
-      tone: NgStatus.amber,
-    ));
 
-    // ---- margin ------------------------------------------------------
-    final expenses = row.expensesThisMonth ?? 0;
-    final orderCount = (row.ordersThisMonth ?? 0).toInt();
-    // Two independent reasons a margin can be dishonest, and BOTH must
-    // hold for it to show. Expenses starved (marginIsMeaningful) is the
-    // 25 Aug case; an unpriced commission is a second, unrelated missing
-    // cost — folding them into one flag would let a fix for one silently
-    // re-enable the figure while the other is still true.
-    final commissionPriced = unpricedCommissionCount == 0;
-    final marginShowable = marginIsMeaningful(
-          expensesTotal: expenses,
-          orderCount: orderCount,
-        ) &&
-        commissionPriced;
-
-    // Labour is a cost, so it sits in the margin tier alongside
-    // Expenses. It is NOT starved the way Expenses is — it sums
-    // `staff.salary` over active staff, which is real data — so it
-    // shows a figure rather than an empty state.
-    add('financials_margin', _Tile(
-      id: 'labour',
-      label: 'Labour',
-      value: functions.inrFormat(row.labourThisMonth) ?? '-',
-    ));
-
-    add('financials_margin', _Tile(
-      id: 'profit',
-      label: 'Profit',
-      // Suppressed ENTIRELY when unavailable — no currency, no zero, no
-      // dash. All three read as a measurement.
-      value: marginShowable
-          ? (functions.inrFormat(row.netProfitThisMonth) ?? '-')
-          : null,
-      // Name the reason that actually applies. "Needs expense data" on an
-      // org that has plenty of expenses and one unpriced order sends the
-      // vendor to fix the wrong thing.
-      emptyTitle:
-          commissionPriced ? kMarginUnavailableTitle : 'Commission not priced',
-      emptyBody: commissionPriced
-          ? kMarginUnavailableBody
-          : commissionIncompleteNote(unpricedCommissionCount),
-      tone: NgStatus.green,
-    ));
-
+    // Same condition as the profit row, via the same helper rather than
+    // a hand-rolled `expenses == 0 && orderCount > 0`. Writing it twice
+    // is how two figures on one screen come to disagree about whether
+    // there is data. An org with genuinely no activity still sees ₹0
+    // here, because the helper only reports a problem when orders exist
+    // to contradict it.
+    final margin = marginState(row, unpricedCommissionCount);
     add('financials_margin', _Tile(
       id: 'expenses',
       label: 'Expenses',
-      // Same condition as Profit, via the same helper rather than a
-      // hand-rolled `expenses == 0 && orderCount > 0`. Writing it twice
-      // is how two tiles on one screen come to disagree about whether
-      // there is data. An org with genuinely no activity still sees
-      // Rs0 here, because the helper only reports a problem when orders
-      // exist to contradict it.
-      value: marginShowable
+      value: margin.showable
           ? (functions.inrFormat(row.expensesThisMonth) ?? '-')
           : null,
       emptyTitle: kNoExpensesTitle,
@@ -228,6 +175,34 @@ class DashboardKpiGrid extends StatelessWidget {
     ));
 
     return out;
+  }
+
+  /// Whether profit can be shown honestly for [row], and if not, why.
+  ///
+  /// Two independent reasons a margin can be dishonest, and BOTH must
+  /// hold for it to show. Expenses starved (marginIsMeaningful) is the
+  /// 25 Aug case; an unpriced commission is a second, unrelated missing
+  /// cost. Folding them into one flag would let a fix for one silently
+  /// re-enable the figure while the other is still true. The title names
+  /// the reason that actually applies: "Needs expense data" on an org
+  /// with plenty of expenses and one unpriced order sends the vendor to
+  /// fix the wrong thing.
+  static ({bool showable, String title, String body}) marginState(
+      DashboardKpisViewRow row, int unpricedCommissionCount) {
+    final commissionPriced = unpricedCommissionCount == 0;
+    final showable = marginIsMeaningful(
+          expensesTotal: row.expensesThisMonth ?? 0,
+          orderCount: (row.ordersThisMonth ?? 0).toInt(),
+        ) &&
+        commissionPriced;
+    return (
+      showable: showable,
+      title:
+          commissionPriced ? kMarginUnavailableTitle : 'Commission not priced',
+      body: commissionPriced
+          ? kMarginUnavailableBody
+          : commissionIncompleteNote(unpricedCommissionCount),
+    );
   }
 
   /// View counts arrive as `double` from PostgREST. Render them as
@@ -242,6 +217,7 @@ class _Tile {
     required this.label,
     required this.value,
     this.tone,
+    this.accent = false,
     this.emptyTitle,
     this.emptyBody,
     this.onEmptyTap,
@@ -257,6 +233,9 @@ class _Tile {
   /// Hue of the figure: money in green, money owed amber, costs red.
   /// Null for plain counts, which read in the text colour.
   final NgStatus? tone;
+
+  /// Accent-coloured figure (the handoff shows Outstanding in orange).
+  final bool accent;
   final String? emptyTitle;
   final String? emptyBody;
   final VoidCallback? onEmptyTap;
@@ -331,9 +310,11 @@ class _KpiCard extends StatelessWidget {
                   style: NgFonts.geist(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: tile.tone == null
-                        ? c.text
-                        : c.status(tile.tone!).fg,
+                    color: tile.accent
+                        ? c.acc
+                        : tile.tone == null
+                            ? c.text
+                            : c.status(tile.tone!).fg,
                   ),
                 ),
             ],
