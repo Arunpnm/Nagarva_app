@@ -171,7 +171,10 @@ const bool kStaffLeaveIncentivesLive = true;
 /// confirmed live by query AND both functions are deployed. While false,
 /// the WhatsApp screens say what is missing and every send falls back to
 /// opening WhatsApp on the phone, exactly as before.
-const bool kWhatsAppCloudLive = false;
+// LIVE 21 Oct 2026: tables, Vault wrappers (service_role only), RLS and
+// column grants confirmed by query; `whatsapp` and `whatsapp-webhook`
+// deployed and ACTIVE. Not yet exercised against Meta.
+const bool kWhatsAppCloudLive = true;
 
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.

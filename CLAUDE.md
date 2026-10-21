@@ -3300,6 +3300,11 @@ that Phase 4 and several notes below still mention.
   `whatsapp` and `whatsapp-webhook` → confirm by query → flip
   `kWhatsAppCloudLive`. Until then every screen says so and every send
   falls back to the phone.
+- **LIVE 21 Oct 2026**: migration run by Arun and confirmed by query
+  (8 library rows, RLS on, Vault wrappers service_role only, app can
+  toggle `enabled` and nothing else, 0 public tables without RLS); both
+  functions deployed ACTIVE (`whatsapp` with JWT, `whatsapp-webhook`
+  without); `kWhatsAppCloudLive` true.
 - **NOT VERIFIED against Meta.** No real number has connected, no
   template has been submitted, no message sent or received. The
   migration was dry-run against live in a rolled-back transaction; the
