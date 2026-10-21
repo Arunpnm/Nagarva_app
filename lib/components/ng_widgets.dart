@@ -398,8 +398,12 @@ class NgChip extends StatelessWidget {
         child: Container(
           height: 34,
           padding: const EdgeInsets.symmetric(horizontal: 13),
-          alignment: Alignment.center,
-          child: Row(
+          // Center with widthFactor 1, not Container.alignment: alignment
+          // makes the Container expand, so a chip inside a Wrap took the
+          // whole row.
+          child: Center(
+            widthFactor: 1,
+            child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
@@ -419,6 +423,7 @@ class NgChip extends StatelessWidget {
                 ),
               ],
             ],
+          ),
           ),
         ),
       ),
@@ -1153,6 +1158,161 @@ class NgQuickAction extends StatelessWidget {
                       color: c.text)),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Form section label (handoff: muted 14px above a field or chip group),
+/// with an optional action on the right ("Edit list").
+class NgFieldLabel extends StatelessWidget {
+  const NgFieldLabel(this.label, {super.key, this.action, this.onAction});
+
+  final String label;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label,
+                style: NgFonts.geist(fontSize: 14, color: c.mute)),
+          ),
+          if (action != null)
+            InkWell(
+              onTap: onAction,
+              child: Text(action!,
+                  style: NgFonts.geist(fontSize: 14, color: c.acc)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Text field on the handoff's form surface: s1 fill, hairline border,
+/// accent border on focus. [mono] for phone numbers and ids.
+class NgInput extends StatelessWidget {
+  const NgInput({
+    super.key,
+    required this.controller,
+    this.hint,
+    this.focusNode,
+    this.keyboardType,
+    this.icon,
+    this.suffix,
+    this.mono = false,
+    this.maxLines = 1,
+    this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String? hint;
+  final FocusNode? focusNode;
+  final TextInputType? keyboardType;
+  final IconData? icon;
+  final Widget? suffix;
+  final bool mono;
+  final int? maxLines;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final style = mono
+        ? NgFonts.mono(fontSize: 16, color: c.text)
+        : NgFonts.geist(fontSize: 16, color: c.text);
+    OutlineInputBorder border(Color col, [double w = 1]) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.tile),
+          borderSide: BorderSide(color: col, width: w),
+        );
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      onChanged: onChanged,
+      style: style,
+      cursorColor: c.acc,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: style.copyWith(color: c.faint),
+        filled: true,
+        fillColor: c.s1,
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        prefixIcon: icon == null
+            ? null
+            : Icon(icon, size: 20, color: c.mute),
+        suffixIcon: suffix,
+        enabledBorder: border(c.w08),
+        border: border(c.w08),
+        focusedBorder: border(c.acc, 1.5),
+      ),
+    );
+  }
+}
+
+/// Option card for a 2-up "Next step" grid (handoff New lead): icon,
+/// title, one muted line, accent outline when selected.
+class NgOptionCard extends StatelessWidget {
+  const NgOptionCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Material(
+      color: selected ? c.status(NgStatus.accent).bg : c.s1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(NgRadius.tile),
+        side: BorderSide(color: selected ? c.acc : c.w06, width: selected ? 1.5 : 1),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(NgRadius.tile),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: selected ? c.acc : c.soft),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: NgFonts.geist(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.text)),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -4258,5 +4258,113 @@
   "odStCompleted": "Completed",
   "@odStCompleted": {
     "description": "Dashboard redesign"
+  },
+  "nlPhone": "Phone",
+  "@nlPhone": {
+    "description": "Dashboard redesign"
+  },
+  "nlName": "Name",
+  "@nlName": {
+    "description": "Dashboard redesign"
+  },
+  "nlRoute": "Route",
+  "@nlRoute": {
+    "description": "Dashboard redesign"
+  },
+  "nlMovingFrom": "Moving from",
+  "@nlMovingFrom": {
+    "description": "Dashboard redesign"
+  },
+  "nlMovingTo": "Moving to",
+  "@nlMovingTo": {
+    "description": "Dashboard redesign"
+  },
+  "nlService": "Service",
+  "@nlService": {
+    "description": "Dashboard redesign"
+  },
+  "nlWhen": "When",
+  "@nlWhen": {
+    "description": "Dashboard redesign"
+  },
+  "nlToday": "Today",
+  "@nlToday": {
+    "description": "Dashboard redesign"
+  },
+  "nlTomorrow": "Tomorrow",
+  "@nlTomorrow": {
+    "description": "Dashboard redesign"
+  },
+  "nlPickDate": "Pick date",
+  "@nlPickDate": {
+    "description": "Dashboard redesign"
+  },
+  "nlSource": "Source",
+  "@nlSource": {
+    "description": "Dashboard redesign"
+  },
+  "nlBranch": "Branch",
+  "@nlBranch": {
+    "description": "Dashboard redesign"
+  },
+  "nlNextStep": "Next step",
+  "@nlNextStep": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepFollow": "Follow-up",
+  "@nlStepFollow": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepFollowSub": "Call again later",
+  "@nlStepFollowSub": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepSurvey": "Survey",
+  "@nlStepSurvey": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepSurveySub": "Visit, link or on call",
+  "@nlStepSurveySub": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepQuote": "Skip survey · Quote",
+  "@nlStepQuote": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepQuoteSub": "Price on this call",
+  "@nlStepQuoteSub": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepConfirm": "Confirm order",
+  "@nlStepConfirm": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepConfirmSub": "Customer agreed now",
+  "@nlStepConfirmSub": {
+    "description": "Dashboard redesign"
+  },
+  "nlMore": "More details",
+  "@nlMore": {
+    "description": "Dashboard redesign"
+  },
+  "nlEmail": "Email (optional)",
+  "@nlEmail": {
+    "description": "Dashboard redesign"
+  },
+  "nlNotes": "Notes",
+  "@nlNotes": {
+    "description": "Dashboard redesign"
+  },
+  "nlNameRequired": "Enter the customer's name.",
+  "@nlNameRequired": {
+    "description": "Dashboard redesign"
+  },
+  "nlNoBranches": "Add a branch in Settings before saving leads.",
+  "@nlNoBranches": {
+    "description": "Dashboard redesign"
+  },
+  "nlUpdateLead": "Update lead",
+  "@nlUpdateLead": {
+    "description": "Dashboard redesign"
   }
 }

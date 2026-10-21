@@ -1078,7 +1078,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           borderRadius: BorderRadius.circular(999),
           border: current
               ? null
-              : Border.all(color: NgPalette.of(context).w08),
+              : Border.all(color: NgPalette.of(context).w1),
         ),
         child: Center(
           widthFactor: 1,

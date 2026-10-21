@@ -1,14 +1,11 @@
 import '/components/ng_widgets.dart';
+import '/backend/detail_navigation.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_drop_down.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import '/flutter_flow/form_field_controller.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -160,6 +157,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
     _model.ldSourceDropdownValue = lead.source;
     _model.ldSourceDropdownValueController?.value = lead.source;
 
+    _packageType = lead.packageType;
     _model.ldBranch = lead.branch;
     _model.ldBranchDropdownValue = lead.branch;
     _model.ldBranchDropdownValueController?.value = lead.branch;
@@ -168,1219 +166,417 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
     safeSetState(() {});
   }
 
+  // ---- Claude Design handoff "NEW LEAD" -------------------------------
+  //
+  // Phone first, route card, chip groups for service / size / when /
+  // source / branch, then "Next step". The payload and the branch rules
+  // are unchanged; only the form around them is new.
+
+  static const _kServices = [
+    'House Shifting',
+    'Office Shifting',
+    'Vehicle Transport',
+    'Storage',
+    'Packing Only',
+    'Long Distance',
+  ];
+  static const _kSizes = ['1 RK', '1 BHK', '2 BHK', '3 BHK', '4+ BHK', 'Villa'];
+  static const _kSources = [
+    'WhatsApp',
+    'Phone Call',
+    'Website',
+    'Porter',
+    'Referral',
+    'Walk-in',
+    'Google',
+    'JustDial',
+    'Other',
+  ];
+
+  /// leads.package_type — the home size. Display-only downstream (Lead
+  /// Details' Package row); nothing prices from it.
+  String? _packageType;
+
+  /// What the office does next. Sets the starting status and where Save
+  /// lands; null keeps the old behaviour (status `new`, back to Leads).
+  String? _nextStep;
+  bool _saving = false;
+  bool _showMore = false;
+
+  bool _sameDay(DateTime? a, DateTime b) =>
+      a != null && a.year == b.year && a.month == b.month && a.day == b.day;
+
+  void _setDate(DateTime d) => setState(() {
+        _model.ldApproxDate = DateTime(d.year, d.month, d.day);
+        _model.ldApproxDatePicked = true;
+      });
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _model.ldApproxDate ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+    );
+    if (picked != null) _setDate(picked);
+  }
+
+  void _swapRoute() {
+    final from = _model.ldFromCityFieldTextController!.text;
+    _model.ldFromCityFieldTextController!.text =
+        _model.ldToCityFieldTextController!.text;
+    _model.ldToCityFieldTextController!.text = from;
+  }
+
+  Future<void> _save() async {
+    final l = AppLocalizations.of(context);
+    if (_model.ldCustomerFieldTextController!.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.nlNameRequired)));
+      return;
+    }
+    if (_model.ldBranch == null || _model.ldBranch!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_model.branchLoadError != null
+              ? 'Branches could not be loaded, so none can be picked. Pull to retry or reopen this page.'
+              : 'Select a branch first.'),
+        ),
+      );
+      return;
+    }
+    final isEditing = widget.leadId != null;
+    if (!isEditing) {
+      _model.ldStatus =
+          _nextStep == 'follow' ? 'follow_up' : (_model.ldStatus ?? 'new');
+    }
+    setState(() => _saving = true);
+    final payload = {
+      'customer': _model.ldCustomerFieldTextController!.text.trim(),
+      'phone': _model.ldPhoneFieldTextController!.text.trim(),
+      'email': _model.ldEmailFieldTextController!.text.trim(),
+      'from_city': _model.ldFromCityFieldTextController!.text.trim(),
+      'to_city': _model.ldToCityFieldTextController!.text.trim(),
+      'approx_date': _model.ldApproxDate?.toString(),
+      'service': _model.ldService,
+      'source': _model.ldSource,
+      'status': _model.ldStatus,
+      'branch': _model.ldBranch,
+      'notes': _model.ldNotesFieldTextController!.text,
+      if (_packageType != null) 'package_type': _packageType,
+    };
+    try {
+      if (isEditing) {
+        // LEAK_AUDIT.md write-gap fix: matched only on id before — now
+        // also requires the row to belong to the current org.
+        await LeadsTable().update(
+          data: payload,
+          matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
+        );
+      } else {
+        _model.createdLead = await LeadsTable().insert({
+          ...OrgScope.stamp(),
+          ...payload,
+        });
+      }
+      _model.ldSaveSuccess = true;
+    } catch (_) {
+      _model.ldSaveSuccess = false;
+    }
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (_model.ldSaveSuccess != true) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Failed to save lead. Please try again.')));
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(isEditing
+            ? 'Lead updated successfully!'
+            : 'Lead saved successfully!')));
+    if (Navigator.of(context).canPop()) context.pop();
+    if (isEditing) return;
+    final lead = _model.createdLead;
+    switch (_nextStep) {
+      case 'quote':
+        context.pushNamed(
+          SurveyQuotePageWidget.routeName,
+          queryParameters: {
+            'leadId': serializeParam(lead?.id, ParamType.String),
+            'leadCustomer': serializeParam(lead?.customer, ParamType.String),
+            'leadPhone': serializeParam(lead?.phone, ParamType.String),
+            'leadFromCity': serializeParam(lead?.fromCity, ParamType.String),
+            'leadToCity': serializeParam(lead?.toCity, ParamType.String),
+          }.withoutNulls,
+        );
+      case 'survey' || 'confirm' || 'follow':
+        // Request Survey and Confirm Order both live on Lead Details.
+        if (lead != null) openLeadDetail(context, lead);
+      default:
+        context.pushNamed(LeadsPageWidget.routeName);
+    }
+  }
+
+  Widget _chips(List<String> options, String? value, ValueChanged<String> onPick,
+          {String Function(String)? label}) =>
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final o in options)
+            NgChip(
+              label: label?.call(o) ?? o,
+              selected: o == value,
+              onTap: () => onPick(o),
+            ),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final isEditing = widget.leadId != null;
+    final now = DateTime.now();
+    final tomorrow = now.add(const Duration(days: 1));
+    final date = _model.ldApproxDate;
+    final customDate = date != null &&
+        !_sameDay(date, now) &&
+        !_sameDay(date, tomorrow);
+    const gap = SizedBox(height: 22);
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: NgSimpleBar(title: widget.leadId != null
-                ? 'Edit Lead'
-                : AppLocalizations.of(context).newLead, close: true),
-        body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context)
-                                .secondaryBackground,
-                            borderRadius: BorderRadius.circular(16.0),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context).contact,
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ldCustomerFieldTextController,
-                                  focusNode: _model.ldCustomerFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).newOrderPageCustomerName,
-                                    hintText:
-                                        AppLocalizations.of(context).fullName,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ldCustomerFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                TextFormField(
-                                  controller: _model.ldPhoneFieldTextController,
-                                  focusNode: _model.ldPhoneFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).newOrderPagePhone,
-                                    hintText:
-                                        AppLocalizations.of(context).n91XxxxxXxxxx,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  keyboardType: TextInputType.number,
-                                  validator: _model
-                                      .ldPhoneFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                TextFormField(
-                                  controller: _model.ldEmailFieldTextController,
-                                  focusNode: _model.ldEmailFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).email,
-                                    hintText:
-                                        AppLocalizations.of(context).emailExampleCom,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ldEmailFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                              ].divide(const SizedBox(height: 14.0)),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context)
-                                .secondaryBackground,
-                            borderRadius: BorderRadius.circular(16.0),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context).moveDetails,
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ldFromCityFieldTextController,
-                                  focusNode: _model.ldFromCityFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).newLeadPageFromCity,
-                                    hintText:
-                                        AppLocalizations.of(context).originCity,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ldFromCityFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ldToCityFieldTextController,
-                                  focusNode: _model.ldToCityFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).newLeadPageToCity,
-                                    hintText:
-                                        AppLocalizations.of(context).destinationCity,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ldToCityFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .primaryBackground,
-                                    borderRadius: BorderRadius.circular(8.0),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        14.0, 12.0, 14.0, 12.0),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              AppLocalizations.of(context).approxDate,
-                                              style:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                            ),
-                                            if (!(_model.ldApproxDatePicked ??
-                                                false))
-                                              Container(
-                                                child: Text(
-                                                  AppLocalizations.of(context).tapToPickDate,
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodyMedium
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontStyle,
-                                                      ),
-                                                ),
-                                              ),
-                                            if ((_model.ldApproxDatePicked ??
-                                                    false) &&
-                                                _model.ldApproxDate != null)
-                                              Container(
-                                                child: Text(
-                                                  dateTimeFormat(
-                                                      'd MMM y',
-                                                      _model.ldApproxDate),
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodyMedium
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .primaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontStyle,
-                                                      ),
-                                                ),
-                                              ),
-                                          ].divide(const SizedBox(height: 2.0)),
-                                        ),
-                                        Padding(
-                                          padding:
-                                              const EdgeInsetsDirectional.fromSTEB(
-                                                  12.0, 6.0, 12.0, 6.0),
-                                          child: FFButtonWidget(
-                                            onPressed: () async {
-                                              final datePickedDate =
-                                                  await showDatePicker(
-                                                context: context,
-                                                // Edit mode: open on the
-                                                // lead's saved date; allow
-                                                // past dates so editing an
-                                                // old lead doesn't assert
-                                                // (initialDate must be >=
-                                                // firstDate).
-                                                initialDate:
-                                                    _model.ldApproxDate ??
-                                                        getCurrentTimestamp,
-                                                firstDate: DateTime(2020),
-                                                lastDate: DateTime(2050),
-                                                builder: (context, child) {
-                                                  // FlutterFlow artifact fix:
-                                                  // the generated wrapper set
-                                                  // every color to 0x00000000
-                                                  // (fully transparent), which
-                                                  // rendered the ghost
-                                                  // calendar. Same themed
-                                                  // builder as the other
-                                                  // fixed pickers.
-                                                  final theme =
-                                                      FlutterFlowTheme.of(
-                                                          context);
-                                                  return wrapInMaterialDatePickerTheme(
-                                                    context,
-                                                    child!,
-                                                    headerBackgroundColor:
-                                                        theme.primary,
-                                                    headerForegroundColor:
-                                                        Colors.white,
-                                                    headerTextStyle: theme
-                                                        .headlineLarge
-                                                        .override(
-                                                          font: NgFonts.geist(
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                          color: Colors.white,
-                                                          fontSize: 30.0,
-                                                        ),
-                                                    pickerBackgroundColor:
-                                                        theme
-                                                            .secondaryBackground,
-                                                    pickerForegroundColor:
-                                                        theme.primaryText,
-                                                    selectedDateTimeBackgroundColor:
-                                                        theme.primary,
-                                                    selectedDateTimeForegroundColor:
-                                                        Colors.white,
-                                                    actionButtonForegroundColor:
-                                                        theme.primary,
-                                                    iconSize: 24,
-                                                  );
-                                                },
-                                              );
-
-                                              // Only commit when a date
-                                              // was actually chosen —
-                                              // dismissing the dialog used
-                                              // to null ldApproxDate while
-                                              // setting picked=true, which
-                                              // crashed the display below
-                                              // ("Unexpected null value").
-                                              if (datePickedDate != null) {
-                                                safeSetState(() {
-                                                  _model.datePicked = DateTime(
-                                                    datePickedDate.year,
-                                                    datePickedDate.month,
-                                                    datePickedDate.day,
-                                                  );
-                                                  _model.ldApproxDate =
-                                                      _model.datePicked;
-                                                  _model.ldApproxDatePicked =
-                                                      true;
-                                                });
-                                              }
-                                            },
-                                            text: AppLocalizations.of(context).pickDate,
-                                            icon: const Icon(
-                                              Icons.calendar_today,
-                                              size: 20.0,
-                                            ),
-                                            options: FFButtonOptions(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              iconPadding: const EdgeInsetsDirectional
-                                                  .fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              iconColor:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primary,
-                                              color: Colors.transparent,
-                                              textStyle: TextStyle(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                              ),
-                                              borderSide: BorderSide(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                                width: 1.0,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8.0),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                FlutterFlowDropDown<String>(
-                                  controller: _model
-                                          .ldServiceDropdownValueController ??=
-                                      FormFieldController<String>(
-                                    _model.ldServiceDropdownValue ??=
-                                        _model.ldService,
-                                  ),
-                                  // Saved VALUES stay the English strings already in the
-                                  // database; only the labels follow the app language.
-                                  // Localising `options` itself would write translated text
-                                  // into the column (Oct 2026, when the ARBs were filled).
-                                  options: const ['House Shifting', 'Office Shifting', 'Vehicle Transport', 'Storage', 'Packing Only', 'Long Distance'],
-                                  optionLabels: [
-                                    AppLocalizations.of(context).houseShifting,
-                                    AppLocalizations.of(context).officeShifting,
-                                    AppLocalizations.of(context).vehicleTransport,
-                                    AppLocalizations.of(context).storage,
-                                    AppLocalizations.of(context).packingOnly,
-                                    AppLocalizations.of(context).longDistance
-                                  ],
-                                  onChanged: (val) async {
-                                    safeSetState(() =>
-                                        _model.ldServiceDropdownValue = val);
-                                    _model.ldService =
-                                        _model.ldServiceDropdownValue;
-                                    safeSetState(() {});
-                                  },
-                                  textStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontStyle,
-                                      ),
-                                  hintText: AppLocalizations.of(context).selectService,
-                                  icon: Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    size: 24.0,
-                                  ),
-                                  fillColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  elevation: 2.0,
-                                  borderColor:
-                                      FlutterFlowTheme.of(context).alternate,
-                                  borderWidth: 1.0,
-                                  borderRadius: 8.0,
-                                  margin: const EdgeInsetsDirectional.fromSTEB(
-                                      12.0, 0.0, 12.0, 0.0),
-                                  hidesUnderline: true,
-                                  isOverButton: false,
-                                  isSearchable: false,
-                                  isMultiSelect: false,
-                                  labelText:
-                                      AppLocalizations.of(context).newOrderPageService,
-                                  labelTextStyle: const TextStyle(),
-                                ),
-                              ].divide(const SizedBox(height: 14.0)),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context)
-                                .secondaryBackground,
-                            borderRadius: BorderRadius.circular(16.0),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context).classification,
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
-                                ),
-                                FlutterFlowDropDown<String>(
-                                  controller:
-                                      _model.ldStatusDropdownValueController ??=
-                                          FormFieldController<String>(
-                                    _model.ldStatusDropdownValue ??=
-                                        _model.ldStatus,
-                                  ),
-                                  // Saved VALUES stay the English strings already in the
-                                  // database; only the labels follow the app language.
-                                  // Localising `options` itself would write translated text
-                                  // into the column (Oct 2026, when the ARBs were filled).
-                                  options: const ['new', 'contacted', 'survey_done', 'quoted', 'converted', 'lost'],
-                                  optionLabels: [
-                                    AppLocalizations.of(context).newLeadPageNew,
-                                    AppLocalizations.of(context).newLeadPageContacted,
-                                    AppLocalizations.of(context).surveyDone,
-                                    AppLocalizations.of(context).quoted,
-                                    AppLocalizations.of(context).converted,
-                                    AppLocalizations.of(context).newLeadPageLost
-                                  ],
-                                  onChanged: (val) async {
-                                    safeSetState(() =>
-                                        _model.ldStatusDropdownValue = val);
-                                    _model.ldStatus =
-                                        _model.ldStatusDropdownValue;
-                                    safeSetState(() {});
-                                  },
-                                  textStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontStyle,
-                                      ),
-                                  hintText: AppLocalizations.of(context).selectStatus,
-                                  icon: Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    size: 24.0,
-                                  ),
-                                  fillColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  elevation: 2.0,
-                                  borderColor:
-                                      FlutterFlowTheme.of(context).alternate,
-                                  borderWidth: 1.0,
-                                  borderRadius: 8.0,
-                                  margin: const EdgeInsetsDirectional.fromSTEB(
-                                      12.0, 0.0, 12.0, 0.0),
-                                  hidesUnderline: true,
-                                  isOverButton: false,
-                                  isSearchable: false,
-                                  isMultiSelect: false,
-                                  labelText:
-                                      AppLocalizations.of(context).status,
-                                  labelTextStyle: const TextStyle(),
-                                ),
-                                FlutterFlowDropDown<String>(
-                                  controller:
-                                      _model.ldSourceDropdownValueController ??=
-                                          FormFieldController<String>(
-                                    _model.ldSourceDropdownValue ??=
-                                        _model.ldSource,
-                                  ),
-                                  // Saved VALUES stay the English strings already in the
-                                  // database; only the labels follow the app language.
-                                  // Localising `options` itself would write translated text
-                                  // into the column (Oct 2026, when the ARBs were filled).
-                                  options: const ['WhatsApp', 'Phone Call', 'Website', 'Porter', 'Referral', 'Walk-in', 'Google', 'JustDial', 'Other'],
-                                  optionLabels: [
-                                    AppLocalizations.of(context).whatsapp,
-                                    AppLocalizations.of(context).phoneCall,
-                                    AppLocalizations.of(context).website,
-                                    AppLocalizations.of(context).newOrderPagePorter,
-                                    AppLocalizations.of(context).referral,
-                                    AppLocalizations.of(context).walkIn,
-                                    AppLocalizations.of(context).google,
-                                    AppLocalizations.of(context).justdial,
-                                    AppLocalizations.of(context).other
-                                  ],
-                                  onChanged: (val) async {
-                                    safeSetState(() =>
-                                        _model.ldSourceDropdownValue = val);
-                                    _model.ldSource =
-                                        _model.ldSourceDropdownValue;
-                                    safeSetState(() {});
-                                  },
-                                  textStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontStyle,
-                                      ),
-                                  hintText: AppLocalizations.of(context).howDidTheyHearAboutUs,
-                                  icon: Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    size: 24.0,
-                                  ),
-                                  fillColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  elevation: 2.0,
-                                  borderColor:
-                                      FlutterFlowTheme.of(context).alternate,
-                                  borderWidth: 1.0,
-                                  borderRadius: 8.0,
-                                  margin: const EdgeInsetsDirectional.fromSTEB(
-                                      12.0, 0.0, 12.0, 0.0),
-                                  hidesUnderline: true,
-                                  isOverButton: false,
-                                  isSearchable: false,
-                                  isMultiSelect: false,
-                                  labelText:
-                                      AppLocalizations.of(context).source,
-                                  labelTextStyle: const TextStyle(),
-                                ),
-                                // The recovery path. Without it the only
-                                // way out of a failed branch load was to
-                                // guess that reopening the page might
-                                // help - which is what actually fixed it
-                                // in testing, discovered by accident.
-                                if (_model.branchLoadError != null)
-                                  Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0, 8, 0, 0),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            'Branches did not load, so none '
-                                            'can be picked.',
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .error),
-                                          ),
-                                        ),
-                                        TextButton(
-                                          onPressed: _loadBranches,
-                                          child: const Text('Retry'),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                FlutterFlowDropDown<String>(
-                                  controller:
-                                      _model.ldBranchDropdownValueController ??=
-                                          FormFieldController<String>(
-                                    _model.ldBranchDropdownValue ??=
-                                        _model.ldBranch,
-                                  ),
-                                  // Was a hardcoded Chennai/Bengaluru/
-                                  // Coimbatore list — see new_order_page
-                                  // _widget.dart's identical fix note.
-                                  options: _model.availableBranches,
-                                  onChanged: (val) async {
-                                    safeSetState(() =>
-                                        _model.ldBranchDropdownValue = val);
-                                    _model.ldBranch =
-                                        _model.ldBranchDropdownValue;
-                                    safeSetState(() {});
-                                  },
-                                  textStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontStyle,
-                                      ),
-                                  hintText: AppLocalizations.of(context).selectBranch,
-                                  icon: Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    size: 24.0,
-                                  ),
-                                  fillColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  elevation: 2.0,
-                                  borderColor:
-                                      FlutterFlowTheme.of(context).alternate,
-                                  borderWidth: 1.0,
-                                  borderRadius: 8.0,
-                                  margin: const EdgeInsetsDirectional.fromSTEB(
-                                      12.0, 0.0, 12.0, 0.0),
-                                  hidesUnderline: true,
-                                  isOverButton: false,
-                                  isSearchable: false,
-                                  isMultiSelect: false,
-                                  labelText:
-                                      AppLocalizations.of(context).branch,
-                                  labelTextStyle: const TextStyle(),
-                                ),
-                                TextFormField(
-                                  controller: _model.ldNotesFieldTextController,
-                                  focusNode: _model.ldNotesFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).notes,
-                                    hintText:
-                                        AppLocalizations.of(context).anyRelevantNotes,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: 3,
-                                  validator: _model
-                                      .ldNotesFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                              ].divide(const SizedBox(height: 14.0)),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 16.0, 0.0, 16.0),
-                          child: FFButtonWidget(
-                            onPressed: () async {
-                              if (_model.ldBranch == null ||
-                                  _model.ldBranch!.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(_model.branchLoadError != null
-                                        ? 'Branches could not be loaded, so none can be picked. Pull to retry or reopen this page.'
-                                        : 'Select a branch first.'),
-                                  ),
-                                );
-                                return;
-                              }
-                              _model.ldSaveSuccess = false;
-                              safeSetState(() {});
-                              final isEditing = widget.leadId != null;
-                              final payload = {
-                                'customer':
-                                    _model.ldCustomerFieldTextController.text,
-                                'phone': _model.ldPhoneFieldTextController.text,
-                                'email': _model.ldEmailFieldTextController.text,
-                                'from_city':
-                                    _model.ldFromCityFieldTextController.text,
-                                'to_city':
-                                    _model.ldToCityFieldTextController.text,
-                                'approx_date': _model.ldApproxDate?.toString(),
-                                'service': _model.ldService,
-                                'source': _model.ldSource,
-                                'status': _model.ldStatus,
-                                'branch': _model.ldBranch,
-                                'notes': _model.ldNotesFieldTextController.text,
-                              };
-                              try {
-                                if (isEditing) {
-                                  // LEAK_AUDIT.md write-gap fix: matched
-                                  // only on id before — now also requires
-                                  // the row to belong to the current org.
-                                  await LeadsTable().update(
-                                    data: payload,
-                                    matchingRows: (q) => OrgScope.write(q)
-                                        .eq('id', widget.leadId!),
-                                  );
-                                } else {
-                                  _model.createdLead =
-                                      await LeadsTable().insert({
-                                    // Phase 1 multi-tenancy pass — see
-                                    // supabase/phase1_add_org_id.sql.
-                                    ...OrgScope.stamp(),
-                                    ...payload,
-                                  });
-                                }
-                                _model.ldSaveSuccess = true;
-                              } catch (_) {
-                                _model.ldSaveSuccess = false;
-                              }
-                              safeSetState(() {});
-                              if (_model.ldSaveSuccess!) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      isEditing
-                                          ? 'Lead updated successfully!'
-                                          : 'Lead saved successfully!',
-                                      style: const TextStyle(),
-                                    ),
-                                    duration: const Duration(milliseconds: 4000),
-                                  ),
-                                );
-                                if (isEditing) {
-                                  if (Navigator.of(context).canPop()) {
-                                    context.pop();
-                                  }
-                                } else {
-                                  if (Navigator.of(context).canPop()) {
-                                    context.pop();
-                                  }
-                                  context.pushNamed(LeadsPageWidget.routeName);
-                                }
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Failed to save lead. Please try again.',
-                                      style: TextStyle(),
-                                    ),
-                                    duration: Duration(milliseconds: 4000),
-                                  ),
-                                );
-                              }
-
-                              safeSetState(() {});
-                            },
-                            text: widget.leadId != null
-                                ? 'Update Lead'
-                                : AppLocalizations.of(context).saveLead,
-                            icon: const Icon(
-                              Icons.save,
-                              size: 20.0,
-                            ),
-                            options: FFButtonOptions(
-                              width: double.infinity,
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 0.0, 0.0),
-                              iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 0.0, 0.0),
-                              iconColor: FlutterFlowTheme.of(context)
-                                  .primaryBackground,
-                              color: FlutterFlowTheme.of(context).primary,
-                              textStyle: TextStyle(
-                                color: FlutterFlowTheme.of(context)
-                                    .primaryBackground,
-                              ),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                          ),
-                        ),
-                      ].divide(const SizedBox(height: 16.0)),
+        backgroundColor: c.bg,
+        appBar: NgSimpleBar(
+            title: isEditing ? 'Edit Lead' : l.newLead, close: true),
+        body: _model.isLoadingExisting
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  NgFieldLabel(l.nlPhone),
+                  NgInput(
+                    controller: _model.ldPhoneFieldTextController!,
+                    focusNode: _model.ldPhoneFieldFocusNode,
+                    hint: '+91 98xxx xxxxx',
+                    keyboardType: TextInputType.phone,
+                    mono: true,
+                  ),
+                  gap,
+                  NgFieldLabel(l.nlName),
+                  NgInput(
+                    controller: _model.ldCustomerFieldTextController!,
+                    focusNode: _model.ldCustomerFieldFocusNode,
+                    hint: l.nlName,
+                  ),
+                  gap,
+                  NgFieldLabel(l.nlRoute),
+                  _routeCard(context),
+                  gap,
+                  NgFieldLabel(l.nlService),
+                  _chips(_kServices, _model.ldService, (v) => setState(() {
+                        _model.ldService = v;
+                        _model.ldServiceDropdownValue = v;
+                      })),
+                  const SizedBox(height: 10),
+                  _chips(_kSizes, _packageType,
+                      (v) => setState(() => _packageType = v)),
+                  gap,
+                  NgFieldLabel(l.nlWhen),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    NgChip(
+                        label: l.nlToday,
+                        selected: _sameDay(date, now),
+                        onTap: () => _setDate(now)),
+                    NgChip(
+                        label: l.nlTomorrow,
+                        selected: _sameDay(date, tomorrow),
+                        onTap: () => _setDate(tomorrow)),
+                    NgChip(
+                        label: customDate
+                            ? DateFormat('d MMM yyyy').format(date)
+                            : l.nlPickDate,
+                        selected: customDate,
+                        onTap: _pickDate),
+                  ]),
+                  gap,
+                  NgFieldLabel(l.nlSource),
+                  _chips(_kSources, _model.ldSource, (v) => setState(() {
+                        _model.ldSource = v;
+                        _model.ldSourceDropdownValue = v;
+                      })),
+                  gap,
+                  NgFieldLabel(l.nlBranch),
+                  if (_model.branchLoadError != null)
+                    Text(_model.branchLoadError!,
+                        style: NgFonts.geist(fontSize: 13, color: c.red))
+                  else if (_model.branchesLoaded &&
+                      _model.availableBranches.isEmpty)
+                    Text(l.nlNoBranches,
+                        style: NgFonts.geist(fontSize: 13, color: c.amber))
+                  else
+                    _chips(_model.availableBranches, _model.ldBranch,
+                        (v) => setState(() {
+                              _model.ldBranch = v;
+                              _model.ldBranchDropdownValue = v;
+                            })),
+                  if (!isEditing) ...[
+                    gap,
+                    NgFieldLabel(l.nlNextStep),
+                    _nextStepGrid(context),
+                  ],
+                  gap,
+                  InkWell(
+                    onTap: () => setState(() => _showMore = !_showMore),
+                    child: Row(children: [
+                      Text(l.nlMore,
+                          style: NgFonts.geist(fontSize: 14, color: c.acc)),
+                      Icon(
+                          _showMore
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          size: 20,
+                          color: c.acc),
+                    ]),
+                  ),
+                  if (_showMore || isEditing) ...[
+                    const SizedBox(height: 12),
+                    NgInput(
+                      controller: _model.ldEmailFieldTextController!,
+                      focusNode: _model.ldEmailFieldFocusNode,
+                      hint: l.nlEmail,
+                      keyboardType: TextInputType.emailAddress,
                     ),
-                  ].divide(const SizedBox(height: 16.0)),
-                ),
+                    const SizedBox(height: 10),
+                    NgInput(
+                      controller: _model.ldNotesFieldTextController!,
+                      focusNode: _model.ldNotesFieldFocusNode,
+                      hint: l.nlNotes,
+                      maxLines: 3,
+                    ),
+                  ],
+                ],
               ),
+        bottomNavigationBar: SafeArea(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            decoration: BoxDecoration(
+              color: c.bg,
+              border: Border(top: BorderSide(color: c.w06)),
+            ),
+            child: NgPrimaryButton(
+              label: isEditing ? l.nlUpdateLead : l.saveLead,
+              icon: Icons.check_rounded,
+              height: 54,
+              onPressed: _saving ? null : _save,
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _routeCard(BuildContext context) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    Widget line(TextEditingController ctrl, FocusNode? node, String hint,
+            Widget leading) =>
+        Row(children: [
+          SizedBox(width: 24, child: Center(child: leading)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: ctrl,
+              focusNode: node,
+              style: NgFonts.geist(fontSize: 16, color: c.text),
+              cursorColor: c.acc,
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: NgFonts.geist(fontSize: 16, color: c.faint),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
+        ]);
+    return NgCard(
+      padding: const EdgeInsets.fromLTRB(16, 2, 10, 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(children: [
+              line(
+                _model.ldFromCityFieldTextController!,
+                _model.ldFromCityFieldFocusNode,
+                l.nlMovingFrom,
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: c.green, width: 3),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 36),
+                child: Divider(height: 1, color: c.w08),
+              ),
+              line(
+                _model.ldToCityFieldTextController!,
+                _model.ldToCityFieldFocusNode,
+                l.nlMovingTo,
+                Icon(Icons.location_on_outlined, size: 20, color: c.acc),
+              ),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          NgHeaderButtonBox(icon: Icons.swap_vert_rounded, onTap: _swapRoute),
+        ],
+      ),
+    );
+  }
+
+  Widget _nextStepGrid(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    Widget card(String key, IconData icon, String title, String sub) =>
+        Expanded(
+          child: NgOptionCard(
+            icon: icon,
+            title: title,
+            subtitle: sub,
+            selected: _nextStep == key,
+            onTap: () => setState(
+                () => _nextStep = _nextStep == key ? null : key),
+          ),
+        );
+    return Column(children: [
+      IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          card('follow', Icons.call_outlined, l.nlStepFollow,
+              l.nlStepFollowSub),
+          const SizedBox(width: 10),
+          card('survey', Icons.home_work_outlined, l.nlStepSurvey,
+              l.nlStepSurveySub),
+        ]),
+      ),
+      const SizedBox(height: 10),
+      IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          card('quote', Icons.request_quote_outlined, l.nlStepQuote,
+              l.nlStepQuoteSub),
+          const SizedBox(width: 10),
+          card('confirm', Icons.check_circle_outline_rounded,
+              l.nlStepConfirm, l.nlStepConfirmSub),
+        ]),
+      ),
+    ]);
   }
 }
