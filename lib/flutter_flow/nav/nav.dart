@@ -408,6 +408,81 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const MaterialsPageWidget(),
         ),
         FFRoute(
+          name: LostReportPage.routeName,
+          path: LostReportPage.routePath,
+          builder: (context, params) => const LostReportPage(),
+        ),
+        FFRoute(
+          name: ReferralsPage.routeName,
+          path: ReferralsPage.routePath,
+          builder: (context, params) => const ReferralsPage(),
+        ),
+        FFRoute(
+          name: DailySummaryPage.routeName,
+          path: DailySummaryPage.routePath,
+          builder: (context, params) => const DailySummaryPage(),
+        ),
+        FFRoute(
+          name: ApprovalsPage.routeName,
+          path: ApprovalsPage.routePath,
+          builder: (context, params) => const ApprovalsPage(),
+        ),
+        FFRoute(
+          name: GstPage.routeName,
+          path: GstPage.routePath,
+          builder: (context, params) => const GstPage(),
+        ),
+        FFRoute(
+          name: CreditNotesPage.routeName,
+          path: CreditNotesPage.routePath,
+          builder: (context, params) => const CreditNotesPage(),
+        ),
+        FFRoute(
+          name: BankMatchPage.routeName,
+          path: BankMatchPage.routePath,
+          builder: (context, params) => const BankMatchPage(),
+        ),
+        FFRoute(
+          name: CashBookPage.routeName,
+          path: CashBookPage.routePath,
+          builder: (context, params) => const CashBookPage(),
+        ),
+        FFRoute(
+          name: PayslipsPage.routeName,
+          path: PayslipsPage.routePath,
+          builder: (context, params) => const PayslipsPage(),
+        ),
+        FFRoute(
+          name: StorageBillingPage.routeName,
+          path: StorageBillingPage.routePath,
+          builder: (context, params) => const StorageBillingPage(),
+        ),
+        FFRoute(
+          name: FuelPage.routeName,
+          path: FuelPage.routePath,
+          builder: (context, params) => const FuelPage(),
+        ),
+        FFRoute(
+          name: VehicleDocsPage.routeName,
+          path: VehicleDocsPage.routePath,
+          builder: (context, params) => const VehicleDocsPage(),
+        ),
+        FFRoute(
+          name: EwayBillsPage.routeName,
+          path: EwayBillsPage.routePath,
+          builder: (context, params) => const EwayBillsPage(),
+        ),
+        FFRoute(
+          name: LeadSourcesPage.routeName,
+          path: LeadSourcesPage.routePath,
+          builder: (context, params) => const LeadSourcesPage(),
+        ),
+        FFRoute(
+          name: ActivityLogPage.routeName,
+          path: ActivityLogPage.routePath,
+          builder: (context, params) => const ActivityLogPage(),
+        ),
+        FFRoute(
           name: WarehousesPageWidget.routeName,
           path: WarehousesPageWidget.routePath,
           builder: (context, params) => const WarehousesPageWidget(),

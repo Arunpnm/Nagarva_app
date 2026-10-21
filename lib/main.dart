@@ -795,6 +795,21 @@ class _NavBarPageState extends State<NavBarPage>
       // route in nav.dart alone renders nothing here (the 2 Aug 2026
       // supervisor-screens bug). Both are required.
       'WarehousesPage': const WarehousesPageWidget(),
+      'LostReportPage': const LostReportPage(),
+      'ReferralsPage': const ReferralsPage(),
+      'DailySummaryPage': const DailySummaryPage(),
+      'ApprovalsPage': const ApprovalsPage(),
+      'GstPage': const GstPage(),
+      'CreditNotesPage': const CreditNotesPage(),
+      'BankMatchPage': const BankMatchPage(),
+      'CashBookPage': const CashBookPage(),
+      'PayslipsPage': const PayslipsPage(),
+      'StorageBillingPage': const StorageBillingPage(),
+      'FuelPage': const FuelPage(),
+      'VehicleDocsPage': const VehicleDocsPage(),
+      'EwayBillsPage': const EwayBillsPage(),
+      'LeadSourcesPage': const LeadSourcesPage(),
+      'ActivityLogPage': const ActivityLogPage(),
       'ReportsPage': const ReportsPageWidget(),
       // Genuinely unbuilt (Step 2.1: "route to a Coming soon placeholder").
       // Session 4, Part B1/B2/B3/B4: real screens now — see nav_items.dart's

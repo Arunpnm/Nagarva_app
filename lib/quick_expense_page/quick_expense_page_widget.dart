@@ -1,3 +1,4 @@
+import '/config/app_config.dart';
 import '/components/ng_widgets.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -431,6 +432,24 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                       .expDescFieldTextControllerValidator
                                       .asValidator(context),
                                 ),
+                                // Cash book needs to know which expenses
+                                // left the cash box. Behind a flag until
+                                // the column exists — see app_config.
+                                if (kExpensePaymentModeLive)
+                                  Wrap(spacing: 8, runSpacing: 8, children: [
+                                    for (final m in const [
+                                      ('cash', 'Cash'),
+                                      ('upi', 'UPI'),
+                                      ('bank', 'Bank'),
+                                      ('card', 'Card'),
+                                    ])
+                                      NgChip(
+                                        label: m.$2,
+                                        selected: _model.expPaymentMode == m.$1,
+                                        onTap: () => safeSetState(
+                                            () => _model.expPaymentMode = m.$1),
+                                      ),
+                                  ]),
                               ].divide(const SizedBox(height: 14.0)),
                             ),
                           ),
@@ -454,6 +473,9 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                 'order_id': _model.linkedOrderId,
                                 'description':
                                     _model.expDescFieldTextController.text,
+                                if (kExpensePaymentModeLive &&
+                                    _model.expPaymentMode != null)
+                                  'payment_mode': _model.expPaymentMode,
                               });
                               context.pop();
 

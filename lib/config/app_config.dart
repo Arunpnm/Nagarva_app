@@ -148,6 +148,14 @@ const bool kQuotationSurveyIdFkRepointed = true;
 /// `next_doc_number` carries the `doc_type='order'` guard.
 const bool kServerSideOrderIds = true;
 
+/// `expenses.payment_mode` (supabase/20261021_expenses_payment_mode.sql).
+/// FALSE until that migration is confirmed live BY QUERY — not on a
+/// report that it ran. While false, Quick Expense does not show or send
+/// "Paid by", because writing a column that does not exist fails the
+/// whole expense insert (the kServerSideOrderIds lesson, 8 Sept 2026).
+/// Cash book reads it either way and says so when it is missing.
+const bool kExpensePaymentModeLive = false;
+
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
 ///
