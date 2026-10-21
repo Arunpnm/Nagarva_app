@@ -1,3 +1,4 @@
+import '/backend/edge_function_errors.dart';
 import '/config/app_config.dart';
 import '/components/ng_widgets.dart';
 import '/backend/supabase/supabase.dart';
@@ -265,62 +266,45 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                       AppLocalizations.of(context).category,
                                   labelTextStyle: const TextStyle(),
                                 ),
-                                TextFormField(
-                                  controller: _model.expDateFieldTextController,
-                                  focusNode: _model.expDateFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).date,
-                                    hintText:
-                                        AppLocalizations.of(context).yyyyMmDd,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
+                                // Was a free-text "yyyy-MM-dd" box written straight into
+                                // the `date` column: a blank or mistyped date made
+                                // Postgres refuse the insert, with nothing shown. Now a
+                                // picker, defaulting to today.
+                                NgCard(
+                                  onTap: () async {
+                                    final p = await showDatePicker(
+                                      context: context,
+                                      initialDate: _model.expDate,
+                                      firstDate: DateTime(2020),
+                                      lastDate: DateTime.now()
+                                          .add(const Duration(days: 365)),
+                                    );
+                                    if (p != null) {
+                                      safeSetState(() => _model.expDate = p);
+                                    }
+                                  },
+                                  child: Row(children: [
+                                    Icon(Icons.calendar_month_outlined,
+                                        size: 20,
+                                        color: NgPalette.of(context).acc),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                          AppLocalizations.of(context).date,
+                                          style: NgFonts.geist(
+                                              fontSize: 14,
+                                              color: NgPalette.of(context)
+                                                  .mute)),
                                     ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .expDateFieldTextControllerValidator
-                                      .asValidator(context),
+                                    Text(
+                                        DateFormat('d MMM yyyy')
+                                            .format(_model.expDate),
+                                        style: NgFonts.geist(
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.w600,
+                                            color:
+                                                NgPalette.of(context).text)),
+                                  ]),
                                 ),
                                 // Was a free-text "Linked Order ID" — typing UUIDs by hand
                                 // invited typos, and an empty string crashed the uuid cast on
@@ -459,15 +443,34 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                               0.0, 16.0, 0.0, 16.0),
                           child: FFButtonWidget(
                             onPressed: () async {
+                              final amount = double.tryParse(_model
+                                  .expAmountFieldTextController!.text
+                                  .trim());
+                              if (amount == null || amount <= 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Enter the amount spent.')));
+                                return;
+                              }
+                              // Both date columns get the picked day:
+                              // `date` is what this form always wrote,
+                              // and expense_date is what Expenses, the
+                              // Dashboard and Accounts read — it used to
+                              // keep its default (today), so a backdated
+                              // expense showed up on today.
+                              final day = DateFormat('yyyy-MM-dd')
+                                  .format(_model.expDate);
+                              try {
                               _model.savedExpense =
                                   await ExpensesTable().insert({
                                 // Phase 1 multi-tenancy pass — see
                                 // supabase/phase1_add_org_id.sql.
                                 ...OrgScope.stamp(),
-                                'amount': double.tryParse(
-                                    _model.expAmountFieldTextController.text),
+                                'amount': amount,
                                 'category': _model.expCategory,
-                                'date': _model.expDateFieldTextController.text,
+                                'date': day,
+                                'expense_date': day,
                                 // Null (not '') when unlinked — an empty
                                 // string used to crash the uuid cast.
                                 'order_id': _model.linkedOrderId,
@@ -477,6 +480,19 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                     _model.expPaymentMode != null)
                                   'payment_mode': _model.expPaymentMode,
                               });
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(extractDbErrorMessage(e,
+                                          fallback:
+                                              'Could not save the expense. Please try again.')),
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+                              if (!context.mounted) return;
                               context.pop();
 
                               safeSetState(() {});
