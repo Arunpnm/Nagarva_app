@@ -4,7 +4,8 @@ import '/backend/order_stages.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
@@ -42,6 +43,7 @@ class _OperationsStandalonePageWidgetState
   @override
   void initState() {
     super.initState();
+    _tabs.addListener(() => setState(() {}));
     _load();
   }
 
@@ -247,121 +249,207 @@ class _OperationsStandalonePageWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
+    final onTracking = _tabs.index == 0;
+    Widget tabButton(int i, String label) => Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _tabs.animateTo(i)),
+            child: Container(
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _tabs.index == i ? c.sel : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(label,
+                  style: NgFonts.geist(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: _tabs.index == i ? c.text : c.mute)),
+            ),
+          ),
+        );
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: Text('Operations',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 22,
-                fontWeight: FontWeight.w600)),
-        elevation: 0,
-        bottom: TabBar(controller: _tabs, tabs: const [
-          Tab(text: 'Tracking'),
-          Tab(text: 'Complaints'),
-        ]),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            _tabs.index == 0 ? _logTrackingUpdate() : _newComplaint(),
-        child: const Icon(Icons.add),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(controller: _tabs, children: [
-              _trackingTab(theme),
-              _complaintsTab(theme),
-            ]),
-    );
-  }
-
-  Widget _trackingTab(FlutterFlowTheme theme) {
-    if (_tracking.isEmpty) {
-      return Center(
-          child: Text('No tracking entries yet.',
-              style: NgFonts.geist(color: theme.secondaryText)));
-    }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _tracking.length,
-        itemBuilder: (context, i) {
-          final t = _tracking[i];
-          return ListTile(
-            title: Text('Order ${t.orderId ?? '—'} · ${orderStageLabel(canonicalOrderStage(t.status) ?? t.status)}'),
-            subtitle: Text([
-              if (t.trackedAt != null)
-                DateFormat('d MMM yyyy, h:mm a').format(t.trackedAt!.toLocal()),
-              if ((t.note ?? '').isNotEmpty) t.note,
-            ].whereType<String>().join(' · ')),
-          );
-        },
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Column(
+              children: [
+                const NgModuleHeader('Ops log'),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                            color: c.s1,
+                            borderRadius: BorderRadius.circular(14)),
+                        child: Row(children: [
+                          tabButton(0, 'Tracking'),
+                          tabButton(1, 'Complaints'),
+                        ]),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    NgPrimaryButton(
+                      compact: true,
+                      height: 44,
+                      icon: Icons.add_rounded,
+                      label: onTracking ? 'Log update' : 'New complaint',
+                      onPressed: () => onTracking
+                          ? _logTrackingUpdate()
+                          : _newComplaint(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(controller: _tabs, children: [
+                    _trackingTab(),
+                    _complaintsTab(),
+                  ]),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _complaintsTab(FlutterFlowTheme theme) {
+  Color _stageDot(String status) {
+    final c = NgPalette.of(context);
+    final st = canonicalOrderStage(status);
+    if (st == null) return c.faint;
+    final i = kOrderStages.indexOf(st);
+    return c.status(orderStageTone(i < 0 ? 0 : i)).fg;
+  }
+
+  Widget _trackingTab() {
+    final c = NgPalette.of(context);
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
-          if (_complaintStatuses.isNotEmpty)
-            Wrap(spacing: 8, children: [
-              ChoiceChip(
-                  label: const Text('All'),
-                  selected: _complaintStatusFilter == null,
-                  onSelected: (_) => setState(() => _complaintStatusFilter = null)),
-              for (final s in _complaintStatuses)
-                ChoiceChip(
-                    label: Text(s),
-                    selected: _complaintStatusFilter == s,
-                    onSelected: (_) => setState(() => _complaintStatusFilter = s)),
-            ]),
-          const SizedBox(height: 8),
-          if (_filteredComplaints.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Text('No complaints logged.',
-                  style: NgFonts.geist(color: theme.secondaryText)),
+          if (_tracking.isEmpty)
+            NgCard(
+              child: Text('No tracking entries yet.',
+                  textAlign: TextAlign.center,
+                  style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
             )
           else
-            for (final c in _filteredComplaints)
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                    color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(c.type?.isNotEmpty == true ? c.type! : 'Complaint',
-                              style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
-                          if ((c.description ?? '').isNotEmpty)
-                            Text(c.description!, style: NgFonts.geist(fontSize: 12)),
-                          Text(
-                            [
-                              if (c.orderId != null) 'Order ${c.orderId}',
-                              c.status,
-                            ].join(' · '),
-                            style: NgFonts.geist(fontSize: 11, color: theme.secondaryText),
-                          ),
-                        ],
+            NgCardList(children: [
+              for (final t in _tracking)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: Container(
+                          width: 9,
+                          height: 9,
+                          decoration: BoxDecoration(
+                              color: _stageDot(t.status),
+                              shape: BoxShape.circle),
+                        ),
                       ),
-                    ),
-                    if (c.status != 'resolved' && c.status != 'closed')
-                      TextButton(
-                          onPressed: () => _resolveComplaint(c),
-                          child: const Text('Resolve')),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                '${t.orderId ?? '—'} · ${orderStageLabel(canonicalOrderStage(t.status) ?? t.status)}',
+                                style: NgFonts.geist(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: c.text)),
+                            const SizedBox(height: 2),
+                            Text(
+                                [
+                                  if (t.trackedAt != null)
+                                    DateFormat('d MMM, h:mm a')
+                                        .format(t.trackedAt!.toLocal()),
+                                  if ((t.note ?? '').isNotEmpty) t.note,
+                                ].whereType<String>().join(' · '),
+                                style: NgFonts.geist(
+                                    fontSize: 12.5,
+                                    height: 1.35,
+                                    color: c.mute)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+            ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _complaintsTab() {
+    final c = NgPalette.of(context);
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        children: [
+          if (_complaintStatuses.isNotEmpty) ...[
+            NgChipRow(edge: 0, chips: [
+              NgChip(
+                  label: 'All',
+                  selected: _complaintStatusFilter == null,
+                  onTap: () => setState(() => _complaintStatusFilter = null)),
+              for (final s in _complaintStatuses)
+                NgChip(
+                    label: s[0].toUpperCase() + s.substring(1),
+                    selected: _complaintStatusFilter == s,
+                    onTap: () => setState(() => _complaintStatusFilter = s)),
+            ]),
+            const SizedBox(height: 14),
+          ],
+          if (_filteredComplaints.isEmpty)
+            NgCard(
+              child: Text('No complaints logged.',
+                  textAlign: TextAlign.center,
+                  style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+            )
+          else
+            NgCardList(children: [
+              for (final cp in _filteredComplaints)
+                NgListRow(
+                  icon: Icons.report_problem_outlined,
+                  iconStatus: cp.status == 'resolved' || cp.status == 'closed'
+                      ? NgStatus.green
+                      : NgStatus.amber,
+                  title: cp.type?.isNotEmpty == true ? cp.type! : 'Complaint',
+                  subtitle: [
+                    if ((cp.description ?? '').isNotEmpty) cp.description!,
+                    [
+                      if (cp.orderId != null) cp.orderId!,
+                      cp.status,
+                    ].join(' · '),
+                  ].join('\n'),
+                  trailing: cp.status != 'resolved' && cp.status != 'closed'
+                      ? NgSecondaryButton(
+                          height: 34,
+                          label: 'Resolve',
+                          onPressed: () => _resolveComplaint(cp),
+                        )
+                      : null,
+                ),
+            ]),
         ],
       ),
     );
