@@ -795,6 +795,15 @@ class _NavBarPageState extends State<NavBarPage>
       // route in nav.dart alone renders nothing here (the 2 Aug 2026
       // supervisor-screens bug). Both are required.
       'WarehousesPage': const WarehousesPageWidget(),
+      'LeavePage': const LeavePage(),
+      'IncentivesPage': const IncentivesPage(),
+      'BusinessAccountsPage': const BusinessAccountsPage(),
+      'PartLoadPage': const PartLoadPage(),
+      'StaffDocumentsPage': const StaffDocumentsPage(),
+      'LabourContractorsPage': const LabourContractorsPage(),
+      'DieselAdvancePage': const DieselAdvancePage(),
+      'HiredTrucksPage': const HiredTrucksPage(),
+      'BackupPage': const BackupPage(),
       'LostReportPage': const LostReportPage(),
       'ReferralsPage': const ReferralsPage(),
       'DailySummaryPage': const DailySummaryPage(),

@@ -98,6 +98,15 @@ const kPermModules = <PermModule>[
   // Session 4, Part C-12.
   PermModule('tasks', 'Tasks & Activities', 'TasksPage'),
   // Design-parity modules (21 Oct 2026), each its own page.
+  PermModule('leave', 'Leave', 'LeavePage'),
+  PermModule('incentives', 'Overtime & incentives', 'IncentivesPage', moneyModule: true),
+  PermModule('business_accounts', 'Business accounts', 'BusinessAccountsPage'),
+  PermModule('part_load', 'Part-load & routes', 'PartLoadPage'),
+  PermModule('staff_documents', 'Staff documents', 'StaffDocumentsPage'),
+  PermModule('labour_contractors', 'Labour contractors', 'LabourContractorsPage'),
+  PermModule('diesel_advance', 'Diesel advance', 'DieselAdvancePage', moneyModule: true),
+  PermModule('hired_trucks', 'Hired trucks', 'HiredTrucksPage'),
+  PermModule('backup', 'Backup & offline', 'BackupPage'),
   PermModule('lost_report', 'Lead rules & lost report', 'LostReportPage'),
   PermModule('referrals', 'Coupons & referrals', 'ReferralsPage'),
   PermModule('daily_summary', 'Daily summary', 'DailySummaryPage'),

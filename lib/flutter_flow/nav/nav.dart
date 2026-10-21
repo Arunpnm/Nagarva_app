@@ -483,6 +483,51 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const ActivityLogPage(),
         ),
         FFRoute(
+          name: BusinessAccountsPage.routeName,
+          path: BusinessAccountsPage.routePath,
+          builder: (context, params) => const BusinessAccountsPage(),
+        ),
+        FFRoute(
+          name: PartLoadPage.routeName,
+          path: PartLoadPage.routePath,
+          builder: (context, params) => const PartLoadPage(),
+        ),
+        FFRoute(
+          name: StaffDocumentsPage.routeName,
+          path: StaffDocumentsPage.routePath,
+          builder: (context, params) => const StaffDocumentsPage(),
+        ),
+        FFRoute(
+          name: LabourContractorsPage.routeName,
+          path: LabourContractorsPage.routePath,
+          builder: (context, params) => const LabourContractorsPage(),
+        ),
+        FFRoute(
+          name: DieselAdvancePage.routeName,
+          path: DieselAdvancePage.routePath,
+          builder: (context, params) => const DieselAdvancePage(),
+        ),
+        FFRoute(
+          name: HiredTrucksPage.routeName,
+          path: HiredTrucksPage.routePath,
+          builder: (context, params) => const HiredTrucksPage(),
+        ),
+        FFRoute(
+          name: BackupPage.routeName,
+          path: BackupPage.routePath,
+          builder: (context, params) => const BackupPage(),
+        ),
+        FFRoute(
+          name: LeavePage.routeName,
+          path: LeavePage.routePath,
+          builder: (context, params) => const LeavePage(),
+        ),
+        FFRoute(
+          name: IncentivesPage.routeName,
+          path: IncentivesPage.routePath,
+          builder: (context, params) => const IncentivesPage(),
+        ),
+        FFRoute(
           name: WarehousesPageWidget.routeName,
           path: WarehousesPageWidget.routePath,
           builder: (context, params) => const WarehousesPageWidget(),

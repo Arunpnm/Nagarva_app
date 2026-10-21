@@ -93,3 +93,4 @@ export '/modules/money_modules.dart';
 export '/modules/transport_modules.dart';
 export '/modules/ops_people_modules.dart';
 export '/modules/setup_modules.dart';
+export '/modules/more_modules.dart';

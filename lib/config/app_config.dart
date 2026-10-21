@@ -156,6 +156,12 @@ const bool kServerSideOrderIds = true;
 /// Cash book reads it either way and says so when it is missing.
 const bool kExpensePaymentModeLive = false;
 
+/// `staff_leaves` / `staff_incentives`
+/// (supabase/20261021_staff_leave_and_incentives.sql). FALSE until both
+/// tables are confirmed live by query. While false, Leave and Overtime &
+/// incentives say what is missing instead of failing on a 42P01.
+const bool kStaffLeaveIncentivesLive = false;
+
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
 ///
