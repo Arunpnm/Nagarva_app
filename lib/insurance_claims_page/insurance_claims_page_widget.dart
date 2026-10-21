@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/order_picker_dialog.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 /// Insurance & Claims (Session 4, Part C-8). Live schema confirmed
@@ -235,7 +235,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text('Linked to policy ${matchingPolicy.policyNo ?? matchingPolicy.id}',
-                          style: GoogleFonts.inter(fontSize: 11.5, color: Colors.grey)),
+                          style: NgFonts.geist(fontSize: 11.5, color: Colors.grey)),
                     ),
                   DropdownButtonFormField<String>(
                     initialValue: claimType,
@@ -337,7 +337,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
             padding: const EdgeInsets.all(16),
             children: [
               Text(claim.claimNo ?? claim.id ?? '(claim)',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 17, fontWeight: FontWeight.w700, color: theme.primaryText)),
               _statusChip(theme, claim.status),
               const SizedBox(height: 10),
@@ -359,7 +359,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Items',
-                      style: GoogleFonts.interTight(fontSize: 13, fontWeight: FontWeight.w700)),
+                      style: NgFonts.geist(fontSize: 13, fontWeight: FontWeight.w700)),
                   TextButton.icon(
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('Add Item'),
@@ -375,7 +375,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text('No items added yet.',
-                      style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                      style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
                 )
               else
                 for (final it in items)
@@ -386,11 +386,11 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                         Expanded(
                           child: Text(
                             '${it.itemName}${it.damageType != null ? ' (${it.damageType})' : ''}',
-                            style: GoogleFonts.inter(fontSize: 12),
+                            style: NgFonts.geist(fontSize: 12),
                           ),
                         ),
                         Text(_rupees(it.claimedAmount),
-                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                            style: NgFonts.geist(fontSize: 12, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -632,8 +632,8 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
           children: [
-            SizedBox(width: 120, child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey))),
-            Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 12.5))),
+            SizedBox(width: 120, child: Text(label, style: NgFonts.geist(fontSize: 12, color: Colors.grey))),
+            Expanded(child: Text(value, style: NgFonts.geist(fontSize: 12.5))),
           ],
         ),
       );
@@ -654,7 +654,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-      child: Text(status, style: GoogleFonts.inter(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
+      child: Text(status, style: NgFonts.geist(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
     );
   }
 
@@ -668,10 +668,9 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
         automaticallyImplyLeading: true,
         title: Text('Insurance & Claims',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 20,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
         bottom: TabBar(
           controller: _tabs,
@@ -697,7 +696,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           child: Text('No policies yet.',
-                              style: GoogleFonts.inter(color: theme.secondaryText)),
+                              style: NgFonts.geist(color: theme.secondaryText)),
                         )
                       else
                         for (final p in _policies) _policyRow(theme, p),
@@ -713,7 +712,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           child: Text('No claims yet.',
-                              style: GoogleFonts.inter(color: theme.secondaryText)),
+                              style: NgFonts.geist(color: theme.secondaryText)),
                         )
                       else
                         for (final c in _claims) _claimRow(theme, c),
@@ -737,13 +736,13 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(p.policyNo ?? '(no policy no)',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                 Text(
                   [
                     if ((p.orderId ?? '').isNotEmpty) p.orderId,
                     if ((p.insurerName ?? '').isNotEmpty) p.insurerName,
                   ].whereType<String>().join(' · '),
-                  style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                  style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                 ),
               ],
             ),
@@ -752,7 +751,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(_rupees(p.totalPremium),
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                  style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
               _statusChip(theme, p.status),
             ],
           ),
@@ -776,13 +775,13 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(c.claimNo ?? c.id ?? '(claim)',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                   Text(
                     [
                       if ((c.orderId ?? '').isNotEmpty) c.orderId,
                       if ((c.claimType ?? '').isNotEmpty) c.claimType,
                     ].whereType<String>().join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
@@ -791,7 +790,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(_rupees(c.claimedAmount),
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
                 _statusChip(theme, c.status),
               ],
             ),

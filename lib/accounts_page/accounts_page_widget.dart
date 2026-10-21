@@ -2,13 +2,13 @@ import '/backend/commission_pricing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'dart:ui' show FontFeature;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'accounts_page_model.dart';
 export 'accounts_page_model.dart';
 
@@ -159,7 +159,20 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         // Follows revenue's tax-exclusive basis, so the Extra column
         // (revenue - quote) stays 0 rather than becoming the GST.
         final orderQuote = amount;
-        final advancePaid = o.advancePaid ?? 0;
+        // Money in, from the ONE source that holds it: payment_entries,
+        // summed onto orders.paid_total by the sync_order_paid_total
+        // trigger.
+        //
+        // This read `orders.advance_paid` until 16 Sept 2026. That column
+        // was 0 on all 8 live orders while paid_total was non-zero on one,
+        // so every cash column below - Collected, Advance, Pending,
+        // Over-collected - was computed from a figure nothing writes:
+        // the one genuinely paid order reported Rs0 collected and its full
+        // gross still pending, on a register an owner reads to decide who
+        // to chase. Not an error state; a wrong number that looks like a
+        // right one. See CLAUDE.md, "orders.advance_paid - SETTLED
+        // 11 Sept 2026: REPLACE, NOT REVIVE".
+        final received = o.paidTotal;
         // Collections are cash actually received, which includes the GST
         // the customer paid - so this stays on the GROSS figure. Only
         // revenue excludes tax; the money in the drawer does not.
@@ -168,8 +181,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
 
         revenue += amount;
         quote += orderQuote;
-        collections += advancePaid;
-        advance += [bookingAdvance, advancePaid]
+        collections += received;
+        advance += [bookingAdvance, received]
             .reduce((a, b) => a < b ? a : b)
             .clamp(0, double.infinity);
         // Both compare against GROSS, not the ex-GST figure. What the
@@ -177,8 +190,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         // the customer pays the tax too. Only `revenue` and `quote` are
         // tax-exclusive; every cash column on this register is gross, or
         // Pending would understate the bill by the GST on it.
-        overCollected += (advancePaid - gross).clamp(0, double.infinity);
-        pending += (gross - advancePaid).clamp(0, double.infinity);
+        overCollected += (received - gross).clamp(0, double.infinity);
+        pending += (gross - received).clamp(0, double.infinity);
 
         salary += orderStaff
             .where((os) => os.orderId == o.id)
@@ -322,7 +335,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                   Text(
                     'Net ${row.profitLoss >= 0 ? 'profit' : 'loss'}: ${_currency.format(row.profitLoss.abs())}',
                     style: FlutterFlowTheme.of(context).bodyMedium.override(
-                          font: GoogleFonts.inter(),
+                          font: NgFonts.geist(),
                           color: row.profitLoss >= 0
                               ? FlutterFlowTheme.of(context).primary
                               : FlutterFlowTheme.of(context).error,
@@ -346,15 +359,15 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                                 style: FlutterFlowTheme.of(context)
                                     .bodyMedium
                                     .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                             fontWeight: FontWeight.w600))),
                             const SizedBox(height: 4),
                             Text(
-                              'Value ${_currency.format(o.amount ?? 0)} · Collected ${_currency.format(o.advancePaid ?? 0)} · Pending ${_currency.format(((o.amount ?? 0) - (o.advancePaid ?? 0)).clamp(0, double.infinity))}',
+                              'Value ${_currency.format(o.amount ?? 0)} · Collected ${_currency.format(o.paidTotal)} · Pending ${_currency.format(((o.amount ?? 0) - o.paidTotal).clamp(0, double.infinity))}',
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
                                   .override(
-                                      font: GoogleFonts.inter(),
+                                      font: NgFonts.geist(),
                                       color: FlutterFlowTheme.of(context)
                                           .secondaryText),
                             ),
@@ -421,7 +434,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
               style: bold
                   ? FlutterFlowTheme.of(context).titleSmall
                   : FlutterFlowTheme.of(context).bodyMedium.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).secondaryText)),
           Text(
             '${isExpense ? '-' : ''}${_currency.format(value.abs())}',
@@ -429,7 +442,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                     ? FlutterFlowTheme.of(context).titleSmall
                     : FlutterFlowTheme.of(context).bodyMedium)
                 .override(
-              font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+              font: NgFonts.geist(fontWeight: FontWeight.w600),
               color: isExpense
                   ? FlutterFlowTheme.of(context).error
                   : (value < 0
@@ -458,7 +471,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
           title: Text(
             'Daily Accounts Register',
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600),
                   fontSize: 22.0,
                   fontWeight: FontWeight.w600,
                 ),
@@ -470,7 +483,6 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
               label: const Text('CSV'),
             ),
           ],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -507,7 +519,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                                   style: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
-                                          font: GoogleFonts.inter(),
+                                          font: NgFonts.geist(),
                                           color: FlutterFlowTheme.of(context)
                                               .secondaryText),
                                 ),
@@ -533,7 +545,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
     return Row(
       children: [
         Text('Opening Balance:',
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 12, color: theme.secondaryText)),
         const SizedBox(width: 8),
         InkWell(
@@ -546,7 +558,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(_currency.format(_model.openingBalance),
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: theme.primaryText)),
@@ -555,7 +567,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         const SizedBox(width: 8),
         Expanded(
           child: Text('starting cash before this period',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 11, color: theme.secondaryText)),
         ),
       ],
@@ -603,13 +615,13 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(_currency.format(value),
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: colour)),
                   const SizedBox(height: 2),
                   Text(label,
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 10,
                           letterSpacing: 0.6,
                           color: theme.secondaryText)),
@@ -655,7 +667,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
           // register is only useful if every figure can be read at a
           // glance, so the table is allowed to be wider and scroll.
           columnSpacing: 26,
-          headingTextStyle: GoogleFonts.inter(
+          headingTextStyle: NgFonts.geist(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: theme.secondaryText),
@@ -685,7 +697,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                   theme.primary.withValues(alpha: 0.06)),
               cells: [
                 DataCell(Text('TOTAL - ${rows.length} day${rows.length == 1 ? '' : 's'}',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText))),
@@ -728,7 +740,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(DateFormat('EEE, d MMM').format(r.date),
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: theme.primaryText)),
@@ -736,7 +748,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
               Text(names.join(', '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 10, color: theme.secondaryText)),
           ],
         )),
@@ -775,7 +787,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
             if (r.profitLoss < 0)
               Text('Loss',
                   style:
-                      GoogleFonts.inter(fontSize: 9, color: theme.error)),
+                      NgFonts.geist(fontSize: 9, color: theme.error)),
           ],
         )),
         DataCell(_num(context, r.runningBalance, bold: true)),
@@ -790,13 +802,13 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
     final theme = FlutterFlowTheme.of(context);
     if (v == 0) {
       return _cell(Text('-',
-          style: GoogleFonts.inter(fontSize: 14, color: theme.secondaryText)));
+          style: NgFonts.geist(fontSize: 14, color: theme.secondaryText)));
     }
     if (plain) {
       return _cell(Text(v.toInt().toString(),
           maxLines: 1,
           softWrap: false,
-          style: GoogleFonts.interTight(
+          style: NgFonts.geist(
               fontSize: 14,
               fontFeatures: const [FontFeature.tabularFigures()],
               fontWeight: FontWeight.w600,
@@ -812,7 +824,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
       Text(_currency.format(v),
         maxLines: 1,
         softWrap: false,
-        style: GoogleFonts.interTight(
+        style: NgFonts.geist(
           fontSize: 14,
           // Tabular figures so digits align vertically down the column —
           // the whole point of a register is scanning one column.

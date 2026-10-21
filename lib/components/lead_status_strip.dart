@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/lead_stage_evidence.dart';
 import '/backend/lead_status.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Lead pipeline progress strip + tappable stage chips.
 ///
@@ -70,7 +70,7 @@ class LeadStatusStrip extends StatelessWidget {
             children: [
               Text(
                 'Pipeline',
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                   color: theme.primaryText,
@@ -109,11 +109,11 @@ class LeadStatusStrip extends StatelessWidget {
                 style: TextButton.styleFrom(
                   minimumSize: const Size(0, 40),
                   padding: const EdgeInsets.symmetric(horizontal: 10),
-                  foregroundColor: leadStatusColor(kLeadStatusLost),
+                  foregroundColor: leadStatusColor(kLeadStatusLost, context),
                 ),
                 child: Text(
                   'Mark as lost',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 12.5, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -149,7 +149,7 @@ class _ProgressRow extends StatelessWidget {
                 currentIdx: currentIdx,
                 evidence: evidence,
               ),
-              color: leadStatusColor(kLeadPipeline[i]),
+              color: leadStatusColor(kLeadPipeline[i], context),
               onTap: onStageTap == null
                   ? null
                   : () => onStageTap!(kLeadPipeline[i]),
@@ -172,7 +172,7 @@ class _ProgressRow extends StatelessWidget {
                           evidence: evidence,
                         ) ==
                         LeadStageState.done
-                    ? leadStatusColor(kLeadPipeline[i])
+                    ? leadStatusColor(kLeadPipeline[i], context)
                     : theme.alternate,
               ),
             ),
@@ -247,7 +247,7 @@ class _Stage extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                 fontSize: 10.5,
                 height: 1.15,
                 fontWeight: current ? FontWeight.w700 : FontWeight.w500,
@@ -270,7 +270,7 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = leadStatusColor(status);
+    final color = leadStatusColor(status, context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -279,7 +279,7 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Text(
         leadStatusLabel(status),
-        style: GoogleFonts.inter(
+        style: NgFonts.geist(
           fontSize: 11.5,
           fontWeight: FontWeight.w700,
           color: color,
@@ -296,7 +296,7 @@ class _LostBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = leadStatusColor(kLeadStatusLost);
+    final color = leadStatusColor(kLeadStatusLost, context);
     return Row(
       children: [
         Icon(Icons.cancel_outlined, size: 17, color: color),
@@ -304,7 +304,7 @@ class _LostBanner extends StatelessWidget {
         Expanded(
           child: Text(
             'This lead is marked lost.',
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 12.5, color: FlutterFlowTheme.of(context).secondaryText),
           ),
         ),
@@ -312,7 +312,7 @@ class _LostBanner extends StatelessWidget {
           onPressed: onReopen,
           style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
           child: Text('Reopen',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 12.5, fontWeight: FontWeight.w600)),
         ),
       ],

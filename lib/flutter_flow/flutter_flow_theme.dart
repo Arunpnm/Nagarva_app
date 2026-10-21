@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'ng_tokens.dart';
+
 const kThemeModeKey = '__theme_mode__';
 // Parity brief Part 2b: a third "Midnight" option alongside Light/Dark.
 // Midnight is still ThemeMode.dark under the hood (same brightness, same
@@ -28,9 +30,10 @@ const kMidnightKey = '__theme_midnight__';
 // Everywhere else inside the app, read from FlutterFlowTheme.of(context)
 // instead of reaching for these.
 // ---------------------------------------------------------------------------
-const Color kBrandGold = Color(0xFFE3B23C);
-const Color kBrandTeal = Color(0xFF1FA98C);
-const Color kBrandNavy = Color(0xFF0F2A47);
+// Redesign (Oct 2026): the accent is the handoff's orange — the gold,
+// teal and navy triad of 27 Jul is retired. Renamed from kBrandGold so
+// the name stops describing a colour it no longer is.
+const Color kBrandAccent = Color(0xFFF68C36);
 
 /// WhatsApp's own brand green. Not part of the Nagarva palette and
 /// deliberately never themed — a WhatsApp button that isn't WhatsApp green
@@ -100,11 +103,24 @@ abstract class FlutterFlowTheme {
   ThemeData toThemeData() {
     final brightness =
         this is LightModeTheme ? Brightness.light : Brightness.dark;
-    final onPrimary =
-        primary.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    // Redesign: text on the orange accent is near-black in the dark
+    // variants (handoff: "text on an accent button is always #0A0C10").
+    // Light keeps the luminance rule — its primary is the darker
+    // text-orange, which needs white.
+    final onPrimary = brightness == Brightness.dark
+        ? NgPalette.onAcc
+        : primary.computeLuminance() > 0.5
+            ? Colors.black
+            : Colors.white;
+    final c = this is MidnightModeTheme
+        ? NgPalette.midnight
+        : this is LightModeTheme
+            ? NgPalette.light
+            : NgPalette.dark;
     return ThemeData(
       brightness: brightness,
       useMaterial3: false,
+      fontFamily: NgFonts.family,
       scaffoldBackgroundColor: primaryBackground,
       canvasColor: primaryBackground,
       cardColor: secondaryBackground,
@@ -123,39 +139,195 @@ abstract class FlutterFlowTheme {
         surface: secondaryBackground,
         onSurface: primaryText,
       ),
+      // ---- Redesign component themes (Claude Design handoff, Oct 2026).
+      // Most module pages are built from stock Material widgets — Card,
+      // FilledButton, AlertDialog, TextField, ChoiceChip — so theming them
+      // here restyles every screen at once without touching page code:
+      // s1 cards with a hairline and no shadow, 14px-radius accent
+      // buttons with near-black labels, inset fields with 12px corners,
+      // sheet-coloured dialogs and sheets. Values come from NgPalette.
       drawerTheme: DrawerThemeData(
-        backgroundColor: primaryBackground,
-        scrimColor: Colors.black.withValues(alpha: 0.5),
+        backgroundColor: c.sheet,
+        scrimColor: Colors.black.withValues(alpha: 0.6),
       ),
       listTileTheme: ListTileThemeData(
-        iconColor: secondaryText,
-        textColor: primaryText,
+        iconColor: c.soft,
+        textColor: c.text,
+        titleTextStyle: NgFonts.geist(
+            fontSize: 14.5, fontWeight: FontWeight.w500, color: c.text),
+        subtitleTextStyle: NgFonts.geist(fontSize: 12.5, color: c.mute),
       ),
-      iconTheme: IconThemeData(color: secondaryText),
+      iconTheme: IconThemeData(color: c.soft),
+      // Left-aligned 20px title on the page colour, as the handoff's
+      // screen headers are; no elevation or M3 tint when content scrolls.
       appBarTheme: AppBarTheme(
-        backgroundColor: primaryBackground,
-        foregroundColor: primaryText,
-        iconTheme: IconThemeData(color: primaryText),
+        backgroundColor: c.bg,
+        foregroundColor: c.text,
+        iconTheme: IconThemeData(color: c.soft),
+        actionsIconTheme: IconThemeData(color: c.soft),
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: false,
+        titleTextStyle: NgFonts.geist(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.3,
+          color: c.text,
+        ),
       ),
-      dialogTheme: DialogThemeData(backgroundColor: secondaryBackground),
-      bottomSheetTheme:
-          BottomSheetThemeData(backgroundColor: secondaryBackground),
-      popupMenuTheme: PopupMenuThemeData(color: secondaryBackground),
+      cardTheme: CardThemeData(
+        color: c.s1,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(NgRadius.card),
+          side: BorderSide(color: c.w06),
+        ),
+      ),
+      dividerTheme: DividerThemeData(color: c.w06, thickness: 1, space: 1),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: c.accBtn,
+        foregroundColor: NgPalette.onAcc,
+        elevation: 0,
+        focusElevation: 0,
+        hoverElevation: 0,
+        highlightElevation: 0,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NgRadius.tile)),
+      ),
+      filledButtonTheme: FilledButtonThemeData(style: _filledStyle(c)),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: _filledStyle(c)),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: c.text,
+          minimumSize: const Size(0, 44),
+          side: BorderSide(color: c.w15),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(NgRadius.button)),
+          textStyle: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: c.acc,
+          textStyle: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: c.sheet,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: c.w08),
+        ),
+        titleTextStyle: NgFonts.geist(
+            fontSize: 18, fontWeight: FontWeight.w600, color: c.text),
+        contentTextStyle:
+            NgFonts.geist(fontSize: 14, height: 1.4, color: c.soft),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.sheet,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(NgRadius.sheet)),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: c.sheet,
+        elevation: 2,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: c.w08),
+        ),
+        textStyle: NgFonts.geist(fontSize: 14, color: c.text),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: c.s1,
+        selectedColor: c.inv,
+        disabledColor: c.s2,
+        side: BorderSide(color: c.w06),
+        shape: const StadiumBorder(),
+        labelStyle: NgFonts.geist(
+            fontSize: 13, fontWeight: FontWeight.w600, color: c.soft),
+        secondaryLabelStyle: NgFonts.geist(
+            fontSize: 13, fontWeight: FontWeight.w600, color: c.invText),
+        checkmarkColor: c.invText,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: c.text,
+        unselectedLabelColor: c.mute,
+        indicatorColor: c.accBtn,
+        dividerColor: c.w06,
+        labelStyle: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600),
+        unselectedLabelStyle:
+            NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w500),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.all(Colors.white),
+        trackColor: WidgetStateProperty.resolveWith((s) =>
+            s.contains(WidgetState.selected) ? c.accBtn : c.w15),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((s) =>
+            s.contains(WidgetState.selected) ? c.accBtn : Colors.transparent),
+        checkColor: WidgetStateProperty.all(NgPalette.onAcc),
+        side: BorderSide(color: c.hairline(0.25), width: 1.5),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.selected) ? c.accBtn : c.mute),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: c.accBtn,
+        linearTrackColor: c.w07,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: c.inv,
+        contentTextStyle: NgFonts.geist(fontSize: 14, color: c.invText),
+        actionTextColor: c.isLight ? c.accBtn : c.acc,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NgRadius.button)),
+      ),
+      // Fields: inset surface, 12px corners, w1 hairline, accent when
+      // focused. Pages that pass their own borders keep them.
       inputDecorationTheme: InputDecorationTheme(
-        hintStyle: TextStyle(color: secondaryText),
-        labelStyle: TextStyle(color: secondaryText),
-        iconColor: secondaryText,
-        prefixIconColor: secondaryText,
-        suffixIconColor: secondaryText,
-        border: UnderlineInputBorder(
-          borderSide: BorderSide(color: alternate),
+        filled: true,
+        fillColor: c.inset,
+        hintStyle: NgFonts.geist(fontSize: 14, color: c.faint),
+        labelStyle: NgFonts.geist(fontSize: 14, color: c.mute),
+        floatingLabelStyle: NgFonts.geist(fontSize: 14, color: c.acc),
+        iconColor: c.mute,
+        prefixIconColor: c.mute,
+        suffixIconColor: c.mute,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.w1),
         ),
-        enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: alternate),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.w1),
         ),
-        focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: primary),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.acc, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.red),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.field),
+          borderSide: BorderSide(color: c.red, width: 1.5),
         ),
       ),
       textSelectionTheme: TextSelectionThemeData(
@@ -167,11 +339,26 @@ abstract class FlutterFlowTheme {
       // without these the typed query stayed near-black on the dark navy
       // search bar.
       textTheme: ThemeData(brightness: brightness).textTheme.apply(
+            fontFamily: NgFonts.family,
             bodyColor: primaryText,
             displayColor: primaryText,
           ),
     );
   }
+
+  /// Filled/elevated button style shared by both themes above.
+  static ButtonStyle _filledStyle(NgPalette c) => FilledButton.styleFrom(
+        backgroundColor: c.accBtn,
+        foregroundColor: NgPalette.onAcc,
+        disabledBackgroundColor: c.s2,
+        disabledForegroundColor: c.faint,
+        elevation: 0,
+        minimumSize: const Size(0, 46),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NgRadius.button)),
+        textStyle: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600),
+      );
 
   @Deprecated('Use primary instead')
   Color get primaryColor => primary;
@@ -285,23 +472,26 @@ class LightModeTheme extends FlutterFlowTheme {
   @Deprecated('Use tertiary instead')
   Color get tertiaryColor => tertiary;
 
-  // Brand rebrand (parity brief Part 2b, 27 Jul 2026): navy #0F2A47,
-  // gold #E3B23C, teal #1FA98C, applied to every theme's accent triad.
-  late Color primary = const Color(0xFFE3B23C);
-  late Color secondary = const Color(0xFFC79A32);
-  late Color tertiary = const Color(0xFF1FA98C);
-  late Color alternate = const Color(0xFFE0E3E7);
-  late Color primaryText = const Color(0xFF0F172A);
-  late Color secondaryText = const Color(0xFF64748B);
-  late Color primaryBackground = const Color(0xFFF1F5F9);
-  late Color secondaryBackground = const Color(0xFFFFFFFF);
-  late Color accent1 = const Color(0x4C4B39EF);
-  late Color accent2 = const Color(0x4D39D2C0);
-  late Color accent3 = const Color(0x4DEE8B60);
+  // Redesign (Claude Design handoff, 20 Oct 2026): every slot now reads
+  // from NgPalette.light — warm off-white page, white cards, orange
+  // accent. `primary` is the TEXT orange (darker, readable on white);
+  // filled buttons that follow the redesign use NgPalette.accBtn.
+  // Replaces the 27 Jul navy/gold/teal triad.
+  late Color primary = NgPalette.light.acc;
+  late Color secondary = NgPalette.light.accBtn;
+  late Color tertiary = NgPalette.light.green;
+  late Color alternate = const Color(0xFFE2E0DA);
+  late Color primaryText = NgPalette.light.text;
+  late Color secondaryText = NgPalette.light.mute;
+  late Color primaryBackground = NgPalette.light.bg;
+  late Color secondaryBackground = NgPalette.light.s1;
+  late Color accent1 = const Color(0x24EF7926);
+  late Color accent2 = NgPalette.light.greenBg;
+  late Color accent3 = NgPalette.light.amberBg;
   late Color accent4 = const Color(0xCCFFFFFF);
-  late Color success = const Color(0xFF249689);
-  late Color warning = const Color(0xFFF9CF58);
-  late Color error = const Color(0xFFDC2626);
+  late Color success = NgPalette.light.green;
+  late Color warning = NgPalette.light.amber;
+  late Color error = NgPalette.light.red;
   late Color info = const Color(0xFFFFFFFF);
 }
 
@@ -358,107 +548,107 @@ class ThemeTypography extends Typography {
 
   final FlutterFlowTheme theme;
 
-  String get displayLargeFamily => 'Inter Tight';
+  String get displayLargeFamily => NgFonts.family;
   bool get displayLargeIsCustom => false;
-  TextStyle get displayLarge => GoogleFonts.interTight(
+  TextStyle get displayLarge => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 64.0,
       );
-  String get displayMediumFamily => 'Inter Tight';
+  String get displayMediumFamily => NgFonts.family;
   bool get displayMediumIsCustom => false;
-  TextStyle get displayMedium => GoogleFonts.interTight(
+  TextStyle get displayMedium => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 44.0,
       );
-  String get displaySmallFamily => 'Inter Tight';
+  String get displaySmallFamily => NgFonts.family;
   bool get displaySmallIsCustom => false;
-  TextStyle get displaySmall => GoogleFonts.interTight(
+  TextStyle get displaySmall => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 36.0,
       );
-  String get headlineLargeFamily => 'Inter Tight';
+  String get headlineLargeFamily => NgFonts.family;
   bool get headlineLargeIsCustom => false;
-  TextStyle get headlineLarge => GoogleFonts.interTight(
+  TextStyle get headlineLarge => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 32.0,
       );
-  String get headlineMediumFamily => 'Inter Tight';
+  String get headlineMediumFamily => NgFonts.family;
   bool get headlineMediumIsCustom => false;
-  TextStyle get headlineMedium => GoogleFonts.interTight(
+  TextStyle get headlineMedium => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 28.0,
       );
-  String get headlineSmallFamily => 'Inter Tight';
+  String get headlineSmallFamily => NgFonts.family;
   bool get headlineSmallIsCustom => false;
-  TextStyle get headlineSmall => GoogleFonts.interTight(
+  TextStyle get headlineSmall => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 24.0,
       );
-  String get titleLargeFamily => 'Inter Tight';
+  String get titleLargeFamily => NgFonts.family;
   bool get titleLargeIsCustom => false;
-  TextStyle get titleLarge => GoogleFonts.interTight(
+  TextStyle get titleLarge => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 20.0,
       );
-  String get titleMediumFamily => 'Inter Tight';
+  String get titleMediumFamily => NgFonts.family;
   bool get titleMediumIsCustom => false;
-  TextStyle get titleMedium => GoogleFonts.interTight(
+  TextStyle get titleMedium => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 18.0,
       );
-  String get titleSmallFamily => 'Inter Tight';
+  String get titleSmallFamily => NgFonts.family;
   bool get titleSmallIsCustom => false;
-  TextStyle get titleSmall => GoogleFonts.interTight(
+  TextStyle get titleSmall => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 16.0,
       );
-  String get labelLargeFamily => 'Inter';
+  String get labelLargeFamily => NgFonts.family;
   bool get labelLargeIsCustom => false;
-  TextStyle get labelLarge => GoogleFonts.inter(
+  TextStyle get labelLarge => NgFonts.geist(
         color: theme.secondaryText,
         fontWeight: FontWeight.normal,
         fontSize: 16.0,
       );
-  String get labelMediumFamily => 'Inter';
+  String get labelMediumFamily => NgFonts.family;
   bool get labelMediumIsCustom => false;
-  TextStyle get labelMedium => GoogleFonts.inter(
+  TextStyle get labelMedium => NgFonts.geist(
         color: theme.secondaryText,
         fontWeight: FontWeight.normal,
         fontSize: 14.0,
       );
-  String get labelSmallFamily => 'Inter';
+  String get labelSmallFamily => NgFonts.family;
   bool get labelSmallIsCustom => false;
-  TextStyle get labelSmall => GoogleFonts.inter(
+  TextStyle get labelSmall => NgFonts.geist(
         color: theme.secondaryText,
         fontWeight: FontWeight.normal,
         fontSize: 12.0,
       );
-  String get bodyLargeFamily => 'Inter';
+  String get bodyLargeFamily => NgFonts.family;
   bool get bodyLargeIsCustom => false;
-  TextStyle get bodyLarge => GoogleFonts.inter(
+  TextStyle get bodyLarge => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 16.0,
       );
-  String get bodyMediumFamily => 'Inter';
+  String get bodyMediumFamily => NgFonts.family;
   bool get bodyMediumIsCustom => false;
-  TextStyle get bodyMedium => GoogleFonts.inter(
+  TextStyle get bodyMedium => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 14.0,
       );
-  String get bodySmallFamily => 'Inter';
+  String get bodySmallFamily => NgFonts.family;
   bool get bodySmallIsCustom => false;
-  TextStyle get bodySmall => GoogleFonts.inter(
+  TextStyle get bodySmall => NgFonts.geist(
         color: theme.primaryText,
         fontWeight: FontWeight.normal,
         fontSize: 12.0,
@@ -473,25 +663,24 @@ class DarkModeTheme extends FlutterFlowTheme {
   @Deprecated('Use tertiary instead')
   Color get tertiaryColor => tertiary;
 
-  // Brand rebrand (parity brief Part 2b, 27 Jul 2026): navy #0F2A47,
-  // gold #E3B23C, teal #1FA98C. primaryBackground is the brand navy
-  // itself; secondaryBackground is a lighter navy tint for card surfaces
-  // to read as distinct from the page background.
-  late Color primary = const Color(0xFFE3B23C);
-  late Color secondary = const Color(0xFFC79A32);
-  late Color tertiary = const Color(0xFF1FA98C);
-  late Color alternate = const Color(0xFF262D34);
-  late Color primaryText = const Color(0xFFFFFFFF);
-  late Color secondaryText = const Color(0xFF94A3B8);
-  late Color primaryBackground = const Color(0xFF0F2A47);
-  late Color secondaryBackground = const Color(0xFF17395E);
-  late Color accent1 = const Color(0x4C4B39EF);
-  late Color accent2 = const Color(0x4D39D2C0);
-  late Color accent3 = const Color(0x4DEE8B60);
-  late Color accent4 = const Color(0xB2262D34);
-  late Color success = const Color(0xFF249689);
-  late Color warning = const Color(0xFFF9CF58);
-  late Color error = const Color(0xFFEF4444);
+  // Redesign (20 Oct 2026): the navy "Dark" variant, from
+  // NgPalette.dark. Orange accent replaces the 27 Jul gold; status
+  // colours are the redesign's green / amber / red.
+  late Color primary = NgPalette.dark.acc;
+  late Color secondary = const Color(0xFFD9701C);
+  late Color tertiary = NgPalette.dark.green;
+  late Color alternate = NgPalette.dark.s3;
+  late Color primaryText = NgPalette.dark.text;
+  late Color secondaryText = NgPalette.dark.mute;
+  late Color primaryBackground = NgPalette.dark.bg;
+  late Color secondaryBackground = NgPalette.dark.s1;
+  late Color accent1 = const Color(0x24F68C36);
+  late Color accent2 = NgPalette.dark.greenBg;
+  late Color accent3 = NgPalette.dark.amberBg;
+  late Color accent4 = const Color(0xB21F3550);
+  late Color success = NgPalette.dark.green;
+  late Color warning = NgPalette.dark.amber;
+  late Color error = NgPalette.dark.red;
   late Color info = const Color(0xFFFFFFFF);
 }
 
@@ -499,9 +688,16 @@ class DarkModeTheme extends FlutterFlowTheme {
 /// distinct from Dark. Same brand accent triad as Dark, but backgrounds
 /// drop to near-black for AMOLED/low-light preference (the "Dim vs Lights
 /// Out" pattern) instead of the brand-navy background Dark uses.
+///
+/// Redesign (20 Oct 2026): Midnight is the DEFAULT look of the handoff —
+/// neutral near-black surfaces from NgPalette.midnight, not navy-tinted.
 class MidnightModeTheme extends DarkModeTheme {
-  late Color primaryBackground = const Color(0xFF07121D);
-  late Color secondaryBackground = const Color(0xFF0F1F30);
+  late Color alternate = NgPalette.midnight.s3;
+  late Color primaryText = NgPalette.midnight.text;
+  late Color secondaryText = NgPalette.midnight.mute;
+  late Color primaryBackground = NgPalette.midnight.bg;
+  late Color secondaryBackground = NgPalette.midnight.s1;
+  late Color accent4 = const Color(0xB21F232B);
 }
 
 class FFDesignTokens {
@@ -569,7 +765,13 @@ extension TextStyleHelper on TextStyle {
     List<Shadow>? shadows,
     String? package,
   }) {
-    if (useGoogleFonts && fontFamily != null && fontFamily.isNotEmpty) {
+    // Geist is a bundled asset, not a Google Fonts download — getFont()
+    // would throw for it, so a Geist family falls through to copyWith.
+    if (useGoogleFonts &&
+        fontFamily != null &&
+        fontFamily.isNotEmpty &&
+        fontFamily != NgFonts.family &&
+        fontFamily != NgFonts.monoFamily) {
       font = GoogleFonts.getFont(fontFamily,
           fontWeight: fontWeight ?? this.fontWeight,
           fontStyle: fontStyle ?? this.fontStyle);

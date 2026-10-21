@@ -69,8 +69,12 @@ class OrdersRow extends SupabaseDataRow {
   double? get amount => getField<double>('amount');
 
   /// Sum of payment_entries for this order — maintained by DB trigger
-  /// (20260718_payment_entries.sql). Balance due =
-  /// amount - advancePaid - paidTotal.
+  /// (20260718_payment_entries.sql). Balance due = amount - paidTotal.
+  ///
+  /// This is the ONLY money-in figure on an order. `advance_paid` was a
+  /// second one; its getter was deleted 16 Sept 2026 so nothing in Dart
+  /// can read or write the column while it is dropped. See CLAUDE.md,
+  /// "orders.advance_paid — SETTLED 11 Sept 2026: REPLACE, NOT REVIVE".
   double get paidTotal => getField<double>('paid_total') ?? 0;
   set amount(double? value) => setField<double>('amount', value);
 
@@ -99,9 +103,6 @@ class OrdersRow extends SupabaseDataRow {
 
   String? get notes => getField<String>('notes');
   set notes(String? value) => setField<String>('notes', value);
-
-  double? get advancePaid => getField<double>('advance_paid');
-  set advancePaid(double? value) => setField<double>('advance_paid', value);
 
   String? get paymentStatus => getField<String>('payment_status');
   set paymentStatus(String? value) => setField<String>('payment_status', value);

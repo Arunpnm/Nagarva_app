@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/signature_pad.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// DEAD CODE AS OF 17 AUG 2026 — NOT what a customer reaches at
 /// link.nagarva.in/sign. That domain runs a separate, hand-written
@@ -23,9 +23,12 @@ import '/flutter_flow/flutter_flow_theme.dart';
 /// Public, unauthenticated document-signing page (live-test fix brief #2,
 /// item 3). Reached via a shared link `/sign?token=...` with no login.
 ///
-/// Unlike SurveyPageWidget — which calls its RPCs directly because
-/// `get_survey_by_token`/`submit_survey` are granted to anon — everything
-/// here goes through the `sign-document` Edge Function. The underlying
+/// Everything here goes through the `sign-document` Edge Function. (This
+/// comment used to draw a contrast with SurveyPageWidget, which called
+/// `get_survey_by_token`/`submit_survey` directly because they were
+/// granted to anon. Both RPCs and that page were deleted on 15 Sept 2026
+/// — see supabase/20260915_drop_ungated_public_rpcs.sql. The posture
+/// described below is now the only one in the codebase.) The underlying
 /// RPCs (`get_signature_request` / `submit_signature`, see
 /// supabase/20260728_public_links_sign_and_track.sql) are granted to
 /// service_role ONLY, so the anon key cannot reach quotations or orders
@@ -220,7 +223,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: theme.primaryText,
@@ -230,7 +233,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
           Text(
             body,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 14, height: 1.45, color: theme.secondaryText),
           ),
           if (onRetry != null) ...[
@@ -251,7 +254,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
         children: [
           Text(
             _orgName,
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: theme.primary,
@@ -260,7 +263,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
           const SizedBox(height: 4),
           Text(
             'Review & accept your $_docLabel',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: theme.primaryText,
@@ -271,7 +274,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
           const SizedBox(height: 22),
           Text(
             'Your signature',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: theme.primaryText,
@@ -313,7 +316,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             const SizedBox(height: 12),
             Text(
               _submitError!,
-              style: GoogleFonts.inter(fontSize: 13, color: theme.error),
+              style: NgFonts.geist(fontSize: 13, color: theme.error),
             ),
           ],
           const SizedBox(height: 18),
@@ -337,7 +340,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
                     )
                   : Text(
                       'Sign & Accept',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -349,7 +352,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
           Text(
             'By signing you confirm you have read and accept the '
             '${_docLabel.toLowerCase()} above.',
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 11.5, height: 1.4, color: theme.secondaryText),
           ),
           const SizedBox(height: 24),
@@ -369,7 +372,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
       return Text(
         'The $_docLabel could not be loaded, but you can still sign below '
         'if $_orgName has shown it to you.',
-        style: GoogleFonts.inter(fontSize: 13.5, color: theme.secondaryText),
+        style: NgFonts.geist(fontSize: 13.5, color: theme.secondaryText),
       );
     }
 
@@ -422,12 +425,12 @@ class _SignPageWidgetState extends State<SignPageWidget> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Total',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: theme.primaryText)),
                 Text('₹${total.toStringAsFixed(0)}',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 17,
                         color: theme.primary)),
@@ -449,7 +452,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
           Expanded(
             flex: 4,
             child: Text(label,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 13, color: theme.secondaryText)),
           ),
           const SizedBox(width: 10),
@@ -458,7 +461,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                   color: theme.primaryText),

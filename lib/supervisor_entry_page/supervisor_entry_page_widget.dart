@@ -3,9 +3,9 @@ import '/backend/customer_lookup.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '/backend/order_id_allocator.dart';
 
@@ -100,7 +100,6 @@ class _SupervisorEntryPageWidgetState
         'status': 'pending',
         'payment_status': 'pending',
         'tracking_status': 'Pending',
-        'advance_paid': 0.0,
         'supervisor_id': AppSession.instance.currentStaffId,
       });
       if (!mounted) return;
@@ -129,10 +128,9 @@ class _SupervisorEntryPageWidgetState
       appBar: AppBar(
         backgroundColor: theme.primaryBackground,
         elevation: 0,
-        centerTitle: true,
         title: Text('Job Entry',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                font: NgFonts.geist(fontWeight: FontWeight.w600))),
       ),
       body: SafeArea(
         child: ListView(

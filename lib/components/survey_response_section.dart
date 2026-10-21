@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '/backend/pricing_defaults.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// One line the customer selected on the public survey page.
 ///
@@ -144,7 +144,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
               Expanded(
                 child: Text(
                   'CUSTOMER SURVEY',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                     fontWeight: FontWeight.w700,
                     fontSize: 12.5,
                     letterSpacing: 0.4,
@@ -156,7 +156,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                 Text(
                   DateFormat('d MMM, h:mm a')
                       .format(widget.survey.submittedAt!.toLocal()),
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 11, color: theme.secondaryText),
                 ),
             ],
@@ -167,7 +167,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
             Text(
               'The customer submitted the survey without selecting any '
               'items. Worth a call before quoting.',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                 fontSize: 12.5,
                 height: 1.4,
                 fontStyle: FontStyle.italic,
@@ -189,7 +189,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                   Text(
                     '$totalCft CFT  ·  ${lines.length} item'
                     '${lines.length == 1 ? '' : 's'}',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                       color: theme.primaryText,
@@ -201,7 +201,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                         ? 'Suggested package unavailable'
                         : 'Suggested: ${pkg.type} · ${pkg.crew} crew · '
                             '${pkg.vehicle}',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12.5, color: theme.secondaryText),
                   ),
                 ],
@@ -220,7 +220,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                     const SizedBox(width: 4),
                     Text(
                       _expanded ? 'Hide items' : 'Show items',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                           color: theme.primary),
@@ -239,7 +239,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                       Expanded(
                         child: Text(
                           entry.key,
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                             fontWeight: FontWeight.w700,
                             fontSize: 12.5,
                             color: theme.primary,
@@ -248,7 +248,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                       ),
                       Text(
                         '${surveyTotalCft(entry.value)} CFT',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                             color: theme.secondaryText),
@@ -264,7 +264,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
             const Divider(height: 22),
             Text(
               'Customer notes',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                   color: theme.primaryText),
@@ -272,7 +272,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
             const SizedBox(height: 4),
             Text(
               instructions,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 13, height: 1.4, color: theme.primaryText),
             ),
           ],
@@ -307,14 +307,14 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
           Expanded(
             child: Text(
               '$name${l.qty > 1 ? '  ×${l.qty}' : ''}',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 12.5, color: theme.primaryText),
             ),
           ),
           const SizedBox(width: 8),
           Text(
             l.cft <= 0 ? 'no CFT' : '${l.lineCft} CFT',
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
               color: l.cft <= 0 ? theme.warning : theme.secondaryText,

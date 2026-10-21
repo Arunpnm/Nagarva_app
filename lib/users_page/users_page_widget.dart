@@ -3,12 +3,12 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/load_error_state.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/keyboard_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'staff_form_sheet.dart';
 import 'users_page_model.dart';
 export 'users_page_model.dart';
@@ -166,7 +166,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
             label,
             textAlign: TextAlign.center,
             style: FlutterFlowTheme.of(context).labelMedium.override(
-                  font: GoogleFonts.inter(),
+                  font: NgFonts.geist(),
                   color: selected
                       ? FlutterFlowTheme.of(context).primaryBackground
                       : FlutterFlowTheme.of(context).primaryText,
@@ -232,7 +232,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                             s.name,
                             overflow: TextOverflow.ellipsis,
                             style: theme.titleSmall.override(
-                              font: GoogleFonts.interTight(),
+                              font: NgFonts.geist(),
                               color: theme.primaryText,
                               letterSpacing: 0.0,
                             ),
@@ -240,7 +240,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                           Text(
                             _cap((s.role ?? '—').toLowerCase()),
                             style: theme.bodySmall.override(
-                              font: GoogleFonts.inter(),
+                              font: NgFonts.geist(),
                               color: theme.primary,
                               letterSpacing: 0.0,
                             ),
@@ -249,7 +249,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                             detailBits.isEmpty ? '—' : detailBits.join(' · '),
                             overflow: TextOverflow.ellipsis,
                             style: theme.bodySmall.override(
-                              font: GoogleFonts.inter(),
+                              font: NgFonts.geist(),
                               color: theme.secondaryText,
                               letterSpacing: 0.0,
                             ),
@@ -274,7 +274,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                       child: Text(
                         active ? 'Active' : 'Inactive',
                         style: theme.labelSmall.override(
-                          font: GoogleFonts.inter(),
+                          font: NgFonts.geist(),
                           color: active ? theme.primary : theme.error,
                           letterSpacing: 0.0,
                         ),
@@ -320,7 +320,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
           title: Text(
             'Staff',
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                   ),
                   fontSize: 22.0,
@@ -329,7 +329,6 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -381,7 +380,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                         initialValue: _model.searchQuery,
                         onChanged: (v) =>
                             safeSetState(() => _model.searchQuery = v),
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             color: FlutterFlowTheme.of(context).primaryText),
                         decoration: InputDecoration(
                           hintText: 'Search by name or phone',
@@ -419,7 +418,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                     Text(
                       'Active Staff (${activeStaff.length})',
                       style: FlutterFlowTheme.of(context).titleMedium.override(
-                            font: GoogleFonts.interTight(),
+                            font: NgFonts.geist(),
                             color: FlutterFlowTheme.of(context).primaryText,
                             letterSpacing: 0.0,
                           ),
@@ -430,7 +429,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                             ? 'Loading…'
                             : 'No active staff found for this org.',
                         style: FlutterFlowTheme.of(context).bodySmall.override(
-                              font: GoogleFonts.inter(),
+                              font: NgFonts.geist(),
                               color: FlutterFlowTheme.of(context).secondaryText,
                             ),
                       )
@@ -439,7 +438,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                     Text(
                       'Inactive Staff (${inactiveStaff.length})',
                       style: FlutterFlowTheme.of(context).titleMedium.override(
-                            font: GoogleFonts.interTight(),
+                            font: NgFonts.geist(),
                             color: FlutterFlowTheme.of(context).secondaryText,
                             letterSpacing: 0.0,
                           ),
@@ -448,7 +447,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
                       Text(
                         'None.',
                         style: FlutterFlowTheme.of(context).bodySmall.override(
-                              font: GoogleFonts.inter(),
+                              font: NgFonts.geist(),
                               color: FlutterFlowTheme.of(context).secondaryText,
                             ),
                       )

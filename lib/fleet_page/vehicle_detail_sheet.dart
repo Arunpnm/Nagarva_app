@@ -1,9 +1,9 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Fleet vehicle detail view + edit sheet (parity brief Part 2c).
 ///
@@ -99,7 +99,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
         headerBackgroundColor: theme.primary,
         headerForegroundColor: Colors.white,
         headerTextStyle: theme.headlineLarge.override(
-          font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+          font: NgFonts.geist(fontWeight: FontWeight.w600),
           color: Colors.white,
         ),
         pickerBackgroundColor: theme.secondaryBackground,
@@ -164,11 +164,11 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11.5, color: theme.secondaryText)),
                 const SizedBox(height: 2),
                 Text(value,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: valueColor ?? theme.primaryText)),
@@ -206,7 +206,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
             Expanded(
               child: Text(
                 value == null ? label : '$label: ${_dateFmt.format(value)}',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                   fontSize: 13.5,
                   color: expired ? theme.error : theme.primaryText,
                   fontWeight: expired ? FontWeight.w700 : FontWeight.w400,
@@ -259,7 +259,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
                       _editing
                           ? (widget.isEdit ? 'Edit Vehicle' : 'Add Vehicle')
                           : (v?.regNo ?? 'Vehicle'),
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText,

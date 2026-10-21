@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -7,6 +6,7 @@ import '/backend/reminders_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// REMINDERS section for Lead Details and the quote screen (live-test fix
 /// brief #2, item 10).
@@ -84,7 +84,7 @@ class RemindersSectionState extends State<RemindersSection> {
             children: [
               Text(
                 widget.title.toUpperCase(),
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                   letterSpacing: 0.4,
@@ -119,7 +119,7 @@ class RemindersSectionState extends State<RemindersSection> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 'No open follow-ups. Add one so this never goes quiet.',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5,
                     fontStyle: FontStyle.italic,
                     color: theme.secondaryText),
@@ -146,7 +146,7 @@ class RemindersSectionState extends State<RemindersSection> {
                           ? 'Hide follow-ups'
                           : 'Show all ${_logs.length} follow-up'
                               '${_logs.length == 1 ? '' : 's'}',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                           color: theme.primary),
@@ -184,7 +184,7 @@ class RemindersSectionState extends State<RemindersSection> {
         children: [
           Text(
             r.title ?? 'Follow up',
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
                 color: theme.primaryText),
@@ -202,7 +202,7 @@ class RemindersSectionState extends State<RemindersSection> {
               const SizedBox(width: 4),
               Text(
                 _dueLabel(r.dueDate, state),
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 11.5, fontWeight: FontWeight.w600, color: color),
               ),
             ],
@@ -211,7 +211,7 @@ class RemindersSectionState extends State<RemindersSection> {
             const SizedBox(height: 4),
             Text(
               r.description!.trim(),
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 12, height: 1.35, color: theme.secondaryText),
             ),
           ],
@@ -262,7 +262,7 @@ class RemindersSectionState extends State<RemindersSection> {
                 Text(
                   '${followUpChannelLabel(l.channel ?? 'call')}'
                   ' · ${followUpOutcomeLabel(l.outcome)}',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                       color: theme.primaryText),
@@ -270,14 +270,14 @@ class RemindersSectionState extends State<RemindersSection> {
                 if ((l.notes ?? '').trim().isNotEmpty)
                   Text(
                     l.notes!.trim(),
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12, height: 1.3, color: theme.secondaryText),
                   ),
                 if (l.loggedAt != null)
                   Text(
                     DateFormat('d MMM yyyy, h:mm a')
                         .format(l.loggedAt!.toLocal()),
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11, color: theme.secondaryText),
                   ),
               ],
@@ -584,7 +584,7 @@ class _LogCallSheetState extends State<_LogCallSheet> {
           subtitle: Text(
             'Creates the next reminder automatically, so the lead never '
             'goes quiet.',
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 11.5, color: theme.secondaryText),
           ),
         ),
@@ -735,7 +735,7 @@ class _SheetShell extends StatelessWidget {
                 ),
                 Text(
                   title,
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText),

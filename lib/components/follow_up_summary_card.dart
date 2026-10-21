@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/reminders_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 
@@ -76,7 +76,7 @@ class FollowUpSummaryCardState extends State<FollowUpSummaryCard> {
                   children: [
                     Text(
                       'Follow-ups',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                         color: theme.primaryText,
@@ -88,7 +88,7 @@ class FollowUpSummaryCardState extends State<FollowUpSummaryCard> {
                         if (_overdue > 0) '$_overdue overdue',
                         if (_today > 0) '$_today due today',
                       ].join(' · '),
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                         color: _overdue > 0 ? theme.error : theme.secondaryText,

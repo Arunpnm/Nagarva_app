@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '/app_session.dart';
 import '/index.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/permissions.dart';
 
 /// Navigation model — Users Kickoff Step 2 (1 Aug 2026).
@@ -65,12 +66,15 @@ const kNavGroupOther = 'Other';
 /// horizontally - 34 destinations in a strip five wide, which is how a
 /// vendor ends up not knowing what exists. These five are the ones a
 /// working day actually returns to.
+///
+/// Redesign (20 Oct 2026): Home / Leads / Orders / Ops, with More pinned
+/// after them by the shell. Payments left the bar — it is in More under
+/// Money and behind the Dashboard's "To collect" tile.
 const kPrimaryNavNames = <String>{
   'HomePage',
   'LeadsPage',
   'OrdersPage',
   'OperationsPage',
-  'PaymentsPage',
 };
 
 /// The destinations the mobile bottom bar shows, for THIS session.
@@ -94,14 +98,30 @@ List<NavItem> primaryNavItems(List<NavItem> all) {
   return primary.isEmpty ? all : primary;
 }
 
-/// The 19 owner/manager destinations (Users Kickoff Step 2.1). Six of
-/// these route to `ComingSoonPage` today — `surveys`, `inbox`, `survey`
-/// and `reviews` are genuinely unbuilt. **`materials`, `reports` and
-/// `calendar` are NOT unbuilt** despite the kickoff brief listing them
-/// as placeholder candidates — `MaterialsPage`, `ReportsPage` and
-/// `CalendarPage` all already exist and are wired to real pages here.
-/// (Corrected against the actual routed pages in `nav.dart`, not copied
-/// from the brief — see report.)
+/// The 27 owner/manager destinations. **EVERY ONE ROUTES TO A REAL
+/// PAGE** — verified 17 Sept 2026 against `nav.dart`, not assumed.
+///
+/// CORRECTED 17 Sept 2026. This said "the 19 owner/manager destinations
+/// … six of these route to `ComingSoonPage` today — `surveys`, `inbox`,
+/// `survey` and `reviews` are genuinely unbuilt", and every clause of
+/// that was wrong by the time anyone read it:
+///   * the list is **27**, not 19;
+///   * **none** of them is a `ComingSoonPage`. The only two such routes
+///     left in `nav.dart` are `MyAttComingSoon` and `MySalComingSoon`,
+///     which are FIELD-STAFF destinations and are not in this list;
+///   * `surveys` was deleted outright on 15 Sept 2026 — see the
+///     tombstone below — so it is not unbuilt, it is gone;
+///   * `inbox` is `WaInboxPage`, `survey` is `SurveyQuoteHubPage` and
+///     `reviews` is `ReviewsPage`. All three are built, routed and in
+///     the permissions matrix.
+///
+/// The half it got right is kept because it is still true: `materials`,
+/// `reports` and `calendar` are NOT unbuilt, despite the kickoff brief
+/// listing them as placeholder candidates.
+///
+/// **Being routed is not the same as having ever run against a row** —
+/// see CLAUDE.md's "BUILT vs USED". Several of these 27 are reachable,
+/// permission-gated and backed by a table with zero rows.
 ///
 /// `'staff'`'s label is computed at read time, not stored here — see
 /// [navItemsForCurrentSession].
@@ -113,116 +133,115 @@ List<NavItem> primaryNavItems(List<NavItem> all) {
 /// filtered). Both call sites now read this file instead of hand-rolling
 /// their own copy — see [navItemsForCurrentSession].
 const kOwnerManagerNavItems = <NavItem>[
-  (name: 'HomePage', icon: Icons.dashboard, label: 'Dashboard',
+  (name: 'HomePage', icon: Icons.space_dashboard_rounded, label: 'Dashboard',
     group: 'Sales',
   ),
-  (name: 'LeadsPage', icon: Icons.people, label: 'Leads / CRM',
+  (name: 'LeadsPage', icon: Icons.person_search_rounded, label: 'Leads / CRM',
     group: 'Sales',
   ),
-  // REMOVED FROM NAV 3 Sept 2026. `CustomerSurveysPage` reads
-  // `customer_surveys`, and NOTHING HAS EVER WRITTEN A ROW TO THAT
-  // TABLE. Verified against the live database: 0 rows, no writer
-  // anywhere in `lib/`, and all four survey RPCs -- `submit_survey`,
-  // `get_survey_by_token`, and the two `public_*` ones the live
-  // link.nagarva.in site calls -- write to `surveys`, not to this
-  // table.
+  // TOMBSTONE — the Customer Surveys module was removed from the nav on
+  // 3 Sept 2026 ("there is two survey it is creating confusion" — Arun)
+  // and DELETED outright on 15 Sept 2026: page, detail sheet,
+  // CustomerSurveysTable, customer_survey_parse.dart, SurveyQueue and
+  // its permission module. Full reasoning in nav.dart's tombstone.
   //
-  // So it occupied a top-level slot with a screen that could only ever
-  // be empty, one character away from 'Survey & Quote' (the real
-  // staff-side builder, which reads `surveys`). Arun, 3 Sept 2026:
-  // "there is two survey it is creating confusion".
+  // The 3 Sept note that stood here said `customer_surveys` had "0 rows,
+  // no writer anywhere" and that the survey RPCs "write to `surveys`,
+  // not to this table". True when written; WRONG SINCE 9 SEPT, when
+  // 20260909_consolidate_survey_tables.sql dropped the old
+  // customer_surveys and RENAMED `surveys` to take its name. That table
+  // now holds 9 live rows and every survey RPC writes it. Recorded
+  // rather than quietly overwritten, because the note read as a settled
+  // fact for six days after it stopped being one.
   //
-  // The page, its detail sheet and `survey_queue.dart` are LEFT IN
-  // PLACE and the route stays registered -- the 29-column shape may
-  // have been intended for something, and an unrouted page costs
-  // nothing. Only the nav entry is gone. The real path is Leads ->
-  // "Request Survey" -> customer fills -> Survey & Quote.
-  (name: 'WaInboxPage', icon: Icons.inbox, label: 'Inbox',
+  // The real path is Leads -> "Request Survey" -> customer fills ->
+  // Survey & Quote, which reads the same table through SurveysTable.
+  (name: 'WaInboxPage', icon: Icons.inbox_rounded, label: 'Inbox',
     group: 'Sales',
   ),
-  (name: 'SurveyQuoteHubPage', icon: Icons.add_task, label: 'Survey & Quote',
+  (name: 'SurveyQuoteHubPage', icon: Icons.add_task_rounded, label: 'Survey & Quote',
     group: 'Sales',
   ),
-  (name: 'CalendarPage', icon: Icons.calendar_month, label: 'Calendar',
+  (name: 'CalendarPage', icon: Icons.calendar_month_rounded, label: 'Calendar',
     group: 'Operations',
   ),
-  (name: 'OrdersPage', icon: Icons.assignment, label: 'Orders',
+  (name: 'OrdersPage', icon: Icons.assignment_rounded, label: 'Orders',
     group: 'Operations',
   ),
-  (name: 'OperationsPage', icon: Icons.local_shipping, label: 'Operations',
+  (name: 'OperationsPage', icon: Icons.local_shipping_rounded, label: 'Operations',
     group: 'Operations',
   ),
-  (name: 'ReviewsPage', icon: Icons.star_outline, label: 'Reviews',
+  (name: 'ReviewsPage', icon: Icons.star_rounded, label: 'Reviews',
     group: 'Sales',
   ),
-  (name: 'PaymentsPage', icon: Icons.payments, label: 'Payments',
+  (name: 'PaymentsPage', icon: Icons.payments_rounded, label: 'Payments',
     group: 'Money',
   ),
-  (name: 'ExpensePage', icon: Icons.receipt_long, label: 'Expenses',
+  (name: 'ExpensePage', icon: Icons.receipt_rounded, label: 'Expenses',
     group: 'Money',
   ),
   (
     name: 'UsersPage',
-    icon: Icons.groups,
+    icon: Icons.groups_rounded,
     label: 'Staff',
     group: 'People',
   ), // label overridden dynamically
-  (name: 'FleetPage', icon: Icons.directions_car, label: 'Fleet',
+  (name: 'FleetPage', icon: Icons.directions_car_rounded, label: 'Fleet',
     group: 'Assets',
   ),
-  (name: 'MaterialsPage', icon: Icons.inventory_2, label: 'Materials',
+  (name: 'MaterialsPage', icon: Icons.inventory_2_rounded, label: 'Materials',
     group: 'Assets',
   ),
-  (name: 'WarehousesPage', icon: Icons.warehouse, label: 'Warehouses',
+  (name: 'WarehousesPage', icon: Icons.warehouse_rounded, label: 'Warehouses',
     group: 'Assets',
   ),
   // Session 4, Part C-2 — new module, not a former ComingSoon stub.
-  (name: 'RateCardsPage', icon: Icons.price_change, label: 'Rate Cards',
+  (name: 'RateCardsPage', icon: Icons.price_change_rounded, label: 'Rate Cards',
     group: 'Money',
   ),
   (
     name: 'LrRegisterPage',
-    icon: Icons.receipt_long_outlined,
+    icon: Icons.receipt_long_rounded,
     label: 'LR Register',
     group: 'Operations',
   ),
   (
     name: 'OperationsStandalonePage',
-    icon: Icons.support_agent,
+    icon: Icons.support_agent_rounded,
     label: 'Ops Log',
     group: 'Operations',
   ),
-  (name: 'VendorsPage', icon: Icons.local_shipping_outlined, label: 'Vendors',
+  (name: 'VendorsPage', icon: Icons.handshake_rounded, label: 'Vendors',
     group: 'Partners',
   ),
-  (name: 'CustomersPage', icon: Icons.people_outline, label: 'Customers',
+  (name: 'CustomersPage', icon: Icons.people_rounded, label: 'Customers',
     group: 'Sales',
   ),
   (
     name: 'InsuranceClaimsPage',
-    icon: Icons.shield_outlined,
+    icon: Icons.shield_rounded,
     label: 'Insurance',
     group: 'Partners',
   ),
-  (name: 'TripsPage', icon: Icons.alt_route, label: 'Trips',
+  (name: 'TripsPage', icon: Icons.alt_route_rounded, label: 'Trips',
     group: 'Operations',
   ),
-  (name: 'TasksPage', icon: Icons.task_alt, label: 'Tasks',
+  (name: 'TasksPage', icon: Icons.task_alt_rounded, label: 'Tasks',
     group: 'Operations',
   ),
-  (name: 'AccountsPage', icon: Icons.account_balance_wallet, label: 'Accounts',
+  (name: 'AccountsPage', icon: Icons.account_balance_wallet_rounded, label: 'Accounts',
     group: 'Money',
   ),
-  (name: 'PLReportPage', icon: Icons.assessment, label: 'P & L',
+  (name: 'PLReportPage', icon: Icons.assessment_rounded, label: 'P & L',
     group: 'Money',
   ),
-  (name: 'ReportsPage', icon: Icons.bar_chart, label: 'Reports',
+  (name: 'ReportsPage', icon: Icons.bar_chart_rounded, label: 'Reports',
     group: 'Money',
   ),
-  (name: 'SalaryPage', icon: Icons.badge, label: 'Salary',
+  (name: 'SalaryPage', icon: Icons.badge_rounded, label: 'Salary',
     group: 'People',
   ),
-  (name: 'SettingsPage', icon: Icons.settings, label: 'Settings',
+  (name: 'SettingsPage', icon: Icons.settings_rounded, label: 'Settings',
     group: 'Setup',
   ),
 ];
@@ -379,4 +398,65 @@ List<NavItem> navItemsForCurrentSession() {
     ));
   }
   return items;
+}
+
+/// The menu label for [item] in the app's language (More sheet, bottom
+/// bar). `name` stays the router key and `label` the English source; this
+/// only picks the ARB string. An item missing here falls back to its
+/// English label rather than to nothing.
+String localizedNavLabel(BuildContext context, NavItem item) {
+  final l = AppLocalizations.of(context);
+  return switch (item.name) {
+    'HomePage' => l.ngMenuDashboard,
+    'LeadsPage' => l.ngMenuLeads,
+    'WaInboxPage' => l.ngMenuInbox,
+    'SurveyQuoteHubPage' => l.ngMenuSurveyQuote,
+    'CalendarPage' => l.ngMenuCalendar,
+    'OrdersPage' => l.ngMenuOrders,
+    'OperationsPage' => l.ngMenuOperations,
+    'ReviewsPage' => l.ngMenuReviews,
+    'PaymentsPage' => l.ngMenuPayments,
+    'ExpensePage' => l.ngMenuExpenses,
+    'UsersPage' =>
+      item.label == 'Staff' ? l.ngMenuStaff : l.ngMenuTeamAttendance,
+    'FleetPage' => l.ngMenuFleet,
+    'MaterialsPage' => l.ngMenuMaterials,
+    'WarehousesPage' => l.ngMenuWarehouses,
+    'RateCardsPage' => l.ngMenuRateCards,
+    'LrRegisterPage' => l.ngMenuLrRegister,
+    'OperationsStandalonePage' => l.ngMenuOpsLog,
+    'VendorsPage' => l.ngMenuVendors,
+    'CustomersPage' => l.ngMenuCustomers,
+    'InsuranceClaimsPage' => l.ngMenuInsurance,
+    'TripsPage' => l.ngMenuTrips,
+    'TasksPage' => l.ngMenuTasks,
+    'AccountsPage' => l.ngMenuAccounts,
+    'PLReportPage' => l.ngMenuPnl,
+    'ReportsPage' => l.ngMenuReports,
+    'SalaryPage' => l.ngMenuSalary,
+    'SettingsPage' => l.ngMenuSettings,
+    'SupervisorJobsListPage' => l.ngMenuMyJobs,
+    'SupervisorTeamPage' => l.ngMenuMyTeam,
+    'SupervisorEarningsPage' || 'MySalComingSoon' => l.ngMenuMyEarnings,
+    'SupervisorAttendancePage' || 'MyAttComingSoon' => l.ngMenuMyAttendance,
+    _ when item.name == SuperAdminPageWidget.routeName =>
+      l.ngMenuPlatformAdmin,
+    _ => item.label,
+  };
+}
+
+/// [kNavGroups] / [kNavGroupOther] name in the app's language.
+String localizedNavGroup(BuildContext context, String group) {
+  final l = AppLocalizations.of(context);
+  return switch (group) {
+    'Sales' => l.ngGroupSales,
+    'Operations' => l.ngGroupOperations,
+    'Money' => l.ngGroupMoney,
+    'People' => l.ngGroupPeople,
+    'Assets' => l.ngGroupAssets,
+    'Partners' => l.ngGroupPartners,
+    'Setup' => l.ngGroupSetup,
+    'Field' => l.ngGroupField,
+    _ => l.ngGroupOther,
+  };
 }

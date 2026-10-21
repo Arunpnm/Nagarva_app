@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Shared "this list failed to load" state (Materials/Staff/Fleet hang
 /// follow-up, 7 Aug 2026) — an icon, the error message, and a Retry button
@@ -31,7 +31,7 @@ class LoadErrorState extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 12.5, color: theme.error),
+            style: NgFonts.geist(fontSize: 12.5, color: theme.error),
           ),
           const SizedBox(height: 14),
           OutlinedButton.icon(

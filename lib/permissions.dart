@@ -70,8 +70,17 @@ const kPermModules = <PermModule>[
   PermModule('inbox', 'WA Inbox', 'WaInboxPage'),
   // Session 4, Part B4.
   PermModule('survey_quote', 'Survey & Quote', 'SurveyQuoteHubPage'),
-  // Session 4, Part B1.
-  PermModule('surveys', 'Customer Surveys', 'CustomerSurveysPage'),
+  // 'surveys'/'Customer Surveys' REMOVED 15 Sept 2026 with the deleted
+  // module (tombstone in nav.dart). It had outlived its page since
+  // 3 Sept: kPermModules is iterated by staff_form_sheet.dart's matrix,
+  // so a vendor could still tick "Customer Surveys" for a staff member
+  // and grant access to a screen that no longer existed, and
+  // allowedPageNames() carried 'CustomerSurveysPage' in an authorization
+  // allow-list that resolved to no route.
+  // Safe to remove rather than migrate: checked live 15 Sept 2026 — all
+  // 5 staff rows carry an explicit matrix and NONE holds a 'surveys'
+  // key, so nothing is orphaned. decode() ignores unknown keys anyway,
+  // so a stored grant from another tenant would be inert, not broken.
   // Session 4, Part C-2.
   PermModule('rate_cards', 'Rate Cards', 'RateCardsPage'),
   // Session 4, Part C-3.

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Create/edit sheet for a subscription_plans row. The limits/features
 /// keys edited here are exactly the ones the app actually reads — grepped
@@ -272,7 +272,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                   Expanded(
                     child: Text(
                       isEdit ? 'Edit Plan' : 'New Plan',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                         color: theme.primaryText,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -368,7 +368,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                       'org, use the tenant\'s trial-date control. Grace days '
                       'is how long after the trial ends before the account '
                       'becomes read-only.',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           color: theme.secondaryText,
                           fontSize: 11.5,
                           height: 1.35),
@@ -376,12 +376,12 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                   ),
                   const SizedBox(height: 12),
                   Text('Limits',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           color: theme.primaryText,
                           fontSize: 14,
                           fontWeight: FontWeight.w700)),
                   Text('-1 = unlimited',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           color: theme.secondaryText, fontSize: 11.5)),
                   const SizedBox(height: 8),
                   for (final k in _limitKeys)
@@ -396,7 +396,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                     ),
                   const SizedBox(height: 8),
                   Text('Features',
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           color: theme.primaryText,
                           fontSize: 14,
                           fontWeight: FontWeight.w700)),
@@ -412,7 +412,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                   if (_error != null) ...[
                     const SizedBox(height: 8),
                     Text(_error!,
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             color: theme.error, fontSize: 13)),
                   ],
                   const SizedBox(height: 16),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'customer_detail_page_widget.dart';
 
@@ -130,10 +130,9 @@ class _CustomersPageWidgetState extends State<CustomersPageWidget>
         automaticallyImplyLeading: true,
         title: Text('Customers',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -162,7 +161,7 @@ class _CustomersPageWidgetState extends State<CustomersPageWidget>
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       child: Text('No customers found.',
-                          style: GoogleFonts.inter(color: theme.secondaryText)),
+                          style: NgFonts.geist(color: theme.secondaryText)),
                     )
                   else
                     for (final c in _filtered) _customerRow(theme, c),
@@ -195,20 +194,20 @@ class _CustomersPageWidgetState extends State<CustomersPageWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(c.name ?? '—',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                   Text(
                     [
                       if ((c.phone ?? '').isNotEmpty) c.phone,
                       if ((c.companyName ?? '').isNotEmpty) c.companyName,
                       '${c.totalOrders} orders',
                     ].whereType<String>().join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
             ),
             Text('₹${c.lifetimeValue.toStringAsFixed(0)}',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
           ],
         ),
       ),

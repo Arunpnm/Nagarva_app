@@ -19,6 +19,8 @@
 /// when staff set it. Nothing here changes what the office sees.
 library;
 
+import '/flutter_flow/ng_tokens.dart';
+
 const String kStageConfirmed = 'confirmed';
 const String kStagePacking = 'packing';
 const String kStageInTransit = 'in_transit';
@@ -101,4 +103,12 @@ int orderStageIndex(String? trackingStatus, String? status) {
   if (stage == null) return 0;
   final idx = kOrderStages.indexOf(stage);
   return idx < 0 ? 0 : idx;
+}
+
+/// Redesign status hue for an order stage index (see [orderStageIndex]):
+/// confirmed blue, on-the-road stages amber, delivered/completed green.
+NgStatus orderStageTone(int index) {
+  if (index >= kOrderStages.indexOf(kStageDelivered)) return NgStatus.green;
+  if (index > 0) return NgStatus.amber;
+  return NgStatus.blue;
 }

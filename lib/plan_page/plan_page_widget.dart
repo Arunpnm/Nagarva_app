@@ -1,11 +1,11 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 // flutter_flow_widgets.dart (FFButtonWidget) dropped 18 Aug 2026 with the
 // dead "Upgrade Plan" button — re-add it when the WhatsApp support CTA
 // is wired.
 import '/app_session.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'plan_page_model.dart';
 export 'plan_page_model.dart';
@@ -52,13 +52,12 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
         automaticallyImplyLeading: true,
         title: Text(
           'Your Plan',
-          style: GoogleFonts.interTight(
+          style: NgFonts.geist(
             color: theme.primaryText,
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
-        centerTitle: true,
         elevation: 0,
       ),
       body: SafeArea(
@@ -86,7 +85,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                       children: [
                         Text(
                           planName,
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                             color: Colors.white,
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
@@ -101,7 +100,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                           ),
                           child: Text(
                             planName == 'Free Trial' ? 'TRIAL' : 'ACTIVE',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: Colors.white,
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -115,7 +114,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                       const SizedBox(height: 8),
                       Text(
                         'Trial ends ${_formatDate(trialEnds)}',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                           color: Colors.white70,
                           fontSize: 13,
                         ),
@@ -125,7 +124,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                       const SizedBox(height: 4),
                       Text(
                         session.currentOrgName!,
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                           color: Colors.white60,
                           fontSize: 13,
                         ),
@@ -220,7 +219,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                               'to activate your plan.'
                           : 'Contact Nagarva support to change your plan.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                         color: theme.primaryText,
                         fontSize: 13.5,
                         height: 1.4,
@@ -239,7 +238,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
 
   Widget _sectionTitle(FlutterFlowTheme theme, String title) => Text(
         title,
-        style: GoogleFonts.interTight(
+        style: NgFonts.geist(
           color: theme.primaryText,
           fontSize: 15,
           fontWeight: FontWeight.w600,
@@ -256,14 +255,14 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
         children: [
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
               color: theme.primaryText,
               fontSize: 14,
             ),
           ),
           Text(
             display,
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
               color: value == -1 ? theme.primary : theme.primaryText,
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -304,7 +303,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
           const SizedBox(width: 6),
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
               color: enabled ? theme.primary : theme.secondaryText,
               fontSize: 13,
               fontWeight: enabled ? FontWeight.w600 : FontWeight.normal,

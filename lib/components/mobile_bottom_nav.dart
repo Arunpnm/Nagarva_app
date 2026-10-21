@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '/l10n/gen/app_localizations.dart';
 import '/nav_items.dart';
 
 import '/backend/approval_queue.dart';
-import '/components/nav_badge.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Mobile bottom navigation bar (parity brief Part 5a/5b, 27 Jul 2026).
 ///
@@ -31,6 +34,12 @@ import '/flutter_flow/flutter_flow_theme.dart';
 /// `main.dart`'s `NavBarPage` now wraps this widget in a `SizeTransition`
 /// instead, so the reserved layout height itself shrinks to zero — this
 /// widget no longer animates its own visibility at all.
+///
+/// Redesign (Claude Design handoff, 20 Oct 2026): nav surface with a w06
+/// top hairline and no elevation; the active slot gets an accent pill at
+/// 16% behind a FILLED icon, inactive slots an outlined icon in navOff;
+/// 11px labels on one line. The owner bar is Home / Leads / Orders / Ops
+/// plus a pinned More that opens the module sheet.
 class MobileBottomNav extends StatelessWidget {
   const MobileBottomNav({
     super.key,
@@ -46,135 +55,113 @@ class MobileBottomNav extends StatelessWidget {
 
   /// Global actions PINNED to the right of the bar — never part of the
   /// scrolling destination row, so they cannot slide off-screen the way
-  /// a destination can.
-  ///
-  /// Added 3 Sept 2026 for Arun: *"i need that button to be in all place
-  /// in same location now its visible only in dashboard page"* (Quick
-  /// Entry) and *"the left bar menu button is need in bottom ... its hard
-  /// to touch ther when we use mobile in one hand"* (Menu).
-  ///
-  /// Both were previously bound to HomePage's own `Scaffold` — the Quick
-  /// Entry FAB and the drawer alike — so neither existed on any other
-  /// screen. Putting them in the bar rather than in a `FloatingActionButton`
-  /// is deliberate: eleven pages in `lib/` already declare their own FAB
-  /// (Leads, Orders, Customers, Fleet, Tasks, Trips, Vendors, Rate Cards,
-  /// Claims, Branches, Survey hub), and those render in the shell's body,
-  /// so a shell FAB would land on the same point as theirs.
-  final List<({IconData icon, String label, VoidCallback onTap})> actions;
+  /// a destination can. (3 Sept 2026, Arun: the menu must be reachable
+  /// one-handed from every screen. Since the redesign this is the single
+  /// "More" slot.)
+  final List<({IconData icon, String label, VoidCallback onTap, int badge})>
+      actions;
 
-  static const double barHeight = 68.0;
-  /// Height reserved for a label, one line or two. Fixed on purpose:
-  /// see the note in [_NavItem].
-  static const double labelHeight = 22.0;
-  /// Pinned-action slot width. Narrower than a destination because the
-  /// labels are one short word and there is no badge to fit.
-  static const double _actionWidth = 52.0;
+  static const double barHeight = 62.0;
+
   /// Below this a destination is compressed no further and the row
-  /// scrolls instead. 50 keeps every slot above Material's 48dp minimum
-  /// while letting five destinations plus two pinned actions sit on a
-  /// 360dp phone without scrolling.
-  static const double _minItemWidth = 50.0;
-  // Widened from an earlier 64dp — at 64dp "Dashboard"/"Leads / CRM" (the
-  // full owner nav set's longest labels) truncated to "Dashbo…" even on a
-  // single line, found live-testing on a real phone. 76dp plus the 2-line
-  // wrap in _NavItem below comfortably fits every label in this app's nav
-  // set without ellipsis.
-  static const double _itemWidth = 76.0;
+  /// scrolls instead — keeps every slot above Material's 48dp minimum.
+  static const double _minItemWidth = 56.0;
+  static const double _itemWidth = 72.0;
+
+  /// Short bar labels and outlined/filled icon pairs for the everyday
+  /// destinations. Anything not listed keeps its NavItem label and icon
+  /// (supervisor and field-staff sets).
+  static const _barLook = <String, (IconData, IconData)>{
+    'HomePage': (Icons.home_outlined, Icons.home_rounded),
+    'LeadsPage': (Icons.person_search_outlined, Icons.person_search_rounded),
+    'OrdersPage': (Icons.assignment_outlined, Icons.assignment_rounded),
+    'OperationsPage': (Icons.local_shipping_outlined, Icons.local_shipping_rounded),
+    'PaymentsPage': (Icons.payments_outlined, Icons.payments_rounded),
+  };
+
+  /// Short bar labels for the everyday destinations; anything else uses
+  /// its menu label.
+  static String _barLabel(BuildContext context, NavItem item) {
+    final l = AppLocalizations.of(context);
+    return switch (item.name) {
+      'HomePage' => l.ngNavHome,
+      'LeadsPage' => l.ngNavLeads,
+      'OrdersPage' => l.ngNavOrders,
+      'OperationsPage' => l.ngNavOps,
+      'PaymentsPage' => l.ngNavPay,
+      _ => localizedNavLabel(context, item),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Material(
-      color: theme.secondaryBackground,
-      elevation: 8,
+    final c = NgPalette.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: c.nav,
+        border: Border(top: BorderSide(color: c.w06)),
+      ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: barHeight,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // EVERY slot is the same width when the whole bar fits -
-              // destinations and actions alike. Giving the actions their
-              // own narrower fixed width made the row read as misaligned
-              // on a narrow screen, where the pinned pair ended up WIDER
-              // than the destinations they sat beside (3 Sept 2026).
-              // The fixed width is kept for the case it exists for: when
-              // the destinations have to scroll, the actions must not
-              // scroll with them.
-              final total = items.length + actions.length;
-              final fits = _minItemWidth * total <= constraints.maxWidth;
-              final slot = fits
-                  ? constraints.maxWidth / total
-                  : _actionWidth;
-              final avail = constraints.maxWidth - slot * actions.length;
-              final row = Row(
-                mainAxisAlignment:
-                    fits ? MainAxisAlignment.spaceEvenly : MainAxisAlignment.start,
-                children: [
-                  for (var i = 0; i < items.length; i++)
-                    _NavItem(
-                      item: items[i],
-                      selected: i == currentIndex,
-                      width: fits ? slot : _itemWidth,
-                      onTap: () => onTap(i),
-                    ),
-                ],
-              );
-              Widget withActions(Widget destinations) {
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: SizedBox(
+            height: barHeight,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Every slot the same width when the whole bar fits —
+                // destinations and actions alike (3 Sept 2026: unequal
+                // pinned slots read as misaligned).
+                final total = items.length + actions.length;
+                final fits = _minItemWidth * total <= constraints.maxWidth;
+                final slot = fits ? constraints.maxWidth / total : _itemWidth;
+                final avail = constraints.maxWidth - slot * actions.length;
+                Widget slotFor(int i) {
+                  final item = items[i];
+                  final look = _barLook[item.name];
+                  final selected = i == currentIndex;
+                  return _NavSlot(
+                    width: slot,
+                    label: _barLabel(context, item),
+                    icon: selected ? (look?.$2 ?? item.icon) : (look?.$1 ?? item.icon),
+                    selected: selected,
+                    // Awaiting-approval count on the Operations slot only
+                    // — the nav site owns which item gets which count.
+                    badge: item.name == 'OperationsPage'
+                        ? ApprovalQueue.instance.pendingCount
+                        : null,
+                    onTap: () => onTap(i),
+                  );
+                }
+
+                final row = Row(
+                  children: [for (var i = 0; i < items.length; i++) slotFor(i)],
+                );
+                final destinations = fits
+                    ? row
+                    // NG-FIX brief, bug 2b: a nav set wider than the phone
+                    // still scrolls rather than dropping destinations.
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal, child: row);
                 if (actions.isEmpty) return destinations;
                 return Row(
                   children: [
                     SizedBox(width: avail, child: destinations),
                     for (final a in actions)
-                      _ActionItem(
-                          icon: a.icon,
-                          label: a.label,
-                          width: slot,
-                          onTap: a.onTap),
+                      _NavSlot(
+                        width: slot,
+                        label: a.label,
+                        icon: a.icon,
+                        // A screen that is not a bar destination was
+                        // reached from the More sheet — light that up.
+                        selected: currentIndex < 0 && a == actions.first,
+                        staticBadge: a.badge,
+                        onTap: a.onTap,
+                      ),
                   ],
                 );
-              }
-              if (fits) return withActions(row);
-              // NG-FIX brief, bug 2b: this app's owner/manager nav has far
-              // more destinations than fit a phone-width bar (27 today,
-              // growing) — reducing the destination count isn't on the
-              // table, and this row already scrolls horizontally to reach
-              // all of them (Row's own mainAxisSize shrink-wraps under the
-              // unbounded width a horizontal SingleChildScrollView gives
-              // it). The actual device complaint ("Calendar clipped at the
-              // edge") is a scroll-discoverability gap, not an
-              // unreachable destination — this trailing fade is the
-              // low-risk fix for that: a visual cue that there's more to
-              // scroll to, without restructuring a nav this app relies on.
-              return withActions(Stack(
-                children: [
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: row,
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    child: IgnorePointer(
-                      child: Container(
-                        width: 20,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              theme.secondaryBackground.withValues(alpha: 0),
-                              theme.secondaryBackground.withValues(alpha: 0.9),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ));
-            },
+              },
+            ),
           ),
         ),
       ),
@@ -182,156 +169,68 @@ class MobileBottomNav extends StatelessWidget {
   }
 }
 
-/// A pinned bar action. Same visual language as a destination — icon in
-/// a pill, label under it — but never "selected", because it opens a
-/// sheet or a drawer rather than swapping the body.
-class _ActionItem extends StatelessWidget {
-  const _ActionItem({
-    required this.icon,
+class _NavSlot extends StatelessWidget {
+  const _NavSlot({
+    required this.width,
     required this.label,
-    required this.width,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final double width;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return SizedBox(
-      width: width,
-      height: MobileBottomNav.barHeight,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 40,
-              height: 30,
-              alignment: Alignment.center,
-              child: Icon(icon, size: 27, color: theme.secondaryText),
-            ),
-            const SizedBox(height: 2),
-            SizedBox(
-              height: MobileBottomNav.labelHeight,
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 9.5,
-                  height: 1.1,
-                  fontWeight: FontWeight.w500,
-                  color: theme.secondaryText,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.item,
+    required this.icon,
     required this.selected,
-    required this.width,
     required this.onTap,
+    this.badge,
+    this.staticBadge = 0,
   });
 
-  final NavItem item;
-  final bool selected;
   final double width;
+  final String label;
+  final IconData icon;
+  final bool selected;
   final VoidCallback onTap;
+  final ValueListenable<int>? badge;
+  final int staticBadge;
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
+    final color = selected ? c.acc : c.navOff;
+    Widget pill(int count) => NgCountBadge(
+          count: count,
+          child: Container(
+            width: 52,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: selected
+                  ? c.accBtn.withValues(alpha: 0.16)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(icon, size: 23, color: color),
+          ),
+        );
     return SizedBox(
       width: width,
       height: MobileBottomNav.barHeight,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 44,
-              height: 30,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                // Filled gold pill behind the icon, not a subtle colour
-                // shift — meant to read as "active" at arm's length.
-                color: selected
-                    ? theme.primary.withValues(alpha: 0.18)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              // Awaiting-approval count on the Operations destination only
-              // — the nav site owns the "which item gets which count"
-              // decision, NavBadgeIcon stays generic. Renders the plain
-              // icon unchanged for every other destination.
-              child: item.name == 'OperationsPage'
-                  ? ValueListenableBuilder<int>(
-                      valueListenable: ApprovalQueue.instance.pendingCount,
-                      builder: (context, count, _) => NavBadgeIcon(
-                        icon: item.icon,
-                        size: 27,
-                        color:
-                            selected ? theme.primary : theme.secondaryText,
-                        count: count,
-                      ),
-                    )
-                  // The CustomerSurveysPage badge was UNBOUND on 9 Sept 2026.
-                  // `SurveyQueue` counts unreviewed rows through
-                  // `CustomerSurveysTable`, which was built for the schema
-                  // dropped by 20260909_consolidate_survey_tables.sql and now
-                  // names the LIVE survey table. This branch was already
-                  // unreachable — the page has had no route, no `_tabs` entry
-                  // and no nav item since 3 Sept — but a bound listener is a
-                  // path from a dormant class to live data, which is the
-                  // difference between latent and reachable. Restore only
-                  // when the survey spec lands.
-                  : Icon(
-                      item.icon,
-                      size: 27,
-                      color: selected ? theme.primary : theme.secondaryText,
-                    ),
-            ),
-            const SizedBox(height: 2),
-            // Fixed height, not free-flowing. "Leads / CRM" wraps to two
-            // lines where every other label takes one, and a Column that
-            // centres its children then pushed that item's ICON up out of
-            // line with its neighbours - the row looked misaligned, and
-            // the cause was the one label that wrapped.
-            SizedBox(
-              height: MobileBottomNav.labelHeight,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Text(
-                  item.label,
-                  textAlign: TextAlign.center,
-                // 2 lines rather than 1 + ellipsis: at any width narrow
-                // enough to matter, "Dashboard" and "Leads / CRM" (this
-                // app's longest labels) still fit fully across two lines
-                // instead of truncating — Part 5a requires labels ALWAYS
-                // visible, not just present.
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    height: 1.1,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected ? theme.primary : theme.secondaryText,
+            badge == null
+                ? pill(staticBadge)
+                : ValueListenableBuilder<int>(
+                    valueListenable: badge!,
+                    builder: (context, n, _) => pill(n),
                   ),
-                ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: NgFonts.geist(
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: color,
               ),
             ),
           ],

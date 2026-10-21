@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/org_resolution.dart';
 import '/backend/owner_pin.dart';
@@ -12,7 +13,6 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'login_page_model.dart';
 export 'login_page_model.dart';
 
@@ -263,9 +263,9 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             content: Text(
               'Password reset link sent to $email. Check your inbox '
               '(and spam folder).',
-              style: GoogleFonts.inter(),
+              style: NgFonts.geist(),
             ),
-            backgroundColor: const Color(0xFF2E7D32),
+            backgroundColor: const Color(0xFF5CCB89),
             duration: const Duration(seconds: 5),
           ),
         );
@@ -286,13 +286,13 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: const Color(0xFF0F1117),
+        backgroundColor: const Color(0xFF0A0C10),
         body: SafeArea(
           top: true,
           child: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF0F1117), Color(0xFF1A1A2E)],
+                colors: [Color(0xFF0A0C10), Color(0xFF12151B)],
                 stops: [0.0, 1.0],
                 begin: AlignmentDirectional(1.0, 1.0),
                 end: AlignmentDirectional(-1.0, -1.0),
@@ -315,7 +315,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                             width: 90,
                             height: 90,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2A1200),
+                              color: const Color(0x24F68C36),
                               borderRadius: BorderRadius.circular(45),
                             ),
                             clipBehavior: Clip.antiAlias,
@@ -329,7 +329,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.local_shipping,
-                                color: kBrandGold,
+                                color: kBrandAccent,
                                 size: 48,
                               ),
                             ),
@@ -346,7 +346,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                             // SettingsPage / AppSession.currentOrgName).
                             'Nagarva',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -355,7 +355,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                           const SizedBox(height: 4),
                           Text(
                             'Industry ERP for packers & movers',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: Colors.white54,
                               fontSize: 13,
                             ),
@@ -366,7 +366,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
 
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E2035),
+                          color: const Color(0xFF12151B),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         padding: const EdgeInsets.all(20),
@@ -411,12 +411,12 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.lock,
-                              color: Color(0xFF888899), size: 14),
+                              color: Color(0xFF8A93A3), size: 14),
                           const SizedBox(width: 6),
                           Text(
                             'Secured & Encrypted',
-                            style: GoogleFonts.inter(
-                              color: const Color(0xFF888899),
+                            style: NgFonts.geist(
+                              color: const Color(0xFF8A93A3),
                               fontSize: 12,
                             ),
                           ),
@@ -446,13 +446,13 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         onTap: onTap,
         child: RichText(
           text: TextSpan(
-            style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+            style: NgFonts.geist(color: Colors.white54, fontSize: 13),
             children: [
               if (prefix.isNotEmpty) TextSpan(text: prefix),
               TextSpan(
                 text: action,
-                style: GoogleFonts.inter(
-                  color: kBrandGold,
+                style: NgFonts.geist(
+                  color: kBrandAccent,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -505,8 +505,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             onTap: _model.isLoading ? null : _handleForgotPassword,
             child: Text(
               'Forgot password?',
-              style: GoogleFonts.inter(
-                color: kBrandGold,
+              style: NgFonts.geist(
+                color: kBrandAccent,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -524,8 +524,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           options: FFButtonOptions(
             width: double.infinity,
             height: 52,
-            color: kBrandGold,
-            textStyle: GoogleFonts.interTight(
+            color: kBrandAccent,
+            textStyle: NgFonts.geist(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -541,14 +541,14 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           children: [
             Text(
               "New here? ",
-              style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+              style: NgFonts.geist(color: Colors.white54, fontSize: 13),
             ),
             GestureDetector(
               onTap: () => context.go(SignupPageWidget.routePath),
               child: Text(
                 'Create an account',
-                style: GoogleFonts.inter(
-                  color: kBrandGold,
+                style: NgFonts.geist(
+                  color: kBrandAccent,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -569,7 +569,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       ),
       child: Text(
         message,
-        style: GoogleFonts.inter(color: Colors.redAccent, fontSize: 13),
+        style: NgFonts.geist(color: Colors.redAccent, fontSize: 13),
       ),
     );
   }
@@ -589,23 +589,23 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       focusNode: focusNode,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      style: GoogleFonts.inter(color: Colors.white),
+      style: NgFonts.geist(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: GoogleFonts.inter(color: Colors.white54),
-        hintStyle: GoogleFonts.inter(color: Colors.white24),
+        labelStyle: NgFonts.geist(color: Colors.white54),
+        hintStyle: NgFonts.geist(color: Colors.white24),
         prefixIcon: Icon(icon, color: Colors.white38, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: const Color(0xFF2A2D45),
+        fillColor: const Color(0xFF1A1E26),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF3A3D55)),
+          borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kBrandGold, width: 1.5),
+          borderSide: const BorderSide(color: kBrandAccent, width: 1.5),
         ),
       ),
     );

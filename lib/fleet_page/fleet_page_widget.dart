@@ -3,13 +3,13 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/components/load_error_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'fleet_page_model.dart';
 import 'vehicle_detail_sheet.dart';
 export 'fleet_page_model.dart';
@@ -98,7 +98,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
     final days = date.difference(DateTime(now.year, now.month, now.day)).inDays;
     if (days > 30) return const SizedBox.shrink();
     final expired = days < 0;
-    final color = expired ? const Color(0xFFC62828) : const Color(0xFFE6A400);
+    final color = expired ? NgPalette.of(context).red : NgPalette.of(context).amber;
     final text =
         expired ? '$label expired ${-days}d ago' : '$label expires in ${days}d';
     return Container(
@@ -115,7 +115,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
           const SizedBox(width: 4),
           Text(
             text,
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 10.5, fontWeight: FontWeight.w700, color: color),
           ),
         ],
@@ -145,7 +145,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
               Text(
                 value,
                 style: FlutterFlowTheme.of(context).titleMedium.override(
-                      font: GoogleFonts.interTight(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).primary,
                       letterSpacing: 0.0,
                     ),
@@ -153,7 +153,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
               Text(
                 label,
                 style: FlutterFlowTheme.of(context).labelSmall.override(
-                      font: GoogleFonts.inter(),
+                      font: NgFonts.geist(),
                       color: FlutterFlowTheme.of(context).secondaryText,
                       letterSpacing: 0.0,
                     ),
@@ -196,7 +196,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
           title: Text(
             AppLocalizations.of(context).fleet,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -208,7 +208,6 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         // Parity brief Part 2c: there was previously no way to add a
@@ -218,8 +217,8 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
             final saved = await VehicleDetailSheet.show(context);
             if (saved) _loadVehicles();
           },
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          child: const Icon(Icons.add, color: Colors.white),
+          // Colours from the app's FAB theme (redesign accent, Oct 2026).
+          child: const Icon(Icons.add),
         ),
         body: SafeArea(
           top: true,
@@ -254,7 +253,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                           AppLocalizations.of(context).liveFleet,
                           style:
                               FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: GoogleFonts.interTight(
+                                    font: NgFonts.geist(
                                       fontWeight: FlutterFlowTheme.of(context)
                                           .titleSmall
                                           .fontWeight,
@@ -356,7 +355,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                                                   .titleSmall
                                                   .override(
                                                     font:
-                                                        GoogleFonts.interTight(
+                                                        NgFonts.geist(
                                                       fontWeight:
                                                           FlutterFlowTheme.of(
                                                                   context)
@@ -404,7 +403,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                                                           context)
                                                       .labelSmall
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -443,7 +442,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                                           style: FlutterFlowTheme.of(context)
                                               .bodyMedium
                                               .override(
-                                                font: GoogleFonts.inter(
+                                                font: NgFonts.geist(
                                                   fontWeight:
                                                       FlutterFlowTheme.of(
                                                               context)
@@ -483,7 +482,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)

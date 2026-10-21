@@ -25,7 +25,7 @@ import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
 import 'components/coming_soon_page.dart';
-import 'components/app_nav_drawer.dart';
+import 'components/more_sheet.dart';
 import 'components/quick_entry_dialog.dart';
 import 'components/load_error_state.dart';
 import 'components/mobile_bottom_nav.dart';
@@ -467,6 +467,8 @@ class _MyAppState extends State<MyApp> {
         Locale('ta'),
         Locale('hi'),
         Locale('kn'),
+        Locale('te'),
+        Locale('ml'),
       ],
       // Item 9: these used to be bare `ThemeData(brightness: ...)` with no
       // brand colours at all, so every Material-themed widget that
@@ -643,12 +645,11 @@ class _NavBarPageState extends State<NavBarPage>
     // its nav set, so the count would render nowhere.
     if (isOwnerOrManagerSession) {
       ApprovalQueue.instance.refresh();
-      // SurveyQueue.refresh() is NOT called. It counts unreviewed
-      // `customer_surveys` rows, and that module is dormant: no writer
-      // exists, the table is empty, its screen is unrouted, and the nav
-      // item its badge would decorate was removed on 3 Sept 2026. So the
-      // call was a network round-trip on every owner login to render a
-      // count nowhere. Restore it with the module, not before.
+      // TOMBSTONE — SurveyQueue was DELETED 15 Sept 2026 with the rest
+      // of the dormant customer-surveys module. Nothing to call. (Its
+      // old comment here also claimed "the table is empty", which had
+      // been wrong since 9 Sept: `customer_surveys` is the renamed
+      // `surveys` and holds live rows.)
     }
     // Fire-and-forget, same style as the SharedPreferences load above —
     // no-ops immediately if activeStaffPages is already populated (the
@@ -783,10 +784,8 @@ class _NavBarPageState extends State<NavBarPage>
       'ReviewsPage': const ReviewsPageWidget(),
       'WaInboxPage': const WaInboxPageWidget(),
       'SurveyQuoteHubPage': const SurveyQuoteHubPageWidget(),
-      // 'CustomerSurveysPage' is deliberately absent — dormant module,
-      // see customer_surveys_page_widget.dart's header. _tabs is the real
-      // router for bottom-bar taps, so leaving it here would keep the
-      // screen reachable after its route was removed.
+      // 'CustomerSurveysPage' is absent because the module was DELETED
+      // 15 Sept 2026 — see the tombstone in nav.dart.
       'RateCardsPage': const RateCardsPageWidget(),
       'LrRegisterPage': const LrRegisterPageWidget(),
       'OperationsStandalonePage': const OperationsStandalonePageWidget(),
@@ -1169,7 +1168,8 @@ class _NavBarPageState extends State<NavBarPage>
         // Dashboard and nowhere else - from Orders or Leads the other
         // twenty-odd modules could not be reached at all. Opened from the
         // bar's pinned Menu button, within thumb reach.
-        drawer: AppNavDrawer(currentPageName: _currentPageName),
+        // The module menu moved from this drawer to MoreSheet (the
+        // redesign's "More" slot); see components/more_sheet.dart.
         body: NotificationListener<UserScrollNotification>(
           onNotification: (notification) {
             // Scroll-aware only — no idle timer anywhere, so the nav can
@@ -1215,30 +1215,25 @@ class _NavBarPageState extends State<NavBarPage>
                 bottomItems.indexWhere((e) => e.name == _currentPageName);
             return MobileBottomNav(
               items: bottomItems,
-              currentIndex: idx < 0 ? 0 : idx,
+              // -1 when the current screen is a module reached from More:
+              // the bar then highlights More instead of a wrong tab.
+              currentIndex: idx,
               // By name: an index into bottomItems is NOT an index into
               // _navItems.
               onTap: (i) => _selectTabNamed(bottomItems[i].name),
-              // Pinned right, on every screen the shell renders. Offered
-              // only to owner/manager: a supervisor's four destinations
-              // are already all in the bar, so a Menu there would open a
-              // drawer listing what is under their thumb already, and
-              // most Quick tiles are permission-gated away from them.
+              // Pinned right, on every screen the shell renders: the
+              // redesign's "More", opening the grouped module sheet (which
+              // also carries Quick entry). Offered only to owner/manager —
+              // a supervisor's four destinations are all in the bar
+              // already, so a sheet would list what is under their thumb.
               actions: isOwnerOrManagerSession
                   ? [
                       (
-                        icon: Icons.add_circle_outline,
-                        label: 'Quick',
-                        onTap: () => QuickEntryDialog.show(context),
-                      ),
-                      (
-                        icon: Icons.menu,
-                        label: 'Menu',
-                        // Scaffold.of finds the SHELL scaffold: this
-                        // builder sits in its bottomNavigationBar slot,
-                        // and the page bodies with their own Scaffolds
-                        // are below it in the tree, not above.
-                        onTap: () => Scaffold.of(context).openDrawer(),
+                        icon: Icons.apps_rounded,
+                        label: AppLocalizations.of(context).ngNavMore,
+                        badge: 0,
+                        onTap: () => MoreSheet.show(context,
+                            currentPageName: _currentPageName),
                       ),
                     ]
                   : const [],
@@ -1425,16 +1420,9 @@ class _NavBarPageState extends State<NavBarPage>
                                           count: count,
                                         ),
                                       )
-                                    // The CustomerSurveysPage badge was
-                                    // UNBOUND on 9 Sept 2026 — see the same
-                                    // note in mobile_bottom_nav.dart.
-                                    // `SurveyQueue` reads through
-                                    // `CustomerSurveysTable`, built for the
-                                    // schema dropped by
-                                    // 20260909_consolidate_survey_tables.sql,
-                                    // which now names the LIVE survey table.
-                                    // Unreachable already; unbound so it
-                                    // cannot become reachable by accident.
+                                    // The CustomerSurveysPage badge is gone: the whole module,
+                                    // SurveyQueue included, was DELETED 15 Sept 2026 (tombstone
+                                    // in nav.dart). Unbound since 9 Sept; nothing left to bind.
                                     else
                                       Icon(
                                         item.icon,

@@ -36,17 +36,29 @@ class DailyAccountRow {
   /// revenue minus logged extra charges — i.e. the original quoted amount.
   final double quote;
 
-  /// Sum of orders.advance_paid for the day.
+  /// Sum of orders.paid_total for the day — money actually received,
+  /// trigger-maintained from payment_entries.
+  ///
+  /// This read `orders.advance_paid` until 16 Sept 2026, which was 0 on
+  /// every order in the database while paid_total was non-zero on one, so
+  /// the register reported Rs0 collected for the only order that had been
+  /// paid. See "orders.advance_paid — SETTLED 11 Sept 2026" in CLAUDE.md:
+  /// money received has exactly one home, and it is payment_entries.
   final double collections;
 
-  /// Sum of min(booking_advance, advance_paid) — the portion of collections
+  /// Sum of min(booking_advance, paid_total) — the portion of collections
   /// that was actually a pre-booking advance, not day-of cash.
+  ///
+  /// There is still no booking_advance column, so the widget passes the
+  /// order's gross as the ceiling and this equals `collections` unless the
+  /// customer has overpaid. It is kept as its own column because the
+  /// distinction is real and the ceiling is the only piece missing.
   final double advance;
 
-  /// Sum of any advance_paid that exceeds orders.amount (unexplained excess).
+  /// Sum of any paid_total that exceeds orders.amount (unexplained excess).
   final double overCollected;
 
-  /// Sum of max(0, amount - advance_paid) — still-owed balance.
+  /// Sum of max(0, amount - paid_total) — still-owed balance.
   final double pending;
 
   /// Sum of order_staff.salary_amount for staff on this day's orders.

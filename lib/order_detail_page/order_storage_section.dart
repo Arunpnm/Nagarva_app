@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/pricing_defaults.dart';
 import '/backend/storage_billing.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Warehouse storage, as a revenue line ON THE ORDER.
 ///
@@ -143,7 +143,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
             Text(
               'This closes the stay today and fixes the storage charge. '
               'The goods can then be delivered out.',
-              style: theme.bodyMedium.override(font: GoogleFonts.inter()),
+              style: theme.bodyMedium.override(font: NgFonts.geist()),
             ),
             if (c != null) ...[
               const SizedBox(height: 10),
@@ -151,7 +151,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
                 'Final storage charge: ₹${c.total.toStringAsFixed(0)}'
                 '  (${c.billedUnits} ${c.unitLabel})',
                 style: theme.bodyMedium.override(
-                    font: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                    font: NgFonts.geist(fontWeight: FontWeight.w600)),
               ),
               if (c.minimumApplied)
                 Padding(
@@ -160,7 +160,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
                     'Includes the ${j.minBillingDays}-day minimum — the goods '
                     'were in store ${c.days} ${c.days == 1 ? 'day' : 'days'}.',
                     style: theme.bodySmall.override(
-                        font: GoogleFonts.inter(), color: theme.secondaryText),
+                        font: NgFonts.geist(), color: theme.secondaryText),
                   ),
                 ),
               if (storageBillingModeFromWire(j.billingMode) ==
@@ -171,7 +171,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
                     'Monthly plan — the full month is charged even on early '
                     'collection. This was disclosed at booking.',
                     style: theme.bodySmall.override(
-                        font: GoogleFonts.inter(), color: theme.secondaryText),
+                        font: NgFonts.geist(), color: theme.secondaryText),
                   ),
                 ),
             ],
@@ -240,7 +240,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
               const SizedBox(width: 7),
               Text('Warehouse Storage',
                   style: theme.bodyLarge.override(
-                      font: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      font: NgFonts.geist(fontWeight: FontWeight.w600),
                       color: theme.primary)),
               const Spacer(),
               if (j != null)
@@ -256,7 +256,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
                   child: Text(
                     j.outDate == null ? 'In storage' : 'Released',
                     style: theme.bodySmall.override(
-                        font: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                        font: NgFonts.geist(fontWeight: FontWeight.w600),
                         color: j.outDate == null
                             ? theme.primary
                             : theme.secondaryText),
@@ -270,7 +270,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
                 'held instead, move them into a godown — rent accrues from '
                 'the day they go in.',
                 style: theme.bodySmall.override(
-                    font: GoogleFonts.inter(), color: theme.secondaryText),
+                    font: NgFonts.geist(), color: theme.secondaryText),
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
@@ -322,11 +322,11 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
                   Text('Storage income',
                       style: theme.bodyLarge.override(
                           font:
-                              GoogleFonts.inter(fontWeight: FontWeight.w700))),
+                              NgFonts.geist(fontWeight: FontWeight.w700))),
                   const Spacer(),
                   Text('₹${c.total.toStringAsFixed(0)}',
                       style: theme.bodyLarge.override(
-                          font: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                          font: NgFonts.geist(fontWeight: FontWeight.w700),
                           color: theme.primary)),
                 ]),
                 if (c.minimumApplied)
@@ -335,7 +335,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
                     child: Text(
                       'Minimum ${j.minBillingDays} days applied.',
                       style: theme.bodySmall.override(
-                          font: GoogleFonts.inter(),
+                          font: NgFonts.geist(),
                           color: theme.secondaryText),
                     ),
                   ),
@@ -370,12 +370,12 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
                 children: [
                   Text(label,
                       style: theme.bodyMedium.override(
-                          font: GoogleFonts.inter(),
+                          font: NgFonts.geist(),
                           color: theme.secondaryText)),
                   if (detail != null)
                     Text(detail,
                         style: theme.bodySmall.override(
-                            font: GoogleFonts.inter(),
+                            font: NgFonts.geist(),
                             color: theme.secondaryText)),
                 ],
               ),
@@ -383,7 +383,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
             Text(value,
                 textAlign: TextAlign.right,
                 style: theme.bodyMedium
-                    .override(font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+                    .override(font: NgFonts.geist(fontWeight: FontWeight.w600))),
           ],
         ),
       );
@@ -599,7 +599,7 @@ class _StorageBookingSheetState extends State<_StorageBookingSheet> {
           children: [
             Text('Move into warehouse',
                 style: theme.headlineSmall.override(
-                    font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                    font: NgFonts.geist(fontWeight: FontWeight.w600))),
             const SizedBox(height: 12),
             if (_loading)
               const Padding(
@@ -612,7 +612,7 @@ class _StorageBookingSheetState extends State<_StorageBookingSheet> {
                 child: Text(
                   'No active godown yet. Add one under Warehouses first — a '
                   'stay has to be somewhere.',
-                  style: theme.bodyMedium.override(font: GoogleFonts.inter()),
+                  style: theme.bodyMedium.override(font: NgFonts.geist()),
                 ),
               )
             else ...[
@@ -643,7 +643,7 @@ class _StorageBookingSheetState extends State<_StorageBookingSheet> {
                     'Storage rates to pick a size and pre-fill, or just '
                     'enter the agreed rate below.',
                     style: theme.bodySmall.override(
-                        font: GoogleFonts.inter(), color: theme.secondaryText),
+                        font: NgFonts.geist(), color: theme.secondaryText),
                   ),
                 )
               else
@@ -690,7 +690,7 @@ class _StorageBookingSheetState extends State<_StorageBookingSheet> {
                             'bills the minimum.'
                         : 'Bills exactly the agreed amount for the stay.',
                 style: theme.bodySmall.override(
-                    font: GoogleFonts.inter(), color: theme.secondaryText),
+                    font: NgFonts.geist(), color: theme.secondaryText),
               ),
               const SizedBox(height: 10),
               Row(children: [
@@ -742,7 +742,7 @@ class _StorageBookingSheetState extends State<_StorageBookingSheet> {
                 const SizedBox(height: 6),
                 Text(_error!,
                     style: theme.bodySmall.override(
-                        font: GoogleFonts.inter(), color: theme.error)),
+                        font: NgFonts.geist(), color: theme.error)),
               ],
               const SizedBox(height: 12),
               Row(
@@ -777,7 +777,7 @@ class _StorageBookingSheetState extends State<_StorageBookingSheet> {
               value == null
                   ? label
                   : '$label: ${OrderStorageSectionState._fmtDate(value)}',
-              style: theme.bodyMedium.override(font: GoogleFonts.inter()),
+              style: theme.bodyMedium.override(font: NgFonts.geist()),
             ),
           ),
           TextButton(

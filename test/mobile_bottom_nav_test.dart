@@ -7,10 +7,16 @@
 // row overflows and they scroll off the right edge, the feature is gone
 // on exactly the narrow phones it was added for. A screenshot on one
 // viewport cannot show that; these can.
+//
+// Redesign (20 Oct 2026): the pinned pair became a single "More" slot
+// (it opens the module sheet, which also carries Quick entry), the owner
+// bar is Home / Leads / Orders / Ops, and those four render short bar
+// labels rather than their NavItem labels. Same risk, same checks.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arun_p_k_r_s/components/mobile_bottom_nav.dart';
+import 'package:arun_p_k_r_s/l10n/gen/app_localizations.dart';
 import 'package:arun_p_k_r_s/nav_items.dart';
 
 const _items = <NavItem>[
@@ -28,11 +34,26 @@ const _items = <NavItem>[
     label: 'Operations',
     group: 'Operations'
   ),
+];
+
+/// What the bar prints for each of [_items].
+const _barLabels = ['Home', 'Leads', 'Orders', 'Ops'];
+
+/// The supervisor set keeps its own labels (no short form).
+const _supervisor = <NavItem>[
+  (name: 'SupervisorJobsListPage', icon: Icons.work, label: 'My Jobs', group: 'Field'),
+  (name: 'SupervisorTeamPage', icon: Icons.groups, label: 'My Team', group: 'Field'),
   (
-    name: 'PaymentsPage',
-    icon: Icons.payments,
-    label: 'Payments',
-    group: 'Money'
+    name: 'SupervisorEarningsPage',
+    icon: Icons.currency_rupee,
+    label: 'My Earnings',
+    group: 'Field'
+  ),
+  (
+    name: 'SupervisorAttendancePage',
+    icon: Icons.event_available,
+    label: 'My Attendance',
+    group: 'Field'
   ),
 ];
 
@@ -52,6 +73,9 @@ Future<void> _pumpBar(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(MaterialApp(
+    // The bar's labels come from the ARB files since Oct 2026.
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
       bottomNavigationBar: MobileBottomNav(
         items: items,
@@ -60,11 +84,11 @@ Future<void> _pumpBar(
         actions: withActions
             ? [
                 (
-                  icon: Icons.add_circle_outline,
-                  label: 'Quick',
+                  icon: Icons.apps_rounded,
+                  label: 'More',
+                  badge: 0,
                   onTap: () {}
                 ),
-                (icon: Icons.menu, label: 'Menu', onTap: () {}),
               ]
             : const [],
       ),
@@ -74,12 +98,12 @@ Future<void> _pumpBar(
 
 void main() {
   group('MobileBottomNav pinned actions', () {
-    testWidgets('Quick and Menu are on screen at 390dp', (tester) async {
+    testWidgets('More is on screen at 390dp', (tester) async {
       await _pumpBar(tester,
           width: 390, items: _items, withActions: true);
 
       final screen = tester.view.physicalSize.width;
-      for (final label in ['Quick', 'Menu']) {
+      for (final label in ['More']) {
         final box = tester.getRect(find.text(label));
         expect(box.right, lessThanOrEqualTo(screen),
             reason: '$label runs past the right edge');
@@ -87,7 +111,7 @@ void main() {
       }
     });
 
-    testWidgets('Quick and Menu are still on screen at 360dp',
+    testWidgets('More is still on screen at 360dp',
         (tester) async {
       // A very common budget-Android width in this app's market. If the
       // pinned actions survive here they survive on the phones vendors
@@ -96,7 +120,7 @@ void main() {
           width: 360, items: _items, withActions: true);
 
       final screen = tester.view.physicalSize.width;
-      for (final label in ['Quick', 'Menu']) {
+      for (final label in ['More']) {
         expect(tester.getRect(find.text(label)).right,
             lessThanOrEqualTo(screen),
             reason: '$label runs past the right edge at 360dp');
@@ -109,9 +133,9 @@ void main() {
           width: 360, items: _items, withActions: true);
       // No destination was dropped to make room - the actions are pinned
       // beside the row, not carved out of it.
-      for (final item in _items) {
-        expect(find.text(item.label), findsOneWidget,
-            reason: '${item.label} vanished from the bar');
+      for (final label in _barLabels) {
+        expect(find.text(label), findsOneWidget,
+            reason: '$label vanished from the bar');
       }
     });
 
@@ -120,13 +144,12 @@ void main() {
       // The regression this release also fixes: a supervisor session
       // matched none of kPrimaryNavNames and got an EMPTY bar, with no
       // drawer either, so it had no navigation at all.
-      final supervisor = _items.take(4).toList();
       await _pumpBar(tester,
-          width: 360, items: supervisor, withActions: false);
-      for (final item in supervisor) {
+          width: 360, items: _supervisor, withActions: false);
+      for (final item in _supervisor) {
         expect(find.text(item.label), findsOneWidget);
       }
-      expect(find.text('Menu'), findsNothing);
+      expect(find.text('More'), findsNothing);
     });
   });
 }

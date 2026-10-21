@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 
@@ -435,7 +435,6 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
         'orderToFloor': serializeParam(o.toFloor?.toString(), ParamType.String),
         'orderMoveDate': serializeParam(o.moveDateOrNull?.toString(), ParamType.String),
         'orderAmount': serializeParam(o.amount?.toString(), ParamType.String),
-        'orderAdvancePaid': serializeParam(o.advancePaid?.toString(), ParamType.String),
         'orderStatus': serializeParam(o.status, ParamType.String),
         'orderPaymentStatus': serializeParam(o.paymentStatus, ParamType.String),
         'orderTrackingStatus': serializeParam(o.trackingStatus, ParamType.String),
@@ -451,8 +450,8 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
           children: [
-            SizedBox(width: 130, child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey))),
-            Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 12.5))),
+            SizedBox(width: 130, child: Text(label, style: NgFonts.geist(fontSize: 12, color: Colors.grey))),
+            Expanded(child: Text(value, style: NgFonts.geist(fontSize: 12.5))),
           ],
         ),
       );
@@ -474,10 +473,9 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
           backgroundColor: theme.primaryBackground,
           title: Text(c?.name ?? 'Customer',
               style: theme.titleLarge.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600),
                   fontSize: 20,
                   fontWeight: FontWeight.w600)),
-          centerTitle: true,
           elevation: 0,
           actions: [
             if (c != null)
@@ -506,7 +504,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                               Expanded(
                                 child: Text(
                                   'Blacklisted${(c.blacklistReason ?? '').isNotEmpty ? ': ${c.blacklistReason}' : ''}',
-                                  style: GoogleFonts.inter(fontSize: 12, color: theme.error),
+                                  style: NgFonts.geist(fontSize: 12, color: theme.error),
                                 ),
                               ),
                             ],
@@ -566,7 +564,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Addresses',
-                              style: GoogleFonts.interTight(fontSize: 14, fontWeight: FontWeight.w700)),
+                              style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
                           TextButton.icon(
                               icon: const Icon(Icons.add, size: 16),
                               label: const Text('Add'),
@@ -577,7 +575,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Text('No saved addresses.',
-                              style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                              style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
                         )
                       else
                         for (final a in _addresses) _addressRow(theme, a),
@@ -586,7 +584,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Contacts',
-                              style: GoogleFonts.interTight(fontSize: 14, fontWeight: FontWeight.w700)),
+                              style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
                           TextButton.icon(
                               icon: const Icon(Icons.add, size: 16),
                               label: const Text('Add'),
@@ -597,19 +595,19 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Text('No additional contacts.',
-                              style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                              style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
                         )
                       else
                         for (final ct in _contacts) _contactRow(theme, ct),
                       const SizedBox(height: 16),
                       Text('Orders',
-                          style: GoogleFonts.interTight(fontSize: 14, fontWeight: FontWeight.w700)),
+                          style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 6),
                       if (_orders.isEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Text('No orders yet.',
-                              style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText)),
+                              style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
                         )
                       else
                         for (final o in _orders) _orderRow(theme, o),
@@ -649,9 +647,9 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: GoogleFonts.inter(fontSize: 10.5, color: theme.secondaryText)),
+            Text(label, style: NgFonts.geist(fontSize: 10.5, color: theme.secondaryText)),
             const SizedBox(height: 2),
-            Text(value, style: GoogleFonts.interTight(fontSize: 15, fontWeight: FontWeight.w700)),
+            Text(value, style: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w700)),
           ],
         ),
       );
@@ -674,7 +672,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                       if ((a.label ?? '').isNotEmpty) a.label,
                       if (a.isPrimary) '(Primary)',
                     ].whereType<String>().join(' '),
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5),
+                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5),
                   ),
                   Text(
                     [
@@ -683,7 +681,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                       if (a.floor != null) 'Floor ${a.floor}',
                       if (a.hasLift) 'Lift',
                     ].whereType<String>().join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
@@ -708,13 +706,13 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(ct.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                  Text(ct.name, style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
                   Text(
                     [
                       if ((ct.designation ?? '').isNotEmpty) ct.designation,
                       if ((ct.phone ?? '').isNotEmpty) ct.phone,
                     ].whereType<String>().join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
@@ -743,14 +741,14 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('${o.fromCity ?? '—'} → ${o.toCity ?? '—'}',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                        style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
                     Text(o.status ?? '—',
-                        style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText)),
+                        style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText)),
                   ],
                 ),
               ),
               Text(_rupees(o.amount ?? 0),
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                  style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
             ],
           ),
         ),

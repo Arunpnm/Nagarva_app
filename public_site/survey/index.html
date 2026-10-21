@@ -298,12 +298,27 @@
     });
   }
 
-  // The server refuses more than MAX_LINES entries (public_submit_survey
-  // guards a public endpoint against an oversized payload). The
-  // catalogue holds 110 selectable lines, so a well-stocked 3BHK can
-  // pass 50 without doing anything unusual - this is a real customer
-  // hitting a real ceiling, not an attacker.
-  var MAX_LINES = 50;
+  // MUST MATCH THE SERVER. public_submit_survey_impl refuses more than
+  // 150 (jsonb_array_length(p_rooms) > 150 -> reason 'too_large').
+  //
+  // CORRECTED 15 Sept 2026, and the correction IS the bug: this read 50,
+  // and the comment above it claimed "the server refuses more than
+  // MAX_LINES". That stopped being true when the server ceiling was
+  // raised 50 -> 150 precisely because 50 "refused legitimate lists" -
+  // the server's own comment says so. The client was never moved, so the
+  // fix never reached a customer: the refusal simply happened one step
+  // earlier, in the browser, with a message naming a limit that no
+  // longer existed.
+  //
+  // The catalogue holds 110 selectable lines (counted live 15 Sept 2026:
+  // 5 categories, 40 items, 110 subs, identical in all three orgs), so a
+  // well-stocked 3BHK passes 50 without doing anything unusual. That is
+  // a real customer hitting a phantom ceiling, not an attacker - and
+  // they cannot tell it is our fault.
+  //
+  // Two numbers, one rule: if either moves, move both. The server's is
+  // in public_submit_survey_impl; grep for 'too_large'.
+  var MAX_LINES = 150;
 
   var SUBMIT_ERRORS = {
     too_large: "You've listed more than " + MAX_LINES + " different item " +

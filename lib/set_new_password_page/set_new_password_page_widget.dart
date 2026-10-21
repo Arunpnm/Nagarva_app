@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 import '/backend/pending_password_reset.dart';
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart' show kBrandGold;
+import '/flutter_flow/flutter_flow_theme.dart' show kBrandAccent;
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
@@ -92,18 +92,18 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: GoogleFonts.inter(color: Colors.white54),
-      hintStyle: GoogleFonts.inter(color: Colors.white24),
+      labelStyle: NgFonts.geist(color: Colors.white54),
+      hintStyle: NgFonts.geist(color: Colors.white24),
       prefixIcon: Icon(icon, color: Colors.white38, size: 20),
       filled: true,
-      fillColor: const Color(0xFF2A2D45),
+      fillColor: const Color(0xFF1A1E26),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF3A3D55)),
+        borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: kBrandGold, width: 1.5),
+        borderSide: const BorderSide(color: kBrandAccent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
@@ -113,7 +113,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
-      errorStyle: GoogleFonts.inter(color: Colors.redAccent, fontSize: 12),
+      errorStyle: NgFonts.geist(color: Colors.redAccent, fontSize: 12),
     );
   }
 
@@ -122,7 +122,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F1117),
+        backgroundColor: const Color(0xFF0A0C10),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -141,17 +141,17 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2A1200),
+                              color: const Color(0x24F68C36),
                               borderRadius: BorderRadius.circular(40),
                             ),
                             child: const Icon(Icons.lock_reset,
-                                color: kBrandGold, size: 36),
+                                color: kBrandAccent, size: 36),
                           ),
                           const SizedBox(height: 20),
                           Text(
                             'Set a new password',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                               color: Colors.white,
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -161,7 +161,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                           Text(
                             'Choose a new password to finish resetting your account.',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: Colors.white54,
                               fontSize: 13,
                             ),
@@ -173,7 +173,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         controller: _passwordController,
                         focusNode: _passwordFocusNode,
                         obscureText: !_passwordVisible,
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: NgFonts.geist(color: Colors.white),
                         // Same rule as SignupPageWidget's own password field.
                         validator: (v) => (v == null || v.length < 8)
                             ? 'Password must be at least 8 characters'
@@ -201,7 +201,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         controller: _confirmController,
                         focusNode: _confirmFocusNode,
                         obscureText: !_confirmVisible,
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: NgFonts.geist(color: Colors.white),
                         // Same rule as SignupPageWidget's confirm-password
                         // field — validated client-side, no round trip.
                         validator: (v) => (v != _passwordController.text)
@@ -235,7 +235,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                           ),
                           child: Text(
                             _errorMessage!,
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 color: Colors.redAccent, fontSize: 13),
                           ),
                         ),
@@ -246,8 +246,8 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         onPressed: _isLoading ? null : _handleSubmit,
                         options: FFButtonOptions(
                           height: 52,
-                          color: kBrandGold,
-                          textStyle: GoogleFonts.interTight(
+                          color: kBrandAccent,
+                          textStyle: NgFonts.geist(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

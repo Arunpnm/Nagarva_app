@@ -2,11 +2,11 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Self-contained "Company Logo" card: pick an image, upload it to the
 /// `org-logos` storage bucket at `<org_id>/logo.png`, stamp
@@ -99,7 +99,7 @@ class _LogoUploadCardState extends State<LogoUploadCard> {
               children: [
                 Text(
                   'Company Logo',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                     color: theme.primaryText,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -108,7 +108,7 @@ class _LogoUploadCardState extends State<LogoUploadCard> {
                 const SizedBox(height: 2),
                 Text(
                   'Shown on invoices and the app sidebar',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       color: theme.secondaryText, fontSize: 12),
                 ),
               ],

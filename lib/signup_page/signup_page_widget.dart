@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
@@ -11,7 +12,6 @@ import '/widgets/signup_success_dialog.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'signup_page_model.dart';
 export 'signup_page_model.dart';
@@ -66,7 +66,6 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     final email = _model.emailController!.text.trim();
     final password = _model.passwordController!.text;
     final phone = _model.phoneController!.text.trim();
-    final inviteCode = _model.inviteCodeController!.text.trim();
 
     safeSetState(() {
       _model.isLoading = true;
@@ -74,29 +73,6 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     });
 
     try {
-      // 0. Validate the invite code BEFORE creating an auth account —
-      // create-org (below) is still the real, atomic gate (this RPC can
-      // race two people onto the last use of the same single-use code;
-      // the loser gets create-org's own 403, same as before this check
-      // existed), but checking here means the common case — a blank or
-      // wrong code — never creates an orphaned "confirmed, no org"
-      // account in the first place. is_invite_code_valid is
-      // SECURITY DEFINER + anon-callable, returns a bare boolean only —
-      // no code enumeration, no other invite_codes columns exposed.
-      final codeValid = await SupaFlow.client.rpc(
-        'is_invite_code_valid',
-        params: {'p_code': inviteCode},
-      ) as bool? ?? false;
-      if (!codeValid) {
-        safeSetState(() {
-          _model.errorMessage =
-              'That invite code is invalid or has already been used. '
-              'Nagarva is currently in closed beta — contact us for access.';
-          _model.isLoading = false;
-        });
-        return;
-      }
-
       // 1. Create (or, on a retried signup, re-authenticate as) the
       // Supabase Auth user. Org creation itself no longer happens here —
       // it moved server-side into create-org / create_org_with_owner(),
@@ -116,12 +92,6 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
           'org_name': company,
           'owner_name': ownerName,
           if (phone.isNotEmpty) 'phone': phone,
-          // Closed-beta gate (16 Aug 2026): stashed in auth metadata for
-          // the same reason org_name/phone are — a confirmation-gap retry
-          // (vendor_org_resolver.dart) calls create-org again later, in a
-          // session that never saw this form, and needs the code to still
-          // be available then.
-          if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
         },
       );
 
@@ -182,7 +152,6 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
           'org_name': company,
           'owner_name': ownerName,
           if (phone.isNotEmpty) 'phone': phone,
-          if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
         },
       );
 
@@ -309,7 +278,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F1117),
+        backgroundColor: const Color(0xFF0A0C10),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -329,7 +298,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2A1200),
+                              color: const Color(0x24F68C36),
                               borderRadius: BorderRadius.circular(40),
                             ),
                             clipBehavior: Clip.antiAlias,
@@ -340,7 +309,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.local_shipping,
-                                color: kBrandGold,
+                                color: kBrandAccent,
                                 size: 44,
                               ),
                             ),
@@ -348,7 +317,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                           const SizedBox(height: 16),
                           Text(
                             'Create your account',
-                            style: GoogleFonts.interTight(
+                            style: NgFonts.geist(
                               color: Colors.white,
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -357,7 +326,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                           const SizedBox(height: 4),
                           Text(
                             'Start your free trial today',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: Colors.white54,
                               fontSize: 14,
                             ),
@@ -369,7 +338,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                       // Form card
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E2035),
+                          color: const Color(0xFF12151B),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         padding: const EdgeInsets.all(20),
@@ -414,7 +383,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               controller: _model.passwordController!,
                               focusNode: _model.passwordFocusNode!,
                               obscureText: !_model.passwordVisible,
-                              style: GoogleFonts.inter(color: Colors.white),
+                              style: NgFonts.geist(color: Colors.white),
                               validator: (v) => (v == null || v.length < 8)
                                   ? 'Password must be at least 8 characters'
                                   : null,
@@ -442,7 +411,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               controller: _model.confirmPasswordController!,
                               focusNode: _model.confirmPasswordFocusNode!,
                               obscureText: !_model.confirmPasswordVisible,
-                              style: GoogleFonts.inter(color: Colors.white),
+                              style: NgFonts.geist(color: Colors.white),
                               // §3: validated client-side before submit via
                               // the Form's own validate() — an inline error
                               // right at this field, never a network round
@@ -479,31 +448,6 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               icon: Icons.phone_outlined,
                               keyboardType: TextInputType.phone,
                             ),
-                            const SizedBox(height: 16),
-                            // Closed-beta gate — required client-side as of
-                            // 17 Aug 2026 (was deliberately optional; Arun
-                            // overrode that after finding a blank code sailed
-                            // through this form and only failed later, at
-                            // create-org, after an auth account already
-                            // existed). is_invite_code_valid (called in
-                            // _handleSignup, before signUp()) is the real
-                            // check; this validator just stops an obviously
-                            // blank submission before that round trip. NOTE
-                            // for whoever turns the gate off at Item 12: this
-                            // validator does NOT know the server-side flag,
-                            // so it will keep demanding *some* text even
-                            // once codes stop mattering — revisit then.
-                            _buildField(
-                              controller: _model.inviteCodeController!,
-                              focusNode: _model.inviteCodeFocusNode!,
-                              label: 'Invite Code',
-                              hint: 'Required during closed beta',
-                              icon: Icons.key_outlined,
-                              textCapitalization: TextCapitalization.characters,
-                              validator: (v) => (v == null || v.trim().isEmpty)
-                                  ? 'Invite code is required during closed beta'
-                                  : null,
-                            ),
                             const SizedBox(height: 12),
                             // §3: required, disables the submit button
                             // until ticked — not a validate-on-submit
@@ -513,7 +457,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               children: [
                                 Checkbox(
                                   value: _model.agreedToTerms,
-                                  activeColor: kBrandGold,
+                                  activeColor: kBrandAccent,
                                   onChanged: (v) => safeSetState(
                                       () => _model.agreedToTerms = v ?? false),
                                 ),
@@ -522,7 +466,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                     padding: const EdgeInsets.only(top: 12),
                                     child: RichText(
                                       text: TextSpan(
-                                        style: GoogleFonts.inter(
+                                        style: NgFonts.geist(
                                           color: Colors.white54,
                                           fontSize: 13,
                                         ),
@@ -531,8 +475,8 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                               text: 'I agree to the '),
                                           TextSpan(
                                             text: 'Terms & Conditions',
-                                            style: GoogleFonts.inter(
-                                              color: kBrandGold,
+                                            style: NgFonts.geist(
+                                              color: kBrandAccent,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -545,8 +489,8 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                           const TextSpan(text: ' and '),
                                           TextSpan(
                                             text: 'Privacy Policy',
-                                            style: GoogleFonts.inter(
-                                              color: kBrandGold,
+                                            style: NgFonts.geist(
+                                              color: kBrandAccent,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -573,7 +517,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                 ),
                                 child: Text(
                                   _model.errorMessage!,
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                     color: Colors.redAccent,
                                     fontSize: 13,
                                   ),
@@ -589,8 +533,8 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                       : _handleSignup,
                               options: FFButtonOptions(
                                 height: 52,
-                                color: kBrandGold,
-                                textStyle: GoogleFonts.interTight(
+                                color: kBrandAccent,
+                                textStyle: NgFonts.geist(
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -611,7 +555,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                         children: [
                           Text(
                             'Already have an account? ',
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                               color: Colors.white54,
                               fontSize: 14,
                             ),
@@ -620,8 +564,8 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             onTap: () => context.go(LoginPageWidget.routePath),
                             child: Text(
                               'Log in',
-                              style: GoogleFonts.inter(
-                                color: kBrandGold,
+                              style: NgFonts.geist(
+                                color: kBrandAccent,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -653,7 +597,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
-      style: GoogleFonts.inter(color: Colors.white),
+      style: NgFonts.geist(color: Colors.white),
       keyboardType: keyboardType,
       validator: validator,
       textCapitalization: textCapitalization,
@@ -669,18 +613,18 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: GoogleFonts.inter(color: Colors.white54),
-      hintStyle: GoogleFonts.inter(color: Colors.white24),
+      labelStyle: NgFonts.geist(color: Colors.white54),
+      hintStyle: NgFonts.geist(color: Colors.white24),
       prefixIcon: Icon(icon, color: Colors.white38, size: 20),
       filled: true,
-      fillColor: const Color(0xFF2A2D45),
+      fillColor: const Color(0xFF1A1E26),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF3A3D55)),
+        borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: kBrandGold, width: 1.5),
+        borderSide: const BorderSide(color: kBrandAccent, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
@@ -690,7 +634,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
-      errorStyle: GoogleFonts.inter(color: Colors.redAccent, fontSize: 12),
+      errorStyle: NgFonts.geist(color: Colors.redAccent, fontSize: 12),
     );
   }
 }

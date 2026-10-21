@@ -3,6 +3,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -10,7 +11,6 @@ import '/flutter_flow/form_field_controller.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'new_lead_page_model.dart';
 export 'new_lead_page_model.dart';
 
@@ -185,7 +185,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                 ? 'Edit Lead'
                 : AppLocalizations.of(context).newLead,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -197,7 +197,6 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -239,7 +238,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        font: GoogleFonts.interTight(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleSmall
@@ -456,7 +455,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        font: GoogleFonts.interTight(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleSmall
@@ -623,7 +622,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                   FlutterFlowTheme.of(context)
                                                       .bodySmall
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -661,7 +660,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                           context)
                                                       .bodyMedium
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -703,7 +702,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                           context)
                                                       .bodyMedium
                                                       .override(
-                                                        font: GoogleFonts.inter(
+                                                        font: NgFonts.geist(
                                                           fontWeight:
                                                               FlutterFlowTheme.of(
                                                                       context)
@@ -777,8 +776,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                                     headerTextStyle: theme
                                                         .headlineLarge
                                                         .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
+                                                          font: NgFonts.geist(
                                                             fontWeight:
                                                                 FontWeight.w600,
                                                           ),
@@ -863,7 +861,12 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                     _model.ldServiceDropdownValue ??=
                                         _model.ldService,
                                   ),
-                                  options: [
+                                  // Saved VALUES stay the English strings already in the
+                                  // database; only the labels follow the app language.
+                                  // Localising `options` itself would write translated text
+                                  // into the column (Oct 2026, when the ARBs were filled).
+                                  options: const ['House Shifting', 'Office Shifting', 'Vehicle Transport', 'Storage', 'Packing Only', 'Long Distance'],
+                                  optionLabels: [
                                     AppLocalizations.of(context).houseShifting,
                                     AppLocalizations.of(context).officeShifting,
                                     AppLocalizations.of(context).vehicleTransport,
@@ -881,7 +884,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   textStyle: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodyMedium
@@ -946,7 +949,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   style: FlutterFlowTheme.of(context)
                                       .titleSmall
                                       .override(
-                                        font: GoogleFonts.interTight(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .titleSmall
@@ -974,7 +977,12 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                     _model.ldStatusDropdownValue ??=
                                         _model.ldStatus,
                                   ),
-                                  options: [
+                                  // Saved VALUES stay the English strings already in the
+                                  // database; only the labels follow the app language.
+                                  // Localising `options` itself would write translated text
+                                  // into the column (Oct 2026, when the ARBs were filled).
+                                  options: const ['new', 'contacted', 'survey_done', 'quoted', 'converted', 'lost'],
+                                  optionLabels: [
                                     AppLocalizations.of(context).newLeadPageNew,
                                     AppLocalizations.of(context).newLeadPageContacted,
                                     AppLocalizations.of(context).surveyDone,
@@ -992,7 +1000,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   textStyle: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodyMedium
@@ -1041,7 +1049,12 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                     _model.ldSourceDropdownValue ??=
                                         _model.ldSource,
                                   ),
-                                  options: [
+                                  // Saved VALUES stay the English strings already in the
+                                  // database; only the labels follow the app language.
+                                  // Localising `options` itself would write translated text
+                                  // into the column (Oct 2026, when the ARBs were filled).
+                                  options: const ['WhatsApp', 'Phone Call', 'Website', 'Porter', 'Referral', 'Walk-in', 'Google', 'JustDial', 'Other'],
+                                  optionLabels: [
                                     AppLocalizations.of(context).whatsapp,
                                     AppLocalizations.of(context).phoneCall,
                                     AppLocalizations.of(context).website,
@@ -1062,7 +1075,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   textStyle: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodyMedium
@@ -1155,7 +1168,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                                   textStyle: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .override(
-                                        font: GoogleFonts.inter(
+                                        font: NgFonts.geist(
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .bodyMedium

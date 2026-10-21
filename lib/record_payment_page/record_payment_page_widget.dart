@@ -3,13 +3,13 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'record_payment_page_model.dart';
 export 'record_payment_page_model.dart';
 
@@ -40,8 +40,11 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
-  double _balance(OrdersRow o) =>
-      (o.amount ?? 0) - (o.advancePaid ?? 0) - o.paidTotal;
+  // paid_total alone: money received lives in payment_entries and is
+  // summed onto it by trigger. The `- advance_paid` term was dropped
+  // 16 Sept 2026 (CLAUDE.md, "REPLACE, NOT REVIVE") - that column was 0
+  // on every live order, so no balance on this screen moves.
+  double _balance(OrdersRow o) => (o.amount ?? 0) - o.paidTotal;
 
   @override
   void initState() {
@@ -183,7 +186,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
       labelText: label,
       hintText: hint,
       labelStyle:
-          GoogleFonts.inter(color: theme.secondaryText, fontSize: 12.5),
+          NgFonts.geist(color: theme.secondaryText, fontSize: 12.5),
       filled: true,
       fillColor: theme.secondaryBackground,
       contentPadding:
@@ -227,7 +230,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: selected
@@ -262,12 +265,11 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
           title: Text(
             'Record Payment',
             style: theme.titleLarge.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600),
                   fontSize: 22.0,
                   letterSpacing: 0.0,
                 ),
           ),
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -284,14 +286,14 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                         value: selected?.id,
                         isExpanded: true,
                         dropdownColor: theme.secondaryBackground,
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             color: theme.primaryText, fontSize: 13.5),
                         decoration: _dec('Order'),
                         hint: Text(
                           _model.unpaidOrders.isEmpty
                               ? 'No orders with balance due'
                               : 'Select order',
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               color: theme.secondaryText, fontSize: 13),
                         ),
                         items: [
@@ -327,8 +329,6 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                             children: [
                               _sumCol('Total',
                                   '₹${(selected.amount ?? 0).toStringAsFixed(0)}'),
-                              _sumCol('Advance',
-                                  '₹${(selected.advancePaid ?? 0).toStringAsFixed(0)}'),
                               _sumCol('Collected',
                                   '₹${selected.paidTotal.toStringAsFixed(0)}'),
                               _sumCol(
@@ -347,7 +347,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly
                           ],
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               color: theme.primaryText, fontSize: 15),
                           decoration: _dec('Amount received (₹)'),
                         ),
@@ -366,7 +366,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                         TextField(
                           controller: _model.noteController,
                           focusNode: _model.noteFocusNode,
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               color: theme.primaryText, fontSize: 13.5),
                           decoration: _dec('Note (optional)',
                               hint: 'e.g. UPI ref, received by'),
@@ -395,7 +395,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                         const SizedBox(height: 20),
                         Text(
                           'Payment History (${_model.history.length})',
-                          style: GoogleFonts.interTight(
+                          style: NgFonts.geist(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                               color: theme.primaryText),
@@ -403,7 +403,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                         const SizedBox(height: 8),
                         if (_model.history.isEmpty)
                           Text('No payments recorded yet for this order.',
-                              style: GoogleFonts.inter(
+                              style: NgFonts.geist(
                                   fontSize: 12.5,
                                   color: theme.secondaryText))
                         else
@@ -434,7 +434,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                         children: [
                                           Text(
                                             '₹${e.amount.toStringAsFixed(0)} · ${e.mode.toUpperCase()}',
-                                            style: GoogleFonts.interTight(
+                                            style: NgFonts.geist(
                                                 fontSize: 13.5,
                                                 fontWeight: FontWeight.w700,
                                                 color: theme.primaryText),
@@ -448,7 +448,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                                   .isNotEmpty)
                                                 e.note!,
                                             ].join(' · '),
-                                            style: GoogleFonts.inter(
+                                            style: NgFonts.geist(
                                                 fontSize: 11.5,
                                                 color:
                                                     theme.secondaryText),
@@ -474,11 +474,11 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 10.5, color: theme.secondaryText)),
         const SizedBox(height: 2),
         Text(value,
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
                 color: highlight ? theme.primary : theme.primaryText)),

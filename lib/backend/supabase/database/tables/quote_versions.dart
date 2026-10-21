@@ -80,9 +80,14 @@ class QuoteVersionsRow extends SupabaseDataRow {
   /// A name cannot be resolved server-side (every staff row still has
   /// `auth_user_id = NULL`) and a client-supplied one would be forgeable,
   /// which is worthless in the dispute a version history exists to
-  /// settle. Same position as `audit_row()`. Populating
-  /// `staff.auth_user_id` at PIN login resolves this retroactively for
-  /// every row already written.
+  /// settle. Same position as `audit_row()`.
+  ///
+  /// CORRECTED 15 Sept 2026 — this used to say PIN login resolves it
+  /// "retroactively for every row already written". It does not, in
+  /// either half. The link IS written at first PIN login
+  /// (`pin-login/index.ts:198`, `staff-login/index.ts:152`), so no
+  /// writer is missing — but it only makes rows written AFTERWARDS
+  /// resolvable. A row already stamped with the owner's uid keeps it.
   String? get createdBy => getField<String>('created_by');
   set createdBy(String? value) => setField<String>('created_by', value);
 

@@ -2,6 +2,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/reminders_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -11,7 +12,6 @@ import 'package:flutter/material.dart';
 import '/components/language_quick_button.dart';
 import '/components/theme_quick_button.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'calendar_page_model.dart';
 export 'calendar_page_model.dart';
 
@@ -262,7 +262,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                   ),
                   child: Text(
                     '$day',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                       fontSize: 13,
                       fontWeight: isToday || isSelected
                           ? FontWeight.w700
@@ -293,8 +293,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                           width: 5,
                           height: 5,
                           margin: const EdgeInsets.symmetric(horizontal: 1),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE6A400),
+                          decoration: BoxDecoration(
+                            color: NgPalette.of(context).amber,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -346,7 +346,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                 ),
                 Text(
                   monthName,
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     color: theme.primaryText,
@@ -377,7 +377,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                     child: Text(
                       d,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
                         color: theme.secondaryText,
@@ -403,11 +403,11 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
         case 'delivered':
         case 'closed':
         case 'done':
-          return const Color(0xFF2E7D32);
+          return NgPalette.of(context).green;
         case 'cancelled':
           return theme.error;
         case 'transit':
-          return const Color(0xFF1565C0);
+          return NgPalette.of(context).blue;
         default:
           return theme.primary;
       }
@@ -426,7 +426,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
           children: [
             Text(
               DateFormat('EEEE, d MMMM').format(day),
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: theme.primaryText,
@@ -435,14 +435,14 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
             Text(
               '${orders.length} order(s)',
               style:
-                  GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
             ),
             const SizedBox(height: 10),
             if (orders.isEmpty)
               Text(
                 'No orders moving this day. Reminders for this day are '
                 'listed below.',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5, color: theme.secondaryText),
               )
             else
@@ -491,7 +491,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                 child: Text(
                                   o.customer,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.interTight(
+                                  style: NgFonts.geist(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
                                     color: theme.primaryText,
@@ -507,7 +507,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                 ),
                                 child: Text(
                                   st.toUpperCase(),
-                                  style: GoogleFonts.inter(
+                                  style: NgFonts.geist(
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w700,
                                     color: statusColor(st),
@@ -522,14 +522,14 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                               if ((o.phone ?? '').isNotEmpty) o.phone!,
                               '${o.fromCity ?? ''} → ${o.toCity ?? ''}',
                             ].join('  ·  '),
-                            style: GoogleFonts.inter(
+                            style: NgFonts.geist(
                                 fontSize: 11.5, color: theme.secondaryText),
                           ),
                           if (o.amount != null) ...[
                             const SizedBox(height: 3),
                             Text(
                               '₹${o.amount!.toStringAsFixed(0)}',
-                              style: GoogleFonts.interTight(
+                              style: NgFonts.geist(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: theme.primary,
@@ -551,17 +551,18 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                         color: theme.primary, shape: BoxShape.circle)),
                 const SizedBox(width: 4),
                 Text('Order',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 10.5, color: theme.secondaryText)),
                 const SizedBox(width: 12),
                 Container(
                     width: 6,
                     height: 6,
-                    decoration: const BoxDecoration(
-                        color: Color(0xFFE6A400), shape: BoxShape.circle)),
+                    decoration: BoxDecoration(
+                        color: NgPalette.of(context).amber,
+                        shape: BoxShape.circle)),
                 const SizedBox(width: 4),
                 Text('Follow-up',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 10.5, color: theme.secondaryText)),
               ],
             ),
@@ -587,7 +588,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
           title: Text(
             AppLocalizations.of(context).calendarPageCalendar,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -602,7 +603,6 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
             LanguageQuickButton(iconColor: IconTheme.of(context).color),
             ThemeQuickButton(iconColor: IconTheme.of(context).color),
           ],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -646,7 +646,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                           style: FlutterFlowTheme.of(context)
                               .titleMedium
                               .override(
-                                font: GoogleFonts.interTight(
+                                font: NgFonts.geist(
                                   fontWeight: FlutterFlowTheme.of(context)
                                       .titleMedium
                                       .fontWeight,
@@ -737,8 +737,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                     FlutterFlowTheme.of(context)
                                                         .titleSmall
                                                         .override(
-                                                          font: GoogleFonts
-                                                              .interTight(
+                                                          font: NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)
@@ -774,7 +773,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                         context)
                                                     .bodySmall
                                                     .override(
-                                                      font: GoogleFonts.inter(
+                                                      font: NgFonts.geist(
                                                         fontWeight:
                                                             FlutterFlowTheme.of(
                                                                     context)
@@ -819,7 +818,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                         .labelSmall
                                                         .override(
                                                           font:
-                                                              GoogleFonts.inter(
+                                                              NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)
@@ -871,8 +870,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                                 .labelSmall
                                                                 .override(
                                                                   font:
-                                                                      GoogleFonts
-                                                                          .inter(
+                                                                      NgFonts.geist(
                                                                     fontWeight: FlutterFlowTheme.of(
                                                                             context)
                                                                         .labelSmall
@@ -925,7 +923,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                         .labelSmall
                                                         .override(
                                                           font:
-                                                              GoogleFonts.inter(
+                                                              NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)
@@ -962,7 +960,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                         .labelSmall
                                                         .override(
                                                           font:
-                                                              GoogleFonts.inter(
+                                                              NgFonts.geist(
                                                             fontWeight:
                                                                 FlutterFlowTheme.of(
                                                                         context)

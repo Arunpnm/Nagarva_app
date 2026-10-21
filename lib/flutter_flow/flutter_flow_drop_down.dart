@@ -210,7 +210,17 @@ class _FlutterFlowDropDownState<T> extends State<FlutterFlowDropDown<T>> {
             ? null
             : widget.labelText,
         labelStyle: widget.labelTextStyle,
+        // The dropdown draws its own filled, bordered container, so the
+        // app-wide field theme (filled inset, outlined — Oct 2026) must
+        // not paint a second box inside it.
+        filled: false,
         border: widget.hidesUnderline
+            ? InputBorder.none
+            : const UnderlineInputBorder(),
+        enabledBorder: widget.hidesUnderline
+            ? InputBorder.none
+            : const UnderlineInputBorder(),
+        focusedBorder: widget.hidesUnderline
             ? InputBorder.none
             : const UnderlineInputBorder(),
       ),

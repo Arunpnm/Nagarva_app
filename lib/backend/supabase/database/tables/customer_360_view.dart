@@ -46,9 +46,13 @@ class Customer360ViewRow extends SupabaseDataRow {
 
   double get outstandingEstimate => getField<double>('outstanding_estimate') ?? 0.0;
 
+  /// Money received across this customer's orders. The ONLY collected
+  /// figure here — `totalAdvance` (the view's `total_advance`, i.e.
+  /// sum(orders.advance_paid)) sat beside it reading 0 for every
+  /// customer, had no call site anywhere in lib/, and is removed with
+  /// the view column by
+  /// supabase/20260916_advance_paid_retire_db_readers.sql.
   double get totalCollected => getField<double>('total_collected') ?? 0.0;
-
-  double get totalAdvance => getField<double>('total_advance') ?? 0.0;
 
   int get activeContracts => getField<int>('active_contracts') ?? 0;
 

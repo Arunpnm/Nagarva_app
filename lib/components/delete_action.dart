@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/soft_delete.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Shared destructive-delete flow (live-test fix brief #2, item 11.4).
 ///
@@ -102,7 +102,7 @@ class DeleteAction {
               const SizedBox(height: 12),
               Text(
                 _altExplanation(alt),
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5, height: 1.4, color: theme.secondaryText),
               ),
             ],
@@ -183,7 +183,7 @@ class DeleteAction {
               Text(
                 'This $entityLabel will be removed from your list. It can be '
                 'restored by the owner from Settings → Deleted Items.',
-                style: GoogleFonts.inter(fontSize: 13.5, height: 1.4),
+                style: NgFonts.geist(fontSize: 13.5, height: 1.4),
               ),
               if (reasonRequired) ...[
                 const SizedBox(height: 14),
@@ -243,7 +243,7 @@ class DeleteAction {
           icon: Icon(Icons.delete_outline, size: 19, color: theme.error),
           label: Text(
             busy ? 'Deleting…' : label,
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontWeight: FontWeight.w600, color: theme.error),
           ),
           style: OutlinedButton.styleFrom(

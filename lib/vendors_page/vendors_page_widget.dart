@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'vendor_detail_page_widget.dart';
 
@@ -160,10 +160,9 @@ class _VendorsPageWidgetState extends State<VendorsPageWidget>
         automaticallyImplyLeading: true,
         title: Text('Vendors',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
         actions: [
           IconButton(
@@ -215,7 +214,7 @@ class _VendorsPageWidgetState extends State<VendorsPageWidget>
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       child: Text('No vendors found.',
-                          style: GoogleFonts.inter(color: theme.secondaryText)),
+                          style: NgFonts.geist(color: theme.secondaryText)),
                     )
                   else
                     for (final v in _filtered) _vendorRow(theme, v),
@@ -246,14 +245,14 @@ class _VendorsPageWidgetState extends State<VendorsPageWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(v.name,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                   Text(
                     [
                       if ((v.vendorType ?? '').isNotEmpty) v.vendorType,
                       if ((v.phone ?? '').isNotEmpty) v.phone,
                       if ((v.city ?? '').isNotEmpty) v.city,
                     ].whereType<String>().join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
@@ -265,7 +264,7 @@ class _VendorsPageWidgetState extends State<VendorsPageWidget>
                   color: theme.error.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('Inactive', style: GoogleFonts.inter(fontSize: 10, color: theme.error)),
+                child: Text('Inactive', style: NgFonts.geist(fontSize: 10, color: theme.error)),
               ),
           ],
         ),

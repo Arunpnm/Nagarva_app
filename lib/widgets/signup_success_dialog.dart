@@ -1,10 +1,10 @@
 import 'dart:async';
+import '/flutter_flow/ng_tokens.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart' show AuthApiException;
-import '/flutter_flow/flutter_flow_theme.dart' show kBrandGold;
+import '/flutter_flow/flutter_flow_theme.dart' show kBrandAccent;
 
 /// Supabase's own minimum gap between two emails to the same address —
 /// confirmed via a live 429 (over_email_send_rate_limit) response, which
@@ -14,14 +14,14 @@ import '/flutter_flow/flutter_flow_theme.dart' show kBrandGold;
 /// of guessing at a shorter one.
 const Duration _kResendCooldown = Duration(seconds: 60);
 
-// Not centrally named beyond kBrandGold (flutter_flow_theme.dart) —
+// Not centrally named beyond kBrandAccent (flutter_flow_theme.dart) —
 // these match signup_page_widget.dart's own dark navy palette exactly
 // (its Scaffold background / card Container decorations), which is its
 // own bespoke dark theme rather than the app's general FlutterFlowTheme.
 // _kSuccessGreen matches login_page_widget.dart's own success SnackBar
 // color (_handleForgotPassword).
-const Color _kCardDark = Color(0xFF1E2035);
-const Color _kSuccessGreen = Color(0xFF2E7D32);
+const Color _kCardDark = Color(0xFF12151B);
+const Color _kSuccessGreen = Color(0xFF5CCB89);
 
 /// Shown after a successful `signUp()` while "Confirm email" is on — a
 /// success state, not the page's error path. Replaces the old inline
@@ -169,7 +169,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
             Text(
               'Account created!',
               textAlign: TextAlign.center,
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                 color: Colors.white,
                 fontSize: 19,
                 fontWeight: FontWeight.w700,
@@ -178,14 +178,14 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
             const SizedBox(height: 10),
             Text.rich(
               TextSpan(
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     color: Colors.white70, fontSize: 14, height: 1.4),
                 children: [
                   const TextSpan(text: "We've sent a confirmation link to "),
                   TextSpan(
                     text: widget.email,
                     style: const TextStyle(
-                        color: kBrandGold, fontWeight: FontWeight.w600),
+                        color: kBrandAccent, fontWeight: FontWeight.w600),
                   ),
                   TextSpan(
                       text:
@@ -201,7 +201,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                 child: ElevatedButton.icon(
                   onPressed: widget.onOpenEmail,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kBrandGold,
+                    backgroundColor: kBrandAccent,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
@@ -210,7 +210,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                   icon: const Icon(Icons.mail_outline, size: 18),
                   label: Text('Open Email App',
                       style:
-                          GoogleFonts.interTight(fontWeight: FontWeight.w600)),
+                          NgFonts.geist(fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -230,7 +230,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text('Go to Login',
-                    style: GoogleFonts.interTight(fontWeight: FontWeight.w600)),
+                    style: NgFonts.geist(fontWeight: FontWeight.w600)),
               ),
             ),
             const SizedBox(height: 14),
@@ -240,7 +240,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: kBrandGold),
+                          strokeWidth: 2, color: kBrandAccent),
                     )
                   : GestureDetector(
                       onTap: _secondsRemaining == 0 ? _handleResend : null,
@@ -248,9 +248,9 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                         _secondsRemaining == 0
                             ? "Didn't get it? Resend email"
                             : 'Resend email in ${_secondsRemaining}s',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                           color: _secondsRemaining == 0
-                              ? kBrandGold
+                              ? kBrandAccent
                               : Colors.white38,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -263,7 +263,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
               Center(
                 child: Text(
                   _resendMessage!,
-                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+                  style: NgFonts.geist(color: Colors.white54, fontSize: 12),
                 ),
               ),
             ],

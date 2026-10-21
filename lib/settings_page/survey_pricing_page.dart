@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/pricing_defaults.dart';
 import '/backend/storage_billing.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Settings → Survey & Pricing (Item 12, 17 Aug 2026).
 ///
@@ -243,7 +243,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
             'This removes $itemCount item(s) from the catalogue for future '
             'surveys. Quotes already saved keep their items and CFT — they '
             'never look the catalogue up again.',
-            style: GoogleFonts.inter(fontSize: 13, height: 1.35),
+            style: NgFonts.geist(fontSize: 13, height: 1.35),
           ),
           actions: [
             TextButton(
@@ -306,9 +306,8 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
         backgroundColor: theme.primaryBackground,
         title: Text('Survey & Pricing',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22)),
-        centerTitle: true,
         elevation: 0,
         bottom: TabBar(
           controller: _tabs,
@@ -344,7 +343,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
               const SizedBox(height: 12),
               Text(_loadError!,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 13)),
+                  style: NgFonts.geist(fontSize: 13)),
               const SizedBox(height: 12),
               OutlinedButton(onPressed: _load, child: const Text('Retry')),
             ],
@@ -373,7 +372,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
                 'suggests that package, vehicle and crew. The surveyor can '
                 'always override on the quote itself. Each range starts '
                 'where the previous one ends, so there are no gaps.',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5, height: 1.4, color: theme.secondaryText),
               ),
               const SizedBox(height: 12),
@@ -402,7 +401,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: Text('• ${e.message}',
-                              style: GoogleFonts.inter(
+                              style: NgFonts.geist(
                                   fontSize: 12.5, color: theme.error)),
                         ),
                     ],
@@ -448,7 +447,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
                 Expanded(
                   child: Text(
                     isLast ? 'From $fromCft CFT and up' : 'From $fromCft CFT',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                         color: theme.primary),
@@ -570,7 +569,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         Text('Your storage prices',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: theme.primaryText)),
@@ -580,7 +579,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
           'you. A stay bills on whichever plan was agreed at booking, and '
           'the rate is copied onto that record, so changing a price here '
           'never re-bills goods already in store.',
-          style: GoogleFonts.inter(fontSize: 12, color: theme.secondaryText),
+          style: NgFonts.geist(fontSize: 12, color: theme.secondaryText),
         ),
         const SizedBox(height: 14),
         if (_rateRows.isEmpty)
@@ -595,7 +594,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
               'on a booking stays empty and the rate has to be typed by '
               'hand every time.',
               style:
-                  GoogleFonts.inter(fontSize: 13, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 13, color: theme.secondaryText),
             ),
           ),
         for (var i = 0; i < _rateRows.length; i++) _rateCard(theme, i),
@@ -608,7 +607,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
         if (_rateError != null) ...[
           const SizedBox(height: 12),
           Text(_rateError!,
-              style: GoogleFonts.inter(fontSize: 12, color: theme.error)),
+              style: NgFonts.geist(fontSize: 12, color: theme.error)),
         ],
         const SizedBox(height: 16),
         FilledButton(
@@ -670,7 +669,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
             'Daily and monthly are independent prices. The app never '
             'compares them or picks the cheaper - whichever plan was '
             'agreed at booking is what bills.',
-            style: GoogleFonts.inter(fontSize: 11, color: theme.secondaryText),
+            style: NgFonts.geist(fontSize: 11, color: theme.secondaryText),
           ),
         ],
       ),
@@ -757,7 +756,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
       key: key,
       margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
-        title: Text(cat, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text(cat, style: NgFonts.geist(fontWeight: FontWeight.w600)),
         subtitle: Text(hidden == 0
             ? '${items.length} item(s)'
             : '${items.length} item(s) · $hidden hidden'),
@@ -813,7 +812,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
             children: [
               Expanded(
                 child: Text(item.name,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: item.active ? null : theme.secondaryText,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '/backend/soft_delete.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 /// Settings → Deleted Items (live-test fix brief #2, item 11.6).
 ///
@@ -146,7 +146,7 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
             child: Text(
               'Only the owner can view or restore deleted records.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 14, color: theme.secondaryText),
             ),
           ),
@@ -177,7 +177,7 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
                   Text(
                     'Records deleted in the last 90 days. Restoring puts a '
                     'record back exactly where it was.',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12.5,
                         height: 1.4,
                         color: theme.secondaryText),
@@ -185,7 +185,7 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
                   const SizedBox(height: 16),
                   if (_error != null)
                     Text(_error!,
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 12.5, color: theme.error)),
                   if (_total == 0)
                     Padding(
@@ -196,13 +196,13 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
                               size: 44, color: theme.secondaryText),
                           const SizedBox(height: 12),
                           Text('Nothing deleted',
-                              style: GoogleFonts.interTight(
+                              style: NgFonts.geist(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                   color: theme.primaryText)),
                           const SizedBox(height: 6),
                           Text('Deleted records will show up here.',
-                              style: GoogleFonts.inter(
+                              style: NgFonts.geist(
                                   fontSize: 12.5,
                                   color: theme.secondaryText)),
                         ],
@@ -232,7 +232,7 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('$label (${rows.length})',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                   color: theme.primary)),
@@ -262,19 +262,19 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title.isEmpty ? '(untitled)' : title,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,
                         color: theme.primaryText)),
                 if (deletedAt != null)
                   Text(
                     'Deleted ${DateFormat('d MMM yyyy, h:mm a').format(deletedAt.toLocal())}',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11.5, color: theme.secondaryText),
                   ),
                 if (reason.isNotEmpty)
                   Text('Reason: $reason',
-                      style: GoogleFonts.inter(
+                      style: NgFonts.geist(
                           fontSize: 11.5,
                           fontStyle: FontStyle.italic,
                           color: theme.secondaryText)),

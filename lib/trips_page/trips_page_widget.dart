@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'trip_detail_page_widget.dart';
 
@@ -179,10 +179,9 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
         automaticallyImplyLeading: true,
         title: Text('Trips',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -217,7 +216,7 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       child: Text('No trips found.',
-                          style: GoogleFonts.inter(color: theme.secondaryText)),
+                          style: NgFonts.geist(color: theme.secondaryText)),
                     )
                   else
                     for (final t in _filtered) _tripRow(theme, t),
@@ -255,7 +254,7 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-      child: Text(status, style: GoogleFonts.inter(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
+      child: Text(status, style: NgFonts.geist(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
     );
   }
 
@@ -277,13 +276,13 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(t.tripNo ?? '(no trip no)',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                   Text(
                     [
                       if ((t.vehicleNo ?? '').isNotEmpty) t.vehicleNo,
                       '${t.fromLoc ?? '—'} → ${t.toLoc ?? '—'}',
                     ].whereType<String>().join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),

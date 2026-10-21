@@ -2,10 +2,10 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'salary_page_model.dart';
 import 'staff_ledger_sheet.dart';
 export 'salary_page_model.dart';
@@ -133,11 +133,11 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text('₹${v.toStringAsFixed(0)}',
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 12.5, fontWeight: FontWeight.w800, color: c)),
             Text(label,
                 style:
-                    GoogleFonts.inter(fontSize: 9, color: theme.secondaryText)),
+                    NgFonts.geist(fontSize: 9, color: theme.secondaryText)),
           ],
         );
 
@@ -163,7 +163,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
               ),
               child: Text(
                 s.name.isEmpty ? '?' : s.name[0].toUpperCase(),
-                style: GoogleFonts.interTight(
+                style: NgFonts.geist(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: theme.primary),
@@ -176,7 +176,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
                 children: [
                   Text(s.name,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.interTight(
+                      style: NgFonts.geist(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: theme.primaryText)),
@@ -186,13 +186,13 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
                       if ((s.branch ?? '').isNotEmpty) s.branch!,
                     ].join(' · '),
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11, color: theme.secondaryText),
                   ),
                 ],
               ),
             ),
-            mini('EARNED', earned, const Color(0xFF2E7D32)),
+            mini('EARNED', earned, NgPalette.of(context).green),
             const SizedBox(width: 12),
             mini('TO PAY', balance,
                 balance > 0 ? theme.primary : theme.secondaryText),
@@ -232,12 +232,11 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
           title: Text(
             'Salary & Staff',
             style: theme.titleLarge.override(
-              font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+              font: NgFonts.geist(fontWeight: FontWeight.w600),
               fontSize: 22.0,
               letterSpacing: 0.0,
             ),
           ),
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -270,7 +269,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
                                           _model.month.month - 1)),
                                 ),
                                 Text(monthLabel,
-                                    style: GoogleFonts.interTight(
+                                    style: NgFonts.geist(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
                                         color: theme.primaryText)),
@@ -287,9 +286,9 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 _totalCol('Earned', totalEarned,
-                                    const Color(0xFF2E7D32)),
+                                    NgPalette.of(context).green),
                                 _totalCol('Paid Out', totalPaid,
-                                    const Color(0xFF1565C0)),
+                                    NgPalette.of(context).blue),
                                 _totalCol('To Pay', totalEarned - totalPaid,
                                     theme.primary),
                                 _totalCol(
@@ -305,7 +304,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
                         Text(
                           'No staff yet — add your team on the Staff page '
                           'first.',
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               fontSize: 13, color: theme.secondaryText),
                         )
                       else
@@ -323,10 +322,10 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
     return Column(
       children: [
         Text('₹${v.toStringAsFixed(0)}',
-            style: GoogleFonts.interTight(
+            style: NgFonts.geist(
                 fontSize: 14.5, fontWeight: FontWeight.w800, color: c)),
         Text(label,
-            style: GoogleFonts.inter(fontSize: 10, color: theme.secondaryText)),
+            style: NgFonts.geist(fontSize: 10, color: theme.secondaryText)),
       ],
     );
   }

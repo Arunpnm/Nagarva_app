@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/device_org_binding.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 
@@ -140,7 +140,7 @@ class _OrgBindingPageWidgetState extends State<OrgBindingPageWidget> {
                 Icon(Icons.local_shipping, size: 48, color: theme.primary),
                 const SizedBox(height: 16),
                 Text('Set up this device',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText)),
@@ -149,7 +149,7 @@ class _OrgBindingPageWidgetState extends State<OrgBindingPageWidget> {
                   'Enter your organization code (ask your admin, or use the '
                   'link they shared — e.g. nagarva.in/apc).',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 13, color: theme.secondaryText),
                 ),
                 const SizedBox(height: 20),

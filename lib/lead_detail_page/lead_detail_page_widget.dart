@@ -23,13 +23,13 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/issued_documents.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'lead_detail_page_model.dart';
@@ -312,7 +312,6 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         'status': 'booked',
         'payment_status': 'pending',
         'tracking_status': 'Booked',
-        'advance_paid': 0.0,
       });
 
       // Item 2: freeze the quote figures onto the order.
@@ -401,8 +400,6 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               serializeParam(order.moveDate.toString(), ParamType.String),
           'orderAmount':
               serializeParam(order.amount?.toString(), ParamType.String),
-          'orderAdvancePaid':
-              serializeParam(order.advancePaid?.toString(), ParamType.String),
           'orderStatus': serializeParam(order.status, ParamType.String),
           'orderPaymentStatus':
               serializeParam(order.paymentStatus, ParamType.String),
@@ -1003,19 +1000,9 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   }
 
   // ---- Session 4, A3: freely-tappable status chips -----------------------
-  // Brief-specified colours, distinct from lead_status.dart's own
-  // leadStatusColor() (used elsewhere — the LeadsPage list badges, the
-  // pipeline strip below) — scoped to just this row rather than changing
-  // that shared function and rippling into screens this brief didn't ask
-  // to touch.
-  static const _chipColors = <String, Color>{
-    kLeadStatusNew: Color(0xFF95A5A6),
-    kLeadStatusFollowUp: Color(0xFF3498DB),
-    kLeadStatusSurveyDone: Color(0xFF9B59B6),
-    kLeadStatusQuoted: Color(0xFFE67E22),
-    kLeadStatusConfirmed: Color(0xFF2ECC71),
-    kLeadStatusLost: Color(0xFFE74C3C),
-  };
+  // Colours: the brief's own hex set was retired with the redesign (Oct
+  // 2026); chips now use leadStatusColor(key, context) like the strip
+  // below, so they follow the theme and read in Light.
   static const _chipLabels = <String, String>{
     kLeadStatusNew: 'New Lead',
     kLeadStatusFollowUp: 'Follow Up',
@@ -1047,7 +1034,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 
   Widget _statusChip(BuildContext context, String key, {required bool canEdit}) {
     final current = key == _canonicalStatus;
-    final color = _chipColors[key]!;
+    final color = leadStatusColor(key, context);
     final tappable = canEdit && !current;
     return InkWell(
       onTap: !tappable
@@ -1074,7 +1061,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         ),
         child: Text(
           _chipLabels[key]!,
-          style: GoogleFonts.inter(
+          style: NgFonts.geist(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: current ? Colors.white : color,
@@ -1149,8 +1136,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           child: OutlinedButton.icon(
             onPressed: _hasUsablePhone ? _callLead : null,
             style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF3498DB),
-                side: const BorderSide(color: Color(0xFF3498DB))),
+                foregroundColor: NgPalette.of(context).blue,
+                side: BorderSide(color: NgPalette.of(context).blue)),
             icon: const Icon(Icons.call, size: 18),
             label: const Text('Call'),
           ),
@@ -1208,7 +1195,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       ),
       child: Text(
         note,
-        style: GoogleFonts.inter(
+        style: NgFonts.geist(
           fontSize: 12.5,
           fontStyle: FontStyle.italic,
           height: 1.4,
@@ -1237,7 +1224,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             children: [
               Expanded(
                 child: Text('Survey & Quote',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                         color: theme.primaryText)),
@@ -1436,7 +1423,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                   child: Text(
                     'Signed by ${_quoteSignature!.customerName ?? 'customer'}'
                     '${_quoteSignature!.signedAt == null ? '' : ' on ${DateFormat('d MMM yyyy').format(_quoteSignature!.signedAt!.toLocal())}'}',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                         color: theme.primaryText),
@@ -1756,7 +1743,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               child: Text(
                 'v${quotation.version ?? 1} · ${money.format(quotation.total ?? 0)}'
                 '${created == null ? '' : ' · ${DateFormat('d MMM yyyy').format(created.toLocal())}'}',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: theme.primaryText),
@@ -1781,7 +1768,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                 child: Text(
                   '${_quotesOnLead.length} quotes on this lead — showing the '
                   'most detailed one.',
-                  style: GoogleFonts.inter(
+                  style: NgFonts.geist(
                       fontSize: 11.5, color: theme.secondaryText),
                 ),
               ),
@@ -1799,7 +1786,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     ),
                 ],
                 child: Text('Switch',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
                         color: theme.primary)),
@@ -1834,7 +1821,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text('v${v.version ?? 1}',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             color: theme.primaryText)),
@@ -1850,7 +1837,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                           // there. One field, so the what and the why
                           // cannot be shown apart.
                           v.changeSummary ?? 'Revised',
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               fontSize: 12, color: theme.primaryText),
                         ),
                         Text(
@@ -1860,7 +1847,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                               DateFormat('d MMM yyyy, h:mm a')
                                   .format(v.createdAt!.toLocal()),
                           ].join(' · '),
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                               fontSize: 11, color: theme.secondaryText),
                         ),
                       ],
@@ -1928,7 +1915,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             child: Text(
               '$what links are switched off — the customer page is not '
               'live right now, so a link would open a dead page. $instead',
-              style: GoogleFonts.inter(
+              style: NgFonts.geist(
                   fontSize: 11.5, color: theme.primaryText),
             ),
           ),
@@ -1953,7 +1940,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           title: Text(
             AppLocalizations.of(context).leadDetails,
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(
+                  font: NgFonts.geist(
                     fontWeight: FontWeight.w600,
                     fontStyle:
                         FlutterFlowTheme.of(context).titleLarge.fontStyle,
@@ -1965,7 +1952,6 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                 ),
           ),
           actions: const [],
-          centerTitle: true,
           elevation: 0.0,
         ),
         body: SafeArea(
@@ -1982,6 +1968,13 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // Redesign: the journey strip — every stage of this
+                    // lead on one screen. See OrderJourneyPageWidget.
+                    if (widget.leadId != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: JourneyEntryCard(leadId: widget.leadId),
+                      ),
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -2004,7 +1997,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                                     style: FlutterFlowTheme.of(context)
                                         .titleMedium
                                         .override(
-                                          font: GoogleFonts.interTight(
+                                          font: NgFonts.geist(
                                             fontWeight: FlutterFlowTheme.of(
                                                     context)
                                                 .titleMedium
@@ -2037,7 +2030,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                                             const EdgeInsets.only(top: 2),
                                         child: Text(
                                           widget.leadPhone!,
-                                          style: GoogleFonts.inter(
+                                          style: NgFonts.geist(
                                             fontSize: 13,
                                             color: FlutterFlowTheme.of(
                                                     context)
@@ -2348,7 +2341,7 @@ class _LostReasonDialogState extends State<_LostReasonDialog> {
                 ? double.tryParse(_competitorPriceCtrl.text.trim())
                 : null,
           )),
-          style: TextButton.styleFrom(foregroundColor: leadStatusColor(kLeadStatusLost)),
+          style: TextButton.styleFrom(foregroundColor: leadStatusColor(kLeadStatusLost, context)),
           child: const Text('Mark lost'),
         ),
       ],

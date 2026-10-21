@@ -16,7 +16,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 const String kLeadStatusNew = 'new';
 const String kLeadStatusFollowUp = 'follow_up';
@@ -109,20 +109,31 @@ String leadStageShortLabel(String canonical) {
   }
 }
 
-Color leadStatusColor(String? raw) {
+/// Status colour for a lead. Pass [context] to get the redesign hue for
+/// the live theme (darker in Light so it stays readable on white); the
+/// context-free form returns the Midnight hues for callers with none.
+Color leadStatusColor(String? raw, [BuildContext? context]) {
+  final palette = context == null ? NgPalette.midnight : NgPalette.of(context);
+  return palette.status(leadStatusTone(raw)).fg;
+}
+
+/// Redesign status hue for a lead (theme-aware via [NgPalette.status]):
+/// new is blue, follow-up amber, survey blue, quoted accent, confirmed
+/// green, lost red. [leadStatusColor] stays for the pre-redesign callers.
+NgStatus leadStatusTone(String? raw) {
   switch (canonicalLeadStatus(raw)) {
     case kLeadStatusFollowUp:
-      return kBrandGold; 
+      return NgStatus.amber;
     case kLeadStatusSurveyDone:
-      return const Color(0xFF3B82F6);
+      return NgStatus.blue;
     case kLeadStatusQuoted:
-      return const Color(0xFF8B5CF6);
+      return NgStatus.accent;
     case kLeadStatusConfirmed:
-      return kBrandTeal; 
+      return NgStatus.green;
     case kLeadStatusLost:
-      return const Color(0xFFEF4444);
+      return NgStatus.red;
     default:
-      return const Color(0xFF6B7280);
+      return NgStatus.blue;
   }
 }
 

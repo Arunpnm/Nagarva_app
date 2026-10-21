@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 /// LR Register (Session 4, Part C-3) — a searchable register behind the
@@ -102,7 +102,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
             padding: const EdgeInsets.all(16),
             children: [
               Text(lr.lrNo,
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 17, fontWeight: FontWeight.w700, color: theme.primaryText)),
               _statusChip(theme, lr.status),
               const SizedBox(height: 10),
@@ -121,7 +121,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
               if (copies.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Text('Copies Generated',
-                    style: GoogleFonts.interTight(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    style: NgFonts.geist(fontSize: 12.5, fontWeight: FontWeight.w700)),
                 Wrap(
                   spacing: 6,
                   children: [
@@ -148,7 +148,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
                         ),
                         child: Text(
                           c.copyType,
-                          style: GoogleFonts.inter(
+                          style: NgFonts.geist(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                             color: FlutterFlowTheme.of(context).primaryText,
@@ -161,7 +161,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
               if (pod != null) ...[
                 const SizedBox(height: 10),
                 Text('Proof of Delivery',
-                    style: GoogleFonts.interTight(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    style: NgFonts.geist(fontSize: 12.5, fontWeight: FontWeight.w700)),
                 _kv('Delivered At',
                     pod.deliveredAt == null ? '—' : DateFormat('d MMM yyyy, h:mm a').format(pod.deliveredAt!.toLocal())),
                 _kv('Received By', pod.receivedByName ?? '—'),
@@ -180,8 +180,8 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Row(
           children: [
-            SizedBox(width: 120, child: Text(label, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey))),
-            Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 12.5))),
+            SizedBox(width: 120, child: Text(label, style: NgFonts.geist(fontSize: 12, color: Colors.grey))),
+            Expanded(child: Text(value, style: NgFonts.geist(fontSize: 12.5))),
           ],
         ),
       );
@@ -198,7 +198,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-      child: Text(status, style: GoogleFonts.inter(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
+      child: Text(status, style: NgFonts.geist(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
     );
   }
 
@@ -211,8 +211,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
         backgroundColor: theme.primaryBackground,
         title: Text('LR Register',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600), fontSize: 22, fontWeight: FontWeight.w600)),
-        centerTitle: true,
+                font: NgFonts.geist(fontWeight: FontWeight.w600), fontSize: 22, fontWeight: FontWeight.w600)),
         elevation: 0,
       ),
       body: _loading
@@ -251,7 +250,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
                   if (_filtered.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Text('No LRs found.', style: GoogleFonts.inter(color: theme.secondaryText)),
+                      child: Text('No LRs found.', style: NgFonts.geist(color: theme.secondaryText)),
                     )
                   else
                     for (final lr in _filtered) _lrRow(theme, lr),
@@ -275,13 +274,13 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(lr.lrNo, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                  Text(lr.lrNo, style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                   Text(
                     [
                       lr.consigneeName ?? '—',
                       '${lr.fromPlace ?? '—'} → ${lr.toPlace ?? '—'}',
                     ].join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                   ),
                 ],
               ),
@@ -290,7 +289,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text('₹${(lr.totalAmount ?? 0).toStringAsFixed(0)}',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
                 _statusChip(theme, lr.status),
               ],
             ),

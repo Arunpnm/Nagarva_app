@@ -1947,5 +1947,861 @@
   "leaveBlankIfNoneCollectedYet": "Leave blank if none collected yet",
   "@leaveBlankIfNoneCollectedYet": {
     "description": "NewOrderPage — porter section hint. Same recovery as cashCollectedByPorter (old key: porcashcol2)."
+  },
+  "jrTitle": "Order journey",
+  "@jrTitle": {
+    "description": "OrderJourneyPage — screen title, and the button that opens it from Lead/Order details"
+  },
+  "jrStageLead": "Lead",
+  "@jrStageLead": {
+    "description": "OrderJourneyPage — stage 1"
+  },
+  "jrStageFollowUp": "Follow-up",
+  "@jrStageFollowUp": {
+    "description": "OrderJourneyPage — stage 2"
+  },
+  "jrStageSurvey": "Survey",
+  "@jrStageSurvey": {
+    "description": "OrderJourneyPage — stage 3"
+  },
+  "jrStageQuote": "Quote & confirm",
+  "@jrStageQuote": {
+    "description": "OrderJourneyPage — stage 4"
+  },
+  "jrStageSupervisor": "Supervisor",
+  "@jrStageSupervisor": {
+    "description": "OrderJourneyPage — stage 5"
+  },
+  "jrStageMoveDay": "Move day",
+  "@jrStageMoveDay": {
+    "description": "OrderJourneyPage — stage 6"
+  },
+  "jrStageInvoice": "Invoice",
+  "@jrStageInvoice": {
+    "description": "OrderJourneyPage — stage 7"
+  },
+  "jrStagePayment": "Payment & issues",
+  "@jrStagePayment": {
+    "description": "OrderJourneyPage — stage 8"
+  },
+  "jrStageClosed": "Closed",
+  "@jrStageClosed": {
+    "description": "OrderJourneyPage — stage 9"
+  },
+  "jrStateDone": "Done",
+  "@jrStateDone": {
+    "description": "OrderJourneyPage — stage state pill"
+  },
+  "jrStateSkipped": "Skipped",
+  "@jrStateSkipped": {
+    "description": "OrderJourneyPage — stage state pill"
+  },
+  "jrStateCurrent": "Now",
+  "@jrStateCurrent": {
+    "description": "OrderJourneyPage — stage state pill for the current stage"
+  },
+  "jrStatePending": "Later",
+  "@jrStatePending": {
+    "description": "OrderJourneyPage — stage state pill for a stage not reached yet"
+  },
+  "jrDirectOrder": "Skipped · direct order",
+  "@jrDirectOrder": {
+    "description": "OrderJourneyPage — follow-up/survey summary on an order booked without a lead"
+  },
+  "jrMoveDate": "Move date",
+  "@jrMoveDate": {
+    "description": "OrderJourneyPage — header tile"
+  },
+  "jrRoute": "Route",
+  "@jrRoute": {
+    "description": "OrderJourneyPage — header tile"
+  },
+  "jrOrderValue": "Order value",
+  "@jrOrderValue": {
+    "description": "OrderJourneyPage — header tile"
+  },
+  "jrNotSet": "Not set",
+  "@jrNotSet": {
+    "description": "OrderJourneyPage — header tile with no value"
+  },
+  "jrDocuments": "Documents",
+  "@jrDocuments": {
+    "description": "OrderJourneyPage — documents panel title"
+  },
+  "jrDocQuote": "Quotation",
+  "@jrDocQuote": {
+    "description": "OrderJourneyPage — document card"
+  },
+  "jrDocInvoice": "Tax invoice",
+  "@jrDocInvoice": {
+    "description": "OrderJourneyPage — document card"
+  },
+  "jrDocReceipts": "Money receipts",
+  "@jrDocReceipts": {
+    "description": "OrderJourneyPage — document card"
+  },
+  "jrDocLr": "Lorry receipt",
+  "@jrDocLr": {
+    "description": "OrderJourneyPage — document card"
+  },
+  "jrDocReady": "Ready · tap to view",
+  "@jrDocReady": {
+    "description": "OrderJourneyPage — document card state"
+  },
+  "jrDocAfter": "After {stage}",
+  "@jrDocAfter": {
+    "description": "OrderJourneyPage — document card state; {stage} is a stage name",
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "jrCreated": "Created {date}",
+  "@jrCreated": {
+    "description": "OrderJourneyPage — lead stage line",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "jrSource": "Source: {source}",
+  "@jrSource": {
+    "description": "OrderJourneyPage — lead stage line",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "jrService": "Service: {service}",
+  "@jrService": {
+    "description": "OrderJourneyPage — lead stage line",
+    "placeholders": {
+      "service": {
+        "type": "String"
+      }
+    }
+  },
+  "jrNoCalls": "No calls logged yet",
+  "@jrNoCalls": {
+    "description": "OrderJourneyPage — follow-up summary"
+  },
+  "jrCallsLogged": "{count} calls logged",
+  "@jrCallsLogged": {
+    "description": "OrderJourneyPage — follow-up summary",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "jrOutcomeQ": "How did the call go?",
+  "@jrOutcomeQ": {
+    "description": "OrderJourneyPage — follow-up form label"
+  },
+  "jrOutNoAnswer": "Not reachable",
+  "@jrOutNoAnswer": {
+    "description": "OrderJourneyPage — call outcome chip"
+  },
+  "jrOutCallback": "Call back",
+  "@jrOutCallback": {
+    "description": "OrderJourneyPage — call outcome chip"
+  },
+  "jrOutInterested": "Interested",
+  "@jrOutInterested": {
+    "description": "OrderJourneyPage — call outcome chip"
+  },
+  "jrOutNotInterested": "Not interested",
+  "@jrOutNotInterested": {
+    "description": "OrderJourneyPage — call outcome chip"
+  },
+  "jrCallNotes": "Notes from the call",
+  "@jrCallNotes": {
+    "description": "OrderJourneyPage — follow-up notes hint"
+  },
+  "jrNextFollowUp": "Next follow-up",
+  "@jrNextFollowUp": {
+    "description": "OrderJourneyPage — follow-up date label"
+  },
+  "jrToday": "Today",
+  "@jrToday": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrTomorrow": "Tomorrow",
+  "@jrTomorrow": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrIn2Days": "In 2 days",
+  "@jrIn2Days": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrNextWeek": "Next week",
+  "@jrNextWeek": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrPickDate": "Pick date",
+  "@jrPickDate": {
+    "description": "OrderJourneyPage — quick date chip"
+  },
+  "jrNoNext": "None",
+  "@jrNoNext": {
+    "description": "OrderJourneyPage — no next follow-up"
+  },
+  "jrLogCall": "Log call",
+  "@jrLogCall": {
+    "description": "OrderJourneyPage — button"
+  },
+  "jrCallLogged": "Call logged",
+  "@jrCallLogged": {
+    "description": "OrderJourneyPage — snackbar"
+  },
+  "jrPickOutcome": "Pick how the call went",
+  "@jrPickOutcome": {
+    "description": "OrderJourneyPage — validation"
+  },
+  "jrSurveyWaiting": "Survey link sent · waiting for the customer",
+  "@jrSurveyWaiting": {
+    "description": "OrderJourneyPage — survey summary"
+  },
+  "jrSurveyDone": "Customer submitted the survey",
+  "@jrSurveyDone": {
+    "description": "OrderJourneyPage — survey summary"
+  },
+  "jrNoSurvey": "No survey yet",
+  "@jrNoSurvey": {
+    "description": "OrderJourneyPage — survey summary"
+  },
+  "jrOpenSurveyQuote": "Open survey & quote",
+  "@jrOpenSurveyQuote": {
+    "description": "OrderJourneyPage — button opening Lead details"
+  },
+  "jrNoQuote": "No quote yet",
+  "@jrNoQuote": {
+    "description": "OrderJourneyPage — quote summary"
+  },
+  "jrQuoteLine": "Quote {amount}",
+  "@jrQuoteLine": {
+    "description": "OrderJourneyPage — quote version line; {amount} is formatted money",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "jrOrderConfirmed": "Order {id} confirmed",
+  "@jrOrderConfirmed": {
+    "description": "OrderJourneyPage — quote stage summary",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "jrLeadLost": "Lead marked lost",
+  "@jrLeadLost": {
+    "description": "OrderJourneyPage — shown instead of a current stage"
+  },
+  "jrNoSupervisor": "No supervisor yet",
+  "@jrNoSupervisor": {
+    "description": "OrderJourneyPage — supervisor summary"
+  },
+  "jrSupervisorIs": "Supervisor: {name}",
+  "@jrSupervisorIs": {
+    "description": "OrderJourneyPage — supervisor summary",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "jrCrew": "Crew on the job: {count}",
+  "@jrCrew": {
+    "description": "OrderJourneyPage — supervisor/move line",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "jrAssignInOrder": "Assign supervisor",
+  "@jrAssignInOrder": {
+    "description": "OrderJourneyPage — button opening Order details crew section"
+  },
+  "jrNotStarted": "Not started",
+  "@jrNotStarted": {
+    "description": "OrderJourneyPage — move day summary"
+  },
+  "jrMoveStarted": "Started {time}",
+  "@jrMoveStarted": {
+    "description": "OrderJourneyPage — move day summary",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "jrMoveFinished": "Finished {time}",
+  "@jrMoveFinished": {
+    "description": "OrderJourneyPage — move day summary",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "jrOpenFieldJob": "Open field job",
+  "@jrOpenFieldJob": {
+    "description": "OrderJourneyPage — button opening the supervisor job screen"
+  },
+  "jrNoInvoice": "Invoice not generated",
+  "@jrNoInvoice": {
+    "description": "OrderJourneyPage — invoice summary and close blocker"
+  },
+  "jrInvoiceNo": "Invoice {no}",
+  "@jrInvoiceNo": {
+    "description": "OrderJourneyPage — invoice summary",
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "jrSigned": "Customer signed",
+  "@jrSigned": {
+    "description": "OrderJourneyPage — invoice line"
+  },
+  "jrNotSigned": "Customer signature missing",
+  "@jrNotSigned": {
+    "description": "OrderJourneyPage — invoice line and close blocker"
+  },
+  "jrOpenOrder": "Open order",
+  "@jrOpenOrder": {
+    "description": "OrderJourneyPage — button opening Order details"
+  },
+  "jrTotal": "Total",
+  "@jrTotal": {
+    "description": "OrderJourneyPage — payment tile"
+  },
+  "jrPaid": "Paid",
+  "@jrPaid": {
+    "description": "OrderJourneyPage — payment tile"
+  },
+  "jrBalance": "Balance",
+  "@jrBalance": {
+    "description": "OrderJourneyPage — payment tile"
+  },
+  "jrRecordPayment": "Record payment",
+  "@jrRecordPayment": {
+    "description": "OrderJourneyPage — button"
+  },
+  "jrTickets": "Tickets",
+  "@jrTickets": {
+    "description": "OrderJourneyPage — section label"
+  },
+  "jrNoTickets": "No tickets",
+  "@jrNoTickets": {
+    "description": "OrderJourneyPage — tickets empty"
+  },
+  "jrTicketHint": "e.g. AC fitting pending",
+  "@jrTicketHint": {
+    "description": "OrderJourneyPage — new ticket hint"
+  },
+  "jrRaiseTicket": "Raise ticket",
+  "@jrRaiseTicket": {
+    "description": "OrderJourneyPage — button"
+  },
+  "jrResolve": "Resolve",
+  "@jrResolve": {
+    "description": "OrderJourneyPage — button"
+  },
+  "jrTicketRaised": "Ticket raised",
+  "@jrTicketRaised": {
+    "description": "OrderJourneyPage — snackbar"
+  },
+  "jrTicketResolved": "Ticket resolved",
+  "@jrTicketResolved": {
+    "description": "OrderJourneyPage — snackbar"
+  },
+  "jrBlockTicket": "A ticket is still open",
+  "@jrBlockTicket": {
+    "description": "OrderJourneyPage — close blocker"
+  },
+  "jrBlockBalance": "Balance of {amount} is due",
+  "@jrBlockBalance": {
+    "description": "OrderJourneyPage — close blocker",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "jrCloseOrder": "Close order",
+  "@jrCloseOrder": {
+    "description": "OrderJourneyPage — button opening the audited close on Order details"
+  },
+  "jrClosedOn": "Closed {date}",
+  "@jrClosedOn": {
+    "description": "OrderJourneyPage — closed summary",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "jrNotClosed": "Open",
+  "@jrNotClosed": {
+    "description": "OrderJourneyPage — closed stage summary while open"
+  },
+  "jrPaymentLine": "{amount} · {mode}",
+  "@jrPaymentLine": {
+    "description": "OrderJourneyPage — payment history line",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "jrCouldNotLoad": "Could not load this journey",
+  "@jrCouldNotLoad": {
+    "description": "OrderJourneyPage — error"
+  },
+  "jrRetry": "Retry",
+  "@jrRetry": {
+    "description": "OrderJourneyPage — error action"
+  },
+  "jrCouldNotSave": "Could not save: {error}",
+  "@jrCouldNotSave": {
+    "description": "OrderJourneyPage — error snackbar",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "ngNavHome": "Home",
+  "@ngNavHome": {
+    "description": "Bottom bar"
+  },
+  "ngNavLeads": "Leads",
+  "@ngNavLeads": {
+    "description": "Bottom bar"
+  },
+  "ngNavOrders": "Orders",
+  "@ngNavOrders": {
+    "description": "Bottom bar"
+  },
+  "ngNavOps": "Ops",
+  "@ngNavOps": {
+    "description": "Bottom bar — short for Operations"
+  },
+  "ngNavPay": "Pay",
+  "@ngNavPay": {
+    "description": "Bottom bar — short for Payments"
+  },
+  "ngNavMore": "More",
+  "@ngNavMore": {
+    "description": "Bottom bar — opens the module sheet"
+  },
+  "ngMenuDashboard": "Dashboard",
+  "@ngMenuDashboard": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuLeads": "Leads / CRM",
+  "@ngMenuLeads": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuInbox": "Inbox",
+  "@ngMenuInbox": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuSurveyQuote": "Survey & Quote",
+  "@ngMenuSurveyQuote": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuCalendar": "Calendar",
+  "@ngMenuCalendar": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuOrders": "Orders",
+  "@ngMenuOrders": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuOperations": "Operations",
+  "@ngMenuOperations": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuReviews": "Reviews",
+  "@ngMenuReviews": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuPayments": "Payments",
+  "@ngMenuPayments": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuExpenses": "Expenses",
+  "@ngMenuExpenses": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuStaff": "Staff",
+  "@ngMenuStaff": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuTeamAttendance": "Team Attendance",
+  "@ngMenuTeamAttendance": {
+    "description": "More sheet / menu item (Staff label without salary rights)"
+  },
+  "ngMenuFleet": "Fleet",
+  "@ngMenuFleet": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuMaterials": "Materials",
+  "@ngMenuMaterials": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuWarehouses": "Warehouses",
+  "@ngMenuWarehouses": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuRateCards": "Rate Cards",
+  "@ngMenuRateCards": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuLrRegister": "LR Register",
+  "@ngMenuLrRegister": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuOpsLog": "Ops Log",
+  "@ngMenuOpsLog": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuVendors": "Vendors",
+  "@ngMenuVendors": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuCustomers": "Customers",
+  "@ngMenuCustomers": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuInsurance": "Insurance",
+  "@ngMenuInsurance": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuTrips": "Trips",
+  "@ngMenuTrips": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuTasks": "Tasks",
+  "@ngMenuTasks": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuAccounts": "Accounts",
+  "@ngMenuAccounts": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuPnl": "P & L",
+  "@ngMenuPnl": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuReports": "Reports",
+  "@ngMenuReports": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuSalary": "Salary",
+  "@ngMenuSalary": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuSettings": "Settings",
+  "@ngMenuSettings": {
+    "description": "More sheet / menu item and footer button"
+  },
+  "ngMenuPlatformAdmin": "Platform Admin",
+  "@ngMenuPlatformAdmin": {
+    "description": "More sheet / menu item"
+  },
+  "ngMenuMyJobs": "My Jobs",
+  "@ngMenuMyJobs": {
+    "description": "Supervisor bottom bar"
+  },
+  "ngMenuMyTeam": "My Team",
+  "@ngMenuMyTeam": {
+    "description": "Supervisor bottom bar"
+  },
+  "ngMenuMyEarnings": "My Earnings",
+  "@ngMenuMyEarnings": {
+    "description": "Supervisor / field bottom bar"
+  },
+  "ngMenuMyAttendance": "My Attendance",
+  "@ngMenuMyAttendance": {
+    "description": "Supervisor / field bottom bar"
+  },
+  "ngGroupSales": "Sales",
+  "@ngGroupSales": {
+    "description": "More sheet group"
+  },
+  "ngGroupOperations": "Operations",
+  "@ngGroupOperations": {
+    "description": "More sheet group"
+  },
+  "ngGroupMoney": "Money",
+  "@ngGroupMoney": {
+    "description": "More sheet group"
+  },
+  "ngGroupPeople": "People",
+  "@ngGroupPeople": {
+    "description": "More sheet group"
+  },
+  "ngGroupAssets": "Assets",
+  "@ngGroupAssets": {
+    "description": "More sheet group"
+  },
+  "ngGroupPartners": "Partners",
+  "@ngGroupPartners": {
+    "description": "More sheet group"
+  },
+  "ngGroupSetup": "Setup",
+  "@ngGroupSetup": {
+    "description": "More sheet group"
+  },
+  "ngGroupField": "Field",
+  "@ngGroupField": {
+    "description": "More sheet group (supervisor/field staff)"
+  },
+  "ngGroupOther": "Other",
+  "@ngGroupOther": {
+    "description": "More sheet group"
+  },
+  "ngQuickEntry": "Quick entry",
+  "@ngQuickEntry": {
+    "description": "More sheet tile"
+  },
+  "ngSearchModules": "Search modules",
+  "@ngSearchModules": {
+    "description": "More sheet search hint"
+  },
+  "ngNoModuleMatches": "No module matches",
+  "@ngNoModuleMatches": {
+    "description": "More sheet empty search"
+  },
+  "ngHelp": "Help",
+  "@ngHelp": {
+    "description": "More sheet footer"
+  },
+  "ngOrgsSwitch": "{count} orgs · tap to switch",
+  "@ngOrgsSwitch": {
+    "description": "More sheet header, several organisations",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "ngRoleOwner": "Owner",
+  "@ngRoleOwner": {
+    "description": "Top bar role line"
+  },
+  "ngRoleStaff": "Staff",
+  "@ngRoleStaff": {
+    "description": "Top bar role line fallback"
+  },
+  "ngTodayMoves": "Moves",
+  "@ngTodayMoves": {
+    "description": "Dashboard today tile"
+  },
+  "ngTodayFollowUps": "Follow-ups",
+  "@ngTodayFollowUps": {
+    "description": "Dashboard today tile"
+  },
+  "ngToCollect": "To collect",
+  "@ngToCollect": {
+    "description": "Dashboard tile / Payments legend"
+  },
+  "ngOpenLeads": "Open leads",
+  "@ngOpenLeads": {
+    "description": "Dashboard tile when money is hidden"
+  },
+  "ngNoMovesYet": "No moves scheduled yet",
+  "@ngNoMovesYet": {
+    "description": "Dashboard agenda empty"
+  },
+  "ngCreateFirstOrder": "Create your first order",
+  "@ngCreateFirstOrder": {
+    "description": "Dashboard agenda empty action"
+  },
+  "ngNoLeadsYet": "No leads yet",
+  "@ngNoLeadsYet": {
+    "description": "Dashboard/Leads empty"
+  },
+  "ngAddLead": "Add a lead",
+  "@ngAddLead": {
+    "description": "Dashboard hot leads empty action"
+  },
+  "ngAllLeads": "All leads",
+  "@ngAllLeads": {
+    "description": "Leads statistics card heading"
+  },
+  "ngConversion": "Conversion",
+  "@ngConversion": {
+    "description": "Leads statistics"
+  },
+  "ngOpen": "Open",
+  "@ngOpen": {
+    "description": "Leads statistics — open leads"
+  },
+  "ngOther": "Other",
+  "@ngOther": {
+    "description": "Lead source fallback in the statistics bar"
+  },
+  "ngSurveyResponse": "Survey response received",
+  "@ngSurveyResponse": {
+    "description": "Lead card badge tooltip"
+  },
+  "ngFollowUpOverdue": "Follow-up overdue",
+  "@ngFollowUpOverdue": {
+    "description": "Lead card badge"
+  },
+  "ngCall": "Call",
+  "@ngCall": {
+    "description": "Lead card action"
+  },
+  "ngWhatsApp": "WhatsApp",
+  "@ngWhatsApp": {
+    "description": "Lead card action"
+  },
+  "ngSurvey": "Survey",
+  "@ngSurvey": {
+    "description": "Lead card action — creates a survey link"
+  },
+  "ngNewLead": "New lead",
+  "@ngNewLead": {
+    "description": "Leads header button"
+  },
+  "ngNameOrPhone": "Name or phone",
+  "@ngNameOrPhone": {
+    "description": "Leads search hint"
+  },
+  "ngNoLeadsMatch": "No leads match",
+  "@ngNoLeadsMatch": {
+    "description": "Leads search empty"
+  },
+  "ngLeadsEmptyHint": "Add an enquiry with New lead and it will show up here.",
+  "@ngLeadsEmptyHint": {
+    "description": "Leads empty hint"
+  },
+  "ngSurveyLinkCreated": "Survey link created",
+  "@ngSurveyLinkCreated": {
+    "description": "Leads survey link dialog title"
+  },
+  "ngCopyClose": "Copy & close",
+  "@ngCopyClose": {
+    "description": "Dialog action"
+  },
+  "ngClose": "Close",
+  "@ngClose": {
+    "description": "Dialog action"
+  },
+  "ngTabAll": "All",
+  "@ngTabAll": {
+    "description": "Orders chip"
+  },
+  "ngTabPending": "Pending",
+  "@ngTabPending": {
+    "description": "Orders chip"
+  },
+  "ngTabCompleted": "Completed",
+  "@ngTabCompleted": {
+    "description": "Orders chip"
+  },
+  "ngTabCancelled": "Cancelled",
+  "@ngTabCancelled": {
+    "description": "Orders chip and card stage"
+  },
+  "ngToday": "Today",
+  "@ngToday": {
+    "description": "Orders day group"
+  },
+  "ngTomorrow": "Tomorrow",
+  "@ngTomorrow": {
+    "description": "Orders day group"
+  },
+  "ngYesterday": "Yesterday",
+  "@ngYesterday": {
+    "description": "Orders day group"
+  },
+  "ngNoMoveDate": "No move date",
+  "@ngNoMoveDate": {
+    "description": "Orders group with no date"
+  },
+  "ngPaid": "Paid",
+  "@ngPaid": {
+    "description": "Payment state"
+  },
+  "ngPartPaid": "Part paid",
+  "@ngPartPaid": {
+    "description": "Payment state"
+  },
+  "ngDue": "Due",
+  "@ngDue": {
+    "description": "Payment state"
+  },
+  "ngUnpaid": "Unpaid",
+  "@ngUnpaid": {
+    "description": "Payment state"
+  },
+  "ngNewOrder": "New order",
+  "@ngNewOrder": {
+    "description": "Orders header button"
+  },
+  "ngNoOrdersHere": "No orders here",
+  "@ngNoOrdersHere": {
+    "description": "Orders empty"
+  },
+  "ngRemind": "Remind",
+  "@ngRemind": {
+    "description": "Payments action"
+  },
+  "ngRecord": "Record",
+  "@ngRecord": {
+    "description": "Payments action"
+  },
+  "ngOverdue": "Overdue",
+  "@ngOverdue": {
+    "description": "Payments group"
+  },
+  "ngUpcoming": "Upcoming",
+  "@ngUpcoming": {
+    "description": "Payments group"
+  },
+  "ngNothingToCollect": "Nothing to collect",
+  "@ngNothingToCollect": {
+    "description": "Payments empty"
+  },
+  "ngLinkedDevice": "Linked device",
+  "@ngLinkedDevice": {
+    "description": "PIN login header"
+  },
+  "ngEnterPin": "Enter your 4-digit PIN",
+  "@ngEnterPin": {
+    "description": "PIN login"
+  },
+  "ngVerifying": "Verifying…",
+  "@ngVerifying": {
+    "description": "PIN login busy"
+  },
+  "ngUseEmail": "Use email login instead",
+  "@ngUseEmail": {
+    "description": "PIN login link"
+  },
+  "ngSwitchDevice": "Not your organization? Switch device",
+  "@ngSwitchDevice": {
+    "description": "PIN login link"
+  },
+  "ngSecuredBy": "Secured by Nagarva",
+  "@ngSecuredBy": {
+    "description": "PIN login footer"
   }
 }

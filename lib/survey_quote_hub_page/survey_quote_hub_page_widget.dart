@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/pricing_defaults.dart';
 import '/backend/soft_delete.dart';
@@ -10,6 +9,7 @@ import '/components/pdf_branding.dart';
 import '/components/share_link_sheet.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 
@@ -103,10 +103,9 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
         automaticallyImplyLeading: true,
         title: Text('Survey & Quote',
             style: theme.titleLarge.override(
-                font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                font: NgFonts.geist(fontWeight: FontWeight.w600),
                 fontSize: 22,
                 fontWeight: FontWeight.w600)),
-        centerTitle: true,
         elevation: 0,
         actions: [
           // The catalogue editor moved to Settings -> Survey & Pricing
@@ -158,7 +157,7 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: Text('No quotes yet.',
-                  style: GoogleFonts.inter(color: theme.secondaryText)),
+                  style: NgFonts.geist(color: theme.secondaryText)),
             )
           else
             for (final q in _filteredQuotes) _quoteRow(theme, q),
@@ -182,19 +181,19 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(q.customer ?? '—',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
                 Text(
                   [
                     if ((q.status ?? '').isNotEmpty) q.status,
                     if (q.createdAt != null) DateFormat('d MMM yyyy').format(q.createdAt!),
                   ].whereType<String>().join(' · '),
-                  style: GoogleFonts.inter(fontSize: 11.5, color: theme.secondaryText),
+                  style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
                 ),
               ],
             ),
           ),
           Text(PdfBranding.rupees(q.total ?? 0),
-              style: GoogleFonts.interTight(fontWeight: FontWeight.w700, fontSize: 13.5)),
+              style: NgFonts.geist(fontWeight: FontWeight.w700, fontSize: 13.5)),
           if (q.leadId != null)
             IconButton(
               tooltip: 'Open Lead',

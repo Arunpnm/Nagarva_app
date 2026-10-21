@@ -7,6 +7,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/signature_pad.dart';
 import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -717,12 +718,11 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           title: Text(
             'Field Job',
             style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                  font: NgFonts.geist(fontWeight: FontWeight.w600),
                   fontSize: 22.0,
                   fontWeight: FontWeight.w600,
                 ),
           ),
-          centerTitle: true,
           elevation: 0.0,
           actions: const [SupervisorMenuButton()],
         ),
@@ -781,11 +781,11 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                   : o.customer,
               style: FlutterFlowTheme.of(context)
                   .titleMedium
-                  .override(font: GoogleFonts.interTight(fontWeight: FontWeight.w600))),
+                  .override(font: NgFonts.geist(fontWeight: FontWeight.w600))),
           const SizedBox(height: 4),
           Text('${o.fromCity ?? ''} → ${o.toCity ?? ''}',
               style: FlutterFlowTheme.of(context).bodySmall.override(
-                  font: GoogleFonts.inter(),
+                  font: NgFonts.geist(),
                   color: FlutterFlowTheme.of(context).secondaryText)),
           const SizedBox(height: 4),
           if ((o.vehicleNo ?? '').isNotEmpty || (o.driverName ?? '').isNotEmpty)
@@ -793,12 +793,12 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                 'Vehicle: ${o.vehicleNo ?? '—'}'
                 '${(o.driverName ?? '').isEmpty ? '' : ' · ${o.driverName}'}',
                 style: FlutterFlowTheme.of(context).bodySmall.override(
-                    font: GoogleFonts.inter(),
+                    font: NgFonts.geist(),
                     color: FlutterFlowTheme.of(context).secondaryText)),
           const SizedBox(height: 8),
           Text('Status: ${o.status ?? '—'} · Supervisor: ${o.supervisorStatus ?? 'not started'}',
               style: FlutterFlowTheme.of(context).bodySmall.override(
-                  font: GoogleFonts.inter(),
+                  font: NgFonts.geist(),
                   color: FlutterFlowTheme.of(context).secondaryText)),
         ],
       ),
@@ -856,7 +856,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           const SizedBox(height: 4),
           Text(body,
               style: FlutterFlowTheme.of(context).bodySmall.override(
-                  font: GoogleFonts.inter(),
+                  font: NgFonts.geist(),
                   color: FlutterFlowTheme.of(context).secondaryText)),
           const SizedBox(height: 12),
           FFButtonWidget(
@@ -891,7 +891,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           if (_model.staffList.isEmpty)
             Text('No active staff found.',
                 style: FlutterFlowTheme.of(context).bodySmall.override(
-                    font: GoogleFonts.inter(),
+                    font: NgFonts.geist(),
                     color: FlutterFlowTheme.of(context).secondaryText))
           else
             Wrap(
@@ -989,7 +989,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           if (_model.crew.isEmpty)
             Text('No crew on record for this order yet.',
                 style: theme.bodySmall.override(
-                    font: GoogleFonts.inter(), color: theme.secondaryText))
+                    font: NgFonts.geist(), color: theme.secondaryText))
           else
             ..._model.crew.map((c) {
               final s = _model.staffList
@@ -999,7 +999,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Text('• ${s?.name ?? 'Staff'}',
                     style: theme.bodySmall
-                        .override(font: GoogleFonts.inter())),
+                        .override(font: NgFonts.geist())),
               );
             }),
         ],
@@ -1040,7 +1040,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           if (_model.fieldExpenses.isEmpty && !editable)
             Text('No field expenses were logged.',
                 style: theme.bodySmall.override(
-                    font: GoogleFonts.inter(), color: theme.secondaryText)),
+                    font: NgFonts.geist(), color: theme.secondaryText)),
           ..._model.fieldExpenses.map((e) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
@@ -1050,7 +1050,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                       child: Text(
                           '${e['type']}${(e['note'] ?? '').toString().isEmpty ? '' : ' — ${e['note']}'}',
                           style: theme.bodySmall
-                              .override(font: GoogleFonts.inter())),
+                              .override(font: NgFonts.geist())),
                     ),
                     Text('₹${(num.tryParse('${e['amount']}') ?? 0).toStringAsFixed(0)}',
                         style: theme.bodySmall),
@@ -1062,7 +1062,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Text('Total: ₹${total.toStringAsFixed(0)}',
                   style: theme.bodyMedium.override(
-                      font: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+                      font: NgFonts.geist(fontWeight: FontWeight.w600))),
             ),
           if (editable) ...[
             const SizedBox(height: 8),
@@ -1134,7 +1134,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               'Read it off the dial before you leave. Optional — leave '
               'blank for a third-party vehicle.',
               style: theme.bodySmall.override(
-                  font: GoogleFonts.inter(), color: theme.secondaryText)),
+                  font: NgFonts.geist(), color: theme.secondaryText)),
           const SizedBox(height: 8),
           TextField(
             controller: _model.kmStartController,
@@ -1190,7 +1190,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                       'reading anyway if you have it.'
                   : 'Opening was ${opening.toStringAsFixed(0)} km.',
               style: theme.bodySmall.override(
-                  font: GoogleFonts.inter(), color: theme.secondaryText)),
+                  font: NgFonts.geist(), color: theme.secondaryText)),
           const SizedBox(height: 8),
           TextField(
             controller: _model.kmEndController,
@@ -1208,7 +1208,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                   ? 'Closing is lower than opening — check the reading.'
                   : 'Distance this job: ${distance.toStringAsFixed(0)} km',
               style: theme.bodySmall.override(
-                  font: GoogleFonts.inter(),
+                  font: NgFonts.geist(),
                   color: distance < 0 ? theme.error : theme.primary),
             ),
           ],
@@ -1319,7 +1319,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                 ? 'Name and relationship are required when the customer signs.'
                 : 'Optional, but recommended.',
             style: theme.bodySmall.override(
-                font: GoogleFonts.inter(), color: theme.secondaryText)),
+                font: NgFonts.geist(), color: theme.secondaryText)),
         const SizedBox(height: 8),
         TextField(
           controller: _model.receivedByNameController,
@@ -1394,7 +1394,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Confirm you have arrived',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: theme.primaryText)),
@@ -1402,7 +1402,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           Text(
             'Ask the customer for the 4-digit arrival code from their '
             'booking confirmation.',
-            style: GoogleFonts.inter(
+            style: NgFonts.geist(
                 fontSize: 12.5, height: 1.4, color: theme.secondaryText),
           ),
           const SizedBox(height: 14),
@@ -1462,7 +1462,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Handover',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: theme.primaryText)),
@@ -1485,7 +1485,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           const SizedBox(height: 14),
           if (method == kCompletionSignature) ...[
             Text('Ask the customer to sign below',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5, color: theme.secondaryText)),
             const SizedBox(height: 8),
             SignaturePad(
@@ -1510,7 +1510,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                     Icon(Icons.check_circle, size: 15, color: theme.success),
                     const SizedBox(width: 4),
                     Text('Signature captured',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 11.5, color: theme.success)),
                   ]),
                 const Spacer(),
@@ -1525,7 +1525,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
             ),
           ] else ...[
             Text('Why could the customer not sign?',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5, color: theme.secondaryText)),
             const SizedBox(height: 8),
             for (final e in kNotAvailableReasons.entries)
@@ -1534,7 +1534,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                 dense: true,
                 value: e.key,
                 groupValue: _model.notAvailableReason,
-                title: Text(e.value, style: GoogleFonts.inter(fontSize: 13)),
+                title: Text(e.value, style: NgFonts.geist(fontSize: 13)),
                 onChanged: (v) =>
                     setState(() => _model.notAvailableReason = v),
               ),
@@ -1558,7 +1558,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
               child: Text(
                 'The owner will see this job as completed without a '
                 'signature, and why.',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 11.5, height: 1.35, color: theme.primaryText),
               ),
             ),
@@ -1611,7 +1611,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
                 'Odometer, field expenses and the crew are locked now.',
                 textAlign: TextAlign.center,
                 style: theme.bodySmall.override(
-                    font: GoogleFonts.inter(), color: theme.secondaryText),
+                    font: NgFonts.geist(), color: theme.secondaryText),
               ),
             ],
           ),

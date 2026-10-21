@@ -24,7 +24,11 @@ class FFLocalizations {
   /// `getVariableText` indexes its positional array by the same value.
   /// Change one and you must change the other in the same edit, or every
   /// non-English string silently resolves to the wrong language.
-  static List<String> languages() => ['en', 'ta', 'hi', 'kn'];
+  ///
+  /// Telugu and Malayalam added Oct 2026 with the redesign's translations
+  /// (app_te.arb / app_ml.arb). Appended at the END so the existing
+  /// indices — and getVariableText's positional array — do not move.
+  static List<String> languages() => ['en', 'ta', 'hi', 'kn', 'te', 'ml'];
 
   static late SharedPreferences _prefs;
   static Future initialize() async =>
@@ -90,7 +94,10 @@ class FFLocalizations {
     // Same fallback rule as getText: an untranslated slot resolves to
     // English, never to an empty string.
     final values = [enText, taText, hiText, knText];
-    final value = values[languageIndex];
+    // te/ml have no positional slot (this API is unused, see above), so
+    // they fall through to English like any other missing translation.
+    final value =
+        languageIndex < values.length ? values[languageIndex] : null;
     if (value != null && value.isNotEmpty) return value;
     return enText ?? '';
   }

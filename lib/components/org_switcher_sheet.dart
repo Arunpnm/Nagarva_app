@@ -1,7 +1,7 @@
 import '/app_session.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Bottom sheet listing every org the signed-in vendor belongs to.
 ///
@@ -35,7 +35,7 @@ Future<String?> showOrgSwitcherSheet(BuildContext context) {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
             child: Text(
               'Switch organization',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                 color: theme.primaryText,
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
@@ -48,7 +48,7 @@ Future<String?> showOrgSwitcherSheet(BuildContext context) {
               leading: Icon(Icons.business, color: theme.primary),
               title: Text(
                 org.orgName,
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                   color: theme.primaryText,
                   fontWeight: FontWeight.w600,
                 ),
@@ -56,7 +56,7 @@ Future<String?> showOrgSwitcherSheet(BuildContext context) {
               subtitle: org.role != null
                   ? Text(
                       org.role!,
-                      style: GoogleFonts.inter(color: theme.secondaryText),
+                      style: NgFonts.geist(color: theme.secondaryText),
                     )
                   : null,
               trailing: isCurrent

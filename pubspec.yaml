@@ -186,6 +186,28 @@ flutter:
     - assets/pdfs/
     - assets/jsons/
 
+  # Redesign (Oct 2026): Geist is the UI face and Geist Mono the face for
+  # numbers, IDs and amounts (NgFonts in lib/flutter_flow/ng_tokens.dart).
+  # Bundled rather than fetched because the pinned google_fonts 6.3.3
+  # carries neither family. SIL OFL 1.1, licence text in
+  # assets/fonts/Geist-OFL.txt. Indian scripts fall back to the
+  # platform's Noto fonts, which Geist does not cover.
+  fonts:
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/Geist-Regular.ttf
+        - asset: assets/fonts/Geist-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Geist-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Geist-Bold.ttf
+          weight: 700
+    - family: Geist Mono
+      fonts:
+        - asset: assets/fonts/GeistMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/GeistMono-SemiBold.ttf
+          weight: 600
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

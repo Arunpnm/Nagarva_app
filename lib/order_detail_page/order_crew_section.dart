@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '/app_session.dart';
@@ -11,6 +10,7 @@ import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 import '/permissions.dart';
 
@@ -347,7 +347,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Team & Salary',
-              style: GoogleFonts.interTight(
+              style: NgFonts.geist(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w700,
                   color: theme.primaryText)),
@@ -361,7 +361,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                 child: _supervisors.isEmpty
                     ? Text(
                         'No supervisors yet — add one on the Staff page with role "Supervisor".',
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 12.5, color: theme.secondaryText),
                       )
                     : DropdownButtonFormField<String>(
@@ -369,7 +369,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                         dropdownColor: theme.secondaryBackground,
                         decoration: InputDecoration(
                           labelText: 'Supervisor',
-                          labelStyle: GoogleFonts.inter(
+                          labelStyle: NgFonts.geist(
                               fontSize: 12.5,
                               color: theme.secondaryText),
                           isDense: true,
@@ -395,7 +395,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Labour (${_crew.length})',
-                  style: GoogleFonts.interTight(
+                  style: NgFonts.geist(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                       color: theme.primaryText)),
@@ -427,7 +427,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
           ),
           if (_crew.isEmpty)
             Text('No labour assigned yet.',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5, color: theme.secondaryText))
           else ...[
             ..._crew.map((c) {
@@ -445,7 +445,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                         '${(s?.role ?? '').isEmpty ? '' : ' · ${s!.role}'}'
                         '${(c.isHalfDay ?? false) ? ' · half day' : ''}',
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: NgFonts.geist(
                             fontSize: 12.5, color: theme.primaryText),
                       ),
                     ),
@@ -459,7 +459,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text('₹${(c.salaryAmount ?? 0).toStringAsFixed(0)}',
-                                style: GoogleFonts.interTight(
+                                style: NgFonts.geist(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
                                     color: theme.primary)),
@@ -489,10 +489,10 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Labour total',
-                    style: GoogleFonts.inter(
+                    style: NgFonts.geist(
                         fontSize: 12.5, color: theme.secondaryText)),
                 Text('₹${_labourTotal.toStringAsFixed(0)}',
-                    style: GoogleFonts.interTight(
+                    style: NgFonts.geist(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                         color: theme.primaryText)),
@@ -528,7 +528,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                 closedAt == null
                     ? 'Order closed — P&L locked'
                     : 'Order closed ${DateFormat('d MMM y').format(closedAt.toLocal())} — P&L locked',
-                style: GoogleFonts.inter(
+                style: NgFonts.geist(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: theme.secondaryText)),
