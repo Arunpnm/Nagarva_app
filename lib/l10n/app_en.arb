@@ -3957,5 +3957,105 @@
   "ngSalNote": "Earnings come from the crew entered on each job this month. Open a person to pay or give an advance.",
   "@ngSalNote": {
     "description": "Dashboard redesign"
+  },
+  "ngSetApp": "App",
+  "@ngSetApp": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetLanguage": "Language",
+  "@ngSetLanguage": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetTheme": "Theme",
+  "@ngSetTheme": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetThemeLight": "Light",
+  "@ngSetThemeLight": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetThemeDark": "Dark",
+  "@ngSetThemeDark": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetThemeMidnight": "Midnight",
+  "@ngSetThemeMidnight": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetNotifications": "Notifications",
+  "@ngSetNotifications": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetNotificationsSub": "Show alerts while the app is open",
+  "@ngSetNotificationsSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetBusiness": "Business",
+  "@ngSetBusiness": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetBizDetails": "Business details",
+  "@ngSetBizDetails": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetBizDetailsSub": "Name, tagline, GST, address, logo, signature, terms, numbering",
+  "@ngSetBizDetailsSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetCft": "CFT & packages",
+  "@ngSetCft": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetCftSub": "Item volumes, house sizes and storage rates",
+  "@ngSetCftSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetSecurity": "Security",
+  "@ngSetSecurity": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetLogin": "Login & security",
+  "@ngSetLogin": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetLoginSub": "Your app PIN",
+  "@ngSetLoginSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetAccount": "Account & support",
+  "@ngSetAccount": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetPlan": "Plan & billing",
+  "@ngSetPlan": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetPlanSub": "Your plan and its limits",
+  "@ngSetPlanSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetRecycle": "Deleted items",
+  "@ngSetRecycle": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetRecycleSub": "Restore anything deleted by mistake",
+  "@ngSetRecycleSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetHelp": "Help & support",
+  "@ngSetHelp": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetHelpSub": "Support contact, privacy policy and terms",
+  "@ngSetHelpSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetPorter": "Porter integration",
+  "@ngSetPorter": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetPorterSub": "Show Porter commission on the dashboard. Turn on only if your business uses Porter.",
+  "@ngSetPorterSub": {
+    "description": "Dashboard redesign"
   }
 }

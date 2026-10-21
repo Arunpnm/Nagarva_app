@@ -4,13 +4,14 @@ import '/backend/session_logout.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/notification_bell.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/config/app_config.dart';
 import '/main.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -69,41 +70,6 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     super.dispose();
   }
 
-  /// Same tri-state selector as main.dart's desktop-sidebar `_themeChip`,
-  /// styled as an inline row segment for this settings card.
-  Widget _themeVariantChip(BuildContext context, String label, String variant) {
-    final selected = FlutterFlowTheme.effectiveVariant(context) == variant;
-    final theme = FlutterFlowTheme.of(context);
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => MyApp.of(context).setThemeVariant(variant),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? theme.primary : Colors.transparent,
-            border: Border.all(
-                color: selected ? theme.primary : theme.secondaryText),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : theme.primaryText,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Language names are shown in their OWN script, never transliterated
-  /// and never in English. A picker that lists "Tamil" in Latin script is
-  /// useless to the person who most needs it — the crew member who cannot
-  /// read English is the reason this control exists. Keys must match
-  /// `FFLocalizations.languages()`.
   static const Map<String, String> _kLanguageNames = {
     'en': 'English',
     'ta': 'தமிழ்',
@@ -113,1052 +79,358 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     'ml': 'മലയാളം',
   };
 
-  /// Same segmented-chip pattern as [_themeVariantChip] above.
-  ///
-  /// Note this switches the app locale immediately and persists it via
-  /// `FFLocalizations.storeLocale`, so it survives a restart. The ARB
-  /// files carry every message for all six locales since Oct 2026
-  /// (Claude-written, pending native-speaker review); text that is still
-  /// a hard-coded English literal in a page stays English until that page
-  /// is moved onto AppLocalizations. It must never render blank, which is
-  /// what the fallback in internationalization.dart guarantees.
-  Widget _languageChip(BuildContext context, String code, double width) {
-    final selected = FFLocalizations.of(context).languageCode == code;
-    final theme = FlutterFlowTheme.of(context);
-    return SizedBox(
-      width: width,
-      child: GestureDetector(
-        onTap: () => MyApp.of(context).setLocale(code),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? theme.primary : Colors.transparent,
-            border: Border.all(
-                color: selected ? theme.primary : theme.secondaryText),
-            borderRadius: BorderRadius.circular(8),
+  // ---- Hub (Claude Design handoff, "SETTINGS HUB") ----------------------
+  //
+  // One screen of grouped rows; each opens its own page. What used to be
+  // stacked on this one page (PIN, business identity, porter switch,
+  // language and theme chips) now lives behind the row that names it.
+  // The read-only "Company" card is gone: Business details edits the same
+  // fields.
+
+  bool get _isOwner => AppSession.instance.currentStaffId == null;
+
+  /// A settings sub-page: shared top bar, module header, then [children].
+  void _openSub(String title, List<Widget> Function(BuildContext) children) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (ctx) => Scaffold(
+        backgroundColor: NgPalette.of(ctx).bg,
+        appBar: const NgTopBar(),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+          children: [
+            NgModuleHeader(title),
+            const SizedBox(height: 14),
+            ...children(ctx),
+          ],
+        ),
+      ),
+    ));
+  }
+
+  Widget _porterCard() => StatefulBuilder(builder: (context, setLocal) {
+        final c = NgPalette.of(context);
+        final l = AppLocalizations.of(context);
+        return NgCard(
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.ngSetPorter,
+                        style: NgFonts.geist(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.text)),
+                    const SizedBox(height: 2),
+                    Text(l.ngSetPorterSub,
+                        style: NgFonts.geist(
+                            fontSize: 12.5, height: 1.35, color: c.mute)),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _model.porterEnabled,
+                onChanged: (v) async {
+                  setLocal(() => _model.porterEnabled = v);
+                  safeSetState(() {});
+                  await SettingsTable().upsert(
+                    {
+                      'key': 'porter_enabled',
+                      ...OrgScope.stamp(),
+                      'value': v.toString(),
+                      'updated_at': DateTime.now().toIso8601String(),
+                    },
+                    onConflict: 'org_id,key',
+                  );
+                },
+              ),
+            ],
           ),
-          alignment: Alignment.center,
-          child: Text(
-            _kLanguageNames[code] ?? code,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : theme.primaryText,
+        );
+      });
+
+  static const _kVariants = ['light', 'dark', 'midnight'];
+
+  String _variantLabel(String v) {
+    final l = AppLocalizations.of(context);
+    return switch (v) {
+      'dark' => l.ngSetThemeDark,
+      'midnight' => l.ngSetThemeMidnight,
+      _ => l.ngSetThemeLight,
+    };
+  }
+
+  Future<void> _pickLanguage() async {
+    final current = FFLocalizations.of(context).languageCode;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: NgPalette.of(context).sheet,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(NgRadius.sheet))),
+      builder: (ctx) {
+        final c = NgPalette.of(ctx);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text(AppLocalizations.of(ctx).ngSetLanguage,
+                      style: NgFonts.geist(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                ),
+                for (final e in _kLanguageNames.entries)
+                  ListTile(
+                    title: Text(e.value,
+                        style: NgFonts.geist(
+                            fontSize: 14.5,
+                            fontWeight: e.key == current
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: c.text)),
+                    trailing: e.key == current
+                        ? Icon(Icons.check_rounded, color: c.acc, size: 20)
+                        : null,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      MyApp.of(context).setLocale(e.key);
+                    },
+                  ),
+              ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _row(IconData icon, String label,
+      {String? sub, String? value, Widget? trailing, VoidCallback? onTap}) {
+    final c = NgPalette.of(context);
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            NgIconTile(icon: icon, color: c.acc),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: NgFonts.geist(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w500,
+                          color: c.text)),
+                  if ((sub ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 1),
+                    Text(sub!,
+                        style: NgFonts.geist(
+                            fontSize: 12, height: 1.35, color: c.mute)),
+                  ],
+                ],
+              ),
+            ),
+            if (value != null) ...[
+              Text(value, style: NgFonts.geist(fontSize: 13, color: c.mute)),
+              const SizedBox(width: 6),
+            ],
+            trailing ??
+                Icon(Icons.chevron_right_rounded, size: 20, color: c.faint),
+          ],
         ),
       ),
     );
   }
 
+  Widget _group(String title, List<Widget> rows) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            child: Text(title,
+                style: NgFonts.geist(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: NgPalette.of(context).text)),
+          ),
+          NgCardList(children: rows),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).settings,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: const [],
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final s = AppSession.instance;
+    final logo = (s.currentOrgLogoUrl ?? '').trim();
+    final variant = FlutterFlowTheme.effectiveVariant(context);
+    final lang = FFLocalizations.of(context).languageCode;
+    final sections = <Widget>[
+      NgModuleHeader(l.settings),
+      NgCard(
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: logo.isNotEmpty
+                  ? Image.network(logo,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/nagarva_logo.png',
+                          fit: BoxFit.cover))
+                  : Image.asset('assets/images/nagarva_logo.png',
+                      fit: BoxFit.cover),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: KeyboardScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: FlutterFlowTheme.of(context).secondaryBackground,
-                        borderRadius: BorderRadius.circular(16.0),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context)
-                                    .primaryBackground,
-                                borderRadius: BorderRadius.circular(32.0),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(14.0),
-                                child: Icon(
-                                  Icons.person,
-                                  color: FlutterFlowTheme.of(context).primary,
-                                  size: 36.0,
-                                ),
-                              ),
-                            ),
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppSession.instance.currentStaffName ??
-                                      AppSession.instance.currentOrgName ??
-                                      AppLocalizations.of(context).arunPackersStaff,
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleMedium
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primaryText,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleMedium
-                                            .fontStyle,
-                                      ),
-                                ),
-                                Text(
-                                  _model.org?.email ??
-                                      AppLocalizations.of(context).adminArunpackersIn,
-                                  style: FlutterFlowTheme.of(context)
-                                      .bodySmall
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodySmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodySmall
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .secondaryText,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .bodySmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodySmall
-                                            .fontStyle,
-                                      ),
-                                ),
-                              ].divide(const SizedBox(height: 4.0)),
-                            ),
-                          ].divide(const SizedBox(width: 16.0)),
-                        ),
-                      ),
-                    ),
-                    // Vendor preferences — Porter toggle. Persisted to the
-                    // org-scoped settings table ('porter_enabled') and read
-                    // by the dashboard to show/hide the Porter KPI card.
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: FlutterFlowTheme.of(context).secondaryBackground,
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 4.0),
-                        child: SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            'Porter integration',
-                            style: FlutterFlowTheme.of(context)
-                                .titleSmall
-                                .override(
-                                  font: NgFonts.geist(),
-                                  letterSpacing: 0.0,
-                                ),
-                          ),
-                          subtitle: Text(
-                            'Show Porter commission on the dashboard. Turn on '
-                            'only if your business uses Porter.',
-                            style: FlutterFlowTheme.of(context)
-                                .bodySmall
-                                .override(
-                                  font: NgFonts.geist(),
-                                  color: FlutterFlowTheme.of(context)
-                                      .secondaryText,
-                                  letterSpacing: 0.0,
-                                ),
-                          ),
-                          value: _model.porterEnabled,
-                          activeColor: FlutterFlowTheme.of(context).primary,
-                          onChanged: (v) async {
-                            safeSetState(() => _model.porterEnabled = v);
-                            await SettingsTable().upsert(
-                              {
-                                'key': 'porter_enabled',
-                                ...OrgScope.stamp(),
-                                'value': v.toString(),
-                                'updated_at':
-                                    DateTime.now().toIso8601String(),
-                              },
-                              onConflict: 'org_id,key',
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    // Parity brief Part 7: owners set their own PIN here,
-                    // logged in the normal (email/password) way — this is
-                    // the only path that can set a PIN in the first place,
-                    // since the PIN screen itself has nothing to check
-                    // against until one exists. Staff-only sessions never
-                    // reach this page's normal route (SettingsPage isn't in
-                    // the staff nav set), so no staff-vs-owner gate is
-                    // needed beyond that.
-                    if (AppSession.instance.currentStaffId == null)
-                      const _PinSettingCard(),
-                    // Vendor self-service branding: business details, logo,
-                    // e-signature — all feed the invoice PDF.
-                    const BusinessSettingsSection(),
-                    // Item 12: survey catalogue + vehicle/crew slabs. Moved
-                    // here from the Survey & Quote hub (the catalogue half)
-                    // per Arun 17 Aug 2026 — both pricing editors live in
-                    // one Settings entry now.
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color:
-                            FlutterFlowTheme.of(context).secondaryBackground,
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      child: ListTile(
-                        leading: Icon(Icons.local_shipping_outlined,
-                            color: FlutterFlowTheme.of(context).primary),
-                        title: Text(
-                          'Survey & Pricing',
-                          style: NgFonts.geist(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: FlutterFlowTheme.of(context).primaryText,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'CFT item catalogue and vehicle/crew slabs',
-                          style: NgFonts.geist(
-                            fontSize: 12,
-                            color: FlutterFlowTheme.of(context).secondaryText,
-                          ),
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () =>
-                            context.pushNamed(SurveyPricingPage.routeName),
-                      ),
-                    ),
-                    // NO "Branches" entry here, deliberately (27 Aug 2026).
-                    //
-                    // Nagarva's model is ORG-PER-LOCATION: Bengaluru and
-                    // Mysuru are two separate orgs, each with its own
-                    // staff, vehicles, accounts, orders and licence — not
-                    // two branches of one org. `branches` survives only as
-                    // an FK target (22 tables carry a branch value) with
-                    // exactly one seeded 'Head Office' row per org.
-                    //
-                    // A "Branches" card in Settings would teach the wrong
-                    // mental model to every vendor who opened it, which is
-                    // a real cost for a screen with nothing to manage.
-                    // BranchesPage still EXISTS and is still routed — it is
-                    // reachable from New Order's zero-branch empty state
-                    // and by direct URL, both of which are recovery paths
-                    // rather than navigation. See NAGARVA_MODULE_STATUS.md
-                    // section 10 before re-adding this.
-                    // Item 11.6: recycle bin. Owner-only, same gate as the
-                    // PIN card above.
-                    if (AppSession.instance.currentStaffId == null)
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color:
-                              FlutterFlowTheme.of(context).secondaryBackground,
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        child: ListTile(
-                          leading: Icon(Icons.restore_from_trash,
-                              color: FlutterFlowTheme.of(context).primary),
-                          title: Text(
-                            'Deleted Items',
-                            style: NgFonts.geist(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                              color: FlutterFlowTheme.of(context).primaryText,
-                            ),
-                          ),
-                          subtitle: Text(
-                            'Restore anything deleted in the last 90 days',
-                            style: NgFonts.geist(
-                              fontSize: 12,
-                              color: FlutterFlowTheme.of(context).secondaryText,
-                            ),
-                          ),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () =>
-                              context.pushNamed(RecycleBinPage.routeName),
-                        ),
-                      ),
-                    // Help & About. NOT owner-gated, unlike the cards
-                    // above — a staff session needs the support contact
-                    // and the legal links just as much, and Play Store
-                    // review expects the privacy policy reachable from a
-                    // normal session, not only an owner's.
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: FlutterFlowTheme.of(context).secondaryBackground,
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      child: ListTile(
-                        leading: Icon(Icons.help_outline,
-                            color: FlutterFlowTheme.of(context).primary),
-                        title: Text(
-                          'Help & About',
-                          style: NgFonts.geist(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                            color: FlutterFlowTheme.of(context).primaryText,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'Support, privacy policy, terms and app version',
-                          style: NgFonts.geist(
-                            fontSize: 12,
-                            color: FlutterFlowTheme.of(context).secondaryText,
-                          ),
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () =>
-                            context.pushNamed(HelpAboutPage.routeName),
-                      ),
-                    ),
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: FlutterFlowTheme.of(context).secondaryBackground,
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    16.0, 10.0, 16.0, 10.0),
-                                child: Text(
-                                  AppLocalizations.of(context).company,
-                                  style: FlutterFlowTheme.of(context)
-                                      .labelMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .labelMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .labelMedium
-                                            .fontStyle,
-                                      ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: double.infinity,
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    16.0, 14.0, 16.0, 14.0),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.business,
-                                      color:
-                                          FlutterFlowTheme.of(context).primary,
-                                      size: 20.0,
-                                    ),
-                                    Container(
-                                      width: 14.0,
-                                    ),
-                                    Expanded(
-                                      flex: 1,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            AppLocalizations.of(context).businessName,
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodyMedium
-                                                .override(
-                                                  font: NgFonts.geist(
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyMedium
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyMedium
-                                                            .fontStyle,
-                                                  ),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .primaryText,
-                                                  letterSpacing: 0.0,
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontStyle,
-                                                ),
-                                          ),
-                                          Text(
-                                            _model.org?.name ??
-                                                AppSession
-                                                    .instance.currentOrgName ??
-                                                AppLocalizations.of(context).settingsPageArunPackersAndCouriers,
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodySmall
-                                                .override(
-                                                  font: NgFonts.geist(
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodySmall
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodySmall
-                                                            .fontStyle,
-                                                  ),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .secondaryText,
-                                                  letterSpacing: 0.0,
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodySmall
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodySmall
-                                                          .fontStyle,
-                                                ),
-                                          ),
-                                        ].divide(const SizedBox(height: 2.0)),
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.chevron_right,
-                                      color: FlutterFlowTheme.of(context)
-                                          .secondaryText,
-                                      size: 18.0,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: double.infinity,
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    16.0, 14.0, 16.0, 14.0),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.phone,
-                                      color:
-                                          FlutterFlowTheme.of(context).primary,
-                                      size: 20.0,
-                                    ),
-                                    Container(
-                                      width: 14.0,
-                                    ),
-                                    Expanded(
-                                      flex: 1,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            AppLocalizations.of(context).phone,
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodyMedium
-                                                .override(
-                                                  font: NgFonts.geist(
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyMedium
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyMedium
-                                                            .fontStyle,
-                                                  ),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .primaryText,
-                                                  letterSpacing: 0.0,
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontStyle,
-                                                ),
-                                          ),
-                                          Text(
-                                            _model.org?.phone ??
-                                                AppLocalizations.of(context).n9144XxxxXxxx,
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodySmall
-                                                .override(
-                                                  font: NgFonts.geist(
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodySmall
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodySmall
-                                                            .fontStyle,
-                                                  ),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .secondaryText,
-                                                  letterSpacing: 0.0,
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodySmall
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodySmall
-                                                          .fontStyle,
-                                                ),
-                                          ),
-                                        ].divide(const SizedBox(height: 2.0)),
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.chevron_right,
-                                      color: FlutterFlowTheme.of(context)
-                                          .secondaryText,
-                                      size: 18.0,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: double.infinity,
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    16.0, 14.0, 16.0, 14.0),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.receipt,
-                                      color:
-                                          FlutterFlowTheme.of(context).primary,
-                                      size: 20.0,
-                                    ),
-                                    Container(
-                                      width: 14.0,
-                                    ),
-                                    Expanded(
-                                      flex: 1,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            AppLocalizations.of(context).gstNumber,
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodyMedium
-                                                .override(
-                                                  font: NgFonts.geist(
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyMedium
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyMedium
-                                                            .fontStyle,
-                                                  ),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .primaryText,
-                                                  letterSpacing: 0.0,
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontStyle,
-                                                ),
-                                          ),
-                                          Text(
-                                            _model.org?.gstin ??
-                                                AppLocalizations.of(context).xxxxxxxxxxxx,
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodySmall
-                                                .override(
-                                                  font: NgFonts.geist(
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodySmall
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodySmall
-                                                            .fontStyle,
-                                                  ),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .secondaryText,
-                                                  letterSpacing: 0.0,
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodySmall
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodySmall
-                                                          .fontStyle,
-                                                ),
-                                          ),
-                                        ].divide(const SizedBox(height: 2.0)),
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.chevron_right,
-                                      color: FlutterFlowTheme.of(context)
-                                          .secondaryText,
-                                      size: 18.0,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: FlutterFlowTheme.of(context).secondaryBackground,
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    16.0, 10.0, 16.0, 10.0),
-                                child: Text(
-                                  AppLocalizations.of(context).app,
-                                  style: FlutterFlowTheme.of(context)
-                                      .labelMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .labelMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .labelMedium
-                                            .fontStyle,
-                                      ),
-                                ),
-                              ),
-                            ),
-                            // Notifications — was a static "Enabled" row with
-                            // no control at all (parity brief Part 2a). Now a
-                            // real per-device switch gating the disruptive
-                            // in-app popup only (see NotificationPrefs doc
-                            // comment) — the bell's badge/list still show
-                            // everything regardless.
-                            SizedBox(
-                              width: double.infinity,
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    16.0, 14.0, 16.0, 14.0),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.notifications,
-                                      color:
-                                          FlutterFlowTheme.of(context).primary,
-                                      size: 20.0,
-                                    ),
-                                    Container(
-                                      width: 14.0,
-                                    ),
-                                    Expanded(
-                                      flex: 1,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Notifications',
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodyMedium
-                                                .override(
-                                                  font: NgFonts.geist(
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .bodyMedium
-                                                            .fontWeight,
-                                                  ),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .primaryText,
-                                                  letterSpacing: 0.0,
-                                                ),
-                                          ),
-                                          Text(
-                                            _model.notificationsEnabled
-                                                ? 'In-app popups on'
-                                                : 'In-app popups off',
-                                            style: FlutterFlowTheme.of(context)
-                                                .bodySmall
-                                                .override(
-                                                  font: NgFonts.geist(),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .secondaryText,
-                                                  letterSpacing: 0.0,
-                                                ),
-                                          ),
-                                        ].divide(const SizedBox(height: 2.0)),
-                                      ),
-                                    ),
-                                    Switch(
-                                      value: _model.notificationsEnabled,
-                                      activeThumbColor:
-                                          FlutterFlowTheme.of(context).primary,
-                                      onChanged: (v) {
-                                        safeSetState(
-                                            () => _model.notificationsEnabled = v);
-                                        NotificationPrefs.setPopupsEnabled(v);
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Dark Mode — was a static "On" row with no
-                            // control (parity brief Part 2a/2b). Now a real
-                            // Light/Dark/Midnight selector, the same control
-                            // the desktop sidebar already has, finally
-                            // available on mobile too.
-                            Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  16.0, 6.0, 16.0, 14.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.dark_mode,
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        size: 20.0,
-                                      ),
-                                      const SizedBox(width: 14.0),
-                                      Text(
-                                        'Theme',
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .override(
-                                              font: NgFonts.geist(
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(
-                                                            context)
-                                                        .bodyMedium
-                                                        .fontWeight,
-                                              ),
-                                              color: FlutterFlowTheme.of(
-                                                      context)
-                                                  .primaryText,
-                                              letterSpacing: 0.0,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10.0),
-                                  Row(
-                                    children: [
-                                      _themeVariantChip(context, 'Light', 'light'),
-                                      const SizedBox(width: 6),
-                                      _themeVariantChip(context, 'Dark', 'dark'),
-                                      const SizedBox(width: 6),
-                                      _themeVariantChip(
-                                          context, 'Midnight', 'midnight'),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Language (NG-055, 27 Aug 2026). FFLocalizations
-                            // has been wired into main.dart since the
-                            // FlutterFlow export — delegate registered,
-                            // setLocale implemented, locale persisted — but
-                            // setLocale had NO caller anywhere outside
-                            // main.dart itself, so the feature was
-                            // unreachable by a user. This is that caller.
-                            // Deliberately not owner-gated: a driver or
-                            // packer is exactly who needs it.
-                            Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  16.0, 6.0, 16.0, 14.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.language,
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        size: 20.0,
-                                      ),
-                                      const SizedBox(width: 14.0),
-                                      Text(
-                                        'Language',
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .override(
-                                              font: NgFonts.geist(
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(
-                                                            context)
-                                                        .bodyMedium
-                                                        .fontWeight,
-                                              ),
-                                              color: FlutterFlowTheme.of(
-                                                      context)
-                                                  .primaryText,
-                                              letterSpacing: 0.0,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10.0),
-                                  // Six languages since Oct 2026: three per
-                                  // row, so names in their own script fit
-                                  // without truncating on a 360dp phone.
-                                  LayoutBuilder(
-                                    builder: (context, box) {
-                                      final w = (box.maxWidth - 12) / 3;
-                                      return Wrap(
-                                        spacing: 6,
-                                        runSpacing: 6,
-                                        children: [
-                                          for (final code
-                                              in FFLocalizations.languages())
-                                            _languageChip(context, code, w),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // "Switch Organization" MOVED OUT of Settings on
-                    // 3 Sept 2026 (Arun: "this switch org also try to keep
-                    // in top somewhere or in menu directly not inside
-                    // settings modules"). It is now the header of the
-                    // bottom-bar Menu drawer, next to the org's own name -
-                    // see components/more_sheet.dart. The switch
-                    // itself lives in backend/org_switch.dart so there is
-                    // still exactly one implementation.
-                    Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(0.0, 16.0, 0.0, 16.0),
-                      child: FFButtonWidget(
-                        onPressed: () => performLogout(context),
-                        text: AppLocalizations.of(context).logout,
-                        icon: const Icon(
-                          Icons.logout,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor: FlutterFlowTheme.of(context).primary,
-                          color: Colors.transparent,
-                          textStyle: TextStyle(
-                            color: FlutterFlowTheme.of(context).primary,
-                          ),
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).primary,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                    ),
-
-                  ].divide(const SizedBox(height: 16.0)),
-                ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      _model.org?.name ??
+                          s.currentOrgName ??
+                          s.currentStaffName ??
+                          '',
+                      style: NgFonts.geist(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                  const SizedBox(height: 2),
+                  Text(
+                      _isOwner
+                          ? l.ngRoleOwner
+                          : (s.currentStaffName ?? l.ngRoleStaff),
+                      style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                ],
               ),
             ),
+          ],
+        ),
+      ),
+      _group(l.ngSetApp, [
+        _row(Icons.translate_rounded, l.ngSetLanguage,
+            value: _kLanguageNames[lang] ?? lang, onTap: _pickLanguage),
+        _row(
+          Icons.light_mode_outlined,
+          l.ngSetTheme,
+          value: _variantLabel(variant),
+          trailing: Icon(Icons.sync_rounded, size: 20, color: c.faint),
+          onTap: () {
+            final i = _kVariants.indexOf(variant);
+            MyApp.of(context)
+                .setThemeVariant(_kVariants[(i + 1) % _kVariants.length]);
+          },
+        ),
+        _row(
+          Icons.notifications_active_outlined,
+          l.ngSetNotifications,
+          sub: l.ngSetNotificationsSub,
+          trailing: Switch(
+            value: _model.notificationsEnabled,
+            onChanged: (v) {
+              safeSetState(() => _model.notificationsEnabled = v);
+              NotificationPrefs.setPopupsEnabled(v);
+            },
           ),
         ),
+      ]),
+      _group(l.ngSetBusiness, [
+        _row(Icons.storefront_outlined, l.ngSetBizDetails,
+            sub: l.ngSetBizDetailsSub,
+            onTap: () => _openSub(l.ngSetBizDetails,
+                (_) => [
+                      const BusinessSettingsSection(),
+                      const SizedBox(height: 14),
+                      _porterCard(),
+                    ])),
+        _row(Icons.view_in_ar_outlined, l.ngSetCft,
+            sub: l.ngSetCftSub,
+            onTap: () => context.pushNamed(SurveyPricingPage.routeName)),
+      ]),
+      if (_isOwner)
+        _group(l.ngSetSecurity, [
+          _row(Icons.lock_outline_rounded, l.ngSetLogin,
+              sub: l.ngSetLoginSub,
+              onTap: () => _openSub(
+                  l.ngSetLogin, (_) => [const _PinSettingCard()])),
+        ]),
+      _group(l.ngSetAccount, [
+        if (_isOwner)
+          _row(Icons.workspace_premium_outlined, l.ngSetPlan,
+              sub: l.ngSetPlanSub,
+              onTap: () => context.pushNamed(PlanPageWidget.routeName)),
+        // Item 11.6: recycle bin. Owner-only, as before.
+        if (_isOwner)
+          _row(Icons.restore_from_trash_outlined, l.ngSetRecycle,
+              sub: l.ngSetRecycleSub,
+              onTap: () => context.pushNamed(RecycleBinPage.routeName)),
+        // Not owner-gated: review expects the privacy policy reachable
+        // from a normal staff session too (see HelpAboutPage).
+        _row(Icons.support_agent_outlined, l.ngSetHelp,
+            sub: l.ngSetHelpSub,
+            onTap: () => context.pushNamed(HelpAboutPage.routeName)),
+      ]),
+      Material(
+        color: c.redBg,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => performLogout(context),
+          child: SizedBox(
+            height: 46,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.logout_rounded, size: 19, color: c.red),
+                const SizedBox(width: 8),
+                Text(l.logout,
+                    style: NgFonts.geist(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: c.red)),
+              ],
+            ),
+          ),
+        ),
+      ),
+      Center(
+        child: Text('Nagarva $kAppVersion',
+            style: NgFonts.mono(fontSize: 12, color: c.faint)),
+      ),
+    ];
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: const NgTopBar(),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        children: [
+          for (var i = 0; i < sections.length; i++) ...[
+            if (i > 0) const SizedBox(height: 14),
+            sections[i],
+          ],
+        ],
       ),
     );
   }
 }
 
-/// Set/change the PIN used by the unified PIN login screen (parity brief
-/// Part 7). Writes org_members.pin (write-only — the
-/// org_members_hash_pin_trigger in 20260728_org_pin_login.sql bcrypt-hashes
-/// it into pin_hash and never stores the plaintext), matched on the
-/// current authenticated user's own row so a vendor can only ever set
-/// their own PIN, never another org's.
 class _PinSettingCard extends StatefulWidget {
   const _PinSettingCard();
 
