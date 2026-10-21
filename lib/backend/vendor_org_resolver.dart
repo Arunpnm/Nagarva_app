@@ -166,6 +166,8 @@ Future<void> establishVendorSession(
     trialEndsAt: sessionData.trialEndsAt,
     graceDays: sessionData.graceDays,
     orgActive: sessionData.orgActive,
+    trialFallsBackToFree: sessionData.trialFallsBackToFree,
+    trialEndedToFree: sessionData.trialEndedToFree,
     availableOrgs: availableOrgs,
   );
   // Remember this vendor session so a later staff PIN unlock can be

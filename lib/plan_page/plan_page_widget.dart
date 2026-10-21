@@ -1,3 +1,4 @@
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -99,7 +100,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            planName == 'Free Trial' ? 'TRIAL' : 'ACTIVE',
+                            session.planStatus == 'trial' ? 'TRIAL' : 'ACTIVE',
                             style: NgFonts.geist(
                               color: Colors.white,
                               fontSize: 11,
@@ -113,10 +114,26 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                     if (trialEnds != null) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Trial ends ${_formatDate(trialEnds)}',
+                        // A signup Pro trial drops to Free, so say so.
+                        session.trialFallsBackToFree
+                            ? AppLocalizations.of(context).plTrEnds(
+                                _formatDate(trialEnds),
+                                '${session.trialDaysRemaining.clamp(0, 9999)}')
+                            : 'Trial ends ${_formatDate(trialEnds)}',
                         style: NgFonts.geist(
                           color: Colors.white70,
                           fontSize: 13,
+                        ),
+                      ),
+                    ],
+                    if (session.trialEndedToFree) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        AppLocalizations.of(context).plTrEnded,
+                        style: NgFonts.geist(
+                          color: Colors.white,
+                          fontSize: 13,
+                          height: 1.4,
                         ),
                       ),
                     ],
@@ -156,8 +173,8 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                       // rather than left showing a permanent dash.
                       _limitRow(theme, 'Users', limits['max_users']),
                       _divider(theme),
-                      _limitRow(
-                          theme, 'Orders / month', limits['max_orders_per_month']),
+                      _limitRow(theme, 'Orders / month',
+                          limits['max_orders_per_month']),
                       _divider(theme),
                       _limitRow(theme, 'WhatsApp msgs / month',
                           limits['max_whatsapp_per_month']),
@@ -327,8 +344,19 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
 
   String _formatDate(DateTime dt) {
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${dt.day} ${months[dt.month]} ${dt.year}';
   }

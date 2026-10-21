@@ -5,6 +5,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
 import 'plans_tab.dart';
+import 'signups_tab.dart';
 import 'tenant_detail_page.dart';
 
 /// Platform (SaaS-operator) admin view — all-tenant list, plan management,
@@ -213,7 +214,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
     final planNameById = {for (final p in _plans) p.id!: p.name};
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: theme.primaryBackground,
         appBar: AppBar(
@@ -222,6 +223,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Tenants'),
+              Tab(text: 'Signups'),
               Tab(text: 'Plans'),
             ],
           ),
@@ -307,6 +309,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                       },
                     ),
                   ),
+            SignupsTab(onChanged: _loadOrgs),
             const PlansTab(),
           ],
         ),

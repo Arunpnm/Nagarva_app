@@ -16,6 +16,8 @@ class OrgSessionData {
     this.trialEndsAt,
     this.graceDays = 7,
     this.orgActive = true,
+    this.trialFallsBackToFree = false,
+    this.trialEndedToFree = false,
   });
 
   final String orgId;
@@ -36,6 +38,15 @@ class OrgSessionData {
   final int graceDays;
 
   final bool orgActive;
+
+  /// The org is on a trial that drops to a fallback plan (Free) when it
+  /// ends instead of locking — vendor signup, 21 Oct 2026. Drives the
+  /// last-3-days banner; the DB (org_effective_plan) is the real gate.
+  final bool trialFallsBackToFree;
+
+  /// That trial has ended: the limits/features/planName above are
+  /// already the fallback plan's, and planStatus reads 'active'.
+  final bool trialEndedToFree;
 }
 
 Future<OrgSessionData> loadOrgSessionData(String orgId) async {
@@ -75,6 +86,39 @@ Future<OrgSessionData> loadOrgSessionData(String orgId) async {
     // Plan lookup is best-effort — don't block login/switch on it.
   }
 
+  // Trial with a fallback plan (vendor signup, 21 Oct 2026). Mirrors
+  // org_effective_plan(): once the trial has ended the org IS on the
+  // fallback plan, not in grace and not read-only.
+  final fallbackId = org?.trialFallbackPlanId;
+  final onTrial = org?.planStatus == 'trial' && org?.trialEndsAt != null;
+  var planStatus = org?.planStatus;
+  DateTime? trialEndsAt = org?.trialEndsAt;
+  var fallsBack = false;
+  var endedToFree = false;
+  if (fallbackId != null && onTrial) {
+    if (trialEndsAt!.isAfter(DateTime.now())) {
+      fallsBack = true;
+    } else {
+      try {
+        final fb = await SubscriptionPlansTable()
+            .queryRows(queryFn: (q) => q.eq('id', fallbackId).limit(1));
+        if (fb.isNotEmpty) {
+          final plan = fb.first;
+          limits = (plan.limits is Map)
+              ? Map<String, dynamic>.from(plan.limits as Map)
+              : {};
+          features = (plan.features is Map)
+              ? Map<String, dynamic>.from(plan.features as Map)
+              : {};
+          planName = plan.name;
+        }
+      } catch (_) {}
+      planStatus = 'active';
+      trialEndsAt = null;
+      endedToFree = true;
+    }
+  }
+
   return OrgSessionData(
     orgId: orgId,
     orgName: org?.name ?? '',
@@ -83,9 +127,11 @@ Future<OrgSessionData> loadOrgSessionData(String orgId) async {
     limits: limits,
     features: features,
     planName: planName,
-    planStatus: org?.planStatus,
-    trialEndsAt: org?.trialEndsAt,
+    planStatus: planStatus,
+    trialEndsAt: trialEndsAt,
     graceDays: graceDays,
     orgActive: org?.active ?? true,
+    trialFallsBackToFree: fallsBack,
+    trialEndedToFree: endedToFree,
   );
 }

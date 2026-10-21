@@ -53,6 +53,10 @@ class AppSession extends ChangeNotifier {
   /// org-switch, session-restore).
   bool orgActive = true;
 
+  /// See OrgSessionData.trialFallsBackToFree / trialEndedToFree.
+  bool trialFallsBackToFree = false;
+  bool trialEndedToFree = false;
+
   /// Whether this session's Supabase Auth user has a `platform_admins`
   /// row — the same check `is_platform_admin()` makes at the DB level
   /// (see `/backend/platform_admin_status.dart`'s own doc comment for why
@@ -99,8 +103,7 @@ class AppSession extends ChangeNotifier {
   /// access, escalating banner) -> [isReadOnly] (view and export only).
   bool get isInTrialGrace {
     if (!isTrialExpired) return false;
-    return DateTime.now()
-        .isBefore(trialEndsAt!.add(Duration(days: graceDays)));
+    return DateTime.now().isBefore(trialEndsAt!.add(Duration(days: graceDays)));
   }
 
   /// True once the trial AND its grace window have both passed. Mirrors
@@ -161,6 +164,8 @@ class AppSession extends ChangeNotifier {
     int? graceDays,
     bool orgActive = true,
     List<OrgMembershipInfo>? availableOrgs,
+    bool trialFallsBackToFree = false,
+    bool trialEndedToFree = false,
   }) {
     if (graceDays != null) this.graceDays = graceDays;
     this.authUserId = authUserId;
@@ -174,6 +179,8 @@ class AppSession extends ChangeNotifier {
     this.planStatus = planStatus;
     this.trialEndsAt = trialEndsAt;
     this.orgActive = orgActive;
+    this.trialFallsBackToFree = trialFallsBackToFree;
+    this.trialEndedToFree = trialEndedToFree;
     // Switching orgs (not logging in fresh) calls this again with
     // availableOrgs left null — keep the membership list as-is rather than
     // wiping it back to empty.
@@ -216,6 +223,8 @@ class AppSession extends ChangeNotifier {
     DateTime? trialEndsAt,
     int? graceDays,
     bool? orgActive,
+    bool trialFallsBackToFree = false,
+    bool trialEndedToFree = false,
   }) {
     if (graceDays != null) this.graceDays = graceDays;
     currentOrgId = orgId;
@@ -230,6 +239,8 @@ class AppSession extends ChangeNotifier {
     if (planStatus != null) this.planStatus = planStatus;
     if (trialEndsAt != null) this.trialEndsAt = trialEndsAt;
     if (orgActive != null) this.orgActive = orgActive;
+    this.trialFallsBackToFree = trialFallsBackToFree;
+    this.trialEndedToFree = trialEndedToFree;
     notifyListeners();
   }
 
@@ -250,6 +261,8 @@ class AppSession extends ChangeNotifier {
     trialEndsAt = null;
     graceDays = 7;
     orgActive = true;
+    trialFallsBackToFree = false;
+    trialEndedToFree = false;
     isPlatformAdmin = false;
     availableOrgs = [];
     notifyListeners();

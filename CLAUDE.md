@@ -3243,6 +3243,46 @@ reported as "back is not redirecting to dashboard".
 an inconsistency and is the whole fix.
 
 ## Changelog
+- **21 Oct 2026, vendor self-signup — mobile OTP, approval first, Pro
+  trial or Free** (Claude Design handoff, App screen `signup` + Admin ›
+  Approvals). Arun's three calls: Supabase phone OTP; the org is created
+  only when the Nagarva team approves; after approval the owner picks a
+  30-day Pro trial or Free, and an expired Pro trial FALLS BACK to Free
+  instead of locking.
+  - **HANDED OVER, NOT RUN**: `supabase/20261021_vendor_signup_approval.sql`
+    (Free plan row, `organizations.trial_fallback_plan_id`,
+    `org_effective_plan()` fallback branch, `vendor_signups` with
+    read-only RLS, private `vendor-docs` bucket, `submit_vendor_signup` /
+    `review_vendor_signup` / `choose_signup_plan`, and the
+    `signup_requires_approval` flag). Then deploy `create-org`, which now
+    refuses a brand-new org while that flag is true. **And** turn on
+    Authentication › Providers › Phone with an SMS provider — until then
+    the Send OTP step says mobile sign-up is not switched on.
+  - **Existing orgs are untouched**: the fallback column is NULL on all
+    of them, so an expired ordinary trial still goes grace -> read-only.
+    The postflight proves both directions on a real org, then undoes the
+    probe.
+  - App: `VendorSignupPage` (`/signup-mobile`) is also the mobile-number
+    LOGIN — after the OTP it routes on what the account has (org -> in,
+    application -> status, nothing -> business form). Login links to it
+    and shows the application banner. Super Admin gains a Signups tab.
+    Trial banner shows only in the last 3 days for a fallback trial.
+  - **Deliberately not copied from the design**: every "you will get a
+    WhatsApp message" line (no send path exists), "Buy Pro" (Item 31 on
+    hold), "customer portal with live GPS" in the trial pitch (bullets are
+    now built from the live Pro plan row), and the in-app Terms/Privacy
+    text — the checkbox links to the published `kTermsUrl` /
+    `kPrivacyPolicyUrl` instead of shipping unreviewed legal text.
+  - **Found, NOT fixed — Tier B never ran.** `organizations` still has
+    `org_insert WITH CHECK (true)` and `org_update` for any org member,
+    and `authenticated` holds table-level UPDATE, so any member can still
+    write `plan_id`/`plan_status`/`trial_ends_at` (and now
+    `trial_fallback_plan_id`). `20260808_tierB_org_billing_rls.sql` is the
+    fix and is still waiting to be run.
+  - **Not verified on a device**: no OTP has been sent (no SMS
+    provider), no application submitted, no approval run. Analyzer and
+    the 224 tests pass; the phone step and login were rendered and looked
+    at in a web build.
 - **22 Sept 2026, closed-beta invite-code gate turned OFF and the field
   removed from SignupPage.** Arun's call — the gate existed only because
   the CFT catalogue was still APC-shaped (see "closed-beta invite-code

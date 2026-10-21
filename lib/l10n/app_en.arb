@@ -2803,5 +2803,518 @@
   "ngSecuredBy": "Secured by Nagarva",
   "@ngSecuredBy": {
     "description": "PIN login footer"
+  },
+  "suCreate": "Create your business account",
+  "@suCreate": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suStep": "Step {n} of 4",
+  "@suStep": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "suS1": "Mobile",
+  "@suS1": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suS2": "Business",
+  "@suS2": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suS3": "Documents",
+  "@suS3": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suS4": "Review",
+  "@suS4": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suPhS": "Use the owner's number. You will log in with it.",
+  "@suPhS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suPh": "Mobile number",
+  "@suPh": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suSend": "Send OTP",
+  "@suSend": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suPhBad": "Enter a 10-digit mobile number",
+  "@suPhBad": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suOtpT": "Enter the OTP",
+  "@suOtpT": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suOtpS": "Sent to +91 {p}",
+  "@suOtpS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "suEnter": "Type the 6-digit code",
+  "@suEnter": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suVerify": "Verify",
+  "@suVerify": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suOtpBad": "Enter the 6-digit OTP",
+  "@suOtpBad": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suResend": "Resend OTP",
+  "@suResend": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suResent": "OTP sent again",
+  "@suResent": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suChange": "Change number",
+  "@suChange": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suBzT": "About your business",
+  "@suBzT": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suBzS": "This appears on your quotes and invoices. You can change it later.",
+  "@suBzS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suName": "Business name",
+  "@suName": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suNameP": "e.g. Arun Packers & Movers",
+  "@suNameP": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suOwner": "Owner name",
+  "@suOwner": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suEmail": "Email (optional)",
+  "@suEmail": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suEmailP": "For invoices and password reset",
+  "@suEmailP": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suCity": "City",
+  "@suCity": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suType": "What do you do?",
+  "@suType": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTPm": "Packers & movers",
+  "@suTPm": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTPmS": "House and office shifting",
+  "@suTPmS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTTr": "Transport",
+  "@suTTr": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTTrS": "Trucks, trips and LR",
+  "@suTTrS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTBo": "Both",
+  "@suTBo": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTBoS": "Shifting and transport",
+  "@suTBoS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suGst": "GSTIN (optional)",
+  "@suGst": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suGstP": "15-character GST number",
+  "@suGstP": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suRef": "Referral code (optional)",
+  "@suRef": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suNeedBz": "Fill business name, owner name and city",
+  "@suNeedBz": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suGstBad": "GSTIN should be 15 characters",
+  "@suGstBad": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suEmailBad": "Check the email address",
+  "@suEmailBad": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suDcT": "Verify your business",
+  "@suDcT": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suDcS": "Photos or PDFs. Our team checks these before your account goes live.",
+  "@suDcS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suPan": "PAN card",
+  "@suPan": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suPanS": "Owner or business PAN",
+  "@suPanS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suGstC": "GST certificate",
+  "@suGstC": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suGstCS": "Needed because you added a GSTIN",
+  "@suGstCS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suShop": "Office or godown photo",
+  "@suShop": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suShopS": "Helps us verify faster",
+  "@suShopS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suUpload": "Upload",
+  "@suUpload": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suReq": "Required",
+  "@suReq": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suOpt": "Optional",
+  "@suOpt": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suNeedPan": "Upload your PAN card",
+  "@suNeedPan": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suNeedGstC": "Upload the GST certificate or remove the GSTIN",
+  "@suNeedGstC": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suPriv": "Documents are used only to verify your business. They are not shown to your staff or customers.",
+  "@suPriv": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suRvT": "Check and submit",
+  "@suRvT": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suEdit": "Edit",
+  "@suEdit": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suNext": "What happens next",
+  "@suNext": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suN1": "Our team checks your details, usually within 1 working day.",
+  "@suN1": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suN3": "You start on the Free plan. Upgrade any time.",
+  "@suN3": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suNeedAgree": "Accept the terms to continue",
+  "@suNeedAgree": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suSubmit": "Submit for approval",
+  "@suSubmit": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suContinue": "Continue",
+  "@suContinue": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suMob": "Mobile",
+  "@suMob": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suBt": "Business type",
+  "@suBt": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suNone": "Not added",
+  "@suNone": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suPendT": "Application under review",
+  "@suPendT": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suAppId": "Application {id}",
+  "@suAppId": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "suTl1": "Submitted",
+  "@suTl1": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTl2": "Documents check",
+  "@suTl2": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTl3": "Account ready",
+  "@suTl3": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suOkT": "Your account is ready",
+  "@suOkT": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suOkS": "{b} is approved. Choose how you want to start.",
+  "@suOkS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "suStart": "Start using Nagarva",
+  "@suStart": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suNoT": "Changes needed",
+  "@suNoT": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suNoS": "Our team could not approve the application yet. Fix the item below and submit again.",
+  "@suNoS": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suFix": "Fix and resubmit",
+  "@suFix": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suWa": "Chat with us on WhatsApp",
+  "@suWa": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suToLogin": "Back to login",
+  "@suToLogin": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suHave": "Already have an account?",
+  "@suHave": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suLogin": "Log in",
+  "@suLogin": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suBnP": "Application under review",
+  "@suBnP": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suBnOk": "Account approved",
+  "@suBnOk": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suBnNo": "Changes needed on your application",
+  "@suBnNo": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suView": "View",
+  "@suView": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suSent": "Application submitted",
+  "@suSent": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "lgTerms": "Terms of use",
+  "@lgTerms": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "lgPriv": "Privacy policy",
+  "@lgPriv": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTrT": "Try Pro free for {n} days",
+  "@suTrT": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "suTrUsers": "Up to {n} users",
+  "@suTrUsers": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "suTrOrdersAll": "Unlimited orders every month",
+  "@suTrOrdersAll": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTrOrders": "{n} orders a month",
+  "@suTrOrders": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "suTrReports": "Reports and P&L",
+  "@suTrReports": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTrBranches": "Multiple branches",
+  "@suTrBranches": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTrNote": "No card needed. After {n} days you move to the Free plan automatically. Your data stays.",
+  "@suTrNote": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "suTrBtn": "Start {n}-day Pro trial",
+  "@suTrBtn": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "suStayFree": "Stay on Free",
+  "@suStayFree": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suTrOn": "Pro trial started · {n} days",
+  "@suTrOn": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "suFreeOn": "You are on the Free plan",
+  "@suFreeOn": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "plTrBan": "Pro trial ends in {n} days. Then you move to the Free plan. Your data stays.",
+  "@plTrBan": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "plTrEnded": "Your Pro trial has ended. You are on the Free plan and all your data is safe.",
+  "@plTrEnded": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "plTrEnds": "Pro trial ends on {d} · {n} days left",
+  "@plTrEnds": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "d": {
+        "type": "String"
+      },
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "suN2b": "Log in with this mobile number any time to check your status.",
+  "@suN2b": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suPendS2": "We usually reply within 1 working day. Log in with +91 {p} to see the result.",
+  "@suPendS2": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "suOtpUnavailable": "Mobile sign-up is not switched on yet. Please contact Nagarva support.",
+  "@suOtpUnavailable": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suSendFailed": "Could not send the OTP. Check the number and try again.",
+  "@suSendFailed": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suOtpFailed": "That code did not work. Check it and try again.",
+  "@suOtpFailed": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suUploadFailed": "Upload failed. Try again.",
+  "@suUploadFailed": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suMobileLogin": "Log in with mobile number",
+  "@suMobileLogin": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suRefresh": "Check status",
+  "@suRefresh": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "suResendIn": "Resend in {n}s",
+  "@suResendIn": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "suAgreeLead": "I agree to the",
+  "@suAgreeLead": {
+    "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
   }
 }

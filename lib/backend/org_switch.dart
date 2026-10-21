@@ -46,6 +46,8 @@ Future<bool> switchOrgFlow(BuildContext context) async {
     trialEndsAt: data.trialEndsAt,
     graceDays: data.graceDays,
     orgActive: data.orgActive,
+    trialFallsBackToFree: data.trialFallsBackToFree,
+    trialEndedToFree: data.trialEndedToFree,
   );
   // So a later cold start restores this org rather than whichever
   // org_members row comes back first.
