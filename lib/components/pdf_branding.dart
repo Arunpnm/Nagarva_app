@@ -218,8 +218,10 @@ class DocumentBoilerplate {
         'whose name is mentioned in the lorry receipt. It will under no '
         'circumstances be delivered to anyone without written '
         'authorization from the consignee on its order.',
-    this.demurrageFreeDays = 5,
-    this.demurrageRatePerDay = 500,
+    // CORRECTIONS.md A4: no invented money. Free days and the daily rate
+    // are the vendor's own figures (app_settings); unset prints nothing.
+    this.demurrageFreeDays,
+    this.demurrageRatePerDay,
     this.demurrageText = 'Demurrage charge after more than {days} day(s) '
         '@ Rs.{rate} per day + handling & local transportation charges.',
     this.goodsDescriptionDefault =
@@ -234,8 +236,8 @@ class DocumentBoilerplate {
 
   final String docFooterText;
   final String lrNoticeText;
-  final int demurrageFreeDays;
-  final int demurrageRatePerDay;
+  final int? demurrageFreeDays;
+  final int? demurrageRatePerDay;
   final String demurrageText;
   final String goodsDescriptionDefault;
   final String invoiceNote;
@@ -256,10 +258,17 @@ class DocumentBoilerplate {
   /// is worded the way it is.
   final List<String> standardTerms;
 
-  /// The demurrage sentence with {days}/{rate} substituted.
-  String get demurrageSentence => demurrageText
-      .replaceAll('{days}', demurrageFreeDays.toString())
-      .replaceAll('{rate}', demurrageRatePerDay.toString());
+  /// The demurrage sentence with {days}/{rate} substituted, or '' when
+  /// the vendor has not set both figures — a sentence quoting a rate
+  /// nobody chose is worse than no sentence.
+  String get demurrageSentence {
+    final days = demurrageFreeDays;
+    final rate = demurrageRatePerDay;
+    if (days == null || rate == null || rate <= 0) return '';
+    return demurrageText
+        .replaceAll('{days}', days.toString())
+        .replaceAll('{rate}', rate.toString());
+  }
 
   /// [rows] is every `app_settings` row for this org with
   /// `category = 'documents'`, keyed by `key`.
@@ -289,15 +298,15 @@ class DocumentBoilerplate {
       demurrageRatePerDay:
           intVal('demurrage_rate_per_day') ?? fallback.demurrageRatePerDay,
       demurrageText: str('demurrage_text') ?? fallback.demurrageText,
-      goodsDescriptionDefault: str('goods_description_default') ??
-          fallback.goodsDescriptionDefault,
+      goodsDescriptionDefault:
+          str('goods_description_default') ?? fallback.goodsDescriptionDefault,
       invoiceNote: str('invoice_note') ?? fallback.invoiceNote,
       standardTerms: (str('document_terms') ?? '')
-              .split('\n')
-              .map((l) => l.trim())
-              .where((l) => l.isNotEmpty)
-              .toList()
-              .let((v) => v.isEmpty ? fallback.standardTerms : v),
+          .split('\n')
+          .map((l) => l.trim())
+          .where((l) => l.isNotEmpty)
+          .toList()
+          .let((v) => v.isEmpty ? fallback.standardTerms : v),
       quotationTerms: (str('quotation_terms') ?? '')
           .split('\n')
           .map((l) => l.trim())
@@ -365,7 +374,8 @@ class PdfBranding {
                 borderRadius: pw.BorderRadius.circular(6),
               ),
               padding: const pw.EdgeInsets.all(4),
-              child: pw.Image(pw.MemoryImage(logoBytes), fit: pw.BoxFit.contain),
+              child:
+                  pw.Image(pw.MemoryImage(logoBytes), fit: pw.BoxFit.contain),
             ),
             pw.SizedBox(width: 12),
           ],
@@ -375,23 +385,30 @@ class PdfBranding {
               children: [
                 pw.Text(orgName.toUpperCase(),
                     style: pw.TextStyle(
-                        font: fonts.bold, fontSize: 16, color: PdfColors.white)),
+                        font: fonts.bold,
+                        fontSize: 16,
+                        color: PdfColors.white)),
                 if (p(profile, 'tagline').isNotEmpty)
                   pw.Text(p(profile, 'tagline'),
-                      style:
-                          pw.TextStyle(font: fonts.regular, fontSize: 9, color: gold)),
+                      style: pw.TextStyle(
+                          font: fonts.regular, fontSize: 9, color: gold)),
                 if (p(profile, 'address').isNotEmpty)
                   pw.Text(p(profile, 'address'),
                       style: pw.TextStyle(
-                          font: fonts.regular, fontSize: 8, color: PdfColors.grey300)),
+                          font: fonts.regular,
+                          fontSize: 8,
+                          color: PdfColors.grey300)),
                 pw.Text(
                   [
-                    if (p(profile, 'phone1').isNotEmpty) 'Ph: ${p(profile, 'phone1')}',
+                    if (p(profile, 'phone1').isNotEmpty)
+                      'Ph: ${p(profile, 'phone1')}',
                     if (p(profile, 'phone2').isNotEmpty) p(profile, 'phone2'),
                     if (p(profile, 'email').isNotEmpty) p(profile, 'email'),
                   ].join('  |  '),
                   style: pw.TextStyle(
-                      font: fonts.regular, fontSize: 8, color: PdfColors.grey300),
+                      font: fonts.regular,
+                      fontSize: 8,
+                      color: PdfColors.grey300),
                 ),
               ],
             ),
@@ -400,11 +417,14 @@ class PdfBranding {
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
               pw.Text(docLabel,
-                  style: pw.TextStyle(font: fonts.bold, fontSize: 13, color: gold)),
+                  style: pw.TextStyle(
+                      font: fonts.bold, fontSize: 13, color: gold)),
               if (p(profile, 'gstin').isNotEmpty)
                 pw.Text('GSTIN: ${p(profile, 'gstin')}',
                     style: pw.TextStyle(
-                        font: fonts.regular, fontSize: 8.5, color: PdfColors.white)),
+                        font: fonts.regular,
+                        fontSize: 8.5,
+                        color: PdfColors.white)),
             ],
           ),
         ],
@@ -466,8 +486,8 @@ class PdfBranding {
                     borderRadius: pw.BorderRadius.circular(6),
                   ),
                   padding: const pw.EdgeInsets.all(4),
-                  child:
-                      pw.Image(pw.MemoryImage(logoBytes), fit: pw.BoxFit.contain),
+                  child: pw.Image(pw.MemoryImage(logoBytes),
+                      fit: pw.BoxFit.contain),
                 ),
                 pw.SizedBox(width: 12),
               ],
@@ -550,7 +570,8 @@ class PdfBranding {
           children: [
             pw.TextSpan(
                 text: '$label: ',
-                style: pw.TextStyle(font: fonts.regular, fontSize: 9, color: grey)),
+                style: pw.TextStyle(
+                    font: fonts.regular, fontSize: 9, color: grey)),
             pw.TextSpan(
                 text: value,
                 style: pw.TextStyle(
@@ -641,7 +662,8 @@ class PdfBranding {
           pw.Text(
             'For Any Query contact us: ${org.phones.join(', ')}',
             textAlign: pw.TextAlign.center,
-            style: pw.TextStyle(font: fonts.regular, fontSize: 7.5, color: grey),
+            style:
+                pw.TextStyle(font: fonts.regular, fontSize: 7.5, color: grey),
           ),
       ],
     );
@@ -649,8 +671,18 @@ class PdfBranding {
 
   static String fmtDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final l = dt.toLocal();
     return '${l.day} ${months[l.month - 1]} ${l.year}';

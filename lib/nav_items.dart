@@ -68,14 +68,16 @@ const kNavGroupOther = 'Other';
 /// vendor ends up not knowing what exists. These five are the ones a
 /// working day actually returns to.
 ///
-/// Redesign (20 Oct 2026): Home / Leads / Orders / Ops, with More pinned
-/// after them by the shell. Payments left the bar — it is in More under
-/// Money and behind the Dashboard's "To collect" tile.
+/// CORRECTIONS.md B6 (Arun, 20 Oct 2026): Home / Leads / Orders / Pay,
+/// with More pinned after them by the shell. Operations moved INTO More,
+/// and its awaiting-approval count moved with it (on the More slot and on
+/// the Operations tile in the sheet). The 20 Oct redesign briefly had Ops
+/// in the bar and Pay in More; B6 is the decision that overrides it.
 const kPrimaryNavNames = <String>{
   'HomePage',
   'LeadsPage',
   'OrdersPage',
-  'OperationsPage',
+  'PaymentsPage',
 };
 
 /// The destinations the mobile bottom bar shows, for THIS session.

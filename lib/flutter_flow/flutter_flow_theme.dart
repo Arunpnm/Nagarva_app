@@ -49,8 +49,11 @@ abstract class FlutterFlowTheme {
 
   static ThemeMode get themeMode {
     final darkMode = _prefs?.getBool(kThemeModeKey);
+    // CORRECTIONS.md B7: light until the user picks Dark or Midnight in
+    // Settings. Was ThemeMode.system, which opened dark on any phone set
+    // to dark mode. A choice already saved on the device is kept.
     return darkMode == null
-        ? ThemeMode.system
+        ? ThemeMode.light
         : darkMode
             ? ThemeMode.dark
             : ThemeMode.light;

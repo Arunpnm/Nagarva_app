@@ -1268,7 +1268,11 @@ class _NavBarPageState extends State<NavBarPage>
             if (bottomItems.isEmpty) return const SizedBox.shrink();
             final idx =
                 bottomItems.indexWhere((e) => e.name == _currentPageName);
-            return MobileBottomNav(
+            // CORRECTIONS.md B6: Operations lives in More now, so the
+            // awaiting-approval count rides on the More slot.
+            return ValueListenableBuilder<int>(
+              valueListenable: ApprovalQueue.instance.pendingCount,
+              builder: (context, pending, _) => MobileBottomNav(
               items: bottomItems,
               // -1 when the current screen is a module reached from More:
               // the bar then highlights More instead of a wrong tab.
@@ -1286,12 +1290,13 @@ class _NavBarPageState extends State<NavBarPage>
                       (
                         icon: Icons.apps_rounded,
                         label: AppLocalizations.of(context).ngNavMore,
-                        badge: 0,
+                        badge: pending,
                         onTap: () => MoreSheet.show(context,
                             currentPageName: _currentPageName),
                       ),
                     ]
                   : const [],
+            ),
             );
           }),
         ),
