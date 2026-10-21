@@ -154,13 +154,16 @@ const bool kServerSideOrderIds = true;
 /// "Paid by", because writing a column that does not exist fails the
 /// whole expense insert (the kServerSideOrderIds lesson, 8 Sept 2026).
 /// Cash book reads it either way and says so when it is missing.
-const bool kExpensePaymentModeLive = false;
+// LIVE 21 Oct 2026: column + check constraint confirmed by query.
+const bool kExpensePaymentModeLive = true;
 
 /// `staff_leaves` / `staff_incentives`
 /// (supabase/20261021_staff_leave_and_incentives.sql). FALSE until both
 /// tables are confirmed live by query. While false, Leave and Overtime &
 /// incentives say what is missing instead of failing on a 42P01.
-const bool kStaffLeaveIncentivesLive = false;
+// LIVE 21 Oct 2026: both tables, RLS and the four command policies
+// confirmed by query; readable as a real member.
+const bool kStaffLeaveIncentivesLive = true;
 
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
