@@ -835,7 +835,7 @@
   "ngQuote": "மதிப்பீடு",
   "ngTabDone": "முடிந்தவை",
   "ngReceived": "பெறப்பட்டவை",
-  "ngDaysLate": "{n} நாள் தாமதம்",
+  "ngDaysLate": "{n, plural, =1{1 நாள் தாமதம்} other{{n} நாள் தாமதம்}}",
   "ngNoPaymentsYet": "இன்னும் கட்டணம் பதிவு செய்யப்படவில்லை",
   "ngOpsTitle": "செயல்பாடுகள்",
   "ngOpsNewTrip": "புதிய பயணம்",

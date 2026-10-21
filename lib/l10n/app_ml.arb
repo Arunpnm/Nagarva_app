@@ -835,7 +835,7 @@
   "ngQuote": "ക്വട്ടേഷൻ",
   "ngTabDone": "പൂർത്തിയായവ",
   "ngReceived": "ലഭിച്ചവ",
-  "ngDaysLate": "{n} ദിവസം വൈകി",
+  "ngDaysLate": "{n, plural, =1{1 ദിവസം വൈകി} other{{n} ദിവസം വൈകി}}",
   "ngNoPaymentsYet": "ഇതുവരെ പേയ്മെന്റുകൾ രേഖപ്പെടുത്തിയിട്ടില്ല",
   "ngOpsTitle": "ഓപ്പറേഷൻസ്",
   "ngOpsNewTrip": "പുതിയ ട്രിപ്പ്",

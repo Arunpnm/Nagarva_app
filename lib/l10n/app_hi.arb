@@ -835,7 +835,7 @@
   "ngQuote": "कोटेशन",
   "ngTabDone": "पूरे",
   "ngReceived": "प्राप्त",
-  "ngDaysLate": "{n} दिन देर",
+  "ngDaysLate": "{n, plural, =1{1 दिन देर} other{{n} दिन देर}}",
   "ngNoPaymentsYet": "अभी कोई भुगतान दर्ज नहीं",
   "ngOpsTitle": "ऑपरेशन्स",
   "ngOpsNewTrip": "नई ट्रिप",

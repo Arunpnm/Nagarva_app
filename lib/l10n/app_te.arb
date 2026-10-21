@@ -835,7 +835,7 @@
   "ngQuote": "కొటేషన్",
   "ngTabDone": "పూర్తయినవి",
   "ngReceived": "అందినవి",
-  "ngDaysLate": "{n} రోజులు ఆలస్యం",
+  "ngDaysLate": "{n, plural, =1{1 రోజు ఆలస్యం} other{{n} రోజులు ఆలస్యం}}",
   "ngNoPaymentsYet": "ఇంకా చెల్లింపులు నమోదు కాలేదు",
   "ngOpsTitle": "ఆపరేషన్స్",
   "ngOpsNewTrip": "కొత్త ట్రిప్",

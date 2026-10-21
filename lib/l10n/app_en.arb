@@ -3534,7 +3534,7 @@
   "@ngReceived": {
     "description": "Payments tab"
   },
-  "ngDaysLate": "{n} days late",
+  "ngDaysLate": "{n, plural, =1{1 day late} other{{n} days late}}",
   "@ngDaysLate": {
     "description": "Payments due card",
     "placeholders": {
