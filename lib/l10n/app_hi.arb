@@ -1004,5 +1004,8 @@
   "nlNotes": "नोट्स",
   "nlNameRequired": "ग्राहक का नाम लिखें।",
   "nlNoBranches": "लीड सेव करने से पहले सेटिंग्स में शाखा जोड़ें।",
-  "nlUpdateLead": "लीड अपडेट करें"
+  "nlUpdateLead": "लीड अपडेट करें",
+  "noPickup": "पिकअप",
+  "noDrop": "ड्रॉप",
+  "noPricing": "कीमत और स्रोत"
 }

@@ -1004,5 +1004,8 @@
   "nlNotes": "ಟಿಪ್ಪಣಿಗಳು",
   "nlNameRequired": "ಗ್ರಾಹಕರ ಹೆಸರು ನಮೂದಿಸಿ.",
   "nlNoBranches": "ಲೀಡ್ ಉಳಿಸುವ ಮೊದಲು ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಶಾಖೆ ಸೇರಿಸಿ.",
-  "nlUpdateLead": "ಲೀಡ್ ನವೀಕರಿಸಿ"
+  "nlUpdateLead": "ಲೀಡ್ ನವೀಕರಿಸಿ",
+  "noPickup": "ಪಿಕಪ್",
+  "noDrop": "ಡ್ರಾಪ್",
+  "noPricing": "ಬೆಲೆ & ಮೂಲ"
 }

@@ -4366,5 +4366,17 @@
   "nlUpdateLead": "Update lead",
   "@nlUpdateLead": {
     "description": "Dashboard redesign"
+  },
+  "noPickup": "Pickup",
+  "@noPickup": {
+    "description": "Dashboard redesign"
+  },
+  "noDrop": "Drop",
+  "@noDrop": {
+    "description": "Dashboard redesign"
+  },
+  "noPricing": "Price & source",
+  "@noPricing": {
+    "description": "Dashboard redesign"
   }
 }
