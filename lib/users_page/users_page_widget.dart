@@ -1,12 +1,14 @@
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/staff_pay_types.dart';
 import '/components/load_error_state.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import '/components/keyboard_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'staff_form_sheet.dart';
@@ -75,9 +77,12 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
     safeSetState(() {});
   }
 
+  late final _searchCtrl = TextEditingController(text: _model.searchQuery);
+
   @override
   void dispose() {
     _model.dispose();
+    _searchCtrl.dispose();
 
     super.dispose();
   }
@@ -149,151 +154,101 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
     if (saved) _reload();
   }
 
-  Widget _roleChip(BuildContext context, String label, String? value) {
-    final selected = _model.roleFilter == value;
-    return GestureDetector(
-      onTap: () => safeSetState(() => _model.roleFilter = value),
-      child: Container(
-        decoration: BoxDecoration(
-          color: selected
-              ? FlutterFlowTheme.of(context).primary
-              : FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16.0, 10.0, 16.0, 10.0),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: FlutterFlowTheme.of(context).labelMedium.override(
-                  font: NgFonts.geist(),
-                  color: selected
-                      ? FlutterFlowTheme.of(context).primaryBackground
-                      : FlutterFlowTheme.of(context).primaryText,
-                  letterSpacing: 0.0,
-                ),
-          ),
-        ),
-      ),
-    );
+  /// Pay-type filter (the handoff's first chip row). Null = all.
+  String? _payFilter;
+
+  String _payLabel(String payType) {
+    final l = AppLocalizations.of(context);
+    return switch (payType) {
+      StaffPayType.monthlyFixed => l.ngStaffMonthly,
+      StaffPayType.temporary => l.ngStaffTemporary,
+      _ => l.ngStaffDaily,
+    };
   }
 
-  String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+  String _roleLabel(String? role) {
+    final r = (role ?? '').trim();
+    return r.isEmpty ? '' : r[0].toUpperCase() + r.substring(1);
+  }
 
-  Widget _staffCard(BuildContext context, StaffRow s) {
+  Widget _staffRow(BuildContext context, StaffRow s) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
     final active = s.active ?? true;
-    final theme = FlutterFlowTheme.of(context);
-    final detailBits = <String>[
-      if ((s.phone ?? '').isNotEmpty) s.phone!,
-      if ((s.branch ?? '').isNotEmpty) s.branch!,
-      if (s.salary != null) '₹${s.salary!.toStringAsFixed(0)}/mo',
-    ];
+    final pay = StaffPayType.of(s);
+    final phone = (s.phone ?? '').trim();
+    final line1 = [
+      _payLabel(pay),
+      if (pay == StaffPayType.monthlyFixed && (s.salary ?? 0) > 0)
+        functions.inrFull(s.salary),
+      if (s.createdAt != null)
+        l.ngStaffJoined(DateFormat("d MMM ''yy").format(s.createdAt!)),
+    ].join(' · ');
     return InkWell(
-      borderRadius: BorderRadius.circular(12.0),
       onTap: () => _editStaff(s),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: theme.primaryBackground,
-                        borderRadius: BorderRadius.circular(22.0),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Icon(
-                          Icons.person,
-                          color: theme.primary,
-                          size: 22.0,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            s.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.titleSmall.override(
-                              font: NgFonts.geist(),
-                              color: theme.primaryText,
-                              letterSpacing: 0.0,
-                            ),
-                          ),
-                          Text(
-                            _cap((s.role ?? '—').toLowerCase()),
-                            style: theme.bodySmall.override(
-                              font: NgFonts.geist(),
-                              color: theme.primary,
-                              letterSpacing: 0.0,
-                            ),
-                          ),
-                          Text(
-                            detailBits.isEmpty ? '—' : detailBits.join(' · '),
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.bodySmall.override(
-                              font: NgFonts.geist(),
-                              color: theme.secondaryText,
-                              letterSpacing: 0.0,
-                            ),
-                          ),
-                        ].divide(const SizedBox(height: 3.0)),
-                      ),
-                    ),
-                  ].divide(const SizedBox(width: 12.0)),
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+        child: Row(
+          children: [
+            NgAvatar(s.name,
+                status: active ? NgStatus.blue : NgStatus.neutral, size: 40),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: theme.primaryBackground,
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          8.0, 3.0, 8.0, 3.0),
-                      child: Text(
-                        active ? 'Active' : 'Inactive',
-                        style: theme.labelSmall.override(
-                          font: NgFonts.geist(),
-                          color: active ? theme.primary : theme.error,
-                          letterSpacing: 0.0,
-                        ),
-                      ),
-                    ),
+                  Text.rich(
+                    TextSpan(children: [
+                      TextSpan(
+                          text: s.name,
+                          style: NgFonts.geist(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: active ? c.text : c.mute)),
+                      if (_roleLabel(s.role).isNotEmpty)
+                        TextSpan(
+                            text: ' · ${_roleLabel(s.role)}',
+                            style:
+                                NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                    ]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(width: 6.0),
-                  // Owner-only edit, see _editStaff's gate above — the icon
-                  // itself signals view-only for a manager instead of every
-                  // tap ending in the same SnackBar.
-                  Icon(
-                    _isOwnerSession ? Icons.edit_outlined : Icons.lock_outline,
-                    color: theme.secondaryText,
-                    size: 18.0,
-                  ),
+                  const SizedBox(height: 2),
+                  Text(line1,
+                      maxLines: 2,
+                      style: NgFonts.geist(
+                          fontSize: 12.5, height: 1.35, color: c.mute)),
+                  if (phone.isNotEmpty)
+                    Text(phone,
+                        style: NgFonts.mono(fontSize: 12, color: c.mute)),
                 ],
               ),
-            ],
-          ),
+            ),
+            if (phone.isNotEmpty)
+              SizedBox(
+                width: 38,
+                height: 38,
+                child: Material(
+                  color: c.s2,
+                  borderRadius: BorderRadius.circular(11),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(11),
+                    onTap: () => launchURL('tel:$phone'),
+                    child: Icon(Icons.call_outlined, size: 18, color: c.green),
+                  ),
+                ),
+              ),
+            const SizedBox(width: 4),
+            // Edit is owner-only at the database (Tier A RLS), so a staff
+            // session sees a lock instead of a way in.
+            Icon(
+                _isOwnerSession
+                    ? Icons.chevron_right_rounded
+                    : Icons.lock_outline_rounded,
+                size: 20,
+                color: c.faint),
+          ],
         ),
       ),
     );
@@ -301,164 +256,130 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final activeStaff =
-        _filteredStaff.where((s) => (s.active ?? true) == true).toList();
-    final inactiveStaff =
-        _filteredStaff.where((s) => (s.active ?? true) == false).toList();
-
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            'Staff',
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final all = _model.staffList;
+    int payCount(String p) =>
+        all.where((s) => StaffPayType.of(s) == p).length;
+    final filtered = _filteredStaff
+        .where((s) => _payFilter == null || StaffPayType.of(s) == _payFilter)
+        .toList();
+    final active = filtered.where((s) => s.active ?? true).toList();
+    final inactive = filtered.where((s) => !(s.active ?? true)).toList();
+    const roles = ['supervisor', 'driver', 'helper', 'packer', 'admin'];
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _reload),
+      body: RefreshIndicator(
+        onRefresh: _reload,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+          children: [
+            NgModuleHeader(
+              l.ngStaffTitle,
+              subtitle: l.ngStaffSummary(
+                  all.length,
+                  payCount(StaffPayType.monthlyFixed),
+                  all.length - payCount(StaffPayType.monthlyFixed)),
+              actions: [
+                NgPrimaryButton(
+                  compact: true,
+                  height: 40,
+                  icon: Icons.person_add_alt_1_outlined,
+                  label: l.ngStaffAdd,
+                  onPressed: _addStaff,
                 ),
-          ),
-          actions: const [],
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+              ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: KeyboardScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+            const SizedBox(height: 14),
+            if (_loadError != null)
+              LoadErrorState(message: _loadError!, onRetry: _reload)
+            else ...[
+              NgSearchField(
+                controller: _searchCtrl,
+                hint: l.ngNameOrPhone,
+                onChanged: (v) => safeSetState(() => _model.searchQuery = v),
+              ),
+              const SizedBox(height: 14),
+              NgChipRow(
+                edge: 0,
+                chips: [
+                  NgChip(
+                    label: l.ngTabAll,
+                    count: all.length,
+                    selected: _payFilter == null,
+                    onTap: () => safeSetState(() => _payFilter = null),
+                  ),
+                  for (final p in StaffPayType.all)
+                    NgChip(
+                      label: _payLabel(p),
+                      count: payCount(p),
+                      selected: _payFilter == p,
+                      onTap: () => safeSetState(() => _payFilter = p),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          0.0, 14.0, 0.0, 0.0),
-                      child: FFButtonWidget(
-                        onPressed: _addStaff,
-                        text: 'Add Staff',
-                        icon: const Icon(
-                          Icons.person_add,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor:
-                              FlutterFlowTheme.of(context).primaryBackground,
-                          color: FlutterFlowTheme.of(context).primary,
-                          textStyle: TextStyle(
-                            color:
-                                FlutterFlowTheme.of(context).primaryBackground,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                    ),
-                    // Users Kickoff Step 3.1: search by name/phone.
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          0.0, 4.0, 0.0, 0.0),
-                      child: TextFormField(
-                        initialValue: _model.searchQuery,
-                        onChanged: (v) =>
-                            safeSetState(() => _model.searchQuery = v),
-                        style: NgFonts.geist(
-                            color: FlutterFlowTheme.of(context).primaryText),
-                        decoration: InputDecoration(
-                          hintText: 'Search by name or phone',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          isDense: true,
-                          filled: true,
-                          fillColor:
-                              FlutterFlowTheme.of(context).secondaryBackground,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _roleChip(context, 'All', null),
-                          _roleChip(context, 'Supervisor', 'supervisor'),
-                          _roleChip(context, 'Driver', 'driver'),
-                          _roleChip(context, 'Helper', 'helper'),
-                          _roleChip(context, 'Packer', 'packer'),
-                          _roleChip(context, 'Admin', 'admin'),
-                        ].divide(const SizedBox(width: 8.0)),
-                      ),
-                    ),
-                    if (_loadError != null && _model.staffOut == null)
-                      LoadErrorState(message: _loadError!, onRetry: _reload)
-                    else ...[
-                    Text(
-                      'Active Staff (${activeStaff.length})',
-                      style: FlutterFlowTheme.of(context).titleMedium.override(
-                            font: NgFonts.geist(),
-                            color: FlutterFlowTheme.of(context).primaryText,
-                            letterSpacing: 0.0,
-                          ),
-                    ),
-                    if (activeStaff.isEmpty)
-                      Text(
-                        _model.staffOut == null
-                            ? 'Loading…'
-                            : 'No active staff found for this org.',
-                        style: FlutterFlowTheme.of(context).bodySmall.override(
-                              font: NgFonts.geist(),
-                              color: FlutterFlowTheme.of(context).secondaryText,
+                    for (final r in [null, ...roles])
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: GestureDetector(
+                          onTap: () =>
+                              safeSetState(() => _model.roleFilter = r),
+                          child: Container(
+                            height: 32,
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 12),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: _model.roleFilter == r
+                                  ? c.sel
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                      )
-                    else
-                      ...activeStaff.map((s) => _staffCard(context, s)),
-                    Text(
-                      'Inactive Staff (${inactiveStaff.length})',
-                      style: FlutterFlowTheme.of(context).titleMedium.override(
-                            font: NgFonts.geist(),
-                            color: FlutterFlowTheme.of(context).secondaryText,
-                            letterSpacing: 0.0,
+                            child: Text(
+                                r == null ? l.ngStaffAllRoles : _roleLabel(r),
+                                style: NgFonts.geist(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: _model.roleFilter == r
+                                        ? c.text
+                                        : c.mute)),
                           ),
-                    ),
-                    if (inactiveStaff.isEmpty)
-                      Text(
-                        'None.',
-                        style: FlutterFlowTheme.of(context).bodySmall.override(
-                              font: NgFonts.geist(),
-                              color: FlutterFlowTheme.of(context).secondaryText,
-                            ),
-                      )
-                    else
-                      ...inactiveStaff.map((s) => _staffCard(context, s)),
-                    ],
-                  ].divide(const SizedBox(height: 16.0)),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            ),
-          ),
+              const SizedBox(height: 14),
+              if (active.isEmpty && inactive.isEmpty)
+                NgCard(
+                  child: Text(l.ngStaffNone,
+                      textAlign: TextAlign.center,
+                      style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+                )
+              else ...[
+                if (active.isNotEmpty)
+                  NgCardList(children: [
+                    for (final s in active) _staffRow(context, s),
+                  ]),
+                if (inactive.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  NgSectionHeader(l.ngStaffInactive,
+                      trailing: '${inactive.length}'),
+                  const SizedBox(height: 10),
+                  NgCardList(children: [
+                    for (final s in inactive) _staffRow(context, s),
+                  ]),
+                ],
+              ],
+            ],
+          ],
         ),
       ),
     );

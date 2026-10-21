@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '/flutter_flow/ng_tokens.dart';
 
@@ -768,6 +769,158 @@ class NgStageBar extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Title row for module screens (everything reached from More): a 40×40
+/// back button, the 24px title with an optional muted line, and the
+/// screen's own action on the right. Sits under [NgTopBar], as in the
+/// handoff's Expenses / Fleet / Materials / Trips / Customers screens.
+///
+/// Back pops when there is somewhere to pop to. A module opened as a
+/// tab (NavBarPage renders it in place) has nothing under it, so back
+/// goes to the Dashboard instead of doing nothing.
+class NgModuleHeader extends StatelessWidget {
+  const NgModuleHeader(
+    this.title, {
+    super.key,
+    this.subtitle,
+    this.actions = const [],
+  });
+
+  final String title;
+  final String? subtitle;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Row(
+      children: [
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: Material(
+            color: c.s1,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                final nav = Navigator.of(context);
+                if (nav.canPop()) {
+                  nav.pop();
+                } else {
+                  GoRouter.of(context).go('/home');
+                }
+              },
+              child: Icon(Icons.arrow_back_rounded, size: 22, color: c.soft),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: NgFonts.geist(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.48,
+                  color: c.text,
+                ),
+              ),
+              if ((subtitle ?? '').isNotEmpty)
+                Text(subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+            ],
+          ),
+        ),
+        for (final a in actions) ...[const SizedBox(width: 8), a],
+      ],
+    );
+  }
+}
+
+/// List row inside an [NgCardList]: icon tile, title over a muted line,
+/// trailing widget (amount, pill, chevron). The handoff's standard row.
+class NgListRow extends StatelessWidget {
+  const NgListRow({
+    super.key,
+    this.icon,
+    this.iconStatus,
+    this.leading,
+    required this.title,
+    this.titleTrailing,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+
+  final IconData? icon;
+  final NgStatus? iconStatus;
+  final Widget? leading;
+  final String title;
+  final Widget? titleTrailing;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final lead = leading ??
+        (icon == null ? null : NgIconTile(icon: icon!, status: iconStatus));
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        child: Row(
+          children: [
+            if (lead != null) ...[lead, const SizedBox(width: 12)],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: NgFonts.geist(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: c.text)),
+                      ),
+                      if (titleTrailing != null) ...[
+                        const SizedBox(width: 6),
+                        titleTrailing!,
+                      ],
+                    ],
+                  ),
+                  if ((subtitle ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: NgFonts.geist(
+                            fontSize: 12.5, height: 1.35, color: c.mute)),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+          ],
+        ),
+      ),
     );
   }
 }

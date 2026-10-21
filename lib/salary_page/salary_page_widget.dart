@@ -1,7 +1,10 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/components/keyboard_scroll_view.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/backend/staff_pay_types.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -122,211 +125,205 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
     super.dispose();
   }
 
-  Widget _staffCard(StaffRow s) {
-    final theme = FlutterFlowTheme.of(context);
-    final earned = _sumOS(_monthEntriesFor(s.id!));
+  Widget _staffRow(StaffRow s) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final entries = _monthEntriesFor(s.id!);
+    final earned = _sumOS(entries);
     final paid = _sumPay(_monthPaymentsFor(s.id!));
     final balance = earned - paid;
     final advance = _sumAdv(_pendingAdvancesFor(s.id!));
-
-    Widget mini(String label, double v, Color c) => Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text('₹${v.toStringAsFixed(0)}',
-                style: NgFonts.geist(
-                    fontSize: 12.5, fontWeight: FontWeight.w800, color: c)),
-            Text(label,
-                style:
-                    NgFonts.geist(fontSize: 9, color: theme.secondaryText)),
-          ],
-        );
-
+    final pay = StaffPayType.of(s);
+    final role = (s.role ?? '').trim();
+    final sub = [
+      switch (pay) {
+        StaffPayType.monthlyFixed => l.ngStaffMonthly,
+        StaffPayType.temporary => l.ngStaffTemporary,
+        _ => l.ngStaffDaily,
+      },
+      if (pay == StaffPayType.monthlyFixed && (s.salary ?? 0) > 0)
+        functions.inrFull(s.salary)
+      else
+        l.ngSalJobs(entries.length),
+      if (advance > 0) l.ngSalAdvance(functions.inrFull(advance)),
+    ].join(' · ');
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
       onTap: () => _openLedger(s),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
         child: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: theme.primary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(19),
-              ),
-              child: Text(
-                s.name.isEmpty ? '?' : s.name[0].toUpperCase(),
-                style: NgFonts.geist(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: theme.primary),
-              ),
-            ),
-            const SizedBox(width: 10),
+            NgAvatar(s.name, size: 40),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(s.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: NgFonts.geist(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: theme.primaryText)),
-                  Text(
-                    [
-                      if ((s.role ?? '').isNotEmpty) s.role!,
-                      if ((s.branch ?? '').isNotEmpty) s.branch!,
-                    ].join(' · '),
+                  Text.rich(
+                    TextSpan(children: [
+                      TextSpan(
+                          text: s.name,
+                          style: NgFonts.geist(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: c.text)),
+                      if (role.isNotEmpty)
+                        TextSpan(
+                            text:
+                                ' · ${role[0].toUpperCase()}${role.substring(1)}',
+                            style:
+                                NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                    ]),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: NgFonts.geist(
-                        fontSize: 11, color: theme.secondaryText),
                   ),
+                  const SizedBox(height: 2),
+                  Text(sub,
+                      maxLines: 2,
+                      style: NgFonts.geist(
+                          fontSize: 12.5, height: 1.35, color: c.mute)),
                 ],
               ),
             ),
-            mini('EARNED', earned, NgPalette.of(context).green),
-            const SizedBox(width: 12),
-            mini('TO PAY', balance,
-                balance > 0 ? theme.primary : theme.secondaryText),
-            const SizedBox(width: 12),
-            mini('ADVANCE', advance,
-                advance > 0 ? theme.error : theme.secondaryText),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(functions.inrFull(balance),
+                    style: NgFonts.geist(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+                Text(l.ngSalBalance,
+                    style: NgFonts.geist(fontSize: 11.5, color: c.mute)),
+              ],
+            ),
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right, size: 18, color: theme.secondaryText),
+            Icon(Icons.chevron_right_rounded, size: 20, color: c.faint),
           ],
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    final monthLabel = DateFormat('MMMM yyyy').format(_model.month);
-    final totalEarned = _model.staffList
-        .fold(0.0, (s, st) => s + _sumOS(_monthEntriesFor(st.id!)));
-    final totalPaid = _model.staffList
-        .fold(0.0, (s, st) => s + _sumPay(_monthPaymentsFor(st.id!)));
-    final totalAdvance = _model.staffList
-        .fold(0.0, (s, st) => s + _sumAdv(_pendingAdvancesFor(st.id!)));
-
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            'Salary & Staff',
-            style: theme.titleLarge.override(
-              font: NgFonts.geist(fontWeight: FontWeight.w600),
-              fontSize: 22.0,
-              letterSpacing: 0.0,
-            ),
-          ),
-          elevation: 0.0,
+  Widget _tile(String label, double v, Color color) {
+    final c = NgPalette.of(context);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: c.s1,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: c.w06),
         ),
-        body: SafeArea(
-          top: true,
-          child: _model.loading
-              ? const Center(child: CircularProgressIndicator())
-              : KeyboardScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // ---- Month nav + payroll totals ---------------------
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: theme.secondaryBackground,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                IconButton(
-                                  icon: Icon(Icons.chevron_left,
-                                      color: theme.primary),
-                                  onPressed: () => safeSetState(() =>
-                                      _model.month = DateTime(_model.month.year,
-                                          _model.month.month - 1)),
-                                ),
-                                Text(monthLabel,
-                                    style: NgFonts.geist(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: theme.primaryText)),
-                                IconButton(
-                                  icon: Icon(Icons.chevron_right,
-                                      color: theme.primary),
-                                  onPressed: () => safeSetState(() =>
-                                      _model.month = DateTime(_model.month.year,
-                                          _model.month.month + 1)),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _totalCol('Earned', totalEarned,
-                                    NgPalette.of(context).green),
-                                _totalCol('Paid Out', totalPaid,
-                                    NgPalette.of(context).blue),
-                                _totalCol('To Pay', totalEarned - totalPaid,
-                                    theme.primary),
-                                _totalCol(
-                                    'Advances', totalAdvance, theme.error),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      if (_model.staffList.isEmpty)
-                        Text(
-                          'No staff yet — add your team on the Staff page '
-                          'first.',
-                          style: NgFonts.geist(
-                              fontSize: 13, color: theme.secondaryText),
-                        )
-                      else
-                        ..._model.staffList.map(_staffCard),
-                    ],
-                  ),
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+            const SizedBox(height: 4),
+            Text(functions.inrFull(v),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: NgFonts.geist(
+                    fontSize: 18, fontWeight: FontWeight.w600, color: color)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _totalCol(String label, double v, Color c) {
-    final theme = FlutterFlowTheme.of(context);
-    return Column(
-      children: [
-        Text('₹${v.toStringAsFixed(0)}',
-            style: NgFonts.geist(
-                fontSize: 14.5, fontWeight: FontWeight.w800, color: c)),
-        Text(label,
-            style: NgFonts.geist(fontSize: 10, color: theme.secondaryText)),
-      ],
+  void _shiftMonth(int d) => safeSetState(() => _model.month =
+      DateTime(_model.month.year, _model.month.month + d));
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final staff = _model.staffList.where((s) => s.id != null).toList();
+    double total(double Function(StaffRow) f) =>
+        staff.fold(0.0, (a, s) => a + f(s));
+    final earned = total((s) => _sumOS(_monthEntriesFor(s.id!)));
+    final paid = total((s) => _sumPay(_monthPaymentsFor(s.id!)));
+    final advances = total((s) => _sumAdv(_pendingAdvancesFor(s.id!)));
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
+      body: _model.loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                children: [
+                  NgModuleHeader(
+                    l.ngSalTitle,
+                    actions: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Previous month',
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(Icons.chevron_left_rounded,
+                                color: c.mute),
+                            onPressed: () => _shiftMonth(-1),
+                          ),
+                          Text(DateFormat('MMM yyyy').format(_model.month),
+                              style:
+                                  NgFonts.geist(fontSize: 13, color: c.mute)),
+                          IconButton(
+                            tooltip: 'Next month',
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(Icons.chevron_right_rounded,
+                                color: c.mute),
+                            onPressed: () => _shiftMonth(1),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      _tile(l.ngSalToPay, earned - paid, c.acc),
+                      const SizedBox(width: 8),
+                      _tile(l.ngSalAdvances, advances, c.red),
+                      const SizedBox(width: 8),
+                      _tile(l.ngSalPaid, paid, c.green),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  if (staff.isEmpty)
+                    NgCard(
+                      child: Text(l.ngStaffNone,
+                          textAlign: TextAlign.center,
+                          style:
+                              NgFonts.geist(fontSize: 13.5, color: c.mute)),
+                    )
+                  else
+                    NgCardList(children: [
+                      for (final s in staff) _staffRow(s),
+                    ]),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline_rounded,
+                            size: 16, color: c.faint),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(l.ngSalNote,
+                              style: NgFonts.geist(
+                                  fontSize: 12, height: 1.4, color: c.mute)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }

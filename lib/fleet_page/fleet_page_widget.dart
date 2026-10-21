@@ -2,12 +2,12 @@ import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/components/keyboard_scroll_view.dart';
 import '/components/load_error_state.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'fleet_page_model.dart';
@@ -89,464 +89,223 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
   }
 
   /// Insurance/permit expiry chip: red when expired, amber when due within
-  /// 30 days, nothing otherwise. Shown on each vehicle card so renewals
-  /// can't sneak up (Arun's fleet-reminder request; push reminders for
-  /// these ride on the Week-3 FCM work).
-  Widget _expiryBadge(String label, DateTime? date) {
-    if (date == null) return const SizedBox.shrink();
+  /// 30 days, nothing otherwise. Shown on each vehicle so renewals can't
+  /// sneak up (Arun's fleet-reminder request).
+  Widget? _expiryBadge(String label, DateTime? date) {
+    if (date == null) return null;
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
     final now = DateTime.now();
     final days = date.difference(DateTime(now.year, now.month, now.day)).inDays;
-    if (days > 30) return const SizedBox.shrink();
+    if (days > 30) return null;
     final expired = days < 0;
-    final color = expired ? NgPalette.of(context).red : NgPalette.of(context).amber;
-    final text =
-        expired ? '$label expired ${-days}d ago' : '$label expires in ${days}d';
+    final s = c.status(expired ? NgStatus.red : NgStatus.amber);
     return Container(
-      margin: const EdgeInsets.only(top: 6, right: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: s.bg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.warning_amber_rounded, size: 13, color: color),
+          Icon(Icons.warning_amber_rounded, size: 14, color: s.fg),
           const SizedBox(width: 4),
           Text(
-            text,
+            expired
+                ? l.ngFleetExpired(label, -days)
+                : l.ngFleetExpires(label, days),
             style: NgFonts.geist(
-                fontSize: 10.5, fontWeight: FontWeight.w700, color: color),
+                fontSize: 11.5, fontWeight: FontWeight.w600, color: s.fg),
           ),
         ],
       ),
     );
   }
 
-  /// Corrections session, B3 (7 Aug 2026): was a bare hardcoded stat
-  /// value/label pair — see the class doc comment for the fake-numbers
-  /// history this replaces.
-  Widget _statTile(BuildContext context, String value, String label) {
-    return Flexible(
-      flex: 1,
+  ({String label, NgStatus tone}) _statusLook(String? st) {
+    final l = AppLocalizations.of(context);
+    switch ((st ?? '').toLowerCase()) {
+      case 'active':
+        return (label: l.ngFleetActive, tone: NgStatus.green);
+      case 'maintenance':
+      case 'service':
+        return (label: l.ngFleetMaintenance, tone: NgStatus.amber);
+      case 'inactive':
+        return (label: l.ngFleetInactive, tone: NgStatus.neutral);
+      default:
+        return (
+          label: (st ?? '').isEmpty ? '—' : st!,
+          tone: NgStatus.neutral
+        );
+    }
+  }
+
+  Widget _tile(String value, String label) {
+    final c = NgPalette.of(context);
+    return Expanded(
       child: Container(
-        width: double.infinity,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(10.0),
+          color: c.s1,
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(0.0, 10.0, 0.0, 10.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                value,
-                style: FlutterFlowTheme.of(context).titleMedium.override(
-                      font: NgFonts.geist(),
-                      color: FlutterFlowTheme.of(context).primary,
-                      letterSpacing: 0.0,
-                    ),
-              ),
-              Text(
-                label,
-                style: FlutterFlowTheme.of(context).labelSmall.override(
-                      font: NgFonts.geist(),
-                      color: FlutterFlowTheme.of(context).secondaryText,
-                      letterSpacing: 0.0,
-                    ),
-              ),
-            ].divide(const SizedBox(height: 2.0)),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(value,
+                style: NgFonts.mono(
+                    fontSize: 19, fontWeight: FontWeight.w600, color: c.acc)),
+            const SizedBox(height: 3),
+            Text(label, style: NgFonts.geist(fontSize: 12, color: c.mute)),
+          ],
         ),
       ),
     );
   }
 
+  Future<void> _openVehicle([VehiclesRow? v]) async {
+    final saved = await VehicleDetailSheet.show(context, existing: v);
+    if (saved) _loadVehicles();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Corrections session, B3: computed from the same status vocabulary
-    // vehicle_detail_sheet.dart's edit form actually writes
-    // (_statuses = ['active', 'maintenance', 'inactive']) — NOT the
-    // "Active/Idle/Service" labels the old hardcoded cards used, which
-    // don't match any status this app's own UI can set (grepped: the only
-    // place vehicles.status is written is that form). One live row still
-    // holds 'idle' from data that predates the current vocabulary; it
-    // shows up in none of these three counts rather than being force-fit
-    // into one, since counting it as "Active" or "Maintenance" would be a
-    // guess this app's own code doesn't support.
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    // Counted from the status vocabulary vehicle_detail_sheet.dart's form
+    // actually writes (active / maintenance / inactive). A legacy value
+    // outside it shows in none of the three rather than being force-fit.
     final vehicles = _model.vehiclesList;
-    final activeCount = vehicles.where((v) => v.status == 'active').length;
-    final maintenanceCount =
-        vehicles.where((v) => v.status == 'maintenance').length;
-    final inactiveCount = vehicles.where((v) => v.status == 'inactive').length;
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).fleet,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
+    int count(String st) => vehicles.where((v) => v.status == st).length;
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _loadVehicles),
+      body: RefreshIndicator(
+        onRefresh: _loadVehicles,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+          children: [
+            NgModuleHeader(
+              l.fleet,
+              actions: [
+                NgPrimaryButton(
+                  compact: true,
+                  height: 40,
+                  icon: Icons.add_rounded,
+                  label: l.ngFleetNew,
+                  onPressed: () => _openVehicle(),
                 ),
-          ),
-          actions: const [],
-          elevation: 0.0,
-        ),
-        // Parity brief Part 2c: there was previously no way to add a
-        // vehicle at all.
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            final saved = await VehicleDetailSheet.show(context);
-            if (saved) _loadVehicles();
-          },
-          // Colours from the app's FAB theme (redesign accent, Oct 2026).
-          child: const Icon(Icons.add),
-        ),
-        body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+              ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: KeyboardScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _statTile(context, '$activeCount', 'Active'),
-                        _statTile(context, '$maintenanceCount', 'Maintenance'),
-                        _statTile(context, '$inactiveCount', 'Inactive'),
-                      ].divide(const SizedBox(width: 10.0)),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context).liveFleet,
-                          style:
-                              FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: NgFonts.geist(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontStyle,
-                                    ),
-                                    color: FlutterFlowTheme.of(context).primary,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontStyle,
-                                  ),
-                        ),
-                        Builder(
-                          builder: (context) {
-                            if (_loadError != null &&
-                                _model.vehiclesOut == null) {
-                              return LoadErrorState(
-                                  message: _loadError!,
-                                  onRetry: _loadVehicles);
-                            }
-                            final vehiclesListItem =
-                                _model.vehiclesList.toList();
-
-                            return ListView.separated(
-                              padding: EdgeInsets.zero,
-                              primary: false,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              scrollDirection: Axis.vertical,
-                              itemCount: vehiclesListItem.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12.0),
-                              itemBuilder: (context, vehiclesListItemIndex) {
-                                final vehiclesListItemItem =
-                                    vehiclesListItem[vehiclesListItemIndex];
-                                // Parity brief Part 2c: this card had no tap
-                                // handler at all — there was no way to open,
-                                // view, or edit a vehicle. Now opens the
-                                // detail/edit sheet and reloads the list on
-                                // save (Part 1's refresh-after-write pattern
-                                // via VehicleDetailSheet's bool return).
-                                return Material(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(12.0),
-                                    onTap: () async {
-                                      final saved =
-                                          await VehicleDetailSheet.show(
-                                        context,
-                                        existing: vehiclesListItemItem,
-                                      );
-                                      if (saved) _loadVehicles();
-                                    },
-                                    child: Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(12.0),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Wrap(
-                                          children: [
-                                            _expiryBadge(
-                                                'Insurance',
-                                                vehiclesListItemItem
-                                                    .insuranceExpiry),
-                                            _expiryBadge(
-                                                'Permit',
-                                                vehiclesListItemItem
-                                                    .permitExpiry),
-                                          ],
-                                        ),
-                                        Row(
-                                          mainAxisSize: MainAxisSize.max,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              vehiclesListItemItem.regNo,
-                                              style: FlutterFlowTheme.of(
-                                                      context)
-                                                  .titleSmall
-                                                  .override(
-                                                    font:
-                                                        NgFonts.geist(
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .fontStyle,
-                                                    ),
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .primary,
-                                                    letterSpacing: 0.0,
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleSmall
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleSmall
-                                                            .fontStyle,
-                                                  ),
-                                            ),
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryBackground,
-                                                borderRadius:
-                                                    BorderRadius.circular(12.0),
-                                              ),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsetsDirectional
-                                                        .fromSTEB(
-                                                        10.0, 4.0, 10.0, 4.0),
-                                                child: Text(
-                                                  vehiclesListItemItem.status ??
-                                                      '-',
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .labelSmall
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .primaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .labelSmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .labelSmall
-                                                                .fontStyle,
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        Text(
-                                          vehiclesListItemItem.vehicleType ??
-                                              '-',
-                                          style: FlutterFlowTheme.of(context)
-                                              .bodyMedium
-                                              .override(
-                                                font: NgFonts.geist(
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .bodyMedium
-                                                          .fontStyle,
-                                                ),
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primaryText,
-                                                letterSpacing: 0.0,
-                                                fontWeight:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontWeight,
-                                                fontStyle:
-                                                    FlutterFlowTheme.of(context)
-                                                        .bodyMedium
-                                                        .fontStyle,
-                                              ),
-                                        ),
-                                        Row(
-                                          mainAxisSize: MainAxisSize.max,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              vehiclesListItemItem.driverName ??
-                                                  '-',
-                                              style:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                            ),
-                                            IconButton(
-                                              tooltip: 'Delete vehicle',
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              icon: Icon(
-                                                  Icons.delete_outline,
-                                                  size: 18,
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .error),
-                                              onPressed: vehiclesListItemItem
-                                                          .id ==
-                                                      null
-                                                  ? null
-                                                  : () => _deleteVehicle(
-                                                      vehiclesListItemItem),
-                                            ),
-                                          ],
-                                        ),
-                                      ].divide(const SizedBox(height: 6.0)),
-                                    ),
-                                  ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ].divide(const SizedBox(height: 12.0)),
-                    ),
-                  ].divide(const SizedBox(height: 16.0)),
-                ),
+            const SizedBox(height: 14),
+            if (_loadError != null)
+              LoadErrorState(message: _loadError!, onRetry: _loadVehicles)
+            else ...[
+              Row(
+                children: [
+                  _tile('${count('active')}', l.ngFleetActive),
+                  const SizedBox(width: 8),
+                  _tile('${count('maintenance')}', l.ngFleetMaintenance),
+                  const SizedBox(width: 8),
+                  _tile('${count('inactive')}', l.ngFleetInactive),
+                ],
               ),
-            ),
-          ),
+              const SizedBox(height: 14),
+              if (vehicles.isEmpty)
+                NgCard(
+                  child: Text(l.ngFleetNone,
+                      textAlign: TextAlign.center,
+                      style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+                )
+              else
+                NgCardList(children: [
+                  for (final v in vehicles)
+                    InkWell(
+                      onTap: () => _openVehicle(v),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 13, 8, 13),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Builder(builder: (context) {
+                                    final badges = [
+                                      _expiryBadge(
+                                          l.ngFleetInsurance, v.insuranceExpiry),
+                                      _expiryBadge(
+                                          l.ngFleetPermit, v.permitExpiry),
+                                    ].whereType<Widget>().toList();
+                                    if (badges.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 5),
+                                      child: Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: badges),
+                                    );
+                                  }),
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(v.regNo,
+                                            style: NgFonts.mono(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                                color: c.acc)),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Builder(builder: (context) {
+                                        final s = _statusLook(v.status);
+                                        return NgPill(s.label, status: s.tone);
+                                      }),
+                                    ],
+                                  ),
+                                  if ((v.vehicleType ?? '').isNotEmpty) ...[
+                                    const SizedBox(height: 5),
+                                    Text(v.vehicleType!,
+                                        style: NgFonts.geist(
+                                            fontSize: 13.5, color: c.text)),
+                                  ],
+                                  const SizedBox(height: 5),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.person_outline_rounded,
+                                          size: 15, color: c.mute),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                          (v.driverName ?? v.driver ?? '')
+                                                  .trim()
+                                                  .isEmpty
+                                              ? '—'
+                                              : (v.driverName ?? v.driver)!,
+                                          style: NgFonts.geist(
+                                              fontSize: 12.5, color: c.mute)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: l.ngFleetDelete,
+                              icon: Icon(Icons.delete_outline_rounded,
+                                  size: 19, color: c.faint),
+                              onPressed: () => _deleteVehicle(v),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ]),
+            ],
+          ],
         ),
       ),
     );

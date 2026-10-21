@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'customer_detail_page_widget.dart';
@@ -27,6 +30,13 @@ class _CustomersPageWidgetState extends State<CustomersPageWidget>
   bool _loading = true;
   List<Customer360ViewRow> _all = [];
   String _search = '';
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -122,94 +132,83 @@ class _CustomersPageWidgetState extends State<CustomersPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        automaticallyImplyLeading: true,
-        title: Text('Customers',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 22,
-                fontWeight: FontWeight.w600)),
-        elevation: 0,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _newCustomer,
-        icon: const Icon(Icons.add),
-        label: const Text('New Customer'),
-      ),
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                 children: [
-                  TextField(
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Search Name / Phone / Company',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
+                  NgModuleHeader(
+                    l.ngMenuCustomers,
+                    subtitle: l.ngCustCount(_all.length),
+                    actions: [
+                      NgPrimaryButton(
+                        compact: true,
+                        height: 40,
+                        icon: Icons.add_rounded,
+                        label: l.ngCustNew,
+                        onPressed: _newCustomer,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  NgSearchField(
+                    controller: _searchCtrl,
+                    hint: l.ngCustSearch,
                     onChanged: (v) => setState(() => _search = v),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
                   if (_filtered.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Text('No customers found.',
-                          style: NgFonts.geist(color: theme.secondaryText)),
+                    NgCard(
+                      child: Text(l.ngCustNone,
+                          textAlign: TextAlign.center,
+                          style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
                     )
                   else
-                    for (final c in _filtered) _customerRow(theme, c),
+                    NgCardList(children: [
+                      for (final cu in _filtered) _customerRow(cu),
+                    ]),
                 ],
               ),
             ),
     );
   }
 
-  Widget _customerRow(FlutterFlowTheme theme, Customer360ViewRow c) {
-    return InkWell(
+  Widget _customerRow(Customer360ViewRow cu) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final due = cu.outstandingEstimate;
+    return NgListRow(
       onTap: () => context.pushNamed(
         CustomerDetailPageWidget.routeName,
         queryParameters: {
-          'customerId': serializeParam(c.customerId, ParamType.String),
+          'customerId': serializeParam(cu.customerId, ParamType.String),
         },
       ),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(c.name ?? '—',
-                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
-                  Text(
-                    [
-                      if ((c.phone ?? '').isNotEmpty) c.phone,
-                      if ((c.companyName ?? '').isNotEmpty) c.companyName,
-                      '${c.totalOrders} orders',
-                    ].whereType<String>().join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
-                  ),
-                ],
-              ),
-            ),
-            Text('₹${c.lifetimeValue.toStringAsFixed(0)}',
-                style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
-          ],
-        ),
+      leading: NgAvatar(cu.name ?? '?'),
+      title: cu.name ?? '—',
+      subtitle: [
+        if ((cu.phone ?? '').isNotEmpty) cu.phone!,
+        if ((cu.companyName ?? '').isNotEmpty) cu.companyName!,
+        l.ngOrdersN(cu.totalOrders),
+      ].join(' · '),
+      trailing: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(functions.inrFull(cu.lifetimeValue),
+              style: NgFonts.geist(
+                  fontSize: 14.5, fontWeight: FontWeight.w600, color: c.text)),
+          if (due > 0)
+            Text(l.ngCustDue(functions.inrFull(due)),
+                style: NgFonts.geist(
+                    fontSize: 12, fontWeight: FontWeight.w500, color: c.red)),
+        ],
       ),
     );
   }

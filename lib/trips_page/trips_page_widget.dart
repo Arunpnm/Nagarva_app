@@ -4,7 +4,9 @@ import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'trip_detail_page_widget.dart';
@@ -169,57 +171,87 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
     }
   }
 
+  static const _kStatusOrder = ['planned', 'ongoing', 'completed', 'cancelled'];
+
+  String _statusLabel(String st) {
+    final l = AppLocalizations.of(context);
+    return switch (st) {
+      'planned' => l.ngTripPlanned,
+      'ongoing' => l.ngTripOngoing,
+      'completed' => l.ngTabCompleted,
+      'cancelled' => l.ngTabCancelled,
+      _ => st,
+    };
+  }
+
+  NgStatus _statusTone(String st) => switch (st) {
+        'planned' => NgStatus.blue,
+        'ongoing' => NgStatus.amber,
+        'completed' => NgStatus.green,
+        'cancelled' => NgStatus.red,
+        _ => NgStatus.neutral,
+      };
+
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final statuses = [
+      ..._kStatusOrder.where(_statuses.contains),
+      ..._statuses.where((s) => !_kStatusOrder.contains(s)),
+    ];
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        automaticallyImplyLeading: true,
-        title: Text('Trips',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 22,
-                fontWeight: FontWeight.w600)),
-        elevation: 0,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _newTrip,
-        icon: const Icon(Icons.add),
-        label: const Text('New Trip'),
-      ),
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                 children: [
-                  if (_statuses.isNotEmpty)
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        ChoiceChip(
-                            label: const Text('All'),
-                            selected: _statusFilter == null,
-                            onSelected: (_) => setState(() => _statusFilter = null)),
-                        for (final s in _statuses)
-                          ChoiceChip(
-                              label: Text(s),
-                              selected: _statusFilter == s,
-                              onSelected: (_) => setState(() => _statusFilter = s)),
-                      ],
-                    ),
-                  const SizedBox(height: 10),
+                  NgModuleHeader(
+                    l.ngMenuTrips,
+                    actions: [
+                      NgPrimaryButton(
+                        compact: true,
+                        height: 40,
+                        icon: Icons.add_rounded,
+                        label: l.ngOpsNewTrip,
+                        onPressed: _newTrip,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  NgChipRow(
+                    edge: 0,
+                    chips: [
+                      NgChip(
+                        label: l.ngTabAll,
+                        count: _all.length,
+                        selected: _statusFilter == null,
+                        onTap: () => setState(() => _statusFilter = null),
+                      ),
+                      for (final st in statuses)
+                        NgChip(
+                          label: _statusLabel(st),
+                          count: _all.where((t) => t.status == st).length,
+                          selected: _statusFilter == st,
+                          onTap: () => setState(() => _statusFilter = st),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
                   if (_filtered.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Text('No trips found.',
-                          style: NgFonts.geist(color: theme.secondaryText)),
+                    NgCard(
+                      child: Text(l.ngTripNone,
+                          textAlign: TextAlign.center,
+                          style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
                     )
                   else
-                    for (final t in _filtered) _tripRow(theme, t),
+                    NgCardList(children: [
+                      for (final t in _filtered) _tripRow(t),
+                    ]),
                 ],
               ),
             ),
@@ -242,60 +274,31 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
     if (deleted) await _load();
   }
 
-  Widget _statusChip(FlutterFlowTheme theme, String status) {
-    final color = {
-          'planned': Colors.blueGrey,
-          'ongoing': Colors.blue,
-          'completed': Colors.green,
-          'cancelled': Colors.red,
-        }[status] ??
-        Colors.grey;
-    return Container(
-      margin: const EdgeInsets.only(top: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-      child: Text(status, style: NgFonts.geist(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
-    );
-  }
-
-  Widget _tripRow(FlutterFlowTheme theme, TripsRow t) {
-    return InkWell(
+  Widget _tripRow(TripsRow t) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    return NgListRow(
       onTap: () => context.pushNamed(
         TripDetailPageWidget.routeName,
         queryParameters: {'tripId': serializeParam(t.id, ParamType.String)},
       ),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(t.tripNo ?? '(no trip no)',
-                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
-                  Text(
-                    [
-                      if ((t.vehicleNo ?? '').isNotEmpty) t.vehicleNo,
-                      '${t.fromLoc ?? '—'} → ${t.toLoc ?? '—'}',
-                    ].whereType<String>().join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
-                  ),
-                ],
-              ),
-            ),
-            _statusChip(theme, t.status),
-            IconButton(
-              tooltip: 'Delete trip',
-              visualDensity: VisualDensity.compact,
-              icon: Icon(Icons.delete_outline, size: 18, color: theme.error),
-              onPressed: () => _deleteTrip(t),
-            ),
-          ],
-        ),
+      title: t.tripNo ?? l.ngTripNoNumber,
+      titleTrailing:
+          NgPill(_statusLabel(t.status), status: _statusTone(t.status)),
+      subtitle: [
+        [
+          if ((t.vehicleNo ?? '').isNotEmpty) t.vehicleNo!,
+          '${t.fromLoc ?? '—'} → ${t.toLoc ?? '—'}',
+        ].join(' · '),
+        [
+          if (t.startDate != null) DateFormat('d MMM').format(t.startDate!),
+          t.isHired ? l.ngTripHired : l.ngTripOwn,
+        ].join(' · '),
+      ].join('\n'),
+      trailing: IconButton(
+        tooltip: l.ngTripDelete,
+        icon: Icon(Icons.delete_outline_rounded, size: 19, color: c.faint),
+        onPressed: () => _deleteTrip(t),
       ),
     );
   }

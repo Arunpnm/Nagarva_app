@@ -3,11 +3,11 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/components/load_error_state.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import 'material_detail_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -37,7 +37,6 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
   late MaterialsPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  List<LowStockViewRow> _lowStock = [];
   bool _showLowStockOnly = false;
   String? _loadError;
 
@@ -76,22 +75,13 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
       safeSetState(() {});
       return;
     }
-    try {
-      _lowStock = await LowStockViewTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).order('name'),
-      );
-    } catch (_) {
-      // low_stock_view may not exist yet on an org whose migration 005
-      // hasn't been run — the page still works off materials.quantity/
-      // min_stock for the plain list either way.
-      _lowStock = [];
-    }
     safeSetState(() {});
   }
 
   @override
   void dispose() {
     _model.dispose();
+    _searchCtrl.dispose();
 
     super.dispose();
   }
@@ -146,134 +136,76 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
     }
   }
 
-  // Hang follow-up (7 Aug 2026): used to return a bare Flexible, which is
-  // only valid as a DIRECT child of a Row/Column — one of the two call
-  // sites below wraps it in an InkWell first, which orphans the Flexible
-  // one level too deep and produces exactly the "RenderBox was not laid
-  // out" / RenderFlex._computeSizes freeze from the device log (the
-  // assertion's RenderSemanticsAnnotations is what InkWell produces
-  // internally). Returning the bare Container instead removes the trap
-  // permanently — flex placement is now each call site's own
-  // responsibility, where it's visibly a direct Row child or not.
-  Widget _statCard(BuildContext context, String label, String value,
-      {bool danger = false}) {
-    return Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: FlutterFlowTheme.of(context).labelMedium.override(
-                      font: NgFonts.geist(),
-                      color: FlutterFlowTheme.of(context).secondaryText,
-                      letterSpacing: 0.0,
-                    ),
-              ),
-              Text(
-                value,
-                style: FlutterFlowTheme.of(context).headlineMedium.override(
-                      font: NgFonts.geist(),
-                      color: danger
-                          ? FlutterFlowTheme.of(context).error
-                          : FlutterFlowTheme.of(context).primaryText,
-                      letterSpacing: 0.0,
-                    ),
-              ),
-            ].divide(const SizedBox(height: 4.0)),
-          ),
-        ),
-      );
-  }
+  final _searchCtrl = TextEditingController();
 
   Widget _materialRow(BuildContext context, MaterialsRow m) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
     final low = _isLow(m);
-    final qtyLabel =
-        '${(m.quantity ?? 0).toStringAsFixed(m.quantity == m.quantity?.roundToDouble() ? 0 : 1)} ${m.unit ?? ''}'
-            .trim();
+    final unit = (m.unit ?? '').trim();
+    final qty = (m.quantity ?? 0);
     return InkWell(
       onTap: m.id == null ? null : () => _openMaterial(m.id!),
-      borderRadius: BorderRadius.circular(10.0),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16.0, 14.0, 16.0, 14.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      m.name,
-                      style: FlutterFlowTheme.of(context).bodyMedium.override(
-                            font: NgFonts.geist(),
-                            color: FlutterFlowTheme.of(context).primaryText,
-                            letterSpacing: 0.0,
-                          ),
-                    ),
-                    Text(
-                      [
-                        if ((m.category ?? '').isNotEmpty) m.category,
-                        low
-                            ? 'Reorder < ${(m.minStock ?? 0).toStringAsFixed(0)}'
-                            : 'OK',
-                      ].whereType<String>().join(' · '),
-                      style: FlutterFlowTheme.of(context).bodySmall.override(
-                            font: NgFonts.geist(),
-                            color: low
-                                ? FlutterFlowTheme.of(context).error
-                                : FlutterFlowTheme.of(context).secondaryText,
-                            letterSpacing: 0.0,
-                          ),
-                    ),
-                  ].divide(const SizedBox(height: 3.0)),
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: FlutterFlowTheme.of(context).primaryBackground,
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(
-                      10.0, 4.0, 10.0, 4.0),
-                  child: Text(
-                    qtyLabel,
-                    style: FlutterFlowTheme.of(context).labelMedium.override(
-                          font: NgFonts.geist(),
-                          color: low
-                              ? FlutterFlowTheme.of(context).error
-                              : FlutterFlowTheme.of(context).primaryText,
-                          letterSpacing: 0.0,
-                        ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(m.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: NgFonts.geist(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w600,
+                                color: c.text)),
+                      ),
+                      if (low) ...[
+                        const SizedBox(width: 6),
+                        NgPill(l.ngMatReorderSoon, status: NgStatus.amber),
+                      ],
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 2),
+                  Text(
+                    [
+                      if ((m.category ?? '').trim().isNotEmpty)
+                        m.category!.trim(),
+                      if ((m.sku ?? '').trim().isNotEmpty) m.sku!.trim(),
+                      if (m.isReturnable == true) l.ngMatReturnable,
+                    ].join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 12.5, color: c.mute),
+                  ),
+                ],
               ),
-              IconButton(
-                tooltip: 'Delete material',
-                visualDensity: VisualDensity.compact,
-                icon: Icon(Icons.delete_outline,
-                    size: 18, color: FlutterFlowTheme.of(context).error),
-                onPressed: m.id == null ? null : () => _deleteMaterial(m),
-              ),
-            ],
-          ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('${qty.toStringAsFixed(qty % 1 == 0 ? 0 : 1)} $unit'.trim(),
+                    style: NgFonts.mono(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: low ? c.acc : c.text)),
+                if ((m.minStock ?? 0) > 0)
+                  Text(l.ngMatMin(m.minStock!.toStringAsFixed(0)),
+                      style: NgFonts.geist(fontSize: 11.5, color: c.faint)),
+              ],
+            ),
+            IconButton(
+              tooltip: l.ngMatDelete,
+              icon: Icon(Icons.delete_outline_rounded,
+                  size: 19, color: c.faint),
+              onPressed: m.id == null ? null : () => _deleteMaterial(m),
+            ),
+          ],
         ),
       ),
     );
@@ -281,173 +213,80 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final allMaterials = _model.materialsList;
-    final lowStockCount = allMaterials.where(_isLow).length;
-    final materials =
-        _showLowStockOnly ? allMaterials.where(_isLow).toList() : allMaterials;
-    final theme = FlutterFlowTheme.of(context);
-
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).materials,
-            style: theme.titleLarge.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final q = _searchCtrl.text.trim().toLowerCase();
+    final all = _model.materialsList
+        .where((m) =>
+            q.isEmpty ||
+            m.name.toLowerCase().contains(q) ||
+            (m.sku ?? '').toLowerCase().contains(q) ||
+            (m.category ?? '').toLowerCase().contains(q))
+        .toList();
+    final low = all.where(_isLow).toList();
+    final shown = _showLowStockOnly ? low : all;
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _loadMaterials),
+      body: RefreshIndicator(
+        onRefresh: _loadMaterials,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+          children: [
+            NgModuleHeader(
+              l.ngMenuMaterials,
+              actions: [
+                NgPrimaryButton(
+                  compact: true,
+                  height: 40,
+                  icon: Icons.add_rounded,
+                  label: l.ngMatNew,
+                  onPressed: _newMaterial,
                 ),
-          ),
-          actions: const [],
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(color: theme.primaryBackground),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Flexible(
-                          flex: 1,
-                          child: _statCard(
-                              context, 'Total SKUs', '${allMaterials.length}'),
-                        ),
-                        Flexible(
-                          flex: 1,
-                          child: InkWell(
-                            onTap: lowStockCount == 0
-                                ? null
-                                : () => setState(() =>
-                                    _showLowStockOnly = !_showLowStockOnly),
-                            borderRadius: BorderRadius.circular(12),
-                            child: _statCard(
-                                context, 'Low Stock', '$lowStockCount',
-                                danger: lowStockCount > 0),
-                          ),
-                        ),
-                      ].divide(const SizedBox(width: 12.0)),
-                    ),
-                    if (_lowStock.isNotEmpty) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: theme.error.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.warning_amber_rounded,
-                                    size: 16, color: theme.error),
-                                const SizedBox(width: 6),
-                                Text('Reorder soon',
-                                    style: NgFonts.geist(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: theme.error)),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            for (final l in _lowStock.take(5))
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(
-                                  '${l.name}: ${(l.quantity ?? 0).toStringAsFixed(0)} '
-                                  '${l.unit ?? ''} left'
-                                  '${l.reorderQty != null && l.reorderQty! > 0 ? ' — reorder ${l.reorderQty!.toStringAsFixed(0)}' : ''}',
-                                  style: NgFonts.geist(
-                                      fontSize: 12, color: theme.secondaryText),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _showLowStockOnly ? 'Inventory (low stock)' : 'Inventory',
-                          style: theme.titleMedium.override(
-                                font: NgFonts.geist(),
-                                color: theme.primaryText,
-                                letterSpacing: 0.0,
-                              ),
-                        ),
-                        if (_showLowStockOnly)
-                          TextButton(
-                            onPressed: () =>
-                                setState(() => _showLowStockOnly = false),
-                            child: const Text('Show all'),
-                          ),
-                      ],
-                    ),
-                    if (_loadError != null && _model.materialsOut == null)
-                      LoadErrorState(
-                          message: _loadError!, onRetry: _loadMaterials)
-                    else if (materials.isEmpty)
-                      Text(
-                        _model.materialsOut == null
-                            ? 'Loading…'
-                            : _showLowStockOnly
-                                ? 'Nothing low on stock.'
-                                : 'No materials tracked yet for this org.',
-                        style: theme.bodySmall.override(
-                              font: NgFonts.geist(),
-                              color: theme.secondaryText,
-                            ),
-                      )
-                    else
-                      ...materials.map((m) => _materialRow(context, m)),
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          0.0, 16.0, 0.0, 16.0),
-                      child: FFButtonWidget(
-                        onPressed: _newMaterial,
-                        text: 'New Material',
-                        icon: const Icon(
-                          Icons.add_box,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor: theme.primaryBackground,
-                          color: theme.primary,
-                          textStyle: TextStyle(color: theme.primaryBackground),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                    ),
-                  ].divide(const SizedBox(height: 16.0)),
-                ),
-              ),
+              ],
             ),
-          ),
+            const SizedBox(height: 14),
+            if (_loadError != null)
+              LoadErrorState(message: _loadError!, onRetry: _loadMaterials)
+            else ...[
+              NgSearchField(
+                controller: _searchCtrl,
+                hint: l.ngMatSearch,
+                onChanged: (_) => safeSetState(() {}),
+              ),
+              const SizedBox(height: 14),
+              NgChipRow(
+                edge: 0,
+                chips: [
+                  NgChip(
+                    label: l.ngTabAll,
+                    count: all.length,
+                    selected: !_showLowStockOnly,
+                    onTap: () =>
+                        safeSetState(() => _showLowStockOnly = false),
+                  ),
+                  NgChip(
+                    label: l.ngMatReorderSoon,
+                    count: low.length,
+                    selected: _showLowStockOnly,
+                    onTap: () => safeSetState(() => _showLowStockOnly = true),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              if (shown.isEmpty)
+                NgCard(
+                  child: Text(l.ngMatNone,
+                      textAlign: TextAlign.center,
+                      style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+                )
+              else
+                NgCardList(children: [
+                  for (final m in shown) _materialRow(context, m),
+                ]),
+            ],
+          ],
         ),
       ),
     );

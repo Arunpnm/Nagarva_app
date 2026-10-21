@@ -3662,5 +3662,300 @@
   "ngOpsFree": "Free",
   "@ngOpsFree": {
     "description": "Dashboard redesign"
+  },
+  "ngExpCount": "{n, plural, =1{1 expense} other{{n} expenses}}",
+  "@ngExpCount": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngExpVsLast": "{pct}% vs last month",
+  "@ngExpVsLast": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "ngExpThisWeek": "This week",
+  "@ngExpThisWeek": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpOrderOnly": "Order-linked only",
+  "@ngExpOrderOnly": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpNone": "No expenses in this period",
+  "@ngExpNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpUncategorised": "Uncategorised",
+  "@ngExpUncategorised": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpDelete": "Delete expense",
+  "@ngExpDelete": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpByCategory": "By category",
+  "@ngExpByCategory": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpNoCat": "Nothing to break down yet",
+  "@ngExpNoCat": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpNoCatSub": "Categories appear here once you record an expense.",
+  "@ngExpNoCatSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetNew": "New vehicle",
+  "@ngFleetNew": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetActive": "Active",
+  "@ngFleetActive": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetMaintenance": "Maintenance",
+  "@ngFleetMaintenance": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetInactive": "Inactive",
+  "@ngFleetInactive": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetNone": "No vehicles yet. Add one to track documents and trips.",
+  "@ngFleetNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetDelete": "Delete vehicle",
+  "@ngFleetDelete": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetInsurance": "Insurance",
+  "@ngFleetInsurance": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetPermit": "Permit",
+  "@ngFleetPermit": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetExpires": "{doc} expires in {n} days",
+  "@ngFleetExpires": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "doc": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngFleetExpired": "{doc} expired {n} days ago",
+  "@ngFleetExpired": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "doc": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngMatNew": "New material",
+  "@ngMatNew": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatSearch": "Search materials",
+  "@ngMatSearch": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatReorderSoon": "Reorder soon",
+  "@ngMatReorderSoon": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatReturnable": "Returnable",
+  "@ngMatReturnable": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatMin": "min {n}",
+  "@ngMatMin": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "ngMatDelete": "Delete material",
+  "@ngMatDelete": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatNone": "No materials here yet",
+  "@ngMatNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripPlanned": "Planned",
+  "@ngTripPlanned": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripOngoing": "Ongoing",
+  "@ngTripOngoing": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripNone": "No trips yet",
+  "@ngTripNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripNoNumber": "(no trip no.)",
+  "@ngTripNoNumber": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripHired": "Hired",
+  "@ngTripHired": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripOwn": "Own",
+  "@ngTripOwn": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripDelete": "Delete trip",
+  "@ngTripDelete": {
+    "description": "Dashboard redesign"
+  },
+  "ngCustCount": "{n, plural, =1{1 customer} other{{n} customers}}",
+  "@ngCustCount": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngCustNew": "New",
+  "@ngCustNew": {
+    "description": "Dashboard redesign"
+  },
+  "ngCustSearch": "Search name, phone or company",
+  "@ngCustSearch": {
+    "description": "Dashboard redesign"
+  },
+  "ngCustNone": "No customers found",
+  "@ngCustNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngCustDue": "{amount} due",
+  "@ngCustDue": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ngStaffTitle": "Staff",
+  "@ngStaffTitle": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffSummary": "{n} people · {monthly} monthly · {other} daily / temporary",
+  "@ngStaffSummary": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "monthly": {
+        "type": "int"
+      },
+      "other": {
+        "type": "int"
+      }
+    }
+  },
+  "ngStaffAdd": "Add staff",
+  "@ngStaffAdd": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffMonthly": "Fixed monthly",
+  "@ngStaffMonthly": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffDaily": "Daily",
+  "@ngStaffDaily": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffTemporary": "Temporary",
+  "@ngStaffTemporary": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffJoined": "Joined {date}",
+  "@ngStaffJoined": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ngStaffAllRoles": "All roles",
+  "@ngStaffAllRoles": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffNone": "No staff here yet",
+  "@ngStaffNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffInactive": "Inactive",
+  "@ngStaffInactive": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalTitle": "Salary",
+  "@ngSalTitle": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalToPay": "To pay",
+  "@ngSalToPay": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalAdvances": "Advances",
+  "@ngSalAdvances": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalPaid": "Salary paid",
+  "@ngSalPaid": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalBalance": "Balance",
+  "@ngSalBalance": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalJobs": "{n, plural, =1{1 job} other{{n} jobs}}",
+  "@ngSalJobs": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngSalAdvance": "Advance {amount}",
+  "@ngSalAdvance": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ngSalNote": "Earnings come from the crew entered on each job this month. Open a person to pay or give an advance.",
+  "@ngSalNote": {
+    "description": "Dashboard redesign"
   }
 }
