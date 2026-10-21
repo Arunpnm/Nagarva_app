@@ -201,6 +201,36 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ---- Approval-first gate (21 Oct 2026). New businesses now sign up
+    // by mobile OTP and are approved by the Nagarva team, which creates
+    // the org through review_vendor_signup() — not through this endpoint.
+    // So for a caller with NO org yet, refuse rather than create one
+    // around the approval step. A caller who already has an org still
+    // gets it back (the idempotent recovery path is unaffected). Same
+    // flag store as the invite gate; missing row = fail closed.
+    // DEPLOY ORDER: run 20261021_vendor_signup_approval.sql first (it
+    // seeds the flag), then deploy this.
+    const { data: approvalRow } = await admin
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "signup_requires_approval")
+      .maybeSingle();
+    const requiresApproval = approvalRow ? approvalRow.value === true : true;
+    if (requiresApproval) {
+      const { data: member } = await admin
+        .from("org_members")
+        .select("id")
+        .eq("user_id", caller.user.id)
+        .limit(1)
+        .maybeSingle();
+      if (!member) {
+        return json({
+          error:
+            "New businesses sign up with their mobile number and are approved by the Nagarva team. Go back and tap \"Create account\".",
+        }, 403);
+      }
+    }
+
     // ---- The atomic write. ----
     const { data: rows, error: rpcErr } = await admin.rpc(
       "create_org_with_owner",
