@@ -1,4 +1,5 @@
-import 'dart:convert';
+import '/components/ng_widgets.dart';
+import '/order_detail_page/order_overview_section.dart';
 import 'dart:typed_data';
 
 import '/backend/gst_state_codes.dart';
@@ -26,7 +27,6 @@ import 'order_addons_section.dart';
 import 'order_materials_section.dart';
 import 'order_pnl_section.dart';
 import 'payment_history_section.dart';
-import 'quick_payment_section.dart';
 import 'quotation_breakdown_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -36,11 +36,9 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'arrival_code_card.dart';
 import 'order_detail_page_model.dart';
 import '/backend/vendor_identity.dart';
@@ -393,7 +391,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     // Order Details Session 1, item 1: keep the P&L card current after a
     // payment update, an expense/vendor-bill write, etc. elsewhere.
     _pnlKey.currentState?.reload();
-    _quickPaymentKey.currentState?.reload();
+    _overviewKey.currentState?.reload();
+    _activityKey.currentState?.reload();
   }
 
   final _breakdownKey = GlobalKey<QuotationBreakdownSectionState>();
@@ -443,22 +442,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   String? get _orderToAddress => widget.orderToAddress ?? _fromRow('to_address');
   String? get _orderFromFloor => widget.orderFromFloor ?? _fromRow('from_floor');
   String? get _orderToFloor => widget.orderToFloor ?? _fromRow('to_floor');
-  String? get _orderMoveDate => widget.orderMoveDate ?? _fromRow('move_date');
   String? get _orderAmount => widget.orderAmount ?? _fromRow('amount');
-  /// Money actually received, from orders.paid_total - the sum of this
-  /// order's payment_entries, maintained by trigger.
-  ///
-  /// Was `orderAdvancePaid` / `advance_paid` until 16 Sept 2026. That
-  /// column is 0 on every live order and nothing writes it, so the
-  /// Payment card reported "Advance Paid Rs0" on an order against which
-  /// Rs37,800 had been received. There is no nav param for this one on
-  /// purpose: the value changes every time a payment is recorded, so it
-  /// is read from the row rather than carried in a URL that can go
-  /// stale. Renders as an em dash until the row arrives.
-  String? get _orderPaidTotal => _fromRow('paid_total');
   String? get _orderStatus => widget.orderStatus ?? _fromRow('status');
-  String? get _orderPaymentStatus => widget.orderPaymentStatus ?? _fromRow('payment_status');
-  String? get _orderTrackingStatus => widget.orderTrackingStatus ?? _fromRow('tracking_status');
   String? get _orderService => widget.orderService ?? _fromRow('service');
   String? get _orderBranch => widget.orderBranch ?? _fromRow('branch');
   String? get _orderType => widget.orderType ?? _fromRow('order_type');
@@ -467,7 +452,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   final _storageKey = GlobalKey<OrderStorageSectionState>();
   final _addonsKey = GlobalKey<OrderAddonsSectionState>();
   final _materialsKey = GlobalKey<OrderMaterialsSectionState>();
-  final _quickPaymentKey = GlobalKey<QuickPaymentSectionState>();
+  final _overviewKey = GlobalKey<OrderOverviewSectionState>();
+  final _activityKey = GlobalKey<OrderActivitySectionState>();
   final _paymentHistoryKey = GlobalKey<PaymentHistorySectionState>();
 
   Future<void> _loadSignature() async {
@@ -689,18 +675,6 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
           SnackBar(content: Text('Could not check the signature: $e')));
     }
   }
-
-  /// Formats a money field that arrives as a nav-param String. Falls back
-  /// to the raw value rather than hiding it if it won't parse — a number
-  /// we can't format is still better than a blank cell on a money row.
-  String? _money(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return null;
-    final v = double.tryParse(raw.trim());
-    return v == null ? raw : _currency.format(v);
-  }
-
-  static final _currency =
-      NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
   // Fixed (RLS/numbering audit, 12 Aug 2026): used to emit '2627' —
   // concatenated 2-digit years, no hyphen — which never matched the
@@ -1405,143 +1379,52 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).orderDetails,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: const [],
-          elevation: 0.0,
+        backgroundColor: NgPalette.of(context).bg,
+        appBar: NgSimpleBar(
+          title: widget.orderId ?? AppLocalizations.of(context).orderDetails,
+          mono: true,
+          actions: [
+            if (kTrackLinkHosted && widget.orderId != null)
+              NgHeaderButtonBox(
+                icon: Icons.share_outlined,
+                tooltip: 'Share tracking link',
+                onTap: _sharingTracking ? null : _shareTrackingLink,
+              ),
+          ],
         ),
         body: SafeArea(
           top: true,
           child: Container(
             decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+              color: NgPalette.of(context).bg,
             ),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: KeyboardScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Redesign: the journey strip — every stage of this
-                    // order on one screen. See OrderJourneyPageWidget.
+                    // Claude Design handoff "ORDER DETAIL": journey strip,
+                    // who/where, Call/WhatsApp/Maps, Progress, Crew &
+                    // vehicle and Payment. See OrderOverviewSection.
                     if (widget.orderId != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: JourneyEntryCard(orderId: widget.orderId),
+                      OrderOverviewSection(
+                        key: _overviewKey,
+                        orderId: widget.orderId!,
+                        hideCustomer: _hideCustomer,
+                        onChanged: () {
+                          _loadRowFallback();
+                          _pnlKey.currentState?.reload();
+                          _paymentHistoryKey.currentState?.reload();
+                          _activityKey.currentState?.reload();
+                        },
                       ),
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: FlutterFlowTheme.of(context).secondaryBackground,
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              _hideCustomer
-                                  ? 'Customer (hidden)'
-                                  : (_orderCustomer ?? '—'),
-                              style: FlutterFlowTheme.of(context)
-                                  .titleMedium
-                                  .override(
-                                    font: NgFonts.geist(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleMedium
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleMedium
-                                          .fontStyle,
-                                    ),
-                                    color: FlutterFlowTheme.of(context)
-                                        .primaryText,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .fontStyle,
-                                  ),
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context)
-                                    .primaryBackground,
-                                borderRadius: BorderRadius.circular(16.0),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    12.0, 6.0, 12.0, 6.0),
-                                child: Text(
-                                  (_orderStatus ?? '—'),
-                                  style: FlutterFlowTheme.of(context)
-                                      .labelMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .labelMedium
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .labelMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .labelMedium
-                                            .fontStyle,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Item 4.4: these four cards each hand-rolled every
-                    // row as Row(spaceBetween, [Text(label), Text(value)])
-                    // with two UNCONSTRAINED Texts — 17 of them — so a
-                    // long address or service name overflowed the row
-                    // instead of wrapping, and the vertical rhythm drifted
-                    // between cards. All of them now go through the same
-                    // shared DetailRow as Lead Details, so the two screens
-                    // sit on one grid.
-                    //
-                    // Money now runs through _currency, which was declared
-                    // in this file and never actually used — Amount and
-                    // Advance Paid were rendering the raw string
-                    // ("15000.0") on an ERP money field.
+                    // Addresses, floors and the office fields the
+                    // overview's one-line route leaves out.
                     DetailCard(
-                      title: 'Customer',
+                      title: AppLocalizations.of(context).odMoveDetails,
                       children: [
                         DetailRow(
                           label: 'Phone',
@@ -1549,24 +1432,9 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                               ? '••••••••••'
                               : _orderPhone,
                         ),
-                        DetailRow(label: 'Service', value: _orderService),
-                        DetailRow(label: 'Branch', value: _orderBranch),
-                        DetailRow(label: 'Type', value: _orderType),
-                      ],
-                    ),
-                    DetailCard(
-                      title: 'Move Details',
-                      children: [
-                        DetailRow(label: 'From', value: _orderFromCity),
-                        DetailRow(label: 'To', value: _orderToCity),
                         DetailRow(
                           label: 'Address (From)',
                           value: _orderFromAddress,
-                          hideWhenEmpty: true,
-                        ),
-                        DetailRow(
-                          label: 'Address (To)',
-                          value: _orderToAddress,
                           hideWhenEmpty: true,
                         ),
                         DetailRow(
@@ -1575,35 +1443,18 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                           hideWhenEmpty: true,
                         ),
                         DetailRow(
+                          label: 'Address (To)',
+                          value: _orderToAddress,
+                          hideWhenEmpty: true,
+                        ),
+                        DetailRow(
                           label: 'Floor (To)',
                           value: _orderToFloor,
                           hideWhenEmpty: true,
                         ),
-                        DetailRow(
-                          label: 'Move Date',
-                          value: _orderMoveDate,
-                        ),
-                      ],
-                    ),
-                    DetailCard(
-                      title: 'Payment',
-                      children: [
-                        DetailRow(
-                          label: 'Amount',
-                          value: _money(_orderAmount),
-                        ),
-                        DetailRow(
-                          label: 'Received',
-                          value: _money(_orderPaidTotal),
-                        ),
-                        DetailRow(
-                          label: 'Payment Status',
-                          value: _orderPaymentStatus,
-                        ),
-                        DetailRow(
-                          label: 'Tracking Status',
-                          value: _orderTrackingStatus,
-                        ),
+                        DetailRow(label: 'Service', value: _orderService),
+                        DetailRow(label: 'Branch', value: _orderBranch),
+                        DetailRow(label: 'Type', value: _orderType),
                       ],
                     ),
                     // Arrival code (19 Aug 2026). Placed high on the page
@@ -1624,20 +1475,6 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         DetailNote(text: _orderNotes),
                       ],
                     ),
-                    // Order Details Session 1, item 2: Quick Payment
-                    // Update. Brief: gated on canActive('orders','edit')
-                    // (not a payments-module permission) — the "hidden
-                    // when already paid" half of the brief's gate is
-                    // enforced inside the section itself (balance <= 0).
-                    if (widget.orderId != null &&
-                        StaffPermissions.canActive('orders', 'edit'))
-                      QuickPaymentSection(
-                          key: _quickPaymentKey,
-                          orderId: widget.orderId!,
-                          onSaved: () {
-                            _pnlKey.currentState?.reload();
-                            _paymentHistoryKey.currentState?.reload();
-                          }),
                     // Item 11 sweep: payment-entry delete UI. Renders
                     // regardless of order/balance state (unlike
                     // QuickPaymentSection above) — always visible when
@@ -1725,207 +1562,82 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                     // customer at the moment they are being asked to
                     // approve a document.
                     if (!kSignLinkHosted)
-                      Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(
-                            0.0, 14.0, 0.0, 0.0),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context)
-                                .warning
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Remote signature links are switched off — the '
-                            'customer signing page is not live. Use '
-                            'Capture Signature in Documents below to take '
-                            'the signature in person.',
-                            style: NgFonts.geist(
-                                fontSize: 11.5,
-                                color: FlutterFlowTheme.of(context)
-                                    .primaryText),
-                          ),
+                      NgCard(
+                        color: NgPalette.of(context).amberBg,
+                        child: Text(
+                          'Remote signature links are switched off — the '
+                          'customer signing page is not live. Use '
+                          'Capture Signature in Documents below to take '
+                          'the signature in person.',
+                          style: NgFonts.geist(
+                              fontSize: 12.5,
+                              height: 1.4,
+                              color: NgPalette.of(context).text),
                         ),
                       )
                     else
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          0.0, 14.0, 0.0, 0.0),
-                      child: FFButtonWidget(
+                      NgSecondaryButton(
                         onPressed:
                             _sendingSignature ? null : _sendForSignature,
-                        text: _sendingSignature
+                        label: _sendingSignature
                             ? 'Preparing…'
                             : (_signature?.isSigned ?? false)
                                 ? 'View signed copy'
                                 : 'Send for Signature',
-                        icon: const Icon(Icons.draw, size: 20.0),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor: FlutterFlowTheme.of(context).primary,
-                          color: Colors.transparent,
-                          textStyle: TextStyle(
-                            color: FlutterFlowTheme.of(context).primary,
-                          ),
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).primary,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
+                        icon: Icons.draw_outlined,
+                        iconColor: NgPalette.of(context).acc,
+                        height: 46,
+                      ),
+                    // The tracking link is shared from the top bar's share
+                    // button (kTrackLinkHosted); the flag still turns it
+                    // off if the page ever goes down.
+                    Row(children: [
+                      Expanded(
+                        child: NgSecondaryButton(
+                          onPressed: () {
+                            context.pushNamed(
+                              SupervisorJobPageWidget.routeName,
+                              queryParameters: {
+                                'orderId': serializeParam(
+                                    widget.orderId, ParamType.String),
+                              }.withoutNulls,
+                            );
+                          },
+                          label: 'Open Field Job',
+                          icon: Icons.local_shipping_outlined,
+                          iconColor: NgPalette.of(context).acc,
+                          height: 46,
                         ),
                       ),
-                    ),
-                    // LIVE since 7 Sept 2026. /track now serves the
-                    // customer document hub from public_site/: their
-                    // status timeline, every document issued for the
-                    // order as a download, and forms to rate the move or
-                    // report a problem.
-                    //
-                    // The flag stays rather than being deleted - it is
-                    // the switch that turns the affordance off again if
-                    // the page ever goes down, which is exactly the
-                    // situation it was added for.
-                    if (kTrackLinkHosted)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          0.0, 14.0, 0.0, 0.0),
-                      child: FFButtonWidget(
-                        onPressed: _sharingTracking ? null : _shareTrackingLink,
-                        text: _sharingTracking
-                            ? 'Preparing…'
-                            : 'Share Tracking Link',
-                        icon: const Icon(Icons.share_location, size: 20.0),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor: FlutterFlowTheme.of(context).primary,
-                          color: Colors.transparent,
-                          textStyle: TextStyle(
-                            color: FlutterFlowTheme.of(context).primary,
+                      // Permission-model decision (1 Aug 2026), Step 4
+                      // sweep: absent, not disabled, without orders.edit.
+                      if (StaffPermissions.canActive('orders', 'edit')) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: NgSecondaryButton(
+                            onPressed: () async {
+                              context.pushNamed(
+                                NewOrderPageWidget.routeName,
+                                queryParameters: {
+                                  'orderId': serializeParam(
+                                      widget.orderId, ParamType.String),
+                                }.withoutNulls,
+                              );
+                            },
+                            label: AppLocalizations.of(context).editOrder,
+                            icon: Icons.edit_outlined,
+                            iconColor: NgPalette.of(context).acc,
+                            height: 46,
                           ),
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).primary,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
                         ),
-                      ),
-                    ),
-                    Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 0.0),
-                      child: FFButtonWidget(
-                        onPressed: () {
-                          context.pushNamed(
-                            SupervisorJobPageWidget.routeName,
-                            queryParameters: {
-                              'orderId': serializeParam(
-                                  widget.orderId, ParamType.String),
-                            }.withoutNulls,
-                          );
-                        },
-                        text: 'Open Field Job',
-                        icon: const Icon(
-                          Icons.local_shipping,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor: FlutterFlowTheme.of(context).primary,
-                          color: Colors.transparent,
-                          textStyle: TextStyle(
-                            color: FlutterFlowTheme.of(context).primary,
-                          ),
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).primary,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 0.0),
-                      child: FFButtonWidget(
-                        onPressed:
-                            _generatingInvoice ? null : _generateInvoice,
-                        text: _generatingInvoice
-                            ? 'Generating…'
-                            : 'Generate Invoice',
-                        icon: const Icon(
-                          Icons.receipt_long,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor:
-                              FlutterFlowTheme.of(context).primaryBackground,
-                          color: FlutterFlowTheme.of(context).primary,
-                          textStyle: TextStyle(
-                            color:
-                                FlutterFlowTheme.of(context).primaryBackground,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                    ),
-                    // Permission-model decision (1 Aug 2026), Step 4 sweep:
-                    // absent, not disabled, without orders.edit.
-                    if (StaffPermissions.canActive('orders', 'edit'))
-                    Padding(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(0.0, 14.0, 0.0, 14.0),
-                      child: FFButtonWidget(
-                        onPressed: () async {
-                          context.pushNamed(
-                            NewOrderPageWidget.routeName,
-                            queryParameters: {
-                              'orderId': serializeParam(
-                                  widget.orderId, ParamType.String),
-                            }.withoutNulls,
-                          );
-                        },
-                        text: AppLocalizations.of(context).editOrder,
-                        icon: const Icon(
-                          Icons.edit,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor: FlutterFlowTheme.of(context).primary,
-                          color: Colors.transparent,
-                          textStyle: TextStyle(
-                            color: FlutterFlowTheme.of(context).primary,
-                          ),
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).primary,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
+                      ],
+                    ]),
+                    NgPrimaryButton(
+                      onPressed: _generatingInvoice ? null : _generateInvoice,
+                      label: _generatingInvoice
+                          ? 'Generating…'
+                          : 'Generate Invoice',
+                      icon: Icons.receipt_long_outlined,
                     ),
                     // Order Details Session 1, item 4: the 8-document grid
                     // + 4-button utility row (incl. "⧉ Copy" = Duplicate
@@ -1938,6 +1650,9 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                         onGenerateInvoice:
                             _generatingInvoice ? () {} : _generateInvoice,
                       ),
+                    if (widget.orderId != null)
+                      OrderActivitySection(
+                          key: _activityKey, orderId: widget.orderId!),
                     // Item 11: owner-only, destructive, at the very bottom.
                     // Staff don't see it at all rather than seeing a
                     // button that always refuses.

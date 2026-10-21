@@ -4057,5 +4057,206 @@
   "ngSetPorterSub": "Show Porter commission on the dashboard. Turn on only if your business uses Porter.",
   "@ngSetPorterSub": {
     "description": "Dashboard redesign"
+  },
+  "odStageOf": "Stage {n} of {total} · {name}",
+  "@odStageOf": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "odJourneyDone": "All stages done",
+  "@odJourneyDone": {
+    "description": "Dashboard redesign"
+  },
+  "odMaps": "Maps",
+  "@odMaps": {
+    "description": "Dashboard redesign"
+  },
+  "odProgress": "Progress",
+  "@odProgress": {
+    "description": "Dashboard redesign"
+  },
+  "odInProgress": "In progress",
+  "@odInProgress": {
+    "description": "Dashboard redesign"
+  },
+  "odMarkAs": "Mark as {stage}",
+  "@odMarkAs": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "odDeliveredHint": "Delivered is recorded when the crew finishes the job with the customer's code.",
+  "@odDeliveredHint": {
+    "description": "Dashboard redesign"
+  },
+  "odOpenFieldJob": "Open field job",
+  "@odOpenFieldJob": {
+    "description": "Dashboard redesign"
+  },
+  "odCrewVehicle": "Crew & vehicle",
+  "@odCrewVehicle": {
+    "description": "Dashboard redesign"
+  },
+  "odNoCrew": "No crew assigned yet",
+  "@odNoCrew": {
+    "description": "Dashboard redesign"
+  },
+  "odNoVehicle": "No vehicle assigned",
+  "@odNoVehicle": {
+    "description": "Dashboard redesign"
+  },
+  "odSupervisorCrew": "Supervisor · {name} · {count} crew",
+  "@odSupervisorCrew": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "odCrewCount": "{count} crew",
+  "@odCrewCount": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "odPayment": "Payment",
+  "@odPayment": {
+    "description": "Dashboard redesign"
+  },
+  "odTotal": "Total",
+  "@odTotal": {
+    "description": "Dashboard redesign"
+  },
+  "odPaid": "Paid",
+  "@odPaid": {
+    "description": "Dashboard redesign"
+  },
+  "odBalance": "Balance",
+  "@odBalance": {
+    "description": "Dashboard redesign"
+  },
+  "odPartPaid": "Part paid",
+  "@odPartPaid": {
+    "description": "Dashboard redesign"
+  },
+  "odFullyPaid": "Paid",
+  "@odFullyPaid": {
+    "description": "Dashboard redesign"
+  },
+  "odUnpaid": "Unpaid",
+  "@odUnpaid": {
+    "description": "Dashboard redesign"
+  },
+  "odRemind": "Remind",
+  "@odRemind": {
+    "description": "Dashboard redesign"
+  },
+  "odRecordPayment": "Record payment",
+  "@odRecordPayment": {
+    "description": "Dashboard redesign"
+  },
+  "odActivity": "Activity",
+  "@odActivity": {
+    "description": "Dashboard redesign"
+  },
+  "odAllN": "All {count}",
+  "@odAllN": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "odStageChanged": "Stage changed",
+  "@odStageChanged": {
+    "description": "Dashboard redesign"
+  },
+  "odPaymentReceived": "Payment received · {amount}",
+  "@odPaymentReceived": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "odNoActivity": "Nothing recorded on this order yet.",
+  "@odNoActivity": {
+    "description": "Dashboard redesign"
+  },
+  "odMoveDetails": "Move details",
+  "@odMoveDetails": {
+    "description": "Dashboard redesign"
+  },
+  "odCancelled": "Cancelled",
+  "@odCancelled": {
+    "description": "Dashboard redesign"
+  },
+  "odMore": "More actions",
+  "@odMore": {
+    "description": "Dashboard redesign"
+  },
+  "odRemindMsg": "Hi {customer}, a balance of {amount} is due for your move ({orderId}). Thank you, {vendor}",
+  "@odRemindMsg": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "customer": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "orderId": {
+        "type": "String"
+      },
+      "vendor": {
+        "type": "String"
+      }
+    }
+  },
+  "odStConfirmed": "Confirmed",
+  "@odStConfirmed": {
+    "description": "Dashboard redesign"
+  },
+  "odStPacking": "Packing",
+  "@odStPacking": {
+    "description": "Dashboard redesign"
+  },
+  "odStInTransit": "In transit",
+  "@odStInTransit": {
+    "description": "Dashboard redesign"
+  },
+  "odStArrived": "Arrived",
+  "@odStArrived": {
+    "description": "Dashboard redesign"
+  },
+  "odStDelivered": "Delivered",
+  "@odStDelivered": {
+    "description": "Dashboard redesign"
+  },
+  "odStCompleted": "Completed",
+  "@odStCompleted": {
+    "description": "Dashboard redesign"
   }
 }

@@ -22,7 +22,13 @@ class LeadStatusStrip extends StatelessWidget {
     this.onStageTap,
     this.onMarkLost,
     this.busy = false,
+    this.compact = false,
   });
+
+  /// Claude Design handoff: five segmented bars with labels, no card or
+  /// heading — for Lead Details, where the status pill already sits in
+  /// the header. Same evidence rules as the full strip.
+  final bool compact;
 
   final String? status;
 
@@ -54,6 +60,15 @@ class LeadStatusStrip extends StatelessWidget {
     final canonical = canonicalLeadStatus(status);
     final currentIdx = leadStageIndex(canonical);
     final isLost = canonical == kLeadStatusLost;
+
+    if (compact) {
+      if (isLost) {
+        return _LostBanner(
+            onReopen: () => onStageTap?.call(kLeadStatusFollowUp));
+      }
+      return _SegmentRow(currentIdx: currentIdx, evidence: evidence,
+          status: canonical);
+    }
 
     return Container(
       width: double.infinity,
@@ -121,6 +136,72 @@ class LeadStatusStrip extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _SegmentRow extends StatelessWidget {
+  const _SegmentRow(
+      {required this.currentIdx, required this.evidence, required this.status});
+
+  final int currentIdx;
+  final LeadStageEvidence evidence;
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final color = c.status(leadStatusTone(status)).fg;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < kLeadPipeline.length; i++) ...[
+          if (i > 0) const SizedBox(width: 5),
+          Expanded(
+            child: Builder(builder: (context) {
+              final st = leadStageState(
+                stage: kLeadPipeline[i],
+                stageIdx: i,
+                currentIdx: currentIdx,
+                evidence: evidence,
+              );
+              final reached = st == LeadStageState.done ||
+                  st == LeadStageState.current;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      // Skipped: passed without happening, so a faded
+                      // bar rather than a solid one (see _Stage).
+                      color: reached
+                          ? color
+                          : st == LeadStageState.skipped
+                              ? color.withValues(alpha: 0.3)
+                              : c.w07,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    leadStageShortLabel(kLeadPipeline[i]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(
+                      fontSize: 12.5,
+                      fontWeight: st == LeadStageState.current
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: reached ? c.text : c.mute,
+                    ),
+                  ),
+                ],
+              );
+            }),
+          ),
+        ],
+      ],
     );
   }
 }

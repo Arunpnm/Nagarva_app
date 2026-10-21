@@ -98,7 +98,7 @@ String leadStatusLabel(String? raw) {
 String leadStageShortLabel(String canonical) {
   switch (canonical) {
     case kLeadStatusFollowUp:
-      return 'Follow Up';
+      return 'Follow up';
     case kLeadStatusSurveyDone:
       return 'Survey';
     case kLeadStatusQuoted:

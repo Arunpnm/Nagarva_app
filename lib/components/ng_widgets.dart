@@ -1112,3 +1112,49 @@ class NgTabBar extends StatelessWidget {
     );
   }
 }
+
+/// One of the three equal-width action cards under a detail header
+/// (handoff: Call / WhatsApp / Maps on an order, Call / WhatsApp / Quote
+/// on a lead). Wrap in [Expanded]. Dimmed and inert when [onTap] is null.
+class NgQuickAction extends StatelessWidget {
+  const NgQuickAction({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color iconColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return NgCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+      child: Opacity(
+        opacity: onTap == null ? 0.45 : 1,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 19, color: iconColor),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NgFonts.geist(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                      color: c.text)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

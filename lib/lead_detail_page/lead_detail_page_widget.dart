@@ -1,3 +1,6 @@
+import '/components/ng_widgets.dart';
+import '/order_journey_page/order_journey_page_widget.dart';
+import '/backend/order_journey.dart';
 import '/app_session.dart';
 import '/config/app_config.dart';
 import '/permissions.dart';
@@ -26,7 +29,6 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -90,6 +92,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   @override
   void onPageRefresh() {
     _loadLinked();
+    _loadJourney();
     // Item 10.7: reminders added/completed in a pushed route or sheet must
     // show immediately too.
     _remindersKey.currentState?.reload();
@@ -160,6 +163,20 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 
   // ---- Item 10: reminders ----------------------------------------------
   final _remindersKey = GlobalKey<RemindersSectionState>();
+
+  /// Drives the journey strip and the Activity list (follow-up logs).
+  JourneyData? _journey;
+
+  Future<void> _loadJourney() async {
+    final id = widget.leadId;
+    if (id == null || id.isEmpty) return;
+    try {
+      final d = await JourneyLoader.load(leadId: id);
+      if (mounted) setState(() => _journey = d);
+    } catch (_) {
+      // The strip falls back to its plain title.
+    }
+  }
   bool _deleting = false;
 
   String get _canonicalStatus => canonicalLeadStatus(_status);
@@ -589,6 +606,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     _model = createModel(context, () => LeadDetailPageModel());
     _status = widget.leadStatus;
     _loadLinked();
+    _loadJourney();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
@@ -1053,18 +1071,24 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             },
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 13),
         decoration: BoxDecoration(
-          color: current ? color : color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-          border: current ? null : Border.all(color: color.withValues(alpha: 0.4)),
+          color: current ? color : NgPalette.of(context).s1,
+          borderRadius: BorderRadius.circular(999),
+          border: current
+              ? null
+              : Border.all(color: NgPalette.of(context).w08),
         ),
-        child: Text(
-          _chipLabels[key]!,
-          style: NgFonts.geist(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: current ? Colors.white : color,
+        child: Center(
+          widthFactor: 1,
+          child: Text(
+            _chipLabels[key]!,
+            style: NgFonts.geist(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: current ? Colors.white : NgPalette.of(context).soft,
+            ),
           ),
         ),
       ),
@@ -1121,27 +1145,196 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   }
 
   Widget _quickContactRow(BuildContext context) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
-          child: FilledButton.icon(
-            onPressed: _hasUsablePhone ? _openWhatsApp : null,
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
-            icon: const Icon(Icons.chat, size: 18),
-            label: const Text('WhatsApp'),
+          child: NgQuickAction(
+            label: l.ngCall,
+            icon: Icons.call_outlined,
+            iconColor: c.green,
+            onTap: _hasUsablePhone ? _callLead : null,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: _hasUsablePhone ? _callLead : null,
-            style: OutlinedButton.styleFrom(
-                foregroundColor: NgPalette.of(context).blue,
-                side: BorderSide(color: NgPalette.of(context).blue)),
-            icon: const Icon(Icons.call, size: 18),
-            label: const Text('Call'),
+          child: NgQuickAction(
+            label: l.ngWhatsApp,
+            icon: Icons.chat_outlined,
+            iconColor: c.green,
+            onTap: _hasUsablePhone ? _openWhatsApp : null,
           ),
         ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: NgQuickAction(
+            label: l.ngQuote,
+            icon: Icons.request_quote_outlined,
+            iconColor: c.acc,
+            onTap: widget.leadId == null
+                ? null
+                : () => context.pushNamed(
+                      SurveyQuotePageWidget.routeName,
+                      queryParameters: {
+                        'leadId':
+                            serializeParam(widget.leadId, ParamType.String),
+                        'leadCustomer': serializeParam(
+                            _lead?.customer ?? widget.leadCustomer,
+                            ParamType.String),
+                        'leadPhone': serializeParam(
+                            _lead?.phone ?? widget.leadPhone,
+                            ParamType.String),
+                        'leadFromCity': serializeParam(
+                            _lead?.fromCity ?? widget.leadFromCity,
+                            ParamType.String),
+                        'leadToCity': serializeParam(
+                            _lead?.toCity ?? widget.leadToCity,
+                            ParamType.String),
+                      }.withoutNulls,
+                    ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Handoff header: initial avatar, name, the phone in mono (tappable,
+  /// A4) and the status pill.
+  Widget _leadHeader(BuildContext context) {
+    final c = NgPalette.of(context);
+    final name = _lead?.customer ?? widget.leadCustomer ?? 'Lead';
+    final phone = _lead?.phone ?? widget.leadPhone;
+    final tone = leadStatusTone(_status);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: Row(
+        children: [
+          NgAvatar(name, status: tone, size: 56),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3,
+                        color: c.text)),
+                if ((phone ?? '').isNotEmpty)
+                  InkWell(
+                    onTap: _hasUsablePhone ? _callLead : null,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(phone!,
+                          style: NgFonts.mono(fontSize: 14.5, color: c.mute)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          NgPill(leadStatusLabel(_status), status: tone),
+        ],
+      ),
+    );
+  }
+
+  /// Follow-up logs, newest first, ending with when the lead came in.
+  Widget _leadActivity(BuildContext context) {
+    final c = NgPalette.of(context);
+    final logs = [...?_journey?.followUps]
+      ..sort((a, b) => (b.loggedAt ?? DateTime(0))
+          .compareTo(a.loggedAt ?? DateTime(0)));
+    final created = _lead?.createdAt;
+    final items = <(IconData, NgStatus, String, String?, DateTime?)>[
+      for (final f in logs)
+        (
+          f.channel == 'whatsapp' ? Icons.chat_outlined : Icons.call_outlined,
+          NgStatus.green,
+          [
+            f.channel == 'whatsapp' ? 'WhatsApp' : 'Called customer',
+            if ((f.outcome ?? '').isNotEmpty)
+              f.outcome!.replaceAll('_', ' '),
+          ].join(' · '),
+          f.notes,
+          f.loggedAt,
+        ),
+      if (created != null)
+        (
+          Icons.add_circle_outline_rounded,
+          NgStatus.blue,
+          [
+            'Lead created',
+            if ((_lead?.source ?? '').isNotEmpty) 'Source: ${_lead!.source}',
+          ].join(' · '),
+          null,
+          created,
+        ),
+    ];
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
+          child: Text(AppLocalizations.of(context).odActivity,
+              style: NgFonts.geist(
+                  fontSize: 18, fontWeight: FontWeight.w600, color: c.text)),
+        ),
+        for (var i = 0; i < items.length; i++)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: 36,
+                  child: Column(children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                          color: c.status(items[i].$2).bg,
+                          shape: BoxShape.circle),
+                      child: Icon(items[i].$1,
+                          size: 16, color: c.status(items[i].$2).fg),
+                    ),
+                    if (i < items.length - 1)
+                      Expanded(child: Container(width: 2, color: c.w07)),
+                  ]),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16, top: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(items[i].$3,
+                            style: NgFonts.geist(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w500,
+                                color: c.text)),
+                        if ((items[i].$4 ?? '').trim().isNotEmpty)
+                          Text(items[i].$4!.trim(),
+                              style: NgFonts.geist(
+                                  fontSize: 13.5, color: c.soft)),
+                        if (items[i].$5 != null)
+                          Text(
+                              DateFormat('d MMM, h:mm a')
+                                  .format(items[i].$5!.toLocal()),
+                              style: NgFonts.geist(
+                                  fontSize: 12.5, color: c.mute)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -1152,7 +1345,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     final fromFloor = lead?.fromFloor;
     final toFloor = lead?.toFloor;
     return DetailCard(
-      title: 'Lead Details',
+      title: AppLocalizations.of(context).odMoveDetails,
       children: [
         DetailRow(
           label: 'Route',
@@ -1933,26 +2126,24 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).leadDetails,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
+        backgroundColor: NgPalette.of(context).bg,
+        appBar: NgSimpleBar(
+          title: AppLocalizations.of(context).leadDetails,
+          actions: [
+            if (StaffPermissions.canActive('leads', 'edit') &&
+                widget.leadId != null)
+              NgHeaderButtonBox(
+                icon: Icons.edit_outlined,
+                tooltip: AppLocalizations.of(context).editLead,
+                onTap: () => context.pushNamed(
+                  NewLeadPageWidget.routeName,
+                  queryParameters: {
+                    'leadId':
+                        serializeParam(widget.leadId, ParamType.String),
+                  }.withoutNulls,
                 ),
-          ),
-          actions: const [],
-          elevation: 0.0,
+              ),
+          ],
         ),
         body: SafeArea(
           top: true,
@@ -1966,92 +2157,34 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Redesign: the journey strip — every stage of this
-                    // lead on one screen. See OrderJourneyPageWidget.
+                    // Claude Design handoff "LEAD DETAIL": journey strip,
+                    // avatar header with the status pill, Call / WhatsApp
+                    // / Quote, then the segmented pipeline.
                     if (widget.leadId != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: JourneyEntryCard(leadId: widget.leadId),
-                      ),
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: FlutterFlowTheme.of(context).secondaryBackground,
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.leadCustomer ?? 'Lead',
-                                    style: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .override(
-                                          font: NgFonts.geist(
-                                            fontWeight: FlutterFlowTheme.of(
-                                                    context)
-                                                .titleMedium
-                                                .fontWeight,
-                                            fontStyle: FlutterFlowTheme.of(
-                                                    context)
-                                                .titleMedium
-                                                .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .primaryText,
-                                          letterSpacing: 0.0,
-                                          fontWeight: FlutterFlowTheme.of(
-                                                  context)
-                                              .titleMedium
-                                              .fontWeight,
-                                          fontStyle: FlutterFlowTheme.of(
-                                                  context)
-                                              .titleMedium
-                                              .fontStyle,
-                                        ),
-                                  ),
-                                  // A4: "the phone number in the lead
-                                  // header is also tappable" — dials it.
-                                  if (_hasUsablePhone)
-                                    InkWell(
-                                      onTap: _callLead,
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.only(top: 2),
-                                        child: Text(
-                                          widget.leadPhone!,
-                                          style: NgFonts.geist(
-                                            fontSize: 13,
-                                            color: FlutterFlowTheme.of(
-                                                    context)
-                                                .primary,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    // Session 4, A3: freely-tappable status chips — the
-                    // one interactive control for lead status now (the
-                    // pipeline strip below mirrors it, read-only).
-                    _statusChipsRow(context),
-                    // Session 4, A4.
+                      JourneyEntryCard(
+                          leadId: widget.leadId, data: _journey),
+                    _leadHeader(context),
                     _quickContactRow(context),
+                    // Item 5.4 pipeline strip, now the handoff's segmented
+                    // bars. Each stage reads its OWN record (12 Sept 2026
+                    // fix: reaching `quoted` used to tick SURVEY on leads
+                    // that were never surveyed).
+                    LeadStatusStrip(
+                      compact: true,
+                      status: _status,
+                      evidence: LeadStageEvidence(
+                        surveySubmitted: _survey?.submittedAt != null,
+                        hasQuote: _quotation != null,
+                        hasOrder: _hasOrder,
+                      ),
+                      busy: _savingStatus,
+                      onStageTap: (stage) => _setLeadStatus(stage, force: true),
+                    ),
+                    // Session 4, A3: the one interactive control for lead
+                    // status — the strip above mirrors it, read-only.
+                    _statusChipsRow(context),
                     // Session 4, A1: one detail table, every row rendered
                     // even when empty (— for null) — replaces the old
                     // Contact/Move Details split, which didn't cover
@@ -2071,92 +2204,12 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                         customerName: widget.leadCustomer,
                         customerPhone: widget.leadPhone,
                       ),
-                    // Item 5.4: pipeline progress strip, APC parity.
-                    // Session 4, A3: now a read-only mirror of the chips
-                    // above — onStageTap is only used by the Lost banner's
-                    // Reopen button (lead_status_strip.dart no longer
-                    // wires it to per-stage taps). onMarkLost removed
-                    // entirely per A3's "remove any separate 'Mark as
-                    // lost' link" — Lost is one of the six chips now.
-                    LeadStatusStrip(
-                      status: _status,
-                      // Each stage now reads its OWN record instead of
-                      // being inferred from the status ordinal. Before
-                      // 12 Sept 2026 reaching `quoted` ticked SURVEY on
-                      // leads that were never surveyed — two of the six
-                      // confirmed leads, in live data.
-                      evidence: LeadStageEvidence(
-                        surveySubmitted: _survey?.submittedAt != null,
-                        hasQuote: _quotation != null,
-                        hasOrder: _hasOrder,
-                      ),
-                      busy: _savingStatus,
-                      onStageTap: (stage) => _setLeadStatus(stage, force: true),
-                    ),
                     if (!_loadingLinked) _surveyQuoteSection(context),
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          0.0, 14.0, 0.0, 14.0),
-                      child: FFButtonWidget(
-                        onPressed: _converting ? null : _confirmOrder,
-                        text: _converting ? 'Confirming…' : 'Confirm Order',
-                        icon: const Icon(
-                          Icons.assignment_turned_in,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor:
-                              FlutterFlowTheme.of(context).primaryBackground,
-                          color: FlutterFlowTheme.of(context).primary,
-                          textStyle: TextStyle(
-                            color:
-                                FlutterFlowTheme.of(context).primaryBackground,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          0.0, 14.0, 0.0, 14.0),
-                      child: FFButtonWidget(
-                        onPressed: () async {
-                          context.pushNamed(
-                            NewLeadPageWidget.routeName,
-                            queryParameters: {
-                              'leadId': serializeParam(
-                                  widget.leadId, ParamType.String),
-                            }.withoutNulls,
-                          );
-                        },
-                        text: AppLocalizations.of(context).editLead,
-                        icon: const Icon(
-                          Icons.edit,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor: FlutterFlowTheme.of(context).primary,
-                          color: Colors.transparent,
-                          textStyle: TextStyle(
-                            color: FlutterFlowTheme.of(context).primary,
-                          ),
-                          borderSide: BorderSide(
-                            color: FlutterFlowTheme.of(context).primary,
-                            width: 1.0,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
+                    _leadActivity(context),
+                    NgPrimaryButton(
+                      onPressed: _converting ? null : _confirmOrder,
+                      label: _converting ? 'Confirming…' : 'Confirm Order',
+                      icon: Icons.assignment_turned_in_outlined,
                     ),
                     // Item 11: destructive, at the bottom, deliberately
                     // separated from the primary actions above.

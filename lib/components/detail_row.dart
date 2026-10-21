@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Shared label/value row for detail screens (live-test fix brief #2,
@@ -46,12 +45,16 @@ class DetailRow extends StatelessWidget {
 
   bool get _isEmpty => value == null || value!.trim().isEmpty;
 
+  /// True when this row renders nothing, so [DetailCard] can leave out
+  /// the divider that would otherwise sit above it.
+  bool get isHidden => _isEmpty && hideWhenEmpty;
+
   @override
   Widget build(BuildContext context) {
     if (_isEmpty && hideWhenEmpty) return const SizedBox.shrink();
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     final row = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      padding: const EdgeInsets.symmetric(vertical: 13.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -61,9 +64,9 @@ class DetailRow extends StatelessWidget {
               label,
               maxLines: 2,
               style: NgFonts.geist(
-                fontSize: 13,
+                fontSize: 14,
                 height: 1.3,
-                color: theme.secondaryText,
+                color: c.mute,
               ),
             ),
           ),
@@ -76,12 +79,10 @@ class DetailRow extends StatelessWidget {
               maxLines: maxValueLines,
               overflow: TextOverflow.ellipsis,
               style: NgFonts.geist(
-                fontSize: 13.5,
+                fontSize: 14.5,
                 height: 1.3,
                 fontWeight: FontWeight.w500,
-                color: _isEmpty
-                    ? theme.secondaryText
-                    : (valueColor ?? theme.primaryText),
+                color: _isEmpty ? c.mute : (valueColor ?? c.text),
               ),
             ),
           ),
@@ -97,8 +98,9 @@ class DetailRow extends StatelessWidget {
   }
 }
 
-/// Card wrapper matching the detail pages' existing surface treatment, so
-/// a group of [DetailRow]s sits on the same grid as the rest of the page.
+/// A titled group of [DetailRow]s (Claude Design handoff "Move
+/// details"): the heading sits above the card, and rows are split by
+/// hairlines. Rows that hide themselves take their divider with them.
 class DetailCard extends StatelessWidget {
   const DetailCard({super.key, required this.title, required this.children});
 
@@ -107,28 +109,44 @@ class DetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      padding: const EdgeInsets.all(16),
+    final c = NgPalette.of(context);
+    final visible = [
+      for (final w in children)
+        if (!(w is DetailRow && w.isHidden)) w,
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            title,
-            style: NgFonts.geist(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              color: theme.primary,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+            child: Text(
+              title,
+              style: NgFonts.geist(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                color: c.text,
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          ...children,
+          Container(
+            decoration: BoxDecoration(
+              color: c.s1,
+              borderRadius: BorderRadius.circular(NgRadius.card),
+              border: Border.all(color: c.w06),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < visible.length; i++) ...[
+                  if (i > 0) Divider(height: 1, thickness: 1, color: c.w06),
+                  visible[i],
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -150,17 +168,17 @@ class DetailNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     final empty = text == null || text!.trim().isEmpty;
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(vertical: 13),
       child: Text(
         empty ? emptyLabel : text!.trim(),
         style: NgFonts.geist(
-          fontSize: 13.5,
+          fontSize: 14.5,
           height: 1.4,
           fontStyle: empty ? FontStyle.italic : FontStyle.normal,
-          color: empty ? theme.secondaryText : theme.primaryText,
+          color: empty ? c.mute : c.text,
         ),
       ),
     );
