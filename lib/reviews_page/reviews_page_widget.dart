@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '/app_session.dart';
 import '/backend/audit_log_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/config/app_config.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/backend/vendor_identity.dart';
@@ -171,125 +171,124 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     final rated = _reviews.where((r) => r['rating'] != null).length;
-
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        automaticallyImplyLeading: true,
-        title: Text('Reviews',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 22,
-                fontWeight: FontWeight.w600)),
-        elevation: 0,
-      ),
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                 children: [
+                  const NgModuleHeader('Reviews'),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
-                      _statCard(theme, 'Collected', '$rated'),
-                      const SizedBox(width: 12),
-                      _statCard(theme, 'Avg Rating',
-                          rated == 0 ? '—' : _averageRating.toStringAsFixed(1)),
-                      const SizedBox(width: 12),
-                      _statCard(theme, 'Due', '${_dueOrders.length}', danger: _dueOrders.isNotEmpty),
+                      _statCard('Collected', '$rated', c.text),
+                      const SizedBox(width: 8),
+                      _statCard(
+                          'Avg rating',
+                          rated == 0 ? '—' : _averageRating.toStringAsFixed(1),
+                          c.amber),
+                      const SizedBox(width: 8),
+                      _statCard('Due', '${_dueOrders.length}',
+                          _dueOrders.isNotEmpty ? c.red : c.text),
                     ],
                   ),
                   if (_dueOrders.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Text('Due for review request',
-                        style: NgFonts.geist(
-                            fontSize: 14, fontWeight: FontWeight.w700, color: theme.primaryText)),
-                    const SizedBox(height: 8),
-                    ..._dueOrders.map((o) => _dueOrderRow(theme, o)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Ask for a review',
+                              style: NgFonts.geist(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: c.text)),
+                          Text(
+                              'Delivered more than 24 hours ago, not asked yet',
+                              style:
+                                  NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    NgCardList(children: [
+                      for (final o in _dueOrders) _dueOrderRow(o),
+                    ]),
                   ],
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text('Collected Reviews',
-                          style: NgFonts.geist(
-                              fontSize: 14, fontWeight: FontWeight.w700, color: theme.primaryText)),
-                      const Spacer(),
-                      DropdownButton<int?>(
-                        value: _ratingFilter,
-                        hint: const Text('Rating'),
-                        items: [
-                          const DropdownMenuItem(value: null, child: Text('All ratings')),
-                          for (var i = 5; i >= 1; i--)
-                            DropdownMenuItem(value: i, child: Text('$i ★')),
-                        ],
-                        onChanged: (v) => setState(() => _ratingFilter = v),
-                      ),
-                      if (_branches.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        DropdownButton<String?>(
-                          value: _branchFilter,
-                          hint: const Text('Branch'),
-                          items: [
-                            const DropdownMenuItem(value: null, child: Text('All branches')),
-                            for (final b in _branches)
-                              DropdownMenuItem(value: b, child: Text(b)),
-                          ],
-                          onChanged: (v) => setState(() => _branchFilter = v),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                  NgChipRow(edge: 0, chips: [
+                    NgChip(
+                        label: 'All',
+                        selected: _ratingFilter == null,
+                        onTap: () => setState(() => _ratingFilter = null)),
+                    for (var i = 5; i >= 1; i--)
+                      NgChip(
+                          label: '$i ★',
+                          selected: _ratingFilter == i,
+                          onTap: () => setState(() => _ratingFilter = i)),
+                  ]),
+                  if (_branches.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    NgChipRow(edge: 0, chips: [
+                      NgChip(
+                          label: 'All branches',
+                          selected: _branchFilter == null,
+                          onTap: () => setState(() => _branchFilter = null)),
+                      for (final b in _branches)
+                        NgChip(
+                            label: b,
+                            selected: _branchFilter == b,
+                            onTap: () => setState(() => _branchFilter = b)),
+                    ]),
+                  ],
+                  const SizedBox(height: 14),
                   if (_filteredReviews.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                    NgCard(
                       child: Text('No reviews yet.',
-                          style: NgFonts.geist(color: theme.secondaryText)),
+                          textAlign: TextAlign.center,
+                          style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
                     )
                   else
-                    ..._filteredReviews.map((r) => _reviewRow(theme, r)),
+                    NgCardList(children: [
+                      for (final r in _filteredReviews) _reviewRow(r),
+                    ]),
                 ],
               ),
             ),
     );
   }
 
-  Widget _statCard(FlutterFlowTheme theme, String label, String value, {bool danger = false}) {
+  Widget _statCard(String label, String value, Color color) {
+    final c = NgPalette.of(context);
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
+      child: NgCard(
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: NgFonts.geist(fontSize: 11, color: theme.secondaryText)),
+            Text(label, style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+            const SizedBox(height: 4),
             Text(value,
-                style: NgFonts.geist(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: danger ? theme.error : theme.primaryText)),
+                style: NgFonts.mono(
+                    fontSize: 20, fontWeight: FontWeight.w600, color: color)),
           ],
         ),
       ),
     );
   }
 
-  Widget _dueOrderRow(FlutterFlowTheme theme, OrdersRow o) {
+  Widget _dueOrderRow(OrdersRow o) {
+    final c = NgPalette.of(context);
     final at = o.deliveredAt ?? o.closedAt;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
           Expanded(
@@ -297,63 +296,78 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(o.customer,
-                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
+                    style: NgFonts.geist(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
                 Text(
-                    'Order ${o.id} · ${at == null ? '—' : DateFormat('d MMM').format(at)}',
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText)),
+                    '${o.id} · delivered ${at == null ? '—' : DateFormat('d MMM').format(at)}',
+                    style: NgFonts.mono(fontSize: 12, color: c.mute)),
               ],
             ),
           ),
-          OutlinedButton(
+          NgPrimaryButton(
+            compact: true,
+            height: 38,
+            icon: Icons.rate_review_outlined,
+            label: 'Request',
             onPressed: () => _requestReview(o),
-            child: const Text('Request'),
           ),
         ],
       ),
     );
   }
 
-  Widget _reviewRow(FlutterFlowTheme theme, Map<String, dynamic> r) {
+  Widget _reviewRow(Map<String, dynamic> r) {
+    final c = NgPalette.of(context);
     final rating = r['rating'] as int?;
     final comment = r['comment'] as String?;
     final orderId = r['order_id'] as String?;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
+    final name = (r['customer_name'] ?? r['customer'] ?? '') as String;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              Expanded(
+                child: Text(name.isEmpty ? (orderId ?? '—') : name,
+                    style: NgFonts.geist(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+              ),
               if (rating != null)
                 Row(
                   children: List.generate(
                       5,
-                      (i) => Icon(i < rating ? Icons.star : Icons.star_border,
-                          size: 16, color: Colors.amber)),
+                      (i) => Icon(
+                          i < rating
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          size: 18,
+                          color: c.amber)),
                 )
               else
                 Text('Awaiting response',
-                    style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
-              const Spacer(),
-              if ((r['branch'] as String?)?.isNotEmpty ?? false)
-                Text(r['branch'] as String,
-                    style: NgFonts.geist(fontSize: 11, color: theme.secondaryText)),
+                    style: NgFonts.geist(fontSize: 12, color: c.mute)),
             ],
           ),
           if ((comment ?? '').isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(comment!, style: NgFonts.geist(fontSize: 12.5)),
+            Text(comment!,
+                style: NgFonts.geist(fontSize: 13.5, height: 1.4, color: c.soft)),
           ],
-          if (orderId != null) ...[
-            const SizedBox(height: 4),
-            Text('Order $orderId',
-                style: NgFonts.geist(fontSize: 11, color: theme.secondaryText)),
-          ],
+          const SizedBox(height: 4),
+          Text(
+            [
+              if (orderId != null) orderId,
+              if ((r['branch'] as String?)?.isNotEmpty ?? false)
+                r['branch'] as String,
+            ].join(' · '),
+            style: NgFonts.mono(fontSize: 12, color: c.mute),
+          ),
         ],
       ),
     );

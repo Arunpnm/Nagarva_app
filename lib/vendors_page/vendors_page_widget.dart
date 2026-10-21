@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'vendor_detail_page_widget.dart';
@@ -26,6 +27,13 @@ class _VendorsPageWidgetState extends State<VendorsPageWidget>
   bool _loading = true;
   List<VendorsRow> _all = [];
   String _search = '';
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
   String? _typeFilter;
   bool _showInactive = false;
 
@@ -152,123 +160,94 @@ class _VendorsPageWidgetState extends State<VendorsPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
+    String pretty(String t) =>
+        t.isEmpty ? t : (t[0].toUpperCase() + t.substring(1)).replaceAll('_', ' ');
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        automaticallyImplyLeading: true,
-        title: Text('Vendors',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 22,
-                fontWeight: FontWeight.w600)),
-        elevation: 0,
-        actions: [
-          IconButton(
-            tooltip: _showInactive ? 'Hide Inactive' : 'Show Inactive',
-            icon: Icon(_showInactive ? Icons.visibility_off : Icons.visibility),
-            onPressed: () => setState(() => _showInactive = !_showInactive),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _newVendor,
-        icon: const Icon(Icons.add),
-        label: const Text('New Vendor'),
-      ),
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                 children: [
-                  TextField(
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Search Name / Phone / City',
-                      isDense: true,
-                      border: OutlineInputBorder(),
+                  NgModuleHeader('Vendors', actions: [
+                    NgPrimaryButton(
+                      compact: true,
+                      height: 40,
+                      icon: Icons.add_rounded,
+                      label: 'New vendor',
+                      onPressed: _newVendor,
                     ),
+                  ]),
+                  const SizedBox(height: 14),
+                  NgSearchField(
+                    controller: _searchCtrl,
+                    hint: 'Search name, phone or city',
                     onChanged: (v) => setState(() => _search = v),
                   ),
+                  const SizedBox(height: 14),
+                  NgChipRow(edge: 0, chips: [
+                    NgChip(
+                        label: 'All',
+                        selected: _typeFilter == null,
+                        onTap: () => setState(() => _typeFilter = null)),
+                    for (final t in _types)
+                      NgChip(
+                          label: pretty(t),
+                          selected: _typeFilter == t,
+                          onTap: () => setState(() => _typeFilter = t)),
+                  ]),
                   const SizedBox(height: 8),
-                  if (_types.isNotEmpty)
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        ChoiceChip(
-                            label: const Text('All'),
-                            selected: _typeFilter == null,
-                            onSelected: (_) => setState(() => _typeFilter = null)),
-                        for (final t in _types)
-                          ChoiceChip(
-                              label: Text(t),
-                              selected: _typeFilter == t,
-                              onSelected: (_) => setState(() => _typeFilter = t)),
-                      ],
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: NgSecondaryButton(
+                      height: 36,
+                      icon: _showInactive
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      label: _showInactive ? 'Hide inactive' : 'Show inactive',
+                      onPressed: () =>
+                          setState(() => _showInactive = !_showInactive),
                     ),
+                  ),
                   const SizedBox(height: 10),
                   if (_filtered.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                    NgCard(
                       child: Text('No vendors found.',
-                          style: NgFonts.geist(color: theme.secondaryText)),
+                          textAlign: TextAlign.center,
+                          style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
                     )
                   else
-                    for (final v in _filtered) _vendorRow(theme, v),
+                    NgCardList(children: [
+                      for (final v in _filtered)
+                        NgListRow(
+                          onTap: () => context.pushNamed(
+                            VendorDetailPageWidget.routeName,
+                            queryParameters: {
+                              'vendorId': serializeParam(v.id, ParamType.String)
+                            },
+                          ),
+                          leading: NgAvatar(v.name),
+                          title: v.name,
+                          subtitle: [
+                            if ((v.vendorType ?? '').isNotEmpty)
+                              pretty(v.vendorType!),
+                            if ((v.phone ?? '').isNotEmpty) v.phone!,
+                            if ((v.city ?? '').isNotEmpty) v.city!,
+                          ].join(' · '),
+                          trailing: v.active
+                              ? Icon(Icons.chevron_right_rounded,
+                                  size: 20, color: c.faint)
+                              : const NgPill('Inactive',
+                                  status: NgStatus.red),
+                        ),
+                    ]),
                 ],
               ),
             ),
-    );
-  }
-
-  Widget _vendorRow(FlutterFlowTheme theme, VendorsRow v) {
-    return InkWell(
-      onTap: () => context.pushNamed(
-        VendorDetailPageWidget.routeName,
-        queryParameters: {'vendorId': serializeParam(v.id, ParamType.String)},
-      ),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(v.name,
-                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
-                  Text(
-                    [
-                      if ((v.vendorType ?? '').isNotEmpty) v.vendorType,
-                      if ((v.phone ?? '').isNotEmpty) v.phone,
-                      if ((v.city ?? '').isNotEmpty) v.city,
-                    ].whereType<String>().join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
-                  ),
-                ],
-              ),
-            ),
-            if (!v.active)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: theme.error.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text('Inactive', style: NgFonts.geist(fontSize: 10, color: theme.error)),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

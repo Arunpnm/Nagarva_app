@@ -924,3 +924,40 @@ class NgListRow extends StatelessWidget {
     );
   }
 }
+
+/// 40×40 square icon button for a module header (the handoff's settings /
+/// import-export buttons beside the title).
+class NgHeaderButtonBox extends StatelessWidget {
+  const NgHeaderButtonBox({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback? onTap;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final box = SizedBox(
+      width: 40,
+      height: 40,
+      child: Material(
+        color: c.s1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: c.w06),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Icon(icon, size: 20, color: c.soft),
+        ),
+      ),
+    );
+    return tooltip == null ? box : Tooltip(message: tooltip!, child: box);
+  }
+}
