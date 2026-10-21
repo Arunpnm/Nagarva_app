@@ -57,6 +57,25 @@ String? inrFormat(double? amount) {
   return '$sign₹${(a / 100000).toStringAsFixed(2)}L';
 }
 
+/// Full rupee amount with Indian grouping, no decimals: "₹42,000",
+/// "₹1,42,350". The handoff uses this on cards and totals, and the short
+/// [inrFormat] ("₹23.4k") on tiles.
+String inrFull(double? amount) {
+  final amt = amount ?? 0.0;
+  final sign = amt < 0 ? '-' : '';
+  final digits = amt.abs().round().toString();
+  if (digits.length <= 3) return '$sign₹$digits';
+  final last3 = digits.substring(digits.length - 3);
+  var rest = digits.substring(0, digits.length - 3);
+  final parts = <String>[];
+  while (rest.length > 2) {
+    parts.insert(0, rest.substring(rest.length - 2));
+    rest = rest.substring(0, rest.length - 2);
+  }
+  if (rest.isNotEmpty) parts.insert(0, rest);
+  return '$sign₹${parts.join(',')},$last3';
+}
+
 /// Converts a double to integer string for count display.
 String? numStr(double? n) {
   return (n ?? 0.0).toInt().toString();

@@ -3521,5 +3521,146 @@
   "ngEditTarget": "Monthly profit target",
   "@ngEditTarget": {
     "description": "Dashboard redesign"
+  },
+  "ngQuote": "Quote",
+  "@ngQuote": {
+    "description": "Lead card action"
+  },
+  "ngTabDone": "Done",
+  "@ngTabDone": {
+    "description": "Orders tab"
+  },
+  "ngReceived": "Received",
+  "@ngReceived": {
+    "description": "Payments tab"
+  },
+  "ngDaysLate": "{n} days late",
+  "@ngDaysLate": {
+    "description": "Payments due card",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngNoPaymentsYet": "No payments recorded yet",
+  "@ngNoPaymentsYet": {
+    "description": "Payments received empty"
+  },
+  "ngOpsTitle": "Operations",
+  "@ngOpsTitle": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsNewTrip": "New trip",
+  "@ngOpsNewTrip": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsCrewsOut": "Crews out",
+  "@ngOpsCrewsOut": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsVehiclesFree": "Vehicles free",
+  "@ngOpsVehiclesFree": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsAttention": "Needs attention",
+  "@ngOpsAttention": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsNoCrew": "No crew · {name}",
+  "@ngOpsNoCrew": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ngOpsAssign": "Assign",
+  "@ngOpsAssign": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsAssignCrew": "Assign crew",
+  "@ngOpsAssignCrew": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsInsuranceExpires": "Insurance expires in {n} days",
+  "@ngOpsInsuranceExpires": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngOpsInsuranceExpired": "Insurance expired",
+  "@ngOpsInsuranceExpired": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsLowStock": "{name} running low",
+  "@ngOpsLowStock": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ngOpsStockLeft": "{qty} left",
+  "@ngOpsStockLeft": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "ngOpsReorder": "Reorder",
+  "@ngOpsReorder": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsView": "View",
+  "@ngOpsView": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsAwaiting": "Awaiting approval",
+  "@ngOpsAwaiting": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsJobs": "Jobs",
+  "@ngOpsJobs": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsNoJobs": "No moves on this day",
+  "@ngOpsNoJobs": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsFleet": "Fleet",
+  "@ngOpsFleet": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsFleetSummary": "{free} of {total} free",
+  "@ngOpsFleetSummary": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "free": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "ngOpsInService": "In service",
+  "@ngOpsInService": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsOnJob": "On a job",
+  "@ngOpsOnJob": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsFree": "Free",
+  "@ngOpsFree": {
+    "description": "Dashboard redesign"
   }
 }

@@ -235,10 +235,10 @@ class DashAgenda extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(a.time,
-                          maxLines: 1,
+                          maxLines: 2,
                           textAlign: TextAlign.center,
                           style: NgFonts.mono(
-                              fontSize: a.ampm.isEmpty ? 11.5 : 14,
+                              fontSize: a.ampm.isEmpty ? 11 : 14,
                               fontWeight: FontWeight.w600,
                               color: c.text)),
                       if (a.ampm.isNotEmpty) ...[
@@ -408,7 +408,7 @@ class DashTargetBlock extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
-    required this.target,
+    this.target,
     required this.fraction,
     required this.percentLabel,
     this.barColor,
@@ -418,7 +418,10 @@ class DashTargetBlock extends StatelessWidget {
 
   final String label;
   final String value;
-  final String target;
+
+  /// "/ ₹3.00L" after the figure. Null when [value] is the target itself
+  /// or a prompt, which then renders smaller.
+  final String? target;
   final double fraction;
   final String percentLabel;
   final Color? barColor;
@@ -453,14 +456,16 @@ class DashTargetBlock extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: NgFonts.geist(
-                        fontSize: 26,
+                        fontSize: target == null && value.length > 12 ? 17 : 26,
                         fontWeight: FontWeight.w600,
                         letterSpacing: -0.52,
                         color: c.text)),
               ),
-              const SizedBox(width: 6),
-              Text('/ $target',
-                  style: NgFonts.geist(fontSize: 14, color: c.faint)),
+              if (target != null) ...[
+                const SizedBox(width: 6),
+                Text('/ $target',
+                    style: NgFonts.geist(fontSize: 14, color: c.faint)),
+              ],
             ],
           ),
           const SizedBox(height: 12),

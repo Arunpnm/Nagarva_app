@@ -1007,7 +1007,6 @@ class _HomePageWidgetState extends State<HomePageWidget>
         target = DashTargetBlock(
           label: l.ngProfitTarget,
           value: l.ngSetTarget,
-          target: '—',
           fraction: 0,
           percentLabel: '',
           note: l.ngSetTargetSub,
@@ -1031,8 +1030,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
       } else {
         target = DashTargetBlock(
           label: l.ngProfitTarget,
-          value: '—',
-          target: functions.inrFormat(t)!,
+          value: functions.inrFormat(t)!,
           fraction: 0,
           percentLabel: '',
           note: margin?.title,
@@ -1241,8 +1239,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
       _greeting(context),
       if (s.currentStaffId == null && (s.planName ?? '').trim().isNotEmpty)
         const DashPlanCard(),
-      if (showInfo) _infoRows(context),
       _todayRow(context),
+      if (showInfo) _infoRows(context),
       _agendaSection(context),
       if (StaffPermissions.canActive('reports', 'view') ||
           StaffPermissions.canActive('financials', 'view'))

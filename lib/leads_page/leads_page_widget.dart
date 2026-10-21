@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import '/config/app_config.dart';
 import '/backend/lead_status.dart';
 import '/backend/reminders_service.dart';
@@ -14,18 +12,8 @@ import '/components/ng_widgets.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:uuid/uuid.dart';
 import 'leads_page_model.dart';
 export 'leads_page_model.dart';
-
-/// Same scheme as lead_detail_page_widget.dart's `_generateHexToken` —
-/// surveys.token has no working DB default.
-String _generateSurveyToken() {
-  final random = Random.secure();
-  final bytes = List<int>.generate(24, (_) => random.nextInt(256));
-  return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-}
 
 /// CRM lead pipeline for Arun Packers.
 class LeadsPageWidget extends StatefulWidget {
@@ -70,51 +58,21 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
     safeSetState(() {});
     _model.allLeadsList = (_model.leadsAllOut ?? []).toList().cast<LeadsRow>();
     safeSetState(() {});
-    // Live-test fix brief #2, item 5: every tab below matched a single
-    // hand-written status string, and the "Won" tab's string was
-    // 'converted' while Convert to Order actually writes 'confirmed' — so
-    // won leads never appeared in it. Tabs now match against the canonical
-    // value PLUS its known legacy spellings (leadStatusMatchValues), so
-    // they are correct whether or not
-    // supabase/20260728_lead_status_canonical.sql has been run yet.
-    _model.leadsNewOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope
-          .read(q)
-          .inFilter('status', leadStatusMatchValues(kLeadStatusNew)),
-    );
-    _model.newLeadsList = (_model.leadsNewOut ?? []).toList().cast<LeadsRow>();
-    safeSetState(() {});
-    _model.leadsContactedOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope
-          .read(q)
-          .inFilter('status', leadStatusMatchValues(kLeadStatusFollowUp)),
-    );
-    _model.contactedLeadsList =
-        (_model.leadsContactedOut ?? []).toList().cast<LeadsRow>();
-    safeSetState(() {});
-    _model.leadsQualifiedOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).inFilter('status', [
-        ...leadStatusMatchValues(kLeadStatusSurveyDone),
-        ...leadStatusMatchValues(kLeadStatusQuoted),
-      ]),
-    );
-    _model.qualifiedLeadsList =
-        (_model.leadsQualifiedOut ?? []).toList().cast<LeadsRow>();
-    safeSetState(() {});
-    _model.leadsWonOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope
-          .read(q)
-          .inFilter('status', leadStatusMatchValues(kLeadStatusConfirmed)),
-    );
-    _model.wonLeadsList = (_model.leadsWonOut ?? []).toList().cast<LeadsRow>();
-    safeSetState(() {});
-    _model.leadsLostOut = await LeadsTable().queryRows(
-      queryFn: (q) => OrgScope
-          .read(q)
-          .inFilter('status', leadStatusMatchValues(kLeadStatusLost)),
-    );
-    _model.lostLeadsList =
-        (_model.leadsLostOut ?? []).toList().cast<LeadsRow>();
+    // One query, bucketed here by canonicalLeadStatus, so every legacy
+    // spelling lands in the right chip whether or not
+    // supabase/20260728_lead_status_canonical.sql has run. The chips are
+    // the handoff's: the lead pipeline stages themselves.
+    List<LeadsRow> only(String k) => _model.allLeadsList
+        .where((r) => canonicalLeadStatus(r.status) == k)
+        .toList();
+    _model.newLeadsList = only(kLeadStatusNew);
+    _model.contactedLeadsList = only(kLeadStatusFollowUp);
+    _model.qualifiedLeadsList = [
+      ...only(kLeadStatusSurveyDone),
+      ...only(kLeadStatusQuoted),
+    ];
+    _model.wonLeadsList = only(kLeadStatusConfirmed);
+    _model.lostLeadsList = only(kLeadStatusLost);
     safeSetState(() {});
 
     // Item 10.5: which leads have an overdue follow-up. One query for the
@@ -155,77 +113,19 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
     super.dispose();
   }
 
-  // Parity brief Part 4b: LeadDetailPage already had "Request Survey"
-  // (see its _requestSurvey) — the missing piece was a quick entry point
-  // right on the list card, without needing to open the full detail page
-  // first. surveys.lead_id is uuid (matches LeadsRow.id's type).
-  bool _generatingSurveyFor(String? leadId) =>
-      leadId != null && _model.surveyLinkLoadingLeadId == leadId;
-
-  Future<void> _quickSurveyLink(LeadsRow lead) async {
-    if (lead.id == null) return;
-    safeSetState(() => _model.surveyLinkLoadingLeadId = lead.id);
-    try {
-      final row = await SurveysTable().insert({
-        'id': const Uuid().v4(),
-        'token': _generateSurveyToken(),
-        ...OrgScope.stamp(),
-        'lead_id': lead.id,
-        'customer_name': lead.customer,
-        'customer_phone': lead.phone ?? '',
-        'from_address': lead.fromCity ?? '',
-        'to_address': lead.toCity ?? '',
-      });
-      // Not Uri.base.origin — that is file:/// inside an APK and throws.
-      // See kPublicBaseUrl in lib/config/app_config.dart.
-      final link = buildTokenLink('/survey', row.token);
-      if (!mounted) return;
-      await showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text(AppLocalizations.of(context).ngSurveyLinkCreated),
-          content: SelectableText(link),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: link));
-                Navigator.of(context).pop();
-              },
-              child: Text(AppLocalizations.of(context).ngCopyClose),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(AppLocalizations.of(context).ngClose),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not create survey link: $e')),
-        );
-      }
-    } finally {
-      if (mounted) safeSetState(() => _model.surveyLinkLoadingLeadId = null);
-    }
-  }
-
   final _searchCtrl = TextEditingController();
 
-  /// Filter chips, in the order the redesign shows them. Each maps to one
-  /// of the lists [_loadLeads] already fetches — the same buckets the old
-  /// tab row used ('contacted' is the follow-up bucket, 'qualified' is
-  /// survey done + quoted).
+  /// Filter chips, as the handoff shows them: All, then every pipeline
+  /// stage and Lost, each counted from the one list [_loadLeads] fetches.
   List<(String, String, List<LeadsRow>)> _filters(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    List<LeadsRow> only(String k) => _model.allLeadsList
+        .where((r) => canonicalLeadStatus(r.status) == k)
+        .toList();
     return [
       ('all', l10n.all, _model.allLeadsList),
-      ('new', l10n.statusNew, _model.newLeadsList),
-      ('contacted', l10n.contacted, _model.contactedLeadsList),
-      ('qualified', l10n.qualified, _model.qualifiedLeadsList),
-      ('won', l10n.won, _model.wonLeadsList),
-      ('lost', l10n.lost, _model.lostLeadsList),
+      for (final k in [...kLeadPipeline, kLeadStatusLost])
+        (k, leadStatusLabel(k), only(k)),
     ];
   }
 
@@ -527,28 +427,27 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                 ),
               ),
               const SizedBox(width: 6),
-              // Parity brief Part 4b: quick "Generate Survey Link" right on
-              // the card — LeadDetailPage's "Request Survey" covers the
-              // detail-page half.
+              // Handoff: Call / WhatsApp / Quote. The survey link moved to
+              // Lead Details' "Request Survey", where it already lived too.
               Expanded(
-                child: _generatingSurveyFor(l.id)
-                    ? const SizedBox(
-                        height: 40,
-                        child: Center(
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                      )
-                    : NgSecondaryButton(
-                        label: AppLocalizations.of(context).ngSurvey,
-                        icon: Icons.assignment_rounded,
-                        iconColor: c.acc,
-                        height: 40,
-                        onPressed: () => _quickSurveyLink(l),
-                      ),
+                child: NgSecondaryButton(
+                  label: AppLocalizations.of(context).ngQuote,
+                  icon: Icons.request_quote_outlined,
+                  iconColor: c.acc,
+                  height: 40,
+                  onPressed: () => context.pushNamed(
+                    SurveyQuotePageWidget.routeName,
+                    queryParameters: {
+                      'leadId': serializeParam(l.id, ParamType.String),
+                      'leadCustomer':
+                          serializeParam(l.customer, ParamType.String),
+                      'leadPhone': serializeParam(l.phone, ParamType.String),
+                      'leadFromCity':
+                          serializeParam(l.fromCity, ParamType.String),
+                      'leadToCity': serializeParam(l.toCity, ParamType.String),
+                    }.withoutNulls,
+                  ),
+                ),
               ),
             ],
           ),
@@ -579,7 +478,8 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
               NgScreenTitle(
-                AppLocalizations.of(context).leadsCrm,
+                AppLocalizations.of(context).leads,
+                large: true,
                 action: NgPrimaryButton(
                   compact: true,
                   icon: Icons.add_rounded,

@@ -200,9 +200,14 @@ class NgSectionHeader extends StatelessWidget {
 /// under it, and an optional trailing action (the per-screen "new" button
 /// that replaced Quick Entry in the redesign).
 class NgScreenTitle extends StatelessWidget {
-  const NgScreenTitle(this.title, {super.key, this.subtitle, this.action});
+  const NgScreenTitle(this.title,
+      {super.key, this.subtitle, this.action, this.large = false});
 
   final String title;
+
+  /// 26px, the handoff's size for the main tab screens (Leads, Orders,
+  /// Operations, Payments, Staff...). Module screens keep 21px.
+  final bool large;
   final String? subtitle;
   final Widget? action;
 
@@ -220,9 +225,9 @@ class NgScreenTitle extends StatelessWidget {
                 Text(
                   title,
                   style: NgFonts.geist(
-                    fontSize: 21,
+                    fontSize: large ? 26 : 21,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: -0.42,
+                    letterSpacing: large ? -0.52 : -0.42,
                     color: c.text,
                   ),
                 ),
@@ -648,6 +653,121 @@ class NgProgressBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Segmented control (the handoff's Orders tabs, Payments Due/Received,
+/// Operations Today/Tomorrow): an s1 track with 4px padding and equal
+/// cells; the selected cell sits on `sel`.
+class NgSegmented extends StatelessWidget {
+  const NgSegmented({
+    super.key,
+    required this.labels,
+    required this.selected,
+    required this.onSelect,
+    this.counts,
+  });
+
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onSelect;
+  final List<int>? counts;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: c.s1,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < labels.length; i++)
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onSelect(i),
+                child: Container(
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: i == selected ? c.sel : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          labels[i],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: NgFonts.geist(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: i == selected ? c.text : c.mute,
+                          ),
+                        ),
+                      ),
+                      if (counts != null) ...[
+                        const SizedBox(width: 4),
+                        Opacity(
+                          opacity: 0.6,
+                          child: Text(
+                            '${counts![i]}',
+                            style: NgFonts.mono(
+                              fontSize: 11,
+                              color: i == selected ? c.text : c.mute,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The handoff's 6-segment stage bar: done segments in the stage hue,
+/// the rest on a w07 track.
+class NgStageBar extends StatelessWidget {
+  const NgStageBar({
+    super.key,
+    required this.done,
+    required this.color,
+    this.total = 6,
+  });
+
+  final int done;
+  final Color color;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Row(
+      children: [
+        for (var i = 0; i < total; i++) ...[
+          if (i > 0) const SizedBox(width: 3),
+          Expanded(
+            child: Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: i < done ? color : c.w07,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -3,15 +3,18 @@ import '/backend/approval_queue.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/field_expenses.dart';
-import '/components/keyboard_scroll_view.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 // kNotAvailableReasons — the same labels the supervisor chose from, so
 // the owner reads exactly what the supervisor selected.
 import '/supervisor_job_page/supervisor_job_page_model.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
+import '/backend/order_stages.dart';
+import '/backend/module_navigation.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'operations_page_model.dart';
@@ -52,9 +55,15 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   void onPageRefresh() => _load();
 
   List<OrdersRow> _awaiting = [];
-  List<OrdersRow> _active = [];
-  List<OrdersRow> _upcoming = [];
-  List<VehicleTripsRow> _trips = [];
+  List<OrdersRow> _orders = [];
+
+  /// Crew names per order, from `order_staff` joined to `staff`.
+  Map<String, List<String>> _crew = {};
+  List<VehiclesRow> _vehicles = [];
+  List<MaterialsRow> _lowStock = [];
+
+  /// 0 = Today, 1 = Tomorrow (the handoff's segmented control).
+  int _day = 0;
   bool _loading = true;
 
   /// supervisor_id -> staff name, and order_id -> balance due, both only
@@ -79,30 +88,6 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   /// Maps order_id -> (completion_method, not_available_reason).
   Map<String, (String?, String?)> _awaitingPod = {};
 
-  // Statuses this app ACTUALLY writes today (grep the writers before
-  // editing this set): 'booked'/'pending' (new_order_page + Duplicate),
-  // 'team_assigned' (order_crew_section._assignSupervisor), 'transit'
-  // (supervisor_job_page._startShifting), 'delivered'
-  // (._verifyAndComplete), 'closed' (Mark Order Complete), 'cancelled'.
-  //
-  // 'transit' was missing here, which is a real bug, not a cosmetic one:
-  // it is the ONE value that means "crew is actively shifting right now",
-  // and it appears in neither this set nor _upcomingStatuses — so an
-  // in-progress job written by the supervisor flow was invisible on this
-  // board entirely, in both sections.
-  //
-  // 'accepted'/'shifting_started'/'in_transit' are reference-app names
-  // that nothing in this codebase writes. Kept (harmless, and they'd
-  // match if legacy rows carry them) but deliberately NOT relied on.
-  static const _activeStatuses = {
-    'team_assigned',
-    'transit',
-    'accepted',
-    'shifting_started',
-    'in_transit',
-  };
-  static const _upcomingStatuses = {'confirmed', 'booked', 'pending'};
-
   @override
   void initState() {
     super.initState();
@@ -122,32 +107,38 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
       final results = await Future.wait([
         OrdersTable()
             .queryRows(queryFn: (q) => OrgScope.read(q).order('move_date')),
-        VehicleTripsTable().queryRows(
-            queryFn: (q) => OrgScope.read(q).order('trip_date').limit(25)),
+        OrderStaffTable().queryRows(queryFn: (q) => OrgScope.read(q)),
+        StaffTable().queryRows(queryFn: (q) => OrgScope.read(q)),
+        VehiclesTable().queryRows(queryFn: (q) => OrgScope.read(q)),
+        MaterialsTable().queryRows(queryFn: (q) => OrgScope.read(q)),
       ]);
-      final orders = (results[0] as List).cast<OrdersRow>();
-      _trips = (results[1] as List).cast<VehicleTripsRow>();
-      final today = DateTime.now();
-      // Filtered from the same already-fetched list rather than a second
-      // query — same filter as ApprovalQueue.awaitingFilter, applied
-      // client-side here because this page has the rows in hand already.
-      _awaiting = orders.where((o) {
+      _orders = (results[0] as List).cast<OrdersRow>();
+      final names = {
+        for (final st in (results[2] as List).cast<StaffRow>())
+          if (st.id != null) st.id!: st.name
+      };
+      final crew = <String, List<String>>{};
+      for (final r in (results[1] as List).cast<OrderStaffRow>()) {
+        if (r.orderId == null) continue;
+        crew.putIfAbsent(r.orderId!, () => []).add(names[r.staffId] ?? '');
+      }
+      _crew = crew;
+      _vehicles = (results[3] as List).cast<VehiclesRow>();
+      // Low stock is the vendor's own threshold; an item without one is
+      // never flagged rather than judged against a number we made up.
+      _lowStock = (results[4] as List)
+          .cast<MaterialsRow>()
+          .where((m) =>
+              (m.minStock ?? 0) > 0 && (m.quantity ?? 0) <= m.minStock!)
+          .toList();
+      // Same filter as ApprovalQueue.awaitingFilter, applied client-side
+      // because this page has the rows in hand already.
+      _awaiting = _orders.where((o) {
         final st = (o.status ?? '').toLowerCase();
         return o.supervisorStatus == 'completed_pending' &&
             st != 'closed' &&
             st != 'cancelled';
       }).toList();
-      _active = orders
-          .where(
-              (o) => _activeStatuses.contains((o.status ?? '').toLowerCase()))
-          .toList();
-      _upcoming = orders
-          .where((o) =>
-              _upcomingStatuses.contains((o.status ?? '').toLowerCase()) &&
-              (o.moveDateOrNull?.isAfter(
-                      DateTime(today.year, today.month, today.day - 1)) ??
-                  false))
-          .toList();
       await _loadAwaitingDetail();
       ApprovalQueue.instance.pendingCount.value = _awaiting.length;
     } catch (_) {}
@@ -259,28 +250,6 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     }
   }
 
-  Color _statusColor(String st) {
-    switch (st.toLowerCase()) {
-      case 'transit':
-      case 'in_transit':
-        return NgPalette.of(context).blue;
-      case 'shifting_started':
-        return NgPalette.of(context).amber;
-      case 'accepted':
-      case 'team_assigned':
-        return NgPalette.of(context).green;
-      case 'confirmed':
-      case 'booked':
-      case 'pending':
-        return FlutterFlowTheme.of(context).primary;
-      default:
-        return FlutterFlowTheme.of(context).secondaryText;
-    }
-  }
-
-  String _prettyStatus(String? st) =>
-      (st ?? '—').replaceAll('_', ' ').toUpperCase();
-
   void _openOrder(OrdersRow o) {
     // Match orders page: mask customer/phone in the URL for supervisors on
     // completed orders (this page won't show completed orders, but the
@@ -305,77 +274,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     );
   }
 
-  Widget _sectionTitle(String s) {
-    final theme = FlutterFlowTheme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(s,
-          style: NgFonts.geist(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w700,
-              color: theme.primaryText)),
-    );
-  }
-
-  Widget _orderCard(OrdersRow o) {
-    final theme = FlutterFlowTheme.of(context);
-    final st = _prettyStatus(o.status);
-    final color = _statusColor(o.status ?? '');
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => _openOrder(o),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(o.customer,
-                      style: NgFonts.geist(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                          color: theme.primaryText)),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(st,
-                      style: NgFonts.geist(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
-                          color: color)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              [
-                '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}',
-                'Move: ${dateTimeFormat('d MMM', o.moveDateOrNull)}',
-                if ((o.phone ?? '').isNotEmpty) o.phone!,
-              ].join('  ·  '),
-              style:
-                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Awaiting-approval card. Richer than _orderCard on purpose: this is a
+  /// Awaiting-approval card. Richer than a job card on purpose: this is a
   /// decision queue, so it carries the three things the owner needs before
   /// tapping through — who ran the job, when they finished, and what is
   /// still owed.
@@ -533,38 +432,120 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     );
   }
 
-  Widget _tripCard(VehicleTripsRow t) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
+  // ---- Handoff layout ("OPS"): Today/Tomorrow, three tiles, Needs
+  // attention, Jobs, Fleet. The awaiting-approval queue stays, as its own
+  // section under the alerts, because it is the owner's decision queue.
+
+  bool _onDay(OrdersRow o, int dayOffset) {
+    final d = o.moveDateOrNull;
+    if (d == null) return false;
+    final n = DateTime.now().add(Duration(days: dayOffset));
+    return d.year == n.year && d.month == n.month && d.day == n.day;
+  }
+
+  bool _isLive(OrdersRow o) {
+    final st = (o.status ?? '').toLowerCase();
+    return !['cancelled', 'closed', 'delivered', 'done', 'completed']
+        .contains(st);
+  }
+
+  List<OrdersRow> _jobsFor(int dayOffset) => _orders
+      .where((o) => _isLive(o) && _onDay(o, dayOffset))
+      .toList();
+
+  Widget _tile(IconData icon, Color color, String value, String of,
+      String label) {
+    final c = NgPalette.of(context);
+    return NgCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(value,
+                  style: NgFonts.geist(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.44,
+                      color: c.text)),
+              if (of.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Text(of, style: NgFonts.geist(fontSize: 13, color: c.faint)),
+              ],
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+        ],
       ),
+    );
+  }
+
+  /// One row of "Needs attention": tinted icon, title and detail, and the
+  /// action that resolves it.
+  Widget _alertRow({
+    required IconData icon,
+    required NgStatus tone,
+    required String title,
+    required String sub,
+    required String action,
+    required VoidCallback onAction,
+    bool primary = false,
+  }) {
+    final c = NgPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
       child: Row(
         children: [
-          Icon(Icons.local_shipping, size: 18, color: theme.secondaryText),
-          const SizedBox(width: 10),
+          NgIconTile(icon: icon, status: tone),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${t.vehicleNo ?? '—'} · ${t.driverName ?? '—'}',
-                  style: NgFonts.geist(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: theme.primaryText),
-                ),
-                Text(
-                  '${t.fromLoc ?? '—'} to ${t.toLoc ?? '—'}'
-                  '${t.tripDate == null ? '' : ' · ${t.tripDate}'}'
-                  '${(t.tripType ?? '').isEmpty ? '' : ' · ${t.tripType}'}',
-                  style: NgFonts.geist(
-                      fontSize: 11.5, color: theme.secondaryText),
-                ),
+                Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: c.text)),
+                const SizedBox(height: 2),
+                Text(sub,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
               ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 34,
+            child: Material(
+              color: primary ? c.accBtn : c.s2,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: onAction,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Center(
+                    child: Text(action,
+                        style: NgFonts.geist(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: primary ? NgPalette.onAcc : c.text)),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -572,107 +553,374 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     );
   }
 
+  List<Widget> _alerts(List<OrdersRow> jobs) {
+    final l = AppLocalizations.of(context);
+    final out = <Widget>[];
+    for (final o in jobs.where((o) => (_crew[o.id] ?? const []).isEmpty)) {
+      out.add(_alertRow(
+        icon: Icons.group_add_outlined,
+        tone: NgStatus.red,
+        title: l.ngOpsNoCrew(o.customer),
+        sub: '${o.fromCity ?? '-'} → ${o.toCity ?? '-'}',
+        action: l.ngOpsAssign,
+        primary: true,
+        onAction: () => _openOrder(o),
+      ));
+    }
+    final soon = DateTime.now().add(const Duration(days: 30));
+    for (final v in _vehicles) {
+      final exp = v.insuranceExpiry;
+      if (exp == null || exp.isAfter(soon)) continue;
+      final days = exp.difference(DateTime.now()).inDays;
+      out.add(_alertRow(
+        icon: Icons.shield_outlined,
+        tone: days < 0 ? NgStatus.red : NgStatus.amber,
+        title: days < 0
+            ? l.ngOpsInsuranceExpired
+            : l.ngOpsInsuranceExpires(days),
+        sub: [v.regNo, v.vehicleType ?? ''].where((x) => x.isNotEmpty).join(' · '),
+        action: l.ngOpsView,
+        onAction: () => openModule(context, 'FleetPage'),
+      ));
+    }
+    for (final m in _lowStock) {
+      out.add(_alertRow(
+        icon: Icons.inventory_2_outlined,
+        tone: NgStatus.amber,
+        title: l.ngOpsLowStock(m.name),
+        sub: l.ngOpsStockLeft(
+            '${(m.quantity ?? 0).toStringAsFixed(0)} ${m.unit ?? ''}'.trim()),
+        action: l.ngOpsReorder,
+        onAction: () => openModule(context, 'MaterialsPage'),
+      ));
+    }
+    return out;
+  }
+
+  Widget _jobCard(OrdersRow o) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final idx = orderStageIndex(o.trackingStatus, o.status);
+    final color = c.status(orderStageTone(idx)).fg;
+    final crew = _crew[o.id] ?? const <String>[];
+    final svc = (o.service ?? '').trim();
+    final start = o.jobStartTime;
+    return NgCard(
+      radius: 20,
+      onTap: () => _openOrder(o),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                    '${orderStageLabel(kOrderStages[idx])} · ${idx + 1}/${kOrderStages.length}',
+                    style: NgFonts.geist(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: color)),
+              ),
+              if (start != null)
+                Text(DateFormat('h:mm a').format(start.toLocal()),
+                    style: NgFonts.mono(fontSize: 12.5, color: c.soft)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(o.customer,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: NgFonts.geist(
+                  fontSize: 15.5, fontWeight: FontWeight.w600, color: c.text)),
+          const SizedBox(height: 2),
+          Text(
+            '${o.fromCity ?? '-'} → ${o.toCity ?? '-'}${svc.isEmpty ? '' : ' · $svc'}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: NgFonts.geist(fontSize: 12.5, color: c.mute),
+          ),
+          const SizedBox(height: 12),
+          NgStageBar(
+              done: idx + 1, total: kOrderStages.length, color: color),
+          const SizedBox(height: 12),
+          if (crew.isEmpty)
+            InkWell(
+              onTap: () => _openOrder(o),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                height: 42,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: c.red),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.group_add_outlined, size: 18, color: c.red),
+                    const SizedBox(width: 6),
+                    Text(l.ngOpsAssignCrew,
+                        style: NgFonts.geist(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.red)),
+                  ],
+                ),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: c.w06))),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 26.0 + 18.0 * (crew.take(3).length - 1),
+                    height: 26,
+                    child: Stack(
+                      children: [
+                        for (var i = 0; i < crew.take(3).length; i++)
+                          Positioned(
+                            left: 18.0 * i,
+                            child: Container(
+                              width: 26,
+                              height: 26,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: c.s3,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: c.s1, width: 2),
+                              ),
+                              child: Text(
+                                  crew[i].isEmpty
+                                      ? '?'
+                                      : crew[i].characters.first.toUpperCase(),
+                                  style: NgFonts.geist(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: c.soft)),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      crew.length == 1
+                          ? crew.first
+                          : '${crew.first} +${crew.length - 1}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: NgFonts.geist(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: c.text),
+                    ),
+                  ),
+                  if ((o.vehicleNo ?? '').isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: c.s2,
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Text(o.vehicleNo!,
+                          style: NgFonts.mono(fontSize: 11.5, color: c.soft)),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  ({String label, NgStatus tone}) _vehicleState(VehiclesRow v, Set<String> busy) {
+    final l = AppLocalizations.of(context);
+    final st = (v.status ?? '').toLowerCase();
+    if (st.contains('service') || st.contains('repair')) {
+      return (label: l.ngOpsInService, tone: NgStatus.red);
+    }
+    if (busy.contains(v.regNo.replaceAll(' ', '').toUpperCase())) {
+      return (label: l.ngOpsOnJob, tone: NgStatus.amber);
+    }
+    return (label: l.ngOpsFree, tone: NgStatus.green);
+  }
+
+  Widget _fleetSection(List<OrdersRow> jobs) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final busy = {
+      for (final o in jobs)
+        if ((o.vehicleNo ?? '').isNotEmpty)
+          o.vehicleNo!.replaceAll(' ', '').toUpperCase()
+    };
+    final free =
+        _vehicles.where((v) => _vehicleState(v, busy).tone == NgStatus.green);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        NgSectionHeader(l.ngOpsFleet,
+            trailing: l.ngOpsFleetSummary(free.length, _vehicles.length),
+            onTrailing: () => openModule(context, 'FleetPage')),
+        const SizedBox(height: 10),
+        NgCardList(children: [
+          for (final v in _vehicles)
+            Builder(builder: (context) {
+              final s = _vehicleState(v, busy);
+              final col = c.status(s.tone).fg;
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.local_shipping_outlined,
+                        size: 20, color: c.faint),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(v.regNo,
+                              style: NgFonts.mono(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: c.text)),
+                          if ((v.vehicleType ?? '').isNotEmpty)
+                            Text(v.vehicleType!,
+                                style: NgFonts.geist(
+                                    fontSize: 12, color: c.mute)),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration:
+                          BoxDecoration(color: col, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(s.label,
+                        style: NgFonts.geist(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: col)),
+                  ],
+                ),
+              );
+            }),
+        ]),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text('Operations',
-              style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 22.0,
-                letterSpacing: 0.0,
-              )),
-          elevation: 0.0,
-          actions: [
-            IconButton(
-              tooltip: 'Refresh',
-              icon: Icon(Icons.refresh, color: theme.primaryText),
-              onPressed: _load,
-            ),
-          ],
-        ),
-        body: SafeArea(
-          top: true,
-          child: _loading
-              ? const Center(child: CircularProgressIndicator())
-              : KeyboardScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Discovery-only queue, above Active Shifting: these
-                      // are finished jobs waiting on the owner. Hidden
-                      // entirely when empty — an always-visible "nothing
-                      // awaiting" header would be noise on the common day.
-                      if (_awaiting.isNotEmpty) ...[
-                        _sectionTitle(
-                            'Awaiting Approval (${_awaiting.length})'),
-                        ..._awaiting.map(_approvalCard),
-                      ],
-                      _sectionTitle('Active Shifting (${_active.length})'),
-                      if (_active.isEmpty)
-                        Text('No jobs currently in progress.',
-                            style: NgFonts.geist(
-                                fontSize: 12.5, color: theme.secondaryText))
-                      else
-                        ..._active.map(_orderCard),
-                      _sectionTitle('Upcoming (${_upcoming.length})'),
-                      if (_upcoming.isEmpty)
-                        Text('No upcoming orders.',
-                            style: NgFonts.geist(
-                                fontSize: 12.5, color: theme.secondaryText))
-                      else
-                        ..._upcoming.map(_orderCard),
-                      _sectionTitle('Vehicle Trip Log (${_trips.length})'),
-                      if (_trips.isEmpty)
-                        Text(
-                          'No trips logged yet. Use "Log New Trip" to '
-                          'record vehicle movements (fuel, tolls, driver bata).',
-                          style: NgFonts.geist(
-                              fontSize: 12.5, color: theme.secondaryText),
-                        )
-                      else
-                        ..._trips.map(_tripCard),
-                      const SizedBox(height: 8),
-                      FFButtonWidget(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  'Trip logging form is coming in Week 4 — '
-                                  'add via Order Details for now.'),
-                            ),
-                          );
-                        },
-                        text: 'Log New Trip',
-                        icon: const Icon(Icons.add_road, size: 18),
-                        options: FFButtonOptions(
-                          height: 46,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          color: theme.primary,
-                          iconColor: theme.primaryBackground,
-                          textStyle: TextStyle(color: theme.primaryBackground),
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final jobs = _jobsFor(_day);
+    final crewed = jobs.where((o) => (_crew[o.id] ?? const []).isNotEmpty);
+    final busy = {
+      for (final o in jobs)
+        if ((o.vehicleNo ?? '').isNotEmpty)
+          o.vehicleNo!.replaceAll(' ', '').toUpperCase()
+    };
+    final freeVehicles = _vehicles
+        .where((v) => _vehicleState(v, busy).tone == NgStatus.green)
+        .length;
+    final alerts = _alerts(jobs);
+    final sections = <Widget>[
+      NgScreenTitle(
+        l.ngOpsTitle,
+        large: true,
+        action: NgPrimaryButton(
+          compact: true,
+          icon: Icons.add_rounded,
+          label: l.ngOpsNewTrip,
+          onPressed: () => openModule(context, 'TripsPage'),
         ),
       ),
+      NgSegmented(
+        labels: [l.ngToday, l.ngTomorrow],
+        counts: [_jobsFor(0).length, _jobsFor(1).length],
+        selected: _day,
+        onSelect: (i) => setState(() => _day = i),
+      ),
+      Row(
+        children: [
+          Expanded(
+              child: _tile(Icons.local_shipping_outlined, c.acc,
+                  '${jobs.length}', '', l.ngTodayMoves)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: _tile(Icons.groups_outlined, c.blue, '${crewed.length}',
+                  '/ ${jobs.length}', l.ngOpsCrewsOut)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: _tile(Icons.fire_truck_outlined, c.green,
+                  '$freeVehicles', '/ ${_vehicles.length}', l.ngOpsVehiclesFree)),
+        ],
+      ),
+      if (alerts.isNotEmpty)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            NgSectionHeader(l.ngOpsAttention, trailing: '${alerts.length}'),
+            const SizedBox(height: 10),
+            NgCardList(children: alerts),
+          ],
+        ),
+      // Discovery-only queue: finished jobs waiting on the owner. Hidden
+      // when empty, as before.
+      if (_awaiting.isNotEmpty)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            NgSectionHeader(l.ngOpsAwaiting, trailing: '${_awaiting.length}'),
+            const SizedBox(height: 10),
+            ..._awaiting.map(_approvalCard),
+          ],
+        ),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          NgSectionHeader(l.ngOpsJobs),
+          const SizedBox(height: 10),
+          if (jobs.isEmpty)
+            NgCard(
+              child: Text(l.ngOpsNoJobs,
+                  textAlign: TextAlign.center,
+                  style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+            )
+          else
+            for (var i = 0; i < jobs.length; i++) ...[
+              if (i > 0) const SizedBox(height: 10),
+              _jobCard(jobs[i]),
+            ],
+        ],
+      ),
+      if (_vehicles.isNotEmpty) _fleetSection(jobs),
+    ];
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  for (var i = 0; i < sections.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 16),
+                    sections[i],
+                  ],
+                ],
+              ),
+            ),
     );
   }
 }

@@ -9,6 +9,7 @@ import '/backend/detail_navigation.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
 import '/config/app_config.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'payments_page_model.dart';
@@ -52,30 +53,25 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
   // is a live bottom-nav tab (see main.dart's NavBarPage tabs map), not
   // dead code, so it's fixed in place rather than removed.
   Future<void> _loadPayments() async {
-    // Arun's bug report: after a part-payment the trigger flips
-    // payment_status to 'partial' and the order VANISHED from this list
-    // (it only matched 'pending'). Correct definition of "pending
-    // payment" = anything with a balance still due, whatever the status
-    // label — so fetch non-paid and filter on the actual balance.
-    _model.pendingOut = await OrdersTable().queryRows(
-      queryFn: (q) => OrgScope.read(q).neqOrNull(
-        'payment_status',
-        'paid',
-      ),
-    );
-    _model.pendingList = (_model.pendingOut ?? [])
-        .toList()
-        .cast<OrdersRow>()
-        .where(
-            (o) => ((o.amount ?? 0) - o.paidTotal) > 0)
-        .toList();
-    safeSetState(() {});
-    // Live 'Received (Month)' tile — the old one was a hardcoded
-    // FlutterFlow string (₹1,24,000), same disease as the fake invoices.
-    final now = DateTime.now();
-    final entries = await PaymentEntriesTable().queryRows(
+    final orders = await OrdersTable().queryRows(
       queryFn: (q) => OrgScope.read(q),
     );
+    _ordersById = {
+      for (final o in orders)
+        if (o.id != null) o.id!: o
+    };
+    _model.pendingList = orders
+        .where((o) =>
+            (o.status ?? '').toLowerCase() != 'cancelled' &&
+            o.paymentStatus != 'paid' &&
+            _due(o) > 0)
+        .toList();
+    safeSetState(() {});
+    final now = DateTime.now();
+    final entries = await PaymentEntriesTable().queryRows(
+      queryFn: (q) => OrgScope.read(q).order('received_at'),
+    );
+    _received = entries;
     _model.receivedThisMonth = entries
         .where((e) =>
             e.receivedAt != null &&
@@ -85,6 +81,12 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
     safeSetState(() {});
   }
 
+  Map<String, OrdersRow> _ordersById = const {};
+  List<PaymentEntriesRow> _received = const [];
+
+  /// 0 = Due, 1 = Received (the handoff's segmented control).
+  int _tab = 0;
+
   @override
   void dispose() {
     _model.dispose();
@@ -92,7 +94,12 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
     super.dispose();
   }
 
-  static double _due(OrdersRow o) => (o.amount ?? 0) - o.paidTotal;
+  /// Quote total when one exists, else the order amount — the same base
+  /// `dashboard_kpis_view.outstanding` uses, so this screen and the
+  /// dashboard tile agree.
+  static double _due(OrdersRow o) =>
+      ((o.quoteTotal ?? 0) > 0 ? o.quoteTotal! : (o.amount ?? 0)) -
+      o.paidTotal;
 
   void _record(OrdersRow o) => context.pushNamed(
         RecordPaymentPageWidget.routeName,
@@ -151,7 +158,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
           const SizedBox(height: 4),
           // Live: Σ balance due across the pending list below.
           Text(
-            '₹${outstanding.toStringAsFixed(0)}',
+            functions.inrFull(outstanding),
             style: NgFonts.geist(
               fontSize: 30,
               fontWeight: FontWeight.w600,
@@ -189,8 +196,9 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
             runSpacing: 6,
             children: [
               legend(c.green, AppLocalizations.of(context).receivedMonth,
-                  '₹${received.toStringAsFixed(0)}'),
-              legend(c.accBtn, AppLocalizations.of(context).ngToCollect, '₹${outstanding.toStringAsFixed(0)}'),
+                  functions.inrFull(received)),
+              legend(c.accBtn, AppLocalizations.of(context).ngToCollect,
+                  functions.inrFull(outstanding)),
             ],
           ),
         ],
@@ -200,8 +208,26 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
 
   Widget _dueCard(BuildContext context, OrdersRow o) {
     final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
     final partial = o.paidTotal > 0;
     final tone = partial ? NgStatus.amber : NgStatus.red;
+    final now = DateTime.now();
+    final d = o.moveDateOrNull;
+    final late = d == null
+        ? 0
+        : DateTime(now.year, now.month, now.day)
+            .difference(DateTime(d.year, d.month, d.day))
+            .inDays;
+    final tag = late > 0
+        ? l.ngDaysLate(late)
+        : late == 0 && d != null
+            ? l.ngToday
+            : (partial ? l.ngPartPaid : l.ngUnpaid);
+    final tagColor = late > 0
+        ? c.red
+        : late == 0 && d != null
+            ? c.amber
+            : c.status(tone).fg;
     final hasPhone = (o.phone ?? '').trim().isNotEmpty;
     return NgCard(
       radius: 20,
@@ -229,7 +255,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                       ),
                       const SizedBox(height: 1),
                       Text(
-                        '${o.fromCity ?? '-'} → ${o.toCity ?? '-'}',
+                        '${o.id} · ${o.fromCity ?? '-'} → ${o.toCity ?? '-'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: NgFonts.geist(fontSize: 12.5, color: c.mute),
@@ -242,7 +268,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                   children: [
                     // Balance due, not gross amount: amount - collected.
                     Text(
-                      '₹${_due(o).toStringAsFixed(0)}',
+                      functions.inrFull(_due(o)),
                       style: NgFonts.geist(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -250,13 +276,11 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      partial
-                          ? AppLocalizations.of(context).ngPartPaid
-                          : AppLocalizations.of(context).ngUnpaid,
+                      tag,
                       style: NgFonts.geist(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: c.status(tone).fg),
+                          color: tagColor),
                     ),
                   ],
                 ),
@@ -292,6 +316,80 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
     );
   }
 
+  Widget _receivedList(BuildContext context) {
+    final c = NgPalette.of(context);
+    final rows = _received.reversed.toList();
+    if (rows.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        child: Center(
+          child: Text(AppLocalizations.of(context).ngNoPaymentsYet,
+              style: NgFonts.geist(fontSize: 14, color: c.mute)),
+        ),
+      );
+    }
+    return NgCardList(children: [
+      for (final e in rows)
+        InkWell(
+          onTap: _ordersById[e.orderId] == null
+              ? null
+              : () => openOrderDetail(context, _ordersById[e.orderId]!),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                const NgIconTile(
+                    icon: Icons.payments_outlined, status: NgStatus.green),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_ordersById[e.orderId]?.customer ?? e.orderId,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: NgFonts.geist(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w500,
+                              color: c.text)),
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          e.mode.toUpperCase(),
+                          e.orderId,
+                          if ((e.receiptNo ?? '').isNotEmpty) e.receiptNo!,
+                        ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NgFonts.geist(fontSize: 12.5, color: c.mute),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(functions.inrFull(e.amount),
+                        style: NgFonts.geist(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.text)),
+                    const SizedBox(height: 2),
+                    Text(
+                        e.receivedAt == null
+                            ? ''
+                            : DateFormat('d MMM')
+                                .format(e.receivedAt!.toLocal()),
+                        style: NgFonts.geist(fontSize: 12, color: c.faint)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = NgPalette.of(context);
@@ -300,14 +398,22 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
     final today = DateTime.now();
     final t0 = DateTime(today.year, today.month, today.day);
     final overdue = <OrdersRow>[];
+    final dueToday = <OrdersRow>[];
     final upcoming = <OrdersRow>[];
     for (final o in _model.pendingList) {
       final d = o.moveDateOrNull;
-      (d != null && d.isBefore(t0) ? overdue : upcoming).add(o);
+      if (d != null && d.isBefore(t0)) {
+        overdue.add(o);
+      } else if (d != null && DateTime(d.year, d.month, d.day) == t0) {
+        dueToday.add(o);
+      } else {
+        upcoming.add(o);
+      }
     }
     final groups = [
       (AppLocalizations.of(context).ngOverdue, c.red, overdue),
-      (AppLocalizations.of(context).ngUpcoming, c.amber, upcoming),
+      (AppLocalizations.of(context).ngToday, c.amber, dueToday),
+      (AppLocalizations.of(context).ngUpcoming, c.blue, upcoming),
     ];
     return GestureDetector(
       onTap: () {
@@ -323,11 +429,33 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              NgScreenTitle(AppLocalizations.of(context).payments),
+              NgScreenTitle(
+                AppLocalizations.of(context).payments,
+                large: true,
+                action: NgPrimaryButton(
+                  compact: true,
+                  icon: Icons.add_rounded,
+                  label: AppLocalizations.of(context).ngRecord,
+                  onPressed: () =>
+                      context.pushNamed(RecordPaymentPageWidget.routeName),
+                ),
+              ),
               const SizedBox(height: 14),
               _summaryCard(context),
               const SizedBox(height: 14),
-              if (_model.pendingList.isEmpty)
+              NgSegmented(
+                labels: [
+                  AppLocalizations.of(context).ngDue,
+                  AppLocalizations.of(context).ngReceived,
+                ],
+                counts: [_model.pendingList.length, _received.length],
+                selected: _tab,
+                onSelect: (i) => safeSetState(() => _tab = i),
+              ),
+              const SizedBox(height: 14),
+              if (_tab == 1)
+                _receivedList(context)
+              else if (_model.pendingList.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 36),
                   child: Column(
@@ -366,7 +494,8 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
                                     color: c.text)),
                           ),
                           Text(
-                            '₹${rows.fold<double>(0, (s, o) => s + _due(o)).toStringAsFixed(0)}',
+                            functions.inrFull(rows.fold<double>(
+                                0, (s, o) => s + _due(o))),
                             style: NgFonts.geist(fontSize: 13, color: c.mute),
                           ),
                         ],
