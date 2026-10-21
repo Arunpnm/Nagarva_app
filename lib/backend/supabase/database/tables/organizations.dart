@@ -50,6 +50,9 @@ class OrganizationsRow extends SupabaseDataRow {
 
   // Added 13 Jul 2026 per owner-confirmed live schema.
   String? get planStatus => getField<String>('plan_status');
+
+  /// Plan an expired trial drops to (20261021_vendor_signup_approval.sql).
+  String? get trialFallbackPlanId => getField<String>('trial_fallback_plan_id');
   set planStatus(String? value) => setField<String>('plan_status', value);
 
   DateTime? get trialEndsAt => getField<DateTime>('trial_ends_at');

@@ -144,6 +144,8 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
           trialEndsAt: sessionData.trialEndsAt,
           graceDays: sessionData.graceDays,
           orgActive: sessionData.orgActive,
+          trialFallsBackToFree: sessionData.trialFallsBackToFree,
+          trialEndedToFree: sessionData.trialEndedToFree,
         );
         AppSession.instance.setStaff(
           staffId: staff['id'] as String,

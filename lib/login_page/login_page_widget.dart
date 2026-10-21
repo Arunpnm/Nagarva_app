@@ -1,4 +1,5 @@
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/org_resolution.dart';
@@ -53,6 +54,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     // Email-confirmation deep link handler (main.dart) routes here on
     // failure with a message stashed for exactly this screen — see
     // PendingAuthMessage's own doc comment for why this bridge exists.
+    _loadSignupStatus();
     final pendingError = PendingAuthMessage.takeAndClear();
     if (pendingError != null) {
       _model.errorMessage = pendingError;
@@ -535,6 +537,28 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           ),
           showLoadingIndicator: _model.isLoading,
         ),
+        const SizedBox(height: 10),
+        // Owners who signed up by mobile number have no password — the
+        // signup screen doubles as their OTP login (vendor signup, 21 Oct
+        // 2026).
+        OutlinedButton.icon(
+          onPressed: _model.isLoading
+              ? null
+              : () => context.go(VendorSignupPageWidget.routePath),
+          icon: const Icon(Icons.phone_iphone_rounded, size: 18),
+          label: Text(AppLocalizations.of(context).suMobileLogin),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(48),
+            side: const BorderSide(color: Color(0x33FFFFFF)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        if (_signupStatus != null) ...[
+          const SizedBox(height: 12),
+          _signupBanner(_signupStatus!),
+        ],
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -544,7 +568,10 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
               style: NgFonts.geist(color: Colors.white54, fontSize: 13),
             ),
             GestureDetector(
-              onTap: () => context.go(SignupPageWidget.routePath),
+              // Approval-first signup by mobile number replaced the
+              // email SignupPage as the way in (21 Oct 2026); create-org
+              // now refuses a brand-new org outside the approval step.
+              onTap: () => context.go(VendorSignupPageWidget.routePath),
               child: Text(
                 'Create an account',
                 style: NgFonts.geist(
@@ -557,6 +584,64 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           ],
         ),
       ],
+    );
+  }
+
+  /// A mobile-signup application still on this device's session: show
+  /// where it stands, the handoff's "Login A shows status banner".
+  String? _signupStatus;
+
+  Future<void> _loadSignupStatus() async {
+    final user = SupaFlow.client.auth.currentUser;
+    if (user == null || (user.phone ?? '').isEmpty) return;
+    try {
+      final row = await SupaFlow.client
+          .from('vendor_signups')
+          .select('status, plan_choice')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+      if (row == null || row['plan_choice'] != null) return;
+      if (mounted) setState(() => _signupStatus = row['status'] as String?);
+    } catch (_) {
+      // No table yet (migration not run) or offline: no banner.
+    }
+  }
+
+  Widget _signupBanner(String status) {
+    final l = AppLocalizations.of(context);
+    final (color, icon, text) = switch (status) {
+      'approved' => (const Color(0xFF5CCB89), Icons.verified_rounded, l.suBnOk),
+      'rejected' => (const Color(0xFFFE8B83), Icons.error_outline, l.suBnNo),
+      _ => (const Color(0xFFF2B84B), Icons.hourglass_top_rounded, l.suBnP),
+    };
+    return Material(
+      color: color.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => context.go(VendorSignupPageWidget.routePath),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: color),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(text,
+                    style: NgFonts.geist(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600)),
+              ),
+              Text(l.suView,
+                  style: NgFonts.geist(
+                      color: kBrandAccent,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

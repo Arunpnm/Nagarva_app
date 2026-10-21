@@ -602,6 +602,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const SignupPageWidget(),
         ),
         FFRoute(
+          name: VendorSignupPageWidget.routeName,
+          path: VendorSignupPageWidget.routePath,
+          builder: (context, params) => const VendorSignupPageWidget(),
+        ),
+        FFRoute(
           name: OrgSetupPageWidget.routeName,
           path: OrgSetupPageWidget.routePath,
           builder: (context, params) => const OrgSetupPageWidget(),

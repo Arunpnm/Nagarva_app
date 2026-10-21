@@ -338,6 +338,25 @@ Future<void> _startApp() async {
           );
           await refreshPlatformAdminStatus();
         }
+        // Vendor-signup trial (21 Oct 2026): a trial that drops to Free
+        // when it ends needs the loader's fallback handling, or an
+        // expired one would restore as read-only. Only such orgs pay
+        // the extra round trip.
+        if (org != null && org['trial_fallback_plan_id'] != null) {
+          final d = await loadOrgSessionData(orgId);
+          AppSession.instance.setOrgOnly(
+            orgId: d.orgId,
+            limits: d.limits,
+            features: d.features,
+            planName: d.planName,
+            planStatus: d.planStatus,
+            trialEndsAt: d.trialEndsAt,
+            graceDays: d.graceDays,
+            orgActive: d.orgActive,
+            trialFallsBackToFree: d.trialFallsBackToFree,
+            trialEndedToFree: d.trialEndedToFree,
+          );
+        }
       }
     } catch (e) {
       debugPrint('Session restore failed: $e');
@@ -699,6 +718,8 @@ class _NavBarPageState extends State<NavBarPage>
           trialEndsAt: data.trialEndsAt,
           graceDays: data.graceDays,
           orgActive: data.orgActive,
+          trialFallsBackToFree: data.trialFallsBackToFree,
+          trialEndedToFree: data.trialEndedToFree,
         );
       } catch (_) {
         // Keep whatever we had — see doc comment.
@@ -965,6 +986,9 @@ class _NavBarPageState extends State<NavBarPage>
     final readOnly = s.isReadOnly;
     final inGrace = s.isInTrialGrace;
     final daysLeft = s.trialDaysRemaining;
+    // A signup Pro trial drops to Free when it ends — no grace, no lock —
+    // so it only warns in its last 3 days (handoff 21 Oct 2026).
+    if (s.trialFallsBackToFree && daysLeft > 3) return body;
     // Stay quiet until the last week — a banner from day 1 of a 30-day
     // trial is just noise the vendor learns to ignore.
     if (!readOnly && !inGrace && daysLeft > 7) return body;
@@ -973,7 +997,12 @@ class _NavBarPageState extends State<NavBarPage>
     final Color bg;
     final IconData icon;
     final String message;
-    if (readOnly) {
+    if (s.trialFallsBackToFree) {
+      bg = theme.primary;
+      icon = Icons.workspace_premium_outlined;
+      message = AppLocalizations.of(context)
+          .plTrBan(daysLeft < 0 ? '0' : '$daysLeft');
+    } else if (readOnly) {
       bg = theme.error;
       icon = Icons.lock_outline;
       message = 'Your trial has ended. You can still view and export '
