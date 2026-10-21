@@ -513,6 +513,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const HiredTrucksPage(),
         ),
         FFRoute(
+          name: WhatsAppPage.routeName,
+          path: WhatsAppPage.routePath,
+          builder: (context, params) => const WhatsAppPage(),
+        ),
+        FFRoute(
+          name: AutoWhatsAppPage.routeName,
+          path: AutoWhatsAppPage.routePath,
+          builder: (context, params) => const AutoWhatsAppPage(),
+        ),
+        FFRoute(
           name: BackupPage.routeName,
           path: BackupPage.routePath,
           builder: (context, params) => const BackupPage(),

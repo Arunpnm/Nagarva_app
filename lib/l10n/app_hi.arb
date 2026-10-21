@@ -1009,5 +1009,9 @@
   "noDrop": "ड्रॉप",
   "noPricing": "कीमत और स्रोत",
   "ngSetFy": "वित्त वर्ष और नंबरिंग",
-  "ngSetFySub": "अगले साल के बिल नंबर शुरू करें"
+  "ngSetFySub": "अगले साल के बिल नंबर शुरू करें",
+  "ngSetWa": "WhatsApp",
+  "ngSetWaSub": "अपने नंबर से मैसेज भेजें",
+  "ngSetAutoWa": "ऑटो WhatsApp",
+  "ngSetAutoWaSub": "हर चरण पर ग्राहक को भेजे जाने वाले मैसेज"
 }

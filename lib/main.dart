@@ -804,6 +804,8 @@ class _NavBarPageState extends State<NavBarPage>
       'DieselAdvancePage': const DieselAdvancePage(),
       'HiredTrucksPage': const HiredTrucksPage(),
       'BackupPage': const BackupPage(),
+      'WhatsAppPage': const WhatsAppPage(),
+      'AutoWhatsAppPage': const AutoWhatsAppPage(),
       'LostReportPage': const LostReportPage(),
       'ReferralsPage': const ReferralsPage(),
       'DailySummaryPage': const DailySummaryPage(),

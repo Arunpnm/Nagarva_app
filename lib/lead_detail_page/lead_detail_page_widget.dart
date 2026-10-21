@@ -1,5 +1,6 @@
 import '/components/ng_widgets.dart';
 import '/order_journey_page/order_journey_page_widget.dart';
+import '/backend/whatsapp_cloud.dart';
 import '/backend/order_journey.dart';
 import '/app_session.dart';
 import '/config/app_config.dart';
@@ -344,6 +345,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         status: 'booked',
         note: 'Order confirmed',
       );
+      WhatsAppCloud.orderBooked(order);
 
       // LEAK_AUDIT.md write-gap fix: matched only on id before.
       await LeadsTable().update(
@@ -870,28 +872,25 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   // kPublicBaseUrl's doc comment in lib/config/app_config.dart.
   String _shareLink(String path, String token) => buildTokenLink(path, token);
 
+  /// Survey link out to the customer. Was a copy-only dialog; now the
+  /// shared sheet — WhatsApp on this phone, or straight from the vendor's
+  /// own WhatsApp number once the survey-link template is approved.
   void _showLinkDialog(String title, String link) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(title),
-        content: SelectableText(link),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: link));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Link copied')),
-              );
-            },
-            child: const Text('Copy'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+    final name = widget.leadCustomer;
+    ShareLinkSheet.show(
+      context,
+      title: title,
+      subtitle: 'The customer lists what they are moving. It takes about '
+          'five minutes and needs no login.',
+      link: link,
+      phone: widget.leadPhone,
+      message: 'Hello${(name ?? '').isEmpty ? '' : ' $name'}, this is '
+          '${VendorIdentity.forSentence}. Please list the items you are '
+          'moving here:',
+      cloud: WaCloudSend('survey_link',
+          params: {'customer_name': name ?? '', 'survey_link': link},
+          entityType: 'lead',
+          entityId: widget.leadId),
     );
   }
 

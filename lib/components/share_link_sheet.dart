@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '/backend/whatsapp_cloud.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
@@ -20,7 +21,12 @@ class ShareLinkSheet extends StatelessWidget {
     required this.message,
     this.phone,
     this.subtitle,
+    this.cloud,
   });
+
+  /// When set, and the vendor's own WhatsApp number can send this
+  /// template, the sheet offers that first. Otherwise unchanged.
+  final WaCloudSend? cloud;
 
   final String title;
   final String link;
@@ -37,6 +43,7 @@ class ShareLinkSheet extends StatelessWidget {
     required String message,
     String? phone,
     String? subtitle,
+    WaCloudSend? cloud,
   }) =>
       showModalBottomSheet<void>(
         context: context,
@@ -48,6 +55,7 @@ class ShareLinkSheet extends StatelessWidget {
           message: message,
           phone: phone,
           subtitle: subtitle,
+          cloud: cloud,
         ),
       );
 
@@ -111,6 +119,8 @@ class ShareLinkSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+            if (cloud != null && (phone ?? '').trim().isNotEmpty)
+              _CloudSendButton(cloud: cloud!, phone: phone!),
             Row(
               children: [
                 Expanded(
@@ -167,4 +177,73 @@ class ShareLinkSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Send from your WhatsApp number" — shown only once the template is
+/// approved for this vendor. Sends through the `whatsapp` function, so the
+/// message comes from the vendor's business number, not this phone.
+class _CloudSendButton extends StatefulWidget {
+  const _CloudSendButton({required this.cloud, required this.phone});
+  final WaCloudSend cloud;
+  final String phone;
+
+  @override
+  State<_CloudSendButton> createState() => _CloudSendButtonState();
+}
+
+class _CloudSendButtonState extends State<_CloudSendButton> {
+  late final Future<bool> _ready = WhatsAppCloud.ready(widget.cloud.key);
+  bool _busy = false;
+  bool _sent = false;
+
+  Future<void> _send() async {
+    setState(() => _busy = true);
+    try {
+      await WhatsAppCloud.send(widget.cloud.key,
+          to: widget.phone,
+          params: widget.cloud.params,
+          entityType: widget.cloud.entityType,
+          entityId: widget.cloud.entityId);
+      if (mounted) setState(() => _sent = true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<bool>(
+        future: _ready,
+        builder: (context, snap) {
+          if (snap.data != true) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: _busy || _sent ? null : _send,
+                icon: Icon(_sent ? Icons.check_rounded : Icons.send_rounded,
+                    size: 19),
+                label: Text(_sent
+                    ? 'Sent from your WhatsApp number'
+                    : _busy
+                        ? 'Sending…'
+                        : 'Send from your WhatsApp number'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kWhatsAppGreen,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: kWhatsAppGreen.withValues(alpha: 0.55),
+                  disabledForegroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+          );
+        },
+      );
 }

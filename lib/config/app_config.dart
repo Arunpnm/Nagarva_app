@@ -165,6 +165,14 @@ const bool kExpensePaymentModeLive = true;
 // confirmed by query; readable as a real member.
 const bool kStaffLeaveIncentivesLive = true;
 
+/// WhatsApp through each vendor's own Meta Cloud API number
+/// (supabase/20261021_whatsapp_cloud_api.sql + the `whatsapp` and
+/// `whatsapp-webhook` Edge Functions). FALSE until the tables are
+/// confirmed live by query AND both functions are deployed. While false,
+/// the WhatsApp screens say what is missing and every send falls back to
+/// opening WhatsApp on the phone, exactly as before.
+const bool kWhatsAppCloudLive = false;
+
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
 ///

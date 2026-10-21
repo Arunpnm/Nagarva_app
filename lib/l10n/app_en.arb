@@ -4386,5 +4386,21 @@
   "ngSetFySub": "Start next year's invoice and receipt numbers",
   "@ngSetFySub": {
     "description": "Dashboard redesign"
+  },
+  "ngSetWa": "WhatsApp",
+  "@ngSetWa": {
+    "description": "Settings row: WhatsApp connection"
+  },
+  "ngSetWaSub": "Send messages from your own number",
+  "@ngSetWaSub": {
+    "description": "Settings row subtitle"
+  },
+  "ngSetAutoWa": "Auto WhatsApp",
+  "@ngSetAutoWa": {
+    "description": "Settings row: automatic messages"
+  },
+  "ngSetAutoWaSub": "Messages sent to the customer at each stage",
+  "@ngSetAutoWaSub": {
+    "description": "Settings row subtitle (design pf_s_wa)"
   }
 }

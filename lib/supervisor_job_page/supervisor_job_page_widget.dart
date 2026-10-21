@@ -1,5 +1,6 @@
 import '/components/ng_widgets.dart';
 import '/app_session.dart';
+import '/backend/whatsapp_cloud.dart';
 import '/backend/audit_log_service.dart';
 import '/backend/crew_sync_service.dart';
 import '/backend/tracking_service.dart';
@@ -285,6 +286,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           orderId: widget.orderId!, teamIds: teamIds);
       await _changeStatus('transit', '📦 Shifting started — team assigned');
       _model.order!.status = 'transit';
+      WhatsAppCloud.moveStarted(_model.order);
       // Refresh crew from order_staff now that the sync has run.
       final crewRows = await OrderStaffTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
@@ -685,6 +687,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       }
       _model.step = SupervisorJobStep.done;
       _model.arrivalCodeError = false;
+      WhatsAppCloud.delivered(_model.order);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('🎉 Job complete! Awaiting owner approval.')));

@@ -1,5 +1,6 @@
 import '/backend/fy_numbering.dart';
 import 'package:flutter/material.dart';
+import '/backend/whatsapp_cloud.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -251,6 +252,8 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
         'note': _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
         if (accountId != null) 'account_id': accountId,
       });
+      WhatsAppCloud.paymentReceived(
+          orderId: o.id, customer: o.customer, phone: o.phone, amount: amount);
 
       // Resolve/backfill customer_id defensively — new_order_page now sets
       // it at creation, but orders created before that fix (or with no

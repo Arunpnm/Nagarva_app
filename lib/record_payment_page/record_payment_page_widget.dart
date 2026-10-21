@@ -1,5 +1,6 @@
 import '/components/ng_widgets.dart';
 import '/app_session.dart';
+import '/backend/whatsapp_cloud.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/keyboard_scroll_view.dart';
@@ -154,6 +155,8 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
             ? null
             : _model.noteController!.text.trim(),
       });
+      WhatsAppCloud.paymentReceived(
+          orderId: o.id, customer: o.customer, phone: o.phone, amount: amount);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(

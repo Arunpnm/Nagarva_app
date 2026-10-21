@@ -1,5 +1,6 @@
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
+import '/backend/whatsapp_cloud.dart';
 import '/index.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/ng_tokens.dart';
@@ -110,9 +111,26 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
 
   /// WhatsApp reminder with a ready-made message. buildWhatsAppLink adds
   /// the India country code to a bare 10-digit number.
-  void _remind(OrdersRow o) {
+  /// From the vendor's own WhatsApp number when the reminder template is
+  /// approved; otherwise WhatsApp on this phone, as before.
+  Future<void> _remind(OrdersRow o) async {
     final phone = (o.phone ?? '').trim();
     if (phone.isEmpty) return;
+    try {
+      if (await WhatsAppCloud.remindBalance(
+          orderId: o.id, customer: o.customer, phone: phone, balance: _due(o))) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Reminder sent from your WhatsApp number.')));
+        }
+        return;
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+      return;
+    }
     launchURL(buildWhatsAppLink(
       phone: phone,
       message: 'Dear ${o.customer}, '
