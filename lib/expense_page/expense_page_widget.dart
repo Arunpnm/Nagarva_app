@@ -2,12 +2,11 @@ import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import '/components/keyboard_scroll_view.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -103,12 +102,6 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
   double get _filteredTotal =>
       _filteredExpenses.fold<double>(0, (s, e) => s + (e.amount ?? 0));
 
-  String get _periodLabel => switch (_model.periodFilter) {
-        'week' => 'This Week',
-        'all' => 'All Time',
-        _ => 'This Month',
-      };
-
   /// Category -> total, highest first. Uncategorised rows are grouped
   /// under "Uncategorised" rather than dropped, so the bars always sum
   /// to the headline figure.
@@ -159,532 +152,228 @@ class _ExpensePageWidgetState extends State<ExpensePageWidget>
     super.dispose();
   }
 
-  Widget _filterChip(
-      BuildContext context, String label, bool selected, VoidCallback onTap) {
-    final theme = FlutterFlowTheme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 36),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? theme.primary : theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-              color: selected ? theme.primary : theme.secondaryText),
-        ),
-        child: Text(
-          label,
-          style: NgFonts.geist(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : theme.primaryText,
-          ),
-        ),
-      ),
-    );
+  static IconData _catIcon(String? cat) {
+    final k = (cat ?? '').toLowerCase();
+    if (k.contains('fuel') || k.contains('diesel')) {
+      return Icons.local_gas_station_outlined;
+    }
+    if (k.contains('toll')) return Icons.toll_outlined;
+    if (k.contains('material') || k.contains('carton')) {
+      return Icons.inventory_2_outlined;
+    }
+    if (k.contains('repair') || k.contains('maint') || k.contains('service')) {
+      return Icons.build_outlined;
+    }
+    if (k.contains('food') || k.contains('bata')) {
+      return Icons.restaurant_outlined;
+    }
+    if (k.contains('labour') || k.contains('wage')) return Icons.groups_outlined;
+    if (k.contains('rent')) return Icons.home_work_outlined;
+    return Icons.receipt_long_outlined;
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            AppLocalizations.of(context).homePageExpenses,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final rows = _filteredExpenses
+      ..sort((a, b) => (b.expenseDate ?? b.createdAt ?? DateTime(0))
+          .compareTo(a.expenseDate ?? a.createdAt ?? DateTime(0)));
+    final total = _filteredTotal;
+    final last = _lastMonthTotal;
+    String sub = l.ngExpCount(rows.length);
+    Color subColor = c.mute;
+    if (last != null && last > 0) {
+      final pct = ((total - last) / last) * 100;
+      sub = '$sub · ${pct >= 0 ? '↑' : '↓'} ${l.ngExpVsLast(pct.abs().round())}';
+      subColor = pct >= 0 ? c.red : c.green;
+    }
+    final cats = _byCategory;
+    final periods = [
+      ('week', l.ngExpThisWeek),
+      ('month', l.ngPeriodThisMonth),
+      ('all', l.ngTabAll),
+    ];
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _loadExpenses),
+      body: RefreshIndicator(
+        onRefresh: _loadExpenses,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+          children: [
+            NgModuleHeader(
+              l.homePageExpenses,
+              actions: [
+                NgPrimaryButton(
+                  compact: true,
+                  height: 40,
+                  icon: Icons.add_rounded,
+                  label: l.ngAddExpense,
+                  onPressed: () =>
+                      context.pushNamed(QuickExpensePageWidget.routeName),
                 ),
-          ),
-          actions: const [],
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+              ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: KeyboardScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Real summary (18 Aug 2026) — replaces the
-                    // hardcoded "May 2025 Total / Rs 68,450 / up 12% vs
-                    // last month" mockup. Uses the same filter as the
-                    // list below, so the two can never disagree.
-                    Builder(builder: (context) {
-                      final theme = FlutterFlowTheme.of(context);
-                      final total = _filteredTotal;
-                      final count = _filteredExpenses.length;
-                      final last = _lastMonthTotal;
-                      String? delta;
-                      bool up = true;
-                      if (last != null && last > 0) {
-                        final pct = ((total - last) / last) * 100;
-                        up = pct >= 0;
-                        delta =
-                            '${up ? '↑' : '↓'} ${pct.abs().toStringAsFixed(0)}% vs last month';
-                      }
-                      return Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: theme.secondaryBackground,
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('$_periodLabel Total',
-                                  style: NgFonts.geist(
-                                      fontSize: 12.5,
-                                      color: theme.secondaryText)),
-                              const SizedBox(height: 6),
-                              Text(_money(total),
-                                  style: NgFonts.geist(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w700,
-                                      color: theme.primaryText)),
-                              const SizedBox(height: 6),
-                              Text(
-                                count == 0
-                                    ? 'No expenses in this period'
-                                    : '$count expense${count == 1 ? '' : 's'}'
-                                        '${delta == null ? '' : '  ·  $delta'}',
-                                style: NgFonts.geist(
-                                  fontSize: 12,
-                                  color: delta == null
-                                      ? theme.secondaryText
-                                      : (up ? theme.error : theme.success),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context).liveExpenses,
-                          style:
-                              FlutterFlowTheme.of(context).titleSmall.override(
-                                    font: NgFonts.geist(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontWeight,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .titleSmall
-                                          .fontStyle,
-                                    ),
-                                    color: FlutterFlowTheme.of(context).primary,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .fontStyle,
-                                  ),
-                        ),
-                        // Parity brief Part 4a: month/week/order-wise
-                        // filters — this page previously had none at all.
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              for (final p in const [
-                                ('week', 'This Week'),
-                                ('month', 'This Month'),
-                                ('all', 'All')
-                              ])
-                                _filterChip(context, p.$2,
-                                    _model.periodFilter == p.$1, () {
-                                  safeSetState(
-                                      () => _model.periodFilter = p.$1);
-                                }),
-                              _filterChip(
-                                  context, 'Order-linked only',
-                                  _model.orderWiseOnly, () {
-                                safeSetState(() =>
-                                    _model.orderWiseOnly =
-                                        !_model.orderWiseOnly);
-                              }),
-                            ],
-                          ),
-                        ),
-                        Builder(
-                          builder: (context) {
-                            final now = DateTime.now();
-                            final expensesListItem = _model.expensesList
-                                .where((e) {
-                                  if (_model.orderWiseOnly &&
-                                      e.orderId == null) {
-                                    return false;
-                                  }
-                                  final d = e.expenseDate ?? e.createdAt;
-                                  if (_model.periodFilter == 'all' ||
-                                      d == null) {
-                                    return true;
-                                  }
-                                  if (_model.periodFilter == 'week') {
-                                    return now.difference(d).inDays <= 7;
-                                  }
-                                  return d.year == now.year &&
-                                      d.month == now.month;
-                                })
-                                .toList();
-
-                            return ListView.separated(
-                              padding: EdgeInsets.zero,
-                              primary: false,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              scrollDirection: Axis.vertical,
-                              itemCount: expensesListItem.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 12.0),
-                              itemBuilder: (context, expensesListItemIndex) {
-                                final expensesListItemItem =
-                                    expensesListItem[expensesListItemIndex];
-                                return Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
-                                    borderRadius: BorderRadius.circular(10.0),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(14.0),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              expensesListItemItem.category ??
-                                                  '-',
-                                              style:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodyMedium
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .primaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontStyle,
-                                                      ),
-                                            ),
-                                            Text(
-                                              dateTimeFormat(
-                                                  'd MMM y',
-                                                  expensesListItemItem
-                                                      .expenseDate),
-                                              style:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                            ),
-                                          ].divide(const SizedBox(height: 3.0)),
-                                        ),
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              (expensesListItemItem.amount ?? 0)
-                                                  .toString(),
-                                              style: FlutterFlowTheme.of(
-                                                      context)
-                                                  .titleSmall
-                                                  .override(
-                                                    font:
-                                                        NgFonts.geist(
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .titleSmall
-                                                              .fontStyle,
-                                                    ),
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .primaryText,
-                                                    letterSpacing: 0.0,
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleSmall
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .titleSmall
-                                                            .fontStyle,
-                                                  ),
-                                            ),
-                                            IconButton(
-                                              tooltip: 'Delete expense',
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              icon: Icon(Icons.delete_outline,
-                                                  size: 18,
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .error),
-                                              onPressed: () =>
-                                                  _deleteExpense(
-                                                      expensesListItemItem),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ].divide(const SizedBox(height: 12.0)),
-                    ),
-                    // Real category breakdown (18 Aug 2026) — replaces
-                    // four hardcoded mockup bars (Fuel 41%, Tolls &
-                    // Permits 18%, Maintenance 26%, Labour 15%). Computed
-                    // from the same filtered set as the total above, so
-                    // the percentages always add up to 100% of a figure
-                    // the vendor can verify by counting the rows.
-                    Builder(builder: (context) {
-                      final theme = FlutterFlowTheme.of(context);
-                      final cats = _byCategory;
-                      final total = _filteredTotal;
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('By Category',
-                              style: NgFonts.geist(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: theme.primaryText)),
-                          const SizedBox(height: 12),
-                          if (cats.isEmpty)
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 26),
-                              decoration: BoxDecoration(
-                                color: theme.secondaryBackground,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                children: [
-                                  Icon(Icons.pie_chart_outline,
-                                      size: 34, color: theme.secondaryText),
-                                  const SizedBox(height: 10),
-                                  Text('Nothing to break down yet',
-                                      style: NgFonts.geist(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: theme.primaryText)),
-                                  const SizedBox(height: 4),
-                                  Text('Categories appear here once you record '
-                                      'an expense.',
-                                      textAlign: TextAlign.center,
-                                      style: NgFonts.geist(
-                                          fontSize: 12,
-                                          color: theme.secondaryText)),
-                                ],
-                              ),
-                            )
-                          else
-                            for (final c in cats)
-                              Container(
-                                width: double.infinity,
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: theme.secondaryBackground,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(c.name,
-                                              style: NgFonts.geist(
-                                                  fontSize: 13.5,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: theme.primaryText)),
-                                        ),
-                                        Text(
-                                          total <= 0
-                                              ? '0%'
-                                              : '${((c.amount / total) * 100).toStringAsFixed(0)}%',
-                                          style: NgFonts.geist(
-                                              fontSize: 12.5,
-                                              color: theme.secondaryText),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(_money(c.amount),
-                                            style: NgFonts.geist(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w700,
-                                                color: theme.primaryText)),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(6),
-                                      child: LinearProgressIndicator(
-                                        value: total <= 0
-                                            ? 0
-                                            : (c.amount / total).clamp(0.0, 1.0),
-                                        minHeight: 6,
-                                        backgroundColor:
-                                            theme.primaryBackground,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                            theme.primary),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                        ],
-                      );
-                    }),
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          0.0, 16.0, 0.0, 16.0),
-                      child: FFButtonWidget(
-                        // Found dead while wiring the real figures above
-                        // (18 Aug 2026): this was still FlutterFlow's
-                        // generated stub — it printed to the console and
-                        // did nothing else, so "Add Expense" was a button
-                        // that visibly worked and silently didn't. Routed
-                        // to the real QuickExpensePage, which already
-                        // exists and already stamps org_id. The list
-                        // refreshes on pop via RefreshOnPopMixin.
-                        onPressed: () =>
-                            context.pushNamed(QuickExpensePageWidget.routeName),
-                        text: AppLocalizations.of(context).addExpense,
-                        icon: const Icon(
-                          Icons.add,
-                          size: 20.0,
-                        ),
-                        options: FFButtonOptions(
-                          width: double.infinity,
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 0.0, 0.0, 0.0),
-                          iconColor:
-                              FlutterFlowTheme.of(context).primaryBackground,
-                          color: FlutterFlowTheme.of(context).primary,
-                          textStyle: TextStyle(
-                            color:
-                                FlutterFlowTheme.of(context).primaryBackground,
-                          ),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                      ),
-                    ),
-                  ].divide(const SizedBox(height: 16.0)),
-                ),
+            const SizedBox(height: 14),
+            NgCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      periods
+                          .firstWhere((p) => p.$1 == _model.periodFilter,
+                              orElse: () => periods[1])
+                          .$2,
+                      style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                  const SizedBox(height: 6),
+                  Text(_money(total),
+                      style: NgFonts.mono(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                  const SizedBox(height: 6),
+                  Text(rows.isEmpty ? l.ngExpNone : sub,
+                      style: NgFonts.geist(fontSize: 12.5, color: subColor)),
+                ],
               ),
             ),
-          ),
+            const SizedBox(height: 14),
+            NgChipRow(
+              edge: 0,
+              chips: [
+                for (final p in periods)
+                  NgChip(
+                    label: p.$2,
+                    selected: _model.periodFilter == p.$1,
+                    onTap: () =>
+                        safeSetState(() => _model.periodFilter = p.$1),
+                  ),
+                NgChip(
+                  label: l.ngExpOrderOnly,
+                  selected: _model.orderWiseOnly,
+                  onTap: () => safeSetState(
+                      () => _model.orderWiseOnly = !_model.orderWiseOnly),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (rows.isEmpty)
+              NgCard(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(l.ngExpNone,
+                      textAlign: TextAlign.center,
+                      style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+                ),
+              )
+            else
+              NgCardList(children: [
+                for (final e in rows)
+                  NgListRow(
+                    icon: _catIcon(e.category),
+                    title: (e.category ?? '').trim().isEmpty
+                        ? l.ngExpUncategorised
+                        : e.category!.trim(),
+                    subtitle: [
+                      if ((e.expenseDate ?? e.createdAt) != null)
+                        DateFormat('d MMM yyyy')
+                            .format((e.expenseDate ?? e.createdAt)!),
+                      if ((e.orderId ?? '').isNotEmpty) e.orderId!,
+                      if ((e.description ?? '').trim().isNotEmpty)
+                        e.description!.trim(),
+                    ].join(' · '),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_money(e.amount ?? 0),
+                            style: NgFonts.mono(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w600,
+                                color: c.text)),
+                        IconButton(
+                          tooltip: l.ngExpDelete,
+                          icon: Icon(Icons.delete_outline_rounded,
+                              size: 19, color: c.faint),
+                          onPressed: () => _deleteExpense(e),
+                        ),
+                      ],
+                    ),
+                  ),
+              ]),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(l.ngExpByCategory,
+                  style: NgFonts.geist(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: c.text)),
+            ),
+            const SizedBox(height: 10),
+            if (cats.isEmpty)
+              NgCard(
+                child: Column(
+                  children: [
+                    Icon(Icons.pie_chart_outline_rounded,
+                        size: 30, color: c.faint),
+                    const SizedBox(height: 6),
+                    Text(l.ngExpNoCat,
+                        style: NgFonts.geist(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.text)),
+                    const SizedBox(height: 2),
+                    Text(l.ngExpNoCatSub,
+                        textAlign: TextAlign.center,
+                        style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                  ],
+                ),
+              )
+            else
+              NgCardList(children: [
+                for (final g in cats)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(_catIcon(g.name), size: 18, color: c.faint),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(g.name,
+                                  style: NgFonts.geist(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: c.text)),
+                            ),
+                            Text(
+                                total <= 0
+                                    ? ''
+                                    : '${(g.amount / total * 100).round()}%',
+                                style: NgFonts.geist(
+                                    fontSize: 12.5, color: c.mute)),
+                            const SizedBox(width: 10),
+                            Text(_money(g.amount),
+                                style: NgFonts.mono(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: c.text)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        NgProgressBar(
+                            value: total <= 0 ? 0 : g.amount / total,
+                            color: c.accBtn),
+                      ],
+                    ),
+                  ),
+              ]),
+          ],
         ),
       ),
     );

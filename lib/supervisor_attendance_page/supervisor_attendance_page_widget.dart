@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -83,14 +84,7 @@ class _SupervisorAttendancePageWidgetState
     final presentCount = _byDate.values.where((s) => s == 'present').length;
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        elevation: 0,
-        title: Text('My Attendance',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600))),
-        actions: const [SupervisorMenuButton()],
-      ),
+      appBar: NgSimpleBar(title: 'My Attendance', actions: const [SupervisorMenuButton()]),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/order_picker_dialog.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -658,91 +660,145 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
     );
   }
 
+  NgStatus _tone(String st) => switch (st) {
+        'active' || 'settled' || 'approved' => NgStatus.green,
+        'surveyed' || 'intimated' => NgStatus.blue,
+        'cancelled' || 'rejected' => NgStatus.red,
+        _ => NgStatus.neutral,
+      };
+
+  Widget _pill(String st) =>
+      NgPill(st.isEmpty ? st : st[0].toUpperCase() + st.substring(1),
+          status: _tone(st));
+
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        automaticallyImplyLeading: true,
-        title: Text('Insurance & Claims',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 20,
-                fontWeight: FontWeight.w600)),
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabs,
-          tabs: const [Tab(text: 'Policies'), Tab(text: 'Claims')],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _tabs.index == 0 ? _newPolicy() : _newClaim(),
-        icon: const Icon(Icons.add),
-        label: Text(_tabs.index == 0 ? 'New Policy' : 'New Claim'),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabs,
-              children: [
-                RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-                    children: [
-                      if (_policies.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Text('No policies yet.',
-                              style: NgFonts.geist(color: theme.secondaryText)),
-                        )
-                      else
-                        for (final p in _policies) _policyRow(theme, p),
-                    ],
-                  ),
-                ),
-                RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-                    children: [
-                      if (_claims.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Text('No claims yet.',
-                              style: NgFonts.geist(color: theme.secondaryText)),
-                        )
-                      else
-                        for (final c in _claims) _claimRow(theme, c),
-                    ],
-                  ),
-                ),
-              ],
+    final c = NgPalette.of(context);
+    final onPolicies = _tabs.index == 0;
+    Widget tabButton(int i, String label) => Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _tabs.animateTo(i),
+            child: Container(
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _tabs.index == i ? c.sel : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(label,
+                  style: NgFonts.geist(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: _tabs.index == i ? c.text : c.mute)),
             ),
+          ),
+        );
+    Widget empty(String t) => NgCard(
+          child: Text(t,
+              textAlign: TextAlign.center,
+              style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+        );
+    return Scaffold(
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Column(children: [
+              const NgModuleHeader('Insurance & claims'),
+              const SizedBox(height: 14),
+              Row(children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                        color: c.s1, borderRadius: BorderRadius.circular(14)),
+                    child: Row(children: [
+                      tabButton(0, 'Policies'),
+                      tabButton(1, 'Claims'),
+                    ]),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                NgPrimaryButton(
+                  compact: true,
+                  height: 44,
+                  icon: Icons.add_rounded,
+                  label: onPolicies ? 'New policy' : 'New claim',
+                  onPressed: () => onPolicies ? _newPolicy() : _newClaim(),
+                ),
+              ]),
+            ]),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    controller: _tabs,
+                    children: [
+                      RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                          children: [
+                            if (_policies.isEmpty)
+                              empty('No policies yet.')
+                            else
+                              NgCardList(children: [
+                                for (final p in _policies) _policyRow(p),
+                              ]),
+                          ],
+                        ),
+                      ),
+                      RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                          children: [
+                            if (_claims.isEmpty)
+                              empty('No claims yet.')
+                            else
+                              NgCardList(children: [
+                                for (final cl in _claims) _claimRow(cl),
+                              ]),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _policyRow(FlutterFlowTheme theme, InsurancePoliciesRow p) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
+  Widget _policyRow(InsurancePoliciesRow p) {
+    final c = NgPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.policyNo ?? '(no policy no)',
-                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(
+                    (p.insurerName ?? '').isNotEmpty
+                        ? p.insurerName!
+                        : (p.policyNo ?? '(no policy no)'),
+                    style: NgFonts.geist(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+                const SizedBox(height: 2),
                 Text(
                   [
-                    if ((p.orderId ?? '').isNotEmpty) p.orderId,
-                    if ((p.insurerName ?? '').isNotEmpty) p.insurerName,
-                  ].whereType<String>().join(' · '),
-                  style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    if ((p.policyNo ?? '').isNotEmpty) p.policyNo!,
+                    'Premium ${_rupees(p.totalPremium)}',
+                  ].join(' · '),
+                  style: NgFonts.mono(fontSize: 12, color: c.mute),
                 ),
               ],
             ),
@@ -750,9 +806,11 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(_rupees(p.totalPremium),
-                  style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
-              _statusChip(theme, p.status),
+              if ((p.orderId ?? '').isNotEmpty)
+                Text(p.orderId!,
+                    style: NgFonts.mono(fontSize: 12, color: c.acc)),
+              const SizedBox(height: 4),
+              _pill(p.status),
             ],
           ),
         ],
@@ -760,28 +818,30 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
     );
   }
 
-  Widget _claimRow(FlutterFlowTheme theme, ClaimsRow c) {
+  Widget _claimRow(ClaimsRow cl) {
+    final c = NgPalette.of(context);
     return InkWell(
-      onTap: () => _openClaim(c),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
+      onTap: () => _openClaim(cl),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(c.claimNo ?? c.id ?? '(claim)',
-                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
+                  Text(cl.claimNo ?? cl.id ?? '(claim)',
+                      style: NgFonts.mono(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                  const SizedBox(height: 2),
                   Text(
                     [
-                      if ((c.orderId ?? '').isNotEmpty) c.orderId,
-                      if ((c.claimType ?? '').isNotEmpty) c.claimType,
-                    ].whereType<String>().join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                      if ((cl.orderId ?? '').isNotEmpty) cl.orderId!,
+                      if ((cl.claimType ?? '').isNotEmpty) cl.claimType!,
+                    ].join(' · '),
+                    style: NgFonts.geist(fontSize: 12.5, color: c.mute),
                   ),
                 ],
               ),
@@ -789,9 +849,13 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(_rupees(c.claimedAmount),
-                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
-                _statusChip(theme, c.status),
+                Text(_rupees(cl.claimedAmount),
+                    style: NgFonts.geist(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+                const SizedBox(height: 4),
+                _pill(cl.status),
               ],
             ),
           ],

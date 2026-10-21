@@ -24,6 +24,7 @@ class NgPalette {
     required this.bg,
     required this.s1,
     required this.s1b,
+    required this.sel,
     required this.s2,
     required this.s3,
     required this.sheet,
@@ -59,6 +60,9 @@ class NgPalette {
 
   /// Cell inside a card (KPI grid cells).
   final Color s1b;
+
+  /// Selected cell of a segmented control (Orders tabs, Due/Received).
+  final Color sel;
 
   /// Raised secondary button.
   final Color s2;
@@ -139,6 +143,7 @@ class NgPalette {
     bg: Color(0xFF0A0C10),
     s1: Color(0xFF12151B),
     s1b: Color(0xFF161920),
+    sel: Color(0xFF232832),
     s2: Color(0xFF1A1E26),
     s3: Color(0xFF1F232B),
     sheet: Color(0xFF14171D),
@@ -168,6 +173,7 @@ class NgPalette {
     bg: Color(0xFF0C1A2B),
     s1: Color(0xFF12243A),
     s1b: Color(0xFF152840),
+    sel: Color(0xFF26405F),
     s2: Color(0xFF1A2E47),
     s3: Color(0xFF1F3550),
     sheet: Color(0xFF13263D),
@@ -197,6 +203,7 @@ class NgPalette {
     bg: Color(0xFFF4F3F0),
     s1: Color(0xFFFFFFFF),
     s1b: Color(0xFFFAF9F7),
+    sel: Color(0xFFE9E7E1),
     s2: Color(0xFFF2F1ED),
     s3: Color(0xFFECEAE5),
     sheet: Color(0xFFFFFFFF),

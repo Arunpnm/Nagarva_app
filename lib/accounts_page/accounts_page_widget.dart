@@ -1,6 +1,9 @@
 import '/backend/commission_pricing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -455,84 +458,198 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
     );
   }
 
+  /// 0 = Overview, 1 = Days (the register).
+  int _tab = 0;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            'Daily Accounts Register',
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600),
-                  fontSize: 22.0,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          actions: [
-            TextButton.icon(
-              onPressed: _model.dailyRows.isEmpty ? null : _copyCsv,
-              icon: const Icon(Icons.download_outlined, size: 16),
-              label: const Text('CSV'),
-            ),
-          ],
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: _model.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _model.loadError != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          'Could not load accounts data:\n${_model.loadError}',
-                          textAlign: TextAlign.center,
-                          style: FlutterFlowTheme.of(context).bodyMedium,
+    final c = NgPalette.of(context);
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _loadData),
+      body: _model.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _model.loadError != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Could not load accounts data:\n${_model.loadError}',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadData,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                    children: [
+                      NgModuleHeader('Accounts', actions: [
+                        NgHeaderButtonBox(
+                          tooltip: 'Copy as CSV',
+                          icon: Icons.download_outlined,
+                          onTap: _model.dailyRows.isEmpty ? null : _copyCsv,
                         ),
+                      ]),
+                      const SizedBox(height: 14),
+                      NgSegmented(
+                        labels: const ['Overview', 'Days'],
+                        selected: _tab,
+                        onSelect: (i) => safeSetState(() => _tab = i),
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: ListView(
-                          children: [
-                            _openingBalanceBar(context),
-                            const SizedBox(height: 12),
-                            _summaryStrip(context),
-                            const SizedBox(height: 16),
-                            if (_model.dailyRows.isEmpty)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 24),
-                                child: Text(
-                                  'No orders yet - the register fills in once orders have a move date.',
-                                  style: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                          font: NgFonts.geist(),
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText),
-                                ),
-                              )
-                            else
-                              _registerTable(context),
-                          ],
-                        ),
+                      const SizedBox(height: 14),
+                      _openingBalanceBar(context),
+                      const SizedBox(height: 14),
+                      if (_model.dailyRows.isEmpty)
+                        NgCard(
+                          child: Text(
+                            'No orders yet. The register fills in once orders have a move date.',
+                            style:
+                                NgFonts.geist(fontSize: 13.5, color: c.mute),
+                          ),
+                        )
+                      else if (_tab == 0)
+                        ..._overview(context)
+                      else
+                        _registerTable(context),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  /// Overview: net P&L, cash now, money in and out, a per-day chart, and
+  /// the totals the register adds up.
+  List<Widget> _overview(BuildContext context) {
+    final c = NgPalette.of(context);
+    final rows = _model.dailyRows;
+    double sum(double Function(DailyAccountRow) f) =>
+        rows.fold(0.0, (a, r) => a + f(r));
+    final moneyIn = sum((r) => r.collections);
+    final moneyOut = sum((r) => r.totalExpenses);
+    Widget tile(String label, String value, Color color) => Expanded(
+          child: NgCard(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                const SizedBox(height: 6),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(value,
+                      style: NgFonts.mono(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w600,
+                          color: color)),
+                ),
+              ],
+            ),
+          ),
+        );
+    final p = _model.periodProfit;
+    final recent = rows.length > 10 ? rows.sublist(rows.length - 10) : rows;
+    final peak = recent.fold<double>(
+        1, (m, r) => [m, r.collections, r.totalExpenses].reduce((a, b) => a > b ? a : b));
+    return [
+      Row(children: [
+        tile('Net P&L', '${p >= 0 ? '+' : '-'}${functions.inrFull(p.abs())}',
+            p < 0 ? c.red : c.green),
+        const SizedBox(width: 8),
+        tile('Cash now', functions.inrFull(_model.currentBalance),
+            _model.currentBalance < 0 ? c.red : c.text),
+      ]),
+      const SizedBox(height: 8),
+      Row(children: [
+        tile('Money in', functions.inrFull(moneyIn), c.text),
+        const SizedBox(width: 8),
+        tile('Money out', functions.inrFull(moneyOut), c.text),
+      ]),
+      const SizedBox(height: 14),
+      NgCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(
+                child: Text('In vs out per day',
+                    style: NgFonts.geist(fontSize: 13, color: c.mute)),
+              ),
+              Container(width: 8, height: 8, color: c.green),
+              const SizedBox(width: 4),
+              Text('Money in', style: NgFonts.geist(fontSize: 11.5, color: c.mute)),
+              const SizedBox(width: 10),
+              Container(width: 8, height: 8, color: c.red),
+              const SizedBox(width: 4),
+              Text('Money out', style: NgFonts.geist(fontSize: 11.5, color: c.mute)),
+            ]),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 120,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (final r in recent)
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Container(
+                                  width: 7,
+                                  height: 92 * r.collections / peak + 1,
+                                  color: c.green),
+                              const SizedBox(width: 2),
+                              Container(
+                                  width: 7,
+                                  height: 92 * r.totalExpenses / peak + 1,
+                                  color: c.red),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text('${r.date.day}',
+                              style: NgFonts.geist(
+                                  fontSize: 10.5, color: c.mute)),
+                        ],
                       ),
                     ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-    );
+      const SizedBox(height: 14),
+      NgCardList(children: [
+        for (final (label, value) in [
+          ('Revenue', sum((r) => r.revenue)),
+          ('Collected', moneyIn),
+          ('Labour', sum((r) => r.salary)),
+          ('Expenses', sum((r) => r.orderExpenses + r.otherExpenses)),
+          ('Commission', sum((r) => r.porterCommission)),
+        ])
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(children: [
+              Expanded(
+                child: Text(label,
+                    style: NgFonts.geist(fontSize: 14, color: c.text)),
+              ),
+              Text(functions.inrFull(value),
+                  style: NgFonts.mono(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: c.text)),
+            ]),
+          ),
+      ]),
+    ];
   }
 
   /// Opening balance strip.
@@ -571,65 +688,6 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                   fontSize: 11, color: theme.secondaryText)),
         ),
       ],
-    );
-  }
-
-  /// The seven period totals, in the same order as the reference register.
-  ///
-  /// EXPENSES is order + other expenses ONLY. Labour and commission are
-  /// their own tiles because a mover reads them separately - and folding
-  /// them in would make the tile disagree with the Total Exp column,
-  /// which is the sum of all four.
-  Widget _summaryStrip(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    final rows = _model.dailyRows;
-    double sum(double Function(DailyAccountRow) f) =>
-        rows.fold(0.0, (a, r) => a + f(r));
-
-    final tiles = <(String, double, Color)>[
-      ('REVENUE', sum((r) => r.revenue), theme.primary),
-      ('COLLECTED', sum((r) => r.collections), theme.success),
-      ('LABOUR', sum((r) => r.salary), theme.secondaryText),
-      ('EXPENSES', sum((r) => r.orderExpenses + r.otherExpenses), theme.error),
-      ('COMMISSION', sum((r) => r.porterCommission), theme.error),
-      ('NET P&L', _model.periodProfit,
-          _model.periodProfit < 0 ? theme.error : theme.success),
-      ('CLOSING BAL', _model.currentBalance,
-          _model.currentBalance < 0 ? theme.error : theme.primaryText),
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final (label, value, colour) in tiles)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: theme.secondaryBackground,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_currency.format(value),
-                      style: NgFonts.geist(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: colour)),
-                  const SizedBox(height: 2),
-                  Text(label,
-                      style: NgFonts.geist(
-                          fontSize: 10,
-                          letterSpacing: 0.6,
-                          color: theme.secondaryText)),
-                ],
-              ),
-            ),
-        ],
-      ),
     );
   }
 

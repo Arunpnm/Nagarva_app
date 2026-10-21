@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -96,14 +97,7 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        elevation: 0,
-        title: Text('My Team',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600))),
-        actions: const [SupervisorMenuButton()],
-      ),
+      appBar: NgSimpleBar(title: 'My Team', actions: const [SupervisorMenuButton()]),
       body: SafeArea(
         child: _loading
             ? const Center(child: CircularProgressIndicator())

@@ -1,6 +1,8 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -34,11 +36,6 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
-  static final _currency = NumberFormat.currency(
-    locale: 'en_IN',
-    symbol: '₹',
-    decimalDigits: 0,
-  );
   static final _monthFormat = DateFormat('MMM yyyy');
   static final _dayFormat = DateFormat('MMM d');
 
@@ -208,172 +205,129 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            'Reports',
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600),
-                  fontSize: 22.0,
-                  fontWeight: FontWeight.w600,
+    final c = NgPalette.of(context);
+    Widget section(String t) => Padding(
+          padding: const EdgeInsets.fromLTRB(4, 20, 4, 10),
+          child: Text(t,
+              style: NgFonts.geist(
+                  fontSize: 15, fontWeight: FontWeight.w600, color: c.text)),
+        );
+    Widget empty(String t) => NgCard(
+          child: Text(t, style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+        );
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _loadData),
+      body: _model.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _model.loadError != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('Could not load reports:\n${_model.loadError}',
+                        textAlign: TextAlign.center),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadData,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                    children: [
+                      const NgModuleHeader('Reports'),
+                      const SizedBox(height: 14),
+                      _periodSelector(context),
+                      const SizedBox(height: 14),
+                      NgSearchField(
+                        controller: _searchController,
+                        hint: 'Search customer or city',
+                        onChanged: (v) {
+                          _model.searchQuery = v;
+                          _recompute();
+                          safeSetState(() {});
+                        },
+                      ),
+                      section('Branch-wise revenue'),
+                      if (_model.branchRevenue.isEmpty)
+                        empty('No orders in this period.')
+                      else
+                        NgCardList(children: [
+                          for (final b in _model.branchRevenue)
+                            _branchCard(context, b),
+                        ]),
+                      section('Monthly volume (last 6 months)'),
+                      _monthlyVolumeChart(context),
+                      section('Top customers'),
+                      if (_model.topCustomers.isEmpty)
+                        empty('No orders yet.')
+                      else
+                        NgCardList(children: [
+                          for (final tc in _model.topCustomers)
+                            _topCustomerRow(context, tc),
+                        ]),
+                      section('Service mix'),
+                      if (_model.serviceMix.isEmpty)
+                        empty('No orders in this period.')
+                      else
+                        NgCardList(children: _serviceMixRows(context)),
+                    ],
+                  ),
                 ),
-          ),
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: _model.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _model.loadError != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                            'Could not load reports:\n${_model.loadError}',
-                            textAlign: TextAlign.center),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      child: ListView(
-                        padding: const EdgeInsets.all(16.0),
-                        children: [
-                          _periodSelector(context),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: 'Search customer or city…',
-                              prefixIcon: const Icon(Icons.search),
-                              filled: true,
-                              fillColor: FlutterFlowTheme.of(context)
-                                  .secondaryBackground,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            onChanged: (v) {
-                              _model.searchQuery = v;
-                              _recompute();
-                              safeSetState(() {});
-                            },
-                          ),
-                          const SizedBox(height: 20),
-                          Text('Branch-wise Revenue',
-                              style: FlutterFlowTheme.of(context).titleMedium),
-                          const SizedBox(height: 8),
-                          ..._model.branchRevenue
-                              .map((b) => _branchCard(context, b)),
-                          const SizedBox(height: 20),
-                          Text('Monthly Volume (Last 6 Months)',
-                              style: FlutterFlowTheme.of(context).titleMedium),
-                          const SizedBox(height: 8),
-                          _monthlyVolumeChart(context),
-                          const SizedBox(height: 20),
-                          Text('Top Customers',
-                              style: FlutterFlowTheme.of(context).titleMedium),
-                          const SizedBox(height: 8),
-                          if (_model.topCustomers.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Text('No orders yet.',
-                                  style: FlutterFlowTheme.of(context)
-                                      .bodySmall
-                                      .override(
-                                          font: NgFonts.geist(),
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText)),
-                            )
-                          else
-                            ..._model.topCustomers
-                                .map((c) => _topCustomerRow(context, c)),
-                          const SizedBox(height: 20),
-                          Text('Service Mix',
-                              style: FlutterFlowTheme.of(context).titleMedium),
-                          const SizedBox(height: 8),
-                          ..._serviceMixRows(context),
-                        ],
-                      ),
-                    ),
-        ),
-      ),
     );
   }
 
   Widget _periodSelector(BuildContext context) {
-    final options = {
+    const options = {
       'month': 'Month',
       'quarter': 'Quarter',
       'year': 'Year',
       'all': 'All',
     };
-    return Wrap(
-      spacing: 8,
-      children: options.entries.map((e) {
-        final selected = _model.period == e.key;
-        return ChoiceChip(
-          label: Text(e.value),
-          selected: selected,
-          onSelected: (_) => _setPeriod(e.key),
-          selectedColor: FlutterFlowTheme.of(context).primary,
-          labelStyle: TextStyle(
-            color: selected
-                ? FlutterFlowTheme.of(context).primaryBackground
-                : FlutterFlowTheme.of(context).primaryText,
+    return NgChipRow(
+      edge: 0,
+      chips: [
+        for (final e in options.entries)
+          NgChip(
+            label: e.value,
+            selected: _model.period == e.key,
+            onTap: () => _setPeriod(e.key),
           ),
-        );
-      }).toList(),
+      ],
     );
   }
 
   Widget _branchCard(BuildContext context, BranchRevenue b) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
+    final c = NgPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(b.branch,
-                  style: FlutterFlowTheme.of(context).bodyMedium.override(
-                      font: NgFonts.geist(fontWeight: FontWeight.w600))),
+              Expanded(
+                child: Text(b.branch,
+                    style: NgFonts.geist(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+              ),
               Text('${b.orderCount} orders',
-                  style: FlutterFlowTheme.of(context).bodySmall.override(
-                      font: NgFonts.geist(),
-                      color: FlutterFlowTheme.of(context).secondaryText)),
+                  style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
             ],
           ),
           const SizedBox(height: 6),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Revenue ${_currency.format(b.revenue)}',
-                  style: FlutterFlowTheme.of(context).bodySmall.override(
-                      font: NgFonts.geist(),
-                      color: FlutterFlowTheme.of(context).secondaryText)),
+              Expanded(
+                child: Text('Revenue ${functions.inrFull(b.revenue)}',
+                    style: NgFonts.mono(fontSize: 12.5, color: c.mute)),
+              ),
               Text(
-                '${_currency.format(b.profit.abs())} ${b.profit >= 0 ? 'profit' : 'loss'} · ${b.margin.toStringAsFixed(0)}%',
-                style: FlutterFlowTheme.of(context).titleSmall.override(
-                    font: NgFonts.geist(fontWeight: FontWeight.w600),
-                    color: b.profit >= 0
-                        ? FlutterFlowTheme.of(context).primary
-                        : FlutterFlowTheme.of(context).error),
+                '${functions.inrFull(b.profit.abs())} ${b.profit >= 0 ? 'profit' : 'loss'} · ${b.margin.toStringAsFixed(0)}%',
+                style: NgFonts.geist(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: b.profit >= 0 ? c.green : c.red),
               ),
             ],
           ),
@@ -382,116 +336,94 @@ class _ReportsPageWidgetState extends State<ReportsPageWidget>
     );
   }
 
+  /// Vertical bars, order count over each, month under — the handoff's
+  /// chart.
   Widget _monthlyVolumeChart(BuildContext context) {
-    final double maxRevenue = _model.monthlyVolume.isEmpty
-        ? 1.0
+    final c = NgPalette.of(context);
+    final maxCount = _model.monthlyVolume.isEmpty
+        ? 1
         : _model.monthlyVolume
-            .map((m) => m.revenue)
-            .fold<double>(0.0, (a, b) => a > b ? a : b)
-            .clamp(1.0, double.infinity)
-            .toDouble();
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: _model.monthlyVolume.map((m) {
-          final double fraction =
-              (m.revenue / maxRevenue).clamp(0.0, 1.0).toDouble();
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                SizedBox(
-                    width: 64,
-                    child: Text(m.label,
-                        style: FlutterFlowTheme.of(context).bodySmall.override(
-                            font: NgFonts.geist(),
-                            color:
-                                FlutterFlowTheme.of(context).secondaryText))),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: fraction,
-                      minHeight: 10,
-                      backgroundColor: FlutterFlowTheme.of(context).alternate,
-                      valueColor: AlwaysStoppedAnimation(
-                          FlutterFlowTheme.of(context).primary),
-                    ),
+            .map((m) => m.orderCount)
+            .fold<int>(0, (a, b) => a > b ? a : b)
+            .clamp(1, 1 << 30);
+    return NgCard(
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
+      child: SizedBox(
+        height: 170,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            for (final m in _model.monthlyVolume)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text('${m.orderCount}',
+                          style: NgFonts.geist(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: c.text)),
+                      const SizedBox(height: 4),
+                      Container(
+                        height: 110 * (m.orderCount / maxCount) + 2,
+                        decoration: BoxDecoration(
+                          color: c.accBtn,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(m.label.split(' ').first,
+                          style: NgFonts.geist(fontSize: 11.5, color: c.mute)),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text('${m.orderCount}',
-                    style: FlutterFlowTheme.of(context).bodySmall.override(
-                        font: NgFonts.geist(),
-                        color: FlutterFlowTheme.of(context).secondaryText)),
-              ],
-            ),
-          );
-        }).toList(),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _topCustomerRow(BuildContext context, TopCustomer c) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(c.customer,
-                    style: FlutterFlowTheme.of(context).bodyMedium.override(
-                        font: NgFonts.geist(fontWeight: FontWeight.w600))),
-                Text(
-                    '${c.orderCount} order${c.orderCount == 1 ? '' : 's'} · last ${_dayFormat.format(c.lastDate)}',
-                    style: FlutterFlowTheme.of(context).bodySmall.override(
-                        font: NgFonts.geist(),
-                        color: FlutterFlowTheme.of(context).secondaryText)),
-              ],
-            ),
-          ),
-          Text(_currency.format(c.revenue),
-              style: FlutterFlowTheme.of(context).titleSmall.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600))),
-        ],
-      ),
+  Widget _topCustomerRow(BuildContext context, TopCustomer tc) {
+    final c = NgPalette.of(context);
+    return NgListRow(
+      leading: NgAvatar(tc.customer),
+      title: tc.customer,
+      subtitle:
+          '${tc.orderCount} order${tc.orderCount == 1 ? '' : 's'} · last ${_dayFormat.format(tc.lastDate)}',
+      trailing: Text(functions.inrFull(tc.revenue),
+          style: NgFonts.mono(
+              fontSize: 14, fontWeight: FontWeight.w600, color: c.text)),
     );
   }
 
   List<Widget> _serviceMixRows(BuildContext context) {
+    final c = NgPalette.of(context);
     final total =
         _model.filteredOrderCount == 0 ? 1 : _model.filteredOrderCount;
     return _model.serviceMix.map((s) {
-      final pct = (s.count / total * 100);
-      return Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      final pct = s.count / total;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
           children: [
-            Text(s.service,
-                style: FlutterFlowTheme.of(context)
-                    .bodyMedium
-                    .override(font: NgFonts.geist())),
-            Text('${s.count} · ${pct.toStringAsFixed(0)}%',
-                style: FlutterFlowTheme.of(context).titleSmall.override(
-                    font: NgFonts.geist(fontWeight: FontWeight.w600))),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(s.service,
+                      style: NgFonts.geist(fontSize: 14, color: c.text)),
+                ),
+                Text('${s.count} · ${(pct * 100).toStringAsFixed(0)}%',
+                    style: NgFonts.mono(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            NgProgressBar(value: pct, color: c.accBtn),
           ],
         ),
       );

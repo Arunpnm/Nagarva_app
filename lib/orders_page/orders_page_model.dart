@@ -67,7 +67,7 @@ class OrdersPageModel extends FlutterFlowModel<OrdersPageWidget> {
   void updateTransitOrdersAtIndex(int index, Function(OrdersRow) updateFn) =>
       transitOrders[index] = updateFn(transitOrders[index]);
 
-  String? selectedTab = 'All';
+  String? selectedTab = 'Active';
 
   ///  State fields for stateful widgets in this page.
 

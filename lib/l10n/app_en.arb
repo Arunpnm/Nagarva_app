@@ -3316,5 +3316,1067 @@
   "suAgreeLead": "I agree to the",
   "@suAgreeLead": {
     "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
+  },
+  "ngGreetMorning": "Good morning",
+  "@ngGreetMorning": {
+    "description": "Dashboard redesign"
+  },
+  "ngGreetAfternoon": "Good afternoon",
+  "@ngGreetAfternoon": {
+    "description": "Dashboard redesign"
+  },
+  "ngGreetEvening": "Good evening",
+  "@ngGreetEvening": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanName": "{plan} plan",
+  "@ngPlanName": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "ngPlanActive": "Active",
+  "@ngPlanActive": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanTrial": "Trial",
+  "@ngPlanTrial": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanEndingSoon": "Ending soon",
+  "@ngPlanEndingSoon": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanEnded": "Ended",
+  "@ngPlanEnded": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanTrialEnds": "Trial ends {date} · {days} days left",
+  "@ngPlanTrialEnds": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "ngPlanReadOnlyIn": "Trial ended · view only in {days} days",
+  "@ngPlanReadOnlyIn": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "ngPlanReadOnly": "Trial ended · view only",
+  "@ngPlanReadOnly": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanNoExpiry": "No expiry date",
+  "@ngPlanNoExpiry": {
+    "description": "Dashboard redesign"
+  },
+  "ngPlanSee": "Plans",
+  "@ngPlanSee": {
+    "description": "Dashboard redesign"
+  },
+  "ngPaymentsDue": "Payments due",
+  "@ngPaymentsDue": {
+    "description": "Dashboard redesign"
+  },
+  "ngPaymentsDueSub": "{n} orders not fully paid",
+  "@ngPaymentsDueSub": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngOverdueFollowUps": "Overdue follow-ups",
+  "@ngOverdueFollowUps": {
+    "description": "Dashboard redesign"
+  },
+  "ngOverdueFollowUpsSub": "Call these first",
+  "@ngOverdueFollowUpsSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngTodaysPlan": "Today's plan",
+  "@ngTodaysPlan": {
+    "description": "Dashboard redesign"
+  },
+  "ngNothingToday": "Nothing planned for today",
+  "@ngNothingToday": {
+    "description": "Dashboard redesign"
+  },
+  "ngComingUp": "Coming up",
+  "@ngComingUp": {
+    "description": "Dashboard redesign"
+  },
+  "ngAgendaMove": "Move · {name}",
+  "@ngAgendaMove": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ngAllDay": "All day",
+  "@ngAllDay": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriodThisMonth": "This month",
+  "@ngPeriodThisMonth": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriodLastMonth": "Last month",
+  "@ngPeriodLastMonth": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriod3m": "Last 3 months",
+  "@ngPeriod3m": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriodFy": "This financial year",
+  "@ngPeriodFy": {
+    "description": "Dashboard redesign"
+  },
+  "ngPeriodAll": "All time",
+  "@ngPeriodAll": {
+    "description": "Dashboard redesign"
+  },
+  "ngPickPeriod": "Show figures for",
+  "@ngPickPeriod": {
+    "description": "Dashboard redesign"
+  },
+  "ngProfitTarget": "Profit target",
+  "@ngProfitTarget": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetTarget": "Set a monthly profit target",
+  "@ngSetTarget": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetTargetSub": "Tap to set the number you want to reach",
+  "@ngSetTargetSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngProfit": "Profit",
+  "@ngProfit": {
+    "description": "Dashboard redesign"
+  },
+  "ngProfitAfter": "After labour {labour} and expenses {expenses}",
+  "@ngProfitAfter": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "labour": {
+        "type": "String"
+      },
+      "expenses": {
+        "type": "String"
+      }
+    }
+  },
+  "ngAddExpense": "Add expense",
+  "@ngAddExpense": {
+    "description": "Dashboard redesign"
+  },
+  "ngSeeAll": "See all",
+  "@ngSeeAll": {
+    "description": "Dashboard redesign"
+  },
+  "ngHotLeads": "Hot leads",
+  "@ngHotLeads": {
+    "description": "Dashboard redesign"
+  },
+  "ngBranches": "Branches",
+  "@ngBranches": {
+    "description": "Dashboard redesign"
+  },
+  "ngOrdersN": "{n} orders",
+  "@ngOrdersN": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngTargetDone": "Target met",
+  "@ngTargetDone": {
+    "description": "Dashboard redesign"
+  },
+  "ngNoProfitYet": "No profit yet this period",
+  "@ngNoProfitYet": {
+    "description": "Dashboard redesign"
+  },
+  "ngEditTarget": "Monthly profit target",
+  "@ngEditTarget": {
+    "description": "Dashboard redesign"
+  },
+  "ngQuote": "Quote",
+  "@ngQuote": {
+    "description": "Lead card action"
+  },
+  "ngTabDone": "Done",
+  "@ngTabDone": {
+    "description": "Orders tab"
+  },
+  "ngReceived": "Received",
+  "@ngReceived": {
+    "description": "Payments tab"
+  },
+  "ngDaysLate": "{n, plural, =1{1 day late} other{{n} days late}}",
+  "@ngDaysLate": {
+    "description": "Payments due card",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngNoPaymentsYet": "No payments recorded yet",
+  "@ngNoPaymentsYet": {
+    "description": "Payments received empty"
+  },
+  "ngOpsTitle": "Operations",
+  "@ngOpsTitle": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsNewTrip": "New trip",
+  "@ngOpsNewTrip": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsCrewsOut": "Crews out",
+  "@ngOpsCrewsOut": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsVehiclesFree": "Vehicles free",
+  "@ngOpsVehiclesFree": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsAttention": "Needs attention",
+  "@ngOpsAttention": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsNoCrew": "No crew · {name}",
+  "@ngOpsNoCrew": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ngOpsAssign": "Assign",
+  "@ngOpsAssign": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsAssignCrew": "Assign crew",
+  "@ngOpsAssignCrew": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsInsuranceExpires": "Insurance expires in {n} days",
+  "@ngOpsInsuranceExpires": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngOpsInsuranceExpired": "Insurance expired",
+  "@ngOpsInsuranceExpired": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsLowStock": "{name} running low",
+  "@ngOpsLowStock": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ngOpsStockLeft": "{qty} left",
+  "@ngOpsStockLeft": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "ngOpsReorder": "Reorder",
+  "@ngOpsReorder": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsView": "View",
+  "@ngOpsView": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsAwaiting": "Awaiting approval",
+  "@ngOpsAwaiting": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsJobs": "Jobs",
+  "@ngOpsJobs": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsNoJobs": "No moves on this day",
+  "@ngOpsNoJobs": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsFleet": "Fleet",
+  "@ngOpsFleet": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsFleetSummary": "{free} of {total} free",
+  "@ngOpsFleetSummary": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "free": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "ngOpsInService": "In service",
+  "@ngOpsInService": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsOnJob": "On a job",
+  "@ngOpsOnJob": {
+    "description": "Dashboard redesign"
+  },
+  "ngOpsFree": "Free",
+  "@ngOpsFree": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpCount": "{n, plural, =1{1 expense} other{{n} expenses}}",
+  "@ngExpCount": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngExpVsLast": "{pct}% vs last month",
+  "@ngExpVsLast": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "ngExpThisWeek": "This week",
+  "@ngExpThisWeek": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpOrderOnly": "Order-linked only",
+  "@ngExpOrderOnly": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpNone": "No expenses in this period",
+  "@ngExpNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpUncategorised": "Uncategorised",
+  "@ngExpUncategorised": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpDelete": "Delete expense",
+  "@ngExpDelete": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpByCategory": "By category",
+  "@ngExpByCategory": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpNoCat": "Nothing to break down yet",
+  "@ngExpNoCat": {
+    "description": "Dashboard redesign"
+  },
+  "ngExpNoCatSub": "Categories appear here once you record an expense.",
+  "@ngExpNoCatSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetNew": "New vehicle",
+  "@ngFleetNew": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetActive": "Active",
+  "@ngFleetActive": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetMaintenance": "Maintenance",
+  "@ngFleetMaintenance": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetInactive": "Inactive",
+  "@ngFleetInactive": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetNone": "No vehicles yet. Add one to track documents and trips.",
+  "@ngFleetNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetDelete": "Delete vehicle",
+  "@ngFleetDelete": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetInsurance": "Insurance",
+  "@ngFleetInsurance": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetPermit": "Permit",
+  "@ngFleetPermit": {
+    "description": "Dashboard redesign"
+  },
+  "ngFleetExpires": "{doc} expires in {n} days",
+  "@ngFleetExpires": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "doc": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngFleetExpired": "{doc} expired {n} days ago",
+  "@ngFleetExpired": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "doc": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngMatNew": "New material",
+  "@ngMatNew": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatSearch": "Search materials",
+  "@ngMatSearch": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatReorderSoon": "Reorder soon",
+  "@ngMatReorderSoon": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatReturnable": "Returnable",
+  "@ngMatReturnable": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatMin": "min {n}",
+  "@ngMatMin": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "ngMatDelete": "Delete material",
+  "@ngMatDelete": {
+    "description": "Dashboard redesign"
+  },
+  "ngMatNone": "No materials here yet",
+  "@ngMatNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripPlanned": "Planned",
+  "@ngTripPlanned": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripOngoing": "Ongoing",
+  "@ngTripOngoing": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripNone": "No trips yet",
+  "@ngTripNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripNoNumber": "(no trip no.)",
+  "@ngTripNoNumber": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripHired": "Hired",
+  "@ngTripHired": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripOwn": "Own",
+  "@ngTripOwn": {
+    "description": "Dashboard redesign"
+  },
+  "ngTripDelete": "Delete trip",
+  "@ngTripDelete": {
+    "description": "Dashboard redesign"
+  },
+  "ngCustCount": "{n, plural, =1{1 customer} other{{n} customers}}",
+  "@ngCustCount": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngCustNew": "New",
+  "@ngCustNew": {
+    "description": "Dashboard redesign"
+  },
+  "ngCustSearch": "Search name, phone or company",
+  "@ngCustSearch": {
+    "description": "Dashboard redesign"
+  },
+  "ngCustNone": "No customers found",
+  "@ngCustNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngCustDue": "{amount} due",
+  "@ngCustDue": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ngStaffTitle": "Staff",
+  "@ngStaffTitle": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffSummary": "{n} people · {monthly} monthly · {other} daily / temporary",
+  "@ngStaffSummary": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "monthly": {
+        "type": "int"
+      },
+      "other": {
+        "type": "int"
+      }
+    }
+  },
+  "ngStaffAdd": "Add staff",
+  "@ngStaffAdd": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffMonthly": "Fixed monthly",
+  "@ngStaffMonthly": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffDaily": "Daily",
+  "@ngStaffDaily": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffTemporary": "Temporary",
+  "@ngStaffTemporary": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffJoined": "Joined {date}",
+  "@ngStaffJoined": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ngStaffAllRoles": "All roles",
+  "@ngStaffAllRoles": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffNone": "No staff here yet",
+  "@ngStaffNone": {
+    "description": "Dashboard redesign"
+  },
+  "ngStaffInactive": "Inactive",
+  "@ngStaffInactive": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalTitle": "Salary",
+  "@ngSalTitle": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalToPay": "To pay",
+  "@ngSalToPay": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalAdvances": "Advances",
+  "@ngSalAdvances": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalPaid": "Salary paid",
+  "@ngSalPaid": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalBalance": "Balance",
+  "@ngSalBalance": {
+    "description": "Dashboard redesign"
+  },
+  "ngSalJobs": "{n, plural, =1{1 job} other{{n} jobs}}",
+  "@ngSalJobs": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ngSalAdvance": "Advance {amount}",
+  "@ngSalAdvance": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "ngSalNote": "Earnings come from the crew entered on each job this month. Open a person to pay or give an advance.",
+  "@ngSalNote": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetApp": "App",
+  "@ngSetApp": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetLanguage": "Language",
+  "@ngSetLanguage": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetTheme": "Theme",
+  "@ngSetTheme": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetThemeLight": "Light",
+  "@ngSetThemeLight": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetThemeDark": "Dark",
+  "@ngSetThemeDark": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetThemeMidnight": "Midnight",
+  "@ngSetThemeMidnight": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetNotifications": "Notifications",
+  "@ngSetNotifications": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetNotificationsSub": "Show alerts while the app is open",
+  "@ngSetNotificationsSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetBusiness": "Business",
+  "@ngSetBusiness": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetBizDetails": "Business details",
+  "@ngSetBizDetails": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetBizDetailsSub": "Name, tagline, GST, address, logo, signature, terms, numbering",
+  "@ngSetBizDetailsSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetCft": "CFT & packages",
+  "@ngSetCft": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetCftSub": "Item volumes, house sizes and storage rates",
+  "@ngSetCftSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetSecurity": "Security",
+  "@ngSetSecurity": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetLogin": "Login & security",
+  "@ngSetLogin": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetLoginSub": "Your app PIN",
+  "@ngSetLoginSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetAccount": "Account & support",
+  "@ngSetAccount": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetPlan": "Plan & billing",
+  "@ngSetPlan": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetPlanSub": "Your plan and its limits",
+  "@ngSetPlanSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetRecycle": "Deleted items",
+  "@ngSetRecycle": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetRecycleSub": "Restore anything deleted by mistake",
+  "@ngSetRecycleSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetHelp": "Help & support",
+  "@ngSetHelp": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetHelpSub": "Support contact, privacy policy and terms",
+  "@ngSetHelpSub": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetPorter": "Porter integration",
+  "@ngSetPorter": {
+    "description": "Dashboard redesign"
+  },
+  "ngSetPorterSub": "Show Porter commission on the dashboard. Turn on only if your business uses Porter.",
+  "@ngSetPorterSub": {
+    "description": "Dashboard redesign"
+  },
+  "odStageOf": "Stage {n} of {total} · {name}",
+  "@odStageOf": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "odJourneyDone": "All stages done",
+  "@odJourneyDone": {
+    "description": "Dashboard redesign"
+  },
+  "odMaps": "Maps",
+  "@odMaps": {
+    "description": "Dashboard redesign"
+  },
+  "odProgress": "Progress",
+  "@odProgress": {
+    "description": "Dashboard redesign"
+  },
+  "odInProgress": "In progress",
+  "@odInProgress": {
+    "description": "Dashboard redesign"
+  },
+  "odMarkAs": "Mark as {stage}",
+  "@odMarkAs": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "odDeliveredHint": "Delivered is recorded when the crew finishes the job with the customer's code.",
+  "@odDeliveredHint": {
+    "description": "Dashboard redesign"
+  },
+  "odOpenFieldJob": "Open field job",
+  "@odOpenFieldJob": {
+    "description": "Dashboard redesign"
+  },
+  "odCrewVehicle": "Crew & vehicle",
+  "@odCrewVehicle": {
+    "description": "Dashboard redesign"
+  },
+  "odNoCrew": "No crew assigned yet",
+  "@odNoCrew": {
+    "description": "Dashboard redesign"
+  },
+  "odNoVehicle": "No vehicle assigned",
+  "@odNoVehicle": {
+    "description": "Dashboard redesign"
+  },
+  "odSupervisorCrew": "Supervisor · {name} · {count} crew",
+  "@odSupervisorCrew": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "odCrewCount": "{count} crew",
+  "@odCrewCount": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "odPayment": "Payment",
+  "@odPayment": {
+    "description": "Dashboard redesign"
+  },
+  "odTotal": "Total",
+  "@odTotal": {
+    "description": "Dashboard redesign"
+  },
+  "odPaid": "Paid",
+  "@odPaid": {
+    "description": "Dashboard redesign"
+  },
+  "odBalance": "Balance",
+  "@odBalance": {
+    "description": "Dashboard redesign"
+  },
+  "odPartPaid": "Part paid",
+  "@odPartPaid": {
+    "description": "Dashboard redesign"
+  },
+  "odFullyPaid": "Paid",
+  "@odFullyPaid": {
+    "description": "Dashboard redesign"
+  },
+  "odUnpaid": "Unpaid",
+  "@odUnpaid": {
+    "description": "Dashboard redesign"
+  },
+  "odRemind": "Remind",
+  "@odRemind": {
+    "description": "Dashboard redesign"
+  },
+  "odRecordPayment": "Record payment",
+  "@odRecordPayment": {
+    "description": "Dashboard redesign"
+  },
+  "odActivity": "Activity",
+  "@odActivity": {
+    "description": "Dashboard redesign"
+  },
+  "odAllN": "All {count}",
+  "@odAllN": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "odStageChanged": "Stage changed",
+  "@odStageChanged": {
+    "description": "Dashboard redesign"
+  },
+  "odPaymentReceived": "Payment received · {amount}",
+  "@odPaymentReceived": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "odNoActivity": "Nothing recorded on this order yet.",
+  "@odNoActivity": {
+    "description": "Dashboard redesign"
+  },
+  "odMoveDetails": "Move details",
+  "@odMoveDetails": {
+    "description": "Dashboard redesign"
+  },
+  "odCancelled": "Cancelled",
+  "@odCancelled": {
+    "description": "Dashboard redesign"
+  },
+  "odMore": "More actions",
+  "@odMore": {
+    "description": "Dashboard redesign"
+  },
+  "odRemindMsg": "Hi {customer}, a balance of {amount} is due for your move ({orderId}). Thank you, {vendor}",
+  "@odRemindMsg": {
+    "description": "Dashboard redesign",
+    "placeholders": {
+      "customer": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "orderId": {
+        "type": "String"
+      },
+      "vendor": {
+        "type": "String"
+      }
+    }
+  },
+  "odStConfirmed": "Confirmed",
+  "@odStConfirmed": {
+    "description": "Dashboard redesign"
+  },
+  "odStPacking": "Packing",
+  "@odStPacking": {
+    "description": "Dashboard redesign"
+  },
+  "odStInTransit": "In transit",
+  "@odStInTransit": {
+    "description": "Dashboard redesign"
+  },
+  "odStArrived": "Arrived",
+  "@odStArrived": {
+    "description": "Dashboard redesign"
+  },
+  "odStDelivered": "Delivered",
+  "@odStDelivered": {
+    "description": "Dashboard redesign"
+  },
+  "odStCompleted": "Completed",
+  "@odStCompleted": {
+    "description": "Dashboard redesign"
+  },
+  "nlPhone": "Phone",
+  "@nlPhone": {
+    "description": "Dashboard redesign"
+  },
+  "nlName": "Name",
+  "@nlName": {
+    "description": "Dashboard redesign"
+  },
+  "nlRoute": "Route",
+  "@nlRoute": {
+    "description": "Dashboard redesign"
+  },
+  "nlMovingFrom": "Moving from",
+  "@nlMovingFrom": {
+    "description": "Dashboard redesign"
+  },
+  "nlMovingTo": "Moving to",
+  "@nlMovingTo": {
+    "description": "Dashboard redesign"
+  },
+  "nlService": "Service",
+  "@nlService": {
+    "description": "Dashboard redesign"
+  },
+  "nlWhen": "When",
+  "@nlWhen": {
+    "description": "Dashboard redesign"
+  },
+  "nlToday": "Today",
+  "@nlToday": {
+    "description": "Dashboard redesign"
+  },
+  "nlTomorrow": "Tomorrow",
+  "@nlTomorrow": {
+    "description": "Dashboard redesign"
+  },
+  "nlPickDate": "Pick date",
+  "@nlPickDate": {
+    "description": "Dashboard redesign"
+  },
+  "nlSource": "Source",
+  "@nlSource": {
+    "description": "Dashboard redesign"
+  },
+  "nlBranch": "Branch",
+  "@nlBranch": {
+    "description": "Dashboard redesign"
+  },
+  "nlNextStep": "Next step",
+  "@nlNextStep": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepFollow": "Follow-up",
+  "@nlStepFollow": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepFollowSub": "Call again later",
+  "@nlStepFollowSub": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepSurvey": "Survey",
+  "@nlStepSurvey": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepSurveySub": "Visit, link or on call",
+  "@nlStepSurveySub": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepQuote": "Skip survey · Quote",
+  "@nlStepQuote": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepQuoteSub": "Price on this call",
+  "@nlStepQuoteSub": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepConfirm": "Confirm order",
+  "@nlStepConfirm": {
+    "description": "Dashboard redesign"
+  },
+  "nlStepConfirmSub": "Customer agreed now",
+  "@nlStepConfirmSub": {
+    "description": "Dashboard redesign"
+  },
+  "nlMore": "More details",
+  "@nlMore": {
+    "description": "Dashboard redesign"
+  },
+  "nlEmail": "Email (optional)",
+  "@nlEmail": {
+    "description": "Dashboard redesign"
+  },
+  "nlNotes": "Notes",
+  "@nlNotes": {
+    "description": "Dashboard redesign"
+  },
+  "nlNameRequired": "Enter the customer's name.",
+  "@nlNameRequired": {
+    "description": "Dashboard redesign"
+  },
+  "nlNoBranches": "Add a branch in Settings before saving leads.",
+  "@nlNoBranches": {
+    "description": "Dashboard redesign"
+  },
+  "nlUpdateLead": "Update lead",
+  "@nlUpdateLead": {
+    "description": "Dashboard redesign"
+  },
+  "noPickup": "Pickup",
+  "@noPickup": {
+    "description": "Dashboard redesign"
+  },
+  "noDrop": "Drop",
+  "@noDrop": {
+    "description": "Dashboard redesign"
+  },
+  "noPricing": "Price & source",
+  "@noPricing": {
+    "description": "Dashboard redesign"
   }
 }

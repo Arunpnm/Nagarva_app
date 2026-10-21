@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -23,13 +24,7 @@ class ComingSoonPage extends StatelessWidget {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: Text(title,
-            style: NgFonts.geist(
-                color: theme.primaryText, fontWeight: FontWeight.w600)),
-        elevation: 0,
-      ),
+      appBar: NgSimpleBar(title: title),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(28),

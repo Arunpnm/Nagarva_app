@@ -6,7 +6,8 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/components/entity_picker_dialog.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
@@ -443,102 +444,143 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     }
   }
 
-  Widget _priorityChip(FlutterFlowTheme theme, String priority) {
-    final color = {
-          'low': Colors.grey,
-          'medium': Colors.blue,
-          'high': Colors.orange,
-          'urgent': Colors.red,
-        }[priority] ??
-        Colors.grey;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-      child: Text(priority, style: NgFonts.geist(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
-    );
-  }
+  NgStatus _priorityTone(String p) => switch (p) {
+        'urgent' => NgStatus.red,
+        'high' => NgStatus.accent,
+        'medium' => NgStatus.blue,
+        _ => NgStatus.neutral,
+      };
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        automaticallyImplyLeading: true,
-        title: Text('Tasks & Activities',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 19,
-                fontWeight: FontWeight.w600)),
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabs,
-          tabs: const [Tab(text: 'Tasks'), Tab(text: 'Activities')],
-        ),
-        actions: [
-          if (_tabs.index == 0)
-            IconButton(
-              tooltip: _myTasksOnly ? 'Show All' : 'My Tasks Only',
-              icon: Icon(_myTasksOnly ? Icons.person : Icons.people_outline),
-              onPressed: () => setState(() => _myTasksOnly = !_myTasksOnly),
+    final c = NgPalette.of(context);
+    final onTasks = _tabs.index == 0;
+    Widget tabButton(int i, String label) => Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _tabs.animateTo(i),
+            child: Container(
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: _tabs.index == i ? c.sel : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(label,
+                  style: NgFonts.geist(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: _tabs.index == i ? c.text : c.mute)),
             ),
+          ),
+        );
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: Column(
+        children: [
+          const NgModuleHeader('Tasks & activities'),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                      color: c.s1, borderRadius: BorderRadius.circular(14)),
+                  child: Row(children: [
+                    tabButton(0, 'Tasks'),
+                    tabButton(1, 'Activities'),
+                  ]),
+                ),
+              ),
+              const SizedBox(width: 8),
+              NgPrimaryButton(
+                compact: true,
+                height: 44,
+                icon: Icons.add_rounded,
+                label: onTasks ? 'New task' : 'Log activity',
+                onPressed: () => onTasks ? _newTask() : _newActivity(),
+              ),
+            ],
+          ),
+          if (onTasks) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: NgSecondaryButton(
+                height: 36,
+                icon: _myTasksOnly
+                    ? Icons.person_outline_rounded
+                    : Icons.groups_outlined,
+                label: _myTasksOnly ? 'Mine' : 'Everyone',
+                onPressed: () => setState(() => _myTasksOnly = !_myTasksOnly),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _tabs.index == 0 ? _newTask() : _newActivity(),
-        icon: const Icon(Icons.add),
-        label: Text(_tabs.index == 0 ? 'New Task' : 'Log Activity'),
+    );
+    Widget empty(String text) => NgCard(
+          child: Text(text,
+              textAlign: TextAlign.center,
+              style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+        );
+    return Scaffold(
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
+      body: Column(
+        children: [
+          header,
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    controller: _tabs,
+                    children: [
+                      RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                          children: [
+                            if (_filteredTasks.isEmpty)
+                              empty('No tasks found.')
+                            else
+                              NgCardList(children: [
+                                for (final t in _filteredTasks) _taskRow(t),
+                              ]),
+                          ],
+                        ),
+                      ),
+                      RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                          children: [
+                            if (_activities.isEmpty)
+                              empty('No activities logged yet.')
+                            else
+                              NgCardList(children: [
+                                for (final a in _activities) _activityRow(a),
+                              ]),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabs,
-              children: [
-                RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-                    children: [
-                      if (_filteredTasks.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Text('No tasks found.',
-                              style: NgFonts.geist(color: theme.secondaryText)),
-                        )
-                      else
-                        for (final t in _filteredTasks) _taskRow(theme, t),
-                    ],
-                  ),
-                ),
-                RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-                    children: [
-                      if (_activities.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Text('No activities logged yet.',
-                              style: NgFonts.geist(color: theme.secondaryText)),
-                        )
-                      else
-                        for (final a in _activities) _activityRow(theme, a),
-                    ],
-                  ),
-                ),
-              ],
-            ),
     );
   }
 
-  Widget _taskRow(FlutterFlowTheme theme, TasksRow t) {
+  Widget _taskRow(TasksRow t) {
+    final c = NgPalette.of(context);
     final done = t.status == 'completed' || t.status == 'cancelled';
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
@@ -546,32 +588,45 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
               children: [
                 Text(t.title,
                     style: NgFonts.geist(
+                        fontSize: 14.5,
                         fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                        color: done ? c.mute : c.text,
                         decoration: done ? TextDecoration.lineThrough : null)),
+                const SizedBox(height: 3),
                 Text(
                   [
                     _staffName(t.assignedTo),
-                    if (t.dueAt != null) DateFormat('d MMM, h:mm a').format(t.dueAt!.toLocal()),
-                    if ((t.entityId ?? '').isNotEmpty) '${t.entityType} ${t.entityId}',
-                  ].join(' · '),
-                  style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    if (t.dueAt != null)
+                      DateFormat('d MMM, h:mm a').format(t.dueAt!.toLocal()),
+                    if ((t.entityId ?? '').isNotEmpty)
+                      '${t.entityType} · ${t.entityId}',
+                  ].where((x) => x.isNotEmpty).join(' · '),
+                  style: NgFonts.geist(
+                      fontSize: 12.5, height: 1.35, color: c.mute),
                 ),
+                const SizedBox(height: 6),
+                NgPill(
+                    t.priority.isEmpty
+                        ? ''
+                        : t.priority[0].toUpperCase() + t.priority.substring(1),
+                    status: _priorityTone(t.priority)),
               ],
             ),
           ),
-          _priorityChip(theme, t.priority),
           if (!done) ...[
             IconButton(
-                icon: const Icon(Icons.check_circle_outline, size: 20),
+                tooltip: 'Complete',
+                icon: Icon(Icons.check_circle_outline_rounded,
+                    size: 21, color: c.green),
                 onPressed: () => _completeTask(t)),
             IconButton(
-                icon: const Icon(Icons.close, size: 20),
+                tooltip: 'Cancel',
+                icon: Icon(Icons.close_rounded, size: 20, color: c.mute),
                 onPressed: () => _cancelTask(t)),
           ],
           IconButton(
             tooltip: 'Delete task',
-            icon: Icon(Icons.delete_outline, size: 20, color: theme.error),
+            icon: Icon(Icons.delete_outline_rounded, size: 19, color: c.faint),
             onPressed: () => _deleteTask(t),
           ),
         ],
@@ -579,30 +634,17 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     );
   }
 
-  Widget _activityRow(FlutterFlowTheme theme, ActivitiesRow a) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${a.activityType ?? '—'}${(a.subject ?? '').isNotEmpty ? ' — ${a.subject}' : ''}',
-            style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5),
-          ),
-          if ((a.body ?? '').isNotEmpty)
-            Text(a.body!, style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText)),
-          Text(
-            [
-              if (a.occurredAt != null)
-                DateFormat('d MMM yyyy, h:mm a').format(a.occurredAt!.toLocal()),
-              if ((a.entityId ?? '').isNotEmpty) '${a.entityType} ${a.entityId}',
-            ].join(' · '),
-            style: NgFonts.geist(fontSize: 10.5, color: theme.secondaryText),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _activityRow(ActivitiesRow a) => NgListRow(
+        icon: Icons.history_rounded,
+        title:
+            '${a.activityType ?? '—'}${(a.subject ?? '').isNotEmpty ? ' · ${a.subject}' : ''}',
+        subtitle: [
+          if ((a.body ?? '').isNotEmpty) a.body!,
+          [
+            if (a.occurredAt != null)
+              DateFormat('d MMM yyyy, h:mm a').format(a.occurredAt!.toLocal()),
+            if ((a.entityId ?? '').isNotEmpty) '${a.entityType} ${a.entityId}',
+          ].join(' · '),
+        ].join('\n'),
+      );
 }

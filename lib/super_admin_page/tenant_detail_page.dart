@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '/backend/edge_function_errors.dart';
@@ -298,10 +299,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
 
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: Text(_org.name),
-      ),
+      appBar: NgSimpleBar(title: _org.name),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(

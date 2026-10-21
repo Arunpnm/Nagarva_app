@@ -1,9 +1,9 @@
+import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/customer_lookup.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
-import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -125,13 +125,7 @@ class _SupervisorEntryPageWidgetState
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        elevation: 0,
-        title: Text('Job Entry',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600))),
-      ),
+      appBar: NgSimpleBar(title: 'Job Entry'),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),

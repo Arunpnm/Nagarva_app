@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/doc_prefix.dart';
@@ -236,18 +237,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          title: Text(
-            'Business Setup',
-            style: NgFonts.geist(
-              color: theme.primaryText,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          elevation: 0,
-          actions: [
+        appBar: NgSimpleBar(title: 'Business Setup', actions: [
             TextButton(
               onPressed: () => context.go(HomePageWidget.routePath),
               child: Text(
@@ -258,8 +248,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                 ),
               ),
             ),
-          ],
-        ),
+          ]),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),

@@ -82,197 +82,176 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
         st == 'closed';
   }
 
-  static const _tabs = ['All', 'Pending', 'Completed', 'Cancelled'];
+  /// Handoff tabs: Active, Done, Cancelled, All. The keys stay English
+  /// state; only labels are localised.
+  static const _tabs = ['Active', 'Completed', 'Cancelled', 'All'];
 
   static String _tabLabel(BuildContext context, String tab) {
     final l = AppLocalizations.of(context);
     return switch (tab) {
-      'Pending' => l.ngTabPending,
-      'Completed' => l.ngTabCompleted,
+      'Active' => l.active,
+      'Completed' => l.ngTabDone,
       'Cancelled' => l.ngTabCancelled,
       _ => l.ngTabAll,
     };
   }
 
-  /// Filter by the top tab. Statuses live lowercase in the DB
-  /// (pending/confirmed/transit/delivered|done/cancelled). Completed =
-  /// delivered/done/completed/closed — 'closed' is Mark Order Complete's
-  /// financial close (Order Details Session 1, item 5) and must land here,
-  /// not fall through to Pending by omission. Cancelled = cancelled;
-  /// Pending = everything still in progress.
-  static bool _inTab(OrdersRow o, String tab) {
+  static bool _isDone(OrdersRow o) {
     final st = (o.status ?? '').toLowerCase();
-    final done = st == 'delivered' ||
+    return st == 'delivered' ||
         st == 'done' ||
         st == 'completed' ||
         st == 'closed';
+  }
+
+  static bool _inTab(OrdersRow o, String tab) {
+    final st = (o.status ?? '').toLowerCase();
     switch (tab) {
       case 'Completed':
-        return done;
+        return _isDone(o);
       case 'Cancelled':
         return st == 'cancelled';
-      case 'Pending':
-        return !done && st != 'cancelled';
+      case 'Active':
+        return !_isDone(o) && st != 'cancelled';
       default:
         return true;
     }
   }
 
-  /// The redesign shows Orders as a schedule grouped by move day. Upcoming
-  /// days run soonest first; on the Completed tab the most recent day
-  /// leads instead, since that is the one being looked for. Orders with no
-  /// move date sit in their own group at the end.
-  List<({String title, String sub, Color dot, List<OrdersRow> items})>
-      _groups(BuildContext context, List<OrdersRow> orders) {
-    final c = NgPalette.of(context);
-    final today = DateTime.now();
-    final t0 = DateTime(today.year, today.month, today.day);
-    final dated = orders.where((o) => o.moveDateOrNull != null).toList()
-      ..sort((a, b) => _model.selectedTab == 'Completed'
-          ? b.moveDateOrNull!.compareTo(a.moveDateOrNull!)
-          : a.moveDateOrNull!.compareTo(b.moveDateOrNull!));
-    final out = <({String title, String sub, Color dot, List<OrdersRow> items})>[];
-    DateTime? cur;
-    for (final o in dated) {
-      final d = o.moveDateOrNull!;
-      final day = DateTime(d.year, d.month, d.day);
-      if (cur == null || day != cur) {
-        cur = day;
-        final diff = day.difference(t0).inDays;
-        final l = AppLocalizations.of(context);
-        final title = diff == 0
-            ? l.ngToday
-            : diff == 1
-                ? l.ngTomorrow
-                : diff == -1
-                    ? l.ngYesterday
-                    : DateFormat('EEE, d MMM').format(day);
-        out.add((
-          title: title,
-          sub: diff.abs() <= 1 ? DateFormat('d MMM').format(day) : '',
-          dot: diff == 0 ? c.acc : (diff > 0 ? c.blue : c.faint),
-          items: [],
-        ));
-      }
-      out.last.items.add(o);
-    }
-    final undated = orders.where((o) => o.moveDateOrNull == null).toList();
-    if (undated.isNotEmpty) {
-      out.add((
-        title: AppLocalizations.of(context).ngNoMoveDate,
-        sub: '',
-        dot: c.faint,
-        items: undated,
-      ));
-    }
+  /// Soonest move first while work is open; most recent first once done.
+  List<OrdersRow> _sorted(List<OrdersRow> rows, String tab) {
+    final far = DateTime(9999);
+    final out = rows.toList()
+      ..sort((a, b) {
+        final da = a.moveDateOrNull ?? far, db = b.moveDateOrNull ?? far;
+        return tab == 'Active' ? da.compareTo(db) : db.compareTo(da);
+      });
     return out;
   }
 
-  ({String label, Color color}) _payLook(
+  ({String label, NgStatus tone}) _payLook(
       AppLocalizations l, NgPalette c, OrdersRow o) {
     switch ((o.paymentStatus ?? '').toLowerCase()) {
       case 'paid':
-        return (label: l.ngPaid, color: c.green);
+        return (label: l.ngPaid, tone: NgStatus.green);
       case 'partial':
-        return (label: l.ngPartPaid, color: c.amber);
+        return (label: l.ngPartPaid, tone: NgStatus.amber);
       default:
-        return (label: l.ngDue, color: c.red);
+        return (label: l.ngDue, tone: NgStatus.red);
     }
   }
 
+  /// The handoff's order card: number and date, customer and route, the
+  /// six-step stage bar with its label and the service, then the amount
+  /// and a payment pill under a hairline.
   Widget _orderCard(BuildContext context, OrdersRow o) {
     final c = NgPalette.of(context);
-    final hidden = _hideCustomerFor(o);
-    final st = (o.status ?? '').toLowerCase();
-    final cancelled = st == 'cancelled';
-    final idx = orderStageIndex(o.trackingStatus, o.status);
-    final stageColor =
-        cancelled ? c.red : c.status(orderStageTone(idx)).fg;
     final l = AppLocalizations.of(context);
-    final stageLabel =
-        cancelled ? l.ngTabCancelled : orderStageLabel(kOrderStages[idx]);
+    final hidden = _hideCustomerFor(o);
+    final cancelled = (o.status ?? '').toLowerCase() == 'cancelled';
+    final idx = orderStageIndex(o.trackingStatus, o.status);
+    final stageColor = cancelled ? c.red : c.status(orderStageTone(idx)).fg;
+    final stageLabel = cancelled
+        ? l.ngTabCancelled
+        : '${orderStageLabel(kOrderStages[idx])} · ${idx + 1}/${kOrderStages.length}';
     final pay = _payLook(l, c, o);
     final svc = (o.service ?? '').trim();
-    return Material(
-      color: c.s1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(NgRadius.tile),
-        side: BorderSide(color: c.w06),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => openOrderDetail(context, o, hideCustomer: hidden),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: stageColor, width: 3)),
-          ),
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final total = (o.quoteTotal ?? 0) > 0 ? o.quoteTotal! : (o.amount ?? 0);
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      onTap: () => openOrderDetail(context, o, hideCustomer: hidden),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      hidden ? 'Customer (hidden)' : o.customer,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: NgFonts.geist(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: c.text),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    stageLabel,
+              Expanded(
+                child: Text(o.id ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.mono(fontSize: 12, color: c.faint)),
+              ),
+              if (o.moveDateOrNull != null) ...[
+                Icon(Icons.event_outlined, size: 16, color: c.mute),
+                const SizedBox(width: 5),
+                Text(DateFormat('d MMM').format(o.moveDateOrNull!),
                     style: NgFonts.geist(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: stageColor),
-                  ),
-                ],
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: c.soft)),
+              ],
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            hidden ? 'Customer (hidden)' : o.customer,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: NgFonts.geist(
+                fontSize: 16, fontWeight: FontWeight.w600, color: c.text),
+          ),
+          const SizedBox(height: 3),
+          Row(
+            children: [
+              Flexible(
+                child: Text(o.fromCity ?? '-',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 13, color: c.mute)),
               ),
-              const SizedBox(height: 6),
-              Text(
-                '${o.fromCity ?? '-'} → ${o.toCity ?? '-'}${svc.isEmpty ? '' : ' · $svc'}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: NgFonts.geist(fontSize: 12.5, color: c.mute),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child:
+                    Icon(Icons.arrow_forward_rounded, size: 15, color: c.faint),
               ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      functions.inrFormat(o.amount ?? 0)!,
-                      style: NgFonts.geist(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: c.text),
-                    ),
-                  ),
-                  if (!cancelled) ...[
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration:
-                          BoxDecoration(color: pay.color, shape: BoxShape.circle),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      pay.label,
-                      style: NgFonts.geist(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: pay.color),
-                    ),
-                  ],
-                ],
+              Flexible(
+                child: Text(o.toCity ?? '-',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 13, color: c.mute)),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 14),
+          NgStageBar(
+              done: cancelled ? 0 : idx + 1,
+              total: kOrderStages.length,
+              color: stageColor),
+          const SizedBox(height: 7),
+          Row(
+            children: [
+              Expanded(
+                child: Text(stageLabel,
+                    style: NgFonts.geist(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: stageColor)),
+              ),
+              if (svc.isNotEmpty)
+                Text(svc, style: NgFonts.geist(fontSize: 12.5, color: c.faint)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.only(top: 12),
+            decoration:
+                BoxDecoration(border: Border(top: BorderSide(color: c.w06))),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(functions.inrFull(total),
+                      style: NgFonts.geist(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.17,
+                          color: c.text)),
+                ),
+                if (!cancelled) NgPill(pay.label, status: pay.tone),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -280,11 +259,11 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
   @override
   Widget build(BuildContext context) {
     final c = NgPalette.of(context);
-    final orders =
-        _model.ordersList
-        .where((o) => _inTab(o, _model.selectedTab ?? 'All'))
-        .toList();
-    final groups = _groups(context, orders);
+    final tab = _tabs.contains(_model.selectedTab)
+        ? _model.selectedTab!
+        : 'Active';
+    final orders = _sorted(
+        _model.ordersList.where((o) => _inTab(o, tab)).toList(), tab);
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -303,6 +282,7 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
             children: [
               NgScreenTitle(
                 AppLocalizations.of(context).orders,
+                large: true,
                 action: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -324,22 +304,15 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                 ),
               ),
               const SizedBox(height: 16),
-              NgChipRow(
-                edge: 0,
-                chips: [
-                  for (final tab in _tabs)
-                    NgChip(
-                      // `tab` stays the English state key; only the
-                      // label is localised.
-                      label: _tabLabel(context, tab),
-                      count: _model.ordersList
-                          .where((o) => _inTab(o, tab))
-                          .length,
-                      selected: _model.selectedTab == tab,
-                      onTap: () =>
-                          safeSetState(() => _model.selectedTab = tab),
-                    ),
+              NgSegmented(
+                labels: [for (final t in _tabs) _tabLabel(context, t)],
+                counts: [
+                  for (final t in _tabs)
+                    _model.ordersList.where((o) => _inTab(o, t)).length,
                 ],
+                selected: _tabs.indexOf(tab),
+                onSelect: (i) =>
+                    safeSetState(() => _model.selectedTab = _tabs[i]),
               ),
               const SizedBox(height: 16),
               if (orders.isEmpty)
@@ -360,42 +333,9 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
                   ),
                 )
               else
-                for (final g in groups) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                              color: g.dot, shape: BoxShape.circle),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          g.title,
-                          style: NgFonts.geist(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: c.text),
-                        ),
-                        if (g.sub.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Text(g.sub,
-                              style:
-                                  NgFonts.geist(fontSize: 13, color: c.faint)),
-                        ],
-                        const Spacer(),
-                        Text('${g.items.length}',
-                            style: NgFonts.mono(fontSize: 12, color: c.faint)),
-                      ],
-                    ),
-                  ),
-                  for (var i = 0; i < g.items.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 8),
-                    _orderCard(context, g.items[i]),
-                  ],
-                  const SizedBox(height: 16),
+                for (var i = 0; i < orders.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 14),
+                  _orderCard(context, orders[i]),
                 ],
             ],
           ),

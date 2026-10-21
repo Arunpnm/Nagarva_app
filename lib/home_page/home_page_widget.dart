@@ -15,11 +15,10 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/backend/module_navigation.dart';
-import '/components/keyboard_scroll_view.dart';
-import '/components/follow_up_summary_card.dart';
+import '/backend/reminders_service.dart';
+import 'dashboard_sections.dart';
 import '/index.dart';
 import '/nav_items.dart';
 import '/permissions.dart';
@@ -82,6 +81,11 @@ class _HomePageWidgetState extends State<HomePageWidget>
   double _activeMoves = 0;
   double _quotesThisMonth = 0;
 
+  /// Open reminders due today, for Today's plan, and the overdue count
+  /// for its row (item 10.5, formerly FollowUpSummaryCard).
+  List<RemindersRow> _todayReminders = const [];
+  int _overdueFollowUps = 0;
+
   @override
   void initState() {
     super.initState();
@@ -103,13 +107,10 @@ class _HomePageWidgetState extends State<HomePageWidget>
   // ...) is popped back to it.
   @override
   void onPageRefresh() {
-    _loadDashboard();
     // Item 10.7: a follow-up completed on a lead must update the
-    // dashboard count on the way back.
-    _followUpKey.currentState?.reload();
+    // dashboard count on the way back; _loadDashboard reloads reminders.
+    _loadDashboard();
   }
-
-  final _followUpKey = GlobalKey<FollowUpSummaryCardState>();
 
   Future<void> _loadDashboard() async {
     // Vendor choice: only show the Porter KPI card when the org turned
@@ -193,6 +194,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
     }
     _recomputePeriodKpis();
     safeSetState(() {});
+    await _loadReminders();
     // "Upcoming" means move_date hasn't passed yet — without this filter
     // the query just returned the earliest-dated confirmed orders ever
     // created, so old/past moves stayed pinned at the top forever.
@@ -224,6 +226,36 @@ class _HomePageWidgetState extends State<HomePageWidget>
     );
     _model.branchStats =
         (_model.dashBranchOut ?? []).toList().cast<BranchKpisViewRow>();
+    safeSetState(() {});
+  }
+
+  Future<void> _loadReminders() async {
+    try {
+      final rows = await RemindersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('status', kReminderOpen),
+      );
+      final now = DateTime.now();
+      final today = <RemindersRow>[];
+      var overdue = 0;
+      for (final r in rows) {
+        final d = r.dueDate?.toLocal();
+        if (d == null) continue;
+        final sameDay =
+            d.year == now.year && d.month == now.month && d.day == now.day;
+        if (sameDay) {
+          today.add(r);
+        } else if (d.isBefore(now)) {
+          overdue++;
+        }
+      }
+      _todayReminders = today;
+      _overdueFollowUps = overdue;
+    } catch (_) {
+      // A failed read leaves the agenda without reminders rather than
+      // blanking the dashboard.
+      _todayReminders = const [];
+      _overdueFollowUps = 0;
+    }
     safeSetState(() {});
   }
 
@@ -529,110 +561,52 @@ class _HomePageWidgetState extends State<HomePageWidget>
     openModule(context, page);
   }
 
-  Widget _periodSelector(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    final now = DateTime.now();
-    final chips = <(String, String, VoidCallback)>[
-      ('month-this', 'This', () => _setPeriodType('month')),
-      ('month-last', 'Last', _setLastMonth),
-      ('3m', '3M', () => _setPeriodType('3m')),
-      ('fy', 'FY', () => _setPeriodType('fy')),
-      ('all', 'All', () => _setPeriodType('all')),
-    ];
-    bool isSelected(String key) {
-      if (_model.periodType != 'month') return key == _model.periodType;
-      final isThisMonth = _model.visibleMonth.year == now.year &&
-          _model.visibleMonth.month == now.month;
-      if (key == 'month-this') return isThisMonth;
-      if (key == 'month-last') {
-        final prev = DateTime(now.year, now.month - 1);
-        return _model.visibleMonth.year == prev.year &&
-            _model.visibleMonth.month == prev.month;
-      }
-      return false;
-    }
-
-    return Padding(
-      padding: EdgeInsets.zero,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  // A hand-built pill, NOT a ChoiceChip.
-                  //
-                  // The chip clipped its own label: "This" rendered as
-                  // "Thi" with the s faded out at the pill edge, and the
-                  // same for "Last", "3M" and "FY" (3 Sept 2026). Not a
-                  // width problem - it reproduced identically at 500dp
-                  // with the row half empty, so it was the chip sizing
-                  // its box smaller than the text it then painted.
-                  // Fighting Material's chip internals to get a pill with
-                  // a label in it is not worth it; this is the pill.
-                  for (final (key, label, onTap) in chips)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 6),
-                      child: NgChip(
-                        label: label,
-                        selected: isSelected(key),
-                        onTap: onTap,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          if (_model.periodType == 'month') ...[
-            // Parity brief Part 5e: these were constrained to 32x32dp,
-            // under the 48dp Material minimum — a frequently-used control
-            // (dashboard period navigation) worth padding out properly.
-            IconButton(
-              tooltip: 'Previous month',
-              icon: Icon(Icons.chevron_left,
-                  color: theme.secondaryText, size: 20),
-              onPressed: () => _shiftMonth(-1),
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            ),
-            IconButton(
-              tooltip: 'Next month',
-              icon: Icon(Icons.chevron_right,
-                  color: theme.secondaryText, size: 20),
-              onPressed: () => _shiftMonth(1),
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-
-  // ---- Redesign sections (Claude Design handoff, 20 Oct 2026) -----------
+  // ---- Sections (Claude Design handoff, "DASHBOARD A : Focus") ---------
   //
-  // The handoff's "Focus" dashboard: date and greeting, a row of three
-  // "today" tiles, the agenda (upcoming moves) as one hairline-divided
-  // card, and hot leads as a horizontal strip. Same data as the
-  // FlutterFlow sections they replace — `_model.upcomingOrders`,
-  // `_model.hotLeads` and the KPI row — only the presentation changed,
-  // and the rows now open their record instead of being inert.
+  // Top to bottom, as in the handoff: date and greeting, plan card,
+  // Payments due (plus overdue follow-ups when there are any), the three
+  // "today" tiles, Today's plan, This month, Hot leads. Branch cards,
+  // which the handoff does not draw, stay at the bottom and only render
+  // once a branch exists.
+
+  /// Name for the greeting. Owner: `owner_name` from signup metadata;
+  /// staff: their own name. Empty when unknown, and the greeting then
+  /// stands alone rather than addressing someone by a guess.
+  String _greetName() {
+    final s = AppSession.instance;
+    String full;
+    if (s.currentStaffId != null) {
+      full = s.currentStaffName ?? '';
+    } else {
+      final meta = SupaFlow.client.auth.currentUser?.userMetadata ?? {};
+      full = (meta['owner_name'] ?? meta['name'] ?? meta['full_name'] ?? '')
+          .toString();
+    }
+    full = full.trim();
+    return full.isEmpty ? '' : full.split(RegExp(r'\s+')).first;
+  }
 
   Widget _greeting(BuildContext context) {
     final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final h = DateTime.now().hour;
+    final hello = h < 12
+        ? l.ngGreetMorning
+        : (h < 17 ? l.ngGreetAfternoon : l.ngGreetEvening);
+    final name = _greetName();
+    final locale = Localizations.localeOf(context).toLanguageTag();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            functions.todayLabel()!,
+            DateFormat('EEEE, d MMMM', locale).format(DateTime.now()),
             style: NgFonts.geist(fontSize: 13, color: c.mute),
           ),
           const SizedBox(height: 4),
           Text(
-            functions.timeGreeting()!,
+            name.isEmpty ? hello : '$hello, $name',
             style: NgFonts.geist(
               fontSize: 26,
               fontWeight: FontWeight.w600,
@@ -651,6 +625,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
   /// leads instead of going blank.
   Widget _todayRow(BuildContext context) {
     final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
     final money = StaffPermissions.canActive('financials', 'view');
     VoidCallback? go(String page) =>
         _canOpen(page) ? () => openModule(context, page) : null;
@@ -658,38 +633,38 @@ class _HomePageWidgetState extends State<HomePageWidget>
       children: [
         Expanded(
           child: NgStatTile(
-            icon: Icons.local_shipping_rounded,
+            icon: Icons.local_shipping_outlined,
             color: c.acc,
             value: functions.numStr(_activeMoves)!,
-            label: AppLocalizations.of(context).ngTodayMoves,
+            label: l.ngTodayMoves,
             onTap: go('OperationsPage'),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: NgStatTile(
-            icon: Icons.phone_in_talk_rounded,
-            color: c.blue,
+            icon: Icons.phone_in_talk_outlined,
+            color: c.amber,
             value: functions.numStr(_remindersToday)!,
-            label: AppLocalizations.of(context).ngTodayFollowUps,
-            onTap: go('CalendarPage'),
+            label: l.ngTodayFollowUps,
+            onTap: go('LeadsPage'),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: money
               ? NgStatTile(
-                  icon: Icons.account_balance_wallet_rounded,
+                  icon: Icons.payments_outlined,
                   color: c.green,
                   value: functions.inrFormat(_outstandingAmount)!,
-                  label: AppLocalizations.of(context).ngToCollect,
+                  label: l.ngToCollect,
                   onTap: go('PaymentsPage'),
                 )
               : NgStatTile(
-                  icon: Icons.person_search_rounded,
-                  color: c.amber,
+                  icon: Icons.person_search_outlined,
+                  color: c.blue,
                   value: functions.numStr(_activeLeads)!,
-                  label: AppLocalizations.of(context).ngOpenLeads,
+                  label: l.ngOpenLeads,
                   onTap: go('LeadsPage'),
                 ),
         ),
@@ -697,114 +672,419 @@ class _HomePageWidgetState extends State<HomePageWidget>
     );
   }
 
-  Widget _agendaSection(BuildContext context) {
+  /// Orders the customer still owes on. `payment_status` is maintained by
+  /// the trigger on `payment_entries`, so this agrees with Record Payment
+  /// without re-deriving the balance here.
+  int get _paymentsDueCount => _allOrders.where((o) {
+        final st = (o.status ?? '').toLowerCase();
+        if (st == 'cancelled') return false;
+        final base = (o.quoteTotal ?? 0) > 0 ? o.quoteTotal! : (o.amount ?? 0);
+        return base > 0 && o.paymentStatus != 'paid';
+      }).length;
+
+  Widget _infoRows(BuildContext context) {
     final c = NgPalette.of(context);
-    final orders = _model.upcomingOrders.toList();
+    final l = AppLocalizations.of(context);
+    final rows = <Widget>[];
+    if (StaffPermissions.canActive('financials', 'view')) {
+      final n = _paymentsDueCount;
+      rows.add(DashInfoRow(
+        icon: Icons.payments_outlined,
+        iconColor: c.amber,
+        title: l.ngPaymentsDue,
+        value: '$n',
+        note: n == 0 ? null : l.ngPaymentsDueSub(n),
+        onTap: _canOpen('PaymentsPage')
+            ? () => openModule(context, 'PaymentsPage')
+            : null,
+      ));
+    }
+    // Item 10.5's overdue count, in the handoff's widget-row form. Not
+    // money-gated: staff chase leads too. Hidden at zero.
+    if (_overdueFollowUps > 0) {
+      rows.add(DashInfoRow(
+        icon: Icons.phone_missed_outlined,
+        iconColor: c.red,
+        title: l.ngOverdueFollowUps,
+        value: '$_overdueFollowUps',
+        note: l.ngOverdueFollowUpsSub,
+        onTap: () => context.pushNamed(LeadsPageWidget.routeName),
+      ));
+    }
+    if (rows.isEmpty) return const SizedBox.shrink();
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        NgSectionHeader(
-          AppLocalizations.of(context).upcomingOrders,
-          trailing: AppLocalizations.of(context).calendar,
-          onTrailing: () => context.pushNamed(CalendarPageWidget.routeName),
-        ),
-        const SizedBox(height: 10),
-        if (orders.isEmpty)
-          NgCard(
-            child: _dashboardEmptyState(
-              context,
-              icon: Icons.event_available_outlined,
-              message: AppLocalizations.of(context).ngNoMovesYet,
-              actionLabel: AppLocalizations.of(context).ngCreateFirstOrder,
-              onAction: () => context.pushNamed(NewOrderPageWidget.routeName),
-            ),
-          )
-        else
-          NgCardList(
-            children: [
-              for (final o in orders)
-                InkWell(
-                  onTap: () => openOrderDetail(context, o),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 13),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 46,
-                          child: Column(
-                            children: [
-                              Text(
-                                '${o.moveDateOrNull?.day ?? '—'}',
-                                style: NgFonts.mono(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: c.text),
-                              ),
-                              const SizedBox(height: 1),
-                              Text(
-                                o.moveDateOrNull == null
-                                    ? ''
-                                    : DateFormat('MMM')
-                                        .format(o.moveDateOrNull!),
-                                style: NgFonts.geist(
-                                    fontSize: 10.5, color: c.faint),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        NgIconTile(
-                          icon: Icons.local_shipping_rounded,
-                          status: orderStageTone(
-                              orderStageIndex(o.trackingStatus, o.status)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                o.customer,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: NgFonts.geist(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.w500,
-                                    color: c.text),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${o.fromCity ?? ''} → ${o.toCity ?? ''}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: NgFonts.geist(
-                                    fontSize: 12.5, color: c.mute),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.chevron_right_rounded,
-                            size: 20, color: c.faint),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          ),
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          rows[i],
+        ],
       ],
+    );
+  }
+
+  bool _isToday(DateTime? d) {
+    if (d == null) return false;
+    final x = d.toLocal(), n = DateTime.now();
+    return x.year == n.year && x.month == n.month && x.day == n.day;
+  }
+
+  (String, String) _clock(DateTime t) {
+    final x = t.toLocal();
+    return (DateFormat('h:mm').format(x), DateFormat('a').format(x));
+  }
+
+  Widget _agendaSection(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final today = <(DateTime?, DashAgendaItem)>[];
+
+    for (final o in _allOrders) {
+      final st = (o.status ?? '').toLowerCase();
+      if (st == 'cancelled' || !_isToday(o.moveDateOrNull)) continue;
+      final start = o.jobStartTime;
+      final (t, ap) = start == null ? (l.ngAllDay, '') : _clock(start);
+      final stage = orderStageIndex(o.trackingStatus, o.status);
+      today.add((
+        start,
+        DashAgendaItem(
+          time: t,
+          ampm: ap,
+          icon: Icons.local_shipping_outlined,
+          tone: NgStatus.accent,
+          title: l.ngAgendaMove(o.customer),
+          sub: [
+            '${o.fromCity ?? ''} → ${o.toCity ?? ''}',
+            orderStageLabel(kOrderStages[stage]),
+          ].where((x) => x.trim().isNotEmpty).join(' · '),
+          onTap: () => openOrderDetail(context, o),
+        ),
+      ));
+    }
+    for (final r in _todayReminders) {
+      final due = r.dueDate;
+      final (t, ap) = due == null ? (l.ngAllDay, '') : _clock(due);
+      final isLead = r.entityType == kEntityLead || r.leadId != null;
+      today.add((
+        due,
+        DashAgendaItem(
+          time: t,
+          ampm: ap,
+          icon: isLead ? Icons.call_outlined : Icons.task_alt_outlined,
+          tone: isLead ? NgStatus.amber : NgStatus.blue,
+          title: r.title ?? '',
+          sub: r.description ?? '',
+          onTap: () => context.pushNamed(
+              isLead ? LeadsPageWidget.routeName : CalendarPageWidget.routeName),
+        ),
+      ));
+    }
+    // Untimed items (a move with no start yet) first, then by time.
+    today.sort((a, b) {
+      if (a.$1 == null) return b.$1 == null ? 0 : -1;
+      if (b.$1 == null) return 1;
+      return a.$1!.compareTo(b.$1!);
+    });
+
+    // Moves booked for the coming days, so the dashboard still shows
+    // what is next once today's list is short.
+    final later = _model.upcomingOrders
+        .where((o) => !_isToday(o.moveDateOrNull))
+        .take(3)
+        .map((o) => DashAgendaItem(
+              time: o.moveDateOrNull == null
+                  ? '—'
+                  : '${o.moveDateOrNull!.day}',
+              ampm: o.moveDateOrNull == null
+                  ? ''
+                  : DateFormat('MMM').format(o.moveDateOrNull!),
+              icon: Icons.local_shipping_outlined,
+              tone: orderStageTone(
+                  orderStageIndex(o.trackingStatus, o.status)),
+              title: l.ngAgendaMove(o.customer),
+              sub: '${o.fromCity ?? ''} → ${o.toCity ?? ''}',
+              onTap: () => openOrderDetail(context, o),
+            ))
+        .toList();
+
+    return DashAgenda(
+      today: [for (final t in today) t.$2],
+      later: later,
+      emptyAction: NgSecondaryButton(
+        label: l.ngCreateFirstOrder,
+        icon: Icons.add_rounded,
+        onPressed: () => context.pushNamed(NewOrderPageWidget.routeName),
+      ),
+    );
+  }
+
+  String _periodTitle(AppLocalizations l) {
+    final now = DateTime.now();
+    final m = _model.visibleMonth;
+    switch (_model.periodType) {
+      case '3m':
+        return l.ngPeriod3m;
+      case 'fy':
+        return l.ngPeriodFy;
+      case 'all':
+        return l.ngPeriodAll;
+      default:
+        if (m.year == now.year && m.month == now.month) {
+          return l.ngPeriodThisMonth;
+        }
+        final prev = DateTime(now.year, now.month - 1);
+        if (m.year == prev.year && m.month == prev.month) {
+          return l.ngPeriodLastMonth;
+        }
+        return DateFormat('MMMM yyyy').format(m);
+    }
+  }
+
+  /// The handoff's "Oct 2026 ▾": the same five periods the old chip row
+  /// offered, plus month stepping, in a sheet.
+  Future<void> _pickPeriod() async {
+    final l = AppLocalizations.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: NgPalette.of(context).sheet,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(NgRadius.sheet))),
+      builder: (ctx) {
+        final c = NgPalette.of(ctx);
+        Widget opt(String label, bool on, VoidCallback f) => ListTile(
+              title: Text(label,
+                  style: NgFonts.geist(
+                      fontSize: 14.5,
+                      fontWeight: on ? FontWeight.w600 : FontWeight.w400,
+                      color: c.text)),
+              trailing: on
+                  ? Icon(Icons.check_rounded, color: c.acc, size: 20)
+                  : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                f();
+              },
+            );
+        final now = DateTime.now();
+        final m = _model.visibleMonth;
+        final month = _model.periodType == 'month';
+        final isThis = month && m.year == now.year && m.month == now.month;
+        final prev = DateTime(now.year, now.month - 1);
+        final isLast = month && m.year == prev.year && m.month == prev.month;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text(l.ngPickPeriod,
+                      style: NgFonts.geist(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                ),
+                opt(l.ngPeriodThisMonth, isThis, () => _setPeriodType('month')),
+                opt(l.ngPeriodLastMonth, isLast, _setLastMonth),
+                opt(l.ngPeriod3m, _model.periodType == '3m',
+                    () => _setPeriodType('3m')),
+                opt(l.ngPeriodFy, _model.periodType == 'fy',
+                    () => _setPeriodType('fy')),
+                opt(l.ngPeriodAll, _model.periodType == 'all',
+                    () => _setPeriodType('all')),
+                if (month)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        tooltip: 'Previous month',
+                        icon: Icon(Icons.chevron_left_rounded, color: c.soft),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _shiftMonth(-1);
+                        },
+                      ),
+                      Text(DateFormat('MMM yyyy').format(m),
+                          style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+                      IconButton(
+                        tooltip: 'Next month',
+                        icon: Icon(Icons.chevron_right_rounded, color: c.soft),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _shiftMonth(1);
+                        },
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _periodShort() {
+    final m = _model.visibleMonth;
+    switch (_model.periodType) {
+      case '3m':
+        return '3M';
+      case 'fy':
+        return _periodLabel();
+      case 'all':
+        return AppLocalizations.of(context).ngPeriodAll;
+      default:
+        return DateFormat('MMM yyyy').format(m);
+    }
+  }
+
+  Future<void> _editTarget() async {
+    final l = AppLocalizations.of(context);
+    final ctrl = TextEditingController(
+        text: _model.monthlyTarget == null
+            ? ''
+            : _model.monthlyTarget!.toStringAsFixed(0));
+    final entered = await showDialog<double?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.ngEditTarget),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(prefixText: '₹ '),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                  MaterialLocalizations.of(ctx).cancelButtonLabel)),
+          FilledButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, functions.parseDouble(ctrl.text)),
+              child: Text(l.save)),
+        ],
+      ),
+    );
+    if (entered == null) return;
+    try {
+      await SettingsTable().upsert(
+        {
+          ...OrgScope.stamp(),
+          'key': 'monthly_target',
+          'value': entered.toStringAsFixed(0),
+        },
+        onConflict: 'org_id,key',
+      );
+      _model.monthlyTarget = entered;
+      safeSetState(() {});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not save target: $e')));
+      }
+    }
+  }
+
+  Widget _monthSection(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = NgPalette.of(context);
+    final kpi = _model.kpiList.isNotEmpty ? _model.kpiList.first : null;
+    final canMargin = StaffPermissions.canActive('financials_margin', 'view');
+    final margin = kpi == null
+        ? null
+        : DashboardKpiGrid.marginState(kpi, _model.unpricedCommissionCount);
+
+    // Target block. Measured in PROFIT, not revenue (Arun, 2 Sep 2026:
+    // "in target we need profit not revenue"). Only shown when profit is
+    // honest; a target bar over a profit that ignores missing expenses
+    // would read as progress that has not happened.
+    Widget? target;
+    if (canMargin) {
+      final t = _model.monthlyTarget ?? 0;
+      if (t <= 0) {
+        target = DashTargetBlock(
+          label: l.ngProfitTarget,
+          value: l.ngSetTarget,
+          fraction: 0,
+          percentLabel: '',
+          note: l.ngSetTargetSub,
+          onTap: _editTarget,
+        );
+      } else if (margin?.showable ?? false) {
+        final done = _model.periodNetProfit;
+        final pct = (done / t * 100).round();
+        target = DashTargetBlock(
+          label: l.ngProfitTarget,
+          value: functions.inrFormat(done)!,
+          target: functions.inrFormat(t)!,
+          fraction: (done <= 0 ? 0.0 : done / t).clamp(0.0, 1.0),
+          percentLabel: '$pct%',
+          barColor: done <= 0 ? c.red : (done >= t ? c.green : null),
+          note: done <= 0
+              ? l.ngNoProfitYet
+              : (done >= t ? l.ngTargetDone : null),
+          onTap: _editTarget,
+        );
+      } else {
+        target = DashTargetBlock(
+          label: l.ngProfitTarget,
+          value: functions.inrFormat(t)!,
+          fraction: 0,
+          percentLabel: '',
+          note: margin?.title,
+          onTap: _editTarget,
+        );
+      }
+    }
+
+    Widget? profit;
+    if (canMargin && kpi != null && margin != null) {
+      profit = margin.showable
+          ? DashProfitRow(
+              title: l.ngProfit,
+              sub: l.ngProfitAfter(
+                  functions.inrFormat(kpi.labourThisMonth)!,
+                  functions.inrFormat(kpi.expensesThisMonth)!),
+              value: functions.inrFormat(kpi.netProfitThisMonth),
+              onTap: () => _openKpiTile('profit'),
+            )
+          : DashProfitRow(
+              title: l.ngProfit,
+              sub: margin.title,
+              action: l.ngAddExpense,
+              onTap: () =>
+                  context.pushNamed(QuickExpensePageWidget.routeName),
+            );
+    }
+
+    final grid = DashboardKpiGrid(
+      kpi: kpi,
+      unpricedCommissionCount: _model.unpricedCommissionCount,
+      onAddExpense: () => context.pushNamed(QuickExpensePageWidget.routeName),
+      onTapTile: _openKpiTile,
+    );
+    return DashMonthPanel(
+      title: _periodTitle(l),
+      periodLabel: _periodShort(),
+      onPickPeriod: _pickPeriod,
+      target: target,
+      grid: grid,
+      profit: profit,
     );
   }
 
   Widget _hotLeadsSection(BuildContext context) {
     final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
     final leads = _model.hotLeads.toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         NgSectionHeader(
-          AppLocalizations.of(context).hotLeads,
-          trailing: AppLocalizations.of(context).viewAll,
+          l.ngHotLeads,
+          trailing: l.ngSeeAll,
           onTrailing: () => context.pushNamed(LeadsPageWidget.routeName),
         ),
         const SizedBox(height: 10),
@@ -813,8 +1093,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
             child: _dashboardEmptyState(
               context,
               icon: Icons.person_add_alt_1_outlined,
-              message: AppLocalizations.of(context).ngNoLeadsYet,
-              actionLabel: AppLocalizations.of(context).ngAddLead,
+              message: l.ngNoLeadsYet,
+              actionLabel: l.ngAddLead,
               onAction: () => context.pushNamed(NewLeadPageWidget.routeName),
             ),
           )
@@ -823,29 +1103,30 @@ class _HomePageWidgetState extends State<HomePageWidget>
             height: 104,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
               padding: EdgeInsets.zero,
               itemCount: leads.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, i) {
-                final l = leads[i];
-                final tone = leadStatusTone(l.status);
+                final ld = leads[i];
+                final tone = leadStatusTone(ld.status);
                 return SizedBox(
                   width: 200,
                   child: NgCard(
-                    onTap: () => openLeadDetail(context, l),
+                    onTap: () => openLeadDetail(context, ld),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            NgAvatar(l.customer, status: tone),
+                            NgAvatar(ld.customer, status: tone),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    l.customer,
+                                    ld.customer,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: NgFonts.geist(
@@ -854,7 +1135,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                                         color: c.text),
                                   ),
                                   Text(
-                                    leadStatusLabel(l.status),
+                                    leadStatusLabel(ld.status),
                                     style: NgFonts.geist(
                                         fontSize: 12,
                                         color: c.status(tone).fg),
@@ -866,7 +1147,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          '${l.fromCity ?? ''} → ${l.toCity ?? ''}',
+                          '${ld.fromCity ?? ''} → ${ld.toCity ?? ''}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: NgFonts.geist(fontSize: 12.5, color: c.mute),
@@ -882,11 +1163,91 @@ class _HomePageWidgetState extends State<HomePageWidget>
     );
   }
 
-  /// One drawer destination. Extracted when the drawer was grouped
-  /// (3 Sept 2026) so the tile markup is written once rather than
-  /// repeated inside each section.
+  /// Per-branch figures. Not in the handoff's dashboard; kept because it
+  /// works today, and hidden until a branch exists (17 Aug 2026: a
+  /// "Branch Performance" title over nothing reads worse than nothing).
+  Widget _branchSection(BuildContext context) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        NgSectionHeader(l.ngBranches),
+        const SizedBox(height: 10),
+        NgCardList(children: [
+          for (final b in _model.branchStats)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              child: Row(
+                children: [
+                  const NgIconTile(icon: Icons.store_mall_directory_outlined),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(b.branch ?? '',
+                            style: NgFonts.geist(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w500,
+                                color: c.text)),
+                        Text(l.ngOrdersN((b.orderCount ?? 0).toInt()),
+                            style:
+                                NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(functions.inrFormat(b.revenue)!,
+                          style: NgFonts.geist(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                              color: c.text)),
+                      // Branch margin is suppressed, not zeroed:
+                      // branch_kpis_view has no expense column, so its
+                      // net_profit is revenue minus commission only until
+                      // NG-046 fixes the view. The hardcoded 0 becomes the
+                      // real column then, and the margin starts rendering.
+                      Text(
+                        marginIsMeaningful(
+                          expensesTotal: 0,
+                          orderCount: (b.orderCount ?? 0).toInt(),
+                        )
+                            ? functions.marginPct(b.netProfit, b.revenue)!
+                            : kMarginUnavailableTitle,
+                        style: NgFonts.geist(fontSize: 12, color: c.mute),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ]),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final s = AppSession.instance;
+    final showInfo = StaffPermissions.canActive('financials', 'view') ||
+        _overdueFollowUps > 0;
+    final sections = <Widget>[
+      _greeting(context),
+      if (s.currentStaffId == null && (s.planName ?? '').trim().isNotEmpty)
+        const DashPlanCard(),
+      _todayRow(context),
+      if (showInfo) _infoRows(context),
+      _agendaSection(context),
+      if (StaffPermissions.canActive('reports', 'view') ||
+          StaffPermissions.canActive('financials', 'view'))
+        _monthSection(context),
+      _hotLeadsSection(context),
+      if (_model.branchStats.isNotEmpty) _branchSection(context),
+    ];
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -894,839 +1255,23 @@ class _HomePageWidgetState extends State<HomePageWidget>
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        // Quick Entry and the module menu MOVED TO THE SHELL, 3 Sept
-        // 2026 (main.dart's NavBarPage + components/more_sheet.dart).
-        // Both used to hang off this Scaffold, which meant they existed
-        // on the Dashboard and nowhere else - the Quick Entry FAB was
-        // unreachable from Orders or Leads, and so were the twenty-odd
-        // modules in the drawer. They are now pinned to the right of the
-        // bottom bar, in the same place on every screen the shell
-        // renders, and within thumb reach one-handed.
-        // Redesign top bar: org logo + name (the 27 Aug safety-net line
-        // telling an owner which company's books are open), role, then
-        // notifications, language, theme and global search — the same
-        // four controls this AppBar carried, see NgTopBar.
-        appBar: const NgTopBar(),
+        backgroundColor: c.bg,
+        // Quick Entry and the module menu live in the shell (main.dart's
+        // NavBarPage + components/more_sheet.dart), so they are on every
+        // tab, not just this one.
+        appBar: NgTopBar(onRefresh: _loadDashboard),
         body: SafeArea(
           top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-              child: KeyboardScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _greeting(context),
-                        _todayRow(context),
-                        // Money is gated on the reports permission, same
-                        // guard as the KPI row below — no point letting
-                        // someone pick a period for cards they can't see.
-                        //
-                        // Was `currentStaffId == null`, which is a SESSION
-                        // SHAPE test, not a permission test: it meant only
-                        // an email/vendor session saw money, so every
-                        // PIN-based session lost Revenue/Labour/Expenses/
-                        // Outstanding/Monthly Target — including managers,
-                        // whom permissions.dart grants fullAccess(). With
-                        // PIN-first login that is most sessions. Fixed
-                        // 20 Aug 2026 after Arun found the cards missing on
-                        // a manager session.
-                        //
-                        // canActive() still returns true for a vendor
-                        // session, so owner behaviour is unchanged, and
-                        // supervisors/drivers/packers/helpers stay excluded
-                        // because the matrix does not grant them 'reports'.
-                        if (StaffPermissions.canActive('financials', 'view'))
-                          _periodSelector(context),
-                        // Item 10.5: today's / overdue follow-up counts.
-                        // Not money-gated — staff chase leads too. Renders
-                        // nothing when both counts are zero.
-                        FollowUpSummaryCard(key: _followUpKey),
-                        // Phase 1 dashboard grid. Replaces ~1,300 lines of FlutterFlow
-                        // markup that rendered these same figures as hand-nested
-                        // Containers. Every tile is permission-gated inside the
-                        // component via StaffPermissions.canActive; LABOUR and
-                        // REMINDERS moved in as tiles rather than being dropped,
-                        // since the mockup omits them but they work today.
-                        Padding(
-                          padding:
-                              const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // The old cards each carried this label.
-                              // Without it the grid shows period-filtered
-                              // money with no statement of the window,
-                              // which makes the selector above ambiguous
-                              // — a regression, not a simplification.
-                              if (StaffPermissions.canActive(
-                                  'financials', 'view'))
-                                Padding(
-                                  padding: const EdgeInsetsDirectional.fromSTEB(
-                                      2, 0, 0, 8),
-                                  child: Text(
-                                    _periodLabel(),
-                                    style: NgFonts.geist(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.5,
-                                      color: FlutterFlowTheme.of(context)
-                                          .secondaryText,
-                                    ),
-                                  ),
-                                ),
-                              DashboardKpiGrid(
-                                kpi: _model.kpiList.isNotEmpty
-                                    ? _model.kpiList.first
-                                    : null,
-                                unpricedCommissionCount:
-                                    _model.unpricedCommissionCount,
-                                onAddExpense: () => context
-                                    .pushNamed(QuickExpensePageWidget.routeName),
-                                onTapTile: _openKpiTile,
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Monthly Target — same reports gate as the KPI
-                        // row above. See that comment for why this is a
-                        // permission check and not `currentStaffId == null`.
-                        if (StaffPermissions.canActive('financials', 'view'))
-                          Padding(
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                                16.0, 0.0, 16.0, 0.0),
-                            child: Container(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  borderRadius: BorderRadius.circular(12.0),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Row(
-                                        mainAxisSize: MainAxisSize.max,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            AppLocalizations.of(context).monthlyTarget,
-                                            style: FlutterFlowTheme.of(context)
-                                                .labelSmall
-                                                .override(
-                                                  font: NgFonts.geist(
-                                                    fontWeight:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .labelSmall
-                                                            .fontWeight,
-                                                    fontStyle:
-                                                        FlutterFlowTheme.of(
-                                                                context)
-                                                            .labelSmall
-                                                            .fontStyle,
-                                                  ),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .secondaryText,
-                                                  letterSpacing: 0.0,
-                                                  fontWeight:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelSmall
-                                                          .fontWeight,
-                                                  fontStyle:
-                                                      FlutterFlowTheme.of(
-                                                              context)
-                                                          .labelSmall
-                                                          .fontStyle,
-                                                ),
-                                          ),
-                                          FFButtonWidget(
-                                            onPressed: () async {
-                                              _model.showEditTarget =
-                                                  !_model.showEditTarget!;
-                                              safeSetState(() {});
-                                            },
-                                            text: AppLocalizations.of(context).edit,
-                                            icon: const Icon(
-                                              Icons.edit,
-                                              size: 20.0,
-                                            ),
-                                            options: FFButtonOptions(
-                                              padding:
-                                                  const EdgeInsetsDirectional
-                                                      .fromSTEB(
-                                                      0.0, 0.0, 0.0, 0.0),
-                                              iconPadding:
-                                                  const EdgeInsetsDirectional
-                                                      .fromSTEB(
-                                                      0.0, 0.0, 0.0, 0.0),
-                                              iconColor:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primary,
-                                              color: Colors.transparent,
-                                              textStyle: TextStyle(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                              ),
-                                              borderSide: BorderSide(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                                width: 1.0,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8.0),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.max,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                // inrFormat(null) renders
-                                                // "Rs0", which reads as a
-                                                // real target of zero rather
-                                                // than one nobody has set.
-                                                _model.monthlyTarget == null
-                                                    ? 'Not set'
-                                                    : functions.inrFormat(
-                                                        _model.monthlyTarget)!,
-                                                style:
-                                                    FlutterFlowTheme.of(context)
-                                                        .headlineMedium
-                                                        .override(
-                                                          font: NgFonts.geist(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .headlineMedium
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .headlineMedium
-                                                                    .fontStyle,
-                                                          ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .primaryText,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .headlineMedium
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .headlineMedium
-                                                                  .fontStyle,
-                                                        ),
-                                              ),
-                                              // Progress toward the target.
-                                              //
-                                              // Measured in PROFIT, not revenue (Arun, 2 Sep 2026: "in target
-                                              // we need profit not revenue"). A revenue target rewards booking
-                                              // work at any price; the number a mover actually runs the business
-                                              // on is what is left after labour, expenses and commission - and
-                                              // after GST, which is collected for the government and is not
-                                              // earnings at all.
-                                              if ((_model.monthlyTarget ?? 0) > 0) ...[
-                                                const SizedBox(height: 8.0),
-                                                Builder(builder: (context) {
-                                                  final target = _model.monthlyTarget!;
-                                                  final done = _model.periodNetProfit;
-                                                  // A loss-making period must not read as progress.
-                                                  final frac = (done <= 0 ? 0.0 : done / target).clamp(0.0, 1.0);
-                                                  final pct = (done / target * 100).round();
-                                                  final left = target - done;
-                                                  final theme = FlutterFlowTheme.of(context);
-                                                  return Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      // LinearProgressIndicator has no intrinsic width and this
-                                                      // Column is sized by its widest child, so without an
-                                                      // explicit width the bar collapses to nothing and renders
-                                                      // invisibly - which is exactly what it did first time.
-                                                      SizedBox(
-                                                        width: 240,
-                                                        child: ClipRRect(
-                                                          borderRadius: BorderRadius.circular(6),
-                                                          child: LinearProgressIndicator(
-                                                            value: frac,
-                                                            minHeight: 8,
-                                                            backgroundColor: theme.alternate,
-                                                            valueColor: AlwaysStoppedAnimation<Color>(done <= 0
-                                                                ? theme.error
-                                                                : (left <= 0 ? theme.success : theme.primary)),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 6.0),
-                                                      Text(
-                                                        done <= 0
-                                                            ? 'No profit yet this period'
-                                                            : (left <= 0
-                                                                ? 'Target met — ${functions.inrFormat(done)} profit ($pct%)'
-                                                                : '${functions.inrFormat(done)} profit of ${functions.inrFormat(target)} · ${functions.inrFormat(left)} to go ($pct%)'),
-                                                        style: theme.bodySmall.override(
-                                                          font: NgFonts.geist(),
-                                                          color: theme.secondaryText,
-                                                          letterSpacing: 0.0,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  );
-                                                }),
-                                                const SizedBox(height: 2.0),
-                                              ],
-                                              Text(
-                                                // Labelled as a PROFIT target
-                                                // so the big number above is
-                                                // not read as revenue.
-                                                'profit target this month',
-                                                style: FlutterFlowTheme.of(
-                                                        context)
-                                                    .bodySmall
-                                                    .override(
-                                                      font: NgFonts.geist(
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                                      color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .secondaryText,
-                                                      letterSpacing: 0.0,
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontStyle,
-                                                    ),
-                                              ),
-                                            ].divide(
-                                                const SizedBox(height: 2.0)),
-                                          ),
-                                        ],
-                                      ),
-                                      if (_model.showEditTarget ?? true)
-                                        Container(
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.max,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              Flexible(
-                                                flex: 1,
-                                                child: TextFormField(
-                                                  controller: _model
-                                                      .targetInputFieldTextController,
-                                                  focusNode: _model
-                                                      .targetInputFieldFocusNode,
-                                                  obscureText: false,
-                                                  decoration: InputDecoration(
-                                                    hintText:
-                                                        AppLocalizations.of(context).eG200000,
-                                                    enabledBorder:
-                                                        const OutlineInputBorder(
-                                                      borderSide: BorderSide(
-                                                        color:
-                                                            Color(0x00000000),
-                                                        width: 1.0,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.only(
-                                                        topLeft:
-                                                            Radius.circular(
-                                                                4.0),
-                                                        topRight:
-                                                            Radius.circular(
-                                                                4.0),
-                                                      ),
-                                                    ),
-                                                    focusedBorder:
-                                                        const OutlineInputBorder(
-                                                      borderSide: BorderSide(
-                                                        color:
-                                                            Color(0x00000000),
-                                                        width: 1.0,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.only(
-                                                        topLeft:
-                                                            Radius.circular(
-                                                                4.0),
-                                                        topRight:
-                                                            Radius.circular(
-                                                                4.0),
-                                                      ),
-                                                    ),
-                                                    errorBorder:
-                                                        const OutlineInputBorder(
-                                                      borderSide: BorderSide(
-                                                        color:
-                                                            Color(0x00000000),
-                                                        width: 1.0,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.only(
-                                                        topLeft:
-                                                            Radius.circular(
-                                                                4.0),
-                                                        topRight:
-                                                            Radius.circular(
-                                                                4.0),
-                                                      ),
-                                                    ),
-                                                    focusedErrorBorder:
-                                                        const OutlineInputBorder(
-                                                      borderSide: BorderSide(
-                                                        color:
-                                                            Color(0x00000000),
-                                                        width: 1.0,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.only(
-                                                        topLeft:
-                                                            Radius.circular(
-                                                                4.0),
-                                                        topRight:
-                                                            Radius.circular(
-                                                                4.0),
-                                                      ),
-                                                    ),
-                                                    filled: true,
-                                                  ),
-                                                  style: const TextStyle(),
-                                                  maxLines: null,
-                                                  validator: _model
-                                                      .targetInputFieldTextControllerValidator
-                                                      .asValidator(context),
-                                                ),
-                                              ),
-                                              FFButtonWidget(
-                                                onPressed: () async {
-                                                  final entered =
-                                                      functions.parseDouble(_model
-                                                          .targetInputFieldTextController
-                                                          .text);
-                                                  // This used to setState and
-                                                  // stop. Nothing was ever
-                                                  // written, so the vendor's
-                                                  // correction silently
-                                                  // reverted on the next
-                                                  // reload - a button that
-                                                  // looks like it works and
-                                                  // does not.
-                                                  try {
-                                                    await SettingsTable().upsert(
-                                                      {
-                                                        ...OrgScope.stamp(),
-                                                        'key': 'monthly_target',
-                                                        'value':
-                                                            (entered ?? 0)
-                                                                .toStringAsFixed(0),
-                                                      },
-                                                      onConflict: 'org_id,key',
-                                                    );
-                                                    _model.monthlyTarget = entered;
-                                                    _model.showEditTarget = false;
-                                                    safeSetState(() {});
-                                                  } catch (e) {
-                                                    if (context.mounted) {
-                                                      ScaffoldMessenger.of(context)
-                                                          .showSnackBar(SnackBar(
-                                                              content: Text(
-                                                                  'Could not save target: $e')));
-                                                    }
-                                                  }
-                                                },
-                                                text:
-                                                    AppLocalizations.of(context).save,
-                                                options: FFButtonOptions(
-                                                  padding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(
-                                                          0.0, 0.0, 0.0, 0.0),
-                                                  iconPadding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(
-                                                          0.0, 0.0, 0.0, 0.0),
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .primary,
-                                                  textStyle: const TextStyle(
-                                                    color: Colors.white,
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          8.0),
-                                                ),
-                                              ),
-                                            ].divide(
-                                                const SizedBox(width: 8.0)),
-                                          ),
-                                        ),
-                                    ].divide(const SizedBox(height: 12.0)),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        _agendaSection(context),
-                        _hotLeadsSection(context),
-                        // Hidden entirely (not just an empty list under the
-                        // header) until at least one branch exists — a
-                        // brand-new org has none yet, and a "Branch
-                        // Performance" title over nothing reads worse than
-                        // no section at all (17 Aug 2026 finding).
-                        if (_model.branchStats.isNotEmpty)
-                          Container(
-                            child: Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  16.0, 0.0, 16.0, 0.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    AppLocalizations.of(context).branchPerformance,
-                                    style: FlutterFlowTheme.of(context)
-                                        .titleSmall
-                                        .override(
-                                          font: NgFonts.geist(
-                                            fontWeight:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleSmall
-                                                    .fontWeight,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleSmall
-                                                    .fontStyle,
-                                          ),
-                                          color: FlutterFlowTheme.of(context)
-                                              .primaryText,
-                                          letterSpacing: 0.0,
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Builder(
-                                    builder: (context) {
-                                      final branchStat =
-                                          _model.branchStats.toList();
-
-                                      return ListView.separated(
-                                        padding: EdgeInsets.zero,
-                                        primary: false,
-                                        shrinkWrap: true,
-                                        scrollDirection: Axis.vertical,
-                                        itemCount: branchStat.length,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(height: 8.0),
-                                        itemBuilder:
-                                            (context, branchStatIndex) {
-                                          final branchStatItem =
-                                              branchStat[branchStatIndex];
-                                          return Container(
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  FlutterFlowTheme.of(context)
-                                                      .secondaryBackground,
-                                              borderRadius:
-                                                  BorderRadius.circular(10.0),
-                                            ),
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.all(12.0),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.max,
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.start,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        branchStatItem.branch!,
-                                                        style:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .titleSmall
-                                                                .override(
-                                                                  font: NgFonts.geist(
-                                                                    fontWeight: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .titleSmall
-                                                                        .fontWeight,
-                                                                    fontStyle: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .titleSmall
-                                                                        .fontStyle,
-                                                                  ),
-                                                                  color: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .primaryText,
-                                                                  letterSpacing:
-                                                                      0.0,
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontStyle,
-                                                                ),
-                                                      ),
-                                                      Text(
-                                                        functions.numStr(
-                                                            branchStatItem
-                                                                .orderCount)!,
-                                                        style:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .override(
-                                                                  font:
-                                                                      NgFonts.geist(
-                                                                    fontWeight: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .bodySmall
-                                                                        .fontWeight,
-                                                                    fontStyle: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .bodySmall
-                                                                        .fontStyle,
-                                                                  ),
-                                                                  color: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .secondaryText,
-                                                                  letterSpacing:
-                                                                      0.0,
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodySmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodySmall
-                                                                      .fontStyle,
-                                                                ),
-                                                      ),
-                                                    ].divide(const SizedBox(
-                                                        height: 4.0)),
-                                                  ),
-                                                  Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.start,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment.end,
-                                                    children: [
-                                                      Text(
-                                                        functions.inrFormat(
-                                                            branchStatItem
-                                                                .revenue)!,
-                                                        style:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .titleSmall
-                                                                .override(
-                                                                  font: NgFonts.geist(
-                                                                    fontWeight: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .titleSmall
-                                                                        .fontWeight,
-                                                                    fontStyle: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .titleSmall
-                                                                        .fontStyle,
-                                                                  ),
-                                                                  color: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .primary,
-                                                                  letterSpacing:
-                                                                      0.0,
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .titleSmall
-                                                                      .fontStyle,
-                                                                ),
-                                                      ),
-                                                      Text(
-                                                        // Branch margin is
-                                                        // suppressed, not
-                                                        // zeroed.
-                                                        //
-                                                        // branch_kpis_view
-                                                        // carries NO expense
-                                                        // column at all — its
-                                                        // net_profit is
-                                                        // revenue minus
-                                                        // porter commission
-                                                        // only, never labour
-                                                        // or expenses. So
-                                                        // expensesTotal is
-                                                        // literally 0 here by
-                                                        // construction, and
-                                                        // the figure can
-                                                        // never be honest
-                                                        // until the view is
-                                                        // fixed (scheduled
-                                                        // with NG-046).
-                                                        //
-                                                        // Passing a hardcoded
-                                                        // 0 is deliberate and
-                                                        // self-correcting:
-                                                        // when the view gains
-                                                        // a real expenses
-                                                        // column this becomes
-                                                        // that field and the
-                                                        // margin starts
-                                                        // rendering, with no
-                                                        // other change.
-                                                        marginIsMeaningful(
-                                                          expensesTotal: 0,
-                                                          orderCount:
-                                                              (branchStatItem
-                                                                          .orderCount ??
-                                                                      0)
-                                                                  .toInt(),
-                                                        )
-                                                            ? functions.marginPct(
-                                                                branchStatItem
-                                                                    .netProfit,
-                                                                branchStatItem
-                                                                    .revenue)!
-                                                            : kMarginUnavailableTitle,
-                                                        style:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .override(
-                                                                  font:
-                                                                      NgFonts.geist(
-                                                                    fontWeight: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .bodySmall
-                                                                        .fontWeight,
-                                                                    fontStyle: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .bodySmall
-                                                                        .fontStyle,
-                                                                  ),
-                                                                  color: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .secondaryText,
-                                                                  letterSpacing:
-                                                                      0.0,
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodySmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .bodySmall
-                                                                      .fontStyle,
-                                                                ),
-                                                      ),
-                                                    ].divide(const SizedBox(
-                                                        height: 4.0)),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ].divide(const SizedBox(height: 10.0)),
-                              ),
-                            ),
-                          ),
-                        Container(
-                          height: 100.0,
-                        ),
-                      ].divide(const SizedBox(height: 20.0)),
-                    ),
-                  ].divide(const SizedBox(height: 24.0)),
-                ),
-              ),
+          child: RefreshIndicator(
+            onRefresh: _loadDashboard,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
+              children: [
+                for (var i = 0; i < sections.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 22),
+                  sections[i],
+                ],
+              ],
             ),
           ),
         ),

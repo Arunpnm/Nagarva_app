@@ -1,5 +1,9 @@
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/backend/supabase/org_scope.dart';
+import '/backend/supabase/supabase.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 // flutter_flow_widgets.dart (FFButtonWidget) dropped 18 Aug 2026 with the
@@ -24,10 +28,37 @@ class PlanPageWidget extends StatefulWidget {
 class _PlanPageWidgetState extends State<PlanPageWidget> {
   late PlanPageModel _model;
 
+  /// Live usage for the limit bars. Null until counted, so a bar never
+  /// shows a zero that was not measured.
+  int? _users;
+  int? _ordersThisMonth;
+  List<SubscriptionPlansRow> _plans = const [];
+
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => PlanPageModel());
+    _loadUsage();
+  }
+
+  Future<void> _loadUsage() async {
+    try {
+      final now = DateTime.now();
+      final first = DateTime(now.year, now.month).toIso8601String();
+      final results = await Future.wait([
+        StaffTable().queryRows(queryFn: (q) => OrgScope.read(q)),
+        OrdersTable().queryRows(
+            queryFn: (q) => OrgScope.read(q).gte('created_at', first)),
+        SubscriptionPlansTable().queryRows(
+            queryFn: (q) => q.eq('active', true).order('price_inr')),
+      ]);
+      _users = results[0].length;
+      _ordersThisMonth = results[1].length;
+      _plans = results[2].cast<SubscriptionPlansRow>();
+    } catch (_) {
+      // Usage is supplementary: the plan and its limits still render.
+    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -36,253 +67,193 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
     super.dispose();
   }
 
+  int? _limit(Map limits, String key) {
+    final raw = limits[key];
+    return raw is int ? raw : (raw as num?)?.toInt();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     final session = context.watch<AppSession>();
-
     final planName = session.planName ?? 'Free Trial';
     final limits = session.planLimits;
     final features = session.planFeatures;
     final trialEnds = session.trialEndsAt;
+    final onTrial = session.planStatus == 'trial' && trialEnds != null;
+    final expired = session.isTrialExpired;
+    final tone = expired
+        ? NgStatus.red
+        : onTrial
+            ? (session.trialDaysRemaining <= 3 ? NgStatus.amber : NgStatus.blue)
+            : NgStatus.green;
 
-    return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        automaticallyImplyLeading: true,
-        title: Text(
-          'Your Plan',
-          style: NgFonts.geist(
-            color: theme.primaryText,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+    Widget usage(String label, int? used, int? max) {
+      final unlimited = max == null || max < 0;
+      final frac = (used == null || unlimited || max == 0)
+          ? 0.0
+          : (used / max).clamp(0.0, 1.0);
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: c.inset,
+            borderRadius: BorderRadius.circular(14),
           ),
-        ),
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Plan header card
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [theme.primary, theme.primary.withOpacity(0.7)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          planName,
-                          style: NgFonts.geist(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            session.planStatus == 'trial' ? 'TRIAL' : 'ACTIVE',
-                            style: NgFonts.geist(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (trialEnds != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        // A signup Pro trial drops to Free, so say so.
-                        session.trialFallsBackToFree
-                            ? AppLocalizations.of(context).plTrEnds(
-                                _formatDate(trialEnds),
-                                '${session.trialDaysRemaining.clamp(0, 9999)}')
-                            : 'Trial ends ${_formatDate(trialEnds)}',
-                        style: NgFonts.geist(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                    if (session.trialEndedToFree) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        AppLocalizations.of(context).plTrEnded,
-                        style: NgFonts.geist(
-                          color: Colors.white,
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                    if (session.currentOrgName != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        session.currentOrgName!,
-                        style: NgFonts.geist(
-                          color: Colors.white60,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Limits section
-              if (limits.isNotEmpty) ...[
-                _sectionTitle(theme, 'Usage Limits'),
-                const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.secondaryBackground,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    children: [
-                      // Item 32 key fix (18 Aug 2026): this read
-                      // `max_orders`, but the live data has always used
-                      // `max_orders_per_month` — so the orders limit
-                      // rendered "—" on every plan while being the limit
-                      // that actually matters. `max_leads` was read here
-                      // and written by the Super Admin editor, but exists
-                      // on no plan and is enforced nowhere; dropped
-                      // rather than left showing a permanent dash.
-                      _limitRow(theme, 'Users', limits['max_users']),
-                      _divider(theme),
-                      _limitRow(theme, 'Orders / month',
-                          limits['max_orders_per_month']),
-                      _divider(theme),
-                      _limitRow(theme, 'WhatsApp msgs / month',
-                          limits['max_whatsapp_per_month']),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // Features section
-              if (features.isNotEmpty) ...[
-                _sectionTitle(theme, 'Features'),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: features.entries.map((e) {
-                    final enabled = e.value == true;
-                    return _featureChip(theme, _featureLabel(e.key), enabled);
-                  }).toList(),
-                ),
-                const SizedBox(height: 32),
-              ],
-
-              // Activation CTA.
-              //
-              // 18 Aug 2026: the "Upgrade Plan" button and its "Razorpay
-              // payment integration · Phase 3" subtitle were REMOVED, not
-              // disabled. There is no payment rail yet (Item 31 is on
-              // hold pending Arun's CA settling which entity bills), so a
-              // confident-looking Upgrade button that answered with
-              // "coming soon" was a dead end shown to exactly the vendor
-              // least willing to tolerate one — someone whose trial just
-              // ended. Plain text with no affordance is more honest than
-              // a button that does nothing.
-              //
-              // WIRE THE WHATSAPP CTA HERE once the dedicated Nagarva
-              // support line is live — Arun is setting one up on WhatsApp
-              // Business, deliberately separate from APC's customer line
-              // (pan-India means lapsed-trial contact at any hour). Use
-              // kNagarvaSupportPhone from /config/app_config.dart and
-              // buildWhatsAppLink() from the same file; see that const's
-              // doc comment for every other place the number is needed.
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.secondaryBackground,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    Icon(Icons.support_agent,
-                        size: 26, color: theme.secondaryText),
-                    const SizedBox(height: 10),
-                    Text(
-                      AppSession.instance.isTrialExpired
-                          ? 'Your trial has ended. Contact Nagarva support '
-                              'to activate your plan.'
-                          : 'Contact Nagarva support to change your plan.',
-                      textAlign: TextAlign.center,
-                      style: NgFonts.geist(
-                        color: theme.primaryText,
-                        fontSize: 13.5,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+              Text(label, style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+              const SizedBox(height: 6),
+              Text(
+                  '${used ?? '—'} / ${unlimited ? 'Unlimited' : max}',
+                  style: NgFonts.mono(
+                      fontSize: 16, fontWeight: FontWeight.w600, color: c.text)),
+              const SizedBox(height: 8),
+              NgProgressBar(
+                  value: frac,
+                  color: frac >= 0.9 ? c.red : c.green,
+                  height: 4),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _sectionTitle(FlutterFlowTheme theme, String title) => Text(
-        title,
-        style: NgFonts.geist(
-          color: theme.primaryText,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-        ),
       );
+    }
 
-  Widget _limitRow(FlutterFlowTheme theme, String label, dynamic raw) {
-    final value = raw is int ? raw : (raw as num?)?.toInt() ?? 0;
-    final display = value == -1 ? 'Unlimited' : value.toString();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Scaffold(
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _loadUsage),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
         children: [
-          Text(
-            label,
-            style: NgFonts.geist(
-              color: theme.primaryText,
-              fontSize: 14,
+          const NgModuleHeader('Plan & billing'),
+          const SizedBox(height: 14),
+          NgCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    NgIconTile(
+                        icon: Icons.workspace_premium_outlined,
+                        status: tone,
+                        size: 44,
+                        iconSize: 22),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(planName,
+                              style: NgFonts.geist(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: c.text)),
+                          if (session.currentOrgName != null)
+                            Text(session.currentOrgName!,
+                                style: NgFonts.geist(
+                                    fontSize: 12.5, color: c.mute)),
+                        ],
+                      ),
+                    ),
+                    NgPill(
+                        expired
+                            ? 'Ended'
+                            : onTrial
+                                ? 'Trial'
+                                : 'Active',
+                        status: tone),
+                  ],
+                ),
+                if (onTrial) ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          // A signup Pro trial drops to Free, so say so.
+                          session.trialFallsBackToFree
+                              ? AppLocalizations.of(context).plTrEnds(
+                                  _formatDate(trialEnds),
+                                  '${session.trialDaysRemaining.clamp(0, 9999)}')
+                              : 'Trial ends ${_formatDate(trialEnds)}',
+                          style: NgFonts.geist(fontSize: 13, color: c.mute),
+                        ),
+                      ),
+                      if (!expired)
+                        Text(
+                            '${session.trialDaysRemaining.clamp(0, 9999)} days left',
+                            style: NgFonts.geist(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: c.status(tone).fg)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  NgProgressBar(
+                      value: expired
+                          ? 0.04
+                          : (session.trialDaysRemaining / 30).clamp(0.04, 1.0),
+                      color: c.status(tone).fg,
+                      height: 4),
+                ],
+                if (session.trialEndedToFree) ...[
+                  const SizedBox(height: 10),
+                  Text(AppLocalizations.of(context).plTrEnded,
+                      style: NgFonts.geist(
+                          fontSize: 13, height: 1.4, color: c.soft)),
+                ],
+                if (limits.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    usage('Users', _users, _limit(limits, 'max_users')),
+                    const SizedBox(width: 8),
+                    usage('Orders this month', _ordersThisMonth,
+                        _limit(limits, 'max_orders_per_month')),
+                  ]),
+                ],
+              ],
             ),
           ),
-          Text(
-            display,
-            style: NgFonts.geist(
-              color: value == -1 ? theme.primary : theme.primaryText,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+          if (features.isNotEmpty) ...[
+            _sectionTitle('What your plan includes'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final e in features.entries)
+                  _featureChip(_featureLabel(e.key), e.value == true),
+              ],
+            ),
+          ],
+          if (_plans.isNotEmpty) ...[
+            _sectionTitle('Plans'),
+            for (final p in _plans) ...[
+              _planCard(p, isCurrent: p.name == session.planName),
+              const SizedBox(height: 10),
+            ],
+          ],
+          const SizedBox(height: 4),
+          // No payment rail yet (Item 31 is on hold), so there is no
+          // Upgrade / Renew button: one that answered "coming soon" was a
+          // dead end shown to the vendor least willing to tolerate one.
+          // WIRE THE WHATSAPP CTA HERE once kNagarvaSupportPhone is set.
+          NgCard(
+            child: Row(
+              children: [
+                Icon(Icons.support_agent_outlined, size: 22, color: c.mute),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    session.isTrialExpired
+                        ? 'Your trial has ended. Contact Nagarva support to activate your plan.'
+                        : 'Contact Nagarva support to change your plan.',
+                    style: NgFonts.geist(
+                        fontSize: 13.5, height: 1.4, color: c.text),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -290,42 +261,97 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
     );
   }
 
-  Widget _divider(FlutterFlowTheme theme) => Divider(
-        height: 1,
-        indent: 16,
-        endIndent: 16,
-        color: theme.alternate,
+  Widget _planCard(SubscriptionPlansRow p, {required bool isCurrent}) {
+    final c = NgPalette.of(context);
+    final limits = p.limits is Map ? p.limits as Map : const {};
+    final features = p.features is Map ? p.features as Map : const {};
+    String lim(String key, String unit) {
+      final v = _limit(limits, key);
+      if (v == null) return '';
+      return v < 0 ? 'Unlimited $unit' : '$v $unit';
+    }
+
+    final price = p.priceInr ?? 0;
+    final lines = [
+      lim('max_users', 'users'),
+      lim('max_orders_per_month', 'orders a month'),
+      for (final e in features.entries)
+        if (e.value == true) _featureLabel(e.key as String),
+    ].where((x) => x.isNotEmpty).toList();
+    return NgCard(
+      color: isCurrent ? c.sel : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Row(children: [
+                  Text(p.name ?? '',
+                      style: NgFonts.geist(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                  if (isCurrent) ...[
+                    const SizedBox(width: 8),
+                    const NgPill('Current', status: NgStatus.accent),
+                  ],
+                ]),
+              ),
+              Text(
+                  price <= 0
+                      ? 'Free'
+                      : '${functions.inrFull(price)} / ${p.billingPeriod == 'annual' ? 'year' : 'month'}',
+                  style: NgFonts.geist(
+                      fontSize: 15, fontWeight: FontWeight.w600, color: c.text)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (final line in lines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(children: [
+                Icon(Icons.check_rounded, size: 16, color: c.green),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(line,
+                      style: NgFonts.geist(fontSize: 13.5, color: c.soft)),
+                ),
+              ]),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 20, 4, 10),
+        child: Text(title,
+            style: NgFonts.geist(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: NgPalette.of(context).text)),
       );
 
-  Widget _featureChip(FlutterFlowTheme theme, String label, bool enabled) {
+  Widget _featureChip(String label, bool enabled) {
+    final c = NgPalette.of(context);
+    final s = c.status(enabled ? NgStatus.green : NgStatus.neutral);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: enabled
-            ? theme.primary.withOpacity(0.12)
-            : theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: enabled ? theme.primary : theme.alternate,
-        ),
+        color: s.bg,
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            enabled ? Icons.check_circle : Icons.cancel_outlined,
-            size: 14,
-            color: enabled ? theme.primary : theme.secondaryText,
-          ),
+          Icon(enabled ? Icons.check_rounded : Icons.lock_outline_rounded,
+              size: 15, color: s.fg),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: NgFonts.geist(
-              color: enabled ? theme.primary : theme.secondaryText,
-              fontSize: 13,
-              fontWeight: enabled ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
+          Text(label,
+              style: NgFonts.geist(
+                  fontSize: 13, fontWeight: FontWeight.w500, color: s.fg)),
         ],
       ),
     );
@@ -333,31 +359,17 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
 
   String _featureLabel(String key) {
     const labels = {
-      'whatsapp': 'WhatsApp Alerts',
-      'reports': 'P&L Reports',
-      'invoice': 'GST Invoice',
-      'fleet': 'Fleet Tracking',
+      'whatsapp': 'WhatsApp alerts',
+      'reports': 'P&L reports',
+      'invoice': 'GST invoice',
+      'gst_invoice': 'GST invoice',
+      'fleet': 'Fleet tracking',
       'salary': 'Salary & PF',
+      'multi_branch': 'Multiple branches',
     };
-    return labels[key] ?? key;
+    return labels[key] ??
+        (key.isEmpty ? key : key[0].toUpperCase() + key.substring(1).replaceAll('_', ' '));
   }
 
-  String _formatDate(DateTime dt) {
-    const months = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-    return '${dt.day} ${months[dt.month]} ${dt.year}';
-  }
+  String _formatDate(DateTime dt) => DateFormat('d MMM yyyy').format(dt);
 }

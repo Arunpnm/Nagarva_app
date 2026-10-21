@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/audit_log_service.dart';
 import '/backend/crew_sync_service.dart';
@@ -712,20 +713,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            'Field Job',
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600),
-                  fontSize: 22.0,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          elevation: 0.0,
-          actions: const [SupervisorMenuButton()],
-        ),
+        appBar: NgSimpleBar(title: 'Field Job', actions: const [SupervisorMenuButton()]),
         body: SafeArea(
           top: true,
           child: _model.isLoading

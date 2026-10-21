@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '/components/language_quick_button.dart';
-import '/components/theme_quick_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/config/app_config.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -190,30 +190,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
 
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        actions: [
-          LanguageQuickButton(iconColor: IconTheme.of(context).color),
-          ThemeQuickButton(iconColor: IconTheme.of(context).color),
-        ],
-        backgroundColor: theme.primaryBackground,
-        automaticallyImplyLeading: _selected == null || wide,
-        leading: (_selected != null && !wide)
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() => _selected = null),
-              )
-            : null,
-        title: Text(
-          _selected == null || wide
-              ? 'WA Inbox'
-              : (_selected!.displayName ?? _selected!.phone),
-          style: theme.titleLarge.override(
-              font: NgFonts.geist(fontWeight: FontWeight.w600),
-              fontSize: 22,
-              fontWeight: FontWeight.w600),
-        ),
-        elevation: 0,
-      ),
+      appBar: NgTopBar(onRefresh: _load),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : wide
@@ -228,7 +205,20 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
               // here when _selected is non-null (same condition drove
               // both), so falling back to `list` reproduces the original
               // `_selected == null ? list : thread` exactly.
-              : (thread ?? list),
+              : (thread == null
+                  ? list
+                  : Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                          child: NgModuleHeader(
+                            _selected!.displayName ?? _selected!.phone,
+                            onBack: () => setState(() => _selected = null),
+                          ),
+                        ),
+                        Expanded(child: thread),
+                      ],
+                    )),
     );
   }
 
@@ -254,71 +244,114 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
       );
 
   Widget _contactList(FlutterFlowTheme theme) {
-    if (_contacts.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'No WhatsApp conversations yet.',
-            textAlign: TextAlign.center,
-            style: NgFonts.geist(color: theme.secondaryText),
-          ),
-        ),
-      );
-    }
+    final c = NgPalette.of(context);
+    final unread = _contacts.where((x) => x.unreadCount > 0).length;
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView.separated(
-        itemCount: _contacts.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, i) {
-          final c = _contacts[i];
-          final selected = _selected?.id == c.id;
-          return ListTile(
-            selected: selected,
-            onTap: () => _openThread(c),
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(c.displayName ?? c.phone,
-                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13.5),
-                      overflow: TextOverflow.ellipsis),
-                ),
-                if (c.leadId != null)
-                  Container(
-                    margin: const EdgeInsets.only(left: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: theme.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        children: [
+          NgModuleHeader('Inbox', subtitle: 'WhatsApp · $unread unread'),
+          const SizedBox(height: 14),
+          if (_contacts.isEmpty)
+            NgCard(
+              child: Text('No WhatsApp conversations yet.',
+                  textAlign: TextAlign.center,
+                  style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+            )
+          else
+            NgCardList(children: [
+              for (final ct in _contacts)
+                InkWell(
+                  onTap: () => _openThread(ct),
+                  child: Container(
+                    color: _selected?.id == ct.id ? c.sel : null,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        const NgIconTile(
+                            icon: Icons.chat_outlined,
+                            status: NgStatus.green,
+                            size: 40,
+                            iconSize: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(ct.displayName ?? ct.phone,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: NgFonts.geist(
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: c.text)),
+                                  ),
+                                  if (ct.leadId != null) ...[
+                                    const SizedBox(width: 6),
+                                    const NgPill('Lead',
+                                        status: NgStatus.amber),
+                                  ],
+                                  if (ct.muted) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(Icons.notifications_off_outlined,
+                                        size: 14, color: c.mute),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(ct.lastMessageText ?? '—',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: NgFonts.geist(
+                                      fontSize: 13, color: c.mute)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (ct.lastMessageAt != null)
+                              Text(
+                                  DateFormat('d MMM')
+                                      .format(ct.lastMessageAt!.toLocal()),
+                                  style: NgFonts.geist(
+                                      fontSize: 12,
+                                      color: ct.unreadCount > 0
+                                          ? c.acc
+                                          : c.faint)),
+                            if (ct.unreadCount > 0) ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                constraints: const BoxConstraints(
+                                    minWidth: 20, minHeight: 20),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 5),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: c.accBtn,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text('${ct.unreadCount}',
+                                    style: NgFonts.geist(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: NgPalette.onAcc)),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
                     ),
-                    child: Text('Lead',
-                        style: NgFonts.geist(fontSize: 9.5, color: theme.primary)),
                   ),
-                if (c.muted)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(Icons.notifications_off, size: 13, color: theme.secondaryText),
-                  ),
-              ],
-            ),
-            subtitle: Text(c.lastMessageText ?? '—',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
-            trailing: c.unreadCount > 0
-                ? CircleAvatar(
-                    radius: 10,
-                    backgroundColor: theme.primary,
-                    child: Text('${c.unreadCount}',
-                        style: const TextStyle(fontSize: 10, color: Colors.white)),
-                  )
-                : (c.lastMessageAt != null
-                    ? Text(DateFormat('d MMM').format(c.lastMessageAt!),
-                        style: NgFonts.geist(fontSize: 10.5, color: theme.secondaryText))
-                    : null),
-          );
-        },
+                ),
+            ]),
+        ],
       ),
     );
   }

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -25,6 +28,13 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
   bool _loading = true;
   List<LrRegisterRow> _all = [];
   String _search = '';
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
   String? _statusFilter;
 
   @override
@@ -104,7 +114,10 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
               Text(lr.lrNo,
                   style: NgFonts.geist(
                       fontSize: 17, fontWeight: FontWeight.w700, color: theme.primaryText)),
-              _statusChip(theme, lr.status),
+              Align(
+                  alignment: Alignment.centerLeft,
+                  child: NgPill(_statusLabel(lr.status),
+                      status: _statusTone(lr.status))),
               const SizedBox(height: 10),
               _kv('Date', lr.lrDate == null ? '—' : DateFormat('d MMM yyyy').format(lr.lrDate!)),
               _kv('Order', lr.orderId ?? '—'),
@@ -186,111 +199,119 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
         ),
       );
 
-  Widget _statusChip(FlutterFlowTheme theme, String status) {
-    final color = {
-          'issued': Colors.grey,
-          'in_transit': Colors.blue,
-          'delivered': Colors.green,
-          'cancelled': Colors.red,
-        }[status] ??
-        Colors.grey;
-    return Container(
-      margin: const EdgeInsets.only(top: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-      child: Text(status, style: NgFonts.geist(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
-    );
-  }
+  static const _kStatusOrder = ['issued', 'in_transit', 'delivered', 'cancelled'];
+
+  String _statusLabel(String st) => switch (st) {
+        'issued' => 'Issued',
+        'in_transit' => 'In transit',
+        'delivered' => 'Delivered',
+        'cancelled' => 'Cancelled',
+        _ => st,
+      };
+
+  NgStatus _statusTone(String st) => switch (st) {
+        'in_transit' => NgStatus.blue,
+        'delivered' => NgStatus.green,
+        'cancelled' => NgStatus.red,
+        _ => NgStatus.neutral,
+      };
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
+    final statuses = [
+      ..._kStatusOrder.where(_statuses.contains),
+      ..._statuses.where((s) => !_kStatusOrder.contains(s)),
+    ];
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: Text('LR Register',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600), fontSize: 22, fontWeight: FontWeight.w600)),
-        elevation: 0,
-      ),
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                 children: [
-                  TextField(
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'Search LR No / Consignee / Vehicle',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
+                  const NgModuleHeader('LR Register'),
+                  const SizedBox(height: 14),
+                  NgSearchField(
+                    controller: _searchCtrl,
+                    hint: 'Search LR no, consignee or vehicle',
                     onChanged: (v) => setState(() => _search = v),
                   ),
-                  const SizedBox(height: 8),
-                  if (_statuses.isNotEmpty)
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        ChoiceChip(
-                            label: const Text('All'),
-                            selected: _statusFilter == null,
-                            onSelected: (_) => setState(() => _statusFilter = null)),
-                        for (final s in _statuses)
-                          ChoiceChip(
-                              label: Text(s),
-                              selected: _statusFilter == s,
-                              onSelected: (_) => setState(() => _statusFilter = s)),
-                      ],
-                    ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
+                  NgChipRow(
+                    edge: 0,
+                    chips: [
+                      NgChip(
+                        label: 'All',
+                        selected: _statusFilter == null,
+                        onTap: () => setState(() => _statusFilter = null),
+                      ),
+                      for (final st in statuses)
+                        NgChip(
+                          label: _statusLabel(st),
+                          selected: _statusFilter == st,
+                          onTap: () => setState(() => _statusFilter = st),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
                   if (_filtered.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Text('No LRs found.', style: NgFonts.geist(color: theme.secondaryText)),
+                    NgCard(
+                      child: Text('No LRs found.',
+                          textAlign: TextAlign.center,
+                          style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
                     )
                   else
-                    for (final lr in _filtered) _lrRow(theme, lr),
+                    NgCardList(children: [
+                      for (final lr in _filtered) _lrRow(lr),
+                    ]),
                 ],
               ),
             ),
     );
   }
 
-  Widget _lrRow(FlutterFlowTheme theme, LrRegisterRow lr) {
+  Widget _lrRow(LrRegisterRow lr) {
+    final c = NgPalette.of(context);
     return InkWell(
       onTap: () => _openDetail(lr),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(lr.lrNo, style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
+                  Text(lr.lrNo,
+                      style: NgFonts.mono(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                  const SizedBox(height: 2),
                   Text(
-                    [
-                      lr.consigneeName ?? '—',
-                      '${lr.fromPlace ?? '—'} → ${lr.toPlace ?? '—'}',
-                    ].join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    '${lr.consigneeName ?? '—'} · ${lr.fromPlace ?? '—'} → ${lr.toPlace ?? '—'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 12.5, color: c.mute),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('₹${(lr.totalAmount ?? 0).toStringAsFixed(0)}',
-                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
-                _statusChip(theme, lr.status),
+                Text(functions.inrFull(lr.totalAmount ?? 0),
+                    style: NgFonts.mono(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+                const SizedBox(height: 4),
+                NgPill(_statusLabel(lr.status), status: _statusTone(lr.status)),
               ],
             ),
           ],

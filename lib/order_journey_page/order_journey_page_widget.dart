@@ -1085,15 +1085,40 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
 /// The strip on Lead Details and Order Details that opens the journey
 /// (handoff: "It opens from the strip on Lead detail or Order detail").
 class JourneyEntryCard extends StatelessWidget {
-  const JourneyEntryCard({super.key, this.leadId, this.orderId});
+  const JourneyEntryCard({super.key, this.leadId, this.orderId, this.data});
 
   final String? leadId;
   final String? orderId;
+
+  /// When given, the card shows "Stage N of 9 · name" and a segmented bar
+  /// (handoff "stage strip"); without it, just the title.
+  final JourneyData? data;
+
+  static String stageName(AppLocalizations l, JourneyStage s) => switch (s) {
+        JourneyStage.lead => l.jrStageLead,
+        JourneyStage.followUp => l.jrStageFollowUp,
+        JourneyStage.survey => l.jrStageSurvey,
+        JourneyStage.quote => l.jrStageQuote,
+        JourneyStage.supervisor => l.jrStageSupervisor,
+        JourneyStage.moveDay => l.jrStageMoveDay,
+        JourneyStage.invoice => l.jrStageInvoice,
+        JourneyStage.payment => l.jrStagePayment,
+        JourneyStage.closed => l.jrStageClosed,
+      };
 
   @override
   Widget build(BuildContext context) {
     final c = NgPalette.of(context);
     final l = AppLocalizations.of(context);
+    final d = data;
+    final total = JourneyStage.values.length;
+    final states = d?.states;
+    final current = d?.current;
+    final title = d == null
+        ? l.jrTitle
+        : current == null
+            ? (d.isClosed ? l.odJourneyDone : l.jrTitle)
+            : l.odStageOf(current.index + 1, total, stageName(l, current));
     return NgCard(
       onTap: () => context.pushNamed(
         OrderJourneyPageWidget.routeName,
@@ -1105,13 +1130,46 @@ class JourneyEntryCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          const NgIconTile(icon: Icons.timeline_rounded, status: NgStatus.accent),
+          Icon(Icons.route_rounded, size: 24, color: c.acc),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(l.jrTitle,
-                style: NgFonts.geist(
-                    fontSize: 14.5, fontWeight: FontWeight.w600, color: c.text)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+                if (states != null) ...[
+                  const SizedBox(height: 7),
+                  Row(
+                    children: [
+                      for (final s in JourneyStage.values) ...[
+                        if (s.index > 0) const SizedBox(width: 3),
+                        Expanded(
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: switch (states[s]) {
+                                JourneyState.done => c.green,
+                                JourneyState.current => c.acc,
+                                _ => c.w07,
+                              },
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           Icon(Icons.chevron_right_rounded, color: c.faint),
         ],
       ),

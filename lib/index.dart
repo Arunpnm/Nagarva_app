@@ -86,3 +86,11 @@ export '/track_page/track_page_widget.dart' show TrackPageWidget;
 export '/super_admin_page/super_admin_page_widget.dart'
     show SuperAdminPageWidget;
 export '/crew_sheet_page/crew_sheet_page_widget.dart' show CrewSheetPageWidget;
+
+// Design-parity modules (21 Oct 2026).
+export '/modules/sales_modules.dart';
+export '/modules/money_modules.dart';
+export '/modules/transport_modules.dart';
+export '/modules/ops_people_modules.dart';
+export '/modules/setup_modules.dart';
+export '/modules/more_modules.dart';

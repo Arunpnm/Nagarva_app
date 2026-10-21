@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '/flutter_flow/ng_tokens.dart';
 
@@ -200,9 +201,14 @@ class NgSectionHeader extends StatelessWidget {
 /// under it, and an optional trailing action (the per-screen "new" button
 /// that replaced Quick Entry in the redesign).
 class NgScreenTitle extends StatelessWidget {
-  const NgScreenTitle(this.title, {super.key, this.subtitle, this.action});
+  const NgScreenTitle(this.title,
+      {super.key, this.subtitle, this.action, this.large = false});
 
   final String title;
+
+  /// 26px, the handoff's size for the main tab screens (Leads, Orders,
+  /// Operations, Payments, Staff...). Module screens keep 21px.
+  final bool large;
   final String? subtitle;
   final Widget? action;
 
@@ -220,9 +226,9 @@ class NgScreenTitle extends StatelessWidget {
                 Text(
                   title,
                   style: NgFonts.geist(
-                    fontSize: 21,
+                    fontSize: large ? 26 : 21,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: -0.42,
+                    letterSpacing: large ? -0.52 : -0.42,
                     color: c.text,
                   ),
                 ),
@@ -392,8 +398,12 @@ class NgChip extends StatelessWidget {
         child: Container(
           height: 34,
           padding: const EdgeInsets.symmetric(horizontal: 13),
-          alignment: Alignment.center,
-          child: Row(
+          // Center with widthFactor 1, not Container.alignment: alignment
+          // makes the Container expand, so a chip inside a Wrap took the
+          // whole row.
+          child: Center(
+            widthFactor: 1,
+            child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
@@ -413,6 +423,7 @@ class NgChip extends StatelessWidget {
                 ),
               ],
             ],
+          ),
           ),
         ),
       ),
@@ -646,6 +657,662 @@ class NgProgressBar extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Segmented control (the handoff's Orders tabs, Payments Due/Received,
+/// Operations Today/Tomorrow): an s1 track with 4px padding and equal
+/// cells; the selected cell sits on `sel`.
+class NgSegmented extends StatelessWidget {
+  const NgSegmented({
+    super.key,
+    required this.labels,
+    required this.selected,
+    required this.onSelect,
+    this.counts,
+  });
+
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onSelect;
+  final List<int>? counts;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: c.s1,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < labels.length; i++)
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onSelect(i),
+                child: Container(
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: i == selected ? c.sel : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          labels[i],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: NgFonts.geist(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: i == selected ? c.text : c.mute,
+                          ),
+                        ),
+                      ),
+                      if (counts != null) ...[
+                        const SizedBox(width: 4),
+                        Opacity(
+                          opacity: 0.6,
+                          child: Text(
+                            '${counts![i]}',
+                            style: NgFonts.mono(
+                              fontSize: 11,
+                              color: i == selected ? c.text : c.mute,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The handoff's 6-segment stage bar: done segments in the stage hue,
+/// the rest on a w07 track.
+class NgStageBar extends StatelessWidget {
+  const NgStageBar({
+    super.key,
+    required this.done,
+    required this.color,
+    this.total = 6,
+  });
+
+  final int done;
+  final Color color;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Row(
+      children: [
+        for (var i = 0; i < total; i++) ...[
+          if (i > 0) const SizedBox(width: 3),
+          Expanded(
+            child: Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: i < done ? color : c.w07,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Title row for module screens (everything reached from More): a 40×40
+/// back button, the 24px title with an optional muted line, and the
+/// screen's own action on the right. Sits under [NgTopBar], as in the
+/// handoff's Expenses / Fleet / Materials / Trips / Customers screens.
+///
+/// Back pops when there is somewhere to pop to. A module opened as a
+/// tab (NavBarPage renders it in place) has nothing under it, so back
+/// goes to the Dashboard instead of doing nothing.
+class NgModuleHeader extends StatelessWidget {
+  const NgModuleHeader(
+    this.title, {
+    super.key,
+    this.subtitle,
+    this.actions = const [],
+    this.onBack,
+  });
+
+  final String title;
+  final String? subtitle;
+  final List<Widget> actions;
+
+  /// Overrides the default pop-or-go-home, for an in-page level such as
+  /// a conversation opened from a list.
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Row(
+      children: [
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: Material(
+            color: c.s1,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: onBack ??
+                  () {
+                final nav = Navigator.of(context);
+                if (nav.canPop()) {
+                  nav.pop();
+                } else {
+                  GoRouter.of(context).go('/home');
+                }
+              },
+              child: Icon(Icons.arrow_back_rounded, size: 22, color: c.soft),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: NgFonts.geist(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.48,
+                  color: c.text,
+                ),
+              ),
+              if ((subtitle ?? '').isNotEmpty)
+                Text(subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+            ],
+          ),
+        ),
+        for (final a in actions) ...[const SizedBox(width: 8), a],
+      ],
+    );
+  }
+}
+
+/// List row inside an [NgCardList]: icon tile, title over a muted line,
+/// trailing widget (amount, pill, chevron). The handoff's standard row.
+class NgListRow extends StatelessWidget {
+  const NgListRow({
+    super.key,
+    this.icon,
+    this.iconStatus,
+    this.leading,
+    required this.title,
+    this.titleTrailing,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+
+  final IconData? icon;
+  final NgStatus? iconStatus;
+  final Widget? leading;
+  final String title;
+  final Widget? titleTrailing;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final lead = leading ??
+        (icon == null ? null : NgIconTile(icon: icon!, status: iconStatus));
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        child: Row(
+          children: [
+            if (lead != null) ...[lead, const SizedBox(width: 12)],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: NgFonts.geist(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: c.text)),
+                      ),
+                      if (titleTrailing != null) ...[
+                        const SizedBox(width: 6),
+                        titleTrailing!,
+                      ],
+                    ],
+                  ),
+                  if ((subtitle ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: NgFonts.geist(
+                            fontSize: 12.5, height: 1.35, color: c.mute)),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 40×40 square icon button for a module header (the handoff's settings /
+/// import-export buttons beside the title).
+class NgHeaderButtonBox extends StatelessWidget {
+  const NgHeaderButtonBox({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback? onTap;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final box = SizedBox(
+      width: 40,
+      height: 40,
+      child: Material(
+        color: c.s1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: c.w06),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Icon(icon, size: 20, color: c.soft),
+        ),
+      ),
+    );
+    return tooltip == null ? box : Tooltip(message: tooltip!, child: box);
+  }
+}
+
+/// Top bar for detail and form screens (the handoff's Lead / Order detail
+/// and New lead / New order): a 40×40 back (or close) button, a centred
+/// title, and the screen's own actions on the right.
+class NgSimpleBar extends StatelessWidget implements PreferredSizeWidget {
+  const NgSimpleBar({
+    super.key,
+    this.title,
+    this.titleWidget,
+    this.actions = const [],
+    this.close = false,
+    this.mono = false,
+    this.onBack,
+  });
+
+  final String? title;
+  final Widget? titleWidget;
+  final List<Widget> actions;
+
+  /// Close (×) instead of back, for create forms.
+  final bool close;
+
+  /// Render the title in Geist Mono (record ids such as LD-1041).
+  final bool mono;
+  final VoidCallback? onBack;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(60);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final style = mono
+        ? NgFonts.mono(fontSize: 13, color: c.mute)
+        : NgFonts.geist(
+            fontSize: 17, fontWeight: FontWeight.w600, color: c.text);
+    return Material(
+      color: c.bg,
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: preferredSize.height,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Material(
+                    color: c.s1,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: onBack ?? () => Navigator.of(context).maybePop(),
+                      child: Icon(
+                          close ? Icons.close_rounded : Icons.arrow_back_rounded,
+                          size: 21,
+                          color: c.soft),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: DefaultTextStyle.merge(
+                      style: style,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      child: titleWidget ??
+                          Text(title ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: style),
+                    ),
+                  ),
+                ),
+                if (actions.isEmpty)
+                  const SizedBox(width: 40)
+                else
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final a in actions)
+                        IconTheme.merge(
+                            data: IconThemeData(color: c.soft, size: 21),
+                            child: a),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A [TabBar] dressed as the handoff's segmented control, for screens
+/// that keep a [TabController] (swipe between tabs still works).
+class NgTabBar extends StatelessWidget {
+  const NgTabBar({
+    super.key,
+    required this.controller,
+    required this.labels,
+    this.scrollable = false,
+  });
+
+  final TabController controller;
+  final List<String> labels;
+  final bool scrollable;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: c.s1,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: TabBar(
+        controller: controller,
+        isScrollable: scrollable,
+        tabAlignment: scrollable ? TabAlignment.start : TabAlignment.fill,
+        dividerHeight: 0,
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicator: BoxDecoration(
+          color: c.sel,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        labelColor: c.text,
+        unselectedLabelColor: c.mute,
+        labelStyle:
+            NgFonts.geist(fontSize: 13, fontWeight: FontWeight.w600),
+        unselectedLabelStyle:
+            NgFonts.geist(fontSize: 13, fontWeight: FontWeight.w600),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+        splashBorderRadius: BorderRadius.circular(10),
+        tabs: [
+          for (final l in labels) Tab(height: 36, text: l),
+        ],
+      ),
+    );
+  }
+}
+
+/// One of the three equal-width action cards under a detail header
+/// (handoff: Call / WhatsApp / Maps on an order, Call / WhatsApp / Quote
+/// on a lead). Wrap in [Expanded]. Dimmed and inert when [onTap] is null.
+class NgQuickAction extends StatelessWidget {
+  const NgQuickAction({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color iconColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return NgCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+      child: Opacity(
+        opacity: onTap == null ? 0.45 : 1,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 19, color: iconColor),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NgFonts.geist(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
+                      color: c.text)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Form section label (handoff: muted 14px above a field or chip group),
+/// with an optional action on the right ("Edit list").
+class NgFieldLabel extends StatelessWidget {
+  const NgFieldLabel(this.label, {super.key, this.action, this.onAction});
+
+  final String label;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label,
+                style: NgFonts.geist(fontSize: 14, color: c.mute)),
+          ),
+          if (action != null)
+            InkWell(
+              onTap: onAction,
+              child: Text(action!,
+                  style: NgFonts.geist(fontSize: 14, color: c.acc)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Text field on the handoff's form surface: s1 fill, hairline border,
+/// accent border on focus. [mono] for phone numbers and ids.
+class NgInput extends StatelessWidget {
+  const NgInput({
+    super.key,
+    required this.controller,
+    this.hint,
+    this.focusNode,
+    this.keyboardType,
+    this.icon,
+    this.suffix,
+    this.mono = false,
+    this.maxLines = 1,
+    this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String? hint;
+  final FocusNode? focusNode;
+  final TextInputType? keyboardType;
+  final IconData? icon;
+  final Widget? suffix;
+  final bool mono;
+  final int? maxLines;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final style = mono
+        ? NgFonts.mono(fontSize: 16, color: c.text)
+        : NgFonts.geist(fontSize: 16, color: c.text);
+    OutlineInputBorder border(Color col, [double w = 1]) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(NgRadius.tile),
+          borderSide: BorderSide(color: col, width: w),
+        );
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      onChanged: onChanged,
+      style: style,
+      cursorColor: c.acc,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: style.copyWith(color: c.faint),
+        filled: true,
+        fillColor: c.s1,
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        prefixIcon: icon == null
+            ? null
+            : Icon(icon, size: 20, color: c.mute),
+        suffixIcon: suffix,
+        enabledBorder: border(c.w08),
+        border: border(c.w08),
+        focusedBorder: border(c.acc, 1.5),
+      ),
+    );
+  }
+}
+
+/// Option card for a 2-up "Next step" grid (handoff New lead): icon,
+/// title, one muted line, accent outline when selected.
+class NgOptionCard extends StatelessWidget {
+  const NgOptionCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Material(
+      color: selected ? c.status(NgStatus.accent).bg : c.s1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(NgRadius.tile),
+        side: BorderSide(color: selected ? c.acc : c.w06, width: selected ? 1.5 : 1),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(NgRadius.tile),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: selected ? c.acc : c.soft),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: NgFonts.geist(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.text)),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

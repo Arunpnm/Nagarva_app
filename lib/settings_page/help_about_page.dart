@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/config/app_config.dart';
@@ -49,14 +52,12 @@ class HelpAboutPage extends StatelessWidget {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: const Text('Help & About'),
-        elevation: 0,
-      ),
+      appBar: const NgTopBar(),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
         children: [
+          const NgModuleHeader('Help & support'),
+          const SizedBox(height: 18),
           // ---- Branding ------------------------------------------------
           Center(
             child: Column(

@@ -148,6 +148,20 @@ const bool kQuotationSurveyIdFkRepointed = true;
 /// `next_doc_number` carries the `doc_type='order'` guard.
 const bool kServerSideOrderIds = true;
 
+/// `expenses.payment_mode` (supabase/20261021_expenses_payment_mode.sql).
+/// FALSE until that migration is confirmed live BY QUERY — not on a
+/// report that it ran. While false, Quick Expense does not show or send
+/// "Paid by", because writing a column that does not exist fails the
+/// whole expense insert (the kServerSideOrderIds lesson, 8 Sept 2026).
+/// Cash book reads it either way and says so when it is missing.
+const bool kExpensePaymentModeLive = false;
+
+/// `staff_leaves` / `staff_incentives`
+/// (supabase/20261021_staff_leave_and_incentives.sql). FALSE until both
+/// tables are confirmed live by query. While false, Leave and Overtime &
+/// incentives say what is missing instead of failing on a 42P01.
+const bool kStaffLeaveIncentivesLive = false;
+
 /// Canonical legal URLs, used by BOTH the signup agreement checkbox and
 /// Settings → Help & About.
 ///

@@ -1,17 +1,17 @@
+import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/customer_lookup.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/pricing_defaults.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_drop_down.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
-import '/flutter_flow/form_field_controller.dart';
 import '/index.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
@@ -428,760 +428,16 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
     safeSetState(() {});
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            widget.orderId != null
-                ? 'Edit Order'
-                : AppLocalizations.of(context).newOrder,
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                  ),
-                  fontSize: 22.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                ),
-          ),
-          actions: const [],
-          elevation: 0.0,
-        ),
-        body: (_model.branchesLoaded &&
-                _model.availableBranches.isEmpty &&
-                widget.orderId == null)
-            ? _buildNoBranchState(context)
-            : SafeArea(
-          top: true,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context)
-                                .secondaryBackground,
-                            borderRadius: BorderRadius.circular(16.0),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context).newOrderPageCustomer,
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ordCustomerFieldTextController,
-                                  focusNode: _model.ordCustomerFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).newOrderPageCustomerName,
-                                    hintText:
-                                        AppLocalizations.of(context).fullName,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ordCustomerFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ordPhoneFieldTextController,
-                                  focusNode: _model.ordPhoneFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).newOrderPagePhone,
-                                    hintText:
-                                        AppLocalizations.of(context).n91XxxxxXxxxx,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  keyboardType: TextInputType.number,
-                                  validator: _model
-                                      .ordPhoneFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                              ].divide(const SizedBox(height: 14.0)),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context)
-                                .secondaryBackground,
-                            borderRadius: BorderRadius.circular(16.0),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context).moveDetails,
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ordFromCityFieldTextController,
-                                  focusNode: _model.ordFromCityFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).fromCity,
-                                    hintText:
-                                        AppLocalizations.of(context).originCity,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ordFromCityFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ordToCityFieldTextController,
-                                  focusNode: _model.ordToCityFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).toCity,
-                                    hintText:
-                                        AppLocalizations.of(context).destinationCity,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ordToCityFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ordFromAddressFieldTextController,
-                                  focusNode:
-                                      _model.ordFromAddressFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).fromAddress,
-                                    hintText:
-                                        AppLocalizations.of(context).pickupAddress,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ordFromAddressFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ordToAddressFieldTextController,
-                                  focusNode: _model.ordToAddressFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).toAddress,
-                                    hintText:
-                                        AppLocalizations.of(context).dropAddress,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ordToAddressFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ordFromFloorFieldTextController,
-                                  focusNode: _model.ordFromFloorFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).fromFloor,
-                                    hintText:
-                                        AppLocalizations.of(context).eG2ndFloor,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ordFromFloorFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ordToFloorFieldTextController,
-                                  focusNode: _model.ordToFloorFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).toFloor,
-                                    hintText:
-                                        AppLocalizations.of(context).eGGroundFloor,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  validator: _model
-                                      .ordToFloorFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .primaryBackground,
-                                    borderRadius: BorderRadius.circular(8.0),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsetsDirectional.fromSTEB(
-                                        14.0, 12.0, 14.0, 12.0),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.max,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              AppLocalizations.of(context).newOrderPageMoveDate,
-                                              style:
-                                                  FlutterFlowTheme.of(context)
-                                                      .bodySmall
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodySmall
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
-                                            ),
-                                            if (!(_model.ordMoveDatePicked ??
-                                                false))
-                                              Container(
-                                                child: Text(
-                                                  AppLocalizations.of(context).tapToPickDate,
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodyMedium
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .secondaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontStyle,
-                                                      ),
-                                                ),
-                                              ),
-                                            if ((_model.ordMoveDatePicked ??
-                                                    false) &&
-                                                _model.ordMoveDate != null)
-                                              Container(
-                                                child: Text(
-                                                  dateTimeFormat(
-                                                      'd MMM y',
-                                                      _model.ordMoveDate),
-                                                  style: FlutterFlowTheme.of(
-                                                          context)
-                                                      .bodyMedium
-                                                      .override(
-                                                        font: NgFonts.geist(
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .bodyMedium
-                                                                  .fontStyle,
-                                                        ),
-                                                        color:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .primaryText,
-                                                        letterSpacing: 0.0,
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodyMedium
-                                                                .fontStyle,
-                                                      ),
-                                                ),
-                                              ),
-                                          ].divide(const SizedBox(height: 2.0)),
-                                        ),
-                                        Padding(
-                                          padding:
-                                              const EdgeInsetsDirectional.fromSTEB(
-                                                  12.0, 6.0, 12.0, 6.0),
-                                          child: FFButtonWidget(
-                                            onPressed: () async {
+  // ---- Claude Design handoff "NEW ORDER" -------------------------------
+  //
+  // Same model, loaders and save as before; the save handler and the
+  // date picker were lifted out of build() verbatim. The commission,
+  // porter-settlement and GST block is kept exactly as it was, inside the
+  // "Price & source" card, because every rule in it is a decision with a
+  // reason in CLAUDE.md (no suggested money, the commission snapshot,
+  // porter cash as a payment entry).
+
+  Future<void> _pickMoveDate() async {
                                               final datePickedDate =
                                                   await showDatePicker(
                                                 context: context,
@@ -1257,747 +513,9 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                       true;
                                                 });
                                               }
-                                            },
-                                            text: AppLocalizations.of(context).pickDate,
-                                            icon: const Icon(
-                                              Icons.calendar_today,
-                                              size: 20.0,
-                                            ),
-                                            options: FFButtonOptions(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              iconPadding: const EdgeInsetsDirectional
-                                                  .fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                              iconColor:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primary,
-                                              color: Colors.transparent,
-                                              textStyle: TextStyle(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                              ),
-                                              borderSide: BorderSide(
-                                                color:
-                                                    FlutterFlowTheme.of(context)
-                                                        .primary,
-                                                width: 1.0,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8.0),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ].divide(const SizedBox(height: 14.0)),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context)
-                                .secondaryBackground,
-                            borderRadius: BorderRadius.circular(16.0),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context).pricingClassification,
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontStyle,
-                                        ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
-                                ),
-                                TextFormField(
-                                  controller:
-                                      _model.ordAmountFieldTextController,
-                                  focusNode: _model.ordAmountFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).newOrderPageAmount,
-                                    hintText:
-                                        AppLocalizations.of(context).n000,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: null,
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => safeSetState(() {}),
-                                  validator: _model
-                                      .ordAmountFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                FlutterFlowDropDown<String>(
-                                  controller: _model
-                                          .ordServiceDropdownValueController ??=
-                                      FormFieldController<String>(null),
-                                  // Saved VALUES stay the English strings already in the
-                                  // database; only the labels follow the app language.
-                                  // Localising `options` itself would write translated text
-                                  // into the column (Oct 2026, when the ARBs were filled).
-                                  options: const ['House Shifting', 'Office Shifting', 'Vehicle Transport', 'Storage', 'Packing Only', 'Long Distance'],
-                                  optionLabels: [
-                                    AppLocalizations.of(context).houseShifting,
-                                    AppLocalizations.of(context).officeShifting,
-                                    AppLocalizations.of(context).vehicleTransport,
-                                    AppLocalizations.of(context).storage,
-                                    AppLocalizations.of(context).packingOnly,
-                                    AppLocalizations.of(context).longDistance
-                                  ],
-                                  onChanged: (val) async {
-                                    safeSetState(() =>
-                                        _model.ordServiceDropdownValue = val);
-                                    _model.ordService =
-                                        _model.ordServiceDropdownValue;
-                                    safeSetState(() {});
-                                  },
-                                  textStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontStyle,
-                                      ),
-                                  hintText: AppLocalizations.of(context).selectService,
-                                  icon: Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    size: 24.0,
-                                  ),
-                                  fillColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  elevation: 2.0,
-                                  borderColor:
-                                      FlutterFlowTheme.of(context).alternate,
-                                  borderWidth: 1.0,
-                                  borderRadius: 8.0,
-                                  margin: const EdgeInsetsDirectional.fromSTEB(
-                                      12.0, 0.0, 12.0, 0.0),
-                                  hidesUnderline: true,
-                                  isOverButton: false,
-                                  isSearchable: false,
-                                  isMultiSelect: false,
-                                  labelText:
-                                      AppLocalizations.of(context).newOrderPageService,
-                                  labelTextStyle: const TextStyle(),
-                                ),
-                                FlutterFlowDropDown<String>(
-                                  controller: _model
-                                          .ordBranchDropdownValueController ??=
-                                      FormFieldController<String>(null),
-                                  // Was a hardcoded Chennai/Bengaluru/
-                                  // Coimbatore list — an APC-shaped default
-                                  // (NG-050 had the same disease in
-                                  // default_pricing_config). Now the org's
-                                  // real branches.dart rows, already
-                                  // restricted to just the caller's own
-                                  // branch for a non-owner session — see
-                                  // _loadBranches().
-                                  options: _model.availableBranches,
-                                  onChanged: (val) async {
-                                    safeSetState(() =>
-                                        _model.ordBranchDropdownValue = val);
-                                    _model.ordBranch =
-                                        _model.ordBranchDropdownValue;
-                                    safeSetState(() {});
-                                  },
-                                  textStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontStyle,
-                                      ),
-                                  hintText: AppLocalizations.of(context).selectBranch,
-                                  icon: Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    size: 24.0,
-                                  ),
-                                  fillColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  elevation: 2.0,
-                                  borderColor:
-                                      FlutterFlowTheme.of(context).alternate,
-                                  borderWidth: 1.0,
-                                  borderRadius: 8.0,
-                                  margin: const EdgeInsetsDirectional.fromSTEB(
-                                      12.0, 0.0, 12.0, 0.0),
-                                  hidesUnderline: true,
-                                  isOverButton: false,
-                                  isSearchable: false,
-                                  isMultiSelect: false,
-                                  labelText:
-                                      AppLocalizations.of(context).branch,
-                                  labelTextStyle: const TextStyle(),
-                                ),
-                                FlutterFlowDropDown<String>(
-                                  controller:
-                                      _model.ordTypeDropdownValueController ??=
-                                          FormFieldController<String>(null),
-                                  // Saved VALUES stay the English strings already in the
-                                  // database; only the labels follow the app language.
-                                  // Localising `options` itself would write translated text
-                                  // into the column (Oct 2026, when the ARBs were filled).
-                                  options: const ['Direct', 'Porter'],
-                                  optionLabels: [
-                                    AppLocalizations.of(context).direct,
-                                    AppLocalizations.of(context).newOrderPagePorter
-                                  ],
-                                  onChanged: (val) async {
-                                    safeSetState(() =>
-                                        _model.ordTypeDropdownValue = val);
-                                    _model.ordType =
-                                        _model.ordTypeDropdownValue;
-                                    safeSetState(() {});
-                                  },
-                                  textStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontStyle,
-                                      ),
-                                  hintText: AppLocalizations.of(context).selectType,
-                                  icon: Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    size: 24.0,
-                                  ),
-                                  fillColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  elevation: 2.0,
-                                  borderColor:
-                                      FlutterFlowTheme.of(context).alternate,
-                                  borderWidth: 1.0,
-                                  borderRadius: 8.0,
-                                  margin: const EdgeInsetsDirectional.fromSTEB(
-                                      12.0, 0.0, 12.0, 0.0),
-                                  hidesUnderline: true,
-                                  isOverButton: false,
-                                  isSearchable: false,
-                                  isMultiSelect: false,
-                                  labelText:
-                                      AppLocalizations.of(context).orderType,
-                                  labelTextStyle: const TextStyle(),
-                                ),
-                                // Lead source + commission (2 Sept 2026).
-                                // Replaces the old 16/19 dropdown, which
-                                // hardcoded APC's two porter rates for every
-                                // tenant and wrote 16 even when untouched.
-                                // Shown for any commission-bearing order, not
-                                // only Porter ones — commission is now a
-                                // property of WHERE THE JOB CAME FROM.
-                                if (_model.leadSources.isNotEmpty)
-                                  Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0, 0, 0, 12),
-                                    child: DropdownButtonFormField<String>(
-                                      value: _model.ordLeadSourceCode,
-                                      isExpanded: true,
-                                      decoration: InputDecoration(
-                                        labelText: 'Lead source',
-                                        filled: true,
-                                        fillColor: FlutterFlowTheme.of(context)
-                                            .secondaryBackground,
-                                      ),
-                                      items: [
-                                        const DropdownMenuItem<String>(
-                                          value: null,
-                                          child:
-                                              Text('Direct - no commission'),
-                                        ),
-                                        // A retired source still has to
-                                        // appear, or DropdownButtonFormField
-                                        // asserts on a value with no
-                                        // matching item and the whole form
-                                        // fails to build. Editing an old
-                                        // order whose source was later
-                                        // deactivated is an ordinary thing
-                                        // to do, not an edge case.
-                                        if (_leadSourceIsRetired)
-                                          DropdownMenuItem<String>(
-                                            value: _model.ordLeadSourceCode,
-                                            child: Text(
-                                              '${_model.ordLeadSourceCode} '
-                                              '(no longer active)',
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        for (final src in _model.leadSources)
-                                          DropdownMenuItem<String>(
-                                            value: src.code,
-                                            child: Text(
-                                              _leadSourceLabel(src),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                      ],
-                                      onChanged: (val) => safeSetState(() {
-                                        _model.ordLeadSourceCode = val;
-                                        _refreshCommissionExpected();
-                                        _model.ordLeadSourceId =
-                                            _selectedLeadSource?.id;
-                                        // Snapshot semantics start here: the
-                                        // source's rate is COPIED into the
-                                        // field, and the field is what gets
-                                        // saved. Nothing re-reads the source
-                                        // afterwards, so editing a lead
-                                        // source's rate later cannot
-                                        // re-price this order (brief §44).
-                                        _model.ordCommissionFieldTextController
-                                            ?.text = _defaultCommissionFor(val);
-                                      }),
-                                    ),
-                                  ),
-                                if (_showCommissionField)
-                                  Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0, 0, 0, 4),
-                                    child: TextFormField(
-                                      controller:
-                                          _model.ordCommissionFieldTextController,
-                                      focusNode:
-                                          _model.ordCommissionFieldFocusNode,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                              decimal: true),
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.allow(
-                                            RegExp(r'[0-9.]')),
-                                      ],
-                                      onChanged: (_) => safeSetState(() {}),
-                                      decoration: InputDecoration(
-                                        labelText: 'Commission %',
-                                        // No example number in the hint: an
-                                        // "e.g. 16" anchors exactly the way
-                                        // the old dropdown did.
-                                        hintText:
-                                            'Leave blank if not decided yet',
-                                        suffixText: '%',
-                                        filled: true,
-                                        fillColor: FlutterFlowTheme.of(context)
-                                            .secondaryBackground,
-                                      ),
-                                      validator: (v) {
-                                        final t = (v ?? '').trim();
-                                        if (t.isEmpty) return null;
-                                        final n = double.tryParse(t);
-                                        if (n == null) {
-                                          return 'Enter a number, or leave blank';
-                                        }
-                                        // Mirrors the DB CHECK on
-                                        // lead_sources.commission_pct.
-                                        if (n < 0 || n > 100) {
-                                          return 'Must be between 0 and 100';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                  ),
-                                if (_showCommissionField && _commissionIsBlank)
-                                  Padding(
-                                    padding:
-                                        const EdgeInsetsDirectional.fromSTEB(
-                                            0, 0, 0, 12),
-                                    child: Text(
-                                      'Saved as not priced. This order stays '
-                                      'flagged in reports until a rate is set '
-                                      '- it is never costed at a guessed rate.',
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        color: FlutterFlowTheme.of(context)
-                                            .secondaryText,
-                                      ),
-                                    ),
-                                  ),
-                                if (_model.ordType == 'Porter')
-                                  TextFormField(
-                                    controller: _model
-                                        .ordPorterCashCollectFieldTextController,
-                                    focusNode: _model
-                                        .ordPorterCashCollectFieldFocusNode,
-                                    obscureText: false,
-                                    decoration: InputDecoration(
-                                      labelText: AppLocalizations.of(context).cashCollectedByPorter,
-                                      hintText: AppLocalizations.of(context).leaveBlankIfNoneCollectedYet,
-                                      filled: true,
-                                    ),
-                                    style: const TextStyle(),
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (_) => safeSetState(() {}),
-                                  ),
-                                if (_model.ordType == 'Porter')
-                                  Builder(builder: (context) {
-                                    // Settlement preview — ported from
-                                    // apc_webapp App.jsx's order-form
-                                    // preview (lines ~3719-3731).
-                                    final amt = double.tryParse(_model
-                                                .ordAmountFieldTextController
-                                                .text) ??
-                                            0.0;
-                                    final cashCollect = double.tryParse(_model
-                                                .ordPorterCashCollectFieldTextController
-                                                .text) ??
-                                        0.0;
-                                    // Null when the vendor has not priced
-                                    // this yet. The preview then shows no
-                                    // commission and no net rather than
-                                    // computing both off a guessed rate —
-                                    // a settlement preview is the single
-                                    // most persuasive place to show a
-                                    // wrong number, because it reads as
-                                    // already agreed.
-                                    final pctValue = _commissionPctOrNull;
-                                    final adv = (amt - cashCollect)
-                                        .clamp(0.0, double.infinity)
-                                        .toDouble();
-                                    final comm = pctValue == null
-                                        ? null
-                                        : (amt * (pctValue / 100))
-                                            .roundToDouble();
-                                    return Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.all(14),
-                                      decoration: BoxDecoration(
-                                        color: FlutterFlowTheme.of(context)
-                                            .primaryBackground,
-                                        borderRadius:
-                                            BorderRadius.circular(10),
-                                        border: Border.all(
-                                            color: FlutterFlowTheme.of(
-                                                    context)
-                                                .alternate),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text('Porter Settlement Preview',
-                                              style: FlutterFlowTheme.of(
-                                                      context)
-                                                  .labelMedium),
-                                          const SizedBox(height: 6),
-                                          _settlementLine(context,
-                                              'Advance (Porter paid)', adv),
-                                          if (comm == null)
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 4),
-                                              child: Text(
-                                                'Commission not priced — enter '
-                                                'a % above to see the net.',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .secondaryText,
-                                                ),
-                                              ),
-                                            )
-                                          else ...[
-                                            _settlementLine(
-                                                context,
-                                                'Commission '
-                                                '(${_commissionPctOrNull}%)',
-                                                comm),
-                                            // "Net to you", not "Net to APC":
-                                            // this is a multi-tenant product
-                                            // and APC is one tenant.
-                                            _settlementLine(context,
-                                                'Net to you (Quote − Comm)',
-                                                amt - comm,
-                                                bold: true),
-                                          ],
-                                        ],
-                                      ),
-                                    );
-                                  }),
-                                // ---- GST (20 Aug 2026) --------------------
-                                // Toggle first, rate second: whether GST
-                                // applies at all is the decision the office
-                                // actually makes, and a rate dropdown shown
-                                // for a non-GST job is a field to ignore.
-                                // Writes the EXISTING quote_gst_* columns —
-                                // no schema change — so a directly-booked
-                                // order carries GST the same way a
-                                // quote-converted one does, and the invoice
-                                // generator reads one set of fields.
-                                SwitchListTile.adaptive(
-                                  contentPadding: EdgeInsets.zero,
-                                  value: _model.ordGstApplicable,
-                                  onChanged: (v) => safeSetState(
-                                      () => _model.ordGstApplicable = v),
-                                  title: const Text('Charge GST'),
-                                  subtitle: Text(
-                                    _model.ordGstApplicable
-                                        ? 'Added on top of the amount above.'
-                                        : 'No GST on this order.',
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                ),
-                                if (_model.ordGstApplicable)
-                                  Builder(builder: (context) {
-                                    final amt = double.tryParse(_model
-                                            .ordAmountFieldTextController
-                                            .text) ??
-                                        0.0;
-                                    final pct = double.tryParse(
-                                            _model.ordGstPct ??
-                                                '$kGstDefaultPct') ??
-                                        kGstDefaultPct.toDouble();
-                                    final gst =
-                                        (amt * pct / 100).roundToDouble();
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        DropdownButtonFormField<String>(
-                                          initialValue: _model.ordGstPct,
-                                          decoration: const InputDecoration(
-                                            labelText: 'GST rate',
-                                            filled: true,
-                                          ),
-                                          items: [
-                                            // 0 is filtered out on purpose:
-                                            // the toggle above already means
-                                            // "no GST", so offering 0% here
-                                            // creates a second, contradictory
-                                            // way to say the same thing.
-                                            for (final r in kGstRateOptions
-                                                .where((r) => r > 0))
-                                              DropdownMenuItem(
-                                                value: '$r',
-                                                child: Text('$r%'),
-                                              ),
-                                          ],
-                                          onChanged: (v) => safeSetState(() =>
-                                              _model.ordGstPct =
-                                                  v ?? '$kGstDefaultPct'),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        // Says the total out loud, because
-                                        // "Amount" alone is ambiguous about
-                                        // whether tax is inside it.
-                                        Text(
-                                          'Taxable ₹${amt.toStringAsFixed(0)}'
-                                          '  +  GST ₹${gst.toStringAsFixed(0)}'
-                                          '  =  ₹${(amt + gst).toStringAsFixed(0)}',
-                                          style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                        const SizedBox(height: 10),
-                                      ],
-                                    );
-                                  }),
-                                TextFormField(
-                                  controller:
-                                      _model.ordNotesFieldTextController,
-                                  focusNode: _model.ordNotesFieldFocusNode,
-                                  obscureText: false,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        AppLocalizations.of(context).notes,
-                                    hintText:
-                                        AppLocalizations.of(context).additionalDetails,
-                                    enabledBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    errorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    focusedErrorBorder: const OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Color(0x00000000),
-                                        width: 1.0,
-                                      ),
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(4.0),
-                                        topRight: Radius.circular(4.0),
-                                      ),
-                                    ),
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  maxLines: 3,
-                                  validator: _model
-                                      .ordNotesFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                                // RLS/GST audit, 12 Aug 2026: needed on a
-                                // B2B tax invoice for the customer's input
-                                // credit. Pre-filled from the matched
-                                // customer's own gstin at save time when
-                                // left blank (see the Save button below) —
-                                // this field is for correcting or manually
-                                // supplying it per order, not the only path
-                                // it can come from.
-                                TextFormField(
-                                  controller: _model.ordGstinFieldTextController,
-                                  focusNode: _model.ordGstinFieldFocusNode,
-                                  textCapitalization: TextCapitalization.characters,
-                                  obscureText: false,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Customer GSTIN (optional)',
-                                    hintText: '15-character GSTIN, for a B2B tax invoice',
-                                    filled: true,
-                                  ),
-                                  style: const TextStyle(),
-                                  validator: _model
-                                      .ordGstinFieldTextControllerValidator
-                                      .asValidator(context),
-                                ),
-                              ].divide(const SizedBox(height: 14.0)),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsetsDirectional.fromSTEB(
-                              0.0, 16.0, 0.0, 16.0),
-                          child: FFButtonWidget(
-                            onPressed: () async {
+                                            }
+
+  Future<void> _save() async {
                               // Forces the explicit pick item 4 asks for
                               // (owner, multi-branch org, no default) and
                               // is also what stops a save going through
@@ -2347,37 +865,623 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                               }
 
                               safeSetState(() {});
-                            },
-                            text: widget.orderId != null
-                                ? 'Update Order'
-                                : AppLocalizations.of(context).saveOrder,
-                            icon: const Icon(
-                              Icons.save,
-                              size: 20.0,
-                            ),
-                            options: FFButtonOptions(
-                              width: double.infinity,
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 0.0, 0.0),
-                              iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 0.0, 0.0),
-                              iconColor: FlutterFlowTheme.of(context)
-                                  .primaryBackground,
-                              color: FlutterFlowTheme.of(context).primary,
-                              textStyle: TextStyle(
-                                color: FlutterFlowTheme.of(context)
-                                    .primaryBackground,
-                              ),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                          ),
+                            }
+
+  Widget _chipGroup(List<String> values, List<String> labels, String? value,
+          ValueChanged<String> onPick) =>
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (var i = 0; i < values.length; i++)
+            NgChip(
+              label: labels[i],
+              selected: values[i] == value,
+              onTap: () => onPick(values[i]),
+            ),
+        ],
+      );
+
+  Widget _place(BuildContext context, {
+    required bool pickup,
+    required TextEditingController city,
+    FocusNode? cityFocus,
+    required TextEditingController address,
+    FocusNode? addressFocus,
+    required TextEditingController floor,
+    FocusNode? floorFocus,
+  }) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          pickup
+              ? Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: c.green, width: 3),
+                  ),
+                )
+              : Icon(Icons.location_on_outlined, size: 20, color: c.acc),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text((pickup ? l.noPickup : l.noDrop).toUpperCase(),
+                style: NgFonts.geist(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
+                    color: c.mute)),
+          ),
+          if (pickup)
+            NgHeaderButtonBox(
+              icon: Icons.swap_vert_rounded,
+              onTap: () {
+                void swap(TextEditingController? a, TextEditingController? b) {
+                  final t = a!.text;
+                  a.text = b!.text;
+                  b.text = t;
+                }
+                swap(_model.ordFromCityFieldTextController,
+                    _model.ordToCityFieldTextController);
+                swap(_model.ordFromAddressFieldTextController,
+                    _model.ordToAddressFieldTextController);
+                swap(_model.ordFromFloorFieldTextController,
+                    _model.ordToFloorFieldTextController);
+              },
+            ),
+        ]),
+        const SizedBox(height: 10),
+        NgInput(
+            controller: city,
+            focusNode: cityFocus,
+            hint: pickup ? l.fromCity : l.toCity),
+        const SizedBox(height: 8),
+        NgInput(
+            controller: address,
+            focusNode: addressFocus,
+            hint: pickup ? l.fromAddress : l.toAddress),
+        const SizedBox(height: 8),
+        NgInput(
+            controller: floor,
+            focusNode: floorFocus,
+            hint: pickup ? l.fromFloor : l.toFloor),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    final isEditing = widget.orderId != null;
+    const gap = SizedBox(height: 22);
+    final amount =
+        double.tryParse(_model.ordAmountFieldTextController?.text.trim() ?? '');
+    final date = _model.ordMoveDate;
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        key: scaffoldKey,
+        backgroundColor: c.bg,
+        appBar: NgSimpleBar(
+            title: isEditing ? 'Edit Order' : l.newOrder, close: true),
+        body: (_model.branchesLoaded &&
+                _model.availableBranches.isEmpty &&
+                widget.orderId == null)
+            ? _buildNoBranchState(context)
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  NgFieldLabel(l.newOrderPageCustomer),
+                  NgInput(
+                    controller: _model.ordCustomerFieldTextController!,
+                    focusNode: _model.ordCustomerFieldFocusNode,
+                    hint: l.fullName,
+                    icon: Icons.person_outline_rounded,
+                  ),
+                  const SizedBox(height: 8),
+                  NgInput(
+                    controller: _model.ordPhoneFieldTextController!,
+                    focusNode: _model.ordPhoneFieldFocusNode,
+                    hint: l.newOrderPagePhone,
+                    icon: Icons.call_outlined,
+                    keyboardType: TextInputType.number,
+                    mono: true,
+                  ),
+                  gap,
+                  NgFieldLabel(l.newOrderPageService),
+                  _chipGroup(
+                    const ['House Shifting', 'Office Shifting', 'Vehicle Transport', 'Storage', 'Packing Only', 'Long Distance'],
+                    [
+                      l.houseShifting,
+                      l.officeShifting,
+                      l.vehicleTransport,
+                      l.storage,
+                      l.packingOnly,
+                      l.longDistance,
+                    ],
+                    _model.ordService,
+                    (v) => safeSetState(() {
+                      _model.ordServiceDropdownValue = v;
+                      _model.ordService = v;
+                    }),
+                  ),
+                  gap,
+                  NgFieldLabel(l.orderType),
+                  _chipGroup(
+                    const ['Direct', 'Porter'],
+                    [l.direct, l.newOrderPagePorter],
+                    _model.ordType,
+                    (v) => safeSetState(() {
+                      _model.ordTypeDropdownValue = v;
+                      _model.ordType = v;
+                    }),
+                  ),
+                  gap,
+                  NgCard(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _place(context,
+                            pickup: true,
+                            city: _model.ordFromCityFieldTextController!,
+                            cityFocus: _model.ordFromCityFieldFocusNode,
+                            address: _model.ordFromAddressFieldTextController!,
+                            addressFocus: _model.ordFromAddressFieldFocusNode,
+                            floor: _model.ordFromFloorFieldTextController!,
+                            floorFocus: _model.ordFromFloorFieldFocusNode),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Divider(height: 1, color: c.w06),
                         ),
-                      ].divide(const SizedBox(height: 16.0)),
+                        _place(context,
+                            pickup: false,
+                            city: _model.ordToCityFieldTextController!,
+                            cityFocus: _model.ordToCityFieldFocusNode,
+                            address: _model.ordToAddressFieldTextController!,
+                            addressFocus: _model.ordToAddressFieldFocusNode,
+                            floor: _model.ordToFloorFieldTextController!,
+                            floorFocus: _model.ordToFloorFieldFocusNode),
+                      ],
                     ),
-                  ].divide(const SizedBox(height: 16.0)),
+                  ),
+                  const SizedBox(height: 12),
+                  NgCard(
+                    onTap: _pickMoveDate,
+                    padding: const EdgeInsets.all(16),
+                    child: Row(children: [
+                      Icon(Icons.calendar_month_outlined,
+                          size: 22, color: c.acc),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l.newOrderPageMoveDate,
+                                style: NgFonts.geist(
+                                    fontSize: 13, color: c.mute)),
+                            const SizedBox(height: 2),
+                            Text(
+                              date == null
+                                  ? l.tapToPickDate
+                                  : DateFormat('EEE, d MMM yyyy').format(date),
+                              style: NgFonts.geist(
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: date == null ? c.faint : c.text),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.expand_more_rounded, color: c.mute),
+                    ]),
+                  ),
+                  gap,
+                  NgFieldLabel(l.branch),
+                  if (_model.branchLoadError != null)
+                    Text(_model.branchLoadError!,
+                        style: NgFonts.geist(fontSize: 13, color: c.red))
+                  else
+                    _chipGroup(
+                      _model.availableBranches,
+                      _model.availableBranches,
+                      _model.ordBranch,
+                      (v) => safeSetState(() {
+                        _model.ordBranchDropdownValue = v;
+                        _model.ordBranch = v;
+                      }),
+                    ),
+                  gap,
+                  NgFieldLabel(l.noPricing),
+                  NgInput(
+                    controller: _model.ordAmountFieldTextController!,
+                    focusNode: _model.ordAmountFieldFocusNode,
+                    hint: l.newOrderPageAmount,
+                    icon: Icons.currency_rupee_rounded,
+                    keyboardType: TextInputType.number,
+                    mono: true,
+                    onChanged: (_) => safeSetState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  NgCard(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                                // Lead source + commission (2 Sept 2026).
+                                // Replaces the old 16/19 dropdown, which
+                                // hardcoded APC's two porter rates for every
+                                // tenant and wrote 16 even when untouched.
+                                // Shown for any commission-bearing order, not
+                                // only Porter ones — commission is now a
+                                // property of WHERE THE JOB CAME FROM.
+                                if (_model.leadSources.isNotEmpty)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0, 0, 0, 12),
+                                    child: DropdownButtonFormField<String>(
+                                      value: _model.ordLeadSourceCode,
+                                      isExpanded: true,
+                                      decoration: InputDecoration(
+                                        labelText: 'Lead source',
+                                        filled: true,
+                                        fillColor: FlutterFlowTheme.of(context)
+                                            .secondaryBackground,
+                                      ),
+                                      items: [
+                                        const DropdownMenuItem<String>(
+                                          value: null,
+                                          child:
+                                              Text('Direct - no commission'),
+                                        ),
+                                        // A retired source still has to
+                                        // appear, or DropdownButtonFormField
+                                        // asserts on a value with no
+                                        // matching item and the whole form
+                                        // fails to build. Editing an old
+                                        // order whose source was later
+                                        // deactivated is an ordinary thing
+                                        // to do, not an edge case.
+                                        if (_leadSourceIsRetired)
+                                          DropdownMenuItem<String>(
+                                            value: _model.ordLeadSourceCode,
+                                            child: Text(
+                                              '${_model.ordLeadSourceCode} '
+                                              '(no longer active)',
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        for (final src in _model.leadSources)
+                                          DropdownMenuItem<String>(
+                                            value: src.code,
+                                            child: Text(
+                                              _leadSourceLabel(src),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                      ],
+                                      onChanged: (val) => safeSetState(() {
+                                        _model.ordLeadSourceCode = val;
+                                        _refreshCommissionExpected();
+                                        _model.ordLeadSourceId =
+                                            _selectedLeadSource?.id;
+                                        // Snapshot semantics start here: the
+                                        // source's rate is COPIED into the
+                                        // field, and the field is what gets
+                                        // saved. Nothing re-reads the source
+                                        // afterwards, so editing a lead
+                                        // source's rate later cannot
+                                        // re-price this order (brief §44).
+                                        _model.ordCommissionFieldTextController
+                                            ?.text = _defaultCommissionFor(val);
+                                      }),
+                                    ),
+                                  ),
+                                if (_showCommissionField)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0, 0, 0, 4),
+                                    child: TextFormField(
+                                      controller:
+                                          _model.ordCommissionFieldTextController,
+                                      focusNode:
+                                          _model.ordCommissionFieldFocusNode,
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                              decimal: true),
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.allow(
+                                            RegExp(r'[0-9.]')),
+                                      ],
+                                      onChanged: (_) => safeSetState(() {}),
+                                      decoration: InputDecoration(
+                                        labelText: 'Commission %',
+                                        // No example number in the hint: an
+                                        // "e.g. 16" anchors exactly the way
+                                        // the old dropdown did.
+                                        hintText:
+                                            'Leave blank if not decided yet',
+                                        suffixText: '%',
+                                        filled: true,
+                                        fillColor: FlutterFlowTheme.of(context)
+                                            .secondaryBackground,
+                                      ),
+                                      validator: (v) {
+                                        final t = (v ?? '').trim();
+                                        if (t.isEmpty) return null;
+                                        final n = double.tryParse(t);
+                                        if (n == null) {
+                                          return 'Enter a number, or leave blank';
+                                        }
+                                        // Mirrors the DB CHECK on
+                                        // lead_sources.commission_pct.
+                                        if (n < 0 || n > 100) {
+                                          return 'Must be between 0 and 100';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                if (_showCommissionField && _commissionIsBlank)
+                                  Padding(
+                                    padding:
+                                        const EdgeInsetsDirectional.fromSTEB(
+                                            0, 0, 0, 12),
+                                    child: Text(
+                                      'Saved as not priced. This order stays '
+                                      'flagged in reports until a rate is set '
+                                      '- it is never costed at a guessed rate.',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: FlutterFlowTheme.of(context)
+                                            .secondaryText,
+                                      ),
+                                    ),
+                                  ),
+                                if (_model.ordType == 'Porter')
+                                  TextFormField(
+                                    controller: _model
+                                        .ordPorterCashCollectFieldTextController,
+                                    focusNode: _model
+                                        .ordPorterCashCollectFieldFocusNode,
+                                    obscureText: false,
+                                    decoration: InputDecoration(
+                                      labelText: AppLocalizations.of(context).cashCollectedByPorter,
+                                      hintText: AppLocalizations.of(context).leaveBlankIfNoneCollectedYet,
+                                      filled: true,
+                                    ),
+                                    style: const TextStyle(),
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (_) => safeSetState(() {}),
+                                  ),
+                                if (_model.ordType == 'Porter')
+                                  Builder(builder: (context) {
+                                    // Settlement preview — ported from
+                                    // apc_webapp App.jsx's order-form
+                                    // preview (lines ~3719-3731).
+                                    final amt = double.tryParse(_model
+                                                .ordAmountFieldTextController
+                                                .text) ??
+                                            0.0;
+                                    final cashCollect = double.tryParse(_model
+                                                .ordPorterCashCollectFieldTextController
+                                                .text) ??
+                                        0.0;
+                                    // Null when the vendor has not priced
+                                    // this yet. The preview then shows no
+                                    // commission and no net rather than
+                                    // computing both off a guessed rate —
+                                    // a settlement preview is the single
+                                    // most persuasive place to show a
+                                    // wrong number, because it reads as
+                                    // already agreed.
+                                    final pctValue = _commissionPctOrNull;
+                                    final adv = (amt - cashCollect)
+                                        .clamp(0.0, double.infinity)
+                                        .toDouble();
+                                    final comm = pctValue == null
+                                        ? null
+                                        : (amt * (pctValue / 100))
+                                            .roundToDouble();
+                                    return Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: FlutterFlowTheme.of(context)
+                                            .primaryBackground,
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        border: Border.all(
+                                            color: FlutterFlowTheme.of(
+                                                    context)
+                                                .alternate),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text('Porter Settlement Preview',
+                                              style: FlutterFlowTheme.of(
+                                                      context)
+                                                  .labelMedium),
+                                          const SizedBox(height: 6),
+                                          _settlementLine(context,
+                                              'Advance (Porter paid)', adv),
+                                          if (comm == null)
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 4),
+                                              child: Text(
+                                                'Commission not priced — enter '
+                                                'a % above to see the net.',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: FlutterFlowTheme.of(
+                                                          context)
+                                                      .secondaryText,
+                                                ),
+                                              ),
+                                            )
+                                          else ...[
+                                            _settlementLine(
+                                                context,
+                                                'Commission '
+                                                '(${_commissionPctOrNull}%)',
+                                                comm),
+                                            // "Net to you", not "Net to APC":
+                                            // this is a multi-tenant product
+                                            // and APC is one tenant.
+                                            _settlementLine(context,
+                                                'Net to you (Quote − Comm)',
+                                                amt - comm,
+                                                bold: true),
+                                          ],
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                // ---- GST (20 Aug 2026) --------------------
+                                // Toggle first, rate second: whether GST
+                                // applies at all is the decision the office
+                                // actually makes, and a rate dropdown shown
+                                // for a non-GST job is a field to ignore.
+                                // Writes the EXISTING quote_gst_* columns —
+                                // no schema change — so a directly-booked
+                                // order carries GST the same way a
+                                // quote-converted one does, and the invoice
+                                // generator reads one set of fields.
+                                SwitchListTile.adaptive(
+                                  contentPadding: EdgeInsets.zero,
+                                  value: _model.ordGstApplicable,
+                                  onChanged: (v) => safeSetState(
+                                      () => _model.ordGstApplicable = v),
+                                  title: const Text('Charge GST'),
+                                  subtitle: Text(
+                                    _model.ordGstApplicable
+                                        ? 'Added on top of the amount above.'
+                                        : 'No GST on this order.',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                                if (_model.ordGstApplicable)
+                                  Builder(builder: (context) {
+                                    final amt = double.tryParse(_model
+                                            .ordAmountFieldTextController
+                                            .text) ??
+                                        0.0;
+                                    final pct = double.tryParse(
+                                            _model.ordGstPct ??
+                                                '$kGstDefaultPct') ??
+                                        kGstDefaultPct.toDouble();
+                                    final gst =
+                                        (amt * pct / 100).roundToDouble();
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        DropdownButtonFormField<String>(
+                                          initialValue: _model.ordGstPct,
+                                          decoration: const InputDecoration(
+                                            labelText: 'GST rate',
+                                            filled: true,
+                                          ),
+                                          items: [
+                                            // 0 is filtered out on purpose:
+                                            // the toggle above already means
+                                            // "no GST", so offering 0% here
+                                            // creates a second, contradictory
+                                            // way to say the same thing.
+                                            for (final r in kGstRateOptions
+                                                .where((r) => r > 0))
+                                              DropdownMenuItem(
+                                                value: '$r',
+                                                child: Text('$r%'),
+                                              ),
+                                          ],
+                                          onChanged: (v) => safeSetState(() =>
+                                              _model.ordGstPct =
+                                                  v ?? '$kGstDefaultPct'),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        // Says the total out loud, because
+                                        // "Amount" alone is ambiguous about
+                                        // whether tax is inside it.
+                                        Text(
+                                          'Taxable ₹${amt.toStringAsFixed(0)}'
+                                          '  +  GST ₹${gst.toStringAsFixed(0)}'
+                                          '  =  ₹${(amt + gst).toStringAsFixed(0)}',
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                        const SizedBox(height: 10),
+                                      ],
+                                    );
+                                  }),
+                      ],
+                    ),
+                  ),
+                  gap,
+                  NgFieldLabel(l.notes),
+                  NgInput(
+                    controller: _model.ordNotesFieldTextController!,
+                    focusNode: _model.ordNotesFieldFocusNode,
+                    hint: l.additionalDetails,
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 8),
+                  // RLS/GST audit, 12 Aug 2026: needed on a B2B tax invoice
+                  // for the customer's input credit. Pre-filled from the
+                  // matched customer's own gstin at save time when left
+                  // blank — this field corrects or supplies it per order.
+                  NgInput(
+                    controller: _model.ordGstinFieldTextController!,
+                    focusNode: _model.ordGstinFieldFocusNode,
+                    hint: 'Customer GSTIN (optional)',
+                    mono: true,
+                  ),
+                ],
+              ),
+        bottomNavigationBar: SafeArea(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+            decoration: BoxDecoration(
+              color: c.bg,
+              border: Border(top: BorderSide(color: c.w06)),
+            ),
+            child: Row(children: [
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    amount == null ? '₹ —' : functions.inrFull(amount),
+                    style: NgFonts.geist(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: c.text),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: NgPrimaryButton(
+                  label: isEditing ? 'Update Order' : l.saveOrder,
+                  icon: Icons.arrow_forward_rounded,
+                  height: 52,
+                  onPressed: _save,
+                ),
+              ),
+            ]),
           ),
         ),
       ),

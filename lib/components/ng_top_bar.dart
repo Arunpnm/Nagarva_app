@@ -20,7 +20,16 @@ import '/flutter_flow/ng_tokens.dart';
 /// only when a name is actually known — a placeholder company name would
 /// be worse than none.
 class NgTopBar extends StatelessWidget implements PreferredSizeWidget {
-  const NgTopBar({super.key, this.showBack = false, this.extraActions = const []});
+  const NgTopBar({
+    super.key,
+    this.showBack = false,
+    this.extraActions = const [],
+    this.onRefresh,
+  });
+
+  /// Reloads the screen's data. The refresh button only renders when a
+  /// screen passes this, so it never appears as a button that does nothing.
+  final VoidCallback? onRefresh;
 
   /// For non-tab screens that adopt the bar; tab screens leave it off.
   final bool showBack;
@@ -111,16 +120,21 @@ class NgTopBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
                 for (final a in extraActions) ...[a, const SizedBox(width: 4)],
+                // Handoff order: refresh, theme, language, search,
+                // notifications.
+                if (onRefresh != null) ...[
+                  NgHeaderButton(
+                    onTap: onRefresh,
+                    child: Icon(Icons.refresh_rounded, size: 20, color: c.soft),
+                  ),
+                  const SizedBox(width: 4),
+                ],
                 NgHeaderButton(
-                  child: NotificationBell(iconSize: 21, iconColor: c.soft),
+                  child: ThemeQuickButton(iconColor: c.soft),
                 ),
                 const SizedBox(width: 4),
                 NgHeaderButton(
                   child: LanguageQuickButton(iconColor: c.soft),
-                ),
-                const SizedBox(width: 4),
-                NgHeaderButton(
-                  child: ThemeQuickButton(iconColor: c.soft),
                 ),
                 const SizedBox(width: 4),
                 // Global customer search (orders + leads by name or phone).
@@ -128,6 +142,10 @@ class NgTopBar extends StatelessWidget implements PreferredSizeWidget {
                   onTap: () => showSearch(
                       context: context, delegate: GlobalSearchDelegate()),
                   child: Icon(Icons.search_rounded, size: 21, color: c.soft),
+                ),
+                const SizedBox(width: 4),
+                NgHeaderButton(
+                  child: NotificationBell(iconSize: 21, iconColor: c.soft),
                 ),
               ],
             ),

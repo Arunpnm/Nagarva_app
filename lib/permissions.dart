@@ -97,6 +97,31 @@ const kPermModules = <PermModule>[
   PermModule('trips', 'Trips', 'TripsPage'),
   // Session 4, Part C-12.
   PermModule('tasks', 'Tasks & Activities', 'TasksPage'),
+  // Design-parity modules (21 Oct 2026), each its own page.
+  PermModule('leave', 'Leave', 'LeavePage'),
+  PermModule('incentives', 'Overtime & incentives', 'IncentivesPage', moneyModule: true),
+  PermModule('business_accounts', 'Business accounts', 'BusinessAccountsPage'),
+  PermModule('part_load', 'Part-load & routes', 'PartLoadPage'),
+  PermModule('staff_documents', 'Staff documents', 'StaffDocumentsPage'),
+  PermModule('labour_contractors', 'Labour contractors', 'LabourContractorsPage'),
+  PermModule('diesel_advance', 'Diesel advance', 'DieselAdvancePage', moneyModule: true),
+  PermModule('hired_trucks', 'Hired trucks', 'HiredTrucksPage'),
+  PermModule('backup', 'Backup & offline', 'BackupPage'),
+  PermModule('lost_report', 'Lead rules & lost report', 'LostReportPage'),
+  PermModule('referrals', 'Coupons & referrals', 'ReferralsPage'),
+  PermModule('daily_summary', 'Daily summary', 'DailySummaryPage'),
+  PermModule('approvals', 'Approvals', 'ApprovalsPage', moneyModule: true),
+  PermModule('gst', 'GST, TDS & exports', 'GstPage', moneyModule: true),
+  PermModule('credit_notes', 'Credit notes & refunds', 'CreditNotesPage', moneyModule: true),
+  PermModule('bank_match', 'Bank & UPI match', 'BankMatchPage', moneyModule: true),
+  PermModule('cash_book', 'Cash book', 'CashBookPage', moneyModule: true),
+  PermModule('payslips', 'Payslips, PF & ESI', 'PayslipsPage', moneyModule: true),
+  PermModule('storage_billing', 'Storage billing', 'StorageBillingPage'),
+  PermModule('fuel', 'Fuel & FASTag', 'FuelPage'),
+  PermModule('vehicle_docs', 'Docs, tyres & battery', 'VehicleDocsPage'),
+  PermModule('eway_bills', 'E-way bills', 'EwayBillsPage'),
+  PermModule('lead_sources', 'Services & sources', 'LeadSourcesPage'),
+  PermModule('activity_log', 'Activity log', 'ActivityLogPage'),
 
   // ---------------------------------------------------------------
   // Dashboard financial tiers (25 Aug 2026).

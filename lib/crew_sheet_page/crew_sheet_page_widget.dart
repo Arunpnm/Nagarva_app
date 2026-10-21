@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -587,23 +588,13 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
     final theme = FlutterFlowTheme.of(context);
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.secondaryBackground,
-        foregroundColor: theme.primaryText,
-        elevation: 0,
-        title: Text('Crew Sheet',
-            style: NgFonts.geist(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: theme.primaryText)),
-        actions: [
+      appBar: NgSimpleBar(title: 'Crew Sheet', actions: [
           IconButton(
             tooltip: 'Reload',
             icon: const Icon(Icons.refresh),
             onPressed: _saving ? null : _load,
           ),
-        ],
-      ),
+        ]),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null

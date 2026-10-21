@@ -77,10 +77,11 @@ List<String> leadStatusMatchValues(String canonical) => [
 
 String leadStatusLabel(String? raw) {
   switch (canonicalLeadStatus(raw)) {
+    // Sentence case, as the handoff writes them.
     case kLeadStatusFollowUp:
-      return 'Follow Up';
+      return 'Follow up';
     case kLeadStatusSurveyDone:
-      return 'Survey Done';
+      return 'Survey done';
     case kLeadStatusQuoted:
       return 'Quoted';
     case kLeadStatusConfirmed:
@@ -88,7 +89,7 @@ String leadStatusLabel(String? raw) {
     case kLeadStatusLost:
       return 'Lost';
     default:
-      return 'New Lead';
+      return 'New';
   }
 }
 
@@ -97,7 +98,7 @@ String leadStatusLabel(String? raw) {
 String leadStageShortLabel(String canonical) {
   switch (canonical) {
     case kLeadStatusFollowUp:
-      return 'Follow Up';
+      return 'Follow up';
     case kLeadStatusSurveyDone:
       return 'Survey';
     case kLeadStatusQuoted:

@@ -4,7 +4,8 @@ import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'rate_card_detail_page_widget.dart';
@@ -114,39 +115,64 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        automaticallyImplyLeading: true,
-        title: Text('Rate Cards',
-            style: theme.titleLarge.override(
-                font: NgFonts.geist(fontWeight: FontWeight.w600),
-                fontSize: 22,
-                fontWeight: FontWeight.w600)),
-        elevation: 0,
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _newCard,
-        icon: const Icon(Icons.add),
-        label: const Text('New Card'),
-      ),
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _load),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                 children: [
+                  NgModuleHeader('Rate cards',
+                      subtitle: 'Your prices. Every new quote uses them.',
+                      actions: [
+                        NgPrimaryButton(
+                          compact: true,
+                          height: 40,
+                          icon: Icons.add_rounded,
+                          label: 'New card',
+                          onPressed: _newCard,
+                        ),
+                      ]),
+                  const SizedBox(height: 14),
+                  // "No suggested money" (CLAUDE.md): say so where the
+                  // vendor sets prices, as the handoff does.
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: c.amberBg,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.edit_note_rounded, size: 20, color: c.amber),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'All prices start at ₹0. Enter your own rates for '
+                            'each service and add-on. New quotes use these prices.',
+                            style: NgFonts.geist(
+                                fontSize: 13, height: 1.4, color: c.soft),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   if (_cards.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                    NgCard(
                       child: Text('No rate cards yet.',
-                          style: NgFonts.geist(color: theme.secondaryText)),
+                          textAlign: TextAlign.center,
+                          style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
                     )
                   else
-                    for (final c in _cards) _cardRow(theme, c),
+                    NgCardList(children: [
+                      for (final rc in _cards) _cardRow(rc),
+                    ]),
                 ],
               ),
             ),
@@ -170,68 +196,29 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
     if (deleted) await _load();
   }
 
-  Widget _cardRow(FlutterFlowTheme theme, RateCardsRow c) {
-    return InkWell(
+  Widget _cardRow(RateCardsRow rc) {
+    final c = NgPalette.of(context);
+    return NgListRow(
       onTap: () => context.pushNamed(
         RateCardDetailPageWidget.routeName,
-        queryParameters: {'cardId': serializeParam(c.id, ParamType.String)},
+        queryParameters: {'cardId': serializeParam(rc.id, ParamType.String)},
       ),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(c.name,
-                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
-                  Text(
-                    [
-                      if ((c.code ?? '').isNotEmpty) c.code,
-                      c.cardType,
-                      if ((c.branch ?? '').isNotEmpty) c.branch,
-                    ].whereType<String>().join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
-                  ),
-                ],
-              ),
-            ),
-            if (c.isDefault)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                margin: const EdgeInsets.only(right: 6),
-                decoration: BoxDecoration(
-                  color: theme.primary.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text('Default',
-                    style: NgFonts.geist(fontSize: 10, color: theme.primary)),
-              ),
-            if (!c.active)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: theme.error.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text('Inactive',
-                    style: NgFonts.geist(fontSize: 10, color: theme.error)),
-              ),
-            IconButton(
-              tooltip: 'Delete rate card',
-              visualDensity: VisualDensity.compact,
-              icon: Icon(Icons.delete_outline, size: 18, color: theme.error),
-              onPressed: () => _deleteCard(c),
-            ),
-          ],
-        ),
+      icon: Icons.sell_outlined,
+      title: rc.name,
+      titleTrailing: rc.isDefault
+          ? const NgPill('Default', status: NgStatus.accent)
+          : (!rc.active
+              ? const NgPill('Inactive', status: NgStatus.red)
+              : null),
+      subtitle: [
+        if ((rc.code ?? '').isNotEmpty) rc.code!,
+        rc.cardType,
+        if ((rc.branch ?? '').isNotEmpty) rc.branch!,
+      ].join(' · '),
+      trailing: IconButton(
+        tooltip: 'Delete rate card',
+        icon: Icon(Icons.delete_outline_rounded, size: 19, color: c.faint),
+        onPressed: () => _deleteCard(rc),
       ),
     );
   }

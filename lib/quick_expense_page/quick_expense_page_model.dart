@@ -16,6 +16,12 @@ class QuickExpensePageModel extends FlutterFlowModel<QuickExpensePageWidget> {
 
   String? expCategory = 'Fuel';
 
+  /// The day the money was spent. Defaults to today.
+  DateTime expDate = DateTime.now();
+
+  /// How the expense was paid; only sent when kExpensePaymentModeLive.
+  String? expPaymentMode;
+
   ///  State fields for stateful widgets in this page.
 
   // State field(s) for ExpAmountField widget.
