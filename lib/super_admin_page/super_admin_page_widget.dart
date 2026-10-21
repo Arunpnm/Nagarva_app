@@ -1,3 +1,4 @@
+import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
@@ -187,10 +188,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
     if (!_isAdmin) {
       return Scaffold(
         backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          title: const Text('Platform Admin'),
-        ),
+        appBar: NgSimpleBar(title: 'Platform Admin'),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -217,18 +215,22 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
       length: 3,
       child: Scaffold(
         backgroundColor: theme.primaryBackground,
-        appBar: AppBar(
-          backgroundColor: theme.primaryBackground,
-          title: Text('Platform Admin — ${_orgs.length} tenants'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Tenants'),
-              Tab(text: 'Signups'),
-              Tab(text: 'Plans'),
-            ],
-          ),
-        ),
-        body: TabBarView(
+        appBar: NgSimpleBar(title: 'Platform Admin — ${_orgs.length} tenants'),
+        body: Column(
+          children: [
+            TabBar(
+              labelColor: NgPalette.of(context).text,
+              unselectedLabelColor: NgPalette.of(context).mute,
+              indicatorColor: NgPalette.of(context).acc,
+              dividerColor: NgPalette.of(context).w06,
+              tabs: const [
+                Tab(text: 'Tenants'),
+                Tab(text: 'Signups'),
+                Tab(text: 'Plans'),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
           children: [
             _loadingOrgs
                 ? const Center(child: CircularProgressIndicator())
@@ -311,6 +313,8 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                   ),
             SignupsTab(onChanged: _loadOrgs),
             const PlansTab(),
+          ],
+        )),
           ],
         ),
       ),

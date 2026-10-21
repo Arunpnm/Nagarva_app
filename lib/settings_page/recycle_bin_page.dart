@@ -154,17 +154,13 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
 
     return Scaffold(
       backgroundColor: theme.primaryBackground,
-      appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
-        title: const Text('Deleted Items'),
-        actions: [
+      appBar: NgSimpleBar(title: 'Deleted Items', actions: [
           IconButton(
             onPressed: _loading ? null : _load,
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
           ),
-        ],
-      ),
+        ]),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
