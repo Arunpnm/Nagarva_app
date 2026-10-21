@@ -2,7 +2,9 @@ import '/backend/commission_pricing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/margin_availability.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -39,12 +41,6 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
   void onPageRefresh() => _loadData();
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
-
-  static final _currency = NumberFormat.currency(
-    locale: 'en_IN',
-    symbol: '₹',
-    decimalDigits: 0,
-  );
 
   List<OrdersRow> _allOrders = [];
   List<ExpensesRow> _allExpenses = [];
@@ -212,264 +208,236 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: AppBar(
-          backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-          automaticallyImplyLeading: true,
-          title: Text(
-            'P&L Report',
-            style: FlutterFlowTheme.of(context).titleLarge.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600),
-                  fontSize: 22.0,
-                  fontWeight: FontWeight.w600,
+    final c = NgPalette.of(context);
+    final costs = _model.orderExpenses +
+        _model.otherExpenses +
+        _model.labour +
+        _model.porterCommission;
+    Widget section(String t) => Padding(
+          padding: const EdgeInsets.fromLTRB(4, 20, 4, 10),
+          child: Text(t,
+              style: NgFonts.geist(
+                  fontSize: 15, fontWeight: FontWeight.w600, color: c.text)),
+        );
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: c.bg,
+      appBar: NgTopBar(onRefresh: _loadData),
+      body: _model.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _model.loadError != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('Could not load report:\n${_model.loadError}',
+                        textAlign: TextAlign.center),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadData,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                    children: [
+                      const NgModuleHeader('P&L report'),
+                      const SizedBox(height: 14),
+                      _periodSelector(context),
+                      const SizedBox(height: 14),
+                      Row(children: [
+                        Expanded(
+                            child: _statCard(Icons.trending_up_rounded,
+                                'Revenue', _model.revenue, c.acc)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                            child: _statCard(Icons.trending_down_rounded,
+                                'Expenses', costs, c.red)),
+                      ]),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        // Suppressed entirely when no expenses are recorded
+                        // for a period that had orders — see
+                        // margin_availability.dart.
+                        Expanded(
+                            child: _statCard(
+                                Icons.account_balance_wallet_outlined,
+                                'Net profit',
+                                _model.marginIsShowable
+                                    ? _model.netProfit
+                                    : null,
+                                _model.netProfit >= 0 ? c.green : c.red,
+                                tinted: true)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _marginCard(context)),
+                      ]),
+                      // Names why the figures above are incomplete.
+                      if (_model.hasUnpricedCommission)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Text(
+                            commissionIncompleteNote(
+                                _model.unpricedCommissionCount),
+                            style:
+                                NgFonts.geist(fontSize: 12, color: c.amber),
+                          ),
+                        ),
+                      section('Where the money went'),
+                      _costBreakdown(costs),
+                      section('Branch P&L'),
+                      if (_model.branchPL.isEmpty)
+                        NgCard(
+                          child: Text('No branches yet',
+                              style: NgFonts.geist(
+                                  fontSize: 13.5, color: c.mute)),
+                        )
+                      else
+                        NgCardList(children: _buildBranchRows(context)),
+                      section('Lead source conversion'),
+                      if (_model.leadSources.isEmpty)
+                        NgCard(
+                          child: Text('No leads in this period.',
+                              style: NgFonts.geist(
+                                  fontSize: 13.5, color: c.mute)),
+                        )
+                      else
+                        NgCardList(children: [
+                          for (final s in _model.leadSources)
+                            _leadSourceRow(context, s),
+                        ]),
+                      section('GST summary (5%, approx.)'),
+                      _gstSummary(context),
+                    ],
+                  ),
                 ),
-          ),
-          elevation: 0.0,
-        ),
-        body: SafeArea(
-          top: true,
-          child: _model.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _model.loadError != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                            'Could not load report:\n${_model.loadError}',
-                            textAlign: TextAlign.center),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadData,
-                      child: ListView(
-                        padding: const EdgeInsets.all(16.0),
-                        children: [
-                          _periodSelector(context),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: _statCard(
-                                      context,
-                                      Icons.trending_up,
-                                      'Revenue',
-                                      _model.revenue,
-                                      FlutterFlowTheme.of(context).primary)),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                  child: _statCard(
-                                      context,
-                                      Icons.trending_down,
-                                      'Expenses',
-                                      _model.orderExpenses +
-                                          _model.otherExpenses +
-                                          _model.labour +
-                                          _model.porterCommission,
-                                      FlutterFlowTheme.of(context).error)),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: _statCard(
-                                      context,
-                                      Icons.account_balance_wallet,
-                                      'Net Profit',
-                                      // Suppressed entirely when no
-                                      // expenses are recorded for a
-                                      // period that had orders — see
-                                      // margin_availability.dart.
-                                      _model.marginIsShowable
-                                          ? _model.netProfit
-                                          : null,
-                                      _model.netProfit >= 0
-                                          ? FlutterFlowTheme.of(context).primary
-                                          : FlutterFlowTheme.of(context)
-                                              .error)),
-                              const SizedBox(width: 12),
-                              Expanded(child: _marginCard(context)),
-                            ],
-                          ),
-                          // Names why the figures above are incomplete.
-                          // Without this, a suppressed Net Profit reads as
-                          // a bug in the report rather than a gap in the
-                          // data the vendor can close.
-                          if (_model.hasUnpricedCommission)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 10),
-                              child: Text(
-                                commissionIncompleteNote(
-                                    _model.unpricedCommissionCount),
-                                style: TextStyle(
-                                    fontSize: 11.5,
-                                    color:
-                                        FlutterFlowTheme.of(context).warning),
-                              ),
-                            ),
-                          const SizedBox(height: 20),
-                          Text('Branch P&L',
-                              style: FlutterFlowTheme.of(context).titleMedium),
-                          const SizedBox(height: 8),
-                          ..._buildBranchRows(context),
-                          const SizedBox(height: 20),
-                          Text('Lead Source Conversion',
-                              style: FlutterFlowTheme.of(context).titleMedium),
-                          const SizedBox(height: 8),
-                          if (_model.leadSources.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Text('No leads in this period.',
-                                  style: FlutterFlowTheme.of(context)
-                                      .bodySmall
-                                      .override(
-                                          font: NgFonts.geist(),
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText)),
-                            )
-                          else
-                            ..._model.leadSources
-                                .map((s) => _leadSourceRow(context, s)),
-                          const SizedBox(height: 20),
-                          Text('GST Summary (5%, approx.)',
-                              style: FlutterFlowTheme.of(context).titleMedium),
-                          const SizedBox(height: 8),
-                          _gstSummary(context),
-                        ],
-                      ),
-                    ),
-        ),
-      ),
     );
   }
 
   Widget _periodSelector(BuildContext context) {
-    final options = {
+    const options = {
       'month': 'Month',
       'quarter': 'Quarter',
       'year': 'Year',
       'all': 'All',
     };
-    return Wrap(
-      spacing: 8,
-      children: options.entries.map((e) {
-        final selected = _model.period == e.key;
-        return ChoiceChip(
-          label: Text(e.value),
-          selected: selected,
-          onSelected: (_) => _setPeriod(e.key),
-          selectedColor: FlutterFlowTheme.of(context).primary,
-          labelStyle: TextStyle(
-            color: selected
-                ? FlutterFlowTheme.of(context).primaryBackground
-                : FlutterFlowTheme.of(context).primaryText,
+    return NgChipRow(
+      edge: 0,
+      chips: [
+        for (final e in options.entries)
+          NgChip(
+            label: e.value,
+            selected: _model.period == e.key,
+            onTap: () => _setPeriod(e.key),
           ),
-        );
-      }).toList(),
+      ],
     );
   }
 
   /// [value] null means "this figure is not honest right now" — render
   /// the reason instead of a number. Deliberately NOT a zero or a dash:
-  /// both read as measurements, and the whole point is that nothing was
-  /// measured. See margin_availability.dart.
-  Widget _statCard(BuildContext context, IconData icon, String label,
-      double? value, Color color) {
+  /// both read as measurements. See margin_availability.dart.
+  Widget _statCard(IconData icon, String label, double? value, Color color,
+      {bool tinted = false}) {
+    final c = NgPalette.of(context);
     final suppressed = value == null;
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon,
-                color: suppressed
-                    ? FlutterFlowTheme.of(context).secondaryText
-                    : color,
-                size: 22.0),
-            const SizedBox(height: 4),
-            if (suppressed) ...[
-              Text(kMarginUnavailableTitle,
-                  style: FlutterFlowTheme.of(context).titleSmall.override(
-                      font: NgFonts.geist(
-                          fontWeight: FontWeight.w600),
-                      color: FlutterFlowTheme.of(context).secondaryText)),
-              Text(kMarginUnavailableBody,
-                  style: FlutterFlowTheme.of(context).labelSmall.override(
-                      font: NgFonts.geist(),
-                      color: FlutterFlowTheme.of(context).secondaryText)),
-            ] else
-              Text(_currency.format(value.abs()),
-                  style: FlutterFlowTheme.of(context).headlineSmall.override(
-                      font: NgFonts.geist(
-                          fontWeight: FontWeight.w600),
-                      color: FlutterFlowTheme.of(context).primaryText)),
-            Text(label,
-                style: FlutterFlowTheme.of(context).labelMedium.override(
-                    font: NgFonts.geist(),
-                    color: FlutterFlowTheme.of(context).secondaryText)),
-          ],
-        ),
+    return NgCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: suppressed ? c.faint : color, size: 20),
+          const SizedBox(height: 10),
+          if (suppressed) ...[
+            Text(kMarginUnavailableTitle,
+                style: NgFonts.geist(
+                    fontSize: 13.5, fontWeight: FontWeight.w600, color: c.soft)),
+            Text(kMarginUnavailableBody,
+                maxLines: 2,
+                style: NgFonts.geist(fontSize: 11, color: c.mute)),
+          ] else
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(functions.inrFull(value),
+                  style: NgFonts.mono(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w600,
+                      color: tinted ? color : c.text)),
+            ),
+          const SizedBox(height: 2),
+          Text(label, style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+        ],
       ),
     );
   }
 
   Widget _marginCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Margin is net profit over revenue, so it inherits exactly
-            // the same starvation — with no expenses recorded it prints
-            // a near-100% margin, which is the most quotable wrong
-            // number on the page.
-            Icon(Icons.percent,
-                color: _model.marginIsShowable
-                    ? FlutterFlowTheme.of(context).primary
-                    : FlutterFlowTheme.of(context).secondaryText,
-                size: 22.0),
-            const SizedBox(height: 4),
-            if (_model.marginIsShowable)
-              Text('${_model.margin.toStringAsFixed(1)}%',
-                  style: FlutterFlowTheme.of(context).headlineSmall.override(
-                      font:
-                          NgFonts.geist(fontWeight: FontWeight.w600)))
-            else
-              Text(kMarginUnavailableTitle,
-                  style: FlutterFlowTheme.of(context).titleSmall.override(
-                      font: NgFonts.geist(
-                          fontWeight: FontWeight.w600),
-                      color: FlutterFlowTheme.of(context).secondaryText)),
-            Text('Margin',
-                style: FlutterFlowTheme.of(context).labelMedium.override(
-                    font: NgFonts.geist(),
-                    color: FlutterFlowTheme.of(context).secondaryText)),
-          ],
-        ),
+    final c = NgPalette.of(context);
+    // Margin is net profit over revenue, so it inherits exactly the same
+    // starvation — with no expenses recorded it prints a near-100%
+    // margin, the most quotable wrong number on the page.
+    return NgCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.percent_rounded,
+              color: _model.marginIsShowable ? c.acc : c.faint, size: 20),
+          const SizedBox(height: 10),
+          if (_model.marginIsShowable)
+            Text('${_model.margin.toStringAsFixed(1)}%',
+                style: NgFonts.mono(
+                    fontSize: 19, fontWeight: FontWeight.w600, color: c.text))
+          else
+            Text(kMarginUnavailableTitle,
+                style: NgFonts.geist(
+                    fontSize: 13.5, fontWeight: FontWeight.w600, color: c.soft)),
+          const SizedBox(height: 2),
+          Text('Margin', style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+        ],
       ),
     );
   }
 
+  Widget _costBreakdown(double total) {
+    final c = NgPalette.of(context);
+    final rows = [
+      ('Labour', _model.labour),
+      ('Order expenses', _model.orderExpenses),
+      ('Other expenses', _model.otherExpenses),
+      if (_model.porterCommission > 0) ('Commission', _model.porterCommission),
+    ];
+    return NgCardList(children: [
+      for (final r in rows)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(r.$1,
+                        style: NgFonts.geist(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.text)),
+                  ),
+                  Text(total <= 0 ? '' : '${(r.$2 / total * 100).round()}%',
+                      style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                  const SizedBox(width: 10),
+                  Text(functions.inrFull(r.$2),
+                      style: NgFonts.mono(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              NgProgressBar(
+                  value: total <= 0 ? 0 : r.$2 / total, color: c.red),
+            ],
+          ),
+        ),
+    ]);
+  }
+
   List<Widget> _buildBranchRows(BuildContext context) {
+    final c = NgPalette.of(context);
     final double maxRevenue = _model.branchPL.isEmpty
         ? 1.0
         : _model.branchPL
@@ -478,50 +446,36 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
             .clamp(1.0, double.infinity)
             .toDouble();
     return _model.branchPL.map((b) {
-      final double fraction =
-          (b.revenue / maxRevenue).clamp(0.0, 1.0).toDouble();
-      return Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(b.branch,
-                    style: FlutterFlowTheme.of(context).bodyMedium.override(
-                        font: NgFonts.geist(fontWeight: FontWeight.w600))),
+                Expanded(
+                  child: Text(b.branch,
+                      style: NgFonts.geist(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                ),
                 Text(
-                  '${_currency.format(b.profit.abs())} ${b.profit >= 0 ? 'profit' : 'loss'} · ${b.margin.toStringAsFixed(0)}%',
-                  style: FlutterFlowTheme.of(context).bodySmall.override(
-                      font: NgFonts.geist(),
-                      color: b.profit >= 0
-                          ? FlutterFlowTheme.of(context).primary
-                          : FlutterFlowTheme.of(context).error),
+                  '${functions.inrFull(b.profit.abs())} ${b.profit >= 0 ? 'profit' : 'loss'} · ${b.margin.toStringAsFixed(0)}%',
+                  style: NgFonts.geist(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: b.profit >= 0 ? c.green : c.red),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: fraction,
-                minHeight: 6,
-                backgroundColor: FlutterFlowTheme.of(context).alternate,
-                valueColor: AlwaysStoppedAnimation(
-                    FlutterFlowTheme.of(context).primary),
-              ),
-            ),
+            NgProgressBar(
+                value: (b.revenue / maxRevenue).clamp(0.0, 1.0).toDouble(),
+                color: c.accBtn),
             const SizedBox(height: 4),
-            Text('Rev ${_currency.format(b.revenue)}',
-                style: FlutterFlowTheme.of(context).bodySmall.override(
-                    font: NgFonts.geist(),
-                    color: FlutterFlowTheme.of(context).secondaryText)),
+            Text('Revenue ${functions.inrFull(b.revenue)}',
+                style: NgFonts.mono(fontSize: 12, color: c.mute)),
           ],
         ),
       );
@@ -529,42 +483,32 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
   }
 
   Widget _leadSourceRow(BuildContext context, LeadSourceStat s) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
+    final c = NgPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(s.source,
-              style: FlutterFlowTheme.of(context)
-                  .bodyMedium
-                  .override(font: NgFonts.geist())),
+          Expanded(
+            child: Text(s.source,
+                style: NgFonts.geist(fontSize: 14, color: c.text)),
+          ),
           Text('${s.converted}/${s.total} · ${s.rate.toStringAsFixed(0)}%',
-              style: FlutterFlowTheme.of(context).titleSmall.override(
-                  font: NgFonts.geist(fontWeight: FontWeight.w600))),
+              style: NgFonts.mono(
+                  fontSize: 13.5, fontWeight: FontWeight.w600, color: c.text)),
         ],
       ),
     );
   }
 
   Widget _gstSummary(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final c = NgPalette.of(context);
+    return NgCard(
       child: Column(
         children: [
-          _gstRow(context, 'Taxable Value', _model.gstTaxable),
+          _gstRow(context, 'Taxable value', _model.gstTaxable),
           _gstRow(context, 'CGST (2.5%)', _model.gstHalf),
           _gstRow(context, 'SGST (2.5%)', _model.gstHalf),
-          const Divider(),
+          Divider(color: c.w06, height: 16),
           _gstRow(context, 'Total GST', _model.gstTotal, bold: true),
         ],
       ),
@@ -573,24 +517,21 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
 
   Widget _gstRow(BuildContext context, String label, double value,
       {bool bold = false}) {
+    final c = NgPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: bold
-                  ? FlutterFlowTheme.of(context).titleSmall
-                  : FlutterFlowTheme.of(context).bodyMedium.override(
-                      font: NgFonts.geist(),
-                      color: FlutterFlowTheme.of(context).secondaryText)),
-          Text(_currency.format(value),
-              style: (bold
-                      ? FlutterFlowTheme.of(context).titleSmall
-                      : FlutterFlowTheme.of(context).bodyMedium)
-                  .override(
-                      font:
-                          NgFonts.geist(fontWeight: FontWeight.w600))),
+          Expanded(
+            child: Text(label,
+                style: NgFonts.geist(
+                    fontSize: 13.5,
+                    fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
+                    color: bold ? c.text : c.mute)),
+          ),
+          Text(functions.inrFull(value),
+              style: NgFonts.mono(
+                  fontSize: 13.5, fontWeight: FontWeight.w600, color: c.text)),
         ],
       ),
     );
