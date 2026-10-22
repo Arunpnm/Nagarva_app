@@ -391,10 +391,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
             height: 48,
             child: ElevatedButton(
               onPressed: _saving ? null : _save,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ng.acc,
-                foregroundColor: Colors.white,
-              ),
+              
               child: Text(_saving ? 'Saving...' : 'Save Vehicle'),
             ),
           ),

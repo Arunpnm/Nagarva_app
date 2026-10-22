@@ -420,9 +420,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: _resettingPassword ? null : _resetOwnerPassword,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
+                    
                     icon: const Icon(Icons.lock_reset),
                     label: const Text('Send Password Reset'),
                   ),

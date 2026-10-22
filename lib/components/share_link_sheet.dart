@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '/backend/whatsapp_cloud.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/ng_tokens.dart';
-import '/flutter_flow/flutter_flow_theme.dart' show kWhatsAppGreen;
 
 /// Shared "here is a customer link" sheet — WhatsApp first, copy as
 /// fallback (fix brief #2, items 3 and 6).
@@ -141,12 +140,7 @@ class ShareLinkSheet extends StatelessWidget {
                       },
                       icon: const Icon(Icons.chat, size: 19),
                       label: const Text('WhatsApp'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kWhatsAppGreen,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
+                      
                     ),
                   ),
                 ),
@@ -162,12 +156,7 @@ class ShareLinkSheet extends StatelessWidget {
                     },
                     icon: const Icon(Icons.copy, size: 18),
                     label: const Text('Copy'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ng.acc,
-                      side: BorderSide(color: ng.acc),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
+                    
                   ),
                 ),
               ],
@@ -233,14 +222,7 @@ class _CloudSendButtonState extends State<_CloudSendButton> {
                     : _busy
                         ? 'Sending…'
                         : 'Send from your WhatsApp number'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kWhatsAppGreen,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: kWhatsAppGreen.withValues(alpha: 0.55),
-                  disabledForegroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
+                
               ),
             ),
           );

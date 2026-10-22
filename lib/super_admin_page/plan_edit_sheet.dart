@@ -419,10 +419,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _saving ? null : _save,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ng.acc,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
+                      
                       child: _saving
                           ? const SizedBox(
                               width: 20,

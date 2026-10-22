@@ -200,13 +200,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: widget.onOpenEmail,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kBrandAccent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
+                  
                   icon: const Icon(Icons.mail_outline, size: 18),
                   label: Text('Open Email App',
                       style:
@@ -222,13 +216,7 @@ class _SignupSuccessDialogState extends State<_SignupSuccessDialog> {
                   Navigator.of(context).pop();
                   widget.onLogin();
                 },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white24),
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
+                
                 child: Text('Go to Login',
                     style: NgFonts.geist(fontWeight: FontWeight.w600)),
               ),

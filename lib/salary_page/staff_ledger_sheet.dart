@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 import 'package:flutter/services.dart';
 
 import '/backend/supabase/supabase.dart';
@@ -397,19 +398,11 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3),
-        child: ElevatedButton.icon(
+        child: NgSecondaryButton(
+          label: label,
+          icon: icon,
+          iconColor: color ?? ng.acc,
           onPressed: _busy ? null : onTap,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color ?? ng.acc,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 11),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(9)),
-          ),
-          icon: Icon(icon, size: 15),
-          label: Text(label,
-              style: NgFonts.geist(
-                  fontSize: 11.5, fontWeight: FontWeight.w700)),
         ),
       ),
     );

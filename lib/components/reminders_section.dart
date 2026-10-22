@@ -7,7 +7,6 @@ import '/backend/reminders_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/ng_tokens.dart';
-import '/flutter_flow/flutter_flow_theme.dart' show kWhatsAppGreen;
 
 /// REMINDERS section for Lead Details and the quote screen (live-test fix
 /// brief #2, item 10).
@@ -91,10 +90,7 @@ class RemindersSectionState extends State<RemindersSection> {
               TextButton.icon(
                 onPressed: _addReminder,
                 icon: const Icon(Icons.add, size: 17),
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(0, 40),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
+                style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
                 label: const Text('Add'),
               ),
             ],
@@ -217,9 +213,7 @@ class RemindersSectionState extends State<RemindersSection> {
               TextButton.icon(
                 onPressed: () => _logCall(r),
                 icon: const Icon(Icons.phone_in_talk, size: 16),
-                style: TextButton.styleFrom(
-                    minimumSize: const Size(0, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
                 label: const Text('Log Call',
                     style: TextStyle(fontSize: 12.5)),
               ),
@@ -229,10 +223,7 @@ class RemindersSectionState extends State<RemindersSection> {
                   await reload();
                 },
                 icon: const Icon(Icons.check_circle_outline, size: 16),
-                style: TextButton.styleFrom(
-                    minimumSize: const Size(0, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    foregroundColor: ng.blue),
+                style: TextButton.styleFrom(minimumSize: const Size(0, 40)),
                 label:
                     const Text('Done', style: TextStyle(fontSize: 12.5)),
               ),
@@ -527,10 +518,7 @@ class _LogCallSheetState extends State<_LogCallSheet> {
                 },
                 icon: const Icon(Icons.chat, size: 18),
                 label: const Text('Message on WhatsApp'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: kWhatsAppGreen,
-                  side: const BorderSide(color: kWhatsAppGreen),
-                ),
+                
               ),
             ),
           ),
@@ -642,12 +630,13 @@ class _DuePickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ng = NgPalette.of(context);
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () async {
+          child: NgPickerField(
+            icon: Icons.event_outlined,
+            value: DateFormat('d MMM yyyy').format(due),
+            onTap: () async {
               final d = await showDatePicker(
                 context: context,
                 initialDate: due,
@@ -658,18 +647,14 @@ class _DuePickerRow extends StatelessWidget {
                 onChanged(DateTime(d.year, d.month, d.day, due.hour, due.minute));
               }
             },
-            icon: const Icon(Icons.event, size: 17),
-            label: Text(DateFormat('d MMM yyyy').format(due)),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 48),
-              foregroundColor: ng.text,
-            ),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () async {
+          child: NgPickerField(
+            icon: Icons.schedule_rounded,
+            value: DateFormat('h:mm a').format(due),
+            onTap: () async {
               final t = await showTimePicker(
                 context: context,
                 initialTime: TimeOfDay.fromDateTime(due),
@@ -679,12 +664,6 @@ class _DuePickerRow extends StatelessWidget {
                     due.year, due.month, due.day, t.hour, t.minute));
               }
             },
-            icon: const Icon(Icons.schedule, size: 17),
-            label: Text(DateFormat('h:mm a').format(due)),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 48),
-              foregroundColor: ng.text,
-            ),
           ),
         ),
       ],
@@ -708,9 +687,9 @@ class _SheetShell extends StatelessWidget {
       child: SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: ng.s1,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(18)),
+            color: ng.sheet,
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(NgRadius.sheet)),
           ),
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
           child: SingleChildScrollView(

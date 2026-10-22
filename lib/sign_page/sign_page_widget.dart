@@ -326,11 +326,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             child: ElevatedButton(
               onPressed:
                   (_submitting || !_hasSignature) ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ng.acc,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-              ),
+              
               child: _submitting
                   ? const SizedBox(
                       width: 20,

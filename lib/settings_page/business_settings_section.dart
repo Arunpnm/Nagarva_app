@@ -522,12 +522,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                   onPressed: (_savingOrgProfile || !_isOwnerSession)
                       ? null
                       : _saveOrgProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ng.acc,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
-                  ),
+                  
                   icon: _savingOrgProfile
                       ? const SizedBox(
                           width: 16,
@@ -565,12 +560,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                 height: 42,
                 child: ElevatedButton.icon(
                   onPressed: _saving ? null : _saveProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ng.acc,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
-                  ),
+                  
                   icon: _saving
                       ? const SizedBox(
                           width: 16,
@@ -619,12 +609,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                     onPressed: (_uploadingLogo || !_isOwnerSession)
                         ? null
                         : _pickLogo,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ng.acc,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9)),
-                    ),
+                    
                     icon: _uploadingLogo
                         ? const SizedBox(
                             width: 16,
@@ -681,12 +666,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                   const SizedBox(width: 14),
                   ElevatedButton.icon(
                     onPressed: _savingSignature ? null : _drawSignature,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ng.acc,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9)),
-                    ),
+                    
                     icon: _savingSignature
                         ? const SizedBox(
                             width: 16,

@@ -885,12 +885,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   height: 46,
                   child: ElevatedButton(
                     onPressed: _saving ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ng.acc,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
+                    
                     child: _saving
                         ? const SizedBox(
                             width: 20,
@@ -921,12 +916,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                       onPressed: _saving ? null : _generateInvite,
                       icon: const Icon(Icons.qr_code_2, size: 19),
                       label: const Text('Generate device invite'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: ng.acc,
-                        side: BorderSide(color: ng.acc),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
+                      
                     ),
                   ),
                 ],

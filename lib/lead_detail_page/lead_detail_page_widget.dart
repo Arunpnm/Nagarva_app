@@ -2387,7 +2387,7 @@ class _LostReasonDialogState extends State<_LostReasonDialog> {
                 ? double.tryParse(_competitorPriceCtrl.text.trim())
                 : null,
           )),
-          style: TextButton.styleFrom(foregroundColor: leadStatusColor(kLeadStatusLost, context)),
+          
           child: const Text('Mark lost'),
         ),
       ],
