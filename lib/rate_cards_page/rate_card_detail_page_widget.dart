@@ -388,109 +388,121 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
     );
   }
 
-  Widget _chargesTab(NgPalette ng) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
+  /// One tab: the rows in a hairline card, then an "Add …" button.
+  Widget _tab(NgPalette ng,
+          {required List<Widget> rows,
+          required String empty,
+          required String addLabel,
+          required VoidCallback onAdd}) =>
+      ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [
+          NgRowsCard(rows: rows, empty: empty),
+          const SizedBox(height: 12),
+          NgSecondaryButton(
+            icon: Icons.add_rounded,
+            iconColor: ng.acc,
+            label: addLabel,
+            height: 46,
+            onPressed: onAdd,
+          ),
+        ],
+      );
+
+  Widget _row(NgPalette ng,
+          {required String title,
+          required String subtitle,
+          String? value,
+          VoidCallback? onTap,
+          required VoidCallback onDelete}) =>
+      InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 4, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: NgFonts.geist(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: ng.text)),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style: NgFonts.geist(fontSize: 12.5, color: ng.mute)),
+                  ],
+                ),
+              ),
+              if (value != null)
+                Text(value,
+                    style: NgFonts.mono(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: ng.text)),
+              IconButton(
+                  icon: Icon(Icons.delete_outline_rounded,
+                      size: 19, color: ng.mute),
+                  onPressed: onDelete),
+            ],
+          ),
+        ),
+      );
+
+  Widget _chargesTab(NgPalette ng) => _tab(ng,
+      rows: [
         for (final c in _charges)
-          ListTile(
-            title: Text(c.label?.isNotEmpty == true ? c.label! : c.chargeKey),
-            subtitle: Text('${c.unit} · ${c.isOptional ? "optional" : "required"}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_rupees(c.rate)),
-                IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    onPressed: () => _deleteCharge(c)),
-              ],
-            ),
-          ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-            onPressed: _addCharge,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Charge')),
+          _row(ng,
+              title: c.label?.isNotEmpty == true ? c.label! : c.chargeKey,
+              subtitle: '${c.unit} · ${c.isOptional ? "optional" : "required"}',
+              value: _rupees(c.rate),
+              onDelete: () => _deleteCharge(c)),
       ],
-    );
-  }
+      empty: 'No charges on this card yet.',
+      addLabel: 'Add charge',
+      onAdd: _addCharge);
 
-  Widget _rulesTab(NgPalette ng) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
+  Widget _rulesTab(NgPalette ng) => _tab(ng,
+      rows: [
         for (final r in _rules)
-          ListTile(
-            onTap: () => _editRule(r),
-            title: Text(
-                '${r.minKm}-${r.maxKm?.toStringAsFixed(0) ?? '∞'} km · ${r.minCft}-${r.maxCft?.toStringAsFixed(0) ?? '∞'} cft'),
-            subtitle: Text(
-                'Base ${_rupees(r.baseAmount)} + ${_rupees(r.perKmRate)}/km + ${_rupees(r.perCftRate)}/cft'),
-            trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18),
-                onPressed: () => _deleteRule(r)),
-          ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-            onPressed: _addRule,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Rule')),
+          _row(ng,
+              onTap: () => _editRule(r),
+              title:
+                  '${r.minKm}–${r.maxKm?.toStringAsFixed(0) ?? '∞'} km · ${r.minCft}–${r.maxCft?.toStringAsFixed(0) ?? '∞'} CFT',
+              subtitle:
+                  'Base ${_rupees(r.baseAmount)} + ${_rupees(r.perKmRate)}/km + ${_rupees(r.perCftRate)}/CFT',
+              onDelete: () => _deleteRule(r)),
       ],
-    );
-  }
+      empty: 'No distance or CFT rules yet.',
+      addLabel: 'Add rule',
+      onAdd: _addRule);
 
-  Widget _floorsTab(NgPalette ng) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
+  Widget _floorsTab(NgPalette ng) => _tab(ng,
+      rows: [
         for (final f in _floors)
-          ListTile(
-            onTap: () => _editFloorCharge(f),
-            title: Text('Floor ${f.floorFrom}-${f.floorTo}'),
-            subtitle: Text(f.hasLift ? 'With lift' : 'No lift'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_rupees(f.amount)),
-                IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    onPressed: () => _deleteFloorCharge(f)),
-              ],
-            ),
-          ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-            onPressed: _addFloorCharge,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Floor Charge')),
+          _row(ng,
+              onTap: () => _editFloorCharge(f),
+              title: 'Floor ${f.floorFrom}–${f.floorTo}',
+              subtitle: f.hasLift ? 'With lift' : 'No lift',
+              value: _rupees(f.amount),
+              onDelete: () => _deleteFloorCharge(f)),
       ],
-    );
-  }
+      empty: 'No floor charges yet.',
+      addLabel: 'Add floor charge',
+      onAdd: _addFloorCharge);
 
-  Widget _multipliersTab(NgPalette ng) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
+  Widget _multipliersTab(NgPalette ng) => _tab(ng,
+      rows: [
         for (final m in _multipliers)
-          ListTile(
-            title: Text(m.name?.isNotEmpty == true ? m.name! : 'Multiplier'),
-            subtitle: Text('Applies to ${m.appliesTo}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('${m.multiplierPct}%'),
-                IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    onPressed: () => _deleteMultiplier(m)),
-              ],
-            ),
-          ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-            onPressed: _addMultiplier,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Multiplier')),
+          _row(ng,
+              title: m.name?.isNotEmpty == true ? m.name! : 'Multiplier',
+              subtitle: 'Applies to ${m.appliesTo}',
+              value: '${m.multiplierPct}%',
+              onDelete: () => _deleteMultiplier(m)),
       ],
-    );
-  }
+      empty: 'No multipliers yet.',
+      addLabel: 'Add multiplier',
+      onAdd: _addMultiplier);
 }
