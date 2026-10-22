@@ -204,22 +204,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
-  SupervisorJobStep _inferStep(OrdersRow o) {
-    if (o.status == 'delivered' ||
-        o.status == 'closed' ||
-        o.supervisorStatus == 'completed_pending' ||
-        o.supervisorStatus == 'approved') {
-      return SupervisorJobStep.done;
-    }
-    if (o.status == 'transit') return SupervisorJobStep.shifting;
-    // in_progress means the job was accepted but shifting hasn't started,
-    // so the arrival code hasn't been entered yet — resume there rather
-    // than skipping the gate on a reopened screen.
-    if (o.supervisorStatus == 'in_progress') {
-      return SupervisorJobStep.arrivalCode;
-    }
-    return SupervisorJobStep.start;
-  }
+  SupervisorJobStep _inferStep(OrdersRow o) => supervisorStepFor(o);
 
   /// Mirrors the reference app's central `changeOrderStatus` helper: writes
   /// orders.status and logs the change. `TrackingService.logStatus` is what

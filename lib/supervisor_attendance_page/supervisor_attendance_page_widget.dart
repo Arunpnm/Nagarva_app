@@ -95,8 +95,23 @@ class _SupervisorAttendancePageWidgetState
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            NgScreenTitle('My attendance',
-                large: true, subtitle: DateFormat('MMMM y').format(now)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(DateFormat('EEEE, d MMMM').format(now),
+                      style: NgFonts.geist(fontSize: 13, color: c.mute)),
+                  const SizedBox(height: 4),
+                  Text('Attendance',
+                      style: NgFonts.geist(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.52,
+                          color: c.text)),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
             if (_loading)
               const Padding(
@@ -104,6 +119,8 @@ class _SupervisorAttendancePageWidgetState
                 child: Center(child: CircularProgressIndicator()),
               )
             else ...[
+              _weekCard(context),
+              const SizedBox(height: 16),
               NgCard(
                 radius: 20,
                 padding: const EdgeInsets.all(16),
@@ -132,7 +149,7 @@ class _SupervisorAttendancePageWidgetState
                 ),
               ),
               const SizedBox(height: 22),
-              const NgSectionHeader('Days'),
+              const NgSectionHeader('This month'),
               const SizedBox(height: 10),
               NgCardList(children: [
                 for (final date in days)
@@ -156,6 +173,68 @@ class _SupervisorAttendancePageWidgetState
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// The design's "This week" strip: Mon–Sun, a tile per day.
+  Widget _weekCard(BuildContext context) {
+    final c = NgPalette.of(context);
+    final now = DateTime.now();
+    final monday = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('This week',
+              style: NgFonts.geist(
+                  fontSize: 14, fontWeight: FontWeight.w600, color: c.text)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              for (var k = 0; k < 7; k++)
+                Expanded(
+                  child: Builder(builder: (context) {
+                    final d = monday.add(Duration(days: k));
+                    final future = d.isAfter(now);
+                    final status =
+                        _byDate[d.toIso8601String().split('T').first];
+                    final tone = c.status(_tone(status));
+                    return Column(
+                      children: [
+                        Text(DateFormat('E').format(d).substring(0, 1),
+                            style:
+                                NgFonts.geist(fontSize: 11.5, color: c.faint)),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: future ? Colors.transparent : tone.bg,
+                            border: future ? Border.all(color: c.w08) : null,
+                            borderRadius: BorderRadius.circular(11),
+                          ),
+                          child: future
+                              ? null
+                              : Icon(
+                                  status == 'present'
+                                      ? Icons.check_rounded
+                                      : status == 'absent'
+                                          ? Icons.close_rounded
+                                          : Icons.remove_rounded,
+                                  size: 18,
+                                  color: tone.fg),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

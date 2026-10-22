@@ -9,7 +9,7 @@ import '/backend/audit_log_service.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 import '/permissions.dart';
@@ -160,12 +160,12 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     final salaryCtrl = TextEditingController();
     bool halfDay = false;
 
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          backgroundColor: theme.secondaryBackground,
+          backgroundColor: ng.s1,
           title: const Text('Add Labour'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -173,7 +173,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
             children: [
               DropdownButtonFormField<String>(
                 value: selectedId,
-                dropdownColor: theme.secondaryBackground,
+                dropdownColor: ng.s1,
                 decoration: const InputDecoration(labelText: 'Staff'),
                 items: [
                   for (final s in available)
@@ -267,7 +267,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
   /// set, see this file's own doc comment on crew responsibilities).
   Future<void> _editSalary(OrderStaffRow c) async {
     final s = _staffById(c.staffId);
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final ctrl = TextEditingController(
         text: (c.salaryAmount ?? 0) == 0
             ? ''
@@ -275,7 +275,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: theme.secondaryBackground,
+        backgroundColor: ng.s1,
         title: Text('Salary — ${s?.name ?? 'Staff'}'),
         content: TextField(
           controller: ctrl,
@@ -317,32 +317,24 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     // Supervisors manage their team from the field job page, not here.
     if (AppSession.instance.currentStaffId != null) {
       return const SizedBox.shrink();
     }
     if (_loading) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Center(
+      return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(20),
+      child: const Center(
             child: SizedBox(
                 width: 20, height: 20, child: CircularProgressIndicator())),
       );
     }
     final supervisor = _staffById(_order?.supervisorId);
-    return Container(
-      width: double.infinity,
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -350,28 +342,28 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
               style: NgFonts.geist(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w700,
-                  color: theme.primaryText)),
+                  color: ng.text)),
           const SizedBox(height: 12),
           // --- Supervisor -----------------------------------------------
           Row(
             children: [
-              Icon(Icons.engineering, color: theme.primary, size: 20),
+              Icon(Icons.engineering, color: ng.acc, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: _supervisors.isEmpty
                     ? Text(
                         'No supervisors yet — add one on the Staff page with role "Supervisor".',
                         style: NgFonts.geist(
-                            fontSize: 12.5, color: theme.secondaryText),
+                            fontSize: 12.5, color: ng.mute),
                       )
                     : DropdownButtonFormField<String>(
                         value: supervisor?.id,
-                        dropdownColor: theme.secondaryBackground,
+                        dropdownColor: ng.s1,
                         decoration: InputDecoration(
                           labelText: 'Supervisor',
                           labelStyle: NgFonts.geist(
                               fontSize: 12.5,
-                              color: theme.secondaryText),
+                              color: ng.mute),
                           isDense: true,
                         ),
                         hint: const Text('Assign supervisor'),
@@ -398,7 +390,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                   style: NgFonts.geist(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
-                      color: theme.primaryText)),
+                      color: ng.text)),
               TextButton.icon(
                 onPressed: _busy || _locked ? null : _addLabour,
                 icon: const Icon(Icons.person_add, size: 17),
@@ -428,7 +420,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
           if (_crew.isEmpty)
             Text('No labour assigned yet.',
                 style: NgFonts.geist(
-                    fontSize: 12.5, color: theme.secondaryText))
+                    fontSize: 12.5, color: ng.mute))
           else ...[
             ..._crew.map((c) {
               final s = _staffById(c.staffId);
@@ -437,7 +429,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                 child: Row(
                   children: [
                     Icon(Icons.person,
-                        size: 16, color: theme.secondaryText),
+                        size: 16, color: ng.mute),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -446,7 +438,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                         '${(c.isHalfDay ?? false) ? ' · half day' : ''}',
                         overflow: TextOverflow.ellipsis,
                         style: NgFonts.geist(
-                            fontSize: 12.5, color: theme.primaryText),
+                            fontSize: 12.5, color: ng.text),
                       ),
                     ),
                     InkWell(
@@ -462,12 +454,12 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                                 style: NgFonts.geist(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
-                                    color: theme.primary)),
+                                    color: ng.acc)),
                             if (!_locked) ...[
                               const SizedBox(width: 3),
                               Icon(Icons.edit,
                                   size: 12,
-                                  color: theme.primary.withValues(alpha: 0.6)),
+                                  color: ng.acc.withValues(alpha: 0.6)),
                             ],
                           ],
                         ),
@@ -476,7 +468,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       icon: Icon(Icons.close,
-                          size: 15, color: theme.error),
+                          size: 15, color: ng.red),
                       onPressed: _busy || _locked ? null : () => _removeLabour(c),
                       tooltip: 'Remove',
                     ),
@@ -490,12 +482,12 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
               children: [
                 Text('Labour total',
                     style: NgFonts.geist(
-                        fontSize: 12.5, color: theme.secondaryText)),
+                        fontSize: 12.5, color: ng.mute)),
                 Text('₹${_labourTotal.toStringAsFixed(0)}',
                     style: NgFonts.geist(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: theme.primaryText)),
+                        color: ng.text)),
               ],
             ),
           ],
@@ -506,7 +498,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
           // porter-handled order can have zero labour rows and still be
           // ready to close).
           if (StaffPermissions.canActive('orders', 'edit'))
-            _markCompleteSection(theme),
+            _markCompleteSection(ng),
         ],
       ),
     );
@@ -514,7 +506,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
 
   bool _markingComplete = false;
 
-  Widget _markCompleteSection(FlutterFlowTheme theme) {
+  Widget _markCompleteSection(NgPalette ng) {
     final status = (_order?.status ?? '').toLowerCase();
     if (status == 'closed') {
       final closedAt = _order?.closedAt;
@@ -522,7 +514,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
         padding: const EdgeInsets.only(top: 14),
         child: Row(
           children: [
-            Icon(Icons.lock, size: 16, color: theme.secondaryText),
+            Icon(Icons.lock, size: 16, color: ng.mute),
             const SizedBox(width: 6),
             Text(
                 closedAt == null
@@ -531,7 +523,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                 style: NgFonts.geist(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: theme.secondaryText)),
+                    color: ng.mute)),
           ],
         ),
       );
@@ -543,7 +535,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
         height: 46,
         child: FilledButton.icon(
           onPressed: _markingComplete ? null : _markComplete,
-          style: FilledButton.styleFrom(backgroundColor: theme.success),
+          style: FilledButton.styleFrom(backgroundColor: ng.green),
           icon: const Icon(Icons.task_alt, size: 19),
           label: Text(_markingComplete ? 'Closing…' : 'Mark Order Complete'),
         ),
@@ -614,7 +606,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        backgroundColor: NgPalette.of(context).s1,
         title: const Text('Mark Order Complete?'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -628,7 +620,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                       ? '⚠ Outstanding balance of ₹${balance.toStringAsFixed(0)} — closing this order will not collect it.'
                       : '⚠ This order is over-collected by ₹${(-balance).toStringAsFixed(0)}.',
                   style: TextStyle(
-                      color: FlutterFlowTheme.of(context).error,
+                      color: NgPalette.of(context).red,
                       fontWeight: FontWeight.w700),
                 ),
               ),
@@ -638,7 +630,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                 child: Text(
                   '⚠ No invoice has been issued for this order yet.',
                   style: TextStyle(
-                      color: FlutterFlowTheme.of(context).warning,
+                      color: NgPalette.of(context).amber,
                       fontWeight: FontWeight.w600),
                 ),
               ),
@@ -655,7 +647,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
           FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: FilledButton.styleFrom(
-                  backgroundColor: FlutterFlowTheme.of(context).error),
+                  backgroundColor: NgPalette.of(context).red),
               child: const Text('Close Order')),
         ],
       ),

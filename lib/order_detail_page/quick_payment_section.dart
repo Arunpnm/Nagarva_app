@@ -11,7 +11,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/upi_payment.dart';
 import '/config/app_config.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -323,7 +323,7 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
     }
   }
 
-  Widget _modeChip(FlutterFlowTheme theme, String value, String label,
+  Widget _modeChip(NgPalette ng, String value, String label,
       IconData icon) {
     final selected = _mode == value;
     return Expanded(
@@ -333,7 +333,7 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? theme.primary : theme.primaryBackground,
+            color: selected ? ng.acc : ng.bg,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -342,15 +342,15 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
               Icon(icon,
                   size: 15,
                   color:
-                      selected ? theme.primaryBackground : theme.secondaryText),
+                      selected ? ng.bg : ng.mute),
               const SizedBox(width: 5),
               Text(label,
                   style: NgFonts.geist(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: selected
-                          ? theme.primaryBackground
-                          : theme.primaryText)),
+                          ? ng.bg
+                          : ng.text)),
             ],
           ),
         ),
@@ -437,7 +437,7 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
-        final theme = FlutterFlowTheme.of(ctx);
+        final ng = NgPalette.of(ctx);
         return Padding(
           padding: EdgeInsets.only(
               left: 16,
@@ -461,11 +461,11 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                       style: NgFonts.geist(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: theme.primaryText)),
+                          color: ng.text)),
                   const SizedBox(height: 4),
                   Text('Paid to ${payee.vpa}',
                       style: NgFonts.geist(
-                          fontSize: 12, color: theme.secondaryText)),
+                          fontSize: 12, color: ng.mute)),
                   const SizedBox(height: 14),
                   TextField(
                     controller: amountCtrl,
@@ -473,15 +473,15 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setSheet(() {}),
                     style: NgFonts.geist(
-                        color: theme.primaryText, fontSize: 14),
+                        color: ng.text, fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'Amount to request (₹)',
                       helperText: 'Balance due ₹${_balance.toStringAsFixed(0)}',
                       labelStyle: NgFonts.geist(
-                          color: theme.secondaryText, fontSize: 12),
+                          color: ng.mute, fontSize: 12),
                       isDense: true,
                       filled: true,
-                      fillColor: theme.primaryBackground,
+                      fillColor: ng.bg,
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide.none),
@@ -500,9 +500,9 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                     options: FFButtonOptions(
                       width: double.infinity,
                       height: 44,
-                      iconColor: theme.primaryBackground,
-                      color: theme.primary,
-                      textStyle: TextStyle(color: theme.primaryBackground),
+                      iconColor: ng.bg,
+                      color: ng.acc,
+                      textStyle: TextStyle(color: ng.bg),
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -530,7 +530,7 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                     'detected automatically — record it above once you '
                     'receive it.',
                     style: NgFonts.geist(
-                        fontSize: 11, color: theme.secondaryText),
+                        fontSize: 11, color: ng.mute),
                   ),
                 ],
               );
@@ -570,17 +570,12 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     if (_loading) {
-      return Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(top: 14),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Center(
+      return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: const Center(
             child: SizedBox(
                 height: 20,
                 width: 20,
@@ -600,14 +595,9 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 14),
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -618,12 +608,12 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                   style: NgFonts.geist(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: theme.primaryText)),
+                      color: ng.text)),
               Text('Balance ₹${_balance.toStringAsFixed(0)}',
                   style: NgFonts.geist(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: theme.primary)),
+                      color: ng.acc)),
             ],
           ),
           const SizedBox(height: 10),
@@ -635,14 +625,14 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   style: NgFonts.geist(
-                      color: theme.primaryText, fontSize: 14),
+                      color: ng.text, fontSize: 14),
                   decoration: InputDecoration(
                     labelText: 'Amount received (₹)',
                     labelStyle: NgFonts.geist(
-                        color: theme.secondaryText, fontSize: 12),
+                        color: ng.mute, fontSize: 12),
                     isDense: true,
                     filled: true,
-                    fillColor: theme.primaryBackground,
+                    fillColor: ng.bg,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 12),
                     border: OutlineInputBorder(
@@ -656,24 +646,24 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
           const SizedBox(height: 10),
           Row(
             children: [
-              _modeChip(theme, 'cash', 'Cash', Icons.payments),
+              _modeChip(ng, 'cash', 'Cash', Icons.payments),
               const SizedBox(width: 6),
-              _modeChip(theme, 'upi', 'UPI', Icons.qr_code),
+              _modeChip(ng, 'upi', 'UPI', Icons.qr_code),
               const SizedBox(width: 6),
-              _modeChip(theme, 'bank', 'Bank', Icons.account_balance),
+              _modeChip(ng, 'bank', 'Bank', Icons.account_balance),
             ],
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _noteCtrl,
-            style: NgFonts.geist(color: theme.primaryText, fontSize: 13),
+            style: NgFonts.geist(color: ng.text, fontSize: 13),
             decoration: InputDecoration(
               labelText: 'Note (optional)',
               labelStyle:
-                  NgFonts.geist(color: theme.secondaryText, fontSize: 12),
+                  NgFonts.geist(color: ng.mute, fontSize: 12),
               isDense: true,
               filled: true,
-              fillColor: theme.primaryBackground,
+              fillColor: ng.bg,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               border: OutlineInputBorder(
@@ -689,9 +679,9 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
             options: FFButtonOptions(
               width: double.infinity,
               height: 44,
-              iconColor: theme.primaryBackground,
-              color: theme.primary,
-              textStyle: TextStyle(color: theme.primaryBackground),
+              iconColor: ng.bg,
+              color: ng.acc,
+              textStyle: TextStyle(color: ng.bg),
               borderRadius: BorderRadius.circular(10),
             ),
           ),
@@ -702,11 +692,11 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
           const SizedBox(height: 8),
           TextButton.icon(
             onPressed: _requesting ? null : _requestByUpi,
-            icon: Icon(Icons.qr_code_2, size: 18, color: theme.primary),
+            icon: Icon(Icons.qr_code_2, size: 18, color: ng.acc),
             label: Text(
               _requesting ? 'Preparing…' : 'Request payment by UPI',
               style: NgFonts.geist(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: theme.primary),
+                  fontSize: 13, fontWeight: FontWeight.w600, color: ng.acc),
             ),
           ),
         ],

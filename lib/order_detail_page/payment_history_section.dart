@@ -5,7 +5,8 @@ import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/ng_tokens.dart';
 
 /// Payment history + delete, for a single order (Item 11 sweep, 16 Aug
@@ -75,69 +76,76 @@ class PaymentHistorySectionState extends State<PaymentHistorySection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
     if (_loading) return const SizedBox.shrink();
     if (_entries.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final total = _entries.fold<double>(0, (s, e) => s + e.amount);
+    return NgSectionCard(
+      title: 'Payment history',
+      icon: Icons.payments_outlined,
+      trailing: Text(functions.inrFull(total),
+          style: NgFonts.mono(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: NgPalette.of(context).green)),
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Payment History',
-              style: NgFonts.geist(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: theme.primaryText)),
-          const SizedBox(height: 10),
-          for (final e in _entries) _row(theme, e),
+          for (var i = 0; i < _entries.length; i++) ...[
+            if (i > 0)
+              Divider(height: 1, color: NgPalette.of(context).w06),
+            _row(context, _entries[i]),
+          ],
         ],
       ),
     );
   }
 
-  Widget _row(FlutterFlowTheme theme, PaymentEntriesRow e) {
+  Widget _row(BuildContext context, PaymentEntriesRow e) {
+    final c = NgPalette.of(context);
     final when = e.receivedAt ?? e.createdAt;
+    final sub = [
+      if (when != null) DateFormat('d MMM yyyy, h:mm a').format(when.toLocal()),
+      if ((e.note ?? '').trim().isNotEmpty) e.note!.trim(),
+    ].join(' · ');
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          NgIconTile(icon: _modeIcon(e.mode), status: NgStatus.green),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('₹${e.amount.toStringAsFixed(0)} · ${e.mode.toUpperCase()}',
-                    style: NgFonts.geist(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: theme.primaryText)),
-                if (when != null)
-                  Text(DateFormat('d MMM yyyy, h:mm a').format(when.toLocal()),
-                      style: NgFonts.geist(
-                          fontSize: 11.5, color: theme.secondaryText)),
-                if ((e.note ?? '').trim().isNotEmpty)
-                  Text(e.note!.trim(),
-                      style: NgFonts.geist(
-                          fontSize: 11.5,
-                          fontStyle: FontStyle.italic,
-                          color: theme.secondaryText)),
-                if (e.receiptId != null)
-                  Text('Receipted',
-                      style: NgFonts.geist(
-                          fontSize: 11, color: theme.primary)),
+                Row(
+                  children: [
+                    Text(functions.inrFull(e.amount),
+                        style: NgFonts.mono(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: c.text)),
+                    const SizedBox(width: 8),
+                    NgPill(e.mode.toUpperCase()),
+                    if (e.receiptId != null) ...[
+                      const SizedBox(width: 6),
+                      const NgPill('Receipted', status: NgStatus.green),
+                    ],
+                  ],
+                ),
+                if (sub.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(sub,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                ],
               ],
             ),
           ),
           IconButton(
             onPressed: () => _delete(e),
-            icon: Icon(Icons.delete_outline, size: 19, color: theme.error),
+            icon: Icon(Icons.delete_outline_rounded, size: 20, color: c.red),
             tooltip: 'Delete payment',
             visualDensity: VisualDensity.compact,
           ),
@@ -145,4 +153,13 @@ class PaymentHistorySectionState extends State<PaymentHistorySection> {
       ),
     );
   }
+
+  static IconData _modeIcon(String mode) => switch (mode.toLowerCase()) {
+        'cash' => Icons.payments_outlined,
+        'upi' => Icons.qr_code_2_rounded,
+        'bank' || 'neft' || 'imps' || 'rtgs' => Icons.account_balance_outlined,
+        'cheque' => Icons.description_outlined,
+        'porter' => Icons.local_shipping_outlined,
+        _ => Icons.currency_rupee_rounded,
+      };
 }

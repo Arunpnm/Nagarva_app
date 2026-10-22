@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '/backend/material_usage.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Materials used on this order, recorded FROM the order.
@@ -153,27 +153,22 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
+    final ng = NgPalette.of(context);
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.inventory_2_outlined, size: 18, color: theme.primary),
+              Icon(Icons.inventory_2_outlined, size: 18, color: ng.acc),
               const SizedBox(width: 8),
               Text('Materials Used',
                   style: NgFonts.geist(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: theme.primaryText)),
+                      color: ng.text)),
               const Spacer(),
               if (!widget.readOnly)
                 TextButton.icon(
@@ -199,7 +194,7 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
                 'it counts as a cost on this order — and if the customer is '
                 'buying them, it is charged to them too.',
                 style:
-                    NgFonts.geist(fontSize: 12, color: theme.secondaryText),
+                    NgFonts.geist(fontSize: 12, color: ng.mute),
               ),
             )
           else ...[
@@ -214,13 +209,13 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
                           style: NgFonts.geist(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: theme.primaryText)),
+                              color: ng.text)),
                     ),
                     Text('₹${r.value.toStringAsFixed(0)}',
                         style: NgFonts.geist(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: theme.primaryText)),
+                            color: ng.text)),
                   ],
                 ),
               ),
@@ -230,20 +225,20 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
                 Expanded(
                   child: Text('Material cost on this job',
                       style: NgFonts.geist(
-                          fontSize: 12, color: theme.secondaryText)),
+                          fontSize: 12, color: ng.mute)),
                 ),
                 Text('₹${_totalCost.toStringAsFixed(0)}',
                     style: NgFonts.geist(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: theme.primaryText)),
+                        color: ng.text)),
               ],
             ),
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!,
-                style: NgFonts.geist(fontSize: 12, color: theme.error)),
+                style: NgFonts.geist(fontSize: 12, color: ng.red)),
           ],
         ],
       ),
@@ -322,7 +317,7 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
     final price = _selected.sellingPrice ?? 0;
     final onHand = _selected.quantity ?? 0;
     return AlertDialog(
-      backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+      backgroundColor: NgPalette.of(context).s1,
       title: const Text('Add material to this job'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -392,7 +387,7 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(_error!,
                   style: TextStyle(
-                      fontSize: 12, color: FlutterFlowTheme.of(context).error)),
+                      fontSize: 12, color: NgPalette.of(context).red)),
             ),
         ],
       ),

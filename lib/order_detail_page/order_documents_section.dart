@@ -23,7 +23,7 @@ import '/components/signature_pad.dart';
 import '/components/pod_pdf.dart';
 import '/components/simple_document_pdf.dart';
 import '/config/app_config.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/backend/vendor_identity.dart';
 
@@ -240,7 +240,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+          backgroundColor: NgPalette.of(context).s1,
           title: const Text('Capture Signature'),
           content: SizedBox(
             width: double.maxFinite,
@@ -511,7 +511,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     final go = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        backgroundColor: NgPalette.of(context).s1,
         title: const Text('No customer signature'),
         content: Text('This $label will be generated without the '
             'customer signature.\n\nUse "Capture Signature" above to take '
@@ -973,7 +973,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+          backgroundColor: NgPalette.of(context).s1,
           title: Text(title),
           content: SizedBox(
             width: double.maxFinite,
@@ -1165,7 +1165,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final ok = await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+            backgroundColor: NgPalette.of(context).s1,
             title: const Text('Payment Voucher'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1363,7 +1363,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   // ---- Build --------------------------------------------------------
 
   Widget _docButton(String label, IconData icon, VoidCallback onTap) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final isPending = _pendingLabel == label;
     return InkWell(
       onTap: _busy
@@ -1383,9 +1383,9 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         width: 104,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
-          color: theme.primaryBackground,
+          color: ng.bg,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: theme.alternate),
+          border: Border.all(color: ng.w08),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1395,19 +1395,19 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2.2, color: theme.primary),
+                    strokeWidth: 2.2, color: ng.acc),
               )
             else
               Icon(icon,
                   size: 22,
-                  color: _busy ? theme.secondaryText : theme.primary),
+                  color: _busy ? ng.mute : ng.acc),
             const SizedBox(height: 6),
             Text(isPending ? 'Working…' : label,
                 textAlign: TextAlign.center,
                 style: NgFonts.geist(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w600,
-                    color: theme.primaryText)),
+                    color: ng.text)),
           ],
         ),
       ),
@@ -1416,8 +1416,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
   Widget _utilityButton(String label, IconData icon, VoidCallback? onTap,
       {Color? color}) {
-    final theme = FlutterFlowTheme.of(context);
-    final c = color ?? theme.primary;
+    final ng = NgPalette.of(context);
+    final c = color ?? ng.acc;
     return OutlinedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 16, color: c),
@@ -1432,18 +1432,13 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final o = _order;
     final paid = o?.paymentStatus == 'paid';
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 14),
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1451,7 +1446,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               style: NgFonts.geist(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: theme.primaryText)),
+                  color: ng.text)),
           const SizedBox(height: 4),
           if (_heldSignature != null)
             Container(
@@ -1459,12 +1454,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: theme.success.withValues(alpha: 0.12),
+                color: ng.green.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, size: 16, color: theme.success),
+                  Icon(Icons.check_circle, size: 16, color: ng.green),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -1472,7 +1467,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                       '${_heldSignatureAt == null ? '' : ' at ${TimeOfDay.fromDateTime(_heldSignatureAt!).format(context)}'}'
                       ' — will appear on next document',
                       style: NgFonts.geist(
-                          fontSize: 11.5, color: theme.primaryText),
+                          fontSize: 11.5, color: ng.text),
                     ),
                   ),
                   TextButton(

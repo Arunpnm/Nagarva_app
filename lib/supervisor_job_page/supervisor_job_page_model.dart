@@ -23,6 +23,26 @@ import 'package:flutter/material.dart';
 /// the `completing` step itself. See the widget's header for why.
 enum SupervisorJobStep { start, arrivalCode, team, shifting, completing, done }
 
+/// Which field step an order is on. Shared by the field job screen and
+/// My jobs' checklist so the two can never disagree.
+SupervisorJobStep supervisorStepFor(OrdersRow o) {
+  if (o.status == 'delivered' ||
+      o.status == 'closed' ||
+      o.supervisorStatus == 'completed_pending' ||
+      o.supervisorStatus == 'approved') {
+    return SupervisorJobStep.done;
+  }
+  if (o.status == 'transit') return SupervisorJobStep.shifting;
+  // in_progress means the job was accepted but shifting hasn't started,
+  // so the arrival code hasn't been entered yet — resume there rather
+  // than skipping the gate on a reopened screen.
+  if (o.supervisorStatus == 'in_progress') {
+    return SupervisorJobStep.arrivalCode;
+  }
+  return SupervisorJobStep.start;
+}
+
+
 const List<String> kRelationshipOptions = [
   'self',
   'family',

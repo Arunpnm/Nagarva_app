@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Extra charges on an order: anything billed on top of the quote.
@@ -137,7 +137,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+          backgroundColor: NgPalette.of(context).s1,
           title: Text(existing == null ? 'Add a charge' : 'Edit charge'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -164,7 +164,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                 Text(err!,
                     style: TextStyle(
                         fontSize: 12,
-                        color: FlutterFlowTheme.of(context).error)),
+                        color: NgPalette.of(context).red)),
               ],
             ],
           ),
@@ -239,27 +239,22 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
+    final ng = NgPalette.of(context);
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.handyman_outlined, size: 18, color: theme.primary),
+              Icon(Icons.handyman_outlined, size: 18, color: ng.acc),
               const SizedBox(width: 8),
               Text('Extra Charges',
                   style: NgFonts.geist(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: theme.primaryText)),
+                      color: ng.text)),
               // Pending count on the HEADER, not only in the list below.
               // Arun, 3 Sept 2026: "that addon serice is pending so make
               // it clear its pending in that order". Outstanding work is
@@ -272,7 +267,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: theme.warning,
+                    color: ng.amber,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text('$_pendingCount PENDING',
@@ -309,7 +304,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                 'customer bought. Pending items count toward the balance '
                 'until they are done.',
                 style:
-                    NgFonts.geist(fontSize: 12, color: theme.secondaryText),
+                    NgFonts.geist(fontSize: 12, color: ng.mute),
               ),
             )
           else ...[
@@ -319,7 +314,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                 margin: const EdgeInsets.only(top: 6, bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: theme.warning.withValues(alpha: 0.12),
+                  color: ng.amber.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -329,31 +324,31 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                   style: NgFonts.geist(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: theme.primaryText),
+                      color: ng.text),
                 ),
               ),
-            for (final r in _rows) _addonRow(theme, r),
+            for (final r in _rows) _addonRow(ng, r),
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!,
-                style: NgFonts.geist(fontSize: 12, color: theme.error)),
+                style: NgFonts.geist(fontSize: 12, color: ng.red)),
           ],
         ],
       ),
     );
   }
 
-  Widget _addonRow(FlutterFlowTheme theme, Map<String, dynamic> r) {
+  Widget _addonRow(NgPalette ng, Map<String, dynamic> r) {
     final status = '${r['status'] ?? 'pending'}';
     final amount = (num.tryParse('${r['amount']}') ?? 0).toDouble();
     final cancelled = status == 'cancelled';
     final done = status == 'completed';
 
     final (Color chipColor, String chipLabel, IconData icon) = switch (status) {
-      'completed' => (theme.success, 'Done', Icons.check_circle_outline),
-      'cancelled' => (theme.secondaryText, 'Cancelled', Icons.block),
-      _ => (theme.warning, 'Pending', Icons.schedule),
+      'completed' => (ng.green, 'Done', Icons.check_circle_outline),
+      'cancelled' => (ng.mute, 'Cancelled', Icons.block),
+      _ => (ng.amber, 'Pending', Icons.schedule),
     };
 
     final pending = !done && !cancelled;
@@ -365,10 +360,10 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
           // done. It gets a tint and a rule so it cannot be skimmed past
           // as if it were finished.
           ? BoxDecoration(
-              color: theme.warning.withValues(alpha: 0.10),
+              color: ng.amber.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(8),
               border: Border(
-                  left: BorderSide(color: theme.warning, width: 3)),
+                  left: BorderSide(color: ng.amber, width: 3)),
             )
           : null,
       child: Row(
@@ -385,7 +380,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                   style: NgFonts.geist(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: cancelled ? theme.secondaryText : theme.primaryText,
+                    color: cancelled ? ng.mute : ng.text,
                     // A cancelled row stays visible as a record of what
                     // was discussed, struck through so it cannot be
                     // misread as outstanding work.
@@ -407,13 +402,13 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
             style: NgFonts.geist(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: cancelled ? theme.secondaryText : theme.primaryText,
+              color: cancelled ? ng.mute : ng.text,
               decoration: cancelled ? TextDecoration.lineThrough : null,
             ),
           ),
           if (!widget.readOnly)
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, size: 18, color: theme.secondaryText),
+              icon: Icon(Icons.more_vert, size: 18, color: ng.mute),
               onSelected: (v) {
                 if (v == 'edit') {
                   _addOrEdit(existing: r);
