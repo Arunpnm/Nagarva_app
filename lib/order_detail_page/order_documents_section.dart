@@ -1378,35 +1378,38 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               setState(() => _pendingLabel = label);
               onTap();
             },
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: 104,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
-          color: ng.bg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: ng.w08),
+          color: ng.inset,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: ng.w06),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isPending)
-              SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2.2, color: ng.acc),
-              )
-            else
-              Icon(icon,
-                  size: 22,
-                  color: _busy ? ng.mute : ng.acc),
-            const SizedBox(height: 6),
+            SizedBox(
+              width: 36,
+              height: 36,
+              child: isPending
+                  ? Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.2, color: ng.acc),
+                    )
+                  : NgIconTile(
+                      icon: icon,
+                      status: _busy ? NgStatus.neutral : NgStatus.accent),
+            ),
+            const SizedBox(height: 8),
             Text(isPending ? 'Working…' : label,
                 textAlign: TextAlign.center,
+                maxLines: 2,
                 style: NgFonts.geist(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    height: 1.25,
+                    fontWeight: FontWeight.w500,
                     color: ng.text)),
           ],
         ),
@@ -1417,16 +1420,11 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   Widget _utilityButton(String label, IconData icon, VoidCallback? onTap,
       {Color? color}) {
     final ng = NgPalette.of(context);
-    final c = color ?? ng.acc;
-    return OutlinedButton.icon(
+    return NgSecondaryButton(
+      icon: icon,
+      iconColor: color ?? ng.acc,
+      label: label,
       onPressed: onTap,
-      icon: Icon(icon, size: 16, color: c),
-      label: Text(label,
-          style: NgFonts.geist(fontSize: 11.5, color: c)),
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(color: c),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      ),
     );
   }
 
@@ -1436,109 +1434,97 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     final o = _order;
     final paid = o?.paymentStatus == 'paid';
 
-    return NgCard(
-      radius: 20,
-      padding: const EdgeInsets.all(16),
+    final docs = <(String, IconData, VoidCallback)>[
+      ('Tax Invoice', Icons.receipt_long_outlined, widget.onGenerateInvoice),
+      ('Money Receipt', Icons.receipt_outlined, _genMoneyReceipt),
+      ('Proforma', Icons.description_outlined, _genProforma),
+      ('LR / Bilty', Icons.local_shipping_outlined, _genLr),
+      ('Packing List', Icons.inventory_2_outlined, _genPackingList),
+      ('Loading Slip', Icons.numbers_rounded, _genLoadingSlip),
+      ('Vehicle Condition', Icons.directions_car_outlined, _genVehicleCondition),
+      ('Payment Voucher', Icons.payments_outlined, _genVoucher),
+      ('Proof of Delivery', Icons.assignment_turned_in_outlined, _genPod),
+    ];
+    final utilities = <Widget>[
+      if (!paid)
+        _utilityButton('Copy UPI', Icons.content_copy_rounded, _copyUpi),
+      if (!paid) _utilityButton('Send pay link', Icons.send_rounded, _sendPayLink),
+      // Live since 7 Sept 2026 — /track serves the customer document hub.
+      if (kTrackLinkHosted)
+        _utilityButton('Copy track link', Icons.link_rounded, _copyTrackLink),
+      // "Duplicate order", not "Copy". Arun, 3 Sept 2026: beside two
+      // clipboard actions, a button labelled "Copy" reads as a third one
+      // - when it actually creates a whole new order.
+      _utilityButton('Duplicate order', Icons.control_point_duplicate_rounded,
+          widget.duplicating ? null : widget.onDuplicate,
+          color: ng.blue),
+    ];
+    return NgSectionCard(
+      title: 'Documents',
+      icon: Icons.folder_open_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Documents',
-              style: NgFonts.geist(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: ng.text)),
-          const SizedBox(height: 4),
           if (_heldSignature != null)
             Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
               decoration: BoxDecoration(
-                color: ng.green.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+                color: ng.greenBg,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle, size: 16, color: ng.green),
-                  const SizedBox(width: 6),
+                  Icon(Icons.check_circle_rounded, size: 17, color: ng.green),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '✅ Customer signature captured'
+                      'Customer signature captured'
                       '${_heldSignatureAt == null ? '' : ' at ${TimeOfDay.fromDateTime(_heldSignatureAt!).format(context)}'}'
-                      ' — will appear on next document',
-                      style: NgFonts.geist(
-                          fontSize: 11.5, color: ng.text),
+                      ' — will appear on the next document',
+                      style: NgFonts.geist(fontSize: 12.5, color: ng.text),
                     ),
                   ),
-                  TextButton(
-                    onPressed: _clearHeldSignature,
-                    child: const Text('Clear'),
-                  ),
+                  NgLinkButton('Clear', onTap: _clearHeldSignature),
                 ],
               ),
             )
           else
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: _captureSignature,
-                  icon: const Icon(Icons.draw, size: 16),
-                  label: const Text('✍️ Capture Signature'),
-                ),
+              padding: const EdgeInsets.only(bottom: 12),
+              child: NgSecondaryButton(
+                icon: Icons.draw_outlined,
+                iconColor: ng.acc,
+                label: 'Capture signature',
+                onPressed: _captureSignature,
               ),
             ),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _docButton(
-                  'Tax Invoice', Icons.receipt_long, widget.onGenerateInvoice),
-              _docButton('Money Receipt', Icons.receipt, _genMoneyReceipt),
-              _docButton('Proforma', Icons.description, _genProforma),
-              _docButton('LR / Bilty', Icons.local_shipping, _genLr),
-              _docButton(
-                  'Packing List', Icons.inventory_2, _genPackingList),
-              _docButton('Loading Slip', Icons.numbers, _genLoadingSlip),
-              _docButton('Vehicle Condition', Icons.directions_car,
-                  _genVehicleCondition),
-              _docButton(
-                  'Payment Voucher', Icons.payments, _genVoucher),
-              _docButton(
-                  'Proof of Delivery', Icons.assignment_turned_in, _genPod),
-            ],
-          ),
+          LayoutBuilder(builder: (context, box) {
+            const gap = 8.0;
+            final w = (box.maxWidth - gap * 2) / 3;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final d in docs)
+                  SizedBox(width: w, child: _docButton(d.$1, d.$2, d.$3)),
+              ],
+            );
+          }),
           const SizedBox(height: 14),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (!paid)
-                _utilityButton('Copy UPI', Icons.content_copy, _copyUpi),
-              if (!paid)
-                _utilityButton(
-                    'Send Pay Link', Icons.send, _sendPayLink),
-              // Live since 7 Sept 2026 — /track serves the customer
-              // document hub. See kTrackLinkHosted.
-              if (kTrackLinkHosted)
-                _utilityButton('Copy Track Link', Icons.link, _copyTrackLink),
-              // "Duplicate Order", not "Copy". Arun, 3 Sept 2026: "there
-              // is copy upi and send paylink then again copy what is that
-              // last copy is for". Sitting third in a row whose other two
-              // buttons copy things to the CLIPBOARD, a button labelled
-              // "Copy" reads as a third clipboard action - when it
-              // actually creates a whole new order. The icon said
-              // copy_all, which made it worse.
-              _utilityButton(
-                  'Duplicate Order',
-                  Icons.control_point_duplicate,
-                  widget.duplicating ? null : widget.onDuplicate,
-                  color: const Color(0xFF7C3AED)),
-            ],
-          ),
+          Divider(height: 1, color: ng.w06),
+          const SizedBox(height: 14),
+          LayoutBuilder(builder: (context, box) {
+            const gap = 8.0;
+            final w = (box.maxWidth - gap) / 2;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final u in utilities) SizedBox(width: w, child: u),
+              ],
+            );
+          }),
         ],
       ),
     );
