@@ -1,11 +1,11 @@
 import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 
 import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
@@ -61,7 +61,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
 
   double _billBalance(VendorBillsRow b) => b.totalAmount - b.tdsAmount - b.paidAmount;
 
-  String _rupees(num v) => '₹${v.toStringAsFixed(0)}';
+  String _rupees(num v) => functions.inrFull(v.toDouble());
 
   Future<void> _editVendor() async {
     final v = _vendor;
@@ -359,7 +359,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
       }
     } catch (_) {}
     if (!mounted) return;
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -371,69 +371,96 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
         expand: false,
         builder: (sheetCtx, scrollController) => Container(
           decoration: BoxDecoration(
-            color: theme.primaryBackground,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+            color: ng.sheet,
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(NgRadius.sheet)),
           ),
           child: ListView(
             controller: scrollController,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
-              Text(bill.billNo ?? '(no bill no)',
-                  style: NgFonts.geist(
-                      fontSize: 17, fontWeight: FontWeight.w700, color: theme.primaryText)),
-              _statusChip(theme, bill.status),
-              const SizedBox(height: 10),
-              _kv('Date', bill.billDate == null
-                  ? '—'
-                  : DateFormat('d MMM yyyy').format(bill.billDate!)),
-              _kv('Taxable Amount', _rupees(bill.taxableAmount)),
-              _kv('GST', '${bill.gstMode ?? '—'} · ${_rupees(bill.gstAmount)}'),
-              _kv('TDS', _rupees(bill.tdsAmount)),
-              _kv('Total', _rupees(bill.totalAmount)),
-              _kv('Paid', _rupees(bill.paidAmount)),
-              _kv('Balance', _rupees(_billBalance(bill))),
-              if ((bill.notes ?? '').isNotEmpty) _kv('Notes', bill.notes!),
-              const SizedBox(height: 14),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                      color: ng.w15, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Payments',
-                      style: NgFonts.geist(fontSize: 13, fontWeight: FontWeight.w700)),
-                  if (_billBalance(bill) > 0.01)
-                    TextButton.icon(
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Record Payment'),
-                      onPressed: () async {
-                        Navigator.of(sheetCtx).pop();
-                        await _recordPayment(bill);
+                  Expanded(
+                    child: Text(bill.billNo ?? '(no bill no)',
+                        style: NgFonts.mono(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: ng.text)),
+                  ),
+                  NgPill(
+                      switch (bill.status) {
+                        'paid' => 'Paid',
+                        'partial' => 'Part paid',
+                        _ => 'Unpaid',
                       },
-                    ),
+                      status: switch (bill.status) {
+                        'paid' => NgStatus.green,
+                        'partial' => NgStatus.amber,
+                        _ => NgStatus.red,
+                      }),
                 ],
               ),
-              if (payments.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text('No payments recorded.',
-                      style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
-                )
-              else
+              const SizedBox(height: 14),
+              NgRowsCard(rows: [
+                NgKvRow(
+                    'Date',
+                    bill.billDate == null
+                        ? '—'
+                        : DateFormat('d MMM yyyy').format(bill.billDate!)),
+                NgKvRow('Taxable', _rupees(bill.taxableAmount), mono: true),
+                NgKvRow('GST',
+                    '${bill.gstMode ?? '—'} · ${_rupees(bill.gstAmount)}'),
+                NgKvRow('TDS', _rupees(bill.tdsAmount), mono: true),
+                NgKvRow('Total', _rupees(bill.totalAmount), mono: true),
+                NgKvRow('Paid', _rupees(bill.paidAmount), mono: true),
+                NgKvRow('Balance', _rupees(_billBalance(bill)), mono: true),
+                if ((bill.notes ?? '').isNotEmpty) NgKvRow('Notes', bill.notes!),
+              ]),
+              const SizedBox(height: 18),
+              NgGroupTitle(
+                'Payments',
+                actionLabel: 'Record payment',
+                onAction: _billBalance(bill) > 0.01
+                    ? () async {
+                        Navigator.of(sheetCtx).pop();
+                        await _recordPayment(bill);
+                      }
+                    : null,
+              ),
+              NgRowsCard(rows: [
                 for (final p in payments)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.fromLTRB(14, 6, 4, 6),
                     child: Row(
                       children: [
+                        Icon(Icons.payments_outlined, size: 18, color: ng.faint),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            '${p.mode ?? '—'} ${(p.reference ?? '').isNotEmpty ? '· ${p.reference}' : ''}',
-                            style: NgFonts.geist(fontSize: 12),
+                            '${p.mode ?? '—'}${(p.reference ?? '').isNotEmpty ? ' · ${p.reference}' : ''}',
+                            style: NgFonts.geist(fontSize: 13.5, color: ng.text),
                           ),
                         ),
                         Text(_rupees(p.amount),
-                            style: NgFonts.geist(fontSize: 12, fontWeight: FontWeight.w600)),
+                            style: NgFonts.mono(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: ng.text)),
                         IconButton(
                           tooltip: 'Delete payment',
                           visualDensity: VisualDensity.compact,
-                          icon: Icon(Icons.delete_outline, size: 16, color: theme.error),
+                          icon: Icon(Icons.delete_outline_rounded,
+                              size: 18, color: ng.red),
                           onPressed: () async {
                             Navigator.of(sheetCtx).pop();
                             await _deleteVendorPayment(bill, p);
@@ -442,11 +469,13 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                       ],
                     ),
                   ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                icon: Icon(Icons.delete_outline, size: 18, color: theme.error),
-                label: Text('Delete Bill', style: TextStyle(color: theme.error)),
-                onPressed: () async {
+              ], empty: 'No payments recorded.'),
+              const SizedBox(height: 18),
+              NgWideButton(
+                icon: Icons.delete_outline_rounded,
+                label: 'Delete bill',
+                danger: true,
+                onTap: () async {
                   Navigator.of(sheetCtx).pop();
                   if (bill.id == null) return;
                   final deleted = await DeleteAction.run(
@@ -615,35 +644,30 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
     }
   }
 
-  Widget _kv(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [
-            SizedBox(width: 120, child: Text(label, style: NgFonts.geist(fontSize: 12, color: Colors.grey))),
-            Expanded(child: Text(value, style: NgFonts.geist(fontSize: 12.5))),
-          ],
-        ),
-      );
-
-  Widget _statusChip(FlutterFlowTheme theme, String status) {
-    final color = {
-          'unpaid': Colors.red,
-          'partial': Colors.orange,
-          'paid': Colors.green,
-        }[status] ??
-        Colors.grey;
-    return Container(
-      margin: const EdgeInsets.only(top: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(10)),
-      child: Text(status, style: NgFonts.geist(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
+  Future<void> _deleteVendor(VendorsRow v) async {
+    setState(() => _deleting = true);
+    final deleted = await DeleteAction.run(
+      context,
+      table: 'vendors',
+      id: v.id!,
+      entityLabel: 'vendor',
+      check: () async => DeleteCheck.allow,
+      reasonRequired: true,
     );
+    if (deleted && mounted) {
+      Navigator.of(context).pop(true);
+    } else if (mounted) {
+      setState(() => _deleting = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final v = _vendor;
+    final outstanding = _bills
+        .where((b) => b.status != 'paid')
+        .fold<double>(0, (s, b) => s + (b.totalAmount - b.paidAmount));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -651,99 +675,114 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
         Navigator.of(context).pop(_changed);
       },
       child: Scaffold(
-        backgroundColor: theme.primaryBackground,
-        appBar: NgSimpleBar(title: v?.name ?? 'Vendor', actions: [
-            if (v != null)
-              IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _editVendor),
-          ]),
-        floatingActionButton: v == null
-            ? null
-            : FloatingActionButton.extended(
-                onPressed: _addBill,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Bill'),
-              ),
-        body: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : v == null
-                ? const Center(child: Text('Vendor not found.'))
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: theme.secondaryBackground,
-                          borderRadius: BorderRadius.circular(12),
+        backgroundColor: ng.bg,
+        body: SafeArea(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : v == null
+                  ? Center(
+                      child: NgEmptyState(
+                        icon: Icons.storefront_outlined,
+                        title: 'Vendor not found',
+                        action: SizedBox(
+                          width: 140,
+                          child: NgSecondaryButton(
+                              label: 'Go back',
+                              onPressed: () => Navigator.of(context).pop()),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if ((v.vendorType ?? '').isNotEmpty) _kv('Type', v.vendorType!),
-                            if ((v.contactPerson ?? '').isNotEmpty)
-                              _kv('Contact', v.contactPerson!),
-                            if ((v.phone ?? '').isNotEmpty) _kv('Phone', v.phone!),
-                            if ((v.email ?? '').isNotEmpty) _kv('Email', v.email!),
-                            if ((v.gstin ?? '').isNotEmpty) _kv('GSTIN', v.gstin!),
-                            if ((v.city ?? '').isNotEmpty) _kv('City', v.city!),
-                            if (v.tdsApplicable)
-                              _kv('TDS', '${v.tdsRatePct ?? 0}% ${v.tdsSection ?? ''}'),
-                            if (v.paymentTermsDays != null)
-                              _kv('Terms', '${v.paymentTermsDays} days'),
-                            if (!v.active) _kv('Status', 'Inactive'),
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
+                      children: [
+                        NgDetailHeader(
+                          title: v.name,
+                          avatar: v.name,
+                          subtitle: [
+                            if ((v.vendorType ?? '').isNotEmpty) v.vendorType!,
+                            if ((v.city ?? '').isNotEmpty) v.city!,
+                            if (!v.active) 'Inactive',
+                          ].join(' · '),
+                          onBack: () => Navigator.of(context).pop(_changed),
+                          actions: [
+                            NgHeaderButtonBox(
+                                icon: Icons.edit_outlined, onTap: _editVendor),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text('Bills',
-                          style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 8),
-                      if (_bills.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Text('No bills yet.',
-                              style: NgFonts.geist(color: theme.secondaryText)),
-                        )
-                      else
-                        for (final b in _bills) _billRow(theme, b),
-                      DeleteAction.button(
-                        context: context,
-                        label: 'Delete Vendor',
-                        busy: _deleting,
-                        onPressed: () async {
-                          setState(() => _deleting = true);
-                          final deleted = await DeleteAction.run(
-                            context,
-                            table: 'vendors',
-                            id: v.id!,
-                            entityLabel: 'vendor',
-                            check: () async => DeleteCheck.allow,
-                            reasonRequired: true,
-                          );
-                          if (deleted && mounted) {
-                            Navigator.of(context).pop(true);
-                          } else if (mounted) {
-                            setState(() => _deleting = false);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: outstanding > 0 ? ng.redBg : ng.s1,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text('Outstanding',
+                                    style: NgFonts.geist(
+                                        fontSize: 13, color: ng.mute)),
+                              ),
+                              Text(_rupees(outstanding),
+                                  style: NgFonts.mono(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      color: outstanding > 0
+                                          ? ng.red
+                                          : ng.green)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        NgRowsCard(rows: [
+                          if ((v.vendorType ?? '').isNotEmpty)
+                            NgKvRow('Type', v.vendorType!),
+                          if ((v.contactPerson ?? '').isNotEmpty)
+                            NgKvRow('Contact', v.contactPerson!),
+                          if ((v.phone ?? '').isNotEmpty)
+                            NgKvRow('Phone', v.phone!, mono: true),
+                          if ((v.email ?? '').isNotEmpty)
+                            NgKvRow('Email', v.email!),
+                          if ((v.gstin ?? '').isNotEmpty)
+                            NgKvRow('GSTIN', v.gstin!, mono: true),
+                          if ((v.city ?? '').isNotEmpty) NgKvRow('City', v.city!),
+                          if (v.tdsApplicable)
+                            NgKvRow('TDS',
+                                '${v.tdsRatePct ?? 0}% ${v.tdsSection ?? ''}'),
+                          if (v.paymentTermsDays != null)
+                            NgKvRow('Terms', '${v.paymentTermsDays} days'),
+                        ], empty: 'No details added.'),
+                        const SizedBox(height: 20),
+                        NgGroupTitle('Bills',
+                            actionLabel: 'Add bill', onAction: _addBill),
+                        NgRowsCard(rows: [
+                          for (final b in _bills) _billRow(ng, b),
+                        ], empty: 'No bills yet.'),
+                        const SizedBox(height: 22),
+                        NgWideButton(
+                          icon: Icons.delete_outline_rounded,
+                          label: _deleting ? 'Deleting…' : 'Delete vendor',
+                          danger: true,
+                          onTap: _deleting ? null : () => _deleteVendor(v),
+                        ),
+                      ],
+                    ),
+        ),
       ),
     );
   }
 
-  Widget _billRow(FlutterFlowTheme theme, VendorBillsRow b) {
+  Widget _billRow(NgPalette ng, VendorBillsRow b) {
+    final (label, tone) = switch (b.status) {
+      'paid' => ('Paid', NgStatus.green),
+      'partial' => ('Part paid', NgStatus.amber),
+      _ => ('Unpaid', NgStatus.red),
+    };
     return InkWell(
       onTap: () => _openBill(b),
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
         child: Row(
           children: [
             Expanded(
@@ -751,10 +790,16 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(b.billNo ?? '(no bill no)',
-                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 13)),
+                      style: NgFonts.mono(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: ng.text)),
+                  const SizedBox(height: 2),
                   Text(
-                    b.billDate == null ? '—' : DateFormat('d MMM yyyy').format(b.billDate!),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    b.billDate == null
+                        ? '—'
+                        : DateFormat('d MMM yyyy').format(b.billDate!),
+                    style: NgFonts.geist(fontSize: 12.5, color: ng.mute),
                   ),
                 ],
               ),
@@ -763,10 +808,16 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(_rupees(b.totalAmount),
-                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
-                _statusChip(theme, b.status),
+                    style: NgFonts.mono(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ng.text)),
+                const SizedBox(height: 4),
+                NgPill(label, status: tone),
               ],
             ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, size: 20, color: ng.faint),
           ],
         ),
       ),

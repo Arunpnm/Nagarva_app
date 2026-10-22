@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/order_picker_dialog.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
@@ -454,11 +453,11 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final t = _trip;
     final pnl = _pnl;
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: NgSimpleBar(title: t?.tripNo ?? 'Trip', actions: [
           if (t != null)
             IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _editTrip),
@@ -473,20 +472,20 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                     if (pnl != null) ...[
                       Row(
                         children: [
-                          Expanded(child: _kpiCard(theme, 'Revenue', _rupees(pnl.grossRevenue))),
+                          Expanded(child: _kpiCard(ng, 'Revenue', _rupees(pnl.grossRevenue))),
                           const SizedBox(width: 8),
-                          Expanded(child: _kpiCard(theme, 'Net Profit', _rupees(pnl.netProfit))),
+                          Expanded(child: _kpiCard(ng, 'Net Profit', _rupees(pnl.netProfit))),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
-                              child: _kpiCard(theme, 'Expenses',
+                              child: _kpiCard(ng, 'Expenses',
                                   _rupees(pnl.tripExpenses + pnl.hireAmount))),
                           const SizedBox(width: 8),
                           Expanded(
-                              child: _kpiCard(theme, 'Cost / Km', _rupees(pnl.costPerKm))),
+                              child: _kpiCard(ng, 'Cost / Km', _rupees(pnl.costPerKm))),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -494,7 +493,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                          color: theme.secondaryBackground, borderRadius: BorderRadius.circular(12)),
+                          color: ng.s1, borderRadius: BorderRadius.circular(12)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -513,7 +512,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Orders on this Trip',
-                            style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
+                            style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600)),
                         TextButton.icon(
                             icon: const Icon(Icons.add, size: 16),
                             label: const Text('Add'),
@@ -524,16 +523,16 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Text('No orders added yet.',
-                            style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
+                            style: NgFonts.geist(fontSize: 12, color: ng.mute)),
                       )
                     else
-                      for (final to in _tripOrders) _tripOrderRow(theme, to),
+                      for (final to in _tripOrders) _tripOrderRow(ng, to),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Trip Expenses',
-                            style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
+                            style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w600)),
                         TextButton.icon(
                             icon: const Icon(Icons.add, size: 16),
                             label: const Text('Add'),
@@ -544,32 +543,32 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Text('No expenses logged yet.',
-                            style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
+                            style: NgFonts.geist(fontSize: 12, color: ng.mute)),
                       )
                     else
-                      for (final e in _expenses) _expenseRow(theme, e),
+                      for (final e in _expenses) _expenseRow(ng, e),
                   ],
                 ),
     );
   }
 
-  Widget _kpiCard(FlutterFlowTheme theme, String label, String value) => Container(
+  Widget _kpiCard(NgPalette ng, String label, String value) => Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: ng.s1, borderRadius: BorderRadius.circular(10)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: NgFonts.geist(fontSize: 10.5, color: theme.secondaryText)),
+            Text(label, style: NgFonts.geist(fontSize: 10.5, color: ng.mute)),
             const SizedBox(height: 2),
-            Text(value, style: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w700)),
+            Text(value, style: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w600)),
           ],
         ),
       );
 
-  Widget _tripOrderRow(FlutterFlowTheme theme, TripOrdersRow to) => Container(
+  Widget _tripOrderRow(NgPalette ng, TripOrdersRow to) => Container(
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: ng.s1, borderRadius: BorderRadius.circular(10)),
         child: Row(
           children: [
             Expanded(
@@ -584,7 +583,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       if (to.allocationPct != null) '${to.allocationPct}%',
                       if (to.allocatedCost != null) _rupees(to.allocatedCost!),
                     ].join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: ng.mute),
                   ),
                 ],
               ),
@@ -596,10 +595,10 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
         ),
       );
 
-  Widget _expenseRow(FlutterFlowTheme theme, TripExpensesRow e) => Container(
+  Widget _expenseRow(NgPalette ng, TripExpensesRow e) => Container(
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: ng.s1, borderRadius: BorderRadius.circular(10)),
         child: Row(
           children: [
             Expanded(
@@ -613,7 +612,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       if (e.expenseDate != null) DateFormat('d MMM').format(e.expenseDate!),
                       if ((e.location ?? '').isNotEmpty) e.location,
                     ].whereType<String>().join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 11.5, color: ng.mute),
                   ),
                 ],
               ),

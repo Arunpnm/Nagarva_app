@@ -656,7 +656,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
                       : '⚠ This order is over-collected by ₹${(-balance).toStringAsFixed(0)}.',
                   style: TextStyle(
                       color: NgPalette.of(context).red,
-                      fontWeight: FontWeight.w700),
+                      fontWeight: FontWeight.w600),
                 ),
               ),
             if (!hasInvoice)

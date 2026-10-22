@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 
 class RateCardDetailPageWidget extends StatefulWidget {
   const RateCardDetailPageWidget({super.key, this.cardId});
@@ -357,7 +356,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
       backgroundColor: NgPalette.of(context).bg,
       appBar: NgSimpleBar(title: _card?.name ?? 'Rate card'),
@@ -379,17 +378,17 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
               ),
               Expanded(
                 child: TabBarView(controller: _tabs, children: [
-                  _chargesTab(theme),
-                  _rulesTab(theme),
-                  _floorsTab(theme),
-                  _multipliersTab(theme),
+                  _chargesTab(ng),
+                  _rulesTab(ng),
+                  _floorsTab(ng),
+                  _multipliersTab(ng),
                 ]),
               ),
             ]),
     );
   }
 
-  Widget _chargesTab(FlutterFlowTheme theme) {
+  Widget _chargesTab(NgPalette ng) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -416,7 +415,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
     );
   }
 
-  Widget _rulesTab(FlutterFlowTheme theme) {
+  Widget _rulesTab(NgPalette ng) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -440,7 +439,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
     );
   }
 
-  Widget _floorsTab(FlutterFlowTheme theme) {
+  Widget _floorsTab(NgPalette ng) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -468,7 +467,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
     );
   }
 
-  Widget _multipliersTab(FlutterFlowTheme theme) {
+  Widget _multipliersTab(NgPalette ng) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [

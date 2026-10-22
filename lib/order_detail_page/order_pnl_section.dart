@@ -574,7 +574,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           Text(kCommissionUnpricedLabel,
               style: NgFonts.geist(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: ng.amber)),
         ],
       ),
@@ -596,7 +596,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
                 Text('Net Profit',
                     style: NgFonts.geist(
                         fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: ng.mute)),
                 Text('Set the commission % to see profit',
                     style: NgFonts.geist(
@@ -608,7 +608,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           Text('Unavailable',
               style: NgFonts.geist(
                   fontSize: 14,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: ng.amber)),
         ],
       ),

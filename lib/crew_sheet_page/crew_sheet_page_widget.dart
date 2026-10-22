@@ -8,7 +8,6 @@ import '/backend/staff_pay_types.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/load_error_state.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/permissions.dart';
 
@@ -277,7 +276,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
   /// and branch are inferred, and everything else on the staff record can
   /// wait until he becomes a regular.
   Future<void> _addTemporaryHand() async {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -285,7 +284,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: theme.secondaryBackground,
+        backgroundColor: ng.s1,
         title: const Text('Add temporary hand'),
         content: Form(
           key: formKey,
@@ -315,7 +314,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                 'coming back, change his pay type to Dynamic on the Staff '
                 'page — same person, history kept.',
                 style: NgFonts.geist(
-                    fontSize: 11.5, color: theme.secondaryText),
+                    fontSize: 11.5, color: ng.mute),
               ),
             ],
           ),
@@ -357,7 +356,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           backgroundColor:
-              FlutterFlowTheme.of(dialogContext).secondaryBackground,
+              NgPalette.of(dialogContext).s1,
           title: const Text('Someone with this name already exists'),
           content: Text(
             '$name (${StaffPayType.label(StaffPayType.of(clash!))}) is already '
@@ -448,7 +447,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           backgroundColor:
-              FlutterFlowTheme.of(dialogContext).secondaryBackground,
+              NgPalette.of(dialogContext).s1,
           title: const Text('Save with blanks?'),
           content: Text('${msgs.join('\n\n')}\n\nThey will be recorded as ₹0.'),
           actions: [
@@ -585,9 +584,9 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: NgSimpleBar(title: 'Crew Sheet', actions: [
           IconButton(
             tooltip: 'Reload',
@@ -600,25 +599,25 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
           : _loadError != null
               ? Center(
                   child: LoadErrorState(message: _loadError!, onRetry: _load))
-              : _body(theme),
+              : _body(ng),
       bottomNavigationBar:
-          _loading || _loadError != null ? null : _footer(theme),
+          _loading || _loadError != null ? null : _footer(ng),
     );
   }
 
-  Widget _body(FlutterFlowTheme theme) {
+  Widget _body(NgPalette ng) {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
         children: [
-          _jobHeader(theme),
+          _jobHeader(ng),
           if (!StaffPermissions.canActive('orders', 'edit'))
-            _notice(theme,
+            _notice(ng,
                 icon: Icons.lock_outline,
                 text: 'You can view this crew sheet but not change it.'),
           if (_locked)
-            _notice(theme,
+            _notice(ng,
                 icon: Icons.lock,
                 text: 'This order is closed. The crew sheet is locked so the '
                     "job's profit figure cannot move after the fact."),
@@ -629,8 +628,8 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
               Text('Crew (${_present.length} present)',
                   style: NgFonts.geist(
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: theme.primaryText)),
+                      fontWeight: FontWeight.w600,
+                      color: ng.text)),
               TextButton.icon(
                 onPressed: _canEdit && !_saving ? _addTemporaryHand : null,
                 icon: const Icon(Icons.person_add_alt, size: 18),
@@ -639,7 +638,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
             ],
           ),
           if (_lines.isEmpty)
-            _notice(theme,
+            _notice(ng,
                 icon: Icons.groups_outlined,
                 text:
                     'No crew to show. Only Dynamic and Temporary staff appear '
@@ -647,32 +646,28 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                     'wage. Add a temporary hand above, or set a pay type on '
                     'the Staff page.')
           else
-            ..._lines.map((l) => _crewRow(theme, l)),
-          if (_ineligible.isNotEmpty) _ineligibleCard(theme),
+            ..._lines.map((l) => _crewRow(ng, l)),
+          if (_ineligible.isNotEmpty) _ineligibleCard(ng),
         ],
       ),
     );
   }
 
-  Widget _jobHeader(FlutterFlowTheme theme) {
+  Widget _jobHeader(NgPalette ng) {
     final o = _order!;
     final route =
         [o.fromCity, o.toCity].where((c) => (c ?? '').isNotEmpty).join(' → ');
-    return Container(
-      width: double.infinity,
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(o.customer,
               style: NgFonts.geist(
                   fontSize: 15.5,
-                  fontWeight: FontWeight.w700,
-                  color: theme.primaryText)),
+                  fontWeight: FontWeight.w600,
+                  color: ng.text)),
           const SizedBox(height: 4),
           Text(
             [
@@ -681,50 +676,50 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
               DateFormat('d MMM yyyy').format(o.moveDate),
             ].where((s) => s.isNotEmpty).join('  ·  '),
             style:
-                NgFonts.geist(fontSize: 12.5, color: theme.secondaryText),
+                NgFonts.geist(fontSize: 12.5, color: ng.mute),
           ),
         ],
       ),
     );
   }
 
-  Widget _notice(FlutterFlowTheme theme,
+  Widget _notice(NgPalette ng,
       {required IconData icon, required String text}) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.warning.withValues(alpha: 0.12),
+        color: ng.amber.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: theme.warning),
+          Icon(icon, size: 18, color: ng.amber),
           const SizedBox(width: 8),
           Expanded(
             child: Text(text,
                 style:
-                    NgFonts.geist(fontSize: 12, color: theme.primaryText)),
+                    NgFonts.geist(fontSize: 12, color: ng.text)),
           ),
         ],
       ),
     );
   }
 
-  Widget _crewRow(FlutterFlowTheme theme, _CrewLine l) {
+  Widget _crewRow(NgPalette ng, _CrewLine l) {
     final isTemp = StaffPayType.of(l.staff) == StaffPayType.temporary;
     final money = NumberFormat.decimalPattern('en_IN');
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.fromLTRB(6, 4, 12, 10),
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: l.present
-              ? theme.primary.withValues(alpha: 0.5)
+              ? ng.acc.withValues(alpha: 0.5)
               : Colors.transparent,
         ),
       ),
@@ -756,14 +751,14 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                               fontWeight:
                                   l.present ? FontWeight.w600 : FontWeight.w400,
                               color: l.present
-                                  ? theme.primaryText
-                                  : theme.secondaryText,
+                                  ? ng.text
+                                  : ng.mute,
                             ),
                           ),
                         ),
                         if (isTemp) ...[
                           const SizedBox(width: 6),
-                          _chip(theme, 'TEMP', theme.tertiary),
+                          _chip(ng, 'TEMP', ng.blue),
                         ],
                       ],
                     ),
@@ -775,8 +770,8 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                   '₹${money.format(l.total)}',
                   style: NgFonts.geist(
                       fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: theme.primaryText),
+                      fontWeight: FontWeight.w600,
+                      color: ng.text),
                 ),
             ],
           ),
@@ -803,7 +798,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                   ),
                   const SizedBox(width: 10),
                   _tagButton(
-                    theme,
+                    ng,
                     label: 'Driver',
                     icon: Icons.local_shipping_outlined,
                     selected: l.isDriver,
@@ -811,7 +806,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                   ),
                   const SizedBox(width: 8),
                   _tagButton(
-                    theme,
+                    ng,
                     label: 'A/C',
                     icon: Icons.ac_unit,
                     selected: l.acDone,
@@ -851,7 +846,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                       child: Text(
                         'Added on top of the wage, and reported as its own line.',
                         style: NgFonts.geist(
-                            fontSize: 11, color: theme.secondaryText),
+                            fontSize: 11, color: ng.mute),
                       ),
                     ),
                   ],
@@ -863,7 +858,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
     );
   }
 
-  Widget _chip(FlutterFlowTheme theme, String text, Color color) {
+  Widget _chip(NgPalette ng, String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -872,18 +867,18 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
       ),
       child: Text(text,
           style: NgFonts.geist(
-              fontSize: 9.5, fontWeight: FontWeight.w700, color: color)),
+              fontSize: 9.5, fontWeight: FontWeight.w600, color: color)),
     );
   }
 
   Widget _tagButton(
-    FlutterFlowTheme theme, {
+    NgPalette ng, {
     required String label,
     required IconData icon,
     required bool selected,
     required VoidCallback? onTap,
   }) {
-    final color = selected ? theme.primary : theme.secondaryText;
+    final color = selected ? ng.acc : ng.mute;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -891,7 +886,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color:
-              selected ? theme.primary.withValues(alpha: 0.14) : Colors.transparent,
+              selected ? ng.acc.withValues(alpha: 0.14) : Colors.transparent,
           border: Border.all(color: color.withValues(alpha: 0.6)),
           borderRadius: BorderRadius.circular(20),
         ),
@@ -903,7 +898,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
             Text(label,
                 style: NgFonts.geist(
                     fontSize: 12,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                     color: color)),
           ],
         ),
@@ -911,16 +906,16 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
     );
   }
 
-  Widget _ineligibleCard(FlutterFlowTheme theme) {
+  Widget _ineligibleCard(NgPalette ng) {
     final money = NumberFormat.decimalPattern('en_IN');
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.warning.withValues(alpha: 0.55)),
+        border: Border.all(color: ng.amber.withValues(alpha: 0.55)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -928,8 +923,8 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
           Text('Not paid per job',
               style: NgFonts.geist(
                   fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: theme.primaryText)),
+                  fontWeight: FontWeight.w600,
+                  color: ng.text)),
           const SizedBox(height: 4),
           Text(
             'These people are attached to this job but are on a monthly '
@@ -937,7 +932,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
             "count as labour cost in this job's profit — remove them if they "
             'were added by mistake.',
             style:
-                NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                NgFonts.geist(fontSize: 11.5, color: ng.mute),
           ),
           for (final r in _ineligible)
             Padding(
@@ -949,7 +944,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                       '${_staffById[r.staffId]?.name ?? 'Staff'}  ·  '
                       '₹${money.format((r.salaryAmount ?? 0) + r.acAmount)}',
                       style: NgFonts.geist(
-                          fontSize: 13, color: theme.primaryText),
+                          fontSize: 13, color: ng.text),
                     ),
                   ),
                   TextButton(
@@ -966,16 +961,16 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
     );
   }
 
-  Widget _footer(FlutterFlowTheme theme) {
+  Widget _footer(NgPalette ng) {
     final money = NumberFormat.decimalPattern('en_IN');
     final driver = _driver;
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
         decoration: BoxDecoration(
-          color: theme.secondaryBackground,
+          color: ng.s1,
           border: Border(
-              top: BorderSide(color: theme.alternate.withValues(alpha: 0.6))),
+              top: BorderSide(color: ng.w08.withValues(alpha: 0.6))),
         ),
         child: Row(
           children: [
@@ -988,8 +983,8 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                     '₹${money.format(_wageTotal + _acTotal)}',
                     style: NgFonts.geist(
                         fontSize: 19,
-                        fontWeight: FontWeight.w700,
-                        color: theme.primaryText),
+                        fontWeight: FontWeight.w600,
+                        color: ng.text),
                   ),
                   Text(
                     // A/C reports as its own line, never absorbed into the
@@ -1001,8 +996,8 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                     style: NgFonts.geist(
                       fontSize: 11.5,
                       color: driver == null && _present.isNotEmpty
-                          ? theme.error
-                          : theme.secondaryText,
+                          ? ng.red
+                          : ng.mute,
                     ),
                   ),
                 ],

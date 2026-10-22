@@ -1,11 +1,12 @@
 import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
+import 'package:intl/intl.dart';
 
 import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -78,7 +79,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
     }
   }
 
-  String _rupees(num v) => '₹${v.toStringAsFixed(0)}';
+  String _rupees(num v) => functions.inrFull(v.toDouble());
 
   Future<void> _editCustomer() async {
     final c = _customer;
@@ -447,19 +448,26 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
     );
   }
 
-  Widget _kv(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [
-            SizedBox(width: 130, child: Text(label, style: NgFonts.geist(fontSize: 12, color: Colors.grey))),
-            Expanded(child: Text(value, style: NgFonts.geist(fontSize: 12.5))),
-          ],
-        ),
-      );
+  Future<void> _deleteCustomer(CustomersRow c) async {
+    setState(() => _deleting = true);
+    final deleted = await DeleteAction.run(
+      context,
+      table: 'customers',
+      id: c.id!,
+      entityLabel: 'customer',
+      check: () async => DeleteCheck.allow,
+      reasonRequired: true,
+    );
+    if (deleted && mounted) {
+      Navigator.of(context).pop(true);
+    } else if (mounted) {
+      setState(() => _deleting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final c = _customer;
     final kpi = _kpi;
     return PopScope(
@@ -469,280 +477,317 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
         Navigator.of(context).pop(_changed);
       },
       child: Scaffold(
-        backgroundColor: theme.primaryBackground,
-        appBar: NgSimpleBar(title: c?.name ?? 'Customer', actions: [
-            if (c != null)
-              IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _editCustomer),
-          ]),
-        body: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : c == null
-                ? const Center(child: Text('Customer not found.'))
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                    children: [
-                      if (c.isBlacklisted)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: theme.error.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.block, size: 16, color: theme.error),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Blacklisted${(c.blacklistReason ?? '').isNotEmpty ? ': ${c.blacklistReason}' : ''}',
-                                  style: NgFonts.geist(fontSize: 12, color: theme.error),
+        backgroundColor: ng.bg,
+        body: SafeArea(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : c == null
+                  ? Center(
+                      child: NgEmptyState(
+                        icon: Icons.person_off_outlined,
+                        title: 'Customer not found',
+                        action: SizedBox(
+                          width: 140,
+                          child: NgSecondaryButton(
+                              label: 'Go back',
+                              onPressed: () => Navigator.of(context).pop()),
+                        ),
+                      ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
+                      children: [
+                        NgDetailHeader(
+                          title: c.name,
+                          avatar: c.name,
+                          subtitle: [
+                            c.customerType,
+                            if ((c.city ?? '').isNotEmpty) c.city!,
+                          ].where((x) => x.trim().isNotEmpty).join(' · '),
+                          onBack: () => Navigator.of(context).pop(_changed),
+                          actions: [
+                            NgHeaderButtonBox(
+                                icon: Icons.edit_outlined,
+                                onTap: _editCustomer),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (c.isBlacklisted) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 11),
+                            decoration: BoxDecoration(
+                              color: ng.redBg,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.block_rounded,
+                                    size: 18, color: ng.red),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Blacklisted${(c.blacklistReason ?? '').isNotEmpty ? ': ${c.blacklistReason}' : ''}',
+                                    style: NgFonts.geist(
+                                        fontSize: 13,
+                                        height: 1.4,
+                                        fontWeight: FontWeight.w500,
+                                        color: ng.red),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      if (kpi != null)
-                        Row(
-                          children: [
-                            Expanded(child: _kpiCard(theme, 'Orders', '${kpi.totalOrders}')),
+                          const SizedBox(height: 16),
+                        ],
+                        _actions(ng, c),
+                        if (kpi != null) ...[
+                          const SizedBox(height: 16),
+                          Row(children: [
+                            Expanded(
+                                child: NgMiniTile('Orders', '${kpi.totalOrders}')),
                             const SizedBox(width: 8),
                             Expanded(
-                                child: _kpiCard(theme, 'Lifetime Value', _rupees(kpi.lifetimeValue))),
-                          ],
-                        ),
-                      if (kpi != null) const SizedBox(height: 8),
-                      if (kpi != null)
-                        Row(
-                          children: [
+                                child: NgMiniTile('Lifetime value',
+                                    _rupees(kpi.lifetimeValue))),
+                          ]),
+                          const SizedBox(height: 8),
+                          Row(children: [
                             Expanded(
-                                child: _kpiCard(theme, 'Avg Order', _rupees(kpi.avgOrderValue))),
+                                child: NgMiniTile('Avg order',
+                                    _rupees(kpi.avgOrderValue))),
                             const SizedBox(width: 8),
                             Expanded(
-                                child: _kpiCard(theme, 'Outstanding', _rupees(kpi.outstandingEstimate))),
-                          ],
-                        ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: theme.secondaryBackground,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _kv('Type', c.customerType),
-                            if ((c.companyName ?? '').isNotEmpty) _kv('Company', c.companyName!),
-                            if ((c.phone ?? '').isNotEmpty) _kv('Phone', c.phone!),
-                            if ((c.altPhone ?? '').isNotEmpty) _kv('Alt Phone', c.altPhone!),
-                            if ((c.email ?? '').isNotEmpty) _kv('Email', c.email!),
-                            if ((c.gstin ?? '').isNotEmpty) _kv('GSTIN', c.gstin!),
-                            if ((c.city ?? '').isNotEmpty) _kv('City', c.city!),
-                            if (c.creditLimit != null)
-                              _kv('Credit', '${_rupees(c.creditLimit!)} / ${c.creditDays ?? 0} days'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      OutlinedButton.icon(
-                        icon: Icon(c.isBlacklisted ? Icons.check_circle_outline : Icons.block,
-                            size: 16),
-                        label: Text(c.isBlacklisted ? 'Remove Blacklist' : 'Blacklist Customer'),
-                        onPressed: _toggleBlacklist,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Addresses',
-                              style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
-                          TextButton.icon(
-                              icon: const Icon(Icons.add, size: 16),
-                              label: const Text('Add'),
-                              onPressed: _addAddress),
+                                child: NgMiniTile('Outstanding',
+                                    _rupees(kpi.outstandingEstimate),
+                                    color: kpi.outstandingEstimate > 0
+                                        ? ng.red
+                                        : null)),
+                          ]),
                         ],
-                      ),
-                      if (_addresses.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Text('No saved addresses.',
-                              style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
-                        )
-                      else
-                        for (final a in _addresses) _addressRow(theme, a),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Contacts',
-                              style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
-                          TextButton.icon(
-                              icon: const Icon(Icons.add, size: 16),
-                              label: const Text('Add'),
-                              onPressed: _addContact),
-                        ],
-                      ),
-                      if (_contacts.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Text('No additional contacts.',
-                              style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
-                        )
-                      else
-                        for (final ct in _contacts) _contactRow(theme, ct),
-                      const SizedBox(height: 16),
-                      Text('Orders',
-                          style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 6),
-                      if (_orders.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Text('No orders yet.',
-                              style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
-                        )
-                      else
-                        for (final o in _orders) _orderRow(theme, o),
-                      DeleteAction.button(
-                        context: context,
-                        label: 'Delete Customer',
-                        busy: _deleting,
-                        onPressed: () async {
-                          setState(() => _deleting = true);
-                          final deleted = await DeleteAction.run(
-                            context,
-                            table: 'customers',
-                            id: c.id!,
-                            entityLabel: 'customer',
-                            check: () async => DeleteCheck.allow,
-                            reasonRequired: true,
-                          );
-                          if (deleted && mounted) {
-                            Navigator.of(context).pop(true);
-                          } else if (mounted) {
-                            setState(() => _deleting = false);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
+                        const SizedBox(height: 20),
+                        NgGroupTitle('Details'),
+                        NgRowsCard(rows: [
+                          NgKvRow('Type', c.customerType),
+                          if ((c.companyName ?? '').isNotEmpty)
+                            NgKvRow('Company', c.companyName!),
+                          if ((c.phone ?? '').isNotEmpty)
+                            NgKvRow('Phone', c.phone!, mono: true),
+                          if ((c.altPhone ?? '').isNotEmpty)
+                            NgKvRow('Alt phone', c.altPhone!, mono: true),
+                          if ((c.email ?? '').isNotEmpty)
+                            NgKvRow('Email', c.email!),
+                          if ((c.gstin ?? '').isNotEmpty)
+                            NgKvRow('GSTIN', c.gstin!, mono: true),
+                          if ((c.city ?? '').isNotEmpty)
+                            NgKvRow('City', c.city!),
+                          if (c.creditLimit != null)
+                            NgKvRow('Credit',
+                                '${_rupees(c.creditLimit!)} / ${c.creditDays ?? 0} days'),
+                        ]),
+                        const SizedBox(height: 20),
+                        NgGroupTitle('Addresses', onAction: _addAddress),
+                        NgRowsCard(rows: [
+                          for (final a in _addresses) _addressRow(ng, a),
+                        ], empty: 'No saved addresses.'),
+                        const SizedBox(height: 20),
+                        NgGroupTitle('Contacts', onAction: _addContact),
+                        NgRowsCard(rows: [
+                          for (final ct in _contacts) _contactRow(ng, ct),
+                        ], empty: 'No additional contacts.'),
+                        const SizedBox(height: 20),
+                        NgGroupTitle('Orders'),
+                        NgRowsCard(rows: [
+                          for (final o in _orders) _orderRow(ng, o),
+                        ], empty: 'No orders yet.'),
+                        const SizedBox(height: 22),
+                        NgWideButton(
+                          icon: c.isBlacklisted
+                              ? Icons.check_circle_outline_rounded
+                              : Icons.block_rounded,
+                          label: c.isBlacklisted
+                              ? 'Remove from blacklist'
+                              : 'Blacklist customer',
+                          onTap: _toggleBlacklist,
+                        ),
+                        const SizedBox(height: 8),
+                        NgWideButton(
+                          icon: Icons.delete_outline_rounded,
+                          label: _deleting ? 'Deleting…' : 'Delete customer',
+                          danger: true,
+                          onTap: _deleting ? null : () => _deleteCustomer(c),
+                        ),
+                      ],
+                    ),
+        ),
       ),
     );
   }
 
-  Widget _kpiCard(FlutterFlowTheme theme, String label, String value) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: NgFonts.geist(fontSize: 10.5, color: theme.secondaryText)),
-            const SizedBox(height: 2),
-            Text(value, style: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w700)),
-          ],
-        ),
-      );
+  Widget _actions(NgPalette ng, CustomersRow c) {
+    final phone = (c.phone ?? '').trim();
+    final email = (c.email ?? '').trim();
+    Widget act(IconData icon, String label, VoidCallback? onTap) => Expanded(
+          child: Opacity(
+            opacity: onTap == null ? 0.45 : 1,
+            child: NgCard(
+              radius: 14,
+              padding: EdgeInsets.zero,
+              onTap: onTap,
+              child: SizedBox(
+                height: 56,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, size: 20, color: ng.acc),
+                    const SizedBox(height: 2),
+                    Text(label,
+                        style: NgFonts.geist(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: ng.text)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+    final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    final wa = digits.length == 10 ? '91$digits' : digits;
+    return Row(children: [
+      act(Icons.call_rounded, 'Call',
+          phone.isEmpty ? null : () => launchURL('tel:$phone')),
+      const SizedBox(width: 8),
+      act(Icons.chat_rounded, 'WhatsApp',
+          wa.isEmpty ? null : () => launchURL('https://wa.me/$wa')),
+      const SizedBox(width: 8),
+      act(Icons.mail_outline_rounded, 'Email',
+          email.isEmpty ? null : () => launchURL('mailto:$email')),
+    ]);
+  }
 
-  Widget _addressRow(FlutterFlowTheme theme, CustomerAddressesRow a) => Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
+  Widget _addressRow(NgPalette ng, CustomerAddressesRow a) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 11, 6, 11),
         child: Row(
           children: [
+            Icon(Icons.location_on_outlined, size: 19, color: ng.faint),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    [
-                      if ((a.label ?? '').isNotEmpty) a.label,
-                      if (a.isPrimary) '(Primary)',
-                    ].whereType<String>().join(' '),
-                    style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5),
-                  ),
+                  Row(children: [
+                    Flexible(
+                      child: Text(
+                        (a.label ?? '').isEmpty ? 'Address' : a.label!,
+                        style: NgFonts.geist(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: ng.soft),
+                      ),
+                    ),
+                    if (a.isPrimary) ...[
+                      const SizedBox(width: 6),
+                      const NgPill('Primary', status: NgStatus.accent),
+                    ],
+                  ]),
+                  const SizedBox(height: 2),
                   Text(
                     [
                       a.address ?? '',
                       if ((a.city ?? '').isNotEmpty) a.city,
                       if (a.floor != null) 'Floor ${a.floor}',
                       if (a.hasLift) 'Lift',
-                    ].whereType<String>().join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    ].whereType<String>().where((x) => x.isNotEmpty).join(' · '),
+                    style: NgFonts.geist(
+                        fontSize: 13.5, height: 1.35, color: ng.text),
                   ),
                 ],
               ),
             ),
             IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18),
+                icon: Icon(Icons.delete_outline_rounded,
+                    size: 19, color: ng.mute),
                 onPressed: () => _deleteAddress(a)),
           ],
         ),
       );
 
-  Widget _contactRow(FlutterFlowTheme theme, CustomerContactsRow ct) => Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(10),
-        ),
+  Widget _contactRow(NgPalette ng, CustomerContactsRow ct) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 11, 6, 11),
         child: Row(
           children: [
+            Icon(Icons.person_outline_rounded, size: 19, color: ng.faint),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(ct.name, style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                  Text(ct.name,
+                      style: NgFonts.geist(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: ng.text)),
                   Text(
                     [
                       if ((ct.designation ?? '').isNotEmpty) ct.designation,
                       if ((ct.phone ?? '').isNotEmpty) ct.phone,
                     ].whereType<String>().join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 12.5, color: ng.mute),
                   ),
                 ],
               ),
             ),
             IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18),
+                icon: Icon(Icons.delete_outline_rounded,
+                    size: 19, color: ng.mute),
                 onPressed: () => _deleteContact(ct)),
           ],
         ),
       );
 
-  Widget _orderRow(FlutterFlowTheme theme, OrdersRow o) => InkWell(
-        onTap: () => _openOrder(o),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 6),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: theme.secondaryBackground,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
+  Widget _orderRow(NgPalette ng, OrdersRow o) {
+    final paid = (o.paymentStatus ?? '').toLowerCase();
+    final (label, tone) = switch (paid) {
+      'paid' => ('Paid', NgStatus.green),
+      'partial' => ('Part paid', NgStatus.amber),
+      _ => ((o.status ?? '—'), NgStatus.neutral),
+    };
+    final date = o.moveDateOrNull ?? o.createdAt;
+    return InkWell(
+      onTap: () => _openOrder(o),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${o.fromCity ?? '—'} → ${o.toCity ?? '—'}',
-                        style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
-                    Text(o.status ?? '—',
-                        style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText)),
-                  ],
-                ),
+                child: Text('${o.fromCity ?? '—'} → ${o.toCity ?? '—'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ng.text)),
               ),
               Text(_rupees(o.amount ?? 0),
-                  style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
-            ],
-          ),
+                  style: NgFonts.mono(
+                      fontSize: 14, fontWeight: FontWeight.w600, color: ng.text)),
+            ]),
+            const SizedBox(height: 4),
+            Row(children: [
+              Expanded(
+                child: Text(
+                    '${o.id ?? ''}${date == null ? '' : ' · ${DateFormat('d MMM yy').format(date)}'}',
+                    style: NgFonts.mono(fontSize: 12, color: ng.faint)),
+              ),
+              NgPill(label, status: tone),
+            ]),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
