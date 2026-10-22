@@ -6,7 +6,6 @@ import '/backend/edge_function_errors.dart';
 import '/components/logo_upload_card.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
 import '/users_page/staff_form_sheet.dart';
@@ -380,21 +379,9 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                     ),
                   ],
                   const SizedBox(height: 28),
-                  FFButtonWidget(
-                    text: 'Save & Continue',
+                  NgPrimaryButton(
+                    label: _model.isLoading ? 'Saving…' : 'Save & continue',
                     onPressed: _model.isLoading ? null : _handleSave,
-                    options: FFButtonOptions(
-                      height: 52,
-                      color: ng.acc,
-                      textStyle: NgFonts.geist(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      elevation: 0,
-                    ),
-                    showLoadingIndicator: _model.isLoading,
                   ),
                   const SizedBox(height: 32),
                 ],

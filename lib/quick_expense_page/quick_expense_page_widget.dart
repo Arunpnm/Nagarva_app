@@ -7,7 +7,6 @@ import '/flutter_flow/flutter_flow_drop_down.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -208,7 +207,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                     size: 24.0,
                                   ),
                                   fillColor: NgPalette.of(context).s1,
-                                  elevation: 2.0,
+                                  elevation: 0.0,
                                   borderColor:
                                       NgPalette.of(context).w08,
                                   borderWidth: 1.0,
@@ -396,7 +395,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                         Padding(
                           padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 16.0, 0.0, 16.0),
-                          child: FFButtonWidget(
+                          child: NgPrimaryButton(
                             onPressed: () async {
                               final amount = double.tryParse(_model
                                   .expAmountFieldTextController!.text
@@ -452,24 +451,8 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
 
                               safeSetState(() {});
                             },
-                            text: AppLocalizations.of(context).saveExpense,
-                            icon: const Icon(
-                              Icons.save,
-                              size: 20.0,
-                            ),
-                            options: FFButtonOptions(
-                              width: double.infinity,
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 0.0, 0.0),
-                              iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 0.0, 0.0),
-                              iconColor: NgPalette.of(context).bg,
-                              color: NgPalette.of(context).acc,
-                              textStyle: TextStyle(
-                                color: NgPalette.of(context).bg,
-                              ),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
+                            label: AppLocalizations.of(context).saveExpense,
+                            icon: Icons.save_outlined,
                           ),
                         ),
                       ].divide(const SizedBox(height: 16.0)),

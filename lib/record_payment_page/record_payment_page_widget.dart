@@ -5,7 +5,6 @@ import '/backend/supabase/org_scope.dart';
 import '/components/keyboard_scroll_view.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -359,24 +358,10 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                               hint: 'e.g. UPI ref, received by'),
                         ),
                         const SizedBox(height: 16),
-                        FFButtonWidget(
+                        NgPrimaryButton(
                           onPressed: _model.saving ? null : _save,
-                          text: _model.saving ? 'Saving…' : 'Save Payment',
-                          icon: const Icon(Icons.check_circle, size: 20.0),
-                          options: FFButtonOptions(
-                            width: double.infinity,
-                            height: 48,
-                            padding: const EdgeInsetsDirectional.fromSTEB(
-                                0.0, 0.0, 0.0, 0.0),
-                            iconPadding:
-                                const EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 0.0, 0.0, 0.0),
-                            iconColor: ng.bg,
-                            color: ng.acc,
-                            textStyle:
-                                TextStyle(color: ng.bg),
-                            borderRadius: BorderRadius.circular(10.0),
-                          ),
+                          label: _model.saving ? 'Saving…' : 'Save payment',
+                          icon: Icons.check_rounded,
                         ),
                         // ---- History --------------------------------------
                         const SizedBox(height: 20),

@@ -9,7 +9,6 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import 'package:flutter/material.dart';
@@ -145,27 +144,19 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
             ),
             const SizedBox(height: 20.0),
             if (noOrgBranches)
-              FFButtonWidget(
+              NgPrimaryButton(
                 // Owner goes straight to the branch editor (27 Aug 2026);
                 // a non-owner can't create one, so Settings is the honest
-                // destination for them — Branches would only say "owner
-                // only", which is what the body text above already says.
+                // destination for them.
+                height: 44,
                 onPressed: () => context.pushNamed(
                   AppSession.instance.currentStaffId == null
                       ? BranchesPage.routeName
                       : SettingsPageWidget.routeName,
                 ),
-                text: AppSession.instance.currentStaffId == null
+                label: AppSession.instance.currentStaffId == null
                     ? 'Set up a branch'
                     : 'Go to Settings',
-                options: FFButtonOptions(
-                  height: 44.0,
-                  padding: const EdgeInsetsDirectional.fromSTEB(
-                      24.0, 0.0, 24.0, 0.0),
-                  color: NgPalette.of(context).acc,
-                  textStyle: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
               ),
           ],
         ),
