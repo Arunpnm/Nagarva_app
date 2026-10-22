@@ -587,13 +587,13 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
     final ng = NgPalette.of(context);
     return Scaffold(
       backgroundColor: ng.bg,
-      appBar: NgSimpleBar(title: 'Crew Sheet', actions: [
-          IconButton(
-            tooltip: 'Reload',
-            icon: const Icon(Icons.refresh),
-            onPressed: _saving ? null : _load,
-          ),
-        ]),
+      appBar: NgSimpleBar(title: 'Crew sheet', actions: [
+        NgHeaderButtonBox(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Reload',
+          onTap: _saving ? null : _load,
+        ),
+      ]),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null
@@ -609,33 +609,23 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           _jobHeader(ng),
           if (!StaffPermissions.canActive('orders', 'edit'))
             _notice(ng,
-                icon: Icons.lock_outline,
+                icon: Icons.lock_outline_rounded,
                 text: 'You can view this crew sheet but not change it.'),
           if (_locked)
             _notice(ng,
-                icon: Icons.lock,
+                icon: Icons.lock_rounded,
                 text: 'This order is closed. The crew sheet is locked so the '
                     "job's profit figure cannot move after the fact."),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Crew (${_present.length} present)',
-                  style: NgFonts.geist(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: ng.text)),
-              TextButton.icon(
-                onPressed: _canEdit && !_saving ? _addTemporaryHand : null,
-                icon: const Icon(Icons.person_add_alt, size: 18),
-                label: const Text('Temp hand'),
-              ),
-            ],
+          const SizedBox(height: 18),
+          NgGroupTitle(
+            'Crew · ${_present.length} present',
+            actionLabel: 'Temp hand',
+            onAction: _canEdit && !_saving ? _addTemporaryHand : null,
           ),
           if (_lines.isEmpty)
             _notice(ng,
@@ -646,7 +636,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
                     'wage. Add a temporary hand above, or set a pay type on '
                     'the Staff page.')
           else
-            ..._lines.map((l) => _crewRow(ng, l)),
+            NgRowsCard(rows: [for (final l in _lines) _crewRow(ng, l)]),
           if (_ineligible.isNotEmpty) _ineligibleCard(ng),
         ],
       ),
@@ -659,25 +649,29 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
         [o.fromCity, o.toCity].where((c) => (c ?? '').isNotEmpty).join(' → ');
     return NgCard(
       radius: 20,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(children: [
+            Expanded(
+              child: Text(o.id ?? '',
+                  style: NgFonts.mono(fontSize: 12, color: ng.faint)),
+            ),
+            Icon(Icons.event_outlined, size: 16, color: ng.mute),
+            const SizedBox(width: 5),
+            Text(DateFormat('d MMM yyyy').format(o.moveDate),
+                style: NgFonts.geist(
+                    fontSize: 12.5, fontWeight: FontWeight.w500, color: ng.soft)),
+          ]),
+          const SizedBox(height: 10),
           Text(o.customer,
               style: NgFonts.geist(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w600,
-                  color: ng.text)),
-          const SizedBox(height: 4),
-          Text(
-            [
-              o.id ?? '',
-              if (route.isNotEmpty) route,
-              DateFormat('d MMM yyyy').format(o.moveDate),
-            ].where((s) => s.isNotEmpty).join('  ·  '),
-            style:
-                NgFonts.geist(fontSize: 12.5, color: ng.mute),
-          ),
+                  fontSize: 17, fontWeight: FontWeight.w600, color: ng.text)),
+          if (route.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(route, style: NgFonts.geist(fontSize: 13, color: ng.mute)),
+          ],
         ],
       ),
     );
@@ -687,11 +681,11 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
       {required IconData icon, required String text}) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(top: 10),
+      margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: ng.amber.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        color: ng.amberBg,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,153 +694,143 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(text,
-                style:
-                    NgFonts.geist(fontSize: 12, color: ng.text)),
+                style: NgFonts.geist(fontSize: 13, height: 1.4, color: ng.text)),
           ),
         ],
       ),
     );
   }
 
+  Widget _smallMoneyField(NgPalette ng, TextEditingController ctrl,
+          {required String hint, required ValueChanged<String> onChanged}) =>
+      SizedBox(
+        width: 120,
+        child: TextField(
+          controller: ctrl,
+          enabled: _canEdit && !_saving,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          onChanged: onChanged,
+          style: NgFonts.mono(fontSize: 14, color: ng.text),
+          cursorColor: ng.acc,
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: hint,
+            hintStyle: NgFonts.geist(fontSize: 13, color: ng.faint),
+            prefixText: '₹ ',
+            prefixStyle: NgFonts.mono(fontSize: 14, color: ng.mute),
+            filled: true,
+            fillColor: ng.inset,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: ng.w08)),
+            disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: ng.w06)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: ng.acc, width: 1.5)),
+          ),
+        ),
+      );
+
   Widget _crewRow(NgPalette ng, _CrewLine l) {
     final isTemp = StaffPayType.of(l.staff) == StaffPayType.temporary;
     final money = NumberFormat.decimalPattern('en_IN');
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.fromLTRB(6, 4, 12, 10),
-      decoration: BoxDecoration(
-        color: ng.s1,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: l.present
-              ? ng.acc.withValues(alpha: 0.5)
-              : Colors.transparent,
-        ),
-      ),
+    final canTap = _canEdit && !_saving;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Checkbox(
-                value: l.present,
-                onChanged: _canEdit && !_saving
-                    ? (v) => _setPresent(l, v ?? false)
-                    : null,
-              ),
-              Expanded(
-                child: GestureDetector(
-                  onTap:
-                      _canEdit && !_saving ? () => _setPresent(l, !l.present) : null,
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            l.staff.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: NgFonts.geist(
-                              fontSize: 14,
-                              fontWeight:
-                                  l.present ? FontWeight.w600 : FontWeight.w400,
-                              color: l.present
-                                  ? ng.text
-                                  : ng.mute,
-                            ),
-                          ),
-                        ),
-                        if (isTemp) ...[
-                          const SizedBox(width: 6),
-                          _chip(ng, 'TEMP', ng.blue),
-                        ],
-                      ],
+          InkWell(
+            onTap: canTap ? () => _setPresent(l, !l.present) : null,
+            child: Row(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: l.present ? ng.accBtn : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        width: 1.5, color: l.present ? ng.accBtn : ng.w15),
+                  ),
+                  child: l.present
+                      ? const Icon(Icons.check_rounded,
+                          size: 16, color: NgPalette.onAcc)
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    l.staff.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(
+                      fontSize: 14.5,
+                      fontWeight: l.present ? FontWeight.w600 : FontWeight.w400,
+                      color: l.present ? ng.text : ng.mute,
                     ),
                   ),
                 ),
-              ),
-              if (l.present)
-                Text(
-                  '₹${money.format(l.total)}',
-                  style: NgFonts.geist(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: ng.text),
-                ),
-            ],
+                if (isTemp) ...[
+                  const SizedBox(width: 6),
+                  const NgPill('Temp', status: NgStatus.blue),
+                ],
+                const Spacer(),
+                if (l.present)
+                  Text('₹${money.format(l.total)}',
+                      style: NgFonts.mono(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: ng.text)),
+              ],
+            ),
           ),
           if (l.present) ...[
-            const SizedBox(height: 2),
+            const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Row(
+              padding: const EdgeInsets.only(left: 36),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  SizedBox(
-                    width: 118,
-                    child: TextField(
-                      controller: l.wage,
-                      enabled: _canEdit && !_saving,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: (_) => setState(() {}),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        prefixText: '₹ ',
-                        labelText: 'Wage',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _tagButton(
-                    ng,
-                    label: 'Driver',
-                    icon: Icons.local_shipping_outlined,
-                    selected: l.isDriver,
-                    onTap: _canEdit && !_saving ? () => _setDriver(l) : null,
-                  ),
-                  const SizedBox(width: 8),
-                  _tagButton(
-                    ng,
-                    label: 'A/C',
-                    icon: Icons.ac_unit,
-                    selected: l.acDone,
-                    onTap: _canEdit && !_saving
-                        ? () => _setAcDone(l, !l.acDone)
-                        : null,
-                  ),
+                  _smallMoneyField(ng, l.wage,
+                      hint: 'Wage', onChanged: (_) => setState(() {})),
+                  _tagButton(ng,
+                      label: 'Driver',
+                      icon: Icons.local_shipping_outlined,
+                      selected: l.isDriver,
+                      onTap: canTap ? () => _setDriver(l) : null),
+                  _tagButton(ng,
+                      label: 'A/C',
+                      icon: Icons.ac_unit_rounded,
+                      selected: l.acDone,
+                      onTap: canTap ? () => _setAcDone(l, !l.acDone) : null),
                 ],
               ),
             ),
             if (l.acDone)
               Padding(
-                padding: const EdgeInsets.only(left: 12, top: 6),
+                padding: const EdgeInsets.only(left: 36, top: 8),
                 child: Row(
                   children: [
-                    SizedBox(
-                      width: 118,
-                      child: TextField(
-                        controller: l.ac,
-                        enabled: _canEdit && !_saving,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly
-                        ],
+                    _smallMoneyField(ng, l.ac,
+                        hint: 'A/C work',
                         onChanged: (v) => setState(() {
-                          if (v.trim().isNotEmpty) _lastAcAmount = v.trim();
-                        }),
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          prefixText: '₹ ',
-                          labelText: 'A/C work',
-                        ),
-                      ),
-                    ),
+                              if (v.trim().isNotEmpty) {
+                                _lastAcAmount = v.trim();
+                              }
+                            })),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Added on top of the wage, and reported as its own line.',
-                        style: NgFonts.geist(
-                            fontSize: 11, color: ng.mute),
+                        style: NgFonts.geist(fontSize: 12, color: ng.mute),
                       ),
                     ),
                   ],
@@ -858,19 +842,6 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
     );
   }
 
-  Widget _chip(NgPalette ng, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(text,
-          style: NgFonts.geist(
-              fontSize: 9.5, fontWeight: FontWeight.w600, color: color)),
-    );
-  }
-
   Widget _tagButton(
     NgPalette ng, {
     required String label,
@@ -878,29 +849,27 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
     required bool selected,
     required VoidCallback? onTap,
   }) {
-    final color = selected ? ng.acc : ng.mute;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color:
-              selected ? ng.acc.withValues(alpha: 0.14) : Colors.transparent,
-          border: Border.all(color: color.withValues(alpha: 0.6)),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 15, color: color),
-            const SizedBox(width: 5),
-            Text(label,
-                style: NgFonts.geist(
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: color)),
-          ],
+    final fg = selected ? ng.acc : ng.soft;
+    return Material(
+      color: selected ? ng.status(NgStatus.accent).bg : ng.s2,
+      shape: StadiumBorder(
+          side: BorderSide(color: selected ? ng.acc : Colors.transparent)),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: fg),
+              const SizedBox(width: 5),
+              Text(label,
+                  style: NgFonts.geist(
+                      fontSize: 13, fontWeight: FontWeight.w600, color: fg)),
+            ],
+          ),
         ),
       ),
     );
@@ -908,54 +877,46 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
 
   Widget _ineligibleCard(NgPalette ng) {
     final money = NumberFormat.decimalPattern('en_IN');
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: ng.s1,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ng.amber.withValues(alpha: 0.55)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Not paid per job',
-              style: NgFonts.geist(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  color: ng.text)),
-          const SizedBox(height: 4),
-          Text(
-            'These people are attached to this job but are on a monthly '
-            'salary, so they do not earn a job wage. Their amounts still '
-            "count as labour cost in this job's profit — remove them if they "
-            'were added by mistake.',
-            style:
-                NgFonts.geist(fontSize: 11.5, color: ng.mute),
-          ),
-          for (final r in _ineligible)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${_staffById[r.staffId]?.name ?? 'Staff'}  ·  '
-                      '₹${money.format((r.salaryAmount ?? 0) + r.acAmount)}',
-                      style: NgFonts.geist(
-                          fontSize: 13, color: ng.text),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _canEdit && !_saving && r.id != null
-                        ? () => _detachIneligible(r)
-                        : null,
-                    child: const Text('Remove'),
-                  ),
-                ],
-              ),
+          const NgGroupTitle('Not paid per job'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+            child: Text(
+              'These people are attached to this job but are on a monthly '
+              'salary, so they do not earn a job wage. Their amounts still '
+              "count as labour cost in this job's profit — remove them if they "
+              'were added by mistake.',
+              style: NgFonts.geist(fontSize: 12.5, height: 1.4, color: ng.mute),
             ),
+          ),
+          NgRowsCard(rows: [
+            for (final r in _ineligible)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+                child: Row(
+                  children: [
+                    NgAvatar(_staffById[r.staffId]?.name ?? 'Staff', size: 30),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(_staffById[r.staffId]?.name ?? 'Staff',
+                          style: NgFonts.geist(fontSize: 14, color: ng.text)),
+                    ),
+                    Text(
+                        '₹${money.format((r.salaryAmount ?? 0) + r.acAmount)}',
+                        style: NgFonts.mono(fontSize: 13.5, color: ng.text)),
+                    const SizedBox(width: 6),
+                    NgLinkButton('Remove',
+                        onTap: _canEdit && !_saving && r.id != null
+                            ? () => _detachIneligible(r)
+                            : null),
+                  ],
+                ),
+              ),
+          ]),
         ],
       ),
     );
@@ -964,58 +925,53 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
   Widget _footer(NgPalette ng) {
     final money = NumberFormat.decimalPattern('en_IN');
     final driver = _driver;
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-        decoration: BoxDecoration(
-          color: ng.s1,
-          border: Border(
-              top: BorderSide(color: ng.w08.withValues(alpha: 0.6))),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '₹${money.format(_wageTotal + _acTotal)}',
-                    style: NgFonts.geist(
+    return NgBottomActionBar(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Wages today',
+                    style: NgFonts.geist(fontSize: 12.5, color: ng.mute)),
+                Text('₹${money.format(_wageTotal + _acTotal)}',
+                    style: NgFonts.mono(
                         fontSize: 19,
                         fontWeight: FontWeight.w600,
-                        color: ng.text),
+                        color: ng.text)),
+                Text(
+                  // A/C reports as its own line, never absorbed into the
+                  // wage figure (brief §5).
+                  [
+                    if (_acTotal > 0) 'A/C ₹${money.format(_acTotal)}',
+                    '${_present.length} present',
+                    driver == null
+                        ? 'no driver tagged'
+                        : 'driver ${driver.staff.name}',
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NgFonts.geist(
+                    fontSize: 12,
+                    color: driver == null && _present.isNotEmpty
+                        ? ng.red
+                        : ng.mute,
                   ),
-                  Text(
-                    // A/C reports as its own line, never absorbed into the
-                    // wage figure (brief §5).
-                    'Wages ₹${money.format(_wageTotal)}'
-                    '${_acTotal > 0 ? '  ·  A/C ₹${money.format(_acTotal)}' : ''}'
-                    '  ·  ${_present.length} present'
-                    '  ·  ${driver == null ? 'no driver tagged' : 'driver ${driver.staff.name}'}',
-                    style: NgFonts.geist(
-                      fontSize: 11.5,
-                      color: driver == null && _present.isNotEmpty
-                          ? ng.red
-                          : ng.mute,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            FilledButton.icon(
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 120,
+            child: NgPrimaryButton(
+              icon: Icons.check_rounded,
+              label: _saving ? 'Saving…' : 'Save',
               onPressed: _canEdit && !_saving ? _save : null,
-              icon: _saving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.check, size: 18),
-              label: const Text('Save'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
