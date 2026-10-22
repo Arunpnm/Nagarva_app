@@ -3,7 +3,7 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/supervisor_menu_button.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -65,82 +65,97 @@ class _SupervisorAttendancePageWidgetState
     }
   }
 
-  Color _statusColor(FlutterFlowTheme theme, String status) {
-    switch (status) {
-      case 'present':
-        return theme.success;
-      case 'absent':
-        return theme.error;
-      default:
-        return theme.secondaryText;
-    }
+  NgStatus _tone(String? status) => switch (status) {
+        'present' => NgStatus.green,
+        'absent' => NgStatus.red,
+        'half_day' || 'leave' => NgStatus.amber,
+        _ => NgStatus.neutral,
+      };
+
+  String _label(String? status) {
+    final v = (status ?? '').replaceAll('_', ' ').trim();
+    if (v.isEmpty) return 'Not marked';
+    return v[0].toUpperCase() + v.substring(1);
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    final daysInMonth = DateUtils.getDaysInMonth(
-        DateTime.now().year, DateTime.now().month);
+    final c = NgPalette.of(context);
+    final now = DateTime.now();
     final presentCount = _byDate.values.where((s) => s == 'present').length;
+    final days = [
+      for (var d = now.day; d >= 1; d--) DateTime(now.year, now.month, d),
+    ];
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: NgSimpleBar(title: 'My Attendance', actions: const [SupervisorMenuButton()]),
-      body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : ListView(
+      backgroundColor: c.bg,
+      appBar: const NgTopBar(extraActions: [SupervisorMenuButton()]),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            NgScreenTitle('My attendance',
+                large: true, subtitle: DateFormat('MMMM y').format(now)),
+            const SizedBox(height: 16),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else ...[
+              NgCard(
+                radius: 20,
                 padding: const EdgeInsets.all(16),
-                children: [
-                  Text(DateFormat('MMMM y').format(DateTime.now()),
-                      style: NgFonts.geist(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: theme.primaryText)),
-                  const SizedBox(height: 4),
-                  Text('$presentCount of $daysInMonth days marked present',
-                      style: NgFonts.geist(
-                          fontSize: 12.5, color: theme.secondaryText)),
-                  const SizedBox(height: 12),
-                  for (var d = 1; d <= daysInMonth; d++)
-                    Builder(builder: (context) {
-                      final date = DateTime(
-                          DateTime.now().year, DateTime.now().month, d);
-                      if (date.isAfter(DateTime.now())) {
-                        return const SizedBox.shrink();
-                      }
-                      final key = date.toIso8601String().split('T').first;
-                      final status = _byDate[key];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                                width: 90,
-                                child: Text(DateFormat('EEE, d MMM').format(date),
-                                    style: NgFonts.geist(
-                                        fontSize: 12.5,
-                                        color: theme.primaryText))),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: _statusColor(
-                                        theme, status ?? 'unmarked')
-                                    .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(status ?? 'Not marked',
-                                  style: NgFonts.geist(
-                                      fontSize: 11.5,
-                                      color: _statusColor(
-                                          theme, status ?? 'unmarked'))),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text('$presentCount',
+                            style: NgFonts.geist(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.56,
+                                color: c.text)),
+                        const SizedBox(width: 6),
+                        Text('of ${now.day} days present',
+                            style: NgFonts.geist(fontSize: 13, color: c.mute)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    NgProgressBar(
+                        value: presentCount / now.day, color: c.green),
+                  ],
+                ),
               ),
+              const SizedBox(height: 22),
+              const NgSectionHeader('Days'),
+              const SizedBox(height: 10),
+              NgCardList(children: [
+                for (final date in days)
+                  Builder(builder: (context) {
+                    final status =
+                        _byDate[date.toIso8601String().split('T').first];
+                    return NgListRow(
+                      leading: NgIconTile(
+                        icon: status == 'present'
+                            ? Icons.check_rounded
+                            : status == 'absent'
+                                ? Icons.close_rounded
+                                : Icons.remove_rounded,
+                        status: _tone(status),
+                      ),
+                      title: DateFormat('EEE, d MMM').format(date),
+                      trailing: NgPill(_label(status), status: _tone(status)),
+                    );
+                  }),
+              ]),
+            ],
+          ],
+        ),
       ),
     );
   }

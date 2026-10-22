@@ -3,7 +3,7 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/supervisor_menu_button.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/nav/nav.dart';
 import '/index.dart';
@@ -97,147 +97,181 @@ class _SupervisorJobsListPageWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
+    final today = _active
+        .where((o) =>
+            o.moveDateOrNull != null &&
+            DateUtils.isSameDay(o.moveDateOrNull, DateTime.now()))
+        .length;
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: NgSimpleBar(title: 'My Jobs', actions: const [SupervisorMenuButton()]),
-      body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _jobs.isEmpty
-                ? Center(
-                    child: Text('No open jobs assigned to you.',
-                        style: NgFonts.geist(color: theme.secondaryText)))
-                : RefreshIndicator(
-                    onRefresh: _load,
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        if (_active.isNotEmpty) ..._active.map(
-                            (o) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _jobCard(context, o))),
-                        if (_awaiting.isNotEmpty) ...[
-                          if (_active.isNotEmpty) const SizedBox(height: 8),
-                          _groupHeader(theme, 'Awaiting Approval',
-                              _awaiting.length),
-                          ..._awaiting.map((o) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _jobCard(context, o))),
-                        ],
-                        if (_recentlyDelivered.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          InkWell(
-                            onTap: () => setState(
-                                () => _showDelivered = !_showDelivered),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                    'Recently Delivered '
-                                    '(${_recentlyDelivered.length})',
-                                    style: NgFonts.geist(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: theme.secondaryText)),
-                                Icon(
-                                    _showDelivered
-                                        ? Icons.expand_less
-                                        : Icons.expand_more,
-                                    color: theme.secondaryText),
-                              ],
-                            ),
-                          ),
-                          if (_showDelivered)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Column(
-                                children: _recentlyDelivered
-                                    .map((o) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 12),
-                                        child: _jobCard(context, o)))
-                                    .toList(),
-                              ),
-                            ),
-                        ],
-                      ],
-                    ),
-                  ),
+      backgroundColor: c.bg,
+      appBar: const NgTopBar(extraActions: [SupervisorMenuButton()]),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            NgScreenTitle('My jobs',
+                large: true,
+                subtitle: _loading
+                    ? null
+                    : today == 0
+                        ? '${_active.length} open'
+                        : '$today today · ${_active.length} open'),
+            const SizedBox(height: 16),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_jobs.isEmpty)
+              const NgEmptyState(
+                icon: Icons.work_outline_rounded,
+                title: 'No jobs assigned to you',
+                subtitle: 'Jobs the office gives you show up here.',
+              )
+            else ...[
+              for (var i = 0; i < _active.length; i++) ...[
+                if (i > 0) const SizedBox(height: 12),
+                _jobCard(context, _active[i]),
+              ],
+              if (_awaiting.isNotEmpty) ...[
+                const SizedBox(height: 22),
+                NgSectionHeader('Awaiting approval',
+                    trailing: '${_awaiting.length}'),
+                const SizedBox(height: 10),
+                for (var i = 0; i < _awaiting.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 12),
+                  _jobCard(context, _awaiting[i]),
+                ],
+              ],
+              if (_recentlyDelivered.isNotEmpty) ...[
+                const SizedBox(height: 22),
+                NgSectionHeader(
+                  'Recently delivered (${_recentlyDelivered.length})',
+                  trailing: _showDelivered ? 'Hide' : 'Show',
+                  onTrailing: () =>
+                      setState(() => _showDelivered = !_showDelivered),
+                ),
+                if (_showDelivered) ...[
+                  const SizedBox(height: 10),
+                  for (var i = 0; i < _recentlyDelivered.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 12),
+                    _jobCard(context, _recentlyDelivered[i]),
+                  ],
+                ],
+              ],
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _groupHeader(FlutterFlowTheme theme, String label, int count) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text('$label ($count)',
-            style: NgFonts.geist(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: theme.secondaryText)),
-      );
+  ({String label, NgStatus tone}) _stage(OrdersRow o) {
+    if (o.supervisorStatus == 'completed_pending') {
+      return (label: 'Awaiting approval', tone: NgStatus.amber);
+    }
+    switch ((o.status ?? '').toLowerCase()) {
+      case 'transit':
+      case 'in_transit':
+        return (label: 'In progress', tone: NgStatus.blue);
+      case 'delivered':
+        return (label: 'Delivered', tone: NgStatus.green);
+      case 'team_assigned':
+      case 'confirmed':
+      case 'booked':
+        return (label: 'Assigned', tone: NgStatus.accent);
+      default:
+        final s = (o.status ?? '').trim();
+        return (
+          label: s.isEmpty ? 'Pending' : s[0].toUpperCase() + s.substring(1),
+          tone: NgStatus.neutral
+        );
+    }
+  }
 
   Widget _jobCard(BuildContext context, OrdersRow o) {
-    final theme = FlutterFlowTheme.of(context);
-    final awaiting = o.supervisorStatus == 'completed_pending';
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
+    final c = NgPalette.of(context);
+    final st = _stage(o);
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
       onTap: () => context.pushNamed(
         SupervisorJobPageWidget.routeName,
         queryParameters: {'orderId': o.id}.withoutNulls,
       ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${o.id} · ${o.customer}',
-                      style: NgFonts.geist(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13.5,
-                          color: theme.primaryText)),
-                  const SizedBox(height: 3),
-                  Text('${o.fromCity ?? '—'} → ${o.toCity ?? '—'}',
-                      style: NgFonts.geist(
-                          fontSize: 12, color: theme.secondaryText)),
-                  const SizedBox(height: 2),
-                  Text(
-                      o.moveDateOrNull == null
-                          ? 'No date'
-                          : DateFormat('d MMM y').format(o.moveDateOrNull!),
-                      style: NgFonts.geist(
-                          fontSize: 11.5, color: theme.secondaryText)),
-                ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(o.id ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.mono(fontSize: 12, color: c.faint)),
               ),
+              Icon(Icons.event_outlined, size: 16, color: c.mute),
+              const SizedBox(width: 5),
+              Text(
+                  o.moveDateOrNull == null
+                      ? 'No date'
+                      : DateFormat('d MMM').format(o.moveDateOrNull!),
+                  style: NgFonts.geist(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: c.soft)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(o.customer,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: NgFonts.geist(
+                  fontSize: 16, fontWeight: FontWeight.w600, color: c.text)),
+          const SizedBox(height: 3),
+          Row(
+            children: [
+              Flexible(
+                child: Text(o.fromCity ?? '-',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 13, color: c.mute)),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child:
+                    Icon(Icons.arrow_forward_rounded, size: 15, color: c.faint),
+              ),
+              Flexible(
+                child: Text(o.toCity ?? '-',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 13, color: c.mute)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.only(top: 12),
+            decoration:
+                BoxDecoration(border: Border(top: BorderSide(color: c.w06))),
+            child: Row(
+              children: [
+                NgPill(st.label, status: st.tone),
+                const Spacer(),
+                Text('Open job',
+                    style: NgFonts.geist(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: c.acc)),
+                Icon(Icons.chevron_right_rounded, size: 18, color: c.acc),
+              ],
             ),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: awaiting
-                    ? NgPalette.of(context).amber.withValues(alpha: 0.15)
-                    : theme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                awaiting ? '⏳ Awaiting' : (o.status ?? '—'),
-                style: NgFonts.geist(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: awaiting ? NgPalette.of(context).amber : theme.primary),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

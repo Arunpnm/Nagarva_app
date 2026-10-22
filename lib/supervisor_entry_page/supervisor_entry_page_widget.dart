@@ -1,10 +1,9 @@
 import '/components/ng_widgets.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/app_session.dart';
 import '/backend/customer_lookup.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '/backend/order_id_allocator.dart';
@@ -120,75 +119,71 @@ class _SupervisorEntryPageWidgetState
     }
   }
 
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _moveDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _moveDate = picked);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: NgSimpleBar(title: 'Job Entry'),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+    final c = NgPalette.of(context);
+    const gap = SizedBox(height: 22);
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        backgroundColor: c.bg,
+        appBar: const NgSimpleBar(title: 'New job', close: true),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            TextField(
-              controller: _customerCtrl,
-              decoration: const InputDecoration(labelText: 'Customer name'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
+            const NgFieldLabel('Customer name'),
+            NgInput(controller: _customerCtrl, hint: 'Customer name'),
+            gap,
+            const NgFieldLabel('Phone'),
+            NgInput(
               controller: _phoneCtrl,
+              hint: '+91 98xxx xxxxx',
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Phone'),
+              mono: true,
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _fromCtrl,
-              decoration: const InputDecoration(labelText: 'From city'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _toCtrl,
-              decoration: const InputDecoration(labelText: 'To city'),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              initialValue: _service,
-              items: _services
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                  .toList(),
-              onChanged: (v) =>
-                  setState(() => _service = v ?? 'Household Shifting'),
-              decoration: const InputDecoration(labelText: 'Service'),
-            ),
-            const SizedBox(height: 10),
-            InkWell(
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _moveDate,
-                  firstDate: DateTime.now().subtract(const Duration(days: 1)),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                );
-                if (picked != null) setState(() => _moveDate = picked);
-              },
-              child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'Move date'),
-                child: Text(DateFormat('d MMM y').format(_moveDate)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            FFButtonWidget(
-              onPressed: _saving ? null : _save,
-              text: _saving ? 'Saving…' : 'Create Order',
-              options: FFButtonOptions(
-                width: double.infinity,
-                height: 46,
-                color: theme.primary,
-                textStyle: TextStyle(color: theme.primaryBackground),
-                borderRadius: BorderRadius.circular(8),
-              ),
+            gap,
+            const NgFieldLabel('Route'),
+            NgRouteFields(
+                from: _fromCtrl,
+                to: _toCtrl,
+                fromHint: 'From city',
+                toHint: 'To city'),
+            gap,
+            const NgFieldLabel('Service'),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final s in _services)
+                NgChip(
+                  label: s,
+                  selected: _service == s,
+                  onTap: () => setState(() => _service = s),
+                ),
+            ]),
+            gap,
+            const NgFieldLabel('Move date'),
+            NgPickerField(
+              icon: Icons.event_outlined,
+              value: DateFormat('EEE, d MMM y').format(_moveDate),
+              onTap: _pickDate,
             ),
           ],
+        ),
+        bottomNavigationBar: NgBottomActionBar(
+          child: NgPrimaryButton(
+            label: _saving ? 'Saving…' : 'Create order',
+            icon: Icons.check_rounded,
+            height: 54,
+            onPressed: _saving ? null : _save,
+          ),
         ),
       ),
     );

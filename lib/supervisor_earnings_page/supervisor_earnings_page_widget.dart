@@ -3,7 +3,8 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/supervisor_menu_button.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -84,92 +85,72 @@ class _SupervisorEarningsPageWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     final total = _byMonth.values.fold(0.0, (s, v) => s + v);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: NgSimpleBar(title: 'My Earnings', actions: const [SupervisorMenuButton()]),
-      body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                padding: const EdgeInsets.all(16),
+      backgroundColor: c.bg,
+      appBar: const NgTopBar(extraActions: [SupervisorMenuButton()]),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            const NgScreenTitle('My earnings',
+                large: true, subtitle: 'From the jobs you were on'),
+            const SizedBox(height: 16),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else ...[
+              Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.secondaryBackground,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Total earned',
-                                style: NgFonts.geist(
-                                    fontSize: 11.5,
-                                    color: theme.secondaryText)),
-                            Text('₹${total.toStringAsFixed(0)}',
-                                style: NgFonts.geist(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: theme.primaryText)),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('Advance balance',
-                                style: NgFonts.geist(
-                                    fontSize: 11.5,
-                                    color: theme.secondaryText)),
-                            Text('₹${_advanceBalance.toStringAsFixed(0)}',
-                                style: NgFonts.geist(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: theme.error)),
-                          ],
-                        ),
-                      ],
+                  Expanded(
+                    child: NgStatTile(
+                      icon: Icons.account_balance_wallet_outlined,
+                      value: functions.inrFull(total),
+                      label: 'Total earned',
+                      color: c.green,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  if (_byMonth.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: Center(
-                        child: Text('No job-staff earnings on record yet.',
-                            style:
-                                NgFonts.geist(color: theme.secondaryText)),
-                      ),
-                    )
-                  else
-                    ..._byMonth.entries.map((e) => Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: theme.secondaryBackground,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(e.key,
-                                  style: NgFonts.geist(
-                                      fontSize: 13, color: theme.primaryText)),
-                              Text('₹${e.value.toStringAsFixed(0)}',
-                                  style: NgFonts.geist(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
-                                      color: theme.primaryText)),
-                            ],
-                          ),
-                        )),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: NgStatTile(
+                      icon: Icons.payments_outlined,
+                      value: functions.inrFull(_advanceBalance),
+                      label: 'Advance balance',
+                      color: _advanceBalance > 0 ? c.red : c.mute,
+                    ),
+                  ),
                 ],
               ),
+              const SizedBox(height: 22),
+              const NgSectionHeader('By month'),
+              const SizedBox(height: 10),
+              if (_byMonth.isEmpty)
+                const NgEmptyState(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'No earnings yet',
+                  subtitle: 'Wages show here once you are put on a job.',
+                )
+              else
+                NgCardList(children: [
+                  for (final e in _byMonth.entries)
+                    NgListRow(
+                      icon: Icons.calendar_month_outlined,
+                      title: e.key,
+                      trailing: Text(functions.inrFull(e.value),
+                          style: NgFonts.mono(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: c.text)),
+                    ),
+                ]),
+            ],
+          ],
+        ),
       ),
     );
   }

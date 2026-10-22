@@ -3,7 +3,7 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/supervisor_menu_button.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_top_bar.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -94,68 +94,73 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
+    final present = _team.where((s) => _presentToday.contains(s.id)).length;
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: NgSimpleBar(title: 'My Team', actions: const [SupervisorMenuButton()]),
-      body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _team.isEmpty
-                ? Center(
-                    child: Text('No staff found for your branch.',
-                        style: NgFonts.geist(color: theme.secondaryText)))
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _team.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, i) {
-                      final s = _team[i];
-                      final present = _presentToday.contains(s.id);
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: theme.secondaryBackground,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(s.name,
-                                      style: NgFonts.geist(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13.5,
-                                          color: theme.primaryText)),
-                                  Text(s.role ?? '—',
-                                      style: NgFonts.geist(
-                                          fontSize: 11.5,
-                                          color: theme.secondaryText)),
-                                ],
-                              ),
+      backgroundColor: c.bg,
+      appBar: const NgTopBar(extraActions: [SupervisorMenuButton()]),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            NgScreenTitle('My team',
+                large: true,
+                subtitle: _loading
+                    ? null
+                    : '$present of ${_team.length} present today'),
+            const SizedBox(height: 16),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 48),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_team.isEmpty)
+              const NgEmptyState(
+                icon: Icons.groups_outlined,
+                title: 'No staff in your branch',
+                subtitle: 'Ask the owner to add staff to your branch.',
+              )
+            else ...[
+              NgProgressBar(
+                    value: present / _team.length,
+                    color: c.green),
+              const SizedBox(height: 16),
+              NgCardList(children: [
+                for (final s in _team)
+                  NgListRow(
+                    leading: NgAvatar(s.name,
+                        status: _presentToday.contains(s.id)
+                            ? NgStatus.green
+                            : NgStatus.neutral),
+                    title: s.name,
+                    subtitle: _roleLabel(s.role),
+                    trailing: _presentToday.contains(s.id)
+                        ? const NgPill('Present',
+                            status: NgStatus.green,
+                            icon: Icons.check_rounded)
+                        : SizedBox(
+                            width: 124,
+                            height: 34,
+                            child: NgSecondaryButton(
+                              label: 'Mark present',
+                              height: 34,
+                              onPressed: _busy ? null : () => _markPresent(s),
                             ),
-                            present
-                                ? Chip(
-                                    label: const Text('Present'),
-                                    backgroundColor:
-                                        theme.success.withValues(alpha: 0.15),
-                                    labelStyle:
-                                        TextStyle(color: theme.success),
-                                  )
-                                : OutlinedButton(
-                                    onPressed:
-                                        _busy ? null : () => _markPresent(s),
-                                    child: const Text('Mark Present'),
-                                  ),
-                          ],
-                        ),
-                      );
-                    },
+                          ),
                   ),
+              ]),
+            ],
+          ],
+        ),
       ),
     );
+  }
+
+  static String _roleLabel(String? r) {
+    final v = (r ?? '').trim();
+    if (v.isEmpty) return 'Staff';
+    return v[0].toUpperCase() + v.substring(1);
   }
 }
