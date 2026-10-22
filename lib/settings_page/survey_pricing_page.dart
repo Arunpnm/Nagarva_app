@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '/backend/pricing_defaults.dart';
 import '/backend/storage_billing.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Settings → Survey & Pricing (Item 12, 17 Aug 2026).
@@ -300,14 +299,14 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
       backgroundColor: NgPalette.of(context).bg,
       appBar: const NgSimpleBar(title: 'CFT & packages'),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _loadError != null
-              ? _errorState(theme)
+              ? _errorState(ng)
               : Column(
                   children: [
                     Padding(
@@ -326,9 +325,9 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
                       child: TabBarView(
                         controller: _tabs,
                         children: [
-                          _slabsTab(theme),
-                          _catalogueTab(theme),
-                          _storageTab(theme),
+                          _slabsTab(ng),
+                          _catalogueTab(ng),
+                          _storageTab(ng),
                         ],
                       ),
                     ),
@@ -337,13 +336,13 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
     );
   }
 
-  Widget _errorState(FlutterFlowTheme theme) => Center(
+  Widget _errorState(NgPalette ng) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 40, color: theme.error),
+              Icon(Icons.error_outline, size: 40, color: ng.red),
               const SizedBox(height: 12),
               Text(_loadError!,
                   textAlign: TextAlign.center,
@@ -355,7 +354,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
         ),
       );
 
-  Widget _slabsTab(FlutterFlowTheme theme) {
+  Widget _slabsTab(NgPalette ng) {
     // Derived From values for display.
     final froms = <num>[];
     num from = 0;
@@ -377,11 +376,11 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
                 'always override on the quote itself. Each range starts '
                 'where the previous one ends, so there are no gaps.',
                 style: NgFonts.geist(
-                    fontSize: 12.5, height: 1.4, color: theme.secondaryText),
+                    fontSize: 12.5, height: 1.4, color: ng.mute),
               ),
               const SizedBox(height: 12),
               for (var i = 0; i < _rows.length; i++)
-                _slabCard(theme, i, froms[i]),
+                _slabCard(ng, i, froms[i]),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: _addSlab,
@@ -393,10 +392,10 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: theme.error.withValues(alpha: 0.1),
+                    color: ng.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                     border:
-                        Border.all(color: theme.error.withValues(alpha: 0.4)),
+                        Border.all(color: ng.red.withValues(alpha: 0.4)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,7 +405,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: Text('• ${e.message}',
                               style: NgFonts.geist(
-                                  fontSize: 12.5, color: theme.error)),
+                                  fontSize: 12.5, color: ng.red)),
                         ),
                     ],
                   ),
@@ -436,7 +435,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
     );
   }
 
-  Widget _slabCard(FlutterFlowTheme theme, int i, num fromCft) {
+  Widget _slabCard(NgPalette ng, int i, num fromCft) {
     final r = _rows[i];
     final isLast = i == _rows.length - 1;
     return Card(
@@ -452,9 +451,9 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
                   child: Text(
                     isLast ? 'From $fromCft CFT and up' : 'From $fromCft CFT',
                     style: NgFonts.geist(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         fontSize: 13,
-                        color: theme.primary),
+                        color: ng.acc),
                   ),
                 ),
                 if (_rows.length > 1)
@@ -568,40 +567,37 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
     }
   }
 
-  Widget _storageTab(FlutterFlowTheme theme) {
+  Widget _storageTab(NgPalette ng) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         Text('Your storage prices',
             style: NgFonts.geist(
                 fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: theme.primaryText)),
+                fontWeight: FontWeight.w600,
+                color: ng.text)),
         const SizedBox(height: 4),
         Text(
           'Sizes and prices are yours to set - nothing is filled in for '
           'you. A stay bills on whichever plan was agreed at booking, and '
           'the rate is copied onto that record, so changing a price here '
           'never re-bills goods already in store.',
-          style: NgFonts.geist(fontSize: 12, color: theme.secondaryText),
+          style: NgFonts.geist(fontSize: 12, color: ng.mute),
         ),
         const SizedBox(height: 14),
         if (_rateRows.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.secondaryBackground,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
+          NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Text(
               'No storage prices set yet. Until you add a size, the picker '
               'on a booking stays empty and the rate has to be typed by '
               'hand every time.',
               style:
-                  NgFonts.geist(fontSize: 13, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 13, color: ng.mute),
             ),
           ),
-        for (var i = 0; i < _rateRows.length; i++) _rateCard(theme, i),
+        for (var i = 0; i < _rateRows.length; i++) _rateCard(ng, i),
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: () => setState(() => _rateRows.add(_RateRowCtrl.empty())),
@@ -611,7 +607,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
         if (_rateError != null) ...[
           const SizedBox(height: 12),
           Text(_rateError!,
-              style: NgFonts.geist(fontSize: 12, color: theme.error)),
+              style: NgFonts.geist(fontSize: 12, color: ng.red)),
         ],
         const SizedBox(height: 16),
         FilledButton(
@@ -622,15 +618,11 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
     );
   }
 
-  Widget _rateCard(FlutterFlowTheme theme, int i) {
+  Widget _rateCard(NgPalette ng, int i) {
     final r = _rateRows[i];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -648,7 +640,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
               ),
               IconButton(
                 tooltip: 'Remove size',
-                icon: Icon(Icons.delete_outline, color: theme.error, size: 20),
+                icon: Icon(Icons.delete_outline, color: ng.red, size: 20),
                 onPressed: () =>
                     setState(() => _rateRows.removeAt(i).dispose()),
               ),
@@ -673,7 +665,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
             'Daily and monthly are independent prices. The app never '
             'compares them or picks the cheaper - whichever plan was '
             'agreed at booking is what bills.',
-            style: NgFonts.geist(fontSize: 11, color: theme.secondaryText),
+            style: NgFonts.geist(fontSize: 11, color: ng.mute),
           ),
         ],
       ),
@@ -686,7 +678,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
         decoration: InputDecoration(labelText: label, isDense: true),
       );
 
-  Widget _catalogueTab(FlutterFlowTheme theme) {
+  Widget _catalogueTab(NgPalette ng) {
     final cats = _catalogue.keys.toList();
     return Column(
       children: [
@@ -728,7 +720,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
             ),
             children: [
               for (final cat in cats)
-                _categoryTile(theme, cat, key: ValueKey('cat:$cat')),
+                _categoryTile(ng, cat, key: ValueKey('cat:$cat')),
             ],
           ),
         ),
@@ -753,7 +745,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
     );
   }
 
-  Widget _categoryTile(FlutterFlowTheme theme, String cat, {required Key key}) {
+  Widget _categoryTile(NgPalette ng, String cat, {required Key key}) {
     final items = _catalogue[cat] ?? [];
     final hidden = items.where((i) => !i.active).length;
     return Card(
@@ -781,7 +773,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
         ),
         children: [
           for (var i = 0; i < items.length; i++)
-            _itemTile(theme, cat, i, items[i]),
+            _itemTile(ng, cat, i, items[i]),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Align(
@@ -806,7 +798,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
   }
 
   Widget _itemTile(
-      FlutterFlowTheme theme, String cat, int itemIndex, SurveyItem item) {
+      NgPalette ng, String cat, int itemIndex, SurveyItem item) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Column(
@@ -819,7 +811,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
                     style: NgFonts.geist(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: item.active ? null : theme.secondaryText,
+                      color: item.active ? null : ng.mute,
                       decoration:
                           item.active ? null : TextDecoration.lineThrough,
                     )),

@@ -76,13 +76,13 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: NgPalette.of(context).bg,
         appBar: NgSimpleBar(title: AppLocalizations.of(context).quickExpense, close: true),
         body: SafeArea(
           top: true,
           child: Container(
             decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+              color: NgPalette.of(context).bg,
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -129,7 +129,6 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                         ),
                                         color: FlutterFlowTheme.of(context)
                                             .primary,
-                                        letterSpacing: 0.0,
                                         fontWeight: FlutterFlowTheme.of(context)
                                             .titleSmall
                                             .fontWeight,
@@ -234,7 +233,6 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                                   .bodyMedium
                                                   .fontStyle,
                                         ),
-                                        letterSpacing: 0.0,
                                         fontWeight: FlutterFlowTheme.of(context)
                                             .bodyMedium
                                             .fontWeight,
@@ -253,7 +251,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                       .secondaryBackground,
                                   elevation: 2.0,
                                   borderColor:
-                                      FlutterFlowTheme.of(context).alternate,
+                                      NgPalette.of(context).w08,
                                   borderWidth: 1.0,
                                   borderRadius: 8.0,
                                   margin: const EdgeInsetsDirectional.fromSTEB(
@@ -313,18 +311,18 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   value: _model.linkedOrderId,
                                   isExpanded: true,
                                   dropdownColor:
-                                      FlutterFlowTheme.of(context).secondaryBackground,
+                                      NgPalette.of(context).s1,
                                   style: NgFonts.geist(
-                                      color: FlutterFlowTheme.of(context).primaryText,
+                                      color: NgPalette.of(context).text,
                                       fontSize: 13.5),
                                   decoration: InputDecoration(
                                     labelText: 'Linked Order (optional)',
                                     labelStyle: NgFonts.geist(
-                                        color: FlutterFlowTheme.of(context).secondaryText,
+                                        color: NgPalette.of(context).mute,
                                         fontSize: 12.5),
                                     filled: true,
                                     fillColor:
-                                        FlutterFlowTheme.of(context).secondaryBackground,
+                                        NgPalette.of(context).s1,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                       borderSide: BorderSide(
@@ -342,7 +340,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   ),
                                   hint: Text('No linked order',
                                       style: NgFonts.geist(
-                                          color: FlutterFlowTheme.of(context).secondaryText,
+                                          color: NgPalette.of(context).mute,
                                           fontSize: 13)),
                                   items: [
                                     const DropdownMenuItem<String>(
@@ -510,7 +508,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   0.0, 0.0, 0.0, 0.0),
                               iconColor: FlutterFlowTheme.of(context)
                                   .primaryBackground,
-                              color: FlutterFlowTheme.of(context).primary,
+                              color: NgPalette.of(context).acc,
                               textStyle: TextStyle(
                                 color: FlutterFlowTheme.of(context)
                                     .primaryBackground,

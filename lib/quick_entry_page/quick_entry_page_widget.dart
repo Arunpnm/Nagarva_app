@@ -48,13 +48,13 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: NgPalette.of(context).bg,
         appBar: NgSimpleBar(title: AppLocalizations.of(context).quickEntry),
         body: SafeArea(
           top: true,
           child: Container(
             decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+              color: NgPalette.of(context).bg,
             ),
             child: Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(20.0, 24.0, 20.0, 24.0),
@@ -74,8 +74,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                 .bodySmall
                                 .fontStyle,
                           ),
-                          color: FlutterFlowTheme.of(context).secondaryText,
-                          letterSpacing: 0.0,
+                          color: NgPalette.of(context).mute,
                           fontWeight:
                               FlutterFlowTheme.of(context).bodySmall.fontWeight,
                           fontStyle:
@@ -114,7 +113,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                 children: [
                                   Icon(
                                     Icons.person_add,
-                                    color: FlutterFlowTheme.of(context).primary,
+                                    color: NgPalette.of(context).acc,
                                     size: 28.0,
                                   ),
                                   Text(
@@ -135,7 +134,6 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                           ),
                                           color: FlutterFlowTheme.of(context)
                                               .primaryText,
-                                          letterSpacing: 0.0,
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .labelMedium
@@ -179,7 +177,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                 children: [
                                   Icon(
                                     Icons.assignment_turned_in,
-                                    color: FlutterFlowTheme.of(context).primary,
+                                    color: NgPalette.of(context).acc,
                                     size: 28.0,
                                   ),
                                   Text(
@@ -200,7 +198,6 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                           ),
                                           color: FlutterFlowTheme.of(context)
                                               .primaryText,
-                                          letterSpacing: 0.0,
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .labelMedium
@@ -252,7 +249,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                 children: [
                                   Icon(
                                     Icons.payments,
-                                    color: FlutterFlowTheme.of(context).primary,
+                                    color: NgPalette.of(context).acc,
                                     size: 28.0,
                                   ),
                                   Text(
@@ -273,7 +270,6 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                           ),
                                           color: FlutterFlowTheme.of(context)
                                               .primaryText,
-                                          letterSpacing: 0.0,
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .labelMedium
@@ -317,7 +313,7 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                 children: [
                                   Icon(
                                     Icons.receipt_long,
-                                    color: FlutterFlowTheme.of(context).primary,
+                                    color: NgPalette.of(context).acc,
                                     size: 28.0,
                                   ),
                                   Text(
@@ -338,7 +334,6 @@ class _QuickEntryPageWidgetState extends State<QuickEntryPageWidget> {
                                           ),
                                           color: FlutterFlowTheme.of(context)
                                               .primaryText,
-                                          letterSpacing: 0.0,
                                           fontWeight:
                                               FlutterFlowTheme.of(context)
                                                   .labelMedium

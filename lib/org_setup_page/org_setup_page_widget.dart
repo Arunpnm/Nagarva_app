@@ -4,7 +4,6 @@ import '/backend/supabase/org_scope.dart';
 import '/backend/doc_prefix.dart';
 import '/backend/edge_function_errors.dart';
 import '/components/logo_upload_card.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -231,19 +230,19 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
 
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: theme.primaryBackground,
+        backgroundColor: ng.bg,
         appBar: NgSimpleBar(title: 'Business Setup', actions: [
             TextButton(
               onPressed: () => context.go(HomePageWidget.routePath),
               child: Text(
                 'Skip',
                 style: NgFonts.geist(
-                  color: theme.secondaryText,
+                  color: ng.mute,
                   fontSize: 14,
                 ),
               ),
@@ -257,11 +256,11 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _sectionHeader(theme, 'Tax & Invoicing'),
+                  _sectionHeader(ng, 'Tax & Invoicing'),
                   const SizedBox(height: 12),
-                  _buildCard(theme, [
+                  _buildCard(ng, [
                     _field(
-                      theme,
+                      ng,
                       controller: _model.gstinController!,
                       focusNode: _model.gstinFocusNode!,
                       label: 'GST Number',
@@ -270,7 +269,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                     ),
                     const SizedBox(height: 14),
                     _field(
-                      theme,
+                      ng,
                       controller: _model.prefixController!,
                       focusNode: _model.prefixFocusNode!,
                       label: 'Invoice Prefix',
@@ -283,11 +282,11 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                     ),
                   ]),
                   const SizedBox(height: 20),
-                  _sectionHeader(theme, 'Business Address'),
+                  _sectionHeader(ng, 'Business Address'),
                   const SizedBox(height: 12),
-                  _buildCard(theme, [
+                  _buildCard(ng, [
                     _field(
-                      theme,
+                      ng,
                       controller: _model.addressController!,
                       focusNode: _model.addressFocusNode!,
                       label: 'Street Address',
@@ -300,7 +299,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                       children: [
                         Expanded(
                           child: _field(
-                            theme,
+                            ng,
                             controller: _model.cityController!,
                             focusNode: _model.cityFocusNode!,
                             label: 'City',
@@ -311,7 +310,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _field(
-                            theme,
+                            ng,
                             controller: _model.stateController!,
                             focusNode: _model.stateFocusNode!,
                             label: 'State',
@@ -323,19 +322,19 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                     ),
                   ]),
                   const SizedBox(height: 20),
-                  _sectionHeader(theme, 'Branding'),
+                  _sectionHeader(ng, 'Branding'),
                   const SizedBox(height: 12),
                   const LogoUploadCard(),
                   const SizedBox(height: 20),
-                  _sectionHeader(theme, 'Your Team'),
+                  _sectionHeader(ng, 'Your Team'),
                   const SizedBox(height: 12),
-                  _buildCard(theme, [
+                  _buildCard(ng, [
                     if (_seededStaff.isEmpty)
                       Text(
                         'No staff added yet — you can add drivers, packers, '
                         'and supervisors now or later from Users.',
                         style: NgFonts.geist(
-                            color: theme.secondaryText, fontSize: 13),
+                            color: ng.mute, fontSize: 13),
                       )
                     else
                       ..._seededStaff.map((s) => Padding(
@@ -343,13 +342,13 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                             child: Row(
                               children: [
                                 Icon(Icons.person_outline,
-                                    size: 18, color: theme.secondaryText),
+                                    size: 18, color: ng.mute),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     '${s.name ?? ''} · ${s.role ?? ''}',
                                     style: NgFonts.geist(
-                                        color: theme.primaryText,
+                                        color: ng.text,
                                         fontSize: 13),
                                   ),
                                 ),
@@ -368,13 +367,13 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.error.withOpacity(0.1),
+                        color: ng.red.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         _model.errorMessage!,
                         style: NgFonts.geist(
-                          color: theme.error,
+                          color: ng.red,
                           fontSize: 13,
                         ),
                       ),
@@ -386,7 +385,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
                     onPressed: _model.isLoading ? null : _handleSave,
                     options: FFButtonOptions(
                       height: 52,
-                      color: theme.primary,
+                      color: ng.acc,
                       textStyle: NgFonts.geist(
                         color: Colors.white,
                         fontSize: 16,
@@ -407,19 +406,19 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
     );
   }
 
-  Widget _sectionHeader(FlutterFlowTheme theme, String title) => Text(
+  Widget _sectionHeader(NgPalette ng, String title) => Text(
         title,
         style: NgFonts.geist(
-          color: theme.primaryText,
+          color: ng.text,
           fontSize: 15,
           fontWeight: FontWeight.w600,
         ),
       );
 
-  Widget _buildCard(FlutterFlowTheme theme, List<Widget> children) =>
+  Widget _buildCard(NgPalette ng, List<Widget> children) =>
       Container(
         decoration: BoxDecoration(
-          color: theme.secondaryBackground,
+          color: ng.s1,
           borderRadius: BorderRadius.circular(14),
         ),
         padding: const EdgeInsets.all(16),
@@ -430,7 +429,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
       );
 
   Widget _field(
-    FlutterFlowTheme theme, {
+    NgPalette ng, {
     required TextEditingController controller,
     required FocusNode focusNode,
     required String label,
@@ -444,31 +443,31 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
       focusNode: focusNode,
       maxLines: maxLines,
       validator: validator,
-      style: NgFonts.geist(color: theme.primaryText, fontSize: 14),
+      style: NgFonts.geist(color: ng.text, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: NgFonts.geist(color: theme.secondaryText, fontSize: 13),
+        labelStyle: NgFonts.geist(color: ng.mute, fontSize: 13),
         hintStyle:
-            NgFonts.geist(color: theme.secondaryText.withOpacity(0.5), fontSize: 13),
-        prefixIcon: Icon(icon, color: theme.secondaryText, size: 18),
+            NgFonts.geist(color: ng.mute.withOpacity(0.5), fontSize: 13),
+        prefixIcon: Icon(icon, color: ng.mute, size: 18),
         filled: true,
-        fillColor: theme.primaryBackground,
+        fillColor: ng.bg,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: theme.alternate),
+          borderSide: BorderSide(color: ng.w08),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: theme.primary, width: 1.5),
+          borderSide: BorderSide(color: ng.acc, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: theme.error),
+          borderSide: BorderSide(color: ng.red),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: theme.error),
+          borderSide: BorderSide(color: ng.red),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '/backend/soft_delete.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Settings → Deleted Items (live-test fix brief #2, item 11.6).
@@ -132,11 +131,11 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
 
     if (!SoftDeleteService.isOwner) {
       return Scaffold(
-        backgroundColor: theme.primaryBackground,
+        backgroundColor: ng.bg,
         appBar: NgSimpleBar(title: 'Deleted Items'),
         body: Center(
           child: Padding(
@@ -145,7 +144,7 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
               'Only the owner can view or restore deleted records.',
               textAlign: TextAlign.center,
               style: NgFonts.geist(
-                  fontSize: 14, color: theme.secondaryText),
+                  fontSize: 14, color: ng.mute),
             ),
           ),
         ),
@@ -153,7 +152,7 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
     }
 
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: NgSimpleBar(title: 'Deleted Items', actions: [
           IconButton(
             onPressed: _loading ? null : _load,
@@ -174,37 +173,37 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
                     style: NgFonts.geist(
                         fontSize: 12.5,
                         height: 1.4,
-                        color: theme.secondaryText),
+                        color: ng.mute),
                   ),
                   const SizedBox(height: 16),
                   if (_error != null)
                     Text(_error!,
                         style: NgFonts.geist(
-                            fontSize: 12.5, color: theme.error)),
+                            fontSize: 12.5, color: ng.red)),
                   if (_total == 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 40),
                       child: Column(
                         children: [
                           Icon(Icons.delete_outline,
-                              size: 44, color: theme.secondaryText),
+                              size: 44, color: ng.mute),
                           const SizedBox(height: 12),
                           Text('Nothing deleted',
                               style: NgFonts.geist(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: theme.primaryText)),
+                                  fontWeight: FontWeight.w600,
+                                  color: ng.text)),
                           const SizedBox(height: 6),
                           Text('Deleted records will show up here.',
                               style: NgFonts.geist(
                                   fontSize: 12.5,
-                                  color: theme.secondaryText)),
+                                  color: ng.mute)),
                         ],
                       ),
                     ),
                   for (final entry in _kBins.entries)
                     if ((_data[entry.key] ?? []).isNotEmpty)
-                      _section(theme, entry.key, entry.value.label,
+                      _section(ng, entry.key, entry.value.label,
                           entry.value.titleFields),
                 ],
               ),
@@ -212,32 +211,28 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
     );
   }
 
-  Widget _section(FlutterFlowTheme theme, String table, String label,
+  Widget _section(NgPalette ng, String table, String label,
       List<String> titleFields) {
     final rows = _data[table]!;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('$label (${rows.length})',
               style: NgFonts.geist(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   fontSize: 13,
-                  color: theme.primary)),
+                  color: ng.acc)),
           const SizedBox(height: 6),
-          for (final r in rows) _row(theme, table, r, titleFields),
+          for (final r in rows) _row(ng, table, r, titleFields),
         ],
       ),
     );
   }
 
-  Widget _row(FlutterFlowTheme theme, String table, Map<String, dynamic> r,
+  Widget _row(NgPalette ng, String table, Map<String, dynamic> r,
       List<String> titleFields) {
     final title = titleFields
         .map((f) => r[f])
@@ -259,19 +254,19 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
                     style: NgFonts.geist(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600,
-                        color: theme.primaryText)),
+                        color: ng.text)),
                 if (deletedAt != null)
                   Text(
                     'Deleted ${DateFormat('d MMM yyyy, h:mm a').format(deletedAt.toLocal())}',
                     style: NgFonts.geist(
-                        fontSize: 11.5, color: theme.secondaryText),
+                        fontSize: 11.5, color: ng.mute),
                   ),
                 if (reason.isNotEmpty)
                   Text('Reason: $reason',
                       style: NgFonts.geist(
                           fontSize: 11.5,
                           fontStyle: FontStyle.italic,
-                          color: theme.secondaryText)),
+                          color: ng.mute)),
               ],
             ),
           ),

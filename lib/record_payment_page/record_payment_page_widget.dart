@@ -1,10 +1,8 @@
 import '/components/ng_widgets.dart';
-import '/app_session.dart';
 import '/backend/whatsapp_cloud.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/keyboard_scroll_view.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
@@ -185,33 +183,33 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
   }
 
   InputDecoration _dec(String label, {String? hint}) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return InputDecoration(
       labelText: label,
       hintText: hint,
       labelStyle:
-          NgFonts.geist(color: theme.secondaryText, fontSize: 12.5),
+          NgFonts.geist(color: ng.mute, fontSize: 12.5),
       filled: true,
-      fillColor: theme.secondaryBackground,
+      fillColor: ng.s1,
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: theme.secondaryText.withOpacity(0.2)),
+        borderSide: BorderSide(color: ng.mute.withOpacity(0.2)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: theme.secondaryText.withOpacity(0.2)),
+        borderSide: BorderSide(color: ng.mute.withOpacity(0.2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: theme.primary, width: 1.5),
+        borderSide: BorderSide(color: ng.acc, width: 1.5),
       ),
     );
   }
 
   Widget _modeChip(String value, String label, IconData icon) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final selected = _model.mode == value;
     return Expanded(
       child: InkWell(
@@ -220,7 +218,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? theme.primary : theme.secondaryBackground,
+            color: selected ? ng.acc : ng.s1,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -229,17 +227,17 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
               Icon(icon,
                   size: 16,
                   color: selected
-                      ? theme.primaryBackground
-                      : theme.secondaryText),
+                      ? ng.bg
+                      : ng.mute),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: NgFonts.geist(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: selected
-                      ? theme.primaryBackground
-                      : theme.primaryText,
+                      ? ng.bg
+                      : ng.text,
                 ),
               ),
             ],
@@ -251,7 +249,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final selected = _model.selected;
     final balance = selected == null ? 0.0 : _balance(selected);
 
@@ -262,7 +260,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: theme.primaryBackground,
+        backgroundColor: ng.bg,
         appBar: NgSimpleBar(title: 'Record Payment', close: true),
         body: SafeArea(
           top: true,
@@ -277,16 +275,16 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                       DropdownButtonFormField<String>(
                         value: selected?.id,
                         isExpanded: true,
-                        dropdownColor: theme.secondaryBackground,
+                        dropdownColor: ng.s1,
                         style: NgFonts.geist(
-                            color: theme.primaryText, fontSize: 13.5),
+                            color: ng.text, fontSize: 13.5),
                         decoration: _dec('Order'),
                         hint: Text(
                           _model.unpaidOrders.isEmpty
                               ? 'No orders with balance due'
                               : 'Select order',
                           style: NgFonts.geist(
-                              color: theme.secondaryText, fontSize: 13),
+                              color: ng.mute, fontSize: 13),
                         ),
                         items: [
                           for (final o in _model.unpaidOrders)
@@ -309,13 +307,10 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                       if (selected != null) ...[
                         const SizedBox(height: 12),
                         // ---- Balance summary ------------------------------
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: theme.secondaryBackground,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
+                        NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(14),
+      child: Row(
                             mainAxisAlignment:
                                 MainAxisAlignment.spaceBetween,
                             children: [
@@ -340,7 +335,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                             FilteringTextInputFormatter.digitsOnly
                           ],
                           style: NgFonts.geist(
-                              color: theme.primaryText, fontSize: 15),
+                              color: ng.text, fontSize: 15),
                           decoration: _dec('Amount received (₹)'),
                         ),
                         const SizedBox(height: 12),
@@ -359,7 +354,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                           controller: _model.noteController,
                           focusNode: _model.noteFocusNode,
                           style: NgFonts.geist(
-                              color: theme.primaryText, fontSize: 13.5),
+                              color: ng.text, fontSize: 13.5),
                           decoration: _dec('Note (optional)',
                               hint: 'e.g. UPI ref, received by'),
                         ),
@@ -376,10 +371,10 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                             iconPadding:
                                 const EdgeInsetsDirectional.fromSTEB(
                                     0.0, 0.0, 0.0, 0.0),
-                            iconColor: theme.primaryBackground,
-                            color: theme.primary,
+                            iconColor: ng.bg,
+                            color: ng.acc,
                             textStyle:
-                                TextStyle(color: theme.primaryBackground),
+                                TextStyle(color: ng.bg),
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                         ),
@@ -389,22 +384,22 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                           'Payment History (${_model.history.length})',
                           style: NgFonts.geist(
                               fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                              color: theme.primaryText),
+                              fontWeight: FontWeight.w600,
+                              color: ng.text),
                         ),
                         const SizedBox(height: 8),
                         if (_model.history.isEmpty)
                           Text('No payments recorded yet for this order.',
                               style: NgFonts.geist(
                                   fontSize: 12.5,
-                                  color: theme.secondaryText))
+                                  color: ng.mute))
                         else
                           ..._model.history.map((e) => Container(
                                 margin: const EdgeInsets.only(bottom: 8),
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 14, vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: theme.secondaryBackground,
+                                  color: ng.s1,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Row(
@@ -416,7 +411,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                               ? Icons.account_balance
                                               : Icons.payments,
                                       size: 17,
-                                      color: theme.primary,
+                                      color: ng.acc,
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
@@ -428,8 +423,8 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                             '₹${e.amount.toStringAsFixed(0)} · ${e.mode.toUpperCase()}',
                                             style: NgFonts.geist(
                                                 fontSize: 13.5,
-                                                fontWeight: FontWeight.w700,
-                                                color: theme.primaryText),
+                                                fontWeight: FontWeight.w600,
+                                                color: ng.text),
                                           ),
                                           Text(
                                             [
@@ -443,7 +438,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                             style: NgFonts.geist(
                                                 fontSize: 11.5,
                                                 color:
-                                                    theme.secondaryText),
+                                                    ng.mute),
                                           ),
                                         ],
                                       ),
@@ -461,19 +456,19 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
   }
 
   Widget _sumCol(String label, String value, {bool highlight = false}) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
             style: NgFonts.geist(
-                fontSize: 10.5, color: theme.secondaryText)),
+                fontSize: 10.5, color: ng.mute)),
         const SizedBox(height: 2),
         Text(value,
             style: NgFonts.geist(
                 fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: highlight ? theme.primary : theme.primaryText)),
+                fontWeight: FontWeight.w600,
+                color: highlight ? ng.acc : ng.text)),
       ],
     );
   }

@@ -1,17 +1,17 @@
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/platform_admin_status.dart';
 import '/backend/supabase/supabase.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
 import '/widgets/signup_success_dialog.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/flutter_flow_theme.dart' show kBrandAccent;
 import 'package:url_launcher/url_launcher.dart';
 import 'signup_page_model.dart';
 export 'signup_page_model.dart';
@@ -278,7 +278,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFF0A0C10),
+        backgroundColor: NgPalette.of(context).bg,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -298,7 +298,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: const Color(0x24F68C36),
+                              color: NgPalette.of(context).status(NgStatus.accent).bg,
                               borderRadius: BorderRadius.circular(40),
                             ),
                             clipBehavior: Clip.antiAlias,
@@ -318,16 +318,16 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                           Text(
                             'Create your account',
                             style: NgFonts.geist(
-                              color: Colors.white,
+                              color: NgPalette.of(context).text,
                               fontSize: 22,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Start your free trial today',
                             style: NgFonts.geist(
-                              color: Colors.white54,
+                              color: NgPalette.of(context).mute,
                               fontSize: 14,
                             ),
                           ),
@@ -338,7 +338,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                       // Form card
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF12151B),
+                          color: NgPalette.of(context).s1,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         padding: const EdgeInsets.all(20),
@@ -383,7 +383,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               controller: _model.passwordController!,
                               focusNode: _model.passwordFocusNode!,
                               obscureText: !_model.passwordVisible,
-                              style: NgFonts.geist(color: Colors.white),
+                              style: NgFonts.geist(color: NgPalette.of(context).text),
                               validator: (v) => (v == null || v.length < 8)
                                   ? 'Password must be at least 8 characters'
                                   : null,
@@ -397,7 +397,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                     _model.passwordVisible
                                         ? Icons.visibility_off
                                         : Icons.visibility,
-                                    color: Colors.white38,
+                                    color: NgPalette.of(context).faint,
                                     size: 20,
                                   ),
                                   onPressed: () => safeSetState(() =>
@@ -411,7 +411,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               controller: _model.confirmPasswordController!,
                               focusNode: _model.confirmPasswordFocusNode!,
                               obscureText: !_model.confirmPasswordVisible,
-                              style: NgFonts.geist(color: Colors.white),
+                              style: NgFonts.geist(color: NgPalette.of(context).text),
                               // §3: validated client-side before submit via
                               // the Form's own validate() — an inline error
                               // right at this field, never a network round
@@ -430,7 +430,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                     _model.confirmPasswordVisible
                                         ? Icons.visibility_off
                                         : Icons.visibility,
-                                    color: Colors.white38,
+                                    color: NgPalette.of(context).faint,
                                     size: 20,
                                   ),
                                   onPressed: () => safeSetState(() =>
@@ -467,7 +467,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                                     child: RichText(
                                       text: TextSpan(
                                         style: NgFonts.geist(
-                                          color: Colors.white54,
+                                          color: NgPalette.of(context).mute,
                                           fontSize: 13,
                                         ),
                                         children: [
@@ -512,38 +512,24 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(10),
+                                  color: NgPalette.of(context).redBg,
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: Text(
                                   _model.errorMessage!,
                                   style: NgFonts.geist(
-                                    color: Colors.redAccent,
+                                    color: NgPalette.of(context).red,
                                     fontSize: 13,
                                   ),
                                 ),
                               ),
                             ],
                             const SizedBox(height: 20),
-                            FFButtonWidget(
-                              text: 'Create Account',
-                              onPressed:
-                                  (_model.isLoading || !_model.agreedToTerms)
-                                      ? null
-                                      : _handleSignup,
-                              options: FFButtonOptions(
-                                height: 52,
-                                color: kBrandAccent,
-                                textStyle: NgFonts.geist(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                elevation: 0,
-                              ),
-                              showLoadingIndicator: _model.isLoading,
-                            ),
+                            NgPrimaryButton(
+  label: _model.isLoading ? 'Please wait…' : 'Create account',
+  height: 54,
+  onPressed: (_model.isLoading || !_model.agreedToTerms) ? null : _handleSignup,
+),
                           ],
                         ),
                       ),
@@ -556,7 +542,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
                           Text(
                             'Already have an account? ',
                             style: NgFonts.geist(
-                              color: Colors.white54,
+                              color: NgPalette.of(context).mute,
                               fontSize: 14,
                             ),
                           ),
@@ -597,7 +583,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
-      style: NgFonts.geist(color: Colors.white),
+      style: NgFonts.geist(color: NgPalette.of(context).text),
       keyboardType: keyboardType,
       validator: validator,
       textCapitalization: textCapitalization,
@@ -613,28 +599,28 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: NgFonts.geist(color: Colors.white54),
-      hintStyle: NgFonts.geist(color: Colors.white24),
-      prefixIcon: Icon(icon, color: Colors.white38, size: 20),
+      labelStyle: NgFonts.geist(color: NgPalette.of(context).mute),
+      hintStyle: NgFonts.geist(color: NgPalette.of(context).faint),
+      prefixIcon: Icon(icon, color: NgPalette.of(context).faint, size: 20),
       filled: true,
-      fillColor: const Color(0xFF1A1E26),
+      fillColor: NgPalette.of(context).s1,
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: NgPalette.of(context).w08),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: kBrandAccent, width: 1.5),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: NgPalette.of(context).acc, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: NgPalette.of(context).red),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: NgPalette.of(context).red),
       ),
-      errorStyle: NgFonts.geist(color: Colors.redAccent, fontSize: 12),
+      errorStyle: NgFonts.geist(color: NgPalette.of(context).red, fontSize: 12),
     );
   }
 }

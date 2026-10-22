@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Step 2 (super-admin console): tenant detail view. Pushed from the
@@ -265,7 +264,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
     }
   }
 
-  Widget _row(FlutterFlowTheme theme, String label, String value) => Padding(
+  Widget _row(NgPalette ng, String label, String value) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,12 +273,12 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
               width: 120,
               child: Text(label,
                   style: NgFonts.geist(
-                      color: theme.secondaryText, fontSize: 13)),
+                      color: ng.mute, fontSize: 13)),
             ),
             Expanded(
               child: Text(value,
                   style: NgFonts.geist(
-                      color: theme.primaryText,
+                      color: ng.text,
                       fontSize: 13,
                       fontWeight: FontWeight.w600)),
             ),
@@ -289,7 +288,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final planName = widget.plans
         .firstWhere((p) => p.id == _org.planId,
             orElse: () => widget.plans.isNotEmpty
@@ -298,7 +297,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
         .name;
 
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: NgSimpleBar(title: _org.name),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -310,41 +309,38 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: theme.error.withOpacity(0.12),
+                      color: ng.red.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.block, color: theme.error, size: 18),
+                        Icon(Icons.block, color: ng.red, size: 18),
                         const SizedBox(width: 8),
                         Text('This tenant is suspended',
                             style: NgFonts.geist(
-                                color: theme.error,
+                                color: ng.red,
                                 fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: theme.secondaryBackground,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
+                NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(14),
+      child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _row(theme, 'Slug', _org.slug),
-                      _row(theme, 'GSTIN', _org.gstin ?? '—'),
+                      _row(ng, 'Slug', _org.slug),
+                      _row(ng, 'GSTIN', _org.gstin ?? '—'),
                       _row(
-                          theme,
+                          ng,
                           'Created',
                           _org.createdAt != null
                               ? '${_org.createdAt!.toLocal()}'.split('.').first
                               : '—'),
-                      _row(theme, 'Plan', planName ?? '—'),
-                      _row(theme, 'Plan status', _org.planStatus ?? '—'),
+                      _row(ng, 'Plan', planName ?? '—'),
+                      _row(ng, 'Plan status', _org.planStatus ?? '—'),
                       _row(
-                          theme,
+                          ng,
                           'Trial ends',
                           _org.trialEndsAt != null
                               ? '${_org.trialEndsAt!.toLocal()}'
@@ -375,7 +371,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                         ),
                       ),
                       _row(
-                          theme,
+                          ng,
                           'Owner email',
                           _ownerEmailUnavailable
                               ? '— (needs 20260727_super_admin_owner_email.sql)'
@@ -384,25 +380,22 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: theme.secondaryBackground,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
+                NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(14),
+      child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Usage',
                           style: NgFonts.geist(
-                              color: theme.primaryText,
+                              color: ng.text,
                               fontSize: 14,
-                              fontWeight: FontWeight.w700)),
+                              fontWeight: FontWeight.w600)),
                       const SizedBox(height: 8),
-                      _row(theme, 'Orders', '$_orders'),
-                      _row(theme, 'Leads', '$_leads'),
-                      _row(theme, 'Staff', '$_staff'),
-                      _row(theme, 'Invoices', '$_invoices'),
+                      _row(ng, 'Orders', '$_orders'),
+                      _row(ng, 'Leads', '$_leads'),
+                      _row(ng, 'Staff', '$_staff'),
+                      _row(ng, 'Invoices', '$_invoices'),
                     ],
                   ),
                 ),
@@ -412,9 +405,9 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                   child: OutlinedButton.icon(
                     onPressed: _togglingActive ? null : _toggleActive,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: _org.active ? Colors.red : theme.success,
+                      foregroundColor: _org.active ? Colors.red : ng.green,
                       side: BorderSide(
-                          color: _org.active ? Colors.red : theme.success),
+                          color: _org.active ? Colors.red : ng.green),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     icon: Icon(_org.active ? Icons.block : Icons.check_circle),

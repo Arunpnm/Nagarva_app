@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 
 import '/backend/device_org_binding.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -39,7 +39,7 @@ class _OrgBindingPageWidgetState extends State<OrgBindingPageWidget> {
   /// them. A leaked code alone must not be enough.
   Future<void> _redeemInvite() async {
     final ctrl = TextEditingController();
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final code = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -50,7 +50,7 @@ class _OrgBindingPageWidgetState extends State<OrgBindingPageWidget> {
           children: [
             Text(
               'Your owner sends this to you. It works once.',
-              style: TextStyle(fontSize: 13, color: theme.secondaryText),
+              style: TextStyle(fontSize: 13, color: ng.mute),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -59,7 +59,7 @@ class _OrgBindingPageWidgetState extends State<OrgBindingPageWidget> {
               textCapitalization: TextCapitalization.characters,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  fontSize: 22, letterSpacing: 4, fontWeight: FontWeight.w700),
+                  fontSize: 22, letterSpacing: 4, fontWeight: FontWeight.w600),
               decoration: const InputDecoration(hintText: 'ABCD2345'),
               onSubmitted: (v) => Navigator.of(dialogContext).pop(v),
             ),
@@ -127,76 +127,94 @@ class _OrgBindingPageWidgetState extends State<OrgBindingPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       body: SafeArea(
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
               children: [
-                Icon(Icons.local_shipping, size: 48, color: theme.primary),
-                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: NgIconTile(
+                      icon: Icons.phonelink_setup_rounded,
+                      status: NgStatus.accent,
+                      size: 60,
+                      iconSize: 30),
+                ),
+                const SizedBox(height: 22),
                 Text('Set up this device',
                     style: NgFonts.geist(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: theme.primaryText)),
+                        fontSize: 30,
+                        height: 1.15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.6,
+                        color: ng.text)),
                 const SizedBox(height: 8),
                 Text(
                   'Enter your organization code (ask your admin, or use the '
                   'link they shared — e.g. nagarva.in/apc).',
-                  textAlign: TextAlign.center,
-                  style: NgFonts.geist(
-                      fontSize: 13, color: theme.secondaryText),
+                  style: NgFonts.geist(fontSize: 15, height: 1.4, color: ng.mute),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 28),
+                const NgFieldLabel('Organization code'),
                 TextField(
                   controller: _slugController,
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                      labelText: 'Organization code', hintText: 'apc'),
+                  cursorColor: ng.acc,
+                  style: NgFonts.mono(fontSize: 17, color: ng.text),
+                  decoration: InputDecoration(
+                    hintText: 'apc',
+                    hintStyle: NgFonts.mono(fontSize: 17, color: ng.faint),
+                    prefixIcon:
+                        Icon(Icons.business_rounded, size: 20, color: ng.faint),
+                    filled: true,
+                    fillColor: ng.s1,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: ng.w08),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: ng.acc, width: 1.5),
+                    ),
+                  ),
                   onSubmitted: (_) => _bind(),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 10),
-                  Text(_error!, style: TextStyle(color: theme.error)),
+                  Text(_error!,
+                      style: NgFonts.geist(fontSize: 13, color: ng.red)),
                 ],
                 const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _bind,
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primary,
-                        foregroundColor: Colors.white),
-                    child: Text(_loading ? 'Checking...' : 'Continue'),
-                  ),
+                NgPrimaryButton(
+                  icon: Icons.arrow_forward_rounded,
+                  label: _loading ? 'Checking…' : 'Continue',
+                  height: 54,
+                  onPressed: _loading ? null : _bind,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 // Auth plan REVISED item 3. Staff never type an org code:
                 // that only binds "which company", which is what forced
                 // PIN login to search an org-wide pool. An invite binds
                 // this phone to ONE staff_id, so login can go straight to
                 // staff-login and never touch the owner's credentials.
-                OutlinedButton.icon(
+                NgSecondaryButton(
+                  icon: Icons.vpn_key_outlined,
+                  iconColor: ng.acc,
+                  label: 'I have an invite code',
+                  height: 50,
                   onPressed: _loading ? null : _redeemInvite,
-                  icon: const Icon(Icons.vpn_key, size: 18),
-                  label: const Text('I have an invite code'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
-                    foregroundColor: theme.primary,
-                    side: BorderSide(color: theme.primary),
-                  ),
                 ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () =>
-                      context.pushNamed(LoginPageWidget.routeName),
-                  child: const Text('First time? Log in with email instead'),
+                const SizedBox(height: 18),
+                Center(
+                  child: NgLinkButton('First time? Log in with email instead',
+                      onTap: () =>
+                          context.pushNamed(LoginPageWidget.routeName)),
                 ),
               ],
             ),
