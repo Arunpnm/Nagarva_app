@@ -24,6 +24,7 @@ import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_session.dart';
+import 'backend/business_modules.dart';
 import 'components/coming_soon_page.dart';
 import 'components/more_sheet.dart';
 import 'components/quick_entry_dialog.dart';
@@ -674,10 +675,28 @@ class _NavBarPageState extends State<NavBarPage>
     // no-ops immediately if activeStaffPages is already populated (the
     // normal case now that every setStaff() call site also loads it).
     _loadStaffPermissions();
+    // Business type decides which modules the menu shows. Reload when the
+    // org changes (a no-op for the same org), rebuild when it changes,
+    // and ask an owner once if their company has never chosen.
+    BusinessModules.instance.addListener(_onModulesChanged);
+    AppSession.instance.addListener(_onSessionChanged);
+    if (isOwnerOrManagerSession) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) BusinessTypeSheet.maybeShow(context);
+      });
+    }
+  }
+
+  void _onModulesChanged() => safeSetState(() {});
+
+  void _onSessionChanged() {
+    if (isOwnerOrManagerSession) BusinessModules.instance.load();
   }
 
   @override
   void dispose() {
+    BusinessModules.instance.removeListener(_onModulesChanged);
+    AppSession.instance.removeListener(_onSessionChanged);
     WidgetsBinding.instance.removeObserver(this);
     _navAnimController.dispose();
     super.dispose();
@@ -1268,7 +1287,11 @@ class _NavBarPageState extends State<NavBarPage>
             if (bottomItems.isEmpty) return const SizedBox.shrink();
             final idx =
                 bottomItems.indexWhere((e) => e.name == _currentPageName);
-            return MobileBottomNav(
+            // CORRECTIONS.md B6: Operations lives in More now, so the
+            // awaiting-approval count rides on the More slot.
+            return ValueListenableBuilder<int>(
+              valueListenable: ApprovalQueue.instance.pendingCount,
+              builder: (context, pending, _) => MobileBottomNav(
               items: bottomItems,
               // -1 when the current screen is a module reached from More:
               // the bar then highlights More instead of a wrong tab.
@@ -1286,12 +1309,13 @@ class _NavBarPageState extends State<NavBarPage>
                       (
                         icon: Icons.apps_rounded,
                         label: AppLocalizations.of(context).ngNavMore,
-                        badge: 0,
+                        badge: pending,
                         onTap: () => MoreSheet.show(context,
                             currentPageName: _currentPageName),
                       ),
                     ]
                   : const [],
+            ),
             );
           }),
         ),

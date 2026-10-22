@@ -10,7 +10,7 @@
 //
 // Redesign (20 Oct 2026): the pinned pair became a single "More" slot
 // (it opens the module sheet, which also carries Quick entry), the owner
-// bar is Home / Leads / Orders / Ops, and those four render short bar
+// bar is Home / Leads / Orders / Pay (Ops until 21 Oct 2026), and those four render short bar
 // labels rather than their NavItem labels. Same risk, same checks.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,15 +29,15 @@ const _items = <NavItem>[
     group: 'Operations'
   ),
   (
-    name: 'OperationsPage',
-    icon: Icons.route,
-    label: 'Operations',
-    group: 'Operations'
+    name: 'PaymentsPage',
+    icon: Icons.payments,
+    label: 'Payments',
+    group: 'Finance'
   ),
 ];
 
 /// What the bar prints for each of [_items].
-const _barLabels = ['Home', 'Leads', 'Orders', 'Ops'];
+const _barLabels = ['Home', 'Leads', 'Orders', 'Pay'];
 
 /// The supervisor set keeps its own labels (no short form).
 const _supervisor = <NavItem>[

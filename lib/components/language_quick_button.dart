@@ -56,6 +56,24 @@ class LanguageQuickButton extends StatelessWidget {
   /// added later without strings goes back in here in the same change.
   static const _untranslated = <String>{};
 
+  /// CORRECTIONS.md D5: these translations are machine-written and wait
+  /// for native-speaker review, so the pickers mark them "Beta". Remove a
+  /// code from here when its review is done — keys never change.
+  static const betaLanguages = <String>{'ta', 'hi', 'kn', 'te', 'ml'};
+
+  /// The small "Beta" tag both language pickers show.
+  static Widget betaTag(Color color) => Container(
+        margin: const EdgeInsets.only(left: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          border: Border.all(color: color.withValues(alpha: 0.6)),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text('Beta',
+            style: TextStyle(
+                fontSize: 10.5, fontWeight: FontWeight.w600, color: color)),
+      );
+
   @override
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
@@ -113,6 +131,8 @@ class LanguageQuickButton extends StatelessWidget {
                       color:
                           code == current ? theme.primary : theme.primaryText,
                     )),
+                if (betaLanguages.contains(code))
+                  betaTag(theme.secondaryText),
               ],
             ),
           ),

@@ -403,13 +403,15 @@ class LrPdf {
                     kv('Weight',
                         'Actual: ${actualWeightKg}kg   Charged: ${chargedWeightKg}kg'),
                     if ((remark ?? '').isNotEmpty) kv('Remark', remark!),
-                    pw.SizedBox(height: 3),
-                    pw.Text(boilerplate.demurrageSentence,
-                        style: pw.TextStyle(
-                            font: fonts.regular,
-                            fontSize: 6.5,
-                            fontStyle: pw.FontStyle.italic,
-                            color: PdfBranding.grey)),
+                    if (boilerplate.demurrageSentence.isNotEmpty) ...[
+                      pw.SizedBox(height: 3),
+                      pw.Text(boilerplate.demurrageSentence,
+                          style: pw.TextStyle(
+                              font: fonts.regular,
+                              fontSize: 6.5,
+                              fontStyle: pw.FontStyle.italic,
+                              color: PdfBranding.grey)),
+                    ],
                   ],
                 ),
               ),

@@ -30,9 +30,17 @@ import '/settings_page/help_about_page.dart';
 /// everywhere (3 Sept 2026), so it is the first tile here rather than
 /// gone.
 class MoreSheet extends StatefulWidget {
-  const MoreSheet({super.key, this.currentPageName});
+  const MoreSheet({super.key, this.currentPageName, required this.host});
 
   final String? currentPageName;
+
+  /// The screen that opened the sheet. Every action closes the sheet
+  /// first, and the sheet's own context is dead the moment it closes, so
+  /// navigation must run on this one. Using the sheet's context is why no
+  /// menu tile opened anything (Arun, 21 Oct 2026: "in menu those icons
+  /// were not working when i click") — the route lookup threw on a
+  /// deactivated widget and the tap did nothing.
+  final BuildContext host;
 
   static Future<void> show(BuildContext context, {String? currentPageName}) =>
       showModalBottomSheet<void>(
@@ -41,7 +49,8 @@ class MoreSheet extends StatefulWidget {
         useSafeArea: true,
         backgroundColor: Colors.transparent,
         barrierColor: Colors.black.withValues(alpha: 0.6),
-        builder: (_) => MoreSheet(currentPageName: currentPageName),
+        builder: (_) =>
+            MoreSheet(currentPageName: currentPageName, host: context),
       );
 
   @override
@@ -79,8 +88,9 @@ class _MoreSheetState extends State<MoreSheet> {
   }
 
   void _open(String name) {
+    final host = widget.host;
     Navigator.of(context).pop();
-    if (name != widget.currentPageName) openModule(context, name);
+    if (name != widget.currentPageName && host.mounted) openModule(host, name);
   }
 
   @override
@@ -115,7 +125,7 @@ class _MoreSheetState extends State<MoreSheet> {
             label: l.ngQuickEntry,
             onTap: () {
               Navigator.of(context).pop();
-              QuickEntryDialog.show(context);
+              if (widget.host.mounted) QuickEntryDialog.show(widget.host);
             },
           ),
         );
@@ -245,7 +255,9 @@ class _MoreSheetState extends State<MoreSheet> {
                       label: l.ngHelp,
                       onTap: () {
                         Navigator.of(context).pop();
-                        context.pushNamed(HelpAboutPage.routeName);
+                        if (widget.host.mounted) {
+                          widget.host.pushNamed(HelpAboutPage.routeName);
+                        }
                       },
                     ),
                   ),
@@ -259,7 +271,9 @@ class _MoreSheetState extends State<MoreSheet> {
                         // The ONE shared logout sequence — see the
                         // drawer's note on why there is no second copy.
                         Navigator.of(context).pop();
-                        await performLogout(context);
+                        if (widget.host.mounted) {
+                          await performLogout(widget.host);
+                        }
                       },
                     ),
                   ),
@@ -338,7 +352,7 @@ class _MoreSheetState extends State<MoreSheet> {
     return InkWell(
       onTap: () async {
         Navigator.of(context).pop();
-        await switchOrgFlow(context);
+        if (widget.host.mounted) await switchOrgFlow(widget.host);
       },
       child: header,
     );

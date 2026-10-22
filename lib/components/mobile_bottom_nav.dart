@@ -38,8 +38,10 @@ import '/flutter_flow/ng_tokens.dart';
 /// Redesign (Claude Design handoff, 20 Oct 2026): nav surface with a w06
 /// top hairline and no elevation; the active slot gets an accent pill at
 /// 16% behind a FILLED icon, inactive slots an outlined icon in navOff;
-/// 11px labels on one line. The owner bar is Home / Leads / Orders / Ops
-/// plus a pinned More that opens the module sheet.
+/// 11px labels on one line. The owner bar is Home / Leads / Orders / Pay
+/// plus a pinned More that opens the module sheet (CORRECTIONS.md B6;
+/// it was Ops until 21 Oct 2026, and Ops' approvals badge now sits on
+/// More).
 class MobileBottomNav extends StatelessWidget {
   const MobileBottomNav({
     super.key,

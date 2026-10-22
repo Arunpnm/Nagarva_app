@@ -95,3 +95,4 @@ export '/modules/ops_people_modules.dart';
 export '/modules/setup_modules.dart';
 export '/modules/more_modules.dart';
 export '/whatsapp/whatsapp_page.dart';
+export '/settings_page/modules_page.dart';

@@ -14,6 +14,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
+import '/components/language_quick_button.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -190,13 +191,17 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 ),
                 for (final e in _kLanguageNames.entries)
                   ListTile(
-                    title: Text(e.value,
-                        style: NgFonts.geist(
-                            fontSize: 14.5,
-                            fontWeight: e.key == current
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                            color: c.text)),
+                    title: Row(children: [
+                      Text(e.value,
+                          style: NgFonts.geist(
+                              fontSize: 14.5,
+                              fontWeight: e.key == current
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: c.text)),
+                      if (LanguageQuickButton.betaLanguages.contains(e.key))
+                        LanguageQuickButton.betaTag(c.mute),
+                    ]),
                     trailing: e.key == current
                         ? Icon(Icons.check_rounded, color: c.acc, size: 20)
                         : null,
@@ -372,6 +377,9 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               onTap: () => _openSub(l.ngSetFy, (_) => [const FyNumberingCard()])),
         // The `whatsapp` function refuses anyone else, so staff don't see it.
         if (isOwnerOrManagerSession) ...[
+          _row(Icons.widgets_outlined, l.mdTitle,
+              sub: l.mdSettingsSub,
+              onTap: () => context.pushNamed(ModulesPage.routeName)),
           _row(Icons.chat_outlined, l.ngSetWa,
               sub: l.ngSetWaSub,
               onTap: () => context.pushNamed(WhatsAppPage.routeName)),
