@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
@@ -242,18 +243,18 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
     final ng = NgPalette.of(context);
     return NgCard(
       radius: 20,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.handyman_outlined, size: 18, color: ng.acc),
+              Icon(Icons.handyman_outlined, size: 18, color: ng.mute),
               const SizedBox(width: 8),
-              Text('Extra Charges',
+              Text('Extra charges',
                   style: NgFonts.geist(
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: ng.text)),
               // Pending count on the HEADER, not only in the list below.
               // Arun, 3 Sept 2026: "that addon serice is pending so make
@@ -263,28 +264,12 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
               // finished.
               if (_pendingCount > 0) ...[
                 const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: ng.amber,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text('$_pendingCount PENDING',
-                      style: NgFonts.geist(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                          color: Colors.white)),
-                ),
+                NgPill('$_pendingCount pending', status: NgStatus.amber),
               ],
               const Spacer(),
               if (!widget.readOnly)
-                TextButton.icon(
-                  onPressed: () => _addOrEdit(),
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Add'),
-                ),
+                NgLinkButton('Add',
+                    icon: Icons.add_rounded, onTap: () => _addOrEdit()),
             ],
           ),
           if (_loading)
@@ -297,29 +282,29 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
             )
           else if (_rows.isEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 10),
               child: Text(
                 'Anything charged on top of the quote — an AC install the '
                 'next day, a carpenter, a second trip, or materials the '
                 'customer bought. Pending items count toward the balance '
                 'until they are done.',
-                style:
-                    NgFonts.geist(fontSize: 12, color: ng.mute),
+                style: NgFonts.geist(
+                    fontSize: 13, height: 1.4, color: ng.mute),
               ),
             )
           else ...[
             if (_pendingCount > 0)
               Container(
                 width: double.infinity,
-                margin: const EdgeInsets.only(top: 6, bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: ng.amber.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  color: ng.amberBg,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '$_pendingCount pending · '
-                  '₹${_pendingTotal.toStringAsFixed(0)} still to be done. '
+                  '${functions.inrFull(_pendingTotal)} still to be done. '
                   'This is included in the balance due.',
                   style: NgFonts.geist(
                       fontSize: 12,
@@ -346,31 +331,34 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
     final done = status == 'completed';
 
     final (Color chipColor, String chipLabel, IconData icon) = switch (status) {
-      'completed' => (ng.green, 'Done', Icons.check_circle_outline),
-      'cancelled' => (ng.mute, 'Cancelled', Icons.block),
-      _ => (ng.amber, 'Pending', Icons.schedule),
+      'completed' => (ng.green, 'Done', Icons.check_rounded),
+      'cancelled' => (ng.mute, 'Cancelled', Icons.block_rounded),
+      _ => (ng.amber, 'Pending', Icons.schedule_rounded),
     };
 
     final pending = !done && !cancelled;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: EdgeInsets.fromLTRB(pending ? 8 : 0, 6, 0, 6),
-      decoration: pending
-          // A pending charge is money not yet earned and work not yet
-          // done. It gets a tint and a rule so it cannot be skimmed past
-          // as if it were finished.
-          ? BoxDecoration(
-              color: ng.amber.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(8),
-              border: Border(
-                  left: BorderSide(color: ng.amber, width: 3)),
-            )
-          : null,
+      padding: const EdgeInsets.fromLTRB(10, 10, 0, 10),
+      decoration: BoxDecoration(
+        // A pending charge is money not yet earned and work not yet
+        // done. It gets a tint so it cannot be skimmed past as if it
+        // were finished.
+        color: pending ? ng.amberBg : ng.inset,
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: chipColor),
-          const SizedBox(width: 8),
+          NgIconTile(
+              icon: icon,
+              status: done
+                  ? NgStatus.green
+                  : cancelled
+                      ? NgStatus.neutral
+                      : NgStatus.amber,
+              size: 32,
+              iconSize: 17),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,8 +366,8 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                 Text(
                   '${r['description'] ?? ''}',
                   style: NgFonts.geist(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
                     color: cancelled ? ng.mute : ng.text,
                     // A cancelled row stays visible as a record of what
                     // was discussed, struck through so it cannot be
@@ -391,17 +379,17 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                   done && r['completed_at'] != null
                       ? '$chipLabel · ${'${r['completed_at']}'.split('T').first}'
                       : chipLabel,
-                  style: NgFonts.geist(fontSize: 11, color: chipColor),
+                  style: NgFonts.geist(fontSize: 12, color: chipColor),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
           Text(
-            '₹${amount.toStringAsFixed(0)}',
-            style: NgFonts.geist(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+            functions.inrFull(amount),
+            style: NgFonts.mono(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
               color: cancelled ? ng.mute : ng.text,
               decoration: cancelled ? TextDecoration.lineThrough : null,
             ),

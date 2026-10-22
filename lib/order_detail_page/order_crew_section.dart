@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -332,176 +333,196 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
       );
     }
     final supervisor = _staffById(_order?.supervisorId);
-    return NgCard(
-      radius: 20,
-      padding: const EdgeInsets.all(16),
+    return NgSectionCard(
+      title: 'Team & salary',
+      icon: Icons.groups_outlined,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Team & Salary',
-              style: NgFonts.geist(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w700,
-                  color: ng.text)),
-          const SizedBox(height: 12),
           // --- Supervisor -----------------------------------------------
-          Row(
-            children: [
-              Icon(Icons.engineering, color: ng.acc, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _supervisors.isEmpty
-                    ? Text(
-                        'No supervisors yet — add one on the Staff page with role "Supervisor".',
-                        style: NgFonts.geist(
-                            fontSize: 12.5, color: ng.mute),
-                      )
-                    : DropdownButtonFormField<String>(
-                        value: supervisor?.id,
-                        dropdownColor: ng.s1,
-                        decoration: InputDecoration(
-                          labelText: 'Supervisor',
-                          labelStyle: NgFonts.geist(
-                              fontSize: 12.5,
-                              color: ng.mute),
-                          isDense: true,
-                        ),
-                        hint: const Text('Assign supervisor'),
-                        items: [
-                          for (final s in _supervisors)
-                            DropdownMenuItem(
-                                value: s.id, child: Text(s.name)),
-                        ],
-                        onChanged: _busy || _locked
-                            ? null
-                            : (v) {
-                                if (v != null) _assignSupervisor(v);
-                              },
-                      ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
+          const NgFieldLabel('Supervisor'),
+          if (_supervisors.isEmpty)
+            Text(
+              'No supervisors yet — add one on the Staff page with role '
+              '"Supervisor".',
+              style: NgFonts.geist(fontSize: 13, height: 1.4, color: ng.mute),
+            )
+          else
+            NgPickerField(
+              icon: Icons.engineering_outlined,
+              value: supervisor?.name ?? 'Assign supervisor',
+              placeholder: supervisor == null,
+              onTap: _busy || _locked ? null : _pickSupervisor,
+            ),
+          const SizedBox(height: 18),
           // --- Labour ---------------------------------------------------
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Labour (${_crew.length})',
-                  style: NgFonts.geist(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: ng.text)),
-              TextButton.icon(
-                onPressed: _busy || _locked ? null : _addLabour,
-                icon: const Icon(Icons.person_add, size: 17),
-                label: const Text('Add Labour'),
+              Expanded(
+                child: Text('Labour (${_crew.length})',
+                    style: NgFonts.geist(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ng.text)),
               ),
+              NgLinkButton('Add labour',
+                  icon: Icons.person_add_alt_1_rounded,
+                  onTap: _busy || _locked ? null : _addLabour),
             ],
           ),
-          // Day-close crew sheet (staff-pay brief §4). This section stays
-          // as the owner's quick add/correct view; the sheet is the
-          // end-of-day pass over the whole crew at once — present/absent,
-          // wage per person, one driver tag, A/C. Both write the same
-          // `order_staff` rows, so whichever the vendor reaches for, the
-          // labour figure below and the P&L card agree.
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _busy
-                  ? null
-                  : () => context.pushNamed(
-                        CrewSheetPageWidget.routeName,
-                        queryParameters: {'orderId': widget.orderId},
-                      ).then((_) => _load().then((_) => widget.onCrewChanged?.call())),
-              icon: const Icon(Icons.fact_check_outlined, size: 17),
-              label: const Text('Open crew sheet'),
-            ),
-          ),
+          const SizedBox(height: 6),
           if (_crew.isEmpty)
             Text('No labour assigned yet.',
-                style: NgFonts.geist(
-                    fontSize: 12.5, color: ng.mute))
+                style: NgFonts.geist(fontSize: 13, color: ng.mute))
           else ...[
-            ..._crew.map((c) {
-              final s = _staffById(c.staffId);
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
-                  children: [
-                    Icon(Icons.person,
-                        size: 16, color: ng.mute),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        '${s?.name ?? 'Staff'}'
-                        '${(s?.role ?? '').isEmpty ? '' : ' · ${s!.role}'}'
-                        '${(c.isHalfDay ?? false) ? ' · half day' : ''}',
-                        overflow: TextOverflow.ellipsis,
-                        style: NgFonts.geist(
-                            fontSize: 12.5, color: ng.text),
-                      ),
-                    ),
-                    InkWell(
-                      onTap: _busy || _locked ? null : () => _editSalary(c),
-                      borderRadius: BorderRadius.circular(6),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 2),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+            for (final c in _crew)
+              Builder(builder: (context) {
+                final s = _staffById(c.staffId);
+                final sub = [
+                  if ((s?.role ?? '').isNotEmpty) s!.role!,
+                  if (c.isHalfDay ?? false) 'half day',
+                ].join(' · ');
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: Row(
+                    children: [
+                      NgAvatar(s?.name ?? 'Staff', size: 32),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('₹${(c.salaryAmount ?? 0).toStringAsFixed(0)}',
+                            Text(s?.name ?? 'Staff',
+                                overflow: TextOverflow.ellipsis,
                                 style: NgFonts.geist(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: ng.acc)),
-                            if (!_locked) ...[
-                              const SizedBox(width: 3),
-                              Icon(Icons.edit,
-                                  size: 12,
-                                  color: ng.acc.withValues(alpha: 0.6)),
-                            ],
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: ng.text)),
+                            if (sub.isNotEmpty)
+                              Text(sub,
+                                  style: NgFonts.geist(
+                                      fontSize: 12, color: ng.mute)),
                           ],
                         ),
                       ),
-                    ),
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(Icons.close,
-                          size: 15, color: ng.red),
-                      onPressed: _busy || _locked ? null : () => _removeLabour(c),
-                      tooltip: 'Remove',
-                    ),
-                  ],
-                ),
-              );
-            }),
-            const Divider(height: 14),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Labour total',
-                    style: NgFonts.geist(
-                        fontSize: 12.5, color: ng.mute)),
-                Text('₹${_labourTotal.toStringAsFixed(0)}',
-                    style: NgFonts.geist(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: ng.text)),
-              ],
-            ),
+                      InkWell(
+                        onTap: _busy || _locked ? null : () => _editSalary(c),
+                        borderRadius: BorderRadius.circular(9),
+                        child: Container(
+                          height: 32,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: ng.s2,
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(functions.inrFull(c.salaryAmount ?? 0),
+                                  style: NgFonts.mono(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: ng.text)),
+                              if (!_locked) ...[
+                                const SizedBox(width: 5),
+                                Icon(Icons.edit_rounded,
+                                    size: 13, color: ng.mute),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(Icons.close_rounded, size: 18, color: ng.red),
+                        onPressed:
+                            _busy || _locked ? null : () => _removeLabour(c),
+                        tooltip: 'Remove',
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            Divider(height: 18, color: ng.w06),
+            NgKeyValue('Labour total', functions.inrFull(_labourTotal),
+                mono: true, strong: true),
           ],
+          const SizedBox(height: 12),
+          // Day-close crew sheet (staff-pay brief §4). This section stays
+          // as the owner's quick add/correct view; the sheet is the
+          // end-of-day pass over the whole crew at once. Both write the
+          // same `order_staff` rows, so the labour figure and the P&L agree.
+          NgSecondaryButton(
+            icon: Icons.fact_check_outlined,
+            label: 'Open crew sheet',
+            onPressed: _busy
+                ? null
+                : () => context.pushNamed(
+                      CrewSheetPageWidget.routeName,
+                      queryParameters: {'orderId': widget.orderId},
+                    ).then((_) =>
+                        _load().then((_) => widget.onCrewChanged?.call())),
+          ),
           // Order Details Session 1, item 5: Mark Order Complete — closes
-          // the order FINANCIALLY, distinct from the operations stepper's
-          // job-progress status. Placed below the labour list per the
-          // brief, but not conditioned on labour existing (a fully
-          // porter-handled order can have zero labour rows and still be
-          // ready to close).
+          // the order FINANCIALLY, distinct from the job-progress status.
+          // Not conditioned on labour existing (a porter-handled order can
+          // have zero labour rows and still be ready to close).
           if (StaffPermissions.canActive('orders', 'edit'))
             _markCompleteSection(ng),
         ],
       ),
     );
+  }
+
+  Future<void> _pickSupervisor() async {
+    final ng = NgPalette.of(context);
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: ng.sheet,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(NgRadius.sheet))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Assign supervisor',
+                  style: NgFonts.geist(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: ng.text)),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final s in _supervisors)
+                      NgListRow(
+                        leading: NgAvatar(s.name,
+                            status: s.id == _order?.supervisorId
+                                ? NgStatus.accent
+                                : NgStatus.neutral),
+                        title: s.name,
+                        subtitle: s.branch,
+                        trailing: s.id == _order?.supervisorId
+                            ? Icon(Icons.check_rounded, color: ng.acc)
+                            : null,
+                        onTap: () => Navigator.pop(ctx, s.id),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null && picked != _order?.supervisorId) {
+      _assignSupervisor(picked);
+    }
   }
 
   bool _markingComplete = false;
@@ -514,7 +535,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
         padding: const EdgeInsets.only(top: 14),
         child: Row(
           children: [
-            Icon(Icons.lock, size: 16, color: ng.mute),
+            Icon(Icons.lock_outline_rounded, size: 16, color: ng.mute),
             const SizedBox(width: 6),
             Text(
                 closedAt == null
@@ -529,15 +550,29 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
       );
     }
     return Padding(
-      padding: const EdgeInsets.only(top: 14),
-      child: SizedBox(
-        width: double.infinity,
-        height: 46,
-        child: FilledButton.icon(
-          onPressed: _markingComplete ? null : _markComplete,
-          style: FilledButton.styleFrom(backgroundColor: ng.green),
-          icon: const Icon(Icons.task_alt, size: 19),
-          label: Text(_markingComplete ? 'Closing…' : 'Mark Order Complete'),
+      padding: const EdgeInsets.only(top: 10),
+      child: Material(
+        color: ng.green,
+        borderRadius: BorderRadius.circular(NgRadius.tile),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(NgRadius.tile),
+          onTap: _markingComplete ? null : _markComplete,
+          child: SizedBox(
+            height: 50,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.task_alt_rounded,
+                    size: 20, color: NgPalette.onAcc),
+                const SizedBox(width: 8),
+                Text(_markingComplete ? 'Closing…' : 'Mark order complete',
+                    style: NgFonts.geist(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: NgPalette.onAcc)),
+              ],
+            ),
+          ),
         ),
       ),
     );

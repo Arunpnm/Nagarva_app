@@ -1,5 +1,6 @@
 import '/backend/fy_numbering.dart';
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/backend/whatsapp_cloud.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,7 +15,6 @@ import '/config/app_config.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 
 /// Quick Payment Update — Order Details Session 1, item 2.
@@ -327,33 +327,12 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
       IconData icon) {
     final selected = _mode == value;
     return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+      child: NgOptionCard(
+        icon: icon,
+        title: label,
+        subtitle: '',
+        selected: selected,
         onTap: () => setState(() => _mode = value),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: selected ? ng.acc : ng.bg,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon,
-                  size: 15,
-                  color:
-                      selected ? ng.bg : ng.mute),
-              const SizedBox(width: 5),
-              Text(label,
-                  style: NgFonts.geist(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: selected
-                          ? ng.bg
-                          : ng.text)),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -436,6 +415,10 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: NgPalette.of(context).sheet,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(NgRadius.sheet))),
       builder: (ctx) {
         final ng = NgPalette.of(ctx);
         return Padding(
@@ -459,55 +442,39 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                 children: [
                   Text('Request payment by UPI',
                       style: NgFonts.geist(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.4,
                           color: ng.text)),
                   const SizedBox(height: 4),
                   Text('Paid to ${payee.vpa}',
-                      style: NgFonts.geist(
-                          fontSize: 12, color: ng.mute)),
-                  const SizedBox(height: 14),
-                  TextField(
+                      style: NgFonts.mono(fontSize: 12.5, color: ng.mute)),
+                  const SizedBox(height: 18),
+                  NgFieldLabel(
+                      'Amount · balance ${functions.inrFull(_balance)}'),
+                  NgInput(
                     controller: amountCtrl,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    hint: '₹ 0',
+                    mono: true,
                     onChanged: (_) => setSheet(() {}),
-                    style: NgFonts.geist(
-                        color: ng.text, fontSize: 14),
-                    decoration: InputDecoration(
-                      labelText: 'Amount to request (₹)',
-                      helperText: 'Balance due ₹${_balance.toStringAsFixed(0)}',
-                      labelStyle: NgFonts.geist(
-                          color: ng.mute, fontSize: 12),
-                      isDense: true,
-                      filled: true,
-                      fillColor: ng.bg,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none),
-                    ),
                   ),
-                  const SizedBox(height: 14),
-                  FFButtonWidget(
+                  const SizedBox(height: 18),
+                  NgPrimaryButton(
+                    icon: Icons.send_rounded,
+                    label: 'Send on WhatsApp',
                     onPressed: amount <= 0
                         ? null
                         : () async {
                             Navigator.pop(ctx);
                             await _sendUpiOnWhatsApp(payee, amount, uri);
                           },
-                    text: 'Send on WhatsApp',
-                    icon: const Icon(Icons.send, size: 18),
-                    options: FFButtonOptions(
-                      width: double.infinity,
-                      height: 44,
-                      iconColor: ng.bg,
-                      color: ng.acc,
-                      textStyle: TextStyle(color: ng.bg),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
+                  NgSecondaryButton(
+                    icon: Icons.content_copy_rounded,
+                    label: 'Copy UPI link',
+                    height: 46,
                     onPressed: amount <= 0
                         ? null
                         : () async {
@@ -518,19 +485,16 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
                                 const SnackBar(
                                     content: Text('UPI link copied.')));
                           },
-                    icon: const Icon(Icons.content_copy, size: 18),
-                    label: const Text('Copy UPI link'),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   // Says plainly what this does not do. A vendor who
                   // believes a sent link auto-reconciles will stop
                   // recording payments, and their books go wrong quietly.
                   Text(
                     'Opens in the customer\'s UPI app. Payments are not '
-                    'detected automatically — record it above once you '
+                    'detected automatically — record it once you '
                     'receive it.',
-                    style: NgFonts.geist(
-                        fontSize: 11, color: ng.mute),
+                    style: NgFonts.geist(fontSize: 12, color: ng.mute),
                   ),
                 ],
               );
@@ -595,112 +559,76 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
       return const SizedBox.shrink();
     }
 
-    return NgCard(
-      radius: 20,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Quick Payment',
+    // Rendered inside the overview's bottom sheet, so laid out as a
+    // sheet (title, fields, primary action) rather than a card.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: Container(
+            width: 36,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+                color: ng.w15, borderRadius: BorderRadius.circular(2)),
+          ),
+        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Text('Record payment',
                   style: NgFonts.geist(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.4,
                       color: ng.text)),
-              Text('Balance ₹${_balance.toStringAsFixed(0)}',
-                  style: NgFonts.geist(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: ng.acc)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _amountCtrl,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: NgFonts.geist(
-                      color: ng.text, fontSize: 14),
-                  decoration: InputDecoration(
-                    labelText: 'Amount received (₹)',
-                    labelStyle: NgFonts.geist(
-                        color: ng.mute, fontSize: 12),
-                    isDense: true,
-                    filled: true,
-                    fillColor: ng.bg,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 12),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              _modeChip(ng, 'cash', 'Cash', Icons.payments),
-              const SizedBox(width: 6),
-              _modeChip(ng, 'upi', 'UPI', Icons.qr_code),
-              const SizedBox(width: 6),
-              _modeChip(ng, 'bank', 'Bank', Icons.account_balance),
-            ],
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _noteCtrl,
-            style: NgFonts.geist(color: ng.text, fontSize: 13),
-            decoration: InputDecoration(
-              labelText: 'Note (optional)',
-              labelStyle:
-                  NgFonts.geist(color: ng.mute, fontSize: 12),
-              isDense: true,
-              filled: true,
-              fillColor: ng.bg,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none),
             ),
-          ),
-          const SizedBox(height: 12),
-          FFButtonWidget(
-            onPressed: _saving ? null : _save,
-            text: _saving ? 'Saving…' : 'Record Payment',
-            icon: const Icon(Icons.check_circle, size: 18),
-            options: FFButtonOptions(
-              width: double.infinity,
-              height: 44,
-              iconColor: ng.bg,
-              color: ng.acc,
-              textStyle: TextStyle(color: ng.bg),
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          // Item 19 Phase 1. Sits UNDER Record Payment deliberately:
-          // recording money already received is the more common action
-          // and stays the primary one. Asking for money is the secondary
-          // affordance, not the headline.
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: _requesting ? null : _requestByUpi,
-            icon: Icon(Icons.qr_code_2, size: 18, color: ng.acc),
-            label: Text(
-              _requesting ? 'Preparing…' : 'Request payment by UPI',
-              style: NgFonts.geist(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: ng.acc),
-            ),
-          ),
-        ],
-      ),
+            Text('Balance ${functions.inrFull(_balance)}',
+                style: NgFonts.geist(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: ng.acc)),
+          ],
+        ),
+        const SizedBox(height: 18),
+        const NgFieldLabel('Amount received'),
+        NgInput(
+          controller: _amountCtrl,
+          keyboardType: TextInputType.number,
+          hint: '₹ 0',
+          mono: true,
+        ),
+        const SizedBox(height: 18),
+        const NgFieldLabel('Paid by'),
+        Row(
+          children: [
+            _modeChip(ng, 'cash', 'Cash', Icons.payments_outlined),
+            const SizedBox(width: 8),
+            _modeChip(ng, 'upi', 'UPI', Icons.qr_code_2_rounded),
+            const SizedBox(width: 8),
+            _modeChip(ng, 'bank', 'Bank', Icons.account_balance_outlined),
+          ],
+        ),
+        const SizedBox(height: 18),
+        NgInput(controller: _noteCtrl, hint: 'Note (optional)'),
+        const SizedBox(height: 18),
+        NgPrimaryButton(
+          icon: Icons.check_circle_rounded,
+          label: _saving ? 'Saving…' : 'Record payment',
+          onPressed: _saving ? null : _save,
+        ),
+        // Item 19 Phase 1. Sits UNDER Record Payment deliberately:
+        // recording money already received is the more common action
+        // and stays the primary one. Asking for money is secondary.
+        const SizedBox(height: 8),
+        NgSecondaryButton(
+          icon: Icons.qr_code_2_rounded,
+          iconColor: ng.acc,
+          label: _requesting ? 'Preparing…' : 'Request payment by UPI',
+          height: 46,
+          onPressed: _requesting ? null : _requestByUpi,
+        ),
+      ],
     );
   }
 }
