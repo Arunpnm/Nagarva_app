@@ -6,7 +6,6 @@ import '/config/app_config.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/staff_pay_types.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/permissions.dart';
 import 'package:flutter/material.dart';
@@ -424,28 +423,28 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
   }
 
   InputDecoration _dec(BuildContext context, String label, {String? hint}) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: NgFonts.geist(color: theme.secondaryText, fontSize: 13),
+      labelStyle: NgFonts.geist(color: ng.mute, fontSize: 13),
       hintStyle: NgFonts.geist(
-          color: theme.secondaryText.withOpacity(0.6), fontSize: 13),
+          color: ng.mute.withOpacity(0.6), fontSize: 13),
       filled: true,
-      fillColor: theme.primaryBackground,
+      fillColor: ng.bg,
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: theme.secondaryText.withOpacity(0.2)),
+        borderSide: BorderSide(color: ng.mute.withOpacity(0.2)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: theme.secondaryText.withOpacity(0.2)),
+        borderSide: BorderSide(color: ng.mute.withOpacity(0.2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: theme.primary, width: 1.5),
+        borderSide: BorderSide(color: ng.acc, width: 1.5),
       ),
     );
   }
@@ -470,7 +469,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
   }
 
   Widget _permissionMatrix(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     const labelColWidth = 128.0;
     const checkColWidth = 46.0;
     // Users Kickoff Step 3.2: "Owner role cannot have permissions edited
@@ -482,9 +481,9 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.primaryBackground,
+        color: ng.bg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.secondaryText.withOpacity(0.15)),
+        border: Border.all(color: ng.mute.withOpacity(0.15)),
       ),
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 10),
       child: Column(
@@ -496,7 +495,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
               Text(
                 'Module Access',
                 style: NgFonts.geist(
-                  color: theme.primaryText,
+                  color: ng.text,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                 ),
@@ -510,7 +509,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   child: Text(
                     'Reset to role defaults',
                     style:
-                        NgFonts.geist(color: theme.primary, fontSize: 12),
+                        NgFonts.geist(color: ng.acc, fontSize: 12),
                   ),
                 ),
             ],
@@ -521,7 +520,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
               'Owner has full access to everything. This can\'t be '
               'restricted here.',
               style: NgFonts.geist(
-                  color: theme.secondaryText,
+                  color: ng.mute,
                   fontSize: 11.5,
                   fontStyle: FontStyle.italic),
             ),
@@ -539,7 +538,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                       child: Text(
                         'PERMISSION',
                         style: NgFonts.geist(
-                            color: theme.secondaryText,
+                            color: ng.mute,
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.4),
@@ -552,7 +551,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                           kPermActionLabels[a] ?? a,
                           textAlign: TextAlign.center,
                           style: NgFonts.geist(
-                              color: theme.secondaryText,
+                              color: ng.mute,
                               fontSize: 11,
                               fontWeight: FontWeight.w600),
                         ),
@@ -561,7 +560,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                 ),
                 Divider(
                     height: 10,
-                    color: theme.secondaryText.withOpacity(0.15)),
+                    color: ng.mute.withOpacity(0.15)),
                 for (final m in kPermModules)
                   Row(
                     children: [
@@ -575,7 +574,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                                 m.label,
                                 overflow: TextOverflow.ellipsis,
                                 style: NgFonts.geist(
-                                    color: theme.primaryText,
+                                    color: ng.text,
                                     fontSize: 12.5),
                               ),
                             ),
@@ -585,7 +584,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                                 child: Text(
                                   '₹',
                                   style: NgFonts.geist(
-                                      color: theme.primary,
+                                      color: ng.acc,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700),
                                 ),
@@ -599,10 +598,10 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                           height: 32,
                           child: Checkbox(
                             value: isOwner ? true : (_perms[m.key]?[a] ?? false),
-                            activeColor: theme.primary,
+                            activeColor: ng.acc,
                             side: BorderSide(
                                 color:
-                                    theme.secondaryText.withOpacity(0.5)),
+                                    ng.mute.withOpacity(0.5)),
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                             onChanged: (_saving || isOwner)
@@ -622,7 +621,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
             'in defaults; fine-tune any box after. ₹ = money module — off '
             'for all non-admin roles unless you enable it here.',
             style:
-                NgFonts.geist(color: theme.secondaryText, fontSize: 11),
+                NgFonts.geist(color: ng.mute, fontSize: 11),
           ),
         ],
       ),
@@ -648,9 +647,9 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final textStyle =
-        NgFonts.geist(color: theme.primaryText, fontSize: 14);
+        NgFonts.geist(color: ng.text, fontSize: 14);
 
     return Padding(
       // Keep the sheet above the keyboard.
@@ -662,7 +661,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
           maxWidth: 560,
         ),
         decoration: BoxDecoration(
-          color: theme.secondaryBackground,
+          color: ng.s1,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SingleChildScrollView(
@@ -679,7 +678,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: theme.secondaryText.withOpacity(0.35),
+                      color: ng.mute.withOpacity(0.35),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -690,13 +689,13 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                     Text(
                       isEdit ? 'Edit Staff' : 'Add Staff',
                       style: NgFonts.geist(
-                        color: theme.primaryText,
+                        color: ng.text,
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, color: theme.secondaryText),
+                      icon: Icon(Icons.close, color: ng.mute),
                       onPressed:
                           _saving ? null : () => Navigator.of(context).pop(),
                     ),
@@ -732,7 +731,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                 DropdownButtonFormField<String>(
                   value: _role,
                   decoration: _dec(context, 'Role'),
-                  dropdownColor: theme.secondaryBackground,
+                  dropdownColor: ng.s1,
                   style: textStyle,
                   items: [
                     for (final r in roles)
@@ -765,7 +764,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                                 : (_branchOptions.isEmpty
                                     ? 'No branch available'
                                     : 'Select branch')),
-                        dropdownColor: theme.secondaryBackground,
+                        dropdownColor: ng.s1,
                         style: textStyle,
                         // Non-owner: exactly one option (their own
                         // branch) — restricted, not merely defaulted, so
@@ -820,7 +819,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   _payTypeHint(_payType),
                   style: NgFonts.geist(
                       fontSize: 11,
-                      color: FlutterFlowTheme.of(context).secondaryText),
+                      color: NgPalette.of(context).mute),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -849,7 +848,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   dense: true,
                   title: Text('PF applicable', style: textStyle),
                   value: _pfApplicable,
-                  activeColor: theme.primary,
+                  activeColor: ng.acc,
                   onChanged: (v) => setState(() => _pfApplicable = v),
                 ),
                 SwitchListTile(
@@ -857,7 +856,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   dense: true,
                   title: Text('ESIC applicable', style: textStyle),
                   value: _esicApplicable,
-                  activeColor: theme.primary,
+                  activeColor: ng.acc,
                   onChanged: (v) => setState(() => _esicApplicable = v),
                 ),
                 SwitchListTile(
@@ -867,10 +866,10 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   subtitle: Text(
                     'Inactive staff cannot log in with their PIN',
                     style: NgFonts.geist(
-                        color: theme.secondaryText, fontSize: 11.5),
+                        color: ng.mute, fontSize: 11.5),
                   ),
                   value: _active,
-                  activeColor: theme.primary,
+                  activeColor: ng.acc,
                   onChanged: (v) => setState(() => _active = v),
                 ),
                 if (_error != null) ...[
@@ -878,7 +877,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   Text(
                     _error!,
                     style:
-                        NgFonts.geist(color: theme.error, fontSize: 12.5),
+                        NgFonts.geist(color: ng.red, fontSize: 12.5),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -886,12 +885,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                   height: 46,
                   child: ElevatedButton(
                     onPressed: _saving ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
+                    
                     child: _saving
                         ? const SizedBox(
                             width: 20,
@@ -922,12 +916,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
                       onPressed: _saving ? null : _generateInvite,
                       icon: const Icon(Icons.qr_code_2, size: 19),
                       label: const Text('Generate device invite'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: theme.primary,
-                        side: BorderSide(color: theme.primary),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                      ),
+                      
                     ),
                   ),
                 ],

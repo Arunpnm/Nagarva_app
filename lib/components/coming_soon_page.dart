@@ -1,7 +1,6 @@
 import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Shared placeholder for nav destinations that don't have a real screen
@@ -21,9 +20,9 @@ class ComingSoonPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: NgSimpleBar(title: title),
       body: Center(
         child: Padding(
@@ -32,7 +31,7 @@ class ComingSoonPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.hourglass_top_outlined,
-                  size: 44, color: theme.secondaryText),
+                  size: 44, color: ng.mute),
               const SizedBox(height: 14),
               Text(
                 '$title is coming soon',
@@ -40,7 +39,7 @@ class ComingSoonPage extends StatelessWidget {
                 style: NgFonts.geist(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: theme.primaryText,
+                  color: ng.text,
                 ),
               ),
               if (note != null) ...[
@@ -49,7 +48,7 @@ class ComingSoonPage extends StatelessWidget {
                   note!,
                   textAlign: TextAlign.center,
                   style: NgFonts.geist(
-                      fontSize: 13, color: theme.secondaryText, height: 1.4),
+                      fontSize: 13, color: ng.mute, height: 1.4),
                 ),
               ],
             ],

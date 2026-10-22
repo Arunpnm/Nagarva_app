@@ -11,7 +11,6 @@ import '/backend/order_stages.dart';
 import '/components/dashboard_kpi_grid.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -305,17 +304,17 @@ class _HomePageWidgetState extends State<HomePageWidget>
     required String actionLabel,
     required VoidCallback onAction,
   }) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 32, color: theme.secondaryText),
+          Icon(icon, size: 32, color: ng.mute),
           const SizedBox(height: 10),
           Text(
             message,
-            style: NgFonts.geist(color: theme.secondaryText, fontSize: 13),
+            style: NgFonts.geist(color: ng.mute, fontSize: 13),
           ),
           const SizedBox(height: 10),
           TextButton(
@@ -323,7 +322,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
             child: Text(
               actionLabel,
               style: NgFonts.geist(
-                color: theme.primary,
+                color: ng.acc,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),

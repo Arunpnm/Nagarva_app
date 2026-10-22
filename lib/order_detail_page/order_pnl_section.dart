@@ -5,7 +5,7 @@ import '/backend/field_expenses.dart';
 import '/backend/storage_billing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Order P&L card — Order Details Session 1, item 1.
@@ -324,7 +324,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   }
 
   Widget _row(
-    FlutterFlowTheme theme, {
+    NgPalette ng, {
     required String label,
     required double? amount,
     bool negative = false,
@@ -342,22 +342,25 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
     final display = (amount == null || isEmptyCost)
         ? '—'
         : (negative ? '- ${_rupees(amount)}' : _rupees(amount));
-    final resolvedColor = isEmptyCost ? theme.secondaryText : color;
+    final resolvedColor = isEmptyCost ? ng.mute : color;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: NgFonts.geist(
-                  fontSize: large ? 14 : 12.5,
-                  fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                  color: theme.secondaryText)),
+          Flexible(
+            child: Text(label,
+                style: NgFonts.geist(
+                    fontSize: large ? 15 : 13.5,
+                    fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
+                    color: bold ? ng.text : ng.mute)),
+          ),
+          const SizedBox(width: 12),
           Text(display,
-              style: NgFonts.geist(
-                  fontSize: large ? 17 : 13,
-                  fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                  color: resolvedColor ?? theme.primaryText)),
+              style: NgFonts.mono(
+                  fontSize: large ? 18 : 13.5,
+                  fontWeight: bold ? FontWeight.w600 : FontWeight.w500,
+                  color: resolvedColor ?? ng.text)),
         ],
       ),
     );
@@ -365,17 +368,12 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     if (_loading) {
-      return Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(top: 14),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Center(
+      return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: const Center(
             child: SizedBox(
                 height: 20,
                 width: 20,
@@ -391,58 +389,71 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
     final margin = _marginPct;
     final Color dot;
     if (margin == null) {
-      dot = theme.secondaryText;
+      dot = ng.mute;
     } else if (margin >= 25) {
-      dot = theme.success;
+      dot = ng.green;
     } else if (margin >= 10) {
       dot = NgPalette.of(context).amber;
     } else {
-      dot = theme.error;
+      dot = ng.red;
     }
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 14),
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Text('Profit & Loss',
+              Icon(Icons.insights_rounded, size: 18, color: ng.mute),
+              const SizedBox(width: 8),
+              Text('Profit & loss',
                   style: NgFonts.geist(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: theme.primaryText)),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: ng.text)),
               if ((_status ?? '').toLowerCase() == 'closed') ...[
                 const SizedBox(width: 6),
-                Icon(Icons.lock, size: 13, color: theme.secondaryText),
+                Icon(Icons.lock_outline_rounded, size: 14, color: ng.mute),
               ],
               const Spacer(),
               Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+                height: 22,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: dot.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration:
+                        BoxDecoration(color: dot, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                      margin == null
+                          ? 'Margin --'
+                          : 'Margin ${margin.toStringAsFixed(0)}%',
+                      style: NgFonts.geist(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: dot)),
+                ]),
               ),
-              const SizedBox(width: 5),
-              Text(margin == null ? '--' : '${margin.toStringAsFixed(0)}%',
-                  style: NgFonts.geist(
-                      fontSize: 12, fontWeight: FontWeight.w700, color: dot)),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           // Stays honest at ₹0 when the order never came from a quote,
           // rather than quietly relabelling `amount` as a quote.
-          _row(theme, label: 'Quote Amount', amount: _quoteTotal),
+          _row(ng, label: 'Quote Amount', amount: _quoteTotal),
           // Shown only when falling back, so the column still visibly adds
           // up to Revenue (Final) instead of a non-zero total appearing
           // under a ₹0 line and reading like an arithmetic bug.
           if (_quoteTotal == 0 && _amount != 0)
-            _row(theme, label: 'Order Amount', amount: _amount),
+            _row(ng, label: 'Order Amount', amount: _amount),
           // GST is shown being REMOVED, rather than silently absent from
           // the total. Without this line the card printed
           // "Quote Amount 35,990" and "Revenue (Final) 37,640" with a
@@ -452,30 +463,30 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           // fallback row directly above: the column has to visibly add
           // up, or the vendor cannot check it.
           if (_quoteGstAmount > 0)
-            _row(theme,
+            _row(ng,
                 label: 'Less GST (collected for govt)',
                 amount: -_quoteGstAmount),
           if (_addonsCount > 0)
-            _row(theme, label: 'Add-ons ($_addonsCount)', amount: _addonsTotal),
+            _row(ng, label: 'Add-ons ($_addonsCount)', amount: _addonsTotal),
           // Storage rent is revenue, and it is shown as its own line so a
           // vendor can see what the godown earned on this job rather than
           // finding it folded anonymously into the total. Labelled as an
           // accrual while the goods are still in store, because that
           // figure will keep growing.
           if (_storageIncome > 0)
-            _row(theme,
+            _row(ng,
                 label: _storageOpen
                     ? 'Storage (accruing)'
                     : 'Storage',
                 amount: _storageIncome),
-          const Divider(height: 16),
-          _row(theme,
+          Divider(height: 18, color: ng.w06),
+          _row(ng,
               label: 'Revenue (Final)',
               amount: _revenueFinal,
               bold: true,
-              color: theme.success),
+              color: ng.green),
           const SizedBox(height: 6),
-          _row(theme,
+          _row(ng,
               label: 'Staff Salary ($_staffCount staff)',
               // No count-based null check needed — _row already renders
               // "—" for a negative row at exactly ₹0. The old
@@ -485,50 +496,50 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
               // zero *salary*.
               amount: _salaryTotal,
               negative: true,
-              color: theme.error),
-          _row(theme,
+              color: ng.red),
+          _row(ng,
               label: 'Order Expenses ($_expensesCount items)',
               // Previous condition compared _salaryTotal to _expensesTotal
               // — two unrelated totals — which is almost certainly a
               // copy-paste leftover, not intentional logic; removed.
               amount: _expensesTotal,
               negative: true,
-              color: theme.error),
+              color: ng.red),
           if (_vendorCount > 0)
-            _row(theme,
+            _row(ng,
                 label: 'Vendor Cost ($_vendorCount)',
                 amount: _vendorCostTotal,
                 negative: true,
-                color: theme.error),
+                color: ng.red),
           if (_materialsCount > 0)
-            _row(theme,
+            _row(ng,
                 label: 'Materials ($_materialsCount)',
                 amount: _materialsTotal,
                 negative: true,
-                color: theme.error),
+                color: ng.red),
           if (_commissionState == CommissionState.priced)
-            _row(theme,
+            _row(ng,
                 label: 'Commission '
                     '(${_commissionPct!.toStringAsFixed(_commissionPct! % 1 == 0 ? 0 : 2)}%)',
                 amount: _commission,
                 negative: true,
-                color: theme.error),
+                color: ng.red),
           // An unpriced commission is stated, not rendered as "—". A dash
           // in a cost column reads as "nothing to pay"; this order has a
           // cost nobody has quantified yet, which is a different fact and
           // the only one that prompts anybody to fix it.
           if (_commissionState == CommissionState.unpriced)
-            _unpricedCommissionRow(theme),
-          const Divider(height: 16),
+            _unpricedCommissionRow(ng),
+          Divider(height: 18, color: ng.w06),
           if (_netProfit == null)
-            _unavailableNetProfitRow(theme)
+            _unavailableNetProfitRow(ng)
           else
-            _row(theme,
+            _row(ng,
                 label: 'Net Profit',
                 amount: _netProfit,
                 bold: true,
                 large: true,
-                color: _netProfit! >= 0 ? theme.success : theme.error),
+                color: _netProfit! >= 0 ? ng.green : ng.red),
         ],
       ),
     );
@@ -537,7 +548,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   /// Commission is owed on this order but has no rate. Tappable, because
   /// an empty state that offers the action fixing it beats one that only
   /// reports emptiness (same shape as the dashboard's Expenses tile).
-  Widget _unpricedCommissionRow(FlutterFlowTheme theme) {
+  Widget _unpricedCommissionRow(NgPalette ng) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -552,10 +563,10 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
                     style: NgFonts.geist(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
-                        color: theme.secondaryText)),
+                        color: ng.mute)),
                 Text(kCommissionUnpricedBody,
                     style: NgFonts.geist(
-                        fontSize: 11, color: theme.warning)),
+                        fontSize: 11, color: ng.amber)),
               ],
             ),
           ),
@@ -563,8 +574,8 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           Text(kCommissionUnpricedLabel,
               style: NgFonts.geist(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: theme.warning)),
+                  fontWeight: FontWeight.w600,
+                  color: ng.amber)),
         ],
       ),
     );
@@ -572,7 +583,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
 
   /// Net profit cannot be stated while a cost is unknown. Showing the
   /// figure minus nothing would overstate it by the entire commission.
-  Widget _unavailableNetProfitRow(FlutterFlowTheme theme) {
+  Widget _unavailableNetProfitRow(NgPalette ng) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -585,11 +596,11 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
                 Text('Net Profit',
                     style: NgFonts.geist(
                         fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: theme.secondaryText)),
+                        fontWeight: FontWeight.w600,
+                        color: ng.mute)),
                 Text('Set the commission % to see profit',
                     style: NgFonts.geist(
-                        fontSize: 11, color: theme.secondaryText)),
+                        fontSize: 11, color: ng.mute)),
               ],
             ),
           ),
@@ -597,8 +608,8 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           Text('Unavailable',
               style: NgFonts.geist(
                   fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: theme.warning)),
+                  fontWeight: FontWeight.w600,
+                  color: ng.amber)),
         ],
       ),
     );

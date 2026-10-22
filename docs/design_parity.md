@@ -134,3 +134,19 @@ Design screens are rendered from the handoff in Chromium (fonts and icons
 served locally). App screens are rendered from the Flutter web build with
 Supabase calls answered by fixture data shaped like the design's sample data,
 so each pair can be compared side by side.
+
+## 22 Oct 2026 — screens that were still on the old UI
+Why they looked old: earlier redesign passes swapped the top bar and
+recoloured, but left each screen's body (FlutterFlow text styles, cards with
+shadows, FFButtonWidget, per-call button overrides) untouched.
+
+Rebuilt to the handoff layout: all supervisor screens (My Jobs, field job,
+My Team, Earnings, Attendance, Job Entry), Crew sheet, Survey quote builder,
+every Order Details section, Customer/Vendor/Trip/Rate-card detail,
+pre-login screens (login, org binding, set password, signup — now follow the
+light theme by default), Quick entry. Every other screen and sheet had its
+old text styles, colours, shadows and button overrides moved onto the design
+palette (`NgPalette`, `NgFonts`, `ng_widgets.dart`). No `FFButtonWidget`
+remains outside `lib/flutter_flow/`.
+
+Not checked on a device; behaviour and queries were not changed.

@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '/backend/pricing_defaults.dart';
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// One line the customer selected on the public survey page.
@@ -115,7 +114,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final lines = parseSurveyRooms(widget.survey.rooms);
     final totalCft = surveyTotalCft(lines);
     final grouped = groupSurveyLines(lines);
@@ -130,16 +129,16 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.tertiary.withValues(alpha: 0.45)),
+        border: Border.all(color: ng.blue.withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.assignment_turned_in, size: 18, color: theme.tertiary),
+              Icon(Icons.assignment_turned_in, size: 18, color: ng.blue),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -148,7 +147,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                     fontWeight: FontWeight.w700,
                     fontSize: 12.5,
                     letterSpacing: 0.4,
-                    color: theme.primaryText,
+                    color: ng.text,
                   ),
                 ),
               ),
@@ -157,7 +156,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                   DateFormat('d MMM, h:mm a')
                       .format(widget.survey.submittedAt!.toLocal()),
                   style: NgFonts.geist(
-                      fontSize: 11, color: theme.secondaryText),
+                      fontSize: 11, color: ng.mute),
                 ),
             ],
           ),
@@ -171,7 +170,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                 fontSize: 12.5,
                 height: 1.4,
                 fontStyle: FontStyle.italic,
-                color: theme.secondaryText,
+                color: ng.mute,
               ),
             )
           else ...[
@@ -180,7 +179,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.primary.withValues(alpha: 0.10),
+                color: ng.acc.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -192,7 +191,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                     style: NgFonts.geist(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
-                      color: theme.primaryText,
+                      color: ng.text,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -202,7 +201,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                         : 'Suggested: ${pkg.type} · ${pkg.crew} crew · '
                             '${pkg.vehicle}',
                     style: NgFonts.geist(
-                        fontSize: 12.5, color: theme.secondaryText),
+                        fontSize: 12.5, color: ng.mute),
                   ),
                 ],
               ),
@@ -216,14 +215,14 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                 child: Row(
                   children: [
                     Icon(_expanded ? Icons.expand_less : Icons.expand_more,
-                        size: 18, color: theme.primary),
+                        size: 18, color: ng.acc),
                     const SizedBox(width: 4),
                     Text(
                       _expanded ? 'Hide items' : 'Show items',
                       style: NgFonts.geist(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
-                          color: theme.primary),
+                          color: ng.acc),
                     ),
                   ],
                 ),
@@ -242,7 +241,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                           style: NgFonts.geist(
                             fontWeight: FontWeight.w700,
                             fontSize: 12.5,
-                            color: theme.primary,
+                            color: ng.acc,
                           ),
                         ),
                       ),
@@ -251,12 +250,12 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
                         style: NgFonts.geist(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
-                            color: theme.secondaryText),
+                            color: ng.mute),
                       ),
                     ],
                   ),
                 ),
-                for (final l in entry.value) _line(theme, l),
+                for (final l in entry.value) _line(ng, l),
               ],
           ],
 
@@ -267,13 +266,13 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
               style: NgFonts.geist(
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
-                  color: theme.primaryText),
+                  color: ng.text),
             ),
             const SizedBox(height: 4),
             Text(
               instructions,
               style: NgFonts.geist(
-                  fontSize: 13, height: 1.4, color: theme.primaryText),
+                  fontSize: 13, height: 1.4, color: ng.text),
             ),
           ],
 
@@ -294,7 +293,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
     );
   }
 
-  Widget _line(FlutterFlowTheme theme, SurveyLine l) {
+  Widget _line(NgPalette ng, SurveyLine l) {
     final name = [
       l.item,
       if (l.sub.isNotEmpty && l.sub != 'Qty') l.sub,
@@ -308,7 +307,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
             child: Text(
               '$name${l.qty > 1 ? '  ×${l.qty}' : ''}',
               style: NgFonts.geist(
-                  fontSize: 12.5, color: theme.primaryText),
+                  fontSize: 12.5, color: ng.text),
             ),
           ),
           const SizedBox(width: 8),
@@ -317,7 +316,7 @@ class _SurveyResponseSectionState extends State<SurveyResponseSection> {
             style: NgFonts.geist(
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
-              color: l.cft <= 0 ? theme.warning : theme.secondaryText,
+              color: l.cft <= 0 ? ng.amber : ng.mute,
             ),
           ),
         ],

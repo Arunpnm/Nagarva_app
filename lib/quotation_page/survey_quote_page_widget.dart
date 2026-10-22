@@ -7,12 +7,12 @@ import '/components/survey_response_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/edge_function_errors.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 // Item 12B-b: the package card links to Settings -> Survey & Pricing when
 // the slab table can't resolve a suggestion.
 import '/index.dart';
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '/config/app_config.dart';
@@ -875,14 +875,14 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: NgSimpleBar(title: _isEditing ? 'Revise Quotation' : 'Survey & Quote', close: true),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -893,73 +893,88 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.error.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                        color: ng.redBg,
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.error_outline,
-                              size: 18, color: theme.error),
+                          Icon(Icons.error_outline_rounded,
+                              size: 18, color: ng.red),
                           const SizedBox(width: 8),
                           Expanded(
                               child: Text(_loadFailed!,
-                                  style: TextStyle(color: theme.error))),
+                                  style: NgFonts.geist(
+                                      fontSize: 13, color: ng.red))),
                         ],
                       ),
                     ),
                     const SizedBox(height: 14),
                   ],
-                  _customerCard(theme),
+                  _customerCard(ng),
                   const SizedBox(height: 14),
-                  _packageCard(theme),
-                  const SizedBox(height: 14),
-                  _itemSearchBar(theme),
+                  _packageCard(ng),
+                  const SizedBox(height: 18),
+                  NgGroupTitle('Items',
+                      actionLabel: 'Custom item',
+                      onAction: () => _addCustomItem()),
+                  _itemSearchBar(ng),
                   const SizedBox(height: 10),
-                  _customItemsSection(theme),
+                  _customItemsSection(ng),
                   // Item 12A: the picker shows active items only. Items
                   // already on this quote resolve through `surveyCats`
                   // (unfiltered) elsewhere, so hiding one never breaks a
                   // quote in progress.
                   ..._config!.activeSurveyCats.entries
-                      .map((e) => _categorySection(theme, e.key, e.value)),
+                      .map((e) => _categorySection(ng, e.key, e.value)),
                   if (_search.isNotEmpty && !_anySearchMatch())
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      child: Column(
-                        children: [
-                          Text('No items match "$_search"',
-                              style: NgFonts.geist(
-                                  fontSize: 13.5,
-                                  color: theme.secondaryText)),
-                          const SizedBox(height: 8),
-                          TextButton.icon(
-                            onPressed: () => _addCustomItem(preset: _search),
-                            icon: const Icon(Icons.add, size: 18),
-                            label: Text('Add "$_search" as a custom item'),
-                          ),
-                        ],
-                      ),
+                    NgEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'No items match "$_search"',
+                      action: NgLinkButton('Add "$_search" as a custom item',
+                          icon: Icons.add_rounded,
+                          onTap: () => _addCustomItem(preset: _search)),
                     ),
                   const SizedBox(height: 14),
-                  _chargesCard(theme),
+                  _chargesCard(ng),
                   const SizedBox(height: 14),
-                  _gstCard(theme),
+                  _gstCard(ng),
                   const SizedBox(height: 14),
-                  _summaryCard(theme),
-                  const SizedBox(height: 20),
+                  _summaryCard(ng),
+                ],
+              ),
+            ),
+      bottomNavigationBar: _loading
+          ? null
+          : NgBottomActionBar(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$_totalItems items · $_totalCft CFT',
+                            style:
+                                NgFonts.geist(fontSize: 12, color: ng.mute)),
+                        Text(functions.inrFull(_total.toDouble()),
+                            style: NgFonts.mono(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w600,
+                                color: ng.text)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
+                    width: 170,
+                    child: NgPrimaryButton(
+                      icon: Icons.check_rounded,
+                      label: _saving
+                          ? 'Saving…'
+                          : _isEditing
+                              ? 'Save revision'
+                              : 'Save quote',
                       onPressed: _saving ? null : _save,
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.primary,
-                          foregroundColor: Colors.white),
-                      child:
-                          Text(_saving
-                              ? 'Saving...'
-                              : _isEditing
-                                  ? 'Save Revision'
-                                  : 'Save Quotation'),
                     ),
                   ),
                 ],
@@ -968,28 +983,25 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     );
   }
 
-  Widget _card(FlutterFlowTheme theme, String title, Widget child) => Container(
-        decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.all(14),
+  Widget _card(NgPalette ng, String title, Widget child) => NgCard(
+        radius: 20,
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(title,
                 style: NgFonts.geist(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: theme.primary)),
-            const SizedBox(height: 10),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: ng.text)),
+            const SizedBox(height: 12),
             child,
           ],
         ),
       );
 
-  Widget _customerCard(FlutterFlowTheme theme) => _card(
-        theme,
+  Widget _customerCard(NgPalette ng) => _card(
+        ng,
         'Customer',
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1007,86 +1019,88 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             // lead, which is where the fields came from.
             if (_isEditing)
               Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  'Customer details are fixed while revising — change them '
-                  'on the lead.',
-                  style: TextStyle(fontSize: 11.5, color: theme.secondaryText),
-                ),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(children: [
+                  Icon(Icons.lock_outline_rounded, size: 15, color: ng.mute),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Customer details are fixed while revising — change '
+                      'them on the lead.',
+                      style: NgFonts.geist(fontSize: 12.5, color: ng.mute),
+                    ),
+                  ),
+                ]),
               ),
-            TextField(
+            NgInput(
                 controller: _customer,
                 readOnly: _isEditing,
-                decoration: const InputDecoration(labelText: 'Customer name')),
+                label: 'Customer name'),
             const SizedBox(height: 10),
-            TextField(
+            NgInput(
                 controller: _phone,
                 readOnly: _isEditing,
-                decoration: const InputDecoration(labelText: 'Phone')),
+                label: 'Phone',
+                keyboardType: TextInputType.phone,
+                mono: true),
             const SizedBox(height: 10),
-            TextField(
+            NgInput(
                 controller: _fromAddr,
                 readOnly: _isEditing,
-                decoration:
-                    const InputDecoration(labelText: 'From city/address')),
+                label: 'From city / address',
+                icon: Icons.trip_origin_rounded),
             const SizedBox(height: 10),
-            TextField(
+            NgInput(
                 controller: _toAddr,
                 readOnly: _isEditing,
-                decoration:
-                    const InputDecoration(labelText: 'To city/address')),
+                label: 'To city / address',
+                icon: Icons.place_outlined),
           ],
         ),
       );
 
-  Widget _packageCard(FlutterFlowTheme theme) {
+  Widget _packageCard(NgPalette ng) {
     final s = _suggestion;
     final isError = s.isConfigError;
     // A broken slab table is a configuration fault, not a quoting problem —
     // it gets the error treatment and a route to the fix, but never blocks
     // the quote (the surveyor still knows what truck they need; the app
     // just can't tell them).
-    final accent = isError ? theme.error : theme.primary;
+    final accent = isError ? ng.red : ng.acc;
 
     return Container(
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accent.withValues(alpha: 0.4)),
+        color: isError ? ng.redBg : ng.status(NgStatus.accent).bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
       ),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               if (isError) ...[
-                Icon(Icons.warning_amber_rounded, size: 18, color: theme.error),
+                Icon(Icons.warning_amber_rounded, size: 18, color: ng.red),
                 const SizedBox(width: 6),
               ],
               Expanded(
                 child: Text('$_totalItems items · $_totalCft CFT',
                     style: NgFonts.geist(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: theme.primaryText)),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: ng.text)),
               ),
               if (!isError && !s.empty)
-                TextButton.icon(
-                  onPressed: _editSuggestion,
-                  icon: const Icon(Icons.edit, size: 15),
-                  label: Text(_hasOverride ? 'Change' : 'Override'),
-                  style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 32),
-                      padding: const EdgeInsets.symmetric(horizontal: 8)),
-                ),
+                NgLinkButton(_hasOverride ? 'Change' : 'Override',
+                    icon: Icons.edit_rounded, onTap: _editSuggestion),
             ],
           ),
           const SizedBox(height: 4),
           if (s.empty)
             Text('Add items to see a suggested package',
                 style: NgFonts.geist(
-                    fontSize: 12.5, color: theme.secondaryText))
+                    fontSize: 12.5, color: ng.mute))
           else if (isError) ...[
             Text(
               '$_totalCft CFT falls in the slab named '
@@ -1094,27 +1108,18 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               'defined for it. This quote can still be saved — it just '
               'won\'t carry a suggestion.',
               style: NgFonts.geist(
-                  fontSize: 12.5, height: 1.35, color: theme.primaryText),
+                  fontSize: 12.5, height: 1.35, color: ng.text),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: [
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      context.pushNamed(SurveyPricingPage.routeName),
-                  icon: const Icon(Icons.settings, size: 15),
-                  label: const Text('Fix in Settings'),
-                  style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 34),
-                      foregroundColor: theme.error),
-                ),
-                TextButton.icon(
-                  onPressed: _editSuggestion,
-                  icon: const Icon(Icons.edit, size: 15),
-                  label: const Text('Set manually'),
-                  style: TextButton.styleFrom(minimumSize: const Size(0, 34)),
-                ),
+                NgLinkButton('Fix in Settings',
+                    icon: Icons.settings_outlined,
+                    onTap: () =>
+                        context.pushNamed(SurveyPricingPage.routeName)),
+                NgLinkButton('Set manually',
+                    icon: Icons.edit_rounded, onTap: _editSuggestion),
               ],
             ),
           ] else ...[
@@ -1122,7 +1127,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               'Suggested: ${s.info!.type} · ${s.info!.crew} crew · ${s.info!.vehicle}',
               style: NgFonts.geist(
                   fontSize: 12.5,
-                  color: theme.secondaryText,
+                  color: ng.mute,
                   decoration:
                       _hasOverride ? TextDecoration.lineThrough : null),
             ),
@@ -1131,7 +1136,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.check_circle, size: 14, color: theme.primary),
+                Icon(Icons.check_circle, size: 14, color: ng.acc),
                 const SizedBox(width: 5),
                 Expanded(
                   child: Text(
@@ -1141,20 +1146,15 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                     style: NgFonts.geist(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
-                        color: theme.primaryText),
+                        color: ng.text),
                   ),
                 ),
-                TextButton(
-                  onPressed: () => setState(() {
-                    _chosenPackage = null;
-                    _chosenVehicle = null;
-                    _chosenCrew = null;
-                  }),
-                  style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 30),
-                      padding: const EdgeInsets.symmetric(horizontal: 8)),
-                  child: const Text('Reset'),
-                ),
+                NgLinkButton('Reset',
+                    onTap: () => setState(() {
+                          _chosenPackage = null;
+                          _chosenVehicle = null;
+                          _chosenCrew = null;
+                        })),
               ],
             ),
           ],
@@ -1228,46 +1228,27 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     });
   }
 
-  Widget _itemSearchBar(FlutterFlowTheme theme) {
+  Widget _itemSearchBar(NgPalette ng) {
     return Row(
       children: [
         Expanded(
-          child: TextField(
+          child: NgSearchField(
             controller: _itemSearch,
+            hint: 'Search items…',
             onChanged: (v) => setState(() => _search = v.trim()),
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: 'Search items…',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              suffixIcon: _search.isEmpty
-                  ? null
-                  : IconButton(
-                      icon: const Icon(Icons.close, size: 18),
-                      onPressed: () {
-                        _itemSearch.clear();
-                        setState(() => _search = '');
-                      },
-                    ),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
           ),
         ),
-        const SizedBox(width: 8),
-        SizedBox(
-          height: 48,
-          child: OutlinedButton.icon(
-            onPressed: () => _addCustomItem(),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Custom'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: theme.primary,
-              side: BorderSide(color: theme.primary),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
+        if (_search.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          NgHeaderButtonBox(
+            icon: Icons.close_rounded,
+            tooltip: 'Clear search',
+            onTap: () {
+              _itemSearch.clear();
+              setState(() => _search = '');
+            },
           ),
-        ),
+        ],
       ],
     );
   }
@@ -1286,55 +1267,50 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     return false;
   }
 
-  Widget _customItemsSection(FlutterFlowTheme theme) {
+  Widget _customItemsSection(NgPalette ng) {
     final visible = _customItems
         .where((c) => _matchesSearch(_kCustomCat, c.name, 'Qty'))
         .toList();
     if (visible.isEmpty) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.fromLTRB(0, 6, 0, 10),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(_kCustomCat,
-                style: NgFonts.geist(
-                    fontWeight: FontWeight.w700, color: theme.primaryText)),
-          ),
-          for (final c in visible)
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: NgCard(
+        radius: 20,
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: _customItemRow(theme, c),
+              padding: const EdgeInsets.fromLTRB(2, 0, 2, 10),
+              child: Text(_kCustomCat,
+                  style: NgFonts.geist(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: ng.text)),
             ),
-        ],
+            for (final c in visible) _customItemRow(ng, c),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _customItemRow(FlutterFlowTheme theme, ({String name, num cft}) c) {
+  Widget _customItemRow(NgPalette ng, ({String name, num cft}) c) {
     final key = '$_kCustomCat|${c.name}|Qty';
     final qty = _qtyOf(key);
     final zeroCft = c.cft <= 0;
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
       decoration: BoxDecoration(
-        color: qty > 0
-            ? theme.primary.withValues(alpha: 0.12)
-            : theme.primaryBackground,
-        borderRadius: BorderRadius.circular(10),
+        color: qty > 0 ? ng.status(NgStatus.accent).bg : ng.inset,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
             color: zeroCft && qty > 0
-                ? theme.warning
+                ? ng.amber
                 : qty > 0
-                    ? theme.primary
-                    : theme.secondaryText.withValues(alpha: 0.3)),
+                    ? ng.acc.withValues(alpha: 0.6)
+                    : ng.w06),
       ),
       child: Row(
         children: [
@@ -1342,11 +1318,16 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             child: Row(
               children: [
                 Flexible(
-                  child: Text('${c.name} (${c.cft} cft)',
+                  child: Text.rich(
+                      TextSpan(children: [
+                        TextSpan(text: c.name),
+                        TextSpan(
+                            text: '  ${c.cft} CFT',
+                            style: NgFonts.mono(fontSize: 12, color: ng.mute)),
+                      ]),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: NgFonts.geist(
-                          fontSize: 12.5, color: theme.primaryText)),
+                      style: NgFonts.geist(fontSize: 13.5, color: ng.text)),
                 ),
                 // Make a 0-CFT line obvious at the point of entry, not
                 // only at save time.
@@ -1355,7 +1336,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   Tooltip(
                     message: 'No CFT — will not count towards the package',
                     child: Icon(Icons.warning_amber_rounded,
-                        size: 16, color: theme.warning),
+                        size: 16, color: ng.amber),
                   ),
                 ],
               ],
@@ -1367,7 +1348,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             child: IconButton(
               padding: EdgeInsets.zero,
               tooltip: 'Remove custom item',
-              icon: Icon(Icons.delete_outline, size: 18, color: theme.error),
+              icon: Icon(Icons.delete_outline, size: 18, color: ng.red),
               onPressed: () => setState(() {
                 _customItems.removeWhere((x) => x.name == c.name);
                 _lines.remove(key);
@@ -1375,7 +1356,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             ),
           ),
           _stepper(
-            theme,
+            ng,
             qty: qty,
             onMinus: qty > 0
                 ? () => _bump(key,
@@ -1472,20 +1453,35 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   }
 
   Widget _categorySection(
-      FlutterFlowTheme theme, String cat, List<SurveyItem> items) {
+      NgPalette ng, String cat, List<SurveyItem> items) {
     // Hide a whole category when nothing in it matches the search.
     final visibleItems =
         items.where((i) => _visibleSubs(i).isNotEmpty).toList();
     if (visibleItems.isEmpty) return const SizedBox.shrink();
+    final picked = _lines.entries
+        .where((e) => e.value.cat == cat && e.value.qty > 0)
+        .fold<int>(0, (s, e) => s + e.value.qty);
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: theme.secondaryBackground,
-          borderRadius: BorderRadius.circular(12),
+          color: ng.s1,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: ng.w06),
         ),
         child: ExpansionTile(
+          tilePadding: const EdgeInsets.fromLTRB(16, 2, 12, 2),
+          iconColor: ng.mute,
+          collapsedIconColor: ng.mute,
+          trailing: picked > 0
+              ? Row(mainAxisSize: MainAxisSize.min, children: [
+                  NgPill('$picked', status: NgStatus.accent),
+                  const SizedBox(width: 4),
+                  Icon(Icons.expand_more_rounded, color: ng.mute),
+                ])
+              : null,
           // Auto-expand while searching so matches are visible without
           // having to open each category by hand. The ValueKey forces
           // ExpansionTile to rebuild its state when the search toggles,
@@ -1494,9 +1490,9 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           initiallyExpanded: _search.isNotEmpty,
           title: Text(cat,
               style: NgFonts.geist(
-                  fontWeight: FontWeight.w700, color: theme.primaryText)),
+                  fontSize: 15, fontWeight: FontWeight.w600, color: ng.text)),
           children: [
-            for (final item in visibleItems) _itemRow(theme, cat, item),
+            for (final item in visibleItems) _itemRow(ng, cat, item),
             const SizedBox(height: 6),
           ],
         ),
@@ -1504,7 +1500,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     );
   }
 
-  Widget _itemRow(FlutterFlowTheme theme, String cat, SurveyItem item) {
+  Widget _itemRow(NgPalette ng, String cat, SurveyItem item) {
     // When a search is active, show only the variants that match, so the
     // list collapses to just the relevant lines.
     final subs = _visibleSubs(item);
@@ -1517,8 +1513,8 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           Text(item.name,
               style: NgFonts.geist(
                   fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: theme.primaryText)),
+                  fontSize: 13.5,
+                  color: ng.soft)),
           const SizedBox(height: 6),
           // Was a `Wrap` of intrinsic-width pills. Because each pill sized
           // itself to its own label ("Top Load (15 cft)" vs "Small (5
@@ -1527,7 +1523,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           // phone. Now every variant is a full-width row: label flexes on
           // the left, the stepper is a fixed-width cluster pinned right,
           // so all the controls line up in one column.
-          for (final sub in subs) _variantRow(theme, cat, item.name, sub),
+          for (final sub in subs) _variantRow(ng, cat, item.name, sub),
           const SizedBox(height: 4),
         ],
       ),
@@ -1535,36 +1531,36 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   }
 
   Widget _variantRow(
-      FlutterFlowTheme theme, String cat, String itemName, SurveySubItem sub) {
+      NgPalette ng, String cat, String itemName, SurveySubItem sub) {
     final key = '$cat|$itemName|${sub.label}';
     final qty = _qtyOf(key);
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
       decoration: BoxDecoration(
-        color: qty > 0
-            ? theme.primary.withValues(alpha: 0.12)
-            : theme.primaryBackground,
-        borderRadius: BorderRadius.circular(10),
+        color: qty > 0 ? ng.status(NgStatus.accent).bg : ng.inset,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: qty > 0
-                ? theme.primary
-                : theme.secondaryText.withValues(alpha: 0.3)),
+            color: qty > 0 ? ng.acc.withValues(alpha: 0.6) : ng.w06),
       ),
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              '${sub.label} (${sub.cft} cft)',
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: sub.label),
+                TextSpan(
+                    text: '  ${sub.cft} CFT',
+                    style: NgFonts.mono(fontSize: 12, color: ng.mute)),
+              ]),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style:
-                  NgFonts.geist(fontSize: 12.5, color: theme.primaryText),
+              style: NgFonts.geist(fontSize: 13.5, color: ng.text),
             ),
           ),
           const SizedBox(width: 8),
           _stepper(
-            theme,
+            ng,
             qty: qty,
             // sub.cft is read here, at add time, and stored on the line.
             onMinus: qty > 0
@@ -1596,47 +1592,53 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   // fixing it here covers every CFT +/- control in the survey builder,
   // not just one spot.
   Widget _stepper(
-    FlutterFlowTheme theme, {
+    NgPalette ng, {
     required int qty,
     required VoidCallback? onMinus,
     required VoidCallback onPlus,
   }) {
+    Widget btn(IconData icon, VoidCallback? onTap) => SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Material(
+              color: onTap == null ? Colors.transparent : ng.s2,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onTap,
+                child: SizedBox(
+                  width: 34,
+                  height: 34,
+                  child: Icon(icon,
+                      size: 18, color: onTap == null ? ng.faint : ng.text),
+                ),
+              ),
+            ),
+          ),
+        );
     return SizedBox(
       width: 118,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          btn(Icons.remove_rounded, onMinus),
           SizedBox(
-            width: 48,
-            height: 48,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: const Icon(Icons.remove_circle_outline, size: 20),
-              onPressed: onMinus,
-            ),
-          ),
-          SizedBox(
-            width: 22,
+            width: 26,
             child: Text('$qty',
                 textAlign: TextAlign.center,
-                style: NgFonts.geist(
-                    fontWeight: FontWeight.w700, color: theme.primaryText)),
+                style: NgFonts.mono(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: qty > 0 ? ng.text : ng.faint)),
           ),
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: const Icon(Icons.add_circle_outline, size: 20),
-              onPressed: onPlus,
-            ),
-          ),
+          btn(Icons.add_rounded, onPlus),
         ],
       ),
     );
   }
 
-  Widget _amountField(FlutterFlowTheme theme, String key, String label,
+  Widget _amountField(NgPalette ng, String key, String label,
       {bool enabled = true}) {
     return TextField(
       controller: _amountCtrl[key],
@@ -1653,23 +1655,23 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     );
   }
 
-  Widget _chargesCard(FlutterFlowTheme theme) {
+  Widget _chargesCard(NgPalette ng) {
     final billable = kDefaultChargeFields.where((f) => f.billable).toList();
     final other = kDefaultChargeFields
         .where((f) => !f.billable && f.key != 'discount' && f.key != 'advanceOnQuote')
         .toList();
     return _card(
-      theme,
+      ng,
       'Charges',
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Freight / Transport',
-              style: NgFonts.geist(fontSize: 13, color: theme.primaryText)),
+              style: NgFonts.geist(fontSize: 13, color: ng.text)),
           const SizedBox(height: 6),
-          _basisRow(theme, 'transport'),
+          _basisRow(ng, 'transport'),
           const SizedBox(height: 10),
-          _amountField(theme, 'advanceOnQuote', 'Advance Paid'),
+          _amountField(ng, 'advanceOnQuote', 'Advance Paid'),
           const SizedBox(height: 14),
           // Arun, 3 Sept 2026: "add price separately packing achrag,
           // loading , unloading". The prices existed from that day; what
@@ -1680,17 +1682,17 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           Text('Packing & Labour',
               style: NgFonts.geist(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: theme.primaryText)),
+                  fontWeight: FontWeight.w600,
+                  color: ng.text)),
           const SizedBox(height: 2),
           Text(
             'Each line is bundled into the freight price unless you switch '
             'it to "Bill separately", which opens its own price field.',
             style: NgFonts.geist(
-                fontSize: 11.5, color: theme.secondaryText, height: 1.35),
+                fontSize: 11.5, color: ng.mute, height: 1.35),
           ),
           const SizedBox(height: 10),
-          for (final f in billable) _billableRow(theme, f),
+          for (final f in billable) _billableRow(ng, f),
           if (_separatelyBilledCount > 0) ...[
             const SizedBox(height: 2),
             Text(
@@ -1701,30 +1703,30 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: _separatelyBilledUnpriced > 0
-                      ? theme.warning
-                      : theme.secondaryText),
+                      ? ng.amber
+                      : ng.mute),
             ),
           ],
           const SizedBox(height: 14),
           Text('Other Charges',
               style: NgFonts.geist(
                   fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: theme.secondaryText)),
+                  fontWeight: FontWeight.w600,
+                  color: ng.mute)),
           const SizedBox(height: 8),
           for (final f in other.where((f) =>
               ['storage', 'carTransport', 'misc', 'stCharge', 'otherCharges']
                   .contains(f.key)))
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _amountField(theme, f.key, f.label),
+              child: _amountField(ng, f.key, f.label),
             ),
           const SizedBox(height: 6),
           Text('Add-on Services',
               style: NgFonts.geist(
                   fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: theme.secondaryText)),
+                  fontWeight: FontWeight.w600,
+                  color: ng.mute)),
           const SizedBox(height: 8),
           for (final f in other.where((f) => ![
                 'storage',
@@ -1735,10 +1737,10 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               ].contains(f.key)))
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _amountField(theme, f.key, f.label),
+              child: _amountField(ng, f.key, f.label),
             ),
           const SizedBox(height: 6),
-          _amountField(theme, 'discount', 'Discount'),
+          _amountField(ng, 'discount', 'Discount'),
         ],
       ),
     );
@@ -1769,7 +1771,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       .where((e) => e.value == 'additional' && _chargeAmount(e.key) <= 0)
       .length;
 
-  Widget _billableRow(FlutterFlowTheme theme, ChargeField f) {
+  Widget _billableRow(NgPalette ng, ChargeField f) {
     final included = (_billingMode[f.key] ?? 'included') == 'included';
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -1787,7 +1789,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   children: [
                     Text(f.label,
                         style: NgFonts.geist(
-                            fontSize: 13, color: theme.primaryText)),
+                            fontSize: 14, color: ng.text)),
                     // The figure, on the row, once there is one. Without
                     // it a priced line looks exactly like an unpriced one
                     // until you scroll into its expanded fields.
@@ -1798,29 +1800,22 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           color: _chargeAmount(f.key) > 0
-                              ? theme.primary
-                              : theme.warning,
+                              ? ng.acc
+                              : ng.amber,
                         ),
                       ),
                   ],
                 ),
               ),
               Expanded(
-                flex: 2,
-                child: DropdownButtonFormField<String>(
-                  initialValue: _billingMode[f.key] ?? 'included',
-                  isDense: true,
-                  items: const [
-                    DropdownMenuItem(
-                        value: 'included', child: Text('Incl. in freight')),
-                    // "Additional" said this line was extra without saying
-                    // what happens next. "Bill separately" names the
-                    // action, and the action is what opens the price box.
-                    DropdownMenuItem(
-                        value: 'additional', child: Text('Bill separately')),
-                  ],
-                  onChanged: (v) =>
-                      setState(() => _billingMode[f.key] = v ?? 'included'),
+                flex: 3,
+                // "Bill separately" names the action, and the action is
+                // what opens the price box.
+                child: NgSegmented(
+                  labels: const ['In freight', 'Separately'],
+                  selected: included ? 0 : 1,
+                  onSelect: (i) => setState(() =>
+                      _billingMode[f.key] = i == 0 ? 'included' : 'additional'),
                 ),
               ),
             ],
@@ -1830,7 +1825,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           // on its own (Part 8 Rev B item 4).
           if (!included) ...[
             const SizedBox(height: 6),
-            _basisRow(theme, f.key),
+            _basisRow(ng, f.key),
           ],
         ],
       ),
@@ -1841,7 +1836,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   /// B item 4). Shared between the 5 billable rows above and the
   /// transport row below — transport has no included/additional toggle
   /// (it's never bundled into itself) but still gets a basis.
-  Widget _basisRow(FlutterFlowTheme theme, String key) {
+  Widget _basisRow(NgPalette ng, String key) {
     final basis = _basis[key] ?? 'lumpsum';
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -1864,12 +1859,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(flex: 3, child: _basisValueFields(theme, key, basis)),
+        Expanded(flex: 3, child: _basisValueFields(ng, key, basis)),
       ],
     );
   }
 
-  Widget _basisValueFields(FlutterFlowTheme theme, String key, String basis) {
+  Widget _basisValueFields(NgPalette ng, String key, String basis) {
     switch (basis) {
       case 'per_cft':
         return Row(
@@ -1878,7 +1873,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             Expanded(
               child: Text('$_totalCft CFT',
                   style: NgFonts.geist(
-                      fontSize: 12.5, color: theme.secondaryText)),
+                      fontSize: 12.5, color: ng.mute)),
             ),
             const SizedBox(width: 6),
             Expanded(
@@ -1948,48 +1943,36 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       case 'lumpsum':
       case 'at_actuals':
       default:
-        return _amountField(theme, key, '₹');
+        return _amountField(ng, key, '₹');
     }
   }
 
-  Widget _gstCard(FlutterFlowTheme theme) => _card(
-        theme,
+  Widget _gstCard(NgPalette ng) => _card(
+        ng,
         'GST (SAC $kGstSac)',
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<double>(
-                    initialValue: _gstPct,
-                    decoration: const InputDecoration(labelText: 'Rate'),
-                    items: [
-                      for (final r in kGstRateOptions)
-                        DropdownMenuItem(
-                            value: r.toDouble(), child: Text('$r%'))
-                    ],
-                    onChanged: (v) =>
-                        setState(() => _gstPct = v ?? kGstDefaultPct.toDouble()),
-                  ),
+            const NgFieldLabel('Rate'),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final r in kGstRateOptions)
+                NgChip(
+                  label: '$r%',
+                  selected: _gstPct == r.toDouble(),
+                  onTap: () => setState(() => _gstPct = r.toDouble()),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _gstType,
-                    decoration: const InputDecoration(labelText: 'Type'),
-                    items: const [
-                      DropdownMenuItem(
-                          value: 'auto', child: Text('Auto-detect')),
-                      DropdownMenuItem(
-                          value: 'intra', child: Text('CGST+SGST')),
-                      DropdownMenuItem(value: 'inter', child: Text('IGST')),
-                    ],
-                    onChanged: (v) => setState(() => _gstType = v ?? 'auto'),
-                  ),
-                ),
-              ],
+            ]),
+            const SizedBox(height: 14),
+            const NgFieldLabel('Type'),
+            NgSegmented(
+              labels: const ['Auto', 'CGST+SGST', 'IGST'],
+              selected: const ['auto', 'intra', 'inter'].indexOf(_gstType) < 0
+                  ? 0
+                  : const ['auto', 'intra', 'inter'].indexOf(_gstType),
+              onSelect: (i) =>
+                  setState(() => _gstType = const ['auto', 'intra', 'inter'][i]),
             ),
+            const SizedBox(height: 12),
             // A "Show GST in PDF" switch stood here and was REMOVED on
             // 10 Sept 2026, not wired up. It had no consumer: it wrote
             // `charges['_gstShowInPdf']`, and `quote_pdf.dart` never read
@@ -2006,62 +1989,33 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             // "BILL (TAX INVOICE)" with the tax silently omitted, which is
             // worse than the no-op it replaced. Restore this only with the
             // answer in hand.
-            Text(
+            NgPill(
               _isInterstate
-                  ? 'Interstate → IGST ₹${_gstAmount.toStringAsFixed(0)}'
-                  : 'Intrastate → CGST ₹${(_gstAmount / 2).toStringAsFixed(0)} '
+                  ? 'Interstate · IGST ₹${_gstAmount.toStringAsFixed(0)}'
+                  : 'Intrastate · CGST ₹${(_gstAmount / 2).toStringAsFixed(0)} '
                       '+ SGST ₹${(_gstAmount / 2).toStringAsFixed(0)}',
-              style: NgFonts.geist(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: theme.primary),
+              status: NgStatus.accent,
             ),
           ],
         ),
       );
 
-  Widget _summaryCard(FlutterFlowTheme theme) {
+  Widget _summaryCard(NgPalette ng) {
     final rows = <(String, double)>[
       ('Subtotal', _subtotal),
       ('GST (${_gstPct.toStringAsFixed(0)}%)', _gstAmount),
     ];
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(14),
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final r in rows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(r.$1, style: NgFonts.geist(color: theme.secondaryText)),
-                  Text('₹${r.$2.toStringAsFixed(0)}',
-                      style: NgFonts.geist(color: theme.primaryText)),
-                ],
-              ),
-            ),
-          const Divider(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Total',
-                  style: NgFonts.geist(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: theme.primaryText)),
-              Text('₹${_total.toStringAsFixed(0)}',
-                  style: NgFonts.geist(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: theme.primary)),
-            ],
-          ),
+            NgKeyValue(r.$1, functions.inrFull(r.$2.toDouble()), mono: true),
+          Divider(height: 18, color: ng.w06),
+          NgKeyValue('Total', functions.inrFull(_total.toDouble()),
+              mono: true, strong: true),
         ],
       ),
     );

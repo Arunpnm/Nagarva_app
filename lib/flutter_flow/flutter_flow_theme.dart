@@ -153,13 +153,6 @@ abstract class FlutterFlowTheme {
         backgroundColor: c.sheet,
         scrimColor: Colors.black.withValues(alpha: 0.6),
       ),
-      listTileTheme: ListTileThemeData(
-        iconColor: c.soft,
-        textColor: c.text,
-        titleTextStyle: NgFonts.geist(
-            fontSize: 14.5, fontWeight: FontWeight.w500, color: c.text),
-        subtitleTextStyle: NgFonts.geist(fontSize: 12.5, color: c.mute),
-      ),
       iconTheme: IconThemeData(color: c.soft),
       // Left-aligned 20px title on the page colour, as the handoff's
       // screen headers are; no elevation or M3 tint when content scrolls.
@@ -190,6 +183,27 @@ abstract class FlutterFlowTheme {
         ),
       ),
       dividerTheme: DividerThemeData(color: c.w06, thickness: 1, space: 1),
+      listTileTheme: ListTileThemeData(
+        iconColor: c.soft,
+        textColor: c.text,
+        titleTextStyle: NgFonts.geist(
+            fontSize: 14.5, fontWeight: FontWeight.w500, color: c.text),
+        subtitleTextStyle: NgFonts.geist(fontSize: 12.5, color: c.mute),
+        leadingAndTrailingTextStyle: NgFonts.geist(
+            fontSize: 13.5, fontWeight: FontWeight.w600, color: c.text),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(NgRadius.button)),
+      ),
+      expansionTileTheme: ExpansionTileThemeData(
+        iconColor: c.mute,
+        collapsedIconColor: c.mute,
+        textColor: c.text,
+        collapsedTextColor: c.text,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        shape: const Border(),
+        collapsedShape: const Border(),
+      ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: c.accBtn,
         foregroundColor: NgPalette.onAcc,

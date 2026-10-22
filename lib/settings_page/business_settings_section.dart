@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -8,7 +7,6 @@ import 'package:flutter/material.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Vendor self-service branding & business identity (Settings page).
@@ -407,39 +405,39 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
   }
 
   InputDecoration _dec(String label, String hint) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return InputDecoration(
       labelText: label,
       hintText: hint.isEmpty ? null : hint,
       labelStyle:
-          NgFonts.geist(color: theme.secondaryText, fontSize: 12.5),
+          NgFonts.geist(color: ng.mute, fontSize: 12.5),
       hintStyle: NgFonts.geist(
-          color: theme.secondaryText.withOpacity(0.5), fontSize: 12.5),
+          color: ng.mute.withOpacity(0.5), fontSize: 12.5),
       filled: true,
-      fillColor: theme.primaryBackground,
+      fillColor: ng.bg,
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(9),
-        borderSide: BorderSide(color: theme.secondaryText.withOpacity(0.2)),
+        borderSide: BorderSide(color: ng.mute.withOpacity(0.2)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(9),
-        borderSide: BorderSide(color: theme.secondaryText.withOpacity(0.2)),
+        borderSide: BorderSide(color: ng.mute.withOpacity(0.2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(9),
-        borderSide: BorderSide(color: theme.primary, width: 1.4),
+        borderSide: BorderSide(color: ng.acc, width: 1.4),
       ),
     );
   }
 
   Widget _card({required Widget child}) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(12.0),
       ),
       child: Padding(padding: const EdgeInsets.all(16.0), child: child),
@@ -447,19 +445,19 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
   }
 
   Widget _cardTitle(String title, String subtitle) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title,
             style: NgFonts.geist(
                 fontSize: 15.5,
-                fontWeight: FontWeight.w700,
-                color: theme.primaryText)),
+                fontWeight: FontWeight.w600,
+                color: ng.text)),
         const SizedBox(height: 2),
         Text(subtitle,
             style: NgFonts.geist(
-                fontSize: 11.5, color: theme.secondaryText)),
+                fontSize: 11.5, color: ng.mute)),
         const SizedBox(height: 12),
       ],
     );
@@ -467,7 +465,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     if (_loading) {
       return _card(
           child: const Center(
@@ -477,7 +475,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
             width: 22, height: 22, child: CircularProgressIndicator()),
       )));
     }
-    final textStyle = NgFonts.geist(color: theme.primaryText, fontSize: 13.5);
+    final textStyle = NgFonts.geist(color: ng.text, fontSize: 13.5);
     return Column(
       children: [
         // ---- 1. Business identity & letterhead (writes to organizations) --
@@ -494,8 +492,8 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                   child: Text(group.$1,
                       style: NgFonts.geist(
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: theme.secondaryText)),
+                          fontWeight: FontWeight.w600,
+                          color: ng.mute)),
                 ),
                 LayoutBuilder(builder: (context, constraints) {
                   final twoCol = constraints.maxWidth > 560;
@@ -524,12 +522,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                   onPressed: (_savingOrgProfile || !_isOwnerSession)
                       ? null
                       : _saveOrgProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
-                  ),
+                  
                   icon: _savingOrgProfile
                       ? const SizedBox(
                           width: 16,
@@ -567,12 +560,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                 height: 42,
                 child: ElevatedButton.icon(
                   onPressed: _saving ? null : _saveProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(9)),
-                  ),
+                  
                   icon: _saving
                       ? const SizedBox(
                           width: 16,
@@ -600,20 +588,20 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: theme.primaryBackground,
+                      color: ng.bg,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: (AppSession.instance.currentOrgLogoUrl ?? '')
                             .isEmpty
                         ? Icon(Icons.local_shipping,
-                            color: theme.primary, size: 30)
+                            color: ng.acc, size: 30)
                         : Image.network(
                             AppSession.instance.currentOrgLogoUrl!,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Icon(
                                 Icons.broken_image,
-                                color: theme.secondaryText),
+                                color: ng.mute),
                           ),
                   ),
                   const SizedBox(width: 14),
@@ -621,12 +609,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                     onPressed: (_uploadingLogo || !_isOwnerSession)
                         ? null
                         : _pickLogo,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9)),
-                    ),
+                    
                     icon: _uploadingLogo
                         ? const SizedBox(
                             width: 16,
@@ -667,7 +650,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: theme.secondaryText.withOpacity(0.25)),
+                          color: ng.mute.withOpacity(0.25)),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: (_signatureUrl ?? '').isEmpty
@@ -683,12 +666,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                   const SizedBox(width: 14),
                   ElevatedButton.icon(
                     onPressed: _savingSignature ? null : _drawSignature,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9)),
-                    ),
+                    
                     icon: _savingSignature
                         ? const SizedBox(
                             width: 16,

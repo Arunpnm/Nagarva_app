@@ -1,7 +1,6 @@
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -46,10 +45,10 @@ class NotificationBell extends StatefulWidget {
   final double iconSize;
 
   /// Overrides the icon's colour. Null keeps the original sidebar look
-  /// (`theme.secondaryText`) — pass `IconTheme.of(context).color` when
+  /// (`ng.mute`) — pass `IconTheme.of(context).color` when
   /// placing this in an AppBar's actions so it matches whatever colour
   /// the AppBar's other icons resolve to in every theme variant, instead
-  /// of hardcoding a colour that would only be right in one theme.
+  /// of hardcoding a colour that would only be right in one ng.
   final Color? iconColor;
 
   @override
@@ -198,11 +197,11 @@ class _NotificationBellState extends State<NotificationBell> {
   /// what tells him which ones are new, and the badge clears when he is
   /// done. Marking on open would fade them out from under him.
   Future<void> _openList() async {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     await showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
-        backgroundColor: theme.secondaryBackground,
+        backgroundColor: ng.s1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
@@ -220,7 +219,7 @@ class _NotificationBellState extends State<NotificationBell> {
                       style: NgFonts.geist(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
-                        color: theme.primaryText,
+                        color: ng.text,
                       ),
                     ),
                     // Was a "Mark all read" link - the ONLY thing in the
@@ -232,7 +231,7 @@ class _NotificationBellState extends State<NotificationBell> {
                       Text(
                         'Marked read on close',
                         style: NgFonts.geist(
-                            fontSize: 11, color: theme.secondaryText),
+                            fontSize: 11, color: ng.mute),
                       ),
                   ],
                 ),
@@ -244,7 +243,7 @@ class _NotificationBellState extends State<NotificationBell> {
                             'No notifications yet.',
                             textAlign: TextAlign.center,
                             style: NgFonts.geist(
-                                color: theme.secondaryText, fontSize: 13),
+                                color: ng.mute, fontSize: 13),
                           ),
                         )
                       : ListView.separated(
@@ -252,7 +251,7 @@ class _NotificationBellState extends State<NotificationBell> {
                           itemCount: _items.length,
                           separatorBuilder: (_, __) => Divider(
                               height: 1,
-                              color: theme.secondaryText.withOpacity(0.15)),
+                              color: ng.mute.withOpacity(0.15)),
                           itemBuilder: (_, i) {
                             final n = _items[i];
                             return ListTile(
@@ -265,8 +264,8 @@ class _NotificationBellState extends State<NotificationBell> {
                                   _ => Icons.person_add_alt_1,
                                 },
                                 color: n.read
-                                    ? theme.secondaryText
-                                    : theme.primary,
+                                    ? ng.mute
+                                    : ng.acc,
                                 size: 20,
                               ),
                               title: Text(
@@ -276,7 +275,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                   fontWeight: n.read
                                       ? FontWeight.w500
                                       : FontWeight.w700,
-                                  color: theme.primaryText,
+                                  color: ng.text,
                                 ),
                               ),
                               subtitle: Text(
@@ -287,7 +286,7 @@ class _NotificationBellState extends State<NotificationBell> {
                                 ].join(' · '),
                                 style: NgFonts.geist(
                                   fontSize: 11.5,
-                                  color: theme.secondaryText,
+                                  color: ng.mute,
                                 ),
                               ),
                             );
@@ -305,7 +304,7 @@ class _NotificationBellState extends State<NotificationBell> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return InkWell(
       borderRadius: BorderRadius.circular(24),
       onTap: _openList,
@@ -320,7 +319,7 @@ class _NotificationBellState extends State<NotificationBell> {
           clipBehavior: Clip.none,
           children: [
             Icon(Icons.notifications_none,
-                color: widget.iconColor ?? theme.secondaryText,
+                color: widget.iconColor ?? ng.mute,
                 size: widget.iconSize),
             if (_unread > 0)
               Positioned(
@@ -330,7 +329,7 @@ class _NotificationBellState extends State<NotificationBell> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 4, vertical: 1.5),
                   decoration: BoxDecoration(
-                    color: theme.error,
+                    color: ng.red,
                     borderRadius: BorderRadius.circular(9),
                   ),
                   constraints:

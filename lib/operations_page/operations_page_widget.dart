@@ -3,7 +3,6 @@ import '/backend/approval_queue.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/field_expenses.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 // kNotAvailableReasons — the same labels the supervisor chose from, so
 // the owner reads exactly what the supervisor selected.
@@ -279,7 +278,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
   /// tapping through — who ran the job, when they finished, and what is
   /// still owed.
   Widget _approvalCard(OrdersRow o) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final gold = NgPalette.of(context).amber;
     final balance = _awaitingBalances[o.id] ?? 0;
     final spend = _awaitingSpend[o.id];
@@ -293,7 +292,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: theme.secondaryBackground,
+          color: ng.s1,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: gold.withValues(alpha: 0.45)),
         ),
@@ -308,7 +307,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                       style: NgFonts.geist(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: theme.primaryText)),
+                          color: ng.text)),
                 ),
                 Container(
                   padding:
@@ -334,7 +333,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
               Builder(builder: (context) {
                 final (method, reason) = _awaitingPod[o.id]!;
                 final unsigned = method == 'not_available';
-                final colour = unsigned ? Colors.orange.shade800 : theme.success;
+                final colour = unsigned ? Colors.orange.shade800 : ng.green;
                 return Row(
                   children: [
                     Icon(
@@ -365,7 +364,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
             Text(
               '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}',
               style:
-                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 11.5, color: ng.mute),
             ),
             const SizedBox(height: 2),
             Text(
@@ -375,7 +374,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                   'Finished ${dateTimeFormat('d MMM, h:mm a', o.jobEndTime)}',
               ].join('  ·  '),
               style:
-                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 11.5, color: ng.mute),
             ),
             const SizedBox(height: 8),
             Row(
@@ -383,7 +382,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
               children: [
                 Text('Balance due',
                     style: NgFonts.geist(
-                        fontSize: 11.5, color: theme.secondaryText)),
+                        fontSize: 11.5, color: ng.mute)),
                 Text(
                   '₹${balance.toStringAsFixed(0)}',
                   style: NgFonts.geist(
@@ -391,7 +390,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                     fontWeight: FontWeight.w800,
                     // Non-zero balance is the thing worth chasing before
                     // closing — Close Order will hard-warn on exactly this.
-                    color: balance > 0 ? theme.error : theme.success,
+                    color: balance > 0 ? ng.red : ng.green,
                   ),
                 ),
               ],
@@ -409,12 +408,12 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
                       'Spent by supervisor  ·  '
                       '${spend.count} item${spend.count == 1 ? '' : 's'}',
                       style: NgFonts.geist(
-                          fontSize: 11.5, color: theme.secondaryText)),
+                          fontSize: 11.5, color: ng.mute)),
                   Text('₹${spend.total.toStringAsFixed(0)}',
                       style: NgFonts.geist(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w800,
-                          color: theme.warning)),
+                          color: ng.amber)),
                 ],
               ),
             ] else ...[
@@ -424,7 +423,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
               // as "not loaded" instead.
               Text('No expenses claimed on this job',
                   style: NgFonts.geist(
-                      fontSize: 11.5, color: theme.secondaryText)),
+                      fontSize: 11.5, color: ng.mute)),
             ],
           ],
         ),

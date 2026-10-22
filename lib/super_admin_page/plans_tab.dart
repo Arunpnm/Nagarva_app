@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'plan_edit_sheet.dart';
 
@@ -51,7 +51,7 @@ class _PlansTabState extends State<PlansTab> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -79,14 +79,10 @@ class _PlansTabState extends State<PlansTab> {
               .where((e) => e.value == true)
               .map((e) => e.key)
               .join(', ');
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: theme.secondaryBackground,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
+          return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(14),
+      child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -95,7 +91,7 @@ class _PlansTabState extends State<PlansTab> {
                       child: Text(
                         p.name ?? p.code ?? p.id ?? '(unnamed)',
                         style: NgFonts.geist(
-                            color: theme.primaryText,
+                            color: ng.text,
                             fontSize: 15,
                             fontWeight: FontWeight.w700),
                       ),
@@ -105,12 +101,12 @@ class _PlansTabState extends State<PlansTab> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: theme.primary.withOpacity(0.12),
+                          color: ng.acc.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text('default trial',
                             style: NgFonts.geist(
-                                color: theme.primary, fontSize: 11)),
+                                color: ng.acc, fontSize: 11)),
                       ),
                   ],
                 ),
@@ -119,7 +115,7 @@ class _PlansTabState extends State<PlansTab> {
                   '₹${p.priceInr?.toStringAsFixed(0) ?? '—'} / ${p.billingPeriod ?? '—'}'
                   '${p.code != null ? ' · ${p.code}' : ''}',
                   style: NgFonts.geist(
-                      color: theme.secondaryText, fontSize: 12.5),
+                      color: ng.mute, fontSize: 12.5),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -130,14 +126,14 @@ class _PlansTabState extends State<PlansTab> {
                   'max_orders_per_month=${limits['max_orders_per_month'] ?? '—'}, '
                   'max_whatsapp_per_month=${limits['max_whatsapp_per_month'] ?? '—'}',
                   style: NgFonts.geist(
-                      color: theme.primaryText, fontSize: 12),
+                      color: ng.text, fontSize: 12),
                 ),
                 if (activeFeatures.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text('Features: $activeFeatures',
                         style: NgFonts.geist(
-                            color: theme.primaryText, fontSize: 12)),
+                            color: ng.text, fontSize: 12)),
                   ),
                 const SizedBox(height: 8),
                 Align(

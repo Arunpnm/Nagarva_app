@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Extra charges on an order: anything billed on top of the quote.
@@ -137,7 +138,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+          backgroundColor: NgPalette.of(context).s1,
           title: Text(existing == null ? 'Add a charge' : 'Edit charge'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -164,7 +165,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                 Text(err!,
                     style: TextStyle(
                         fontSize: 12,
-                        color: FlutterFlowTheme.of(context).error)),
+                        color: NgPalette.of(context).red)),
               ],
             ],
           ),
@@ -239,27 +240,22 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final ng = NgPalette.of(context);
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.handyman_outlined, size: 18, color: theme.primary),
+              Icon(Icons.handyman_outlined, size: 18, color: ng.mute),
               const SizedBox(width: 8),
-              Text('Extra Charges',
+              Text('Extra charges',
                   style: NgFonts.geist(
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: theme.primaryText)),
+                      fontWeight: FontWeight.w600,
+                      color: ng.text)),
               // Pending count on the HEADER, not only in the list below.
               // Arun, 3 Sept 2026: "that addon serice is pending so make
               // it clear its pending in that order". Outstanding work is
@@ -268,28 +264,12 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
               // finished.
               if (_pendingCount > 0) ...[
                 const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: theme.warning,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text('$_pendingCount PENDING',
-                      style: NgFonts.geist(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                          color: Colors.white)),
-                ),
+                NgPill('$_pendingCount pending', status: NgStatus.amber),
               ],
               const Spacer(),
               if (!widget.readOnly)
-                TextButton.icon(
-                  onPressed: () => _addOrEdit(),
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Add'),
-                ),
+                NgLinkButton('Add',
+                    icon: Icons.add_rounded, onTap: () => _addOrEdit()),
             ],
           ),
           if (_loading)
@@ -302,80 +282,83 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
             )
           else if (_rows.isEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 10),
               child: Text(
                 'Anything charged on top of the quote — an AC install the '
                 'next day, a carpenter, a second trip, or materials the '
                 'customer bought. Pending items count toward the balance '
                 'until they are done.',
-                style:
-                    NgFonts.geist(fontSize: 12, color: theme.secondaryText),
+                style: NgFonts.geist(
+                    fontSize: 13, height: 1.4, color: ng.mute),
               ),
             )
           else ...[
             if (_pendingCount > 0)
               Container(
                 width: double.infinity,
-                margin: const EdgeInsets.only(top: 6, bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.warning.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  color: ng.amberBg,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '$_pendingCount pending · '
-                  '₹${_pendingTotal.toStringAsFixed(0)} still to be done. '
+                  '${functions.inrFull(_pendingTotal)} still to be done. '
                   'This is included in the balance due.',
                   style: NgFonts.geist(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: theme.primaryText),
+                      color: ng.text),
                 ),
               ),
-            for (final r in _rows) _addonRow(theme, r),
+            for (final r in _rows) _addonRow(ng, r),
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
             Text(_error!,
-                style: NgFonts.geist(fontSize: 12, color: theme.error)),
+                style: NgFonts.geist(fontSize: 12, color: ng.red)),
           ],
         ],
       ),
     );
   }
 
-  Widget _addonRow(FlutterFlowTheme theme, Map<String, dynamic> r) {
+  Widget _addonRow(NgPalette ng, Map<String, dynamic> r) {
     final status = '${r['status'] ?? 'pending'}';
     final amount = (num.tryParse('${r['amount']}') ?? 0).toDouble();
     final cancelled = status == 'cancelled';
     final done = status == 'completed';
 
     final (Color chipColor, String chipLabel, IconData icon) = switch (status) {
-      'completed' => (theme.success, 'Done', Icons.check_circle_outline),
-      'cancelled' => (theme.secondaryText, 'Cancelled', Icons.block),
-      _ => (theme.warning, 'Pending', Icons.schedule),
+      'completed' => (ng.green, 'Done', Icons.check_rounded),
+      'cancelled' => (ng.mute, 'Cancelled', Icons.block_rounded),
+      _ => (ng.amber, 'Pending', Icons.schedule_rounded),
     };
 
     final pending = !done && !cancelled;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: EdgeInsets.fromLTRB(pending ? 8 : 0, 6, 0, 6),
-      decoration: pending
-          // A pending charge is money not yet earned and work not yet
-          // done. It gets a tint and a rule so it cannot be skimmed past
-          // as if it were finished.
-          ? BoxDecoration(
-              color: theme.warning.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(8),
-              border: Border(
-                  left: BorderSide(color: theme.warning, width: 3)),
-            )
-          : null,
+      padding: const EdgeInsets.fromLTRB(10, 10, 0, 10),
+      decoration: BoxDecoration(
+        // A pending charge is money not yet earned and work not yet
+        // done. It gets a tint so it cannot be skimmed past as if it
+        // were finished.
+        color: pending ? ng.amberBg : ng.inset,
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: chipColor),
-          const SizedBox(width: 8),
+          NgIconTile(
+              icon: icon,
+              status: done
+                  ? NgStatus.green
+                  : cancelled
+                      ? NgStatus.neutral
+                      : NgStatus.amber,
+              size: 32,
+              iconSize: 17),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,9 +366,9 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                 Text(
                   '${r['description'] ?? ''}',
                   style: NgFonts.geist(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: cancelled ? theme.secondaryText : theme.primaryText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: cancelled ? ng.mute : ng.text,
                     // A cancelled row stays visible as a record of what
                     // was discussed, struck through so it cannot be
                     // misread as outstanding work.
@@ -396,24 +379,24 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                   done && r['completed_at'] != null
                       ? '$chipLabel · ${'${r['completed_at']}'.split('T').first}'
                       : chipLabel,
-                  style: NgFonts.geist(fontSize: 11, color: chipColor),
+                  style: NgFonts.geist(fontSize: 12, color: chipColor),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
           Text(
-            '₹${amount.toStringAsFixed(0)}',
-            style: NgFonts.geist(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: cancelled ? theme.secondaryText : theme.primaryText,
+            functions.inrFull(amount),
+            style: NgFonts.mono(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: cancelled ? ng.mute : ng.text,
               decoration: cancelled ? TextDecoration.lineThrough : null,
             ),
           ),
           if (!widget.readOnly)
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, size: 18, color: theme.secondaryText),
+              icon: Icon(Icons.more_vert, size: 18, color: ng.mute),
               onSelected: (v) {
                 if (v == 'edit') {
                   _addOrEdit(existing: r);

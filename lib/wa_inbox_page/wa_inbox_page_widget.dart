@@ -6,7 +6,6 @@ import '/backend/supabase/org_scope.dart';
 import '/config/app_config.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -175,10 +174,10 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final wide = MediaQuery.of(context).size.width > 760;
 
-    final list = _contactList(theme);
+    final list = _contactList(ng);
     // NG-FIX follow-up (7 Aug 2026): _threadView() reads `_selected!` on
     // its very first line, so it must never be called while `_selected`
     // is null — which it always is until a contact is tapped. This used
@@ -186,10 +185,10 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
     // first build (before the query even resolved, let alone before any
     // row existed to look at). Lazy fix: only build it when there's a
     // selection to build it from; `_threadView` itself is untouched.
-    final thread = _selected != null ? _threadView(theme) : null;
+    final thread = _selected != null ? _threadView(ng) : null;
 
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: NgTopBar(onRefresh: _load),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -198,7 +197,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
                   children: [
                     SizedBox(width: 320, child: list),
                     const VerticalDivider(width: 1),
-                    Expanded(child: thread ?? _threadPlaceholder(theme)),
+                    Expanded(child: thread ?? _threadPlaceholder(ng)),
                   ],
                 )
               // Narrow layout is unchanged: thread is only ever non-null
@@ -226,24 +225,24 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
   /// bare `Text('Select a conversation')` with no visual weight; matches
   /// the icon-plus-message empty-state pattern already used in
   /// [_contactList] instead of reading as an accidentally-blank panel.
-  Widget _threadPlaceholder(FlutterFlowTheme theme) => Center(
+  Widget _threadPlaceholder(NgPalette ng) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.forum_outlined, size: 40, color: theme.secondaryText),
+              Icon(Icons.forum_outlined, size: 40, color: ng.mute),
               const SizedBox(height: 12),
               Text(
                 'Select a conversation',
-                style: NgFonts.geist(color: theme.secondaryText, fontSize: 13.5),
+                style: NgFonts.geist(color: ng.mute, fontSize: 13.5),
               ),
             ],
           ),
         ),
       );
 
-  Widget _contactList(FlutterFlowTheme theme) {
+  Widget _contactList(NgPalette ng) {
     final c = NgPalette.of(context);
     final unread = _contacts.where((x) => x.unreadCount > 0).length;
     return RefreshIndicator(
@@ -356,19 +355,19 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
     );
   }
 
-  Widget _threadView(FlutterFlowTheme theme) {
+  Widget _threadView(NgPalette ng) {
     final contact = _selected!;
     return Column(
       children: [
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          color: theme.secondaryBackground,
+          color: ng.s1,
           child: Row(
             children: [
               Expanded(
                 child: Text(contact.phone,
-                    style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
+                    style: NgFonts.geist(fontSize: 12, color: ng.mute)),
               ),
               if (contact.leadId != null)
                 TextButton(
@@ -395,14 +394,14 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: _thread.length,
-                  itemBuilder: (context, i) => _bubble(theme, _thread[i]),
+                  itemBuilder: (context, i) => _bubble(ng, _thread[i]),
                 ),
         ),
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: theme.secondaryBackground,
-            border: Border(top: BorderSide(color: theme.alternate)),
+            color: ng.s1,
+            border: Border(top: BorderSide(color: ng.w08)),
           ),
           child: Row(
             children: [
@@ -435,7 +434,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
     );
   }
 
-  Widget _bubble(FlutterFlowTheme theme, WaMessagesRow m) {
+  Widget _bubble(NgPalette ng, WaMessagesRow m) {
     final inbound = m.direction == 'in';
     final isUnsupported = m.msgType == 'unsupported';
     return Align(
@@ -445,7 +444,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         constraints: const BoxConstraints(maxWidth: 320),
         decoration: BoxDecoration(
-          color: inbound ? theme.secondaryBackground : theme.primary.withValues(alpha: 0.85),
+          color: inbound ? ng.s1 : ng.acc.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -456,7 +455,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
               style: NgFonts.geist(
                 fontSize: 13,
                 fontStyle: isUnsupported ? FontStyle.italic : FontStyle.normal,
-                color: inbound ? theme.primaryText : Colors.white,
+                color: inbound ? ng.text : Colors.white,
               ),
             ),
             if (m.sentAt != null)
@@ -467,7 +466,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
                   style: NgFonts.geist(
                       fontSize: 9.5,
                       color: inbound
-                          ? theme.secondaryText
+                          ? ng.mute
                           : Colors.white.withValues(alpha: 0.8)),
                 ),
               ),

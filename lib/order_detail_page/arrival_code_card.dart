@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/nav_items.dart';
 
@@ -90,7 +89,7 @@ class ArrivalCodeCardState extends State<ArrivalCodeCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     if (!_canSee || _loading) return const SizedBox.shrink();
 
     // A closed or cancelled job's code is spent and only adds noise.
@@ -101,75 +100,71 @@ class ArrivalCodeCardState extends State<ArrivalCodeCard> {
     if (code.isEmpty) return const SizedBox.shrink();
 
     final muted = _alreadyUsed;
-    final accent = muted ? theme.secondaryText : theme.primary;
+    final accent = muted ? c.mute : c.acc;
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 14),
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accent.withValues(alpha: muted ? 0.25 : 0.6)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(muted ? Icons.check_circle_outline : Icons.vpn_key_outlined,
-                  size: 18, color: accent),
-              const SizedBox(width: 8),
-              Text('Arrival code',
-                  style: NgFonts.geist(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: theme.primaryText)),
-              const Spacer(),
-              if (muted)
-                Text('Already used',
-                    style: NgFonts.geist(
-                        fontSize: 11, color: theme.secondaryText)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              // Monospace + wide spacing: this gets read aloud down a
-              // phone line, so the digits have to be unambiguous.
-              Text(
-                code.split('').join(' '),
-                style: GoogleFonts.robotoMono(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2,
-                  color: accent,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                        muted
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.key_rounded,
+                        size: 18,
+                        color: accent),
+                    const SizedBox(width: 8),
+                    Text('Arrival code',
+                        style: NgFonts.geist(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: c.text)),
+                    if (muted) ...[
+                      const SizedBox(width: 8),
+                      const NgPill('Already used'),
+                    ],
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                tooltip: 'Copy',
-                visualDensity: VisualDensity.compact,
-                icon: Icon(Icons.content_copy, size: 18, color: accent),
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: code));
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Arrival code copied.')));
-                },
-              ),
-            ],
+                const SizedBox(height: 10),
+                // Mono + wide spacing: this gets read aloud down a phone
+                // line, so the digits have to be unambiguous.
+                Text(code.split('').join(' '),
+                    style: NgFonts.mono(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 4,
+                      color: muted ? c.mute : c.text,
+                    )),
+                const SizedBox(height: 6),
+                Text(
+                  muted
+                      ? 'This job has already been started with this code.'
+                      : 'Read this to the customer when the crew reaches the '
+                          'address. The supervisor types it in to start the '
+                          'job — they cannot see it themselves, which is what '
+                          'makes it proof the crew actually arrived.',
+                  style: NgFonts.geist(
+                      fontSize: 12.5, color: c.mute, height: 1.4),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            muted
-                ? 'This job has already been started with this code.'
-                : 'Read this to the customer when the crew reaches the '
-                    'address. The supervisor types it in to start the job — '
-                    'they cannot see it themselves, which is what makes it '
-                    'proof the crew actually arrived.',
-            style: NgFonts.geist(
-                fontSize: 11.5, color: theme.secondaryText, height: 1.35),
+          const SizedBox(width: 8),
+          NgHeaderButtonBox(
+            icon: Icons.content_copy_rounded,
+            tooltip: 'Copy',
+            onTap: () async {
+              await Clipboard.setData(ClipboardData(text: code));
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Arrival code copied.')));
+            },
           ),
         ],
       ),

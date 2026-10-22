@@ -1,10 +1,10 @@
 import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/order_picker_dialog.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
@@ -68,7 +68,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
     }
   }
 
-  String _rupees(num v) => '₹${v.toStringAsFixed(0)}';
+  String _rupees(num v) => functions.inrFull(v.toDouble());
 
   Future<void> _editTrip() async {
     final t = _trip;
@@ -442,185 +442,162 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
     }
   }
 
-  Widget _kv(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [
-            SizedBox(width: 120, child: Text(label, style: NgFonts.geist(fontSize: 12, color: Colors.grey))),
-            Expanded(child: Text(value, style: NgFonts.geist(fontSize: 12.5))),
-          ],
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final t = _trip;
     final pnl = _pnl;
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
-      appBar: NgSimpleBar(title: t?.tripNo ?? 'Trip', actions: [
-          if (t != null)
-            IconButton(icon: const Icon(Icons.edit_outlined), onPressed: _editTrip),
-        ]),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : t == null
-              ? const Center(child: Text('Trip not found.'))
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                  children: [
-                    if (pnl != null) ...[
-                      Row(
-                        children: [
-                          Expanded(child: _kpiCard(theme, 'Revenue', _rupees(pnl.grossRevenue))),
-                          const SizedBox(width: 8),
-                          Expanded(child: _kpiCard(theme, 'Net Profit', _rupees(pnl.netProfit))),
-                        ],
+      backgroundColor: ng.bg,
+      body: SafeArea(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : t == null
+                ? Center(
+                    child: NgEmptyState(
+                      icon: Icons.local_shipping_outlined,
+                      title: 'Trip not found',
+                      action: SizedBox(
+                        width: 140,
+                        child: NgSecondaryButton(
+                            label: 'Go back',
+                            onPressed: () => Navigator.of(context).pop()),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                              child: _kpiCard(theme, 'Expenses',
-                                  _rupees(pnl.tripExpenses + pnl.hireAmount))),
-                          const SizedBox(width: 8),
-                          Expanded(
-                              child: _kpiCard(theme, 'Cost / Km', _rupees(pnl.costPerKm))),
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
+                    children: [
+                      NgDetailHeader(
+                        title: t.tripNo ?? 'Trip',
+                        subtitle:
+                            '${t.fromLoc ?? '—'} → ${t.toLoc ?? '—'} · ${t.isHired ? 'Hired' : 'Own'}',
+                        actions: [
+                          NgHeaderButtonBox(
+                              icon: Icons.edit_outlined, onTap: _editTrip),
                         ],
                       ),
                       const SizedBox(height: 16),
+                      if (pnl != null) ...[
+                        Row(children: [
+                          Expanded(
+                              child: NgMiniTile(
+                                  'Revenue', _rupees(pnl.grossRevenue))),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: NgMiniTile(
+                                  'Net profit', _rupees(pnl.netProfit),
+                                  color: pnl.netProfit < 0 ? ng.red : ng.green)),
+                        ]),
+                        const SizedBox(height: 8),
+                        Row(children: [
+                          Expanded(
+                              child: NgMiniTile('Expenses',
+                                  _rupees(pnl.tripExpenses + pnl.hireAmount))),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child:
+                                  NgMiniTile('Cost / km', _rupees(pnl.costPerKm))),
+                        ]),
+                        const SizedBox(height: 20),
+                      ],
+                      const NgGroupTitle('Details'),
+                      NgRowsCard(rows: [
+                        NgKvRow('Type', t.isHired ? 'Hired' : 'Own'),
+                        if ((t.vehicleNo ?? '').isNotEmpty)
+                          NgKvRow('Vehicle', t.vehicleNo!, mono: true),
+                        if ((t.driverName ?? '').isNotEmpty)
+                          NgKvRow('Driver', t.driverName!),
+                        NgKvRow('Route', '${t.fromLoc ?? '—'} → ${t.toLoc ?? '—'}'),
+                        if (t.totalKm != null)
+                          NgKvRow('Total km', '${t.totalKm}', mono: true),
+                        if (t.isHired && t.hireAmount != null)
+                          NgKvRow('Hire amount', _rupees(t.hireAmount!),
+                              mono: true),
+                      ]),
+                      const SizedBox(height: 20),
+                      NgGroupTitle('Orders on this trip',
+                          onAction: _addOrderToTrip),
+                      NgRowsCard(rows: [
+                        for (final to in _tripOrders) _tripOrderRow(ng, to),
+                      ], empty: 'No orders added yet.'),
+                      const SizedBox(height: 20),
+                      NgGroupTitle('Trip expenses', onAction: _addExpense),
+                      NgRowsCard(rows: [
+                        for (final e in _expenses) _expenseRow(ng, e),
+                      ], empty: 'No expenses logged yet.'),
                     ],
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                          color: theme.secondaryBackground, borderRadius: BorderRadius.circular(12)),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _kv('Type', t.isHired ? 'Hired' : 'Own'),
-                          if ((t.vehicleNo ?? '').isNotEmpty) _kv('Vehicle', t.vehicleNo!),
-                          if ((t.driverName ?? '').isNotEmpty) _kv('Driver', t.driverName!),
-                          _kv('Route', '${t.fromLoc ?? '—'} → ${t.toLoc ?? '—'}'),
-                          if (t.totalKm != null) _kv('Total Km', '${t.totalKm}'),
-                          if (t.isHired && t.hireAmount != null)
-                            _kv('Hire Amount', _rupees(t.hireAmount!)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Orders on this Trip',
-                            style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
-                        TextButton.icon(
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text('Add'),
-                            onPressed: _addOrderToTrip),
-                      ],
-                    ),
-                    if (_tripOrders.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Text('No orders added yet.',
-                            style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
-                      )
-                    else
-                      for (final to in _tripOrders) _tripOrderRow(theme, to),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Trip Expenses',
-                            style: NgFonts.geist(fontSize: 14, fontWeight: FontWeight.w700)),
-                        TextButton.icon(
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text('Add'),
-                            onPressed: _addExpense),
-                      ],
-                    ),
-                    if (_expenses.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Text('No expenses logged yet.',
-                            style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
-                      )
-                    else
-                      for (final e in _expenses) _expenseRow(theme, e),
-                  ],
-                ),
+                  ),
+      ),
     );
   }
 
-  Widget _kpiCard(FlutterFlowTheme theme, String label, String value) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: NgFonts.geist(fontSize: 10.5, color: theme.secondaryText)),
-            const SizedBox(height: 2),
-            Text(value, style: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w700)),
-          ],
-        ),
-      );
-
-  Widget _tripOrderRow(FlutterFlowTheme theme, TripOrdersRow to) => Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
+  Widget _tripOrderRow(NgPalette ng, TripOrdersRow to) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 4, 8),
         child: Row(
           children: [
+            NgIconTile(icon: Icons.inventory_2_outlined, size: 32, iconSize: 17),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(to.orderId ?? '—',
-                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                      style: NgFonts.mono(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: ng.text)),
                   Text(
                     [
                       if (to.cftShare != null) '${to.cftShare} CFT',
                       if (to.allocationPct != null) '${to.allocationPct}%',
                       if (to.allocatedCost != null) _rupees(to.allocatedCost!),
                     ].join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 12.5, color: ng.mute),
                   ),
                 ],
               ),
             ),
             IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18),
+                icon: Icon(Icons.delete_outline_rounded,
+                    size: 19, color: ng.mute),
                 onPressed: () => _removeTripOrder(to)),
           ],
         ),
       );
 
-  Widget _expenseRow(FlutterFlowTheme theme, TripExpensesRow e) => Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: theme.secondaryBackground, borderRadius: BorderRadius.circular(10)),
+  Widget _expenseRow(NgPalette ng, TripExpensesRow e) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 4, 8),
         child: Row(
           children: [
+            NgIconTile(icon: Icons.receipt_long_outlined, size: 32, iconSize: 17),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(e.expenseType ?? '—',
-                      style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                      style: NgFonts.geist(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: ng.text)),
                   Text(
                     [
-                      if (e.expenseDate != null) DateFormat('d MMM').format(e.expenseDate!),
+                      if (e.expenseDate != null)
+                        DateFormat('d MMM').format(e.expenseDate!),
                       if ((e.location ?? '').isNotEmpty) e.location,
                     ].whereType<String>().join(' · '),
-                    style: NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                    style: NgFonts.geist(fontSize: 12.5, color: ng.mute),
                   ),
                 ],
               ),
             ),
-            Text(_rupees(e.amount), style: NgFonts.geist(fontWeight: FontWeight.w600, fontSize: 12.5)),
+            Text(_rupees(e.amount),
+                style: NgFonts.mono(
+                    fontSize: 13.5, fontWeight: FontWeight.w600, color: ng.text)),
             IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18),
+                icon: Icon(Icons.delete_outline_rounded,
+                    size: 19, color: ng.mute),
                 onPressed: () => _removeExpense(e)),
           ],
         ),

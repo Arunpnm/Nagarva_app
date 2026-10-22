@@ -2,7 +2,6 @@ import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
 import 'plans_tab.dart';
@@ -176,18 +175,18 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
 
     if (_checking) {
       return Scaffold(
-        backgroundColor: theme.primaryBackground,
+        backgroundColor: ng.bg,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (!_isAdmin) {
       return Scaffold(
-        backgroundColor: theme.primaryBackground,
+        backgroundColor: ng.bg,
         appBar: NgSimpleBar(title: 'Platform Admin'),
         body: Center(
           child: Padding(
@@ -195,12 +194,12 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_outline, size: 40, color: theme.secondaryText),
+                Icon(Icons.lock_outline, size: 40, color: ng.mute),
                 const SizedBox(height: 12),
                 Text(
                   'This account is not a platform administrator.',
                   textAlign: TextAlign.center,
-                  style: NgFonts.geist(color: theme.secondaryText),
+                  style: NgFonts.geist(color: ng.mute),
                 ),
               ],
             ),
@@ -214,7 +213,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: theme.primaryBackground,
+        backgroundColor: ng.bg,
         appBar: NgSimpleBar(title: 'Platform Admin — ${_orgs.length} tenants'),
         body: Column(
           children: [
@@ -245,14 +244,10 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                         return InkWell(
                           onTap: () => _openTenant(org),
                           borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: theme.secondaryBackground,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
+                          child: NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(14),
+      child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
@@ -261,9 +256,9 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                                       child: Text(
                                         org.name,
                                         style: NgFonts.geist(
-                                            color: theme.primaryText,
+                                            color: ng.text,
                                             fontSize: 15,
-                                            fontWeight: FontWeight.w700),
+                                            fontWeight: FontWeight.w600),
                                       ),
                                     ),
                                     if (!org.active)
@@ -271,13 +266,13 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: theme.error.withOpacity(0.12),
+                                          color: ng.red.withOpacity(0.12),
                                           borderRadius:
                                               BorderRadius.circular(6),
                                         ),
                                         child: Text('suspended',
                                             style: NgFonts.geist(
-                                                color: theme.error,
+                                                color: ng.red,
                                                 fontSize: 11)),
                                       ),
                                   ],
@@ -287,14 +282,14 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                                   '${org.slug} · plan: ${planNameById[org.planId] ?? '—'} '
                                   '(${org.planStatus ?? '—'})',
                                   style: NgFonts.geist(
-                                      color: theme.secondaryText,
+                                      color: ng.mute,
                                       fontSize: 12.5),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   '${usage['orders'] ?? 0} orders · ${usage['leads'] ?? 0} leads · ${usage['staff'] ?? 0} staff',
                                   style: NgFonts.geist(
-                                      color: theme.primaryText, fontSize: 12.5),
+                                      color: ng.text, fontSize: 12.5),
                                 ),
                                 const SizedBox(height: 8),
                                 Align(

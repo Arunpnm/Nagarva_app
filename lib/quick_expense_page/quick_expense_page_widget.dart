@@ -4,11 +4,9 @@ import '/components/ng_widgets.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/flutter_flow_drop_down.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/flutter_flow/form_field_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -76,13 +74,13 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: NgPalette.of(context).bg,
         appBar: NgSimpleBar(title: AppLocalizations.of(context).quickExpense, close: true),
         body: SafeArea(
           top: true,
           child: Container(
             decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+              color: NgPalette.of(context).bg,
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -101,8 +99,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                         Container(
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: FlutterFlowTheme.of(context)
-                                .secondaryBackground,
+                            color: NgPalette.of(context).s1,
                             borderRadius: BorderRadius.circular(16.0),
                           ),
                           child: Padding(
@@ -114,29 +111,9 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                               children: [
                                 Text(
                                   AppLocalizations.of(context).expenseDetails,
-                                  style: FlutterFlowTheme.of(context)
-                                      .titleSmall
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleSmall
-                                                  .fontStyle,
+                                  style: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w600, 
+                                        color: NgPalette.of(context).acc,
                                         ),
-                                        color: FlutterFlowTheme.of(context)
-                                            .primary,
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .titleSmall
-                                            .fontStyle,
-                                      ),
                                 ),
                                 TextFormField(
                                   controller:
@@ -221,39 +198,18 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                         _model.expCategoryDropdownValue;
                                     safeSetState(() {});
                                   },
-                                  textStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .override(
-                                        font: NgFonts.geist(
-                                          fontWeight:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontWeight,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
+                                  textStyle: NgFonts.geist(fontSize: 14, 
                                         ),
-                                        letterSpacing: 0.0,
-                                        fontWeight: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontWeight,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .fontStyle,
-                                      ),
                                   hintText: AppLocalizations.of(context).selectCategory,
                                   icon: Icon(
                                     Icons.keyboard_arrow_down_rounded,
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
+                                    color: NgPalette.of(context).mute,
                                     size: 24.0,
                                   ),
-                                  fillColor: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  elevation: 2.0,
+                                  fillColor: NgPalette.of(context).s1,
+                                  elevation: 0.0,
                                   borderColor:
-                                      FlutterFlowTheme.of(context).alternate,
+                                      NgPalette.of(context).w08,
                                   borderWidth: 1.0,
                                   borderRadius: 8.0,
                                   margin: const EdgeInsetsDirectional.fromSTEB(
@@ -313,36 +269,34 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                   value: _model.linkedOrderId,
                                   isExpanded: true,
                                   dropdownColor:
-                                      FlutterFlowTheme.of(context).secondaryBackground,
+                                      NgPalette.of(context).s1,
                                   style: NgFonts.geist(
-                                      color: FlutterFlowTheme.of(context).primaryText,
+                                      color: NgPalette.of(context).text,
                                       fontSize: 13.5),
                                   decoration: InputDecoration(
                                     labelText: 'Linked Order (optional)',
                                     labelStyle: NgFonts.geist(
-                                        color: FlutterFlowTheme.of(context).secondaryText,
+                                        color: NgPalette.of(context).mute,
                                         fontSize: 12.5),
                                     filled: true,
                                     fillColor:
-                                        FlutterFlowTheme.of(context).secondaryBackground,
+                                        NgPalette.of(context).s1,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                       borderSide: BorderSide(
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText
+                                          color: NgPalette.of(context).mute
                                               .withOpacity(0.2)),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                       borderSide: BorderSide(
-                                          color: FlutterFlowTheme.of(context)
-                                              .secondaryText
+                                          color: NgPalette.of(context).mute
                                               .withOpacity(0.2)),
                                     ),
                                   ),
                                   hint: Text('No linked order',
                                       style: NgFonts.geist(
-                                          color: FlutterFlowTheme.of(context).secondaryText,
+                                          color: NgPalette.of(context).mute,
                                           fontSize: 13)),
                                   items: [
                                     const DropdownMenuItem<String>(
@@ -441,7 +395,7 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                         Padding(
                           padding: const EdgeInsetsDirectional.fromSTEB(
                               0.0, 16.0, 0.0, 16.0),
-                          child: FFButtonWidget(
+                          child: NgPrimaryButton(
                             onPressed: () async {
                               final amount = double.tryParse(_model
                                   .expAmountFieldTextController!.text
@@ -497,26 +451,8 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
 
                               safeSetState(() {});
                             },
-                            text: AppLocalizations.of(context).saveExpense,
-                            icon: const Icon(
-                              Icons.save,
-                              size: 20.0,
-                            ),
-                            options: FFButtonOptions(
-                              width: double.infinity,
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 0.0, 0.0),
-                              iconPadding: const EdgeInsetsDirectional.fromSTEB(
-                                  0.0, 0.0, 0.0, 0.0),
-                              iconColor: FlutterFlowTheme.of(context)
-                                  .primaryBackground,
-                              color: FlutterFlowTheme.of(context).primary,
-                              textStyle: TextStyle(
-                                color: FlutterFlowTheme.of(context)
-                                    .primaryBackground,
-                              ),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
+                            label: AppLocalizations.of(context).saveExpense,
+                            icon: Icons.save_outlined,
                           ),
                         ),
                       ].divide(const SizedBox(height: 16.0)),

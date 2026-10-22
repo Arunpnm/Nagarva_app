@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '/backend/soft_delete.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Shared destructive-delete flow (live-test fix brief #2, item 11.4).
@@ -88,7 +87,7 @@ class DeleteAction {
     void Function(String)? onAlternative,
   ) async {
     final alt = guard.alternative;
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -103,7 +102,7 @@ class DeleteAction {
               Text(
                 _altExplanation(alt),
                 style: NgFonts.geist(
-                    fontSize: 12.5, height: 1.4, color: theme.secondaryText),
+                    fontSize: 12.5, height: 1.4, color: ng.mute),
               ),
             ],
           ],
@@ -168,7 +167,7 @@ class DeleteAction {
     required bool reasonRequired,
   }) async {
     final reasonCtrl = TextEditingController();
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     var canSubmit = !reasonRequired;
 
     final ok = await showDialog<bool>(
@@ -210,7 +209,7 @@ class DeleteAction {
               onPressed: canSubmit
                   ? () => Navigator.of(dialogContext).pop(true)
                   : null,
-              style: TextButton.styleFrom(foregroundColor: theme.error),
+              style: TextButton.styleFrom(foregroundColor: ng.red),
               child: const Text('Delete'),
             ),
           ],
@@ -232,7 +231,7 @@ class DeleteAction {
     required BuildContext context,
     bool busy = false,
   }) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 24, bottom: 8),
       child: SizedBox(
@@ -240,14 +239,14 @@ class DeleteAction {
         height: 48,
         child: OutlinedButton.icon(
           onPressed: busy ? null : onPressed,
-          icon: Icon(Icons.delete_outline, size: 19, color: theme.error),
+          icon: Icon(Icons.delete_outline, size: 19, color: ng.red),
           label: Text(
             busy ? 'Deleting…' : label,
             style: NgFonts.geist(
-                fontWeight: FontWeight.w600, color: theme.error),
+                fontWeight: FontWeight.w600, color: ng.red),
           ),
           style: OutlinedButton.styleFrom(
-            side: BorderSide(color: theme.error.withValues(alpha: 0.6)),
+            side: BorderSide(color: ng.red.withValues(alpha: 0.6)),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8)),
           ),

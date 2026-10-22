@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '/app_session.dart';
 import '/backend/owner_pin.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 
@@ -100,11 +99,11 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final orgName = AppSession.instance.currentOrgName ?? 'your organization';
 
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -115,15 +114,15 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.lock_outline, size: 48, color: theme.primary),
+                  Icon(Icons.lock_outline, size: 48, color: ng.acc),
                   const SizedBox(height: 20),
                   Text(
                     'Set your PIN',
                     textAlign: TextAlign.center,
                     style: NgFonts.geist(
                       fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: theme.primaryText,
+                      fontWeight: FontWeight.w600,
+                      color: ng.text,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -132,7 +131,7 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
                     'typing your email and password every time.',
                     textAlign: TextAlign.center,
                     style: NgFonts.geist(
-                        fontSize: 14, color: theme.secondaryText),
+                        fontSize: 14, color: ng.mute),
                   ),
                   const SizedBox(height: 28),
                   TextField(
@@ -166,7 +165,7 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
                     Text(
                       _error!,
                       style: NgFonts.geist(
-                          fontSize: 13, color: theme.error),
+                          fontSize: 13, color: ng.red),
                     ),
                   ],
                   const SizedBox(height: 24),
@@ -193,7 +192,7 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
                     'You can set it later from Settings → App PIN.',
                     textAlign: TextAlign.center,
                     style: NgFonts.geist(
-                        fontSize: 12, color: theme.secondaryText),
+                        fontSize: 12, color: ng.mute),
                   ),
                 ],
               ),

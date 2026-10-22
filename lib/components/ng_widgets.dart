@@ -1211,11 +1211,20 @@ class NgInput extends StatelessWidget {
     this.maxLines = 1,
     this.onChanged,
     this.obscure = false,
+    this.readOnly = false,
+    this.label,
   });
 
   final TextEditingController controller;
   /// Hide what is typed (access tokens, secrets).
   final bool obscure;
+
+  /// Shown but not editable (fields locked by a later stage).
+  final bool readOnly;
+
+  /// Floating label inside the field, for dense forms with no
+  /// [NgFieldLabel] above.
+  final String? label;
   final String? hint;
   final FocusNode? focusNode;
   final TextInputType? keyboardType;
@@ -1241,6 +1250,7 @@ class NgInput extends StatelessWidget {
       keyboardType: keyboardType,
       maxLines: obscure ? 1 : maxLines,
       obscureText: obscure,
+      readOnly: readOnly,
       enableSuggestions: !obscure,
       autocorrect: !obscure,
       onChanged: onChanged,
@@ -1249,8 +1259,11 @@ class NgInput extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: style.copyWith(color: c.faint),
+        labelText: label,
+        labelStyle: NgFonts.geist(fontSize: 14, color: c.mute),
+        floatingLabelStyle: NgFonts.geist(fontSize: 13, color: c.acc),
         filled: true,
-        fillColor: c.s1,
+        fillColor: readOnly ? c.inset : c.s1,
         isDense: true,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -1311,15 +1324,581 @@ class NgOptionCard extends StatelessWidget {
                             fontSize: 14.5,
                             fontWeight: FontWeight.w600,
                             color: c.text)),
-                    const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(subtitle,
+                          style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Centred empty state: muted icon, a 16px title and an optional muted
+/// line under it (the handoff's "No orders here" pattern).
+class NgEmptyState extends StatelessWidget {
+  const NgEmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.action,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 42, color: c.mute),
+          const SizedBox(height: 12),
+          Text(title,
+              textAlign: TextAlign.center,
+              style: NgFonts.geist(
+                  fontSize: 16, fontWeight: FontWeight.w600, color: c.text)),
+          if ((subtitle ?? '').isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(subtitle!,
+                textAlign: TextAlign.center,
+                style: NgFonts.geist(fontSize: 13, color: c.mute)),
+          ],
+          if (action != null) ...[const SizedBox(height: 16), action!],
+        ],
+      ),
+    );
+  }
+}
+
+/// Label on the left, value on the right — one line of a detail card
+/// (amounts in Geist Mono when [mono]).
+class NgKeyValue extends StatelessWidget {
+  const NgKeyValue(
+    this.label,
+    this.value, {
+    super.key,
+    this.mono = false,
+    this.strong = false,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final bool mono;
+  final bool strong;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    final vStyle = (mono ? NgFonts.mono : NgFonts.geist)(
+      fontSize: strong ? 15 : 13.5,
+      fontWeight: strong ? FontWeight.w600 : FontWeight.w500,
+      color: valueColor ?? c.text,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(label,
+                style: NgFonts.geist(
+                    fontSize: 13.5,
+                    fontWeight: strong ? FontWeight.w600 : FontWeight.w400,
+                    color: strong ? c.text : c.mute)),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(value, textAlign: TextAlign.right, style: vStyle),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A titled card: 15px semibold title (optional icon and trailing
+/// widget) over the card's own content. The detail-screen section.
+class NgSectionCard extends StatelessWidget {
+  const NgSectionCard({
+    super.key,
+    required this.title,
+    required this.child,
+    this.icon,
+    this.trailing,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  final String title;
+  final IconData? icon;
+  final Widget? trailing;
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return NgCard(
+      radius: 20,
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 18, color: c.mute),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(title,
+                    style: NgFonts.geist(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+/// Small inline text button in the accent colour ("Edit", "Add").
+class NgLinkButton extends StatelessWidget {
+  const NgLinkButton(this.label, {super.key, required this.onTap, this.icon});
+
+  final String label;
+  final VoidCallback? onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: onTap == null ? c.faint : c.acc),
+              const SizedBox(width: 4),
+            ],
+            Text(label,
+                style: NgFonts.geist(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: onTap == null ? c.faint : c.acc)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// From → To pair in one card (the handoff's New lead / New order route
+/// block): green ring for pickup, accent pin for drop, a hairline between.
+class NgRouteFields extends StatelessWidget {
+  const NgRouteFields({
+    super.key,
+    required this.from,
+    required this.to,
+    this.fromHint = 'Moving from',
+    this.toHint = 'Moving to',
+  });
+
+  final TextEditingController from;
+  final TextEditingController to;
+  final String fromHint;
+  final String toHint;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    Widget line(TextEditingController ctrl, String hint, Widget leading) =>
+        Row(children: [
+          SizedBox(width: 24, child: Center(child: leading)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: ctrl,
+              style: NgFonts.geist(fontSize: 16, color: c.text),
+              cursorColor: c.acc,
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: NgFonts.geist(fontSize: 16, color: c.faint),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
+        ]);
+    return NgCard(
+      padding: const EdgeInsets.fromLTRB(16, 2, 10, 2),
+      child: Column(children: [
+        line(
+          from,
+          fromHint,
+          Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: c.green, width: 3),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 36),
+          child: Divider(height: 1, color: c.w08),
+        ),
+        line(to, toHint, Icon(Icons.place_rounded, size: 20, color: c.acc)),
+      ]),
+    );
+  }
+}
+
+/// Sticky bottom bar holding a form's primary action, above a hairline.
+class NgBottomActionBar extends StatelessWidget {
+  const NgBottomActionBar({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        decoration: BoxDecoration(
+          color: c.bg,
+          border: Border(top: BorderSide(color: c.w06)),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Tappable field that shows a value and opens a picker (dates, pickers
+/// over long lists). Same surface as [NgInput].
+class NgPickerField extends StatelessWidget {
+  const NgPickerField({
+    super.key,
+    required this.value,
+    required this.onTap,
+    this.icon,
+    this.placeholder = false,
+  });
+
+  final String value;
+  final VoidCallback? onTap;
+  final IconData? icon;
+
+  /// Render [value] in the hint colour (nothing chosen yet).
+  final bool placeholder;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Material(
+      color: c.s1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(NgRadius.tile),
+        side: BorderSide(color: c.w08),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(NgRadius.tile),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20, color: c.mute),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Text(value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(
+                        fontSize: 16,
+                        color: placeholder ? c.faint : c.text)),
+              ),
+              Icon(Icons.expand_more_rounded, size: 20, color: c.mute),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Detail-screen header from the handoff (customer / vendor detail): back,
+/// optional avatar, 20px title over a muted line, optional actions.
+/// Sits in the body, not as an app bar.
+class NgDetailHeader extends StatelessWidget {
+  const NgDetailHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.avatar,
+    this.actions = const [],
+    this.onBack,
+  });
+
+  final String title;
+  final String? subtitle;
+
+  /// Name to draw an initial avatar from; null for no avatar.
+  final String? avatar;
+  final List<Widget> actions;
+  final VoidCallback? onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Row(
+      children: [
+        NgHeaderButtonBox(
+          icon: Icons.arrow_back_rounded,
+          onTap: onBack ?? () => Navigator.of(context).maybePop(),
+        ),
+        const SizedBox(width: 12),
+        if (avatar != null) ...[
+          NgAvatar(avatar!, size: 44),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NgFonts.geist(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                      color: c.text)),
+              if ((subtitle ?? '').isNotEmpty)
+                Text(subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+            ],
+          ),
+        ),
+        for (final a in actions) ...[const SizedBox(width: 8), a],
+      ],
+    );
+  }
+}
+
+/// 14px title over a group, with an optional accent "Add" on the right.
+class NgGroupTitle extends StatelessWidget {
+  const NgGroupTitle(this.title, {super.key, this.actionLabel, this.onAction});
+
+  final String title;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 0, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(title,
+                style: NgFonts.geist(
+                    fontSize: 14, fontWeight: FontWeight.w600, color: c.text)),
+          ),
+          if (onAction != null)
+            NgLinkButton(actionLabel ?? 'Add',
+                icon: Icons.add_rounded, onTap: onAction),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rows in one hairline-separated card (radius 18); [empty] shows instead
+/// when there are none.
+class NgRowsCard extends StatelessWidget {
+  const NgRowsCard({super.key, required this.rows, this.empty});
+
+  final List<Widget> rows;
+  final String? empty;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return NgCard(
+      radius: 18,
+      padding: EdgeInsets.zero,
+      child: rows.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(empty ?? '',
+                  style: NgFonts.geist(fontSize: 13, color: c.mute)),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < rows.length; i++)
+                  Container(
+                    decoration: BoxDecoration(
+                        border: i == 0
+                            ? null
+                            : Border(top: BorderSide(color: c.w06))),
+                    child: rows[i],
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
+/// Key / value row for an [NgRowsCard]: fixed 112px muted label, value
+/// wrapping beside it (the handoff's "Details" list).
+class NgKvRow extends StatelessWidget {
+  const NgKvRow(this.label, this.value, {super.key, this.mono = false});
+
+  final String label;
+  final String value;
+  final bool mono;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+              width: 112,
+              child: Text(label,
+                  style: NgFonts.geist(fontSize: 12.5, color: c.mute))),
+          Expanded(
+              child: Text(value,
+                  style: (mono ? NgFonts.mono : NgFonts.geist)(
+                      fontSize: 13.5, height: 1.4, color: c.text))),
+        ],
+      ),
+    );
+  }
+}
+
+/// Full-width 46px button: s1 with a hairline, or red-tinted when [danger].
+class NgWideButton extends StatelessWidget {
+  const NgWideButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Opacity(
+      opacity: onTap == null ? 0.5 : 1,
+      child: Material(
+        color: danger ? c.redBg : c.s1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: danger ? BorderSide.none : BorderSide(color: c.w06),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: SizedBox(
+            height: 46,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 19, color: danger ? c.red : c.soft),
+                const SizedBox(width: 8),
+                Text(label,
+                    style: NgFonts.geist(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: danger ? c.red : c.text)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Small label-over-value tile (customer / vendor KPI grid), value in mono.
+class NgMiniTile extends StatelessWidget {
+  const NgMiniTile(this.label, this.value, {super.key, this.color});
+
+  final String label;
+  final String value;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration:
+          BoxDecoration(color: c.s1, borderRadius: BorderRadius.circular(14)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: NgFonts.geist(fontSize: 12, color: c.mute)),
+          const SizedBox(height: 4),
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: NgFonts.mono(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: color ?? c.text)),
+        ],
       ),
     );
   }

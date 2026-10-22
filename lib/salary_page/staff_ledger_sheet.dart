@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 import 'package:flutter/services.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
@@ -88,7 +88,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
     return showDialog<double>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        backgroundColor: NgPalette.of(context).s1,
         title: Text(title),
         content: TextField(
           controller: amountCtrl,
@@ -224,7 +224,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
   /// is blank, not absent — marking someone absent for a day that has not
   /// happened is a lie the vendor would have to explain to them.
   Widget _attendanceCalendar(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final month = widget.month;
     final first = DateTime(month.year, month.month, 1);
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
@@ -260,7 +260,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
           margin: const EdgeInsets.all(2),
           height: 38,
           decoration: BoxDecoration(
-            color: bg ?? theme.primaryBackground,
+            color: bg ?? ng.bg,
             borderRadius: BorderRadius.circular(6),
           ),
           alignment: Alignment.center,
@@ -276,8 +276,8 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
       final didWork = worked.contains(day);
       final mark = future ? '' : (didWork ? 'P' : 'A');
       final colour = future
-          ? theme.secondaryText
-          : (didWork ? theme.success : theme.error);
+          ? ng.mute
+          : (didWork ? ng.green : ng.red);
       cells.add(cell(
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -286,7 +286,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                 style: NgFonts.geist(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: theme.primaryText)),
+                    color: ng.text)),
             Text(mark.isEmpty ? '·' : mark,
                 style: NgFonts.geist(
                     fontSize: 10, fontWeight: FontWeight.w700, color: colour)),
@@ -295,8 +295,8 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
         bg: future
             ? null
             : (didWork
-                ? theme.success.withValues(alpha: 0.14)
-                : theme.error.withValues(alpha: 0.10)),
+                ? ng.green.withValues(alpha: 0.14)
+                : ng.red.withValues(alpha: 0.10)),
       ));
     }
 
@@ -307,13 +307,13 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
             style: NgFonts.geist(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: theme.primaryText)),
+                color: ng.text)),
         const SizedBox(height: 2),
         Text(
           'Auto-derived from orders. Present = assigned to at least one '
           'order that day.',
           style:
-              NgFonts.geist(fontSize: 11, color: theme.secondaryText),
+              NgFonts.geist(fontSize: 11, color: ng.mute),
         ),
         const SizedBox(height: 8),
         Row(
@@ -325,7 +325,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                       style: NgFonts.geist(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: theme.secondaryText)),
+                          color: ng.mute)),
                 ),
               ),
           ],
@@ -341,21 +341,21 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
         const SizedBox(height: 8),
         Row(
           children: [
-            Icon(Icons.check_circle, size: 14, color: theme.success),
+            Icon(Icons.check_circle, size: 14, color: ng.green),
             const SizedBox(width: 4),
             Text('Present: $present day${present == 1 ? '' : 's'}',
                 style: NgFonts.geist(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: theme.primaryText)),
+                    color: ng.text)),
             const SizedBox(width: 14),
-            Icon(Icons.cancel, size: 14, color: theme.error),
+            Icon(Icons.cancel, size: 14, color: ng.red),
             const SizedBox(width: 4),
             Text('Absent: $absent day${absent == 1 ? '' : 's'}',
                 style: NgFonts.geist(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: theme.primaryText)),
+                    color: ng.text)),
           ],
         ),
       ],
@@ -363,16 +363,16 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
   }
 
   Widget _chip(String label, double value, {Color? color}) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         margin: const EdgeInsets.symmetric(horizontal: 3),
         decoration: BoxDecoration(
-          color: theme.primaryBackground,
+          color: ng.bg,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-              color: (color ?? theme.secondaryText).withOpacity(0.35)),
+              color: (color ?? ng.mute).withOpacity(0.35)),
         ),
         child: Column(
           children: [
@@ -380,12 +380,12 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                 style: NgFonts.geist(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
-                    color: color ?? theme.primaryText)),
+                    color: color ?? ng.text)),
             const SizedBox(height: 2),
             Text(label,
                 textAlign: TextAlign.center,
                 style: NgFonts.geist(
-                    fontSize: 9.5, color: theme.secondaryText)),
+                    fontSize: 9.5, color: ng.mute)),
           ],
         ),
       ),
@@ -394,23 +394,15 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
 
   Widget _actionBtn(String label, IconData icon, VoidCallback? onTap,
       {Color? color}) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3),
-        child: ElevatedButton.icon(
+        child: NgSecondaryButton(
+          label: label,
+          icon: icon,
+          iconColor: color ?? ng.acc,
           onPressed: _busy ? null : onTap,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color ?? theme.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 11),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(9)),
-          ),
-          icon: Icon(icon, size: 15),
-          label: Text(label,
-              style: NgFonts.geist(
-                  fontSize: 11.5, fontWeight: FontWeight.w700)),
         ),
       ),
     );
@@ -418,13 +410,13 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SingleChildScrollView(
@@ -439,7 +431,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: theme.secondaryText.withOpacity(0.35),
+                  color: ng.mute.withOpacity(0.35),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -455,7 +447,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                           style: NgFonts.geist(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
-                              color: theme.primaryText)),
+                              color: ng.text)),
                       Text(
                         [
                           if ((widget.staff.role ?? '').isNotEmpty)
@@ -463,13 +455,13 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                           DateFormat('MMMM yyyy').format(widget.month),
                         ].join(' · '),
                         style: NgFonts.geist(
-                            fontSize: 12, color: theme.secondaryText),
+                            fontSize: 12, color: ng.mute),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.close, color: theme.secondaryText),
+                  icon: Icon(Icons.close, color: ng.mute),
                   onPressed:
                       _busy ? null : () => Navigator.of(context).pop(_dirty),
                 ),
@@ -482,9 +474,9 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                     color: NgPalette.of(context).green),
                 _chip('PAID OUT', paid, color: NgPalette.of(context).blue),
                 _chip('BALANCE TO PAY', balance,
-                    color: balance > 0 ? theme.primary : null),
+                    color: balance > 0 ? ng.acc : null),
                 _chip('ADVANCE BALANCE', advance,
-                    color: advance > 0 ? theme.error : null),
+                    color: advance > 0 ? ng.red : null),
               ],
             ),
             const SizedBox(height: 12),
@@ -507,12 +499,12 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                 style: NgFonts.geist(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: theme.primaryText)),
+                    color: ng.text)),
             const SizedBox(height: 6),
             if (widget.monthOrderStaff.isEmpty)
               Text('No job earnings this month.',
                   style: NgFonts.geist(
-                      fontSize: 12, color: theme.secondaryText))
+                      fontSize: 12, color: ng.mute))
             else
               ...widget.monthOrderStaff.map((e) {
                 final o = widget.ordersById[e.orderId];
@@ -521,7 +513,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                   child: Row(
                     children: [
                       Icon(Icons.local_shipping,
-                          size: 15, color: theme.secondaryText),
+                          size: 15, color: ng.mute),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -531,7 +523,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                                   '${(e.isHalfDay ?? false) ? ' · half day' : ''}',
                           overflow: TextOverflow.ellipsis,
                           style: NgFonts.geist(
-                              fontSize: 12.5, color: theme.primaryText),
+                              fontSize: 12.5, color: ng.text),
                         ),
                       ),
                       Text('₹${(e.salaryAmount ?? 0).toStringAsFixed(0)}',
@@ -548,19 +540,19 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                 style: NgFonts.geist(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: theme.primaryText)),
+                    color: ng.text)),
             const SizedBox(height: 6),
             if (widget.monthPayments.isEmpty)
               Text('Nothing paid out yet this month.',
                   style: NgFonts.geist(
-                      fontSize: 12, color: theme.secondaryText))
+                      fontSize: 12, color: ng.mute))
             else
               ...widget.monthPayments.map((p) => Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Row(
                       children: [
                         Icon(Icons.payments,
-                            size: 15, color: theme.secondaryText),
+                            size: 15, color: ng.mute),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -572,7 +564,7 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
                             overflow: TextOverflow.ellipsis,
                             style: NgFonts.geist(
                                 fontSize: 12.5,
-                                color: theme.primaryText),
+                                color: ng.text),
                           ),
                         ),
                         Text('₹${p.amount.toStringAsFixed(0)}',

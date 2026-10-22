@@ -1,6 +1,5 @@
 import '/app_session.dart';
 import '/permissions.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -106,7 +105,7 @@ class QuickEntryDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
 
     Widget tile({
       required IconData icon,
@@ -123,22 +122,22 @@ class QuickEntryDialog extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
           decoration: BoxDecoration(
-            color: theme.primaryBackground,
+            color: ng.bg,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: theme.secondaryText.withValues(alpha: 0.18),
+              color: ng.mute.withValues(alpha: 0.18),
             ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: theme.primary, size: 26),
+              Icon(icon, color: ng.acc, size: 26),
               const SizedBox(height: 10),
               Text(
                 label,
                 style: NgFonts.geist(
-                  color: theme.primaryText,
+                  color: ng.text,
                   fontSize: 14.5,
                   fontWeight: FontWeight.w700,
                 ),
@@ -147,7 +146,7 @@ class QuickEntryDialog extends StatelessWidget {
               Text(
                 steps,
                 style: NgFonts.geist(
-                  color: theme.secondaryText,
+                  color: ng.mute,
                   fontSize: 11.5,
                 ),
               ),
@@ -174,7 +173,7 @@ class QuickEntryDialog extends StatelessWidget {
       top: false,
       child: Container(
         decoration: BoxDecoration(
-          color: theme.secondaryBackground,
+          color: ng.s1,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -188,14 +187,14 @@ class QuickEntryDialog extends StatelessWidget {
                   child: Text(
                     'Quick Entry',
                     style: NgFonts.geist(
-                      color: theme.primaryText,
+                      color: ng.text,
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.close, color: theme.secondaryText),
+                  icon: Icon(Icons.close, color: ng.mute),
                   onPressed: () => Navigator.of(context).pop(),
                   tooltip: 'Close',
                   constraints: const BoxConstraints.tightFor(
@@ -214,7 +213,7 @@ class QuickEntryDialog extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: NgFonts.geist(
                     fontSize: 13,
-                    color: theme.secondaryText,
+                    color: ng.mute,
                   ),
                 ),
               )

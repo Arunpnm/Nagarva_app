@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 import '/backend/pending_password_reset.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/flutter_flow_theme.dart' show kBrandAccent;
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/index.dart';
 
 /// Landing page for a `type=recovery` deep link (17 Aug 2026 —
@@ -92,28 +92,28 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: NgFonts.geist(color: Colors.white54),
-      hintStyle: NgFonts.geist(color: Colors.white24),
-      prefixIcon: Icon(icon, color: Colors.white38, size: 20),
+      labelStyle: NgFonts.geist(color: NgPalette.of(context).mute),
+      hintStyle: NgFonts.geist(color: NgPalette.of(context).faint),
+      prefixIcon: Icon(icon, color: NgPalette.of(context).faint, size: 20),
       filled: true,
-      fillColor: const Color(0xFF1A1E26),
+      fillColor: NgPalette.of(context).s1,
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: NgPalette.of(context).w08),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: kBrandAccent, width: 1.5),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: NgPalette.of(context).acc, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: NgPalette.of(context).red),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: NgPalette.of(context).red),
       ),
-      errorStyle: NgFonts.geist(color: Colors.redAccent, fontSize: 12),
+      errorStyle: NgFonts.geist(color: NgPalette.of(context).red, fontSize: 12),
     );
   }
 
@@ -122,7 +122,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFF0A0C10),
+        backgroundColor: NgPalette.of(context).bg,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -141,7 +141,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: const Color(0x24F68C36),
+                              color: NgPalette.of(context).status(NgStatus.accent).bg,
                               borderRadius: BorderRadius.circular(40),
                             ),
                             child: const Icon(Icons.lock_reset,
@@ -152,9 +152,9 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                             'Set a new password',
                             textAlign: TextAlign.center,
                             style: NgFonts.geist(
-                              color: Colors.white,
+                              color: NgPalette.of(context).text,
                               fontSize: 22,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -162,7 +162,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                             'Choose a new password to finish resetting your account.',
                             textAlign: TextAlign.center,
                             style: NgFonts.geist(
-                              color: Colors.white54,
+                              color: NgPalette.of(context).mute,
                               fontSize: 13,
                             ),
                           ),
@@ -173,7 +173,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         controller: _passwordController,
                         focusNode: _passwordFocusNode,
                         obscureText: !_passwordVisible,
-                        style: NgFonts.geist(color: Colors.white),
+                        style: NgFonts.geist(color: NgPalette.of(context).text),
                         // Same rule as SignupPageWidget's own password field.
                         validator: (v) => (v == null || v.length < 8)
                             ? 'Password must be at least 8 characters'
@@ -188,7 +188,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                               _passwordVisible
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: Colors.white38,
+                              color: NgPalette.of(context).faint,
                               size: 20,
                             ),
                             onPressed: () => safeSetState(
@@ -201,7 +201,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         controller: _confirmController,
                         focusNode: _confirmFocusNode,
                         obscureText: !_confirmVisible,
-                        style: NgFonts.geist(color: Colors.white),
+                        style: NgFonts.geist(color: NgPalette.of(context).text),
                         // Same rule as SignupPageWidget's confirm-password
                         // field — validated client-side, no round trip.
                         validator: (v) => (v != _passwordController.text)
@@ -217,7 +217,7 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                               _confirmVisible
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: Colors.white38,
+                              color: NgPalette.of(context).faint,
                               size: 20,
                             ),
                             onPressed: () => safeSetState(
@@ -230,33 +230,22 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(10),
+                            color: NgPalette.of(context).redBg,
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text(
                             _errorMessage!,
                             style: NgFonts.geist(
-                                color: Colors.redAccent, fontSize: 13),
+                                color: NgPalette.of(context).red, fontSize: 13),
                           ),
                         ),
                       ],
                       const SizedBox(height: 22),
-                      FFButtonWidget(
-                        text: 'Update Password',
-                        onPressed: _isLoading ? null : _handleSubmit,
-                        options: FFButtonOptions(
-                          height: 52,
-                          color: kBrandAccent,
-                          textStyle: NgFonts.geist(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          elevation: 0,
-                        ),
-                        showLoadingIndicator: _isLoading,
-                      ),
+                      NgPrimaryButton(
+  label: _isLoading ? 'Please wait…' : 'Update password',
+  height: 54,
+  onPressed: _isLoading ? null : _handleSubmit,
+),
                     ],
                   ),
                 ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 
@@ -117,7 +117,7 @@ class _SignupsTabState extends State<SignupsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final c = NgPalette.of(context);
     final shown = _rows
         .where((r) =>
@@ -159,17 +159,17 @@ class _SignupsTabState extends State<SignupsTab> {
                     _pendingOnly
                         ? 'No signups waiting for review.'
                         : 'No decided signups yet.',
-                    style: NgFonts.geist(color: theme.secondaryText)),
+                    style: NgFonts.geist(color: ng.mute)),
               ),
             )
           else
-            for (final r in shown) _card(theme, c, r),
+            for (final r in shown) _card(ng, c, r),
         ],
       ),
     );
   }
 
-  Widget _card(FlutterFlowTheme theme, NgPalette c, Map<String, dynamic> r) {
+  Widget _card(NgPalette ng, NgPalette c, Map<String, dynamic> r) {
     final st = r['status'] as String? ?? 'pending';
     final (:fg, :bg) = c.status(st == 'approved'
         ? NgStatus.green
@@ -187,13 +187,9 @@ class _SignupsTabState extends State<SignupsTab> {
       ('Referral code', (r['referral_code'] as String?) ?? '—'),
     ];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(14),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -216,7 +212,7 @@ class _SignupsTabState extends State<SignupsTab> {
                         style: NgFonts.geist(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: theme.primaryText)),
+                            color: ng.text)),
                     const SizedBox(height: 2),
                     Text(
                       [
@@ -230,7 +226,7 @@ class _SignupsTabState extends State<SignupsTab> {
                           .where((x) => (x ?? '').toString().isNotEmpty)
                           .join(' · '),
                       style: NgFonts.geist(
-                          fontSize: 12.5, color: theme.secondaryText),
+                          fontSize: 12.5, color: ng.mute),
                     ),
                   ],
                 ),
@@ -247,13 +243,13 @@ class _SignupsTabState extends State<SignupsTab> {
                   TextSpan(
                       text: '${d.$1}  ',
                       style: NgFonts.geist(
-                          fontSize: 12, color: theme.secondaryText)),
+                          fontSize: 12, color: ng.mute)),
                   TextSpan(
                       text: d.$2.toString(),
                       style: NgFonts.geist(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
-                          color: theme.primaryText)),
+                          color: ng.text)),
                 ])),
             ],
           ),
@@ -300,7 +296,7 @@ class _SignupsTabState extends State<SignupsTab> {
               const SizedBox(height: 10),
               Text('Reason the owner will see',
                   style: NgFonts.geist(
-                      fontSize: 12.5, color: theme.secondaryText)),
+                      fontSize: 12.5, color: ng.mute)),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,

@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '/flutter_flow/ng_tokens.dart';
 import 'package:printing/printing.dart';
 
-import '/flutter_flow/flutter_flow_theme.dart';
 
 /// Looks at a generated document without downloading it first.
 ///
@@ -52,14 +52,14 @@ class PdfViewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: AppBar(
-        backgroundColor: theme.primaryBackground,
+        backgroundColor: ng.bg,
         title: Text(title,
-            style: TextStyle(color: theme.primaryText, fontSize: 17)),
-        iconTheme: IconThemeData(color: theme.primaryText),
+            style: TextStyle(color: ng.text, fontSize: 17)),
+        iconTheme: IconThemeData(color: ng.text),
       ),
       body: PdfPreview(
         build: (_) async => bytes,

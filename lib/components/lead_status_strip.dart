@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 
 import '/backend/lead_stage_evidence.dart';
 import '/backend/lead_status.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Lead pipeline progress strip + tappable stage chips.
@@ -56,7 +56,7 @@ class LeadStatusStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final canonical = canonicalLeadStatus(status);
     final currentIdx = leadStageIndex(canonical);
     final isLost = canonical == kLeadStatusLost;
@@ -70,14 +70,9 @@ class LeadStatusStrip extends StatelessWidget {
           status: canonical);
     }
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 14),
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -88,7 +83,7 @@ class LeadStatusStrip extends StatelessWidget {
                 style: NgFonts.geist(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
-                  color: theme.primaryText,
+                  color: ng.text,
                 ),
               ),
               const Spacer(),
@@ -216,7 +211,7 @@ class _ProgressRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -254,7 +249,7 @@ class _ProgressRow extends StatelessWidget {
                         ) ==
                         LeadStageState.done
                     ? leadStatusColor(kLeadPipeline[i], context)
-                    : theme.alternate,
+                    : ng.w08,
               ),
             ),
         ],
@@ -280,7 +275,7 @@ class _Stage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final done = state == LeadStageState.done;
     final current = state == LeadStageState.current;
     final skipped = state == LeadStageState.skipped;
@@ -305,8 +300,8 @@ class _Stage extends StatelessWidget {
               height: current ? 26 : 20,
               decoration: BoxDecoration(
                 color: skipped
-                    ? theme.secondaryBackground
-                    : (active ? color : theme.alternate),
+                    ? ng.s1
+                    : (active ? color : ng.w08),
                 shape: BoxShape.circle,
                 border: current
                     ? Border.all(color: color.withValues(alpha: 0.35), width: 3)
@@ -333,8 +328,8 @@ class _Stage extends StatelessWidget {
                 height: 1.15,
                 fontWeight: current ? FontWeight.w700 : FontWeight.w500,
                 color: skipped
-                    ? theme.secondaryText
-                    : (active ? theme.primaryText : theme.secondaryText),
+                    ? ng.mute
+                    : (active ? ng.text : ng.mute),
               ),
             ),
           ],
@@ -386,7 +381,7 @@ class _LostBanner extends StatelessWidget {
           child: Text(
             'This lead is marked lost.',
             style: NgFonts.geist(
-                fontSize: 12.5, color: FlutterFlowTheme.of(context).secondaryText),
+                fontSize: 12.5, color: NgPalette.of(context).mute),
           ),
         ),
         TextButton(

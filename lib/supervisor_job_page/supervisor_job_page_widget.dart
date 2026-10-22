@@ -8,16 +8,14 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/signature_pad.dart';
 import '/components/supervisor_menu_button.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'supervisor_job_page_model.dart';
 export 'supervisor_job_page_model.dart';
 
@@ -206,22 +204,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
-  SupervisorJobStep _inferStep(OrdersRow o) {
-    if (o.status == 'delivered' ||
-        o.status == 'closed' ||
-        o.supervisorStatus == 'completed_pending' ||
-        o.supervisorStatus == 'approved') {
-      return SupervisorJobStep.done;
-    }
-    if (o.status == 'transit') return SupervisorJobStep.shifting;
-    // in_progress means the job was accepted but shifting hasn't started,
-    // so the arrival code hasn't been entered yet — resume there rather
-    // than skipping the gate on a reopened screen.
-    if (o.supervisorStatus == 'in_progress') {
-      return SupervisorJobStep.arrivalCode;
-    }
-    return SupervisorJobStep.start;
-  }
+  SupervisorJobStep _inferStep(OrdersRow o) => supervisorStepFor(o);
 
   /// Mirrors the reference app's central `changeOrderStatus` helper: writes
   /// orders.status and logs the change. `TrackingService.logStatus` is what
@@ -708,6 +691,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -715,35 +699,121 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        appBar: NgSimpleBar(title: 'Field Job', actions: const [SupervisorMenuButton()]),
-        body: SafeArea(
-          top: true,
-          child: _model.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _model.loadError != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(_model.loadError!, textAlign: TextAlign.center),
-                      ),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: ListView(
-                        children: [
-                          _orderSummaryCard(context),
-                          const SizedBox(height: 16),
-                          _stepBody(context),
-                        ],
+        backgroundColor: c.bg,
+        appBar: NgSimpleBar(
+          titleWidget: Text(widget.orderId ?? 'Field job'),
+          mono: true,
+          actions: const [SupervisorMenuButton()],
+        ),
+        body: _model.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _model.loadError != null
+                ? Center(
+                    child: NgEmptyState(
+                      icon: Icons.error_outline_rounded,
+                      title: 'Could not open this job',
+                      subtitle: _model.loadError,
+                      action: SizedBox(
+                        width: 140,
+                        child: NgSecondaryButton(
+                            label: 'Try again', onPressed: _loadData),
                       ),
                     ),
-        ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      children: [
+                        _orderSummaryCard(context),
+                        const SizedBox(height: 14),
+                        _stepTracker(context),
+                        const SizedBox(height: 14),
+                        _stepBody(context),
+                      ],
+                    ),
+                  ),
+      ),
+    );
+  }
+
+  static const _kStepLabels = [
+    'Accept',
+    'Arrive',
+    'Crew',
+    'Shifting',
+    'Handover',
+  ];
+
+  int get _stepIndex => switch (_model.step) {
+        SupervisorJobStep.start => 0,
+        SupervisorJobStep.arrivalCode => 1,
+        SupervisorJobStep.team => 2,
+        SupervisorJobStep.shifting => 3,
+        SupervisorJobStep.completing => 4,
+        SupervisorJobStep.done => 5,
+      };
+
+  /// Where the job is, in the same 5 field steps the screen walks through.
+  Widget _stepTracker(BuildContext context) {
+    final c = NgPalette.of(context);
+    final i = _stepIndex;
+    final done = i >= _kStepLabels.length;
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  done ? 'Job complete' : 'Step ${i + 1} of 5 · ${_kStepLabels[i]}',
+                  style: NgFonts.geist(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: done ? c.green : c.text),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          NgStageBar(
+              done: done ? 5 : i, total: 5, color: done ? c.green : c.accBtn),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (var k = 0; k < _kStepLabels.length; k++)
+                Expanded(
+                  child: Text(
+                    _kStepLabels[k],
+                    textAlign: k == 0
+                        ? TextAlign.left
+                        : k == _kStepLabels.length - 1
+                            ? TextAlign.right
+                            : TextAlign.center,
+                    style: NgFonts.geist(
+                        fontSize: 11,
+                        fontWeight:
+                            k == i ? FontWeight.w600 : FontWeight.w400,
+                        color: k < i || done
+                            ? c.soft
+                            : k == i
+                                ? c.acc
+                                : c.faint),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _orderSummaryCard(BuildContext context) {
+    final c = NgPalette.of(context);
     final o = _model.order!;
     final completed = o.status == 'delivered' ||
         o.status == 'closed' ||
@@ -751,46 +821,63 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         o.supervisorStatus == 'approved';
     final hideCustomer =
         completed && AppSession.instance.isSupervisorSession;
-    return Container(
-      width: double.infinity,
+    final vehicle = [
+      if ((o.vehicleNo ?? '').isNotEmpty) o.vehicleNo!,
+      if ((o.driverName ?? '').isNotEmpty) o.driverName!,
+    ].join(' · ');
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Privacy hold (post-job contact / lead-poaching prevention,
-          // same rule as OrdersPage/OperationsPage) still hides the name,
-          // but keeps the order id visible — device-test follow-up: a
-          // supervisor with several completed jobs in a row had no way to
-          // tell which one they'd tapped into once the name disappeared.
-          Text(
-              hideCustomer
-                  ? '${o.id} · Customer (hidden)'
-                  : o.customer,
-              style: FlutterFlowTheme.of(context)
-                  .titleMedium
-                  .override(font: NgFonts.geist(fontWeight: FontWeight.w600))),
+          // same rule as OrdersPage/OperationsPage) still hides the name;
+          // the order id stays in the top bar so a supervisor with several
+          // completed jobs can still tell which one is open.
+          Text(hideCustomer ? 'Customer (hidden)' : o.customer,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: NgFonts.geist(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                  color: c.text)),
           const SizedBox(height: 4),
-          Text('${o.fromCity ?? ''} → ${o.toCity ?? ''}',
-              style: FlutterFlowTheme.of(context).bodySmall.override(
-                  font: NgFonts.geist(),
-                  color: FlutterFlowTheme.of(context).secondaryText)),
-          const SizedBox(height: 4),
-          if ((o.vehicleNo ?? '').isNotEmpty || (o.driverName ?? '').isNotEmpty)
-            Text(
-                'Vehicle: ${o.vehicleNo ?? '—'}'
-                '${(o.driverName ?? '').isEmpty ? '' : ' · ${o.driverName}'}',
-                style: FlutterFlowTheme.of(context).bodySmall.override(
-                    font: NgFonts.geist(),
-                    color: FlutterFlowTheme.of(context).secondaryText)),
-          const SizedBox(height: 8),
-          Text('Status: ${o.status ?? '—'} · Supervisor: ${o.supervisorStatus ?? 'not started'}',
-              style: FlutterFlowTheme.of(context).bodySmall.override(
-                  font: NgFonts.geist(),
-                  color: FlutterFlowTheme.of(context).secondaryText)),
+          Row(
+            children: [
+              Flexible(
+                child: Text(o.fromCity ?? '-',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child:
+                    Icon(Icons.arrow_forward_rounded, size: 15, color: c.faint),
+              ),
+              Flexible(
+                child: Text(o.toCity ?? '-',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: NgFonts.geist(fontSize: 13.5, color: c.mute)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (o.moveDateOrNull != null)
+                NgPill(DateFormat('EEE, d MMM').format(o.moveDateOrNull!),
+                    icon: Icons.event_outlined),
+              if (vehicle.isNotEmpty)
+                NgPill(vehicle, icon: Icons.local_shipping_outlined),
+              if ((o.service ?? '').isNotEmpty) NgPill(o.service!),
+            ],
+          ),
         ],
       ),
     );
@@ -801,9 +888,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       case SupervisorJobStep.start:
         return _actionCard(
           context,
+          icon: Icons.assignment_turned_in_outlined,
           title: 'Ready to start this job?',
           body: 'Accepting will let you pick the labour team and begin shifting.',
-          buttonLabel: 'Accept Job',
+          buttonLabel: 'Accept job',
           onPressed: _startJob,
         );
       case SupervisorJobStep.arrivalCode:
@@ -816,10 +904,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         // Closing reading lives WITH the handover, so it can only be
         // entered at the moment the job actually ends.
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _closingOdometerCard(context),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             _completionCard(context),
           ],
         );
@@ -828,38 +916,34 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
   }
 
+  Widget _muted(BuildContext context, String text) => Text(text,
+      style: NgFonts.geist(
+          fontSize: 13, height: 1.4, color: NgPalette.of(context).mute));
+
   Widget _actionCard(BuildContext context,
-      {required String title,
+      {required IconData icon,
+      required String title,
       required String body,
       required String buttonLabel,
       required Future<void> Function() onPressed}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final c = NgPalette.of(context);
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(18),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(title, style: FlutterFlowTheme.of(context).titleSmall),
+          NgIconTile(icon: icon, status: NgStatus.accent, size: 44, iconSize: 22),
+          const SizedBox(height: 14),
+          Text(title,
+              style: NgFonts.geist(
+                  fontSize: 17, fontWeight: FontWeight.w600, color: c.text)),
           const SizedBox(height: 4),
-          Text(body,
-              style: FlutterFlowTheme.of(context).bodySmall.override(
-                  font: NgFonts.geist(),
-                  color: FlutterFlowTheme.of(context).secondaryText)),
-          const SizedBox(height: 12),
-          FFButtonWidget(
+          _muted(context, body),
+          const SizedBox(height: 16),
+          NgPrimaryButton(
+            label: _model.saving ? 'Please wait…' : buttonLabel,
             onPressed: _model.saving ? null : onPressed,
-            text: _model.saving ? 'Please wait…' : buttonLabel,
-            options: FFButtonOptions(
-              width: double.infinity,
-              color: FlutterFlowTheme.of(context).primary,
-              textStyle:
-                  TextStyle(color: FlutterFlowTheme.of(context).primaryBackground),
-              borderRadius: BorderRadius.circular(8.0),
-            ),
           ),
         ],
       ),
@@ -867,134 +951,155 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   }
 
   Widget _teamSelectionCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: FlutterFlowTheme.of(context).secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Select Labour Team', style: FlutterFlowTheme.of(context).titleSmall),
-          const SizedBox(height: 8),
-          if (_model.staffList.isEmpty)
-            Text('No active staff found.',
-                style: FlutterFlowTheme.of(context).bodySmall.override(
-                    font: NgFonts.geist(),
-                    color: FlutterFlowTheme.of(context).secondaryText))
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _model.staffList.map((s) {
-                final selected = _model.selectedTeamIds.contains(s.id);
-                return FilterChip(
-                  // Role alongside the name. Arun, 3 Sept 2026: "only
-                  // labour name were visible their role is not visible
-                  // so by this it might get confused selecting wrong
-                  // person, if both were in same name". Two Balajis on
-                  // a crew list are indistinguishable by name alone, and
-                  // the wrong tick puts the wrong man on the job - which
-                  // then flows into his attendance, his earnings and the
-                  // job's labour cost.
-                  label: Text(
-                    (s.role ?? '').trim().isEmpty
-                        ? s.name
-                        : '${s.name} · ${s.role!.trim()}',
-                  ),
-                  selected: selected,
-                  onSelected: (v) {
-                    setState(() {
-                      if (v) {
-                        _model.selectedTeamIds.add(s.id ?? '');
-                      } else {
-                        _model.selectedTeamIds.remove(s.id);
-                      }
-                    });
-                  },
-                  selectedColor: FlutterFlowTheme.of(context).primary,
-                  labelStyle: TextStyle(
-                    color: selected
-                        ? FlutterFlowTheme.of(context).primaryBackground
-                        : FlutterFlowTheme.of(context).primaryText,
-                  ),
-                );
-              }).toList(),
+    final c = NgPalette.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        NgSectionCard(
+          title: 'Labour team',
+          icon: Icons.groups_outlined,
+          trailing: Text('${_model.selectedTeamIds.length} picked',
+              style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: _model.staffList.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _muted(context, 'No active staff found.'),
+                )
+              : Column(
+                  children: [
+                    for (final s in _model.staffList)
+                      // Role alongside the name. Arun, 3 Sept 2026: two
+                      // Balajis on a crew list are indistinguishable by
+                      // name alone, and the wrong tick puts the wrong man on
+                      // the job - which then flows into his attendance, his
+                      // earnings and the job's labour cost.
+                      _crewPickRow(context, s),
+                  ],
+                ),
+        ),
+        const SizedBox(height: 14),
+        // Opening reading sits WITH the crew selection, because both
+        // are things you do before the vehicle moves.
+        _openingOdometerCard(context),
+        const SizedBox(height: 16),
+        NgPrimaryButton(
+          icon: Icons.play_arrow_rounded,
+          label: _model.saving ? 'Please wait…' : 'Start shifting',
+          onPressed: _model.saving ? null : _startShifting,
+        ),
+      ],
+    );
+  }
+
+  Widget _crewPickRow(BuildContext context, StaffRow s) {
+    final c = NgPalette.of(context);
+    final selected = _model.selectedTeamIds.contains(s.id);
+    final role = (s.role ?? '').trim();
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => setState(() {
+        if (selected) {
+          _model.selectedTeamIds.remove(s.id);
+        } else {
+          _model.selectedTeamIds.add(s.id ?? '');
+        }
+      }),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            NgAvatar(s.name,
+                status: selected ? NgStatus.accent : NgStatus.neutral),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(s.name,
+                      style: NgFonts.geist(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: c.text)),
+                  if (role.isNotEmpty)
+                    Text(role[0].toUpperCase() + role.substring(1),
+                        style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                ],
+              ),
             ),
-          const SizedBox(height: 16),
-          // Opening reading sits WITH the crew selection, because both
-          // are things you do before the vehicle moves.
-          _openingOdometerCard(context),
-          const SizedBox(height: 12),
-          FFButtonWidget(
-            onPressed: _model.saving ? null : _startShifting,
-            text: _model.saving ? 'Please wait…' : 'Start Shifting',
-            options: FFButtonOptions(
-              width: double.infinity,
-              color: FlutterFlowTheme.of(context).primary,
-              textStyle:
-                  TextStyle(color: FlutterFlowTheme.of(context).primaryBackground),
-              borderRadius: BorderRadius.circular(8.0),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: selected ? c.accBtn : Colors.transparent,
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(
+                    color: selected ? c.accBtn : c.w15, width: 1.5),
+              ),
+              child: selected
+                  ? const Icon(Icons.check_rounded,
+                      size: 17, color: NgPalette.onAcc)
+                  : null,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _crewCard(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
+    final c = NgPalette.of(context);
+    return NgSectionCard(
+      title: 'Crew',
+      icon: Icons.groups_outlined,
+      // Day-close crew sheet (staff-pay brief §4/§10). The brief puts day
+      // close on the supervisor, so the sheet has to be reachable from the
+      // job he already has open — the crew card is where he is standing
+      // when he thinks about who worked.
+      trailing: NgLinkButton(
+        'Crew sheet',
+        icon: Icons.fact_check_outlined,
+        onTap: () => context
+            .pushNamed(
+              CrewSheetPageWidget.routeName,
+              queryParameters: {'orderId': widget.orderId ?? ''},
+            )
+            .then((_) => _loadData()),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Crew', style: theme.titleSmall),
-              // Day-close crew sheet (staff-pay brief §4/§10). The brief
-              // puts day close on the supervisor, so the sheet has to be
-              // reachable from the job he already has open — the crew card
-              // is where he is standing when he thinks about who worked.
-              TextButton.icon(
-                onPressed: () => context
-                    .pushNamed(
-                      CrewSheetPageWidget.routeName,
-                      queryParameters: {'orderId': widget.orderId ?? ''},
-                    )
-                    .then((_) => _loadData()),
-                icon: const Icon(Icons.fact_check_outlined, size: 17),
-                label: const Text('Crew sheet'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          if (_model.crew.isEmpty)
-            Text('No crew on record for this order yet.',
-                style: theme.bodySmall.override(
-                    font: NgFonts.geist(), color: theme.secondaryText))
-          else
-            ..._model.crew.map((c) {
-              final s = _model.staffList
-                  .where((s) => s.id == c.staffId)
-                  .firstOrNull;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text('• ${s?.name ?? 'Staff'}',
-                    style: theme.bodySmall
-                        .override(font: NgFonts.geist())),
-              );
-            }),
-        ],
-      ),
+      child: _model.crew.isEmpty
+          ? _muted(context, 'No crew on record for this order yet.')
+          : Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final m in _model.crew)
+                  Builder(builder: (context) {
+                    final s = _model.staffList
+                        .where((s) => s.id == m.staffId)
+                        .firstOrNull;
+                    return Container(
+                      padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
+                      decoration: BoxDecoration(
+                        color: c.s3,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          NgAvatar(s?.name ?? 'Staff', size: 24),
+                          const SizedBox(width: 6),
+                          Text(s?.name ?? 'Staff',
+                              style: NgFonts.geist(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: c.text)),
+                        ],
+                      ),
+                    );
+                  }),
+              ],
+            ),
     );
   }
 
@@ -1002,90 +1107,104 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   /// device-test decision change: field expenses (and the crew, which was
   /// already implicitly locked by the step machine simply not showing
   /// `_teamSelectionCard` again) used to stay editable until the OWNER
-  /// closed the order. Now everything locks the moment OTP verification
+  /// closed the order. Now everything locks the moment completion
   /// succeeds, not at Close Order — the owner is approving a fixed set of
-  /// numbers, and they must not be able to move after the code is entered.
+  /// numbers, and they must not be able to move after that.
   Widget _fieldExpensesCard(BuildContext context, {bool editable = true}) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     final total = _model.fieldExpenses.fold<double>(
         0, (s, e) => s + (num.tryParse('${e['amount']}') ?? 0));
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return NgSectionCard(
+      title: 'Field expenses',
+      icon: Icons.receipt_long_outlined,
+      trailing: editable
+          ? null
+          : const NgPill('Locked', icon: Icons.lock_outline_rounded),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Field Expenses', style: theme.titleSmall),
-              if (!editable)
-                Icon(Icons.lock, size: 15, color: theme.secondaryText),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (_model.fieldExpenses.isEmpty && !editable)
-            Text('No field expenses were logged.',
-                style: theme.bodySmall.override(
-                    font: NgFonts.geist(), color: theme.secondaryText)),
-          ..._model.fieldExpenses.map((e) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                          '${e['type']}${(e['note'] ?? '').toString().isEmpty ? '' : ' — ${e['note']}'}',
-                          style: theme.bodySmall
-                              .override(font: NgFonts.geist())),
-                    ),
-                    Text('₹${(num.tryParse('${e['amount']}') ?? 0).toStringAsFixed(0)}',
-                        style: theme.bodySmall),
-                  ],
-                ),
-              )),
-          if (_model.fieldExpenses.isNotEmpty)
+          if (_model.fieldExpenses.isEmpty)
+            _muted(context,
+                editable ? 'Nothing logged yet.' : 'No field expenses were logged.'),
+          for (final e in _model.fieldExpenses)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text('Total: ₹${total.toStringAsFixed(0)}',
-                  style: theme.bodyMedium.override(
-                      font: NgFonts.geist(fontWeight: FontWeight.w600))),
-            ),
-          if (editable) ...[
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: _model.expenseType,
-              items: kJobExpenseCategories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                  .toList(),
-              onChanged: (v) =>
-                  setState(() => _model.expenseType = v ?? 'Fuel'),
-              decoration: const InputDecoration(labelText: 'Type'),
-            ),
-            TextField(
-              controller: _model.expenseAmountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Amount (₹)'),
-            ),
-            TextField(
-              controller: _model.expenseNoteController,
-              decoration: const InputDecoration(labelText: 'Note (optional)'),
-            ),
-            const SizedBox(height: 8),
-            FFButtonWidget(
-              onPressed: _model.saving ? null : _addFieldExpense,
-              text: 'Add Expense',
-              options: FFButtonOptions(
-                width: double.infinity,
-                color: theme.secondaryBackground,
-                textStyle: TextStyle(color: theme.primary),
-                borderSide: BorderSide(color: theme.primary),
-                borderRadius: BorderRadius.circular(8.0),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${e['type']}',
+                            style: NgFonts.geist(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: c.text)),
+                        if ((e['note'] ?? '').toString().isNotEmpty)
+                          Text('${e['note']}',
+                              style:
+                                  NgFonts.geist(fontSize: 12.5, color: c.mute)),
+                      ],
+                    ),
+                  ),
+                  Text(
+                      functions
+                          .inrFull((num.tryParse('${e['amount']}') ?? 0).toDouble()),
+                      style: NgFonts.mono(fontSize: 13.5, color: c.text)),
+                ],
               ),
+            ),
+          if (_model.fieldExpenses.isNotEmpty) ...[
+            Divider(height: 18, color: c.w06),
+            NgKeyValue('Total', functions.inrFull(total),
+                mono: true, strong: true),
+          ],
+          if (editable) ...[
+            const SizedBox(height: 14),
+            const NgFieldLabel('Add an expense'),
+            SizedBox(
+              height: 34,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final cat in kJobExpenseCategories) ...[
+                    NgChip(
+                      label: cat,
+                      selected: _model.expenseType == cat,
+                      onTap: () => setState(() => _model.expenseType = cat),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: NgInput(
+                    controller: _model.expenseAmountController!,
+                    hint: '₹ Amount',
+                    keyboardType: TextInputType.number,
+                    mono: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 3,
+                  child: NgInput(
+                    controller: _model.expenseNoteController!,
+                    hint: 'Note (optional)',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            NgSecondaryButton(
+              icon: Icons.add_rounded,
+              label: 'Add expense',
+              onPressed: _model.saving ? null : _addFieldExpense,
             ),
           ],
         ],
@@ -1096,193 +1215,165 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   /// Opening odometer — captured WHEN THE JOB STARTS, beside the crew.
   ///
   /// Arun, 3 Sept 2026: *"while selecting labour make the opening odo km
-  /// noted and while he marks order complete then only closing odo. now
-  /// we have both at the same time which is not proper way to track"*.
-  ///
-  /// He is right, and the reason matters. Both boxes on one card meant
-  /// the supervisor could fill them in together at the END of the day —
-  /// at which point the opening reading is not observed, it is
-  /// remembered or guessed. Every kilometre figure downstream (fuel per
-  /// km, a driver's distance, what an outstation job really cost) is
-  /// then built on a number nobody actually read off the dial. Splitting
-  /// the two is what makes the opening reading evidence instead of a
-  /// reconstruction.
+  /// noted and while he marks order complete then only closing odo."*
+  /// Both boxes on one card meant the supervisor could fill them in
+  /// together at the END of the day — at which point the opening reading
+  /// is remembered or guessed, not observed. Splitting the two is what
+  /// makes the opening reading evidence instead of a reconstruction.
   Widget _openingOdometerCard(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return NgSectionCard(
+      title: 'Opening odometer',
+      icon: Icons.speed_rounded,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Opening Odometer', style: theme.titleSmall),
-          const SizedBox(height: 4),
-          Text(
+          _muted(
+              context,
               'Read it off the dial before you leave. Optional — leave '
-              'blank for a third-party vehicle.',
-              style: theme.bodySmall.override(
-                  font: NgFonts.geist(), color: theme.secondaryText)),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _model.kmStartController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Opening KM'),
-          ),
-          const SizedBox(height: 8),
-          FFButtonWidget(
-            onPressed: _model.saving ? null : _saveOdometer,
-            text: 'Save Opening KM',
-            options: FFButtonOptions(
-              width: double.infinity,
-              color: theme.secondaryBackground,
-              textStyle: TextStyle(color: theme.primary),
-              borderSide: BorderSide(color: theme.primary),
-              borderRadius: BorderRadius.circular(8.0),
-            ),
+              'blank for a third-party vehicle.'),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: NgInput(
+                  controller: _model.kmStartController!,
+                  hint: 'Opening km',
+                  keyboardType: TextInputType.number,
+                  mono: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 96,
+                child: NgSecondaryButton(
+                  label: 'Save',
+                  height: 52,
+                  onPressed: _model.saving ? null : _saveOdometer,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  /// Closing odometer — only at completion, and only after an opening
-  /// reading exists.
-  ///
-  /// Shows the opening figure read-only above it, so the supervisor is
-  /// entering a number they can see is larger, and the distance is
-  /// visible before they commit rather than discovered in a report later.
+  /// Closing odometer — only at completion. Shows the opening figure
+  /// above it, so the supervisor is entering a number they can see is
+  /// larger, and the distance is visible before they commit rather than
+  /// discovered in a report later.
   Widget _closingOdometerCard(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
     final opening = double.tryParse(_model.kmStartController.text.trim());
     final closing = double.tryParse(_model.kmEndController.text.trim());
     final distance =
         (opening != null && closing != null) ? closing - opening : null;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return NgSectionCard(
+      title: 'Closing odometer',
+      icon: Icons.speed_rounded,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Closing Odometer', style: theme.titleSmall),
-          const SizedBox(height: 4),
-          Text(
+          _muted(
+              context,
               opening == null
                   ? 'No opening reading was recorded for this job, so the '
                       'distance cannot be worked out. Enter the closing '
                       'reading anyway if you have it.'
-                  : 'Opening was ${opening.toStringAsFixed(0)} km.',
-              style: theme.bodySmall.override(
-                  font: NgFonts.geist(), color: theme.secondaryText)),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _model.kmEndController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Closing KM'),
-            onChanged: (_) => setState(() {}),
+                  : 'Opening was ${opening.toStringAsFixed(0)} km.'),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: NgInput(
+                  controller: _model.kmEndController!,
+                  hint: 'Closing km',
+                  keyboardType: TextInputType.number,
+                  mono: true,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 96,
+                child: NgSecondaryButton(
+                  label: 'Save',
+                  height: 52,
+                  onPressed: _model.saving ? null : _saveOdometer,
+                ),
+              ),
+            ],
           ),
           if (distance != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              distance < 0
-                  // Flagged, not blocked: a genuine reason exists (the
-                  // dial was misread, or the vehicle was swapped), and
-                  // refusing to save would lose the reading entirely.
-                  ? 'Closing is lower than opening — check the reading.'
-                  : 'Distance this job: ${distance.toStringAsFixed(0)} km',
-              style: theme.bodySmall.override(
-                  font: NgFonts.geist(),
-                  color: distance < 0 ? theme.error : theme.primary),
+            const SizedBox(height: 10),
+            // Flagged, not blocked: a genuine reason exists (the dial was
+            // misread, or the vehicle was swapped), and refusing to save
+            // would lose the reading entirely.
+            Align(
+              alignment: Alignment.centerLeft,
+              child: NgPill(
+                distance < 0
+                    ? 'Closing is lower than opening — check the reading'
+                    : '${distance.toStringAsFixed(0)} km this job',
+                status: distance < 0 ? NgStatus.red : NgStatus.green,
+              ),
             ),
           ],
-          const SizedBox(height: 8),
-          FFButtonWidget(
-            onPressed: _model.saving ? null : _saveOdometer,
-            text: 'Save Closing KM',
-            options: FFButtonOptions(
-              width: double.infinity,
-              color: theme.secondaryBackground,
-              textStyle: TextStyle(color: theme.primary),
-              borderSide: BorderSide(color: theme.primary),
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _shiftingCard(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _crewCard(context),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         _fieldExpensesCard(context),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         // No odometer here on purpose. Opening was taken at the crew
         // step; closing belongs on the completion card, so the two
         // cannot be typed together at the end of the day.
-
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.secondaryBackground,
-            borderRadius: BorderRadius.circular(12),
+        NgSectionCard(
+          title: 'Notes',
+          icon: Icons.sticky_note_2_outlined,
+          child: NgInput(
+            controller: _model.notesController!,
+            hint: 'Any notes for the office…',
+            maxLines: 3,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Notes', style: theme.titleSmall),
-              TextField(
-                controller: _model.notesController,
-                maxLines: 3,
-                decoration: const InputDecoration(hintText: 'Any notes for the office…'),
-              ),
-              const SizedBox(height: 8),
-              if (_shiftingCompletionBlocked)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+        ),
+        const SizedBox(height: 16),
+        if (_shiftingCompletionBlocked)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.warning_amber_rounded, size: 18, color: c.red),
+                const SizedBox(width: 6),
+                Expanded(
                   child: Text(
-                    '⚠ Closing KM is required before completion — an opening '
+                    'Closing km is required before completion — an opening '
                     'reading was recorded for this vehicle.',
-                    style: TextStyle(
-                        color: theme.error,
+                    style: NgFonts.geist(
                         fontSize: 12.5,
-                        fontWeight: FontWeight.w600),
+                        fontWeight: FontWeight.w500,
+                        color: c.red),
                   ),
                 ),
-              FFButtonWidget(
-                onPressed: _shiftingCompletionBlocked
-                    ? null
-                    : () => setState(
-                        () => _model.step = SupervisorJobStep.completing),
-                // Was "🏁 Shifting Completed — Get OTP" until the 19 Aug
-                // 2026 emulator pass caught it: the completion OTP was
-                // removed the day before, but this label on the SHIFTING
-                // step still promised one. It now leads to the handover
-                // card (signature or "customer not available").
-                text: '🏁 Shifting Completed — Handover',
-                options: FFButtonOptions(
-                  width: double.infinity,
-                  color: theme.primary,
-                  textStyle: TextStyle(color: theme.primaryBackground),
-                  borderRadius: BorderRadius.circular(8.0),
-                  disabledColor: theme.alternate,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
+        // Leads to the handover card (signature or "customer not
+        // available"); the old completion OTP was removed 18 Aug 2026.
+        NgPrimaryButton(
+          icon: Icons.flag_rounded,
+          label: 'Shifting done — handover',
+          onPressed: _shiftingCompletionBlocked
+              ? null
+              : () => setState(() => _model.step = SupervisorJobStep.completing),
         ),
       ],
     );
@@ -1296,73 +1387,110 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   /// by the field itself, because they remain genuinely optional on the
   /// not-available path.
   Widget _podCaptureFields(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     final needsName = (_model.completionMethod ?? kCompletionSignature) ==
         kCompletionSignature;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 16),
-        Text('Proof of Delivery', style: theme.titleSmall),
-        const SizedBox(height: 4),
-        Text(
+        Text('Proof of delivery',
+            style: NgFonts.geist(
+                fontSize: 15, fontWeight: FontWeight.w600, color: c.text)),
+        const SizedBox(height: 2),
+        _muted(
+            context,
             needsName
                 ? 'Name and relationship are required when the customer signs.'
-                : 'Optional, but recommended.',
-            style: theme.bodySmall.override(
-                font: NgFonts.geist(), color: theme.secondaryText)),
+                : 'Optional, but recommended.'),
+        const SizedBox(height: 12),
+        NgFieldLabel(needsName ? 'Received by *' : 'Received by'),
+        NgInput(controller: _model.receivedByNameController!, hint: 'Name'),
         const SizedBox(height: 8),
-        TextField(
-          controller: _model.receivedByNameController,
-          decoration: InputDecoration(
-              labelText:
-                  needsName ? 'Received by (name) *' : 'Received by (name)'),
-        ),
-        TextField(
-          controller: _model.receivedByPhoneController,
+        NgInput(
+          controller: _model.receivedByPhoneController!,
+          hint: 'Phone',
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(labelText: 'Received by (phone)'),
+          mono: true,
         ),
-        DropdownButtonFormField<String>(
-          initialValue: _model.relationship,
-          items: kRelationshipOptions
-              .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-              .toList(),
-          onChanged: (v) => setState(() => _model.relationship = v ?? 'self'),
-          decoration:
-              const InputDecoration(labelText: 'Relationship to customer'),
-        ),
+        const SizedBox(height: 14),
+        const NgFieldLabel('Relationship to customer'),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final r in kRelationshipOptions)
+            NgChip(
+              label: r[0].toUpperCase() + r.substring(1),
+              selected: _model.relationship == r,
+              onTap: () => setState(() => _model.relationship = r),
+            ),
+        ]),
+        const SizedBox(height: 14),
         Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: _model.packagesDeliveredController,
-                keyboardType: TextInputType.number,
-                decoration:
-                    const InputDecoration(labelText: 'Packages delivered'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const NgFieldLabel('Packages delivered'),
+                  NgInput(
+                    controller: _model.packagesDeliveredController!,
+                    hint: '0',
+                    keyboardType: TextInputType.number,
+                    mono: true,
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: TextField(
-                controller: _model.packagesShortController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Packages short'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const NgFieldLabel('Packages short'),
+                  NgInput(
+                    controller: _model.packagesShortController!,
+                    hint: '0',
+                    keyboardType: TextInputType.number,
+                    mono: true,
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
+        const SizedBox(height: 12),
+        _toggleRow(
+          context,
+          label: 'Damage noted',
           value: _model.damageNoted,
-          onChanged: (v) => setState(() => _model.damageNoted = v ?? false),
-          title: const Text('Damage noted'),
+          onChanged: (v) => setState(() => _model.damageNoted = v),
         ),
-        if (_model.damageNoted)
-          TextField(
-            controller: _model.damageDescriptionController,
-            decoration: const InputDecoration(labelText: 'Damage description'),
+        if (_model.damageNoted) ...[
+          const SizedBox(height: 8),
+          NgInput(
+            controller: _model.damageDescriptionController!,
+            hint: 'What was damaged?',
+            maxLines: 2,
           ),
+        ],
+      ],
+    );
+  }
+
+  Widget _toggleRow(BuildContext context,
+      {required String label,
+      required bool value,
+      required ValueChanged<bool> onChanged}) {
+    final c = NgPalette.of(context);
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label,
+              style: NgFonts.geist(fontSize: 14.5, color: c.text)),
+        ),
+        Switch.adaptive(
+          value: value,
+          onChanged: onChanged,
+          activeTrackColor: c.accBtn,
+        ),
       ],
     );
   }
@@ -1373,37 +1501,40 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   /// that was the flaw in the old completion OTP, where the supervisor's
   /// own screen showed them the answer before they typed it back.
   Widget _arrivalCodeCard(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final c = NgPalette.of(context);
+    final err = _model.arrivalCodeError;
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(18),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          NgIconTile(
+              icon: Icons.pin_outlined,
+              status: NgStatus.accent,
+              size: 44,
+              iconSize: 22),
+          const SizedBox(height: 14),
           Text('Confirm you have arrived',
               style: NgFonts.geist(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: theme.primaryText)),
-          const SizedBox(height: 6),
-          Text(
-            'Ask the customer for the 4-digit arrival code from their '
-            'booking confirmation.',
-            style: NgFonts.geist(
-                fontSize: 12.5, height: 1.4, color: theme.secondaryText),
-          ),
-          const SizedBox(height: 14),
+                  fontSize: 17, fontWeight: FontWeight.w600, color: c.text)),
+          const SizedBox(height: 4),
+          _muted(
+              context,
+              'Ask the customer for the 4-digit arrival code from their '
+              'booking confirmation.'),
+          const SizedBox(height: 18),
           TextField(
-            controller: _model.arrivalCodeController,
+            controller: _model.arrivalCodeController!,
             keyboardType: TextInputType.number,
             maxLength: 4,
-            style: GoogleFonts.robotoMono(
-                fontSize: 32, letterSpacing: 10, fontWeight: FontWeight.w700),
+            style: NgFonts.mono(
+                fontSize: 32,
+                letterSpacing: 14,
+                fontWeight: FontWeight.w600,
+                color: c.text),
             textAlign: TextAlign.center,
+            cursorColor: c.acc,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             onChanged: (_) {
               if (_model.arrivalCodeError) {
@@ -1412,23 +1543,32 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
             },
             decoration: InputDecoration(
               counterText: '',
-              hintText: '----',
-              errorText: _model.arrivalCodeError
-                  ? 'That code does not match. Check with the customer.'
-                  : null,
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              hintText: '····',
+              hintStyle: NgFonts.mono(
+                  fontSize: 32, letterSpacing: 14, color: c.faint),
+              filled: true,
+              fillColor: c.inset,
+              contentPadding: const EdgeInsets.symmetric(vertical: 18),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(NgRadius.tile),
+                borderSide: BorderSide(color: err ? c.red : c.w08),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(NgRadius.tile),
+                borderSide: BorderSide(color: err ? c.red : c.acc, width: 1.5),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: FilledButton.icon(
-              onPressed: _model.saving ? null : _verifyArrival,
-              icon: const Icon(Icons.login, size: 18),
-              label: const Text('Confirm arrival'),
-            ),
+          if (err) ...[
+            const SizedBox(height: 8),
+            Text('That code does not match. Check with the customer.',
+                style: NgFonts.geist(fontSize: 12.5, color: c.red)),
+          ],
+          const SizedBox(height: 16),
+          NgPrimaryButton(
+            icon: Icons.login_rounded,
+            label: 'Confirm arrival',
+            onPressed: _model.saving ? null : _verifyArrival,
           ),
         ],
       ),
@@ -1440,178 +1580,161 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   /// silently closes the job, and no code the supervisor could enter
   /// from the office.
   Widget _completionCard(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
     final method = _model.completionMethod ?? kCompletionSignature;
-    return Container(
-      width: double.infinity,
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Handover',
               style: NgFonts.geist(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: theme.primaryText)),
-          const SizedBox(height: 10),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(
-                  value: kCompletionSignature,
-                  icon: Icon(Icons.draw, size: 16),
-                  label: Text('Customer signs')),
-              ButtonSegment(
-                  value: kCompletionNotAvailable,
-                  icon: Icon(Icons.person_off_outlined, size: 16),
-                  label: Text('Not available')),
-            ],
-            selected: {method},
-            onSelectionChanged: (s) =>
-                setState(() => _model.completionMethod = s.first),
+                  fontSize: 17, fontWeight: FontWeight.w600, color: c.text)),
+          const SizedBox(height: 12),
+          NgSegmented(
+            labels: const ['Customer signs', 'Not available'],
+            selected: method == kCompletionSignature ? 0 : 1,
+            onSelect: (i) => setState(() => _model.completionMethod =
+                i == 0 ? kCompletionSignature : kCompletionNotAvailable),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           if (method == kCompletionSignature) ...[
-            Text('Ask the customer to sign below',
-                style: NgFonts.geist(
-                    fontSize: 12.5, color: theme.secondaryText)),
+            _muted(context, 'Ask the customer to sign below'),
             const SizedBox(height: 8),
-            SignaturePad(
-              key: _sigKey,
-              // Captured to model state the instant the customer lifts
-              // their finger — BEFORE any network call. A failed write
-              // must never mean asking them to sign again.
-              onChanged: (_) async {
-                final png = await _sigKey.currentState?.toPngBase64();
-                if (png != null && mounted) {
-                  setState(() {
-                    _model.signatureBase64 = png;
-                    _model.completionMethod = kCompletionSignature;
-                  });
-                }
-              },
+            ClipRRect(
+              borderRadius: BorderRadius.circular(NgRadius.tile),
+              child: SignaturePad(
+                key: _sigKey,
+                // Captured to model state the instant the customer lifts
+                // their finger — BEFORE any network call. A failed write
+                // must never mean asking them to sign again.
+                onChanged: (_) async {
+                  final png = await _sigKey.currentState?.toPngBase64();
+                  if (png != null && mounted) {
+                    setState(() {
+                      _model.signatureBase64 = png;
+                      _model.completionMethod = kCompletionSignature;
+                    });
+                  }
+                },
+              ),
             ),
+            const SizedBox(height: 6),
             Row(
               children: [
                 if ((_model.signatureBase64 ?? '').isNotEmpty)
-                  Row(children: [
-                    Icon(Icons.check_circle, size: 15, color: theme.success),
-                    const SizedBox(width: 4),
-                    Text('Signature captured',
-                        style: NgFonts.geist(
-                            fontSize: 11.5, color: theme.success)),
-                  ]),
+                  const NgPill('Signature captured',
+                      status: NgStatus.green, icon: Icons.check_rounded),
                 const Spacer(),
-                TextButton(
-                  onPressed: () => setState(() {
-                    _sigKey.currentState?.clear();
-                    _model.signatureBase64 = null;
-                  }),
-                  child: const Text('Clear'),
-                ),
+                NgLinkButton('Clear',
+                    onTap: () => setState(() {
+                          _sigKey.currentState?.clear();
+                          _model.signatureBase64 = null;
+                        })),
               ],
             ),
           ] else ...[
-            Text('Why could the customer not sign?',
-                style: NgFonts.geist(
-                    fontSize: 12.5, color: theme.secondaryText)),
-            const SizedBox(height: 8),
-            for (final e in kNotAvailableReasons.entries)
-              RadioListTile<String>(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                value: e.key,
-                groupValue: _model.notAvailableReason,
-                title: Text(e.value, style: NgFonts.geist(fontSize: 13)),
-                onChanged: (v) =>
-                    setState(() => _model.notAvailableReason = v),
+            _muted(context, 'Why could the customer not sign?'),
+            const SizedBox(height: 10),
+            for (final e in kNotAvailableReasons.entries) ...[
+              NgOptionCard(
+                icon: _model.notAvailableReason == e.key
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                title: e.value,
+                subtitle: '',
+                selected: _model.notAvailableReason == e.key,
+                onTap: () => setState(() => _model.notAvailableReason = e.key),
               ),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _model.notAvailableNoteController,
+              const SizedBox(height: 8),
+            ],
+            const SizedBox(height: 4),
+            NgInput(
+              controller: _model.notAvailableNoteController!,
+              hint: 'Add detail (optional)',
               maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'Add detail (optional)',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade800.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+                color: c.amberBg,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                'The owner will see this job as completed without a '
-                'signature, and why.',
-                style: NgFonts.geist(
-                    fontSize: 11.5, height: 1.35, color: theme.primaryText),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 17, color: c.amber),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'The owner will see this job as completed without a '
+                      'signature, and why.',
+                      style: NgFonts.geist(
+                          fontSize: 12.5, height: 1.35, color: c.text),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-          const SizedBox(height: 14),
+          Divider(height: 32, color: c.w06),
           _podCaptureFields(context),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: FilledButton.icon(
-              onPressed: _model.saving ? null : _completeJob,
-              icon: const Icon(Icons.check_circle_outline, size: 18),
-              label: const Text('Complete job'),
-            ),
+          const SizedBox(height: 18),
+          NgPrimaryButton(
+            icon: Icons.check_circle_outline_rounded,
+            label: _model.saving ? 'Please wait…' : 'Complete job',
+            height: 54,
+            onPressed: _model.saving ? null : _completeJob,
           ),
         ],
       ),
     );
   }
 
-
   Widget _doneCard(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final c = NgPalette.of(context);
+    final approved = _model.order?.supervisorStatus == 'approved';
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: theme.secondaryBackground,
-            borderRadius: BorderRadius.circular(12),
-          ),
+        NgCard(
+          radius: 20,
+          padding: const EdgeInsets.all(22),
           child: Column(
             children: [
-              Icon(Icons.celebration, color: theme.primary, size: 40),
-              const SizedBox(height: 8),
+              NgIconTile(
+                icon: approved
+                    ? Icons.verified_rounded
+                    : Icons.hourglass_top_rounded,
+                status: approved ? NgStatus.green : NgStatus.amber,
+                size: 52,
+                iconSize: 26,
+              ),
+              const SizedBox(height: 12),
               Text(
-                  _model.order?.supervisorStatus == 'approved'
-                      ? 'Approved by the office.'
-                      : '⏳ Awaiting owner approval.',
-                  style: theme.titleMedium),
+                  approved
+                      ? 'Approved by the office'
+                      : 'Awaiting owner approval',
+                  style: NgFonts.geist(
+                      fontSize: 17, fontWeight: FontWeight.w600, color: c.text)),
               const SizedBox(height: 4),
-              // Device-test decision change: everything locks at OTP
-              // success now, not at Close Order — the owner is approving a
-              // fixed set of numbers, so field expenses and the crew must
-              // not be able to move after the code is entered.
+              // Everything locks at completion now, not at Close Order —
+              // the owner is approving a fixed set of numbers.
               Text(
                 'Odometer, field expenses and the crew are locked now.',
                 textAlign: TextAlign.center,
-                style: theme.bodySmall.override(
-                    font: NgFonts.geist(), color: theme.secondaryText),
+                style: NgFonts.geist(fontSize: 13, color: c.mute),
               ),
             ],
           ),
         ),
-        // Read-only from here on — see _fieldExpensesCard's own doc
-        // comment. Crew has no card here at all (never did): the step
-        // machine simply doesn't render _teamSelectionCard again once
-        // `done`, which is a real lock, not a UI oversight.
-        const SizedBox(height: 16),
+        // Read-only from here on — see _fieldExpensesCard's doc comment.
+        // Crew has no card here at all (never did): the step machine
+        // simply doesn't render _teamSelectionCard again once `done`,
+        // which is a real lock, not a UI oversight.
+        const SizedBox(height: 14),
         _fieldExpensesCard(context, editable: false),
       ],
     );

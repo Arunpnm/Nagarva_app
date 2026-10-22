@@ -1,4 +1,3 @@
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/backend/device_org_binding.dart';
@@ -10,10 +9,14 @@ import '/backend/vendor_org_resolver.dart';
 import '/config/app_config.dart';
 import '/components/org_switcher_sheet.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/app_session.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
+import '/components/language_quick_button.dart';
+import '/components/theme_quick_button.dart';
+import '/components/ng_top_bar.dart';
+import '/components/ng_widgets.dart';
+import '/flutter_flow/flutter_flow_theme.dart' show kBrandAccent;
 import 'login_page_model.dart';
 export 'login_page_model.dart';
 
@@ -281,6 +284,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -288,145 +292,114 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: const Color(0xFF0A0C10),
+        backgroundColor: c.bg,
         body: SafeArea(
-          top: true,
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF0A0C10), Color(0xFF12151B)],
-                stops: [0.0, 1.0],
-                begin: AlignmentDirectional(1.0, 1.0),
-                end: AlignmentDirectional(-1.0, -1.0),
-              ),
-            ),
-            alignment: const AlignmentDirectional(0.0, 0.0),
-            child: Center(
-              child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: CustomScrollView(
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            width: 90,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              color: const Color(0x24F68C36),
-                              borderRadius: BorderRadius.circular(45),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            // Nagarva platform logo. Drop the file at
-                            // assets/images/nagarva_logo.png (assets/images/
-                            // is already declared in pubspec). Until the
-                            // file exists, errorBuilder falls back to the
-                            // old truck icon so the screen never breaks.
-                            child: Image.asset(
-                              'assets/images/nagarva_logo.png',
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.local_shipping,
-                                color: kBrandAccent,
-                                size: 48,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              NgHeaderButton(
+                                  child: ThemeQuickButton(iconColor: c.soft)),
+                              const SizedBox(width: 8),
+                              NgHeaderButton(
+                                  child:
+                                      LanguageQuickButton(iconColor: c.soft)),
+                            ],
+                          ),
+                          const SizedBox(height: 36),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              // Nagarva platform logo; the truck icon is the
+                              // fallback so the screen never breaks.
+                              child: Image.asset(
+                                'assets/images/nagarva_logo.png',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: c.status(NgStatus.accent).bg,
+                                  child: const Icon(Icons.local_shipping,
+                                      color: kBrandAccent, size: 32),
+                                ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            // Was hardcoded 'Arun Packers And Couriers'
-                            // (CLAUDE.md known bug #5). This screen is now
-                            // the shared multi-tenant login gateway (any
-                            // vendor's staff/owner can land here before an
-                            // org is known), so it shows the platform name
-                            // rather than one tenant's brand. Per-org
-                            // branding still applies post-login (see
-                            // SettingsPage / AppSession.currentOrgName).
-                            'Nagarva',
-                            textAlign: TextAlign.center,
-                            style: NgFonts.geist(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Industry ERP for packers & movers',
-                            style: NgFonts.geist(
-                              color: Colors.white54,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF12151B),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        child: _buildVendorForm(),
-                      ),
-
-                      const SizedBox(height: 16),
-                      // Bound vs. unbound device get different footer links,
-                      // never both. A BOUND device only ever reaches this
-                      // page via PinLoginPageWidget's "Use email login
-                      // instead" (owner setting up a PIN for the first
-                      // time, or an existing staff member without one) — for
-                      // that visitor, "Joining a team?" would unbind an
-                      // already-correct device just to get back to the PIN
-                      // screen, which is destructive, not a way back. An
-                      // UNBOUND device is this page's own default landing
-                      // spot (nav.dart's _initialize, NG-BRIEF-vendor-auth-
-                      // flow.md §4) — for a staff member who installed the
-                      // app manually instead of arriving via an invite link,
-                      // the org/invite-code path is the one they need.
-                      DeviceOrgBinding.isBound
-                          ? _bottomLink(
-                              prefix: '',
-                              action: 'Back to PIN login',
-                              onTap: () =>
-                                  context.go(PinLoginPageWidget.routePath),
-                            )
-                          : _bottomLink(
-                              prefix: 'Joining a team? ',
-                              action: 'Use an org or invite code',
-                              onTap: () async {
-                                await DeviceOrgBinding.unbind();
-                                if (mounted) {
-                                  context.pushNamed(
-                                      OrgBindingPageWidget.routeName);
-                                }
-                              },
-                            ),
-
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.lock,
-                              color: Color(0xFF8A93A3), size: 14),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Secured & Encrypted',
-                            style: NgFonts.geist(
-                              color: const Color(0xFF8A93A3),
-                              fontSize: 12,
-                            ),
+                          const SizedBox(height: 22),
+                          // Shared multi-tenant gateway: no org is known yet,
+                          // so this shows the platform, never a tenant brand
+                          // (CLAUDE.md known bug #5).
+                          Text('Welcome back',
+                              style: NgFonts.geist(
+                                  fontSize: 30,
+                                  height: 1.15,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.6,
+                                  color: c.text)),
+                          const SizedBox(height: 8),
+                          Text('Sign in to Nagarva — industry ERP for packers '
+                              '& movers',
+                              style: NgFonts.geist(fontSize: 15, color: c.mute)),
+                          const SizedBox(height: 28),
+                          _buildVendorForm(),
+                          const Spacer(),
+                          const SizedBox(height: 22),
+                          // Bound vs. unbound device get different footer
+                          // links, never both. A BOUND device only reaches
+                          // this page via PinLoginPage's "Use email login
+                          // instead"; for that visitor "Joining a team?"
+                          // would unbind an already-correct device. An
+                          // UNBOUND device lands here by default, and the
+                          // org/invite-code path is the one a staff member
+                          // who installed the app manually needs.
+                          DeviceOrgBinding.isBound
+                              ? _bottomLink(
+                                  prefix: '',
+                                  action: 'Back to PIN login',
+                                  onTap: () =>
+                                      context.go(PinLoginPageWidget.routePath),
+                                )
+                              : _bottomLink(
+                                  prefix: 'Joining a team? ',
+                                  action: 'Use an org or invite code',
+                                  onTap: () async {
+                                    await DeviceOrgBinding.unbind();
+                                    if (mounted) {
+                                      context.pushNamed(
+                                          OrgBindingPageWidget.routeName);
+                                    }
+                                  },
+                                ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.lock_rounded, color: c.faint, size: 14),
+                              const SizedBox(width: 5),
+                              Text('Secured & encrypted',
+                                  style: NgFonts.geist(
+                                      color: c.faint, fontSize: 12)),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
@@ -435,29 +408,26 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     );
   }
 
-  /// Shared shape for the page's single footer link — extracted since two
-  /// mutually-exclusive variants render here depending on
-  /// `DeviceOrgBinding.isBound` (see the call site).
+  /// Shared shape for the page's single footer link — two mutually
+  /// exclusive variants render depending on `DeviceOrgBinding.isBound`.
   Widget _bottomLink({
     required String prefix,
     required String action,
     required VoidCallback onTap,
   }) {
+    final c = NgPalette.of(context);
     return Center(
       child: GestureDetector(
         onTap: onTap,
         child: RichText(
           text: TextSpan(
-            style: NgFonts.geist(color: Colors.white54, fontSize: 13),
+            style: NgFonts.geist(color: c.mute, fontSize: 13.5),
             children: [
               if (prefix.isNotEmpty) TextSpan(text: prefix),
               TextSpan(
                 text: action,
                 style: NgFonts.geist(
-                  color: kBrandAccent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+                    color: c.acc, fontSize: 13.5, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -467,31 +437,52 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   }
 
   Widget _buildVendorForm() {
+    final c = NgPalette.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Text('Email',
+            style: NgFonts.geist(
+                fontSize: 13, fontWeight: FontWeight.w500, color: c.mute)),
+        const SizedBox(height: 6),
         _textField(
           controller: _model.vendorEmailController!,
           focusNode: _model.vendorEmailFocusNode!,
-          label: 'Email',
           hint: 'owner@company.com',
-          icon: Icons.email_outlined,
+          icon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 14),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Expanded(
+              child: Text('Password',
+                  style: NgFonts.geist(
+                      fontSize: 13, fontWeight: FontWeight.w500, color: c.mute)),
+            ),
+            GestureDetector(
+              onTap: _model.isLoading ? null : _handleForgotPassword,
+              child: Text('Forgot?',
+                  style: NgFonts.geist(
+                      color: c.acc, fontSize: 13, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
         _textField(
           controller: _model.vendorPasswordController!,
           focusNode: _model.vendorPasswordFocusNode!,
-          label: 'Password',
           hint: 'Your password',
-          icon: Icons.lock_outline,
+          icon: Icons.lock_outline_rounded,
           obscureText: !_model.vendorPasswordVisible,
           suffixIcon: IconButton(
             icon: Icon(
               _model.vendorPasswordVisible
-                  ? Icons.visibility_off
-                  : Icons.visibility,
-              color: Colors.white38,
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: c.faint,
               size: 20,
             ),
             onPressed: () => safeSetState(
@@ -500,88 +491,67 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerRight,
-          child: GestureDetector(
-            onTap: _model.isLoading ? null : _handleForgotPassword,
-            child: Text(
-              'Forgot password?',
-              style: NgFonts.geist(
-                color: kBrandAccent,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
         if (_model.errorMessage != null) ...[
           const SizedBox(height: 14),
           _errorBox(_model.errorMessage!),
         ],
-        const SizedBox(height: 18),
-        FFButtonWidget(
-          text: 'Log In',
-          onPressed: _model.isLoading ? null : _handleVendorLogin,
-          options: FFButtonOptions(
-            width: double.infinity,
-            height: 52,
-            color: kBrandAccent,
-            textStyle: NgFonts.geist(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+        const SizedBox(height: 20),
+        Material(
+          color: c.accBtn,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: _model.isLoading ? null : _handleVendorLogin,
+            child: SizedBox(
+              height: 54,
+              child: Center(
+                child: _model.isLoading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.4, color: NgPalette.onAcc))
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Log in',
+                              style: NgFonts.geist(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: NgPalette.onAcc)),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward_rounded,
+                              size: 20, color: NgPalette.onAcc),
+                        ],
+                      ),
+              ),
             ),
-            borderRadius: BorderRadius.circular(12),
-            elevation: 0,
           ),
-          showLoadingIndicator: _model.isLoading,
         ),
         const SizedBox(height: 10),
         // Owners who signed up by mobile number have no password — the
         // signup screen doubles as their OTP login (vendor signup, 21 Oct
         // 2026).
-        OutlinedButton.icon(
-          onPressed: _model.isLoading
-              ? null
-              : () => context.go(VendorSignupPageWidget.routePath),
-          icon: const Icon(Icons.phone_iphone_rounded, size: 18),
-          label: Text(AppLocalizations.of(context).suMobileLogin),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(48),
-            side: const BorderSide(color: Color(0x33FFFFFF)),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        Center(
+          child: NgLinkButton(
+            AppLocalizations.of(context).suMobileLogin,
+            icon: Icons.sms_outlined,
+            onTap: _model.isLoading
+                ? null
+                : () => context.go(VendorSignupPageWidget.routePath),
           ),
         ),
         if (_signupStatus != null) ...[
           const SizedBox(height: 12),
           _signupBanner(_signupStatus!),
         ],
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "New here? ",
-              style: NgFonts.geist(color: Colors.white54, fontSize: 13),
-            ),
-            GestureDetector(
-              // Approval-first signup by mobile number replaced the
-              // email SignupPage as the way in (21 Oct 2026); create-org
-              // now refuses a brand-new org outside the approval step.
-              onTap: () => context.go(VendorSignupPageWidget.routePath),
-              child: Text(
-                'Create an account',
-                style: NgFonts.geist(
-                  color: kBrandAccent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+        const SizedBox(height: 14),
+        // Approval-first signup by mobile number replaced the email
+        // SignupPage as the way in (21 Oct 2026).
+        _bottomLink(
+          prefix: 'New here? ',
+          action: 'Create an account',
+          onTap: () => context.go(VendorSignupPageWidget.routePath),
         ),
       ],
     );
@@ -609,13 +579,15 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
 
   Widget _signupBanner(String status) {
     final l = AppLocalizations.of(context);
-    final (color, icon, text) = switch (status) {
-      'approved' => (const Color(0xFF5CCB89), Icons.verified_rounded, l.suBnOk),
-      'rejected' => (const Color(0xFFFE8B83), Icons.error_outline, l.suBnNo),
-      _ => (const Color(0xFFF2B84B), Icons.hourglass_top_rounded, l.suBnP),
+    final c = NgPalette.of(context);
+    final (tone, icon, text) = switch (status) {
+      'approved' => (NgStatus.green, Icons.verified_rounded, l.suBnOk),
+      'rejected' => (NgStatus.red, Icons.error_outline_rounded, l.suBnNo),
+      _ => (NgStatus.amber, Icons.hourglass_top_rounded, l.suBnP),
     };
+    final s = c.status(tone);
     return Material(
-      color: color.withValues(alpha: 0.14),
+      color: s.bg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -624,18 +596,18 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              Icon(icon, size: 20, color: color),
+              Icon(icon, size: 20, color: s.fg),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(text,
                     style: NgFonts.geist(
-                        color: Colors.white,
+                        color: c.text,
                         fontSize: 13.5,
                         fontWeight: FontWeight.w600)),
               ),
               Text(l.suView,
                   style: NgFonts.geist(
-                      color: kBrandAccent,
+                      color: c.acc,
                       fontSize: 13.5,
                       fontWeight: FontWeight.w600)),
             ],
@@ -646,15 +618,23 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   }
 
   Widget _errorBox(String message) {
+    final c = NgPalette.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(10),
+        color: c.redBg,
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        message,
-        style: NgFonts.geist(color: Colors.redAccent, fontSize: 13),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: c.red),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(message,
+                style: NgFonts.geist(color: c.red, fontSize: 13, height: 1.4)),
+          ),
+        ],
       ),
     );
   }
@@ -662,35 +642,35 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   Widget _textField({
     required TextEditingController controller,
     required FocusNode focusNode,
-    required String label,
     required String hint,
     required IconData icon,
     TextInputType? keyboardType,
     bool obscureText = false,
     Widget? suffixIcon,
   }) {
+    final c = NgPalette.of(context);
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      style: NgFonts.geist(color: Colors.white),
+      cursorColor: c.acc,
+      style: NgFonts.geist(color: c.text, fontSize: 15),
       decoration: InputDecoration(
-        labelText: label,
         hintText: hint,
-        labelStyle: NgFonts.geist(color: Colors.white54),
-        hintStyle: NgFonts.geist(color: Colors.white24),
-        prefixIcon: Icon(icon, color: Colors.white38, size: 20),
+        hintStyle: NgFonts.geist(color: c.faint, fontSize: 15),
+        prefixIcon: Icon(icon, color: c.faint, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: const Color(0xFF1A1E26),
+        fillColor: c.s1,
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.w08),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kBrandAccent, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: c.acc, width: 1.5),
         ),
       ),
     );

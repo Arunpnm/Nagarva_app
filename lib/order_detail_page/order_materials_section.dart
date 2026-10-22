@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 
 import '/backend/material_usage.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Materials used on this order, recorded FROM the order.
@@ -153,97 +154,74 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final ng = NgPalette.of(context);
+    return NgSectionCard(
+      title: 'Materials used',
+      icon: Icons.inventory_2_outlined,
+      trailing: widget.readOnly
+          ? null
+          : NgLinkButton('Add', icon: Icons.add_rounded, onTap: _addMaterial),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(Icons.inventory_2_outlined, size: 18, color: theme.primary),
-              const SizedBox(width: 8),
-              Text('Materials Used',
-                  style: NgFonts.geist(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: theme.primaryText)),
-              const Spacer(),
-              if (!widget.readOnly)
-                TextButton.icon(
-                  onPressed: _addMaterial,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Add'),
-                ),
-            ],
-          ),
           if (_loading)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2)),
-            )
-          else if (_used.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'Cartons, tape, bubble wrap used on this job. Recorded here '
-                'it counts as a cost on this order — and if the customer is '
-                'buying them, it is charged to them too.',
-                style:
-                    NgFonts.geist(fontSize: 12, color: theme.secondaryText),
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Center(
+                child: SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
               ),
             )
+          else if (_used.isEmpty)
+            Text(
+              'Cartons, tape, bubble wrap used on this job. Recorded here '
+              'it counts as a cost on this order — and if the customer is '
+              'buying them, it is charged to them too.',
+              style: NgFonts.geist(fontSize: 13, height: 1.4, color: ng.mute),
+            )
           else ...[
-            const SizedBox(height: 4),
             for (final r in _used)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
+                padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: Text('${_qty(r.qty)} × ${r.name}',
-                          style: NgFonts.geist(
-                              fontSize: 13,
+                    Container(
+                      constraints: const BoxConstraints(minWidth: 36),
+                      height: 28,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                          color: ng.s3,
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Text('${_qty(r.qty)}×',
+                          style: NgFonts.mono(
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w600,
-                              color: theme.primaryText)),
+                              color: ng.soft)),
                     ),
-                    Text('₹${r.value.toStringAsFixed(0)}',
-                        style: NgFonts.geist(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: theme.primaryText)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(r.name,
+                          style: NgFonts.geist(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: ng.text)),
+                    ),
+                    Text(functions.inrFull(r.value),
+                        style: NgFonts.mono(fontSize: 13.5, color: ng.text)),
                   ],
                 ),
               ),
-            const Divider(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: Text('Material cost on this job',
-                      style: NgFonts.geist(
-                          fontSize: 12, color: theme.secondaryText)),
-                ),
-                Text('₹${_totalCost.toStringAsFixed(0)}',
-                    style: NgFonts.geist(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: theme.primaryText)),
-              ],
-            ),
+            Divider(height: 18, color: ng.w06),
+            NgKeyValue('Material cost on this job',
+                functions.inrFull(_totalCost),
+                mono: true, strong: true),
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!,
-                style: NgFonts.geist(fontSize: 12, color: theme.error)),
+            Text(_error!, style: NgFonts.geist(fontSize: 12.5, color: ng.red)),
           ],
         ],
       ),
@@ -322,7 +300,7 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
     final price = _selected.sellingPrice ?? 0;
     final onHand = _selected.quantity ?? 0;
     return AlertDialog(
-      backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+      backgroundColor: NgPalette.of(context).s1,
       title: const Text('Add material to this job'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -392,7 +370,7 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(_error!,
                   style: TextStyle(
-                      fontSize: 12, color: FlutterFlowTheme.of(context).error)),
+                      fontSize: 12, color: NgPalette.of(context).red)),
             ),
         ],
       ),

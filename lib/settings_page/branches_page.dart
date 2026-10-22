@@ -1,11 +1,11 @@
 import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 import '/app_session.dart';
 import '/backend/supabase/database/database.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/load_error_state.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 
 /// Settings → Branches (27 Aug 2026).
 ///
@@ -262,7 +262,7 @@ class _BranchesPageState extends State<BranchesPage> {
       context: context,
       isScrollControlled: true,
       builder: (sheetContext) {
-        final theme = FlutterFlowTheme.of(sheetContext);
+        final ng = NgPalette.of(sheetContext);
         return Padding(
           padding: EdgeInsets.only(
             left: 20,
@@ -278,7 +278,7 @@ class _BranchesPageState extends State<BranchesPage> {
               children: [
                 Text(
                   existing == null ? 'Add branch' : 'Edit branch',
-                  style: theme.headlineSmall,
+                  style: NgFonts.geist(fontSize: 22, fontWeight: FontWeight.w600, color: ng.text),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -350,15 +350,15 @@ class _BranchesPageState extends State<BranchesPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(message),
       backgroundColor:
-          isError ? FlutterFlowTheme.of(context).error : null,
+          isError ? NgPalette.of(context).red : null,
     ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: NgSimpleBar(title: 'Branches'),
       floatingActionButton: _isOwner
           ? FloatingActionButton.extended(
@@ -367,11 +367,11 @@ class _BranchesPageState extends State<BranchesPage> {
               label: const Text('Add branch'),
             )
           : null,
-      body: _buildBody(theme),
+      body: _buildBody(ng),
     );
   }
 
-  Widget _buildBody(FlutterFlowTheme theme) {
+  Widget _buildBody(NgPalette ng) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -380,7 +380,7 @@ class _BranchesPageState extends State<BranchesPage> {
     }
     if (!_isOwner) {
       return _message(
-        theme,
+        ng,
         Icons.lock_outline,
         'Owner only',
         'Branches are managed by the account owner. Ask them to add or '
@@ -389,7 +389,7 @@ class _BranchesPageState extends State<BranchesPage> {
     }
     if (_branches.isEmpty) {
       return _message(
-        theme,
+        ng,
         Icons.store_mall_directory_outlined,
         'No branches yet',
         'Add your first branch to start creating orders, leads and staff.',
@@ -404,19 +404,19 @@ class _BranchesPageState extends State<BranchesPage> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
-          for (final b in active) _branchCard(theme, b, archived: false),
+          for (final b in active) _branchCard(ng, b, archived: false),
           if (archived.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Text('Archived', style: theme.labelMedium),
+            Text('Archived', style: NgFonts.geist(fontSize: 12.5, fontWeight: FontWeight.w500, color: ng.text)),
             const SizedBox(height: 8),
-            for (final b in archived) _branchCard(theme, b, archived: true),
+            for (final b in archived) _branchCard(ng, b, archived: true),
           ],
         ],
       ),
     );
   }
 
-  Widget _branchCard(FlutterFlowTheme theme, BranchesRow b,
+  Widget _branchCard(NgPalette ng, BranchesRow b,
       {required bool archived}) {
     final subtitle = [b.city, b.address]
         .where((s) => s != null && s.trim().isNotEmpty)
@@ -426,13 +426,12 @@ class _BranchesPageState extends State<BranchesPage> {
       child: ListTile(
         leading: Icon(
           archived ? Icons.inventory_2_outlined : Icons.store_outlined,
-          color: archived ? theme.secondaryText : theme.primary,
+          color: archived ? ng.mute : ng.acc,
         ),
         title: Text(
           b.name,
-          style: theme.bodyLarge.override(
-            fontFamily: 'Inter',
-            color: archived ? theme.secondaryText : null,
+          style: NgFonts.geist(fontSize: 15.5, 
+            color: archived ? ng.mute : null,
           ),
         ),
         subtitle: subtitle.isEmpty ? null : Text(subtitle),
@@ -460,23 +459,22 @@ class _BranchesPageState extends State<BranchesPage> {
   }
 
   Widget _message(
-      FlutterFlowTheme theme, IconData icon, String title, String body) {
+      NgPalette ng, IconData icon, String title, String body) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: theme.secondaryText),
+            Icon(icon, size: 44, color: ng.mute),
             const SizedBox(height: 14),
-            Text(title, style: theme.titleMedium),
+            Text(title, style: NgFonts.geist(fontSize: 17, fontWeight: FontWeight.w600, color: ng.text)),
             const SizedBox(height: 8),
             Text(
               body,
               textAlign: TextAlign.center,
-              style: theme.bodySmall.override(
-                fontFamily: 'Inter',
-                color: theme.secondaryText,
+              style: NgFonts.geist(fontSize: 12.5, 
+                color: ng.mute,
               ),
             ),
           ],

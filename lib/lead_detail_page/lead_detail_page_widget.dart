@@ -26,7 +26,6 @@ import '/components/quote_pdf.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/issued_documents.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -795,7 +794,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 border: Border.all(
-                    color: FlutterFlowTheme.of(context).alternate),
+                    color: NgPalette.of(context).w08),
                 borderRadius: BorderRadius.circular(8),
                 // The pad captures dark ink on white. Painting a white
                 // ground here keeps it legible in dark mode instead of
@@ -1375,15 +1374,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   Widget? _autoCreationNote(BuildContext context) {
     final note = (_lead?.notes ?? widget.leadNotes ?? '').trim();
     if (note.isEmpty) return null;
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(8),
-        border: Border(left: BorderSide(color: theme.primary, width: 3)),
+        border: Border(left: BorderSide(color: ng.acc, width: 3)),
       ),
       child: Text(
         note,
@@ -1391,24 +1390,19 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           fontSize: 12.5,
           fontStyle: FontStyle.italic,
           height: 1.4,
-          color: theme.secondaryText,
+          color: ng.mute,
         ),
       ),
     );
   }
 
   Widget _surveyQuoteSection(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final survey = _survey;
     final quotation = _quotation;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 14.0),
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(10.0),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1419,7 +1413,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
-                        color: theme.primaryText)),
+                        color: ng.text)),
               ),
               // Part 8 addendum item 2: two separate documents, not one
               // combined (Rev B, Q2) - the survey PDF exists before pricing
@@ -1536,7 +1530,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.check_circle, size: 18, color: theme.success),
+                    Icon(Icons.check_circle, size: 18, color: ng.green),
                     const SizedBox(width: 6),
                     Expanded(
                         child: Text(
@@ -1577,14 +1571,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           else
             Row(
               children: [
-                Icon(Icons.hourglass_top, size: 18, color: theme.secondaryText),
+                Icon(Icons.hourglass_top, size: 18, color: ng.mute),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     quotation.status == 'lost'
                         ? 'Quote marked lost'
                         : 'Quote not yet accepted',
-                    style: TextStyle(color: theme.secondaryText),
+                    style: TextStyle(color: ng.mute),
                   ),
                 ),
               ],
@@ -1609,7 +1603,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           if (_quoteSignature?.isSigned ?? false)
             Row(
               children: [
-                Icon(Icons.verified, size: 17, color: theme.tertiary),
+                Icon(Icons.verified, size: 17, color: ng.blue),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -1618,7 +1612,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     style: NgFonts.geist(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
-                        color: theme.primaryText),
+                        color: ng.text),
                   ),
                 ),
                 // Offered ONLY when the stored signature actually decodes.
@@ -1911,7 +1905,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// list — one block, because they are one question: *which quote is
   /// this, what has it been through, and do I change it again?*
   Widget _quoteRevisionPanel(BuildContext context, QuotationsRow quotation) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final money = NumberFormat.currency(
         locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final created = quotation.createdAt;
@@ -1921,7 +1915,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 10),
-        Divider(height: 1, color: theme.alternate),
+        Divider(height: 1, color: ng.w08),
         const SizedBox(height: 8),
 
         // WHICH QUOTE. Named, not implied. `_pickBestQuote` chooses
@@ -1929,7 +1923,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         // to revise has to know which row they are about to change.
         Row(
           children: [
-            Icon(Icons.receipt_long, size: 16, color: theme.secondaryText),
+            Icon(Icons.receipt_long, size: 16, color: ng.mute),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
@@ -1938,7 +1932,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                 style: NgFonts.geist(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: theme.primaryText),
+                    color: ng.text),
               ),
             ),
           ],
@@ -1954,14 +1948,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.layers_outlined, size: 15, color: theme.warning),
+              Icon(Icons.layers_outlined, size: 15, color: ng.amber),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   '${_quotesOnLead.length} quotes on this lead — showing the '
                   'most detailed one.',
                   style: NgFonts.geist(
-                      fontSize: 11.5, color: theme.secondaryText),
+                      fontSize: 11.5, color: ng.mute),
                 ),
               ),
               PopupMenuButton<QuotationsRow>(
@@ -1981,7 +1975,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     style: NgFonts.geist(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
-                        color: theme.primary)),
+                        color: ng.acc)),
               ),
             ],
           ),
@@ -2009,14 +2003,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 1),
                     decoration: BoxDecoration(
-                      color: theme.alternate,
+                      color: ng.w08,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text('v${v.version ?? 1}',
                         style: NgFonts.geist(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
-                            color: theme.primaryText)),
+                            color: ng.text)),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -2030,7 +2024,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                           // cannot be shown apart.
                           v.changeSummary ?? 'Revised',
                           style: NgFonts.geist(
-                              fontSize: 12, color: theme.primaryText),
+                              fontSize: 12, color: ng.text),
                         ),
                         Text(
                           [
@@ -2040,7 +2034,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                                   .format(v.createdAt!.toLocal()),
                           ].join(' · '),
                           style: NgFonts.geist(
-                              fontSize: 11, color: theme.secondaryText),
+                              fontSize: 11, color: ng.mute),
                         ),
                       ],
                     ),
@@ -2090,25 +2084,25 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   }
 
   Widget _linkUnavailableNote(BuildContext context, String what, String instead) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: theme.warning.withValues(alpha: 0.12),
+        color: ng.amber.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.link_off, size: 15, color: theme.warning),
+          Icon(Icons.link_off, size: 15, color: ng.amber),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               '$what links are switched off — the customer page is not '
               'live right now, so a link would open a dead page. $instead',
               style: NgFonts.geist(
-                  fontSize: 11.5, color: theme.primaryText),
+                  fontSize: 11.5, color: ng.text),
             ),
           ),
         ],
@@ -2148,7 +2142,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           top: true,
           child: Container(
             decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+              color: NgPalette.of(context).bg,
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -2393,7 +2387,7 @@ class _LostReasonDialogState extends State<_LostReasonDialog> {
                 ? double.tryParse(_competitorPriceCtrl.text.trim())
                 : null,
           )),
-          style: TextButton.styleFrom(foregroundColor: leadStatusColor(kLeadStatusLost, context)),
+          
           child: const Text('Mark lost'),
         ),
       ],
