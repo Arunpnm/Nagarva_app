@@ -3,7 +3,6 @@ import '/backend/supabase/org_scope.dart';
 import '/backend/reminders_service.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -220,7 +219,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
       }).toList();
 
   Widget _monthGrid(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final month = _model.visibleMonth;
     final today = DateTime.now();
     final monthName = DateFormat('MMMM yyyy').format(month);
@@ -253,9 +252,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? theme.primary
+                        ? ng.acc
                         : isToday
-                            ? theme.primary.withOpacity(0.25)
+                            ? ng.acc.withOpacity(0.25)
                             : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
@@ -267,8 +266,8 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                           ? FontWeight.w700
                           : FontWeight.w500,
                       color: isSelected
-                          ? theme.primaryBackground
-                          : theme.primaryText,
+                          ? ng.bg
+                          : ng.text,
                     ),
                   ),
                 ),
@@ -283,7 +282,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                           height: 5,
                           margin: const EdgeInsets.symmetric(horizontal: 1),
                           decoration: BoxDecoration(
-                            color: theme.primary,
+                            color: ng.acc,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -325,7 +324,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(12.0),
       ),
       child: Padding(
@@ -337,7 +336,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: Icon(Icons.chevron_left, color: theme.primary),
+                  icon: Icon(Icons.chevron_left, color: ng.acc),
                   onPressed: () => safeSetState(() {
                     _model.visibleMonth = DateTime(month.year, month.month - 1);
                     _model.selectedDay = null;
@@ -348,11 +347,11 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                   style: NgFonts.geist(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
-                    color: theme.primaryText,
+                    color: ng.text,
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.chevron_right, color: theme.primary),
+                  icon: Icon(Icons.chevron_right, color: ng.acc),
                   onPressed: () => safeSetState(() {
                     _model.visibleMonth = DateTime(month.year, month.month + 1);
                     _model.selectedDay = null;
@@ -379,7 +378,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                       style: NgFonts.geist(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
-                        color: theme.secondaryText,
+                        color: ng.mute,
                       ),
                     ),
                   ),
@@ -394,7 +393,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
   }
 
   Widget _dayEventsCard(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final day = _model.selectedDay!;
     final orders = _ordersOn(day);
     Color statusColor(String st) {
@@ -404,18 +403,18 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
         case 'done':
           return NgPalette.of(context).green;
         case 'cancelled':
-          return theme.error;
+          return ng.red;
         case 'transit':
           return NgPalette.of(context).blue;
         default:
-          return theme.primary;
+          return ng.acc;
       }
     }
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(12.0),
       ),
       child: Padding(
@@ -428,13 +427,13 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
               style: NgFonts.geist(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: theme.primaryText,
+                color: ng.text,
               ),
             ),
             Text(
               '${orders.length} order(s)',
               style:
-                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 11.5, color: ng.mute),
             ),
             const SizedBox(height: 10),
             if (orders.isEmpty)
@@ -442,7 +441,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                 'No orders moving this day. Reminders for this day are '
                 'listed below.',
                 style: NgFonts.geist(
-                    fontSize: 12.5, color: theme.secondaryText),
+                    fontSize: 12.5, color: ng.mute),
               )
             else
               ...orders.map((o) {
@@ -477,7 +476,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.primaryBackground,
+                        color: ng.bg,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
@@ -493,7 +492,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                   style: NgFonts.geist(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
-                                    color: theme.primaryText,
+                                    color: ng.text,
                                   ),
                                 ),
                               ),
@@ -522,7 +521,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                               '${o.fromCity ?? ''} → ${o.toCity ?? ''}',
                             ].join('  ·  '),
                             style: NgFonts.geist(
-                                fontSize: 11.5, color: theme.secondaryText),
+                                fontSize: 11.5, color: ng.mute),
                           ),
                           if (o.amount != null) ...[
                             const SizedBox(height: 3),
@@ -531,7 +530,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                               style: NgFonts.geist(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: theme.primary,
+                                color: ng.acc,
                               ),
                             ),
                           ],
@@ -547,11 +546,11 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                     width: 6,
                     height: 6,
                     decoration: BoxDecoration(
-                        color: theme.primary, shape: BoxShape.circle)),
+                        color: ng.acc, shape: BoxShape.circle)),
                 const SizedBox(width: 4),
                 Text('Order',
                     style: NgFonts.geist(
-                        fontSize: 10.5, color: theme.secondaryText)),
+                        fontSize: 10.5, color: ng.mute)),
                 const SizedBox(width: 12),
                 Container(
                     width: 6,
@@ -562,7 +561,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                 const SizedBox(width: 4),
                 Text('Follow-up',
                     style: NgFonts.geist(
-                        fontSize: 10.5, color: theme.secondaryText)),
+                        fontSize: 10.5, color: ng.mute)),
               ],
             ),
           ],
@@ -580,13 +579,13 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: NgPalette.of(context).bg,
         appBar: NgTopBar(onRefresh: _loadCalendarData),
         body: SafeArea(
           top: true,
           child: Container(
             decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryBackground,
+              color: NgPalette.of(context).bg,
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -633,26 +632,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                       children: [
                         Text(
                           AppLocalizations.of(context).activeRemindersLive,
-                          style: FlutterFlowTheme.of(context)
-                              .titleMedium
-                              .override(
-                                font: NgFonts.geist(
-                                  fontWeight: FlutterFlowTheme.of(context)
-                                      .titleMedium
-                                      .fontWeight,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .titleMedium
-                                      .fontStyle,
+                          style: NgFonts.geist(fontSize: 17, fontWeight: FontWeight.w600, 
+                                color: NgPalette.of(context).text,
                                 ),
-                                color: FlutterFlowTheme.of(context).primaryText,
-                                letterSpacing: 0.0,
-                                fontWeight: FlutterFlowTheme.of(context)
-                                    .titleMedium
-                                    .fontWeight,
-                                fontStyle: FlutterFlowTheme.of(context)
-                                    .titleMedium
-                                    .fontStyle,
-                              ),
                         ),
                         Builder(
                           builder: (context) {
@@ -685,8 +667,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                 return Container(
                                   width: double.infinity,
                                   decoration: BoxDecoration(
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryBackground,
+                                    color: NgPalette.of(context).s1,
                                     borderRadius: BorderRadius.circular(10.0),
                                   ),
                                   child: Padding(
@@ -701,8 +682,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                         Container(
                                           width: 4.0,
                                           decoration: BoxDecoration(
-                                            color: FlutterFlowTheme.of(context)
-                                                .primary,
+                                            color: NgPalette.of(context).acc,
                                             borderRadius:
                                                 BorderRadius.circular(2.0),
                                           ),
@@ -724,73 +704,18 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                         .title ??
                                                     '-',
                                                 style:
-                                                    FlutterFlowTheme.of(context)
-                                                        .titleSmall
-                                                        .override(
-                                                          font: NgFonts.geist(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .titleSmall
-                                                                    .fontStyle,
+                                                    NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w600, 
+                                                          color: NgPalette.of(context).text,
                                                           ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .primaryText,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .titleSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .titleSmall
-                                                                  .fontStyle,
-                                                        ),
                                               ),
                                               Text(
                                                 remindersViewListItemItem
                                                         .description ??
                                                     '-',
-                                                style: FlutterFlowTheme.of(
-                                                        context)
-                                                    .bodySmall
-                                                    .override(
-                                                      font: NgFonts.geist(
-                                                        fontWeight:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontWeight,
-                                                        fontStyle:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .bodySmall
-                                                                .fontStyle,
-                                                      ),
+                                                style: NgFonts.geist(fontSize: 12.5, 
                                                       color:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .secondaryText,
-                                                      letterSpacing: 0.0,
-                                                      fontWeight:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontWeight,
-                                                      fontStyle:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodySmall
-                                                              .fontStyle,
-                                                    ),
+                                                          NgPalette.of(context).mute,
+                                                      ),
                                               ),
                                               Row(
                                                 mainAxisSize: MainAxisSize.max,
@@ -803,44 +728,13 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                     remindersViewListItemItem
                                                             .dueDate ??
                                                         '-',
-                                                    style: FlutterFlowTheme.of(
-                                                            context)
-                                                        .labelSmall
-                                                        .override(
-                                                          font:
-                                                              NgFonts.geist(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .labelSmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .labelSmall
-                                                                    .fontStyle,
+                                                    style: NgFonts.geist(fontSize: 11, fontWeight: FontWeight.w500, 
+                                                          color: NgPalette.of(context).acc,
                                                           ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .primary,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontStyle,
-                                                        ),
                                                   ),
                                                   Container(
                                                     decoration: BoxDecoration(
-                                                      color: FlutterFlowTheme
-                                                              .of(context)
-                                                          .primaryBackground,
+                                                      color: NgPalette.of(context).bg,
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               6.0),
@@ -855,35 +749,9 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                                 .reminderType ??
                                                             '-',
                                                         style:
-                                                            FlutterFlowTheme.of(
-                                                                    context)
-                                                                .labelSmall
-                                                                .override(
-                                                                  font:
-                                                                      NgFonts.geist(
-                                                                    fontWeight: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .labelSmall
-                                                                        .fontWeight,
-                                                                    fontStyle: FlutterFlowTheme.of(
-                                                                            context)
-                                                                        .labelSmall
-                                                                        .fontStyle,
+                                                            NgFonts.geist(fontSize: 11, fontWeight: FontWeight.w500, 
+                                                                  color: NgPalette.of(context).mute,
                                                                   ),
-                                                                  color: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .secondaryText,
-                                                                  letterSpacing:
-                                                                      0.0,
-                                                                  fontWeight: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .labelSmall
-                                                                      .fontWeight,
-                                                                  fontStyle: FlutterFlowTheme.of(
-                                                                          context)
-                                                                      .labelSmall
-                                                                      .fontStyle,
-                                                                ),
                                                       ),
                                                     ),
                                                   ),
@@ -899,84 +767,24 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                                                 children: [
                                                   Icon(
                                                     Icons.person_outline,
-                                                    color: FlutterFlowTheme.of(
-                                                            context)
-                                                        .secondaryText,
+                                                    color: NgPalette.of(context).mute,
                                                     size: 12.0,
                                                   ),
                                                   Text(
                                                     remindersViewListItemItem
                                                             .leadCustomer ??
                                                         '-',
-                                                    style: FlutterFlowTheme.of(
-                                                            context)
-                                                        .labelSmall
-                                                        .override(
-                                                          font:
-                                                              NgFonts.geist(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .labelSmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .labelSmall
-                                                                    .fontStyle,
+                                                    style: NgFonts.geist(fontSize: 11, fontWeight: FontWeight.w500, 
+                                                          color: NgPalette.of(context).mute,
                                                           ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .secondaryText,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontStyle,
-                                                        ),
                                                   ),
                                                   Text(
                                                     remindersViewListItemItem
                                                             .orderCustomer ??
                                                         '-',
-                                                    style: FlutterFlowTheme.of(
-                                                            context)
-                                                        .labelSmall
-                                                        .override(
-                                                          font:
-                                                              NgFonts.geist(
-                                                            fontWeight:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .labelSmall
-                                                                    .fontWeight,
-                                                            fontStyle:
-                                                                FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .labelSmall
-                                                                    .fontStyle,
+                                                    style: NgFonts.geist(fontSize: 11, fontWeight: FontWeight.w500, 
+                                                          color: NgPalette.of(context).mute,
                                                           ),
-                                                          color: FlutterFlowTheme
-                                                                  .of(context)
-                                                              .secondaryText,
-                                                          letterSpacing: 0.0,
-                                                          fontWeight:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontWeight,
-                                                          fontStyle:
-                                                              FlutterFlowTheme.of(
-                                                                      context)
-                                                                  .labelSmall
-                                                                  .fontStyle,
-                                                        ),
                                                   ),
                                                 ].divide(
                                                     const SizedBox(width: 4.0)),

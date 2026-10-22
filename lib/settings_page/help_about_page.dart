@@ -5,7 +5,6 @@ import '/components/ng_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/config/app_config.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Settings → Help & About (18 Aug 2026).
@@ -49,9 +48,9 @@ class HelpAboutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       appBar: const NgTopBar(),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
@@ -66,18 +65,18 @@ class HelpAboutPage extends StatelessWidget {
                   width: 62,
                   height: 62,
                   decoration: BoxDecoration(
-                    color: theme.primary.withValues(alpha: 0.12),
+                    color: ng.acc.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(Icons.local_shipping,
-                      size: 32, color: theme.primary),
+                      size: 32, color: ng.acc),
                 ),
                 const SizedBox(height: 12),
                 Text('Nagarva',
                     style: NgFonts.geist(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: theme.primaryText)),
+                        color: ng.text)),
                 const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -87,13 +86,13 @@ class HelpAboutPage extends StatelessWidget {
                     style: NgFonts.geist(
                         fontSize: 12.5,
                         height: 1.45,
-                        color: theme.secondaryText),
+                        color: ng.mute),
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text('Version $kAppVersion',
                     style: NgFonts.geist(
-                        fontSize: 12, color: theme.secondaryText)),
+                        fontSize: 12, color: ng.mute)),
               ],
             ),
           ),
@@ -102,10 +101,10 @@ class HelpAboutPage extends StatelessWidget {
           // ---- Support -------------------------------------------------
           // Hidden entirely until the number exists — see the class doc.
           if (hasNagarvaSupportPhone) ...[
-            _sectionLabel(theme, 'Support'),
-            _card(theme, [
+            _sectionLabel(ng, 'Support'),
+            _card(ng, [
               _row(
-                theme,
+                ng,
                 icon: Icons.chat_bubble_outline,
                 title: 'Chat with support',
                 subtitle: kNagarvaSupportPhone,
@@ -117,9 +116,9 @@ class HelpAboutPage extends StatelessWidget {
                   ),
                 ),
               ),
-              _divider(theme),
+              _divider(ng),
               _row(
-                theme,
+                ng,
                 icon: Icons.call_outlined,
                 title: 'Call support',
                 subtitle: kNagarvaSupportPhone,
@@ -130,17 +129,17 @@ class HelpAboutPage extends StatelessWidget {
           ],
 
           // ---- Legal ---------------------------------------------------
-          _sectionLabel(theme, 'Legal'),
-          _card(theme, [
+          _sectionLabel(ng, 'Legal'),
+          _card(ng, [
             _row(
-              theme,
+              ng,
               icon: Icons.privacy_tip_outlined,
               title: 'Privacy Policy',
               onTap: () => _open(context, kPrivacyPolicyUrl),
             ),
-            _divider(theme),
+            _divider(ng),
             _row(
-              theme,
+              ng,
               icon: Icons.description_outlined,
               title: 'Terms of Service',
               onTap: () => _open(context, kTermsUrl),
@@ -152,7 +151,7 @@ class HelpAboutPage extends StatelessWidget {
             child: Text(
               '© ${DateTime.now().year} Nagarva',
               style:
-                  NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                  NgFonts.geist(fontSize: 11.5, color: ng.mute),
             ),
           ),
         ],
@@ -160,7 +159,7 @@ class HelpAboutPage extends StatelessWidget {
     );
   }
 
-  Widget _sectionLabel(FlutterFlowTheme theme, String text) => Padding(
+  Widget _sectionLabel(NgPalette ng, String text) => Padding(
         padding: const EdgeInsets.only(left: 4, bottom: 8),
         child: Text(
           text.toUpperCase(),
@@ -168,46 +167,46 @@ class HelpAboutPage extends StatelessWidget {
             fontSize: 11.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.6,
-            color: theme.secondaryText,
+            color: ng.mute,
           ),
         ),
       );
 
-  Widget _card(FlutterFlowTheme theme, List<Widget> children) => Container(
+  Widget _card(NgPalette ng, List<Widget> children) => Container(
         decoration: BoxDecoration(
-          color: theme.secondaryBackground,
+          color: ng.s1,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(children: children),
       );
 
-  Widget _divider(FlutterFlowTheme theme) => Divider(
+  Widget _divider(NgPalette ng) => Divider(
         height: 1,
         thickness: 1,
         indent: 52,
-        color: theme.primaryBackground,
+        color: ng.bg,
       );
 
   Widget _row(
-    FlutterFlowTheme theme, {
+    NgPalette ng, {
     required IconData icon,
     required String title,
     String? subtitle,
     required VoidCallback onTap,
   }) =>
       ListTile(
-        leading: Icon(icon, size: 21, color: theme.primary),
+        leading: Icon(icon, size: 21, color: ng.acc),
         title: Text(title,
             style: NgFonts.geist(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: theme.primaryText)),
+                color: ng.text)),
         subtitle: subtitle == null
             ? null
             : Text(subtitle,
                 style: NgFonts.geist(
-                    fontSize: 12, color: theme.secondaryText)),
-        trailing: Icon(Icons.open_in_new, size: 16, color: theme.secondaryText),
+                    fontSize: 12, color: ng.mute)),
+        trailing: Icon(Icons.open_in_new, size: 16, color: ng.mute),
         onTap: onTap,
       );
 }

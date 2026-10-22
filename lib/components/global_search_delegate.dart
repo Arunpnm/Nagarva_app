@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '/flutter_flow/ng_tokens.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -99,11 +100,11 @@ class GlobalSearchDelegate extends SearchDelegate<void> {
         if (orders.isEmpty && leads.isEmpty) {
           return Center(child: Text('No customer found for "$query"'));
         }
-        final theme = FlutterFlowTheme.of(context);
+        final ng = NgPalette.of(context);
         return ListView(
           children: [
             if (orders.isNotEmpty) ...[
-              _sectionHeader(theme, 'ORDERS (${orders.length})'),
+              _sectionHeader(ng, 'ORDERS (${orders.length})'),
               for (final o in orders)
                 ListTile(
                   title: Text(o.customer),
@@ -117,7 +118,7 @@ class GlobalSearchDelegate extends SearchDelegate<void> {
                 ),
             ],
             if (leads.isNotEmpty) ...[
-              _sectionHeader(theme, 'LEADS (${leads.length})'),
+              _sectionHeader(ng, 'LEADS (${leads.length})'),
               for (final l in leads)
                 ListTile(
                   title: Text(l.customer),
@@ -136,15 +137,15 @@ class GlobalSearchDelegate extends SearchDelegate<void> {
     );
   }
 
-  Widget _sectionHeader(FlutterFlowTheme theme, String text) => Container(
+  Widget _sectionHeader(NgPalette ng, String text) => Container(
         width: double.infinity,
-        color: theme.alternate,
+        color: ng.w08,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         child: Text(text,
             style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: theme.secondaryText)),
+                color: ng.mute)),
       );
 
   Future<({List<OrdersRow> orders, List<LeadsRow> leads})> _search(

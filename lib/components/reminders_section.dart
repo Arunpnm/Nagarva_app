@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/reminders_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/config/app_config.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
+import '/flutter_flow/flutter_flow_theme.dart' show kWhatsAppGreen;
 
 /// REMINDERS section for Lead Details and the quote screen (live-test fix
 /// brief #2, item 10).
@@ -68,15 +69,10 @@ class RemindersSectionState extends State<RemindersSection> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 14),
+    final ng = NgPalette.of(context);
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(10),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -88,7 +84,7 @@ class RemindersSectionState extends State<RemindersSection> {
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                   letterSpacing: 0.4,
-                  color: theme.primaryText,
+                  color: ng.text,
                 ),
               ),
               const Spacer(),
@@ -122,11 +118,11 @@ class RemindersSectionState extends State<RemindersSection> {
                 style: NgFonts.geist(
                     fontSize: 12.5,
                     fontStyle: FontStyle.italic,
-                    color: theme.secondaryText),
+                    color: ng.mute),
               ),
             )
           else
-            for (final r in _open) _reminderRow(theme, r),
+            for (final r in _open) _reminderRow(ng, r),
           if (_logs.isNotEmpty) ...[
             const Divider(height: 20),
             InkWell(
@@ -138,7 +134,7 @@ class RemindersSectionState extends State<RemindersSection> {
                     Icon(
                       _showHistory ? Icons.expand_less : Icons.expand_more,
                       size: 18,
-                      color: theme.primary,
+                      color: ng.acc,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -149,34 +145,34 @@ class RemindersSectionState extends State<RemindersSection> {
                       style: NgFonts.geist(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
-                          color: theme.primary),
+                          color: ng.acc),
                     ),
                   ],
                 ),
               ),
             ),
             if (_showHistory)
-              for (final l in _logs) _logRow(theme, l),
+              for (final l in _logs) _logRow(ng, l),
           ],
         ],
       ),
     );
   }
 
-  Widget _reminderRow(FlutterFlowTheme theme, RemindersRow r) {
+  Widget _reminderRow(NgPalette ng, RemindersRow r) {
     final state = dueStateOf(r.dueDate);
     final color = dueColor(state,
-        overdue: theme.error, today: theme.warning, normal: theme.secondaryText);
+        overdue: ng.red, today: ng.amber, normal: ng.mute);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
       decoration: BoxDecoration(
-        color: theme.primaryBackground,
+        color: ng.bg,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: state == DueState.overdue
-              ? theme.error.withValues(alpha: 0.5)
-              : theme.alternate,
+              ? ng.red.withValues(alpha: 0.5)
+              : ng.w08,
         ),
       ),
       child: Column(
@@ -187,7 +183,7 @@ class RemindersSectionState extends State<RemindersSection> {
             style: NgFonts.geist(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
-                color: theme.primaryText),
+                color: ng.text),
           ),
           const SizedBox(height: 2),
           Row(
@@ -212,7 +208,7 @@ class RemindersSectionState extends State<RemindersSection> {
             Text(
               r.description!.trim(),
               style: NgFonts.geist(
-                  fontSize: 12, height: 1.35, color: theme.secondaryText),
+                  fontSize: 12, height: 1.35, color: ng.mute),
             ),
           ],
           const SizedBox(height: 2),
@@ -236,7 +232,7 @@ class RemindersSectionState extends State<RemindersSection> {
                 style: TextButton.styleFrom(
                     minimumSize: const Size(0, 40),
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    foregroundColor: theme.tertiary),
+                    foregroundColor: ng.blue),
                 label:
                     const Text('Done', style: TextStyle(fontSize: 12.5)),
               ),
@@ -247,13 +243,13 @@ class RemindersSectionState extends State<RemindersSection> {
     );
   }
 
-  Widget _logRow(FlutterFlowTheme theme, FollowUpLogsRow l) {
+  Widget _logRow(NgPalette ng, FollowUpLogsRow l) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10, left: 2),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(_channelIcon(l.channel), size: 15, color: theme.secondaryText),
+          Icon(_channelIcon(l.channel), size: 15, color: ng.mute),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -265,20 +261,20 @@ class RemindersSectionState extends State<RemindersSection> {
                   style: NgFonts.geist(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: theme.primaryText),
+                      color: ng.text),
                 ),
                 if ((l.notes ?? '').trim().isNotEmpty)
                   Text(
                     l.notes!.trim(),
                     style: NgFonts.geist(
-                        fontSize: 12, height: 1.3, color: theme.secondaryText),
+                        fontSize: 12, height: 1.3, color: ng.mute),
                   ),
                 if (l.loggedAt != null)
                   Text(
                     DateFormat('d MMM yyyy, h:mm a')
                         .format(l.loggedAt!.toLocal()),
                     style: NgFonts.geist(
-                        fontSize: 11, color: theme.secondaryText),
+                        fontSize: 11, color: ng.mute),
                   ),
               ],
             ),
@@ -504,7 +500,7 @@ class _LogCallSheetState extends State<_LogCallSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return _SheetShell(
       title: 'Log follow-up',
       children: [
@@ -585,7 +581,7 @@ class _LogCallSheetState extends State<_LogCallSheet> {
             'Creates the next reminder automatically, so the lead never '
             'goes quiet.',
             style: NgFonts.geist(
-                fontSize: 11.5, color: theme.secondaryText),
+                fontSize: 11.5, color: ng.mute),
           ),
         ),
         if (_setNext)
@@ -646,7 +642,7 @@ class _DuePickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Row(
       children: [
         Expanded(
@@ -666,7 +662,7 @@ class _DuePickerRow extends StatelessWidget {
             label: Text(DateFormat('d MMM yyyy').format(due)),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 48),
-              foregroundColor: theme.primaryText,
+              foregroundColor: ng.text,
             ),
           ),
         ),
@@ -687,7 +683,7 @@ class _DuePickerRow extends StatelessWidget {
             label: Text(DateFormat('h:mm a').format(due)),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 48),
-              foregroundColor: theme.primaryText,
+              foregroundColor: ng.text,
             ),
           ),
         ),
@@ -704,7 +700,7 @@ class _SheetShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Padding(
       // Keeps the sheet above the keyboard when a field is focused.
       padding: EdgeInsets.only(
@@ -712,7 +708,7 @@ class _SheetShell extends StatelessWidget {
       child: SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: theme.secondaryBackground,
+            color: ng.s1,
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(18)),
           ),
@@ -728,7 +724,7 @@ class _SheetShell extends StatelessWidget {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 14),
                     decoration: BoxDecoration(
-                      color: theme.alternate,
+                      color: ng.w08,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -738,7 +734,7 @@ class _SheetShell extends StatelessWidget {
                   style: NgFonts.geist(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
-                      color: theme.primaryText),
+                      color: ng.text),
                 ),
                 const SizedBox(height: 14),
                 ...children,

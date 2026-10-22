@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 import 'package:intl/intl.dart';
 
 import '/app_session.dart';
 import '/backend/audit_log_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Material detail + stock movement actions (Session 4 Materials rebuild).
@@ -245,7 +245,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final m = _material;
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -254,7 +254,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
       expand: false,
       builder: (context, scrollController) => Container(
         decoration: BoxDecoration(
-          color: theme.primaryBackground,
+          color: ng.bg,
           borderRadius:
               const BorderRadius.vertical(top: Radius.circular(18)),
         ),
@@ -272,7 +272,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                           height: 4,
                           margin: const EdgeInsets.only(bottom: 14),
                           decoration: BoxDecoration(
-                            color: theme.alternate,
+                            color: ng.w08,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -281,32 +281,28 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                           style: NgFonts.geist(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              color: theme.primaryText)),
+                              color: ng.text)),
                       const SizedBox(height: 4),
                       Wrap(
                         spacing: 10,
                         runSpacing: 4,
                         children: [
                           if ((m.sku ?? '').isNotEmpty)
-                            _tag('SKU: ${m.sku}', theme),
+                            _tag('SKU: ${m.sku}', ng),
                           if ((m.category ?? '').isNotEmpty)
-                            _tag(m.category!, theme),
+                            _tag(m.category!, ng),
                           if ((m.hsnCode ?? '').isNotEmpty)
-                            _tag('HSN ${m.hsnCode}', theme),
+                            _tag('HSN ${m.hsnCode}', ng),
                           if ((m.branch ?? '').isNotEmpty)
-                            _tag(m.branch!, theme),
-                          if (m.isReturnable ?? false) _tag('Returnable', theme),
+                            _tag(m.branch!, ng),
+                          if (m.isReturnable ?? false) _tag('Returnable', ng),
                         ],
                       ),
                       const SizedBox(height: 14),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: theme.secondaryBackground,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
+                      NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(14),
+      child: Row(
                           children: [
                             Expanded(
                               child: Column(
@@ -315,14 +311,14 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                                   Text('Current Stock (read-only)',
                                       style: NgFonts.geist(
                                           fontSize: 11,
-                                          color: theme.secondaryText)),
+                                          color: ng.mute)),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${(m.quantity ?? 0).toStringAsFixed((m.quantity ?? 0) == (m.quantity ?? 0).roundToDouble() ? 0 : 1)} ${m.unit ?? ''}',
                                     style: NgFonts.geist(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w700,
-                                        color: theme.primaryText),
+                                        color: ng.text),
                                   ),
                                 ],
                               ),
@@ -334,7 +330,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                                   Text('Cost/Unit',
                                       style: NgFonts.geist(
                                           fontSize: 11,
-                                          color: theme.secondaryText)),
+                                          color: ng.mute)),
                                   Text(_rupees(m.costPerUnit!),
                                       style: NgFonts.geist(
                                           fontSize: 13,
@@ -349,7 +345,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                                   Text('Selling Price',
                                       style: NgFonts.geist(
                                           fontSize: 11,
-                                          color: theme.secondaryText)),
+                                          color: ng.mute)),
                                   Text(_rupees(m.sellingPrice!),
                                       style: NgFonts.geist(
                                           fontSize: 13,
@@ -395,35 +391,35 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                           style: NgFonts.geist(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: theme.primaryText)),
+                              color: ng.text)),
                       const SizedBox(height: 8),
                       if (_history.isEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           child: Text('No movements recorded yet.',
                               style: NgFonts.geist(
-                                  fontSize: 12.5, color: theme.secondaryText)),
+                                  fontSize: 12.5, color: ng.mute)),
                         )
                       else
-                        ..._history.map((h) => _historyRow(h, theme)),
+                        ..._history.map((h) => _historyRow(h, ng)),
                     ],
                   ),
       ),
     );
   }
 
-  Widget _tag(String text, FlutterFlowTheme theme) => Container(
+  Widget _tag(String text, NgPalette ng) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: theme.primaryBackground,
+          color: ng.bg,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(text,
             style:
-                NgFonts.geist(fontSize: 10.5, color: theme.secondaryText)),
+                NgFonts.geist(fontSize: 10.5, color: ng.mute)),
       );
 
-  Widget _historyRow(StockMovementsRow h, FlutterFlowTheme theme) {
+  Widget _historyRow(StockMovementsRow h, NgPalette ng) {
     final inbound = h.quantity >= 0;
     final dateStr = h.movementDate != null
         ? DateFormat('d MMM yyyy').format(h.movementDate!)
@@ -448,7 +444,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                   style: NgFonts.geist(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: theme.primaryText),
+                      color: ng.text),
                 ),
                 Text(
                   [
@@ -458,7 +454,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
                     if ((h.note ?? '').isNotEmpty) h.note,
                   ].whereType<String>().join(' · '),
                   style: NgFonts.geist(
-                      fontSize: 11, color: theme.secondaryText),
+                      fontSize: 11, color: ng.mute),
                 ),
               ],
             ),
@@ -469,7 +465,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
               style: NgFonts.geist(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: theme.secondaryText),
+                  color: ng.mute),
             ),
         ],
       ),

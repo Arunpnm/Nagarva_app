@@ -1,5 +1,4 @@
 import '/app_session.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -16,13 +15,13 @@ import 'package:flutter/material.dart';
 /// need to reload org+plan data and call `AppSession.setVendorSession`
 /// — this sheet only picks the target org.
 Future<String?> showOrgSwitcherSheet(BuildContext context) {
-  final theme = FlutterFlowTheme.of(context);
+  final ng = NgPalette.of(context);
   final orgs = AppSession.instance.availableOrgs;
   final currentOrgId = AppSession.instance.currentOrgId;
 
   return showModalBottomSheet<String>(
     context: context,
-    backgroundColor: theme.primaryBackground,
+    backgroundColor: ng.bg,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
@@ -36,7 +35,7 @@ Future<String?> showOrgSwitcherSheet(BuildContext context) {
             child: Text(
               'Switch organization',
               style: NgFonts.geist(
-                color: theme.primaryText,
+                color: ng.text,
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
               ),
@@ -45,22 +44,22 @@ Future<String?> showOrgSwitcherSheet(BuildContext context) {
           ...orgs.map((org) {
             final isCurrent = org.orgId == currentOrgId;
             return ListTile(
-              leading: Icon(Icons.business, color: theme.primary),
+              leading: Icon(Icons.business, color: ng.acc),
               title: Text(
                 org.orgName,
                 style: NgFonts.geist(
-                  color: theme.primaryText,
+                  color: ng.text,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               subtitle: org.role != null
                   ? Text(
                       org.role!,
-                      style: NgFonts.geist(color: theme.secondaryText),
+                      style: NgFonts.geist(color: ng.mute),
                     )
                   : null,
               trailing: isCurrent
-                  ? Icon(Icons.check_circle, color: theme.success)
+                  ? Icon(Icons.check_circle, color: ng.green)
                   : null,
               // Always return the tapped org, even when it is the one
               // already active. `null` here means "the user chose

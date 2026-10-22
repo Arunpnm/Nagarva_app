@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 import 'package:intl/intl.dart';
 
 import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/signature_pad.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// DEAD CODE AS OF 17 AUG 2026 — NOT what a customer reaches at
@@ -159,9 +159,9 @@ class _SignPageWidgetState extends State<SignPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -212,13 +212,13 @@ class _SignPageWidgetState extends State<SignPageWidget> {
 
   Widget _message(IconData icon, String title, String body,
       {VoidCallback? onRetry}) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Padding(
       padding: const EdgeInsets.all(28),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 52, color: theme.primary),
+          Icon(icon, size: 52, color: ng.acc),
           const SizedBox(height: 18),
           Text(
             title,
@@ -226,7 +226,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             style: NgFonts.geist(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: theme.primaryText,
+              color: ng.text,
             ),
           ),
           const SizedBox(height: 10),
@@ -234,7 +234,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             body,
             textAlign: TextAlign.center,
             style: NgFonts.geist(
-                fontSize: 14, height: 1.45, color: theme.secondaryText),
+                fontSize: 14, height: 1.45, color: ng.mute),
           ),
           if (onRetry != null) ...[
             const SizedBox(height: 20),
@@ -246,7 +246,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
   }
 
   Widget _form(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -257,7 +257,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             style: NgFonts.geist(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: theme.primary,
+              color: ng.acc,
             ),
           ),
           const SizedBox(height: 4),
@@ -266,7 +266,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             style: NgFonts.geist(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: theme.primaryText,
+              color: ng.text,
             ),
           ),
           const SizedBox(height: 18),
@@ -277,13 +277,13 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             style: NgFonts.geist(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: theme.primaryText,
+              color: ng.text,
             ),
           ),
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: theme.alternate),
+              border: Border.all(color: ng.w08),
               borderRadius: BorderRadius.circular(10),
             ),
             clipBehavior: Clip.antiAlias,
@@ -316,7 +316,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             const SizedBox(height: 12),
             Text(
               _submitError!,
-              style: NgFonts.geist(fontSize: 13, color: theme.error),
+              style: NgFonts.geist(fontSize: 13, color: ng.red),
             ),
           ],
           const SizedBox(height: 18),
@@ -327,7 +327,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
               onPressed:
                   (_submitting || !_hasSignature) ? null : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primary,
+                backgroundColor: ng.acc,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
@@ -353,7 +353,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             'By signing you confirm you have read and accept the '
             '${_docLabel.toLowerCase()} above.',
             style: NgFonts.geist(
-                fontSize: 11.5, height: 1.4, color: theme.secondaryText),
+                fontSize: 11.5, height: 1.4, color: ng.mute),
           ),
           const SizedBox(height: 24),
         ],
@@ -366,13 +366,13 @@ class _SignPageWidgetState extends State<SignPageWidget> {
   /// picks out the fields worth showing rather than assuming a fixed
   /// shape — an added column must never break the customer's page.
   Widget _documentCard(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final d = _doc;
     if (d == null) {
       return Text(
         'The $_docLabel could not be loaded, but you can still sign below '
         'if $_orgName has shown it to you.',
-        style: NgFonts.geist(fontSize: 13.5, color: theme.secondaryText),
+        style: NgFonts.geist(fontSize: 13.5, color: ng.mute),
       );
     }
 
@@ -385,13 +385,9 @@ class _SignPageWidgetState extends State<SignPageWidget> {
     final items = d['items'] is List ? d['items'] as List : const [];
     final total = asNum('total') ?? asNum('amount');
 
-    return Container(
-      width: double.infinity,
+    return NgCard(
+      radius: 20,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -428,12 +424,12 @@ class _SignPageWidgetState extends State<SignPageWidget> {
                     style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: theme.primaryText)),
+                        color: ng.text)),
                 Text('₹${total.toStringAsFixed(0)}',
                     style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 17,
-                        color: theme.primary)),
+                        color: ng.acc)),
               ],
             ),
           ],
@@ -443,7 +439,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
   }
 
   Widget _line(BuildContext context, String label, String value) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -453,7 +449,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
             flex: 4,
             child: Text(label,
                 style: NgFonts.geist(
-                    fontSize: 13, color: theme.secondaryText)),
+                    fontSize: 13, color: ng.mute)),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -464,7 +460,7 @@ class _SignPageWidgetState extends State<SignPageWidget> {
               style: NgFonts.geist(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
-                  color: theme.primaryText),
+                  color: ng.text),
             ),
           ),
         ],

@@ -498,11 +498,11 @@ class _PinSettingCardState extends State<_PinSettingCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(12.0),
       ),
       padding: const EdgeInsets.all(16),
@@ -511,13 +511,13 @@ class _PinSettingCardState extends State<_PinSettingCard> {
         children: [
           Text('App PIN',
               style: NgFonts.geist(
-                  fontWeight: FontWeight.w700, color: theme.primaryText)),
+                  fontWeight: FontWeight.w700, color: ng.text)),
           const SizedBox(height: 4),
           Text(
             'Set or change the 4-digit PIN used to sign in on this and '
             'other devices.',
             style:
-                NgFonts.geist(fontSize: 12.5, color: theme.secondaryText),
+                NgFonts.geist(fontSize: 12.5, color: ng.mute),
           ),
           const SizedBox(height: 10),
           Row(
@@ -538,7 +538,7 @@ class _PinSettingCardState extends State<_PinSettingCard> {
                 child: ElevatedButton(
                   onPressed: _saving ? null : _save,
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.primary,
+                      backgroundColor: ng.acc,
                       foregroundColor: Colors.white),
                   child: Text(_saving ? 'Saving...' : 'Save'),
                 ),
@@ -550,7 +550,7 @@ class _PinSettingCardState extends State<_PinSettingCard> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(_message!,
                   style: NgFonts.geist(
-                      fontSize: 12, color: theme.secondaryText)),
+                      fontSize: 12, color: ng.mute)),
             ),
         ],
       ),

@@ -5,7 +5,6 @@ import '/backend/supabase/org_scope.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
@@ -92,7 +91,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
       }
     } catch (_) {}
     if (!mounted) return;
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -104,7 +103,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
         expand: false,
         builder: (context, scrollController) => Container(
           decoration: BoxDecoration(
-            color: theme.primaryBackground,
+            color: ng.bg,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
           ),
           child: ListView(
@@ -113,7 +112,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
             children: [
               Text(lr.lrNo,
                   style: NgFonts.geist(
-                      fontSize: 17, fontWeight: FontWeight.w700, color: theme.primaryText)),
+                      fontSize: 17, fontWeight: FontWeight.w700, color: ng.text)),
               Align(
                   alignment: Alignment.centerLeft,
                   child: NgPill(_statusLabel(lr.status),
@@ -156,7 +155,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: FlutterFlowTheme.of(context).primaryBackground,
+                          color: NgPalette.of(context).bg,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Text(
@@ -164,7 +163,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
                           style: NgFonts.geist(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
-                            color: FlutterFlowTheme.of(context).primaryText,
+                            color: NgPalette.of(context).text,
                           ),
                         ),
                       ),

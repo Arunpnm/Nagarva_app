@@ -6,7 +6,6 @@ import '/backend/edge_function_errors.dart';
 import '/backend/pricing_defaults.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -122,14 +121,14 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
             Icon(
               Icons.domain_disabled,
               size: 48.0,
-              color: FlutterFlowTheme.of(context).secondaryText,
+              color: NgPalette.of(context).mute,
             ),
             const SizedBox(height: 16.0),
             Text(
               noOrgBranches
                   ? 'Set up a branch first'
                   : 'Your account has no active branch',
-              style: FlutterFlowTheme.of(context).titleMedium,
+              style: NgFonts.geist(fontSize: 17, fontWeight: FontWeight.w600, color: NgPalette.of(context).text),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8.0),
@@ -141,7 +140,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                   : "Your staff record isn't assigned to one of this "
                       "org's active branches. Ask the owner to fix this in "
                       'Settings before creating an order.',
-              style: FlutterFlowTheme.of(context).bodyMedium,
+              style: NgFonts.geist(fontSize: 14, color: NgPalette.of(context).text),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20.0),
@@ -163,10 +162,8 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                   height: 44.0,
                   padding: const EdgeInsetsDirectional.fromSTEB(
                       24.0, 0.0, 24.0, 0.0),
-                  color: FlutterFlowTheme.of(context).primary,
-                  textStyle: FlutterFlowTheme.of(context)
-                      .titleSmall
-                      .override(color: Colors.white),
+                  color: NgPalette.of(context).acc,
+                  textStyle: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
               ),
@@ -460,37 +457,29 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                   // calendar. Same themed
                                                   // builder as the leads
                                                   // page fix.
-                                                  final theme =
-                                                      FlutterFlowTheme.of(
-                                                          context);
+                                                  final ng = NgPalette.of(context);
                                                   return wrapInMaterialDatePickerTheme(
                                                     context,
                                                     child!,
                                                     headerBackgroundColor:
-                                                        theme.primary,
+                                                        ng.acc,
                                                     headerForegroundColor:
                                                         Colors.white,
-                                                    headerTextStyle: theme
-                                                        .headlineLarge
-                                                        .override(
-                                                          font: NgFonts.geist(
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                          color: Colors.white,
+                                                    headerTextStyle: NgFonts.geist(
+                                                          fontWeight:
+                                                                FontWeight.w600, color: Colors.white,
                                                           fontSize: 30.0,
                                                         ),
                                                     pickerBackgroundColor:
-                                                        theme
-                                                            .secondaryBackground,
+                                                        ng.s1,
                                                     pickerForegroundColor:
-                                                        theme.primaryText,
+                                                        ng.text,
                                                     selectedDateTimeBackgroundColor:
-                                                        theme.primary,
+                                                        ng.acc,
                                                     selectedDateTimeForegroundColor:
                                                         Colors.white,
                                                     actionButtonForegroundColor:
-                                                        theme.primary,
+                                                        ng.acc,
                                                     iconSize: 24,
                                                   );
                                                 },
@@ -1135,8 +1124,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       decoration: InputDecoration(
                                         labelText: 'Lead source',
                                         filled: true,
-                                        fillColor: FlutterFlowTheme.of(context)
-                                            .secondaryBackground,
+                                        fillColor: NgPalette.of(context).s1,
                                       ),
                                       items: [
                                         const DropdownMenuItem<String>(
@@ -1214,8 +1202,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                             'Leave blank if not decided yet',
                                         suffixText: '%',
                                         filled: true,
-                                        fillColor: FlutterFlowTheme.of(context)
-                                            .secondaryBackground,
+                                        fillColor: NgPalette.of(context).s1,
                                       ),
                                       validator: (v) {
                                         final t = (v ?? '').trim();
@@ -1244,8 +1231,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       '- it is never costed at a guessed rate.',
                                       style: TextStyle(
                                         fontSize: 11.5,
-                                        color: FlutterFlowTheme.of(context)
-                                            .secondaryText,
+                                        color: NgPalette.of(context).mute,
                                       ),
                                     ),
                                   ),
@@ -1298,23 +1284,18 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                       width: double.infinity,
                                       padding: const EdgeInsets.all(14),
                                       decoration: BoxDecoration(
-                                        color: FlutterFlowTheme.of(context)
-                                            .primaryBackground,
+                                        color: NgPalette.of(context).bg,
                                         borderRadius:
                                             BorderRadius.circular(10),
                                         border: Border.all(
-                                            color: FlutterFlowTheme.of(
-                                                    context)
-                                                .alternate),
+                                            color: NgPalette.of(context).w08),
                                       ),
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text('Porter Settlement Preview',
-                                              style: FlutterFlowTheme.of(
-                                                      context)
-                                                  .labelMedium),
+                                              style: NgFonts.geist(fontSize: 12.5, fontWeight: FontWeight.w500, color: NgPalette.of(context).text)),
                                           const SizedBox(height: 6),
                                           _settlementLine(context,
                                               'Advance (Porter paid)', adv),
@@ -1328,9 +1309,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
                                                 'a % above to see the net.',
                                                 style: TextStyle(
                                                   fontSize: 12,
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .secondaryText,
+                                                  color: NgPalette.of(context).mute,
                                                 ),
                                               ),
                                             )
@@ -1501,18 +1480,13 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
         children: [
           Text(label,
               style: bold
-                  ? FlutterFlowTheme.of(context).bodyMedium.override(
-                      font: NgFonts.geist(fontWeight: FontWeight.w600))
-                  : FlutterFlowTheme.of(context).bodySmall.override(
-                      font: NgFonts.geist(),
-                      color: FlutterFlowTheme.of(context).secondaryText)),
+                  ? NgFonts.geist(fontSize: 14, 
+                      fontWeight: FontWeight.w600)
+                  : NgFonts.geist(fontSize: 12.5, 
+                      color: NgPalette.of(context).mute)),
           Text('₹${value.toStringAsFixed(0)}',
-              style: FlutterFlowTheme.of(context)
-                  .bodyMedium
-                  .override(
-                      font: NgFonts.geist(
-                          fontWeight: FontWeight.w600),
-                      color: FlutterFlowTheme.of(context).primary)),
+              style: NgFonts.geist(fontSize: 14, 
+                      fontWeight: FontWeight.w600, color: NgPalette.of(context).acc)),
         ],
       ),
     );

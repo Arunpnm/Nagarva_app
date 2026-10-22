@@ -5,7 +5,6 @@ import '/backend/supabase/org_scope.dart';
 import '/components/order_picker_dialog.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
@@ -319,7 +318,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
       );
     } catch (_) {}
     if (!mounted) return;
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -331,7 +330,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
         expand: false,
         builder: (sheetCtx, scrollController) => Container(
           decoration: BoxDecoration(
-            color: theme.primaryBackground,
+            color: ng.bg,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
           ),
           child: ListView(
@@ -340,8 +339,8 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
             children: [
               Text(claim.claimNo ?? claim.id ?? '(claim)',
                   style: NgFonts.geist(
-                      fontSize: 17, fontWeight: FontWeight.w700, color: theme.primaryText)),
-              _statusChip(theme, claim.status),
+                      fontSize: 17, fontWeight: FontWeight.w700, color: ng.text)),
+              _statusChip(ng, claim.status),
               const SizedBox(height: 10),
               _kv('Order', claim.orderId ?? '—'),
               _kv('Type', claim.claimType ?? '—'),
@@ -377,7 +376,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text('No items added yet.',
-                      style: NgFonts.geist(fontSize: 12, color: theme.secondaryText)),
+                      style: NgFonts.geist(fontSize: 12, color: ng.mute)),
                 )
               else
                 for (final it in items)
@@ -640,7 +639,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
         ),
       );
 
-  Widget _statusChip(FlutterFlowTheme theme, String status) {
+  Widget _statusChip(NgPalette ng, String status) {
     final color = {
           'active': Colors.green,
           'expired': Colors.grey,

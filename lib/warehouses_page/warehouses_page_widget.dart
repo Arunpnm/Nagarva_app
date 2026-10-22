@@ -6,7 +6,6 @@ import '/components/load_error_state.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Warehouses / godowns.
@@ -92,7 +91,7 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+      backgroundColor: NgPalette.of(context).s1,
       builder: (_) => _WarehouseFormSheet(existing: existing),
     );
     if (saved == true) await _load();
@@ -398,7 +397,7 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final isNew = widget.existing == null;
     return Padding(
       padding: EdgeInsets.only(
@@ -413,8 +412,8 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(isNew ? 'New Warehouse' : 'Edit Warehouse',
-                style: theme.headlineSmall.override(
-                    font: NgFonts.geist(fontWeight: FontWeight.w600))),
+                style: NgFonts.geist(fontSize: 22, 
+                    fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             _field(_name, 'Name *'),
             Row(children: [
@@ -443,8 +442,8 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
               subtitle: Text(
                 'Inactive godowns stay on past storage records but cannot '
                 'take new goods.',
-                style: theme.bodySmall.override(
-                    font: NgFonts.geist(), color: theme.secondaryText),
+                style: NgFonts.geist(fontSize: 12.5, 
+                    color: ng.mute),
               ),
               value: _active,
               onChanged: (v) => setState(() => _active = v),
@@ -452,8 +451,7 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
             if (_error != null) ...[
               const SizedBox(height: 6),
               Text(_error!,
-                  style: theme.bodySmall
-                      .override(font: NgFonts.geist(), color: theme.error)),
+                  style: NgFonts.geist(fontSize: 12.5, color: ng.red)),
             ],
             const SizedBox(height: 12),
             Row(

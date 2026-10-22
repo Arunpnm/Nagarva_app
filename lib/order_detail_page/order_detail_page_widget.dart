@@ -33,7 +33,6 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/issued_documents.dart';
 import '/components/pdf_view_page.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -162,7 +161,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: TextButton.styleFrom(
-                foregroundColor: FlutterFlowTheme.of(context).error),
+                foregroundColor: NgPalette.of(context).red),
             child: const Text('Cancel order'),
           ),
         ],
@@ -222,7 +221,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+          backgroundColor: NgPalette.of(context).s1,
           title: const Text('Duplicate Order'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -575,9 +574,9 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   Widget _signatureStatusChip(BuildContext context) {
     final sig = _signature;
     if (sig == null) return const SizedBox.shrink();
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final signed = sig.isSigned;
-    final color = signed ? theme.tertiary : theme.warning;
+    final color = signed ? ng.blue : ng.amber;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 14),
@@ -601,7 +600,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
               style: NgFonts.geist(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
-                color: theme.primaryText,
+                color: ng.text,
               ),
             ),
           ),
@@ -762,7 +761,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
   /// false registration a one-tap default. It still permits it — see
   /// _generateInvoice — but it names what is being done.
   Future<bool> _confirmInvoiceCompliance(InvoiceComplianceIssue issue) async {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -771,7 +770,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
               child: Text(
                 issue.message,
                 style: NgFonts.geist(
-                    fontSize: 13.5, color: theme.primaryText),
+                    fontSize: 13.5, color: ng.text),
               ),
             ),
             actions: [

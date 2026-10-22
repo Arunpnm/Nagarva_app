@@ -4,8 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/whatsapp_cloud.dart';
 import '/config/app_config.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
+import '/flutter_flow/flutter_flow_theme.dart' show kWhatsAppGreen;
 
 /// Shared "here is a customer link" sheet — WhatsApp first, copy as
 /// fallback (fix brief #2, items 3 and 6).
@@ -64,11 +64,11 @@ class ShareLinkSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return SafeArea(
       child: Container(
         decoration: BoxDecoration(
-          color: theme.secondaryBackground,
+          color: ng.s1,
           borderRadius:
               const BorderRadius.vertical(top: Radius.circular(18)),
         ),
@@ -83,7 +83,7 @@ class ShareLinkSheet extends StatelessWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 14),
                 decoration: BoxDecoration(
-                  color: theme.alternate,
+                  color: ng.w08,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -93,7 +93,7 @@ class ShareLinkSheet extends StatelessWidget {
               style: NgFonts.geist(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: theme.primaryText,
+                color: ng.text,
               ),
             ),
             if (subtitle != null) ...[
@@ -101,7 +101,7 @@ class ShareLinkSheet extends StatelessWidget {
               Text(
                 subtitle!,
                 style: NgFonts.geist(
-                    fontSize: 12.5, height: 1.4, color: theme.secondaryText),
+                    fontSize: 12.5, height: 1.4, color: ng.mute),
               ),
             ],
             const SizedBox(height: 14),
@@ -109,13 +109,13 @@ class ShareLinkSheet extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.primaryBackground,
+                color: ng.bg,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: SelectableText(
                 link,
                 style: NgFonts.geist(
-                    fontSize: 12.5, color: theme.primaryText),
+                    fontSize: 12.5, color: ng.text),
               ),
             ),
             const SizedBox(height: 16),
@@ -163,8 +163,8 @@ class ShareLinkSheet extends StatelessWidget {
                     icon: const Icon(Icons.copy, size: 18),
                     label: const Text('Copy'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.primary,
-                      side: BorderSide(color: theme.primary),
+                      foregroundColor: ng.acc,
+                      side: BorderSide(color: ng.acc),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),

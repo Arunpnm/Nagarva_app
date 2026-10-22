@@ -4,7 +4,6 @@ import '/backend/supabase/org_scope.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'dart:ui' show FontFeature;
@@ -315,7 +314,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+      backgroundColor: NgPalette.of(context).s1,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -332,47 +331,39 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                 children: [
                   Text(
                     _dayFormat.format(row.date),
-                    style: FlutterFlowTheme.of(context).titleLarge,
+                    style: NgFonts.geist(fontSize: 20, fontWeight: FontWeight.w600, color: NgPalette.of(context).text),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Net ${row.profitLoss >= 0 ? 'profit' : 'loss'}: ${_currency.format(row.profitLoss.abs())}',
-                    style: FlutterFlowTheme.of(context).bodyMedium.override(
-                          font: NgFonts.geist(),
+                    style: NgFonts.geist(fontSize: 14, 
                           color: row.profitLoss >= 0
-                              ? FlutterFlowTheme.of(context).primary
-                              : FlutterFlowTheme.of(context).error,
+                              ? NgPalette.of(context).acc
+                              : NgPalette.of(context).red,
                         ),
                   ),
                   const SizedBox(height: 16),
                   Text('Orders (${row.dayOrders.length})',
-                      style: FlutterFlowTheme.of(context).titleSmall),
+                      style: NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w600, color: NgPalette.of(context).text)),
                   const SizedBox(height: 8),
                   ...row.dayOrders.map((o) => Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: FlutterFlowTheme.of(context).primaryBackground,
+                          color: NgPalette.of(context).bg,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(o.customer,
-                                style: FlutterFlowTheme.of(context)
-                                    .bodyMedium
-                                    .override(
-                                        font: NgFonts.geist(
-                                            fontWeight: FontWeight.w600))),
+                                style: NgFonts.geist(fontSize: 14, 
+                                        fontWeight: FontWeight.w600)),
                             const SizedBox(height: 4),
                             Text(
                               'Value ${_currency.format(o.amount ?? 0)} · Collected ${_currency.format(o.paidTotal)} · Pending ${_currency.format(((o.amount ?? 0) - o.paidTotal).clamp(0, double.infinity))}',
-                              style: FlutterFlowTheme.of(context)
-                                  .bodySmall
-                                  .override(
-                                      font: NgFonts.geist(),
-                                      color: FlutterFlowTheme.of(context)
-                                          .secondaryText),
+                              style: NgFonts.geist(fontSize: 12.5, 
+                                      color: NgPalette.of(context).mute),
                             ),
                           ],
                         ),
@@ -397,7 +388,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                         ' (${row.unpricedCommissionOrderIds.join(', ')})',
                         style: TextStyle(
                           fontSize: 11,
-                          color: FlutterFlowTheme.of(context).warning,
+                          color: NgPalette.of(context).amber,
                         ),
                       ),
                     ),
@@ -435,22 +426,20 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         children: [
           Text(label,
               style: bold
-                  ? FlutterFlowTheme.of(context).titleSmall
-                  : FlutterFlowTheme.of(context).bodyMedium.override(
-                      font: NgFonts.geist(),
-                      color: FlutterFlowTheme.of(context).secondaryText)),
+                  ? NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w600, color: NgPalette.of(context).text)
+                  : NgFonts.geist(fontSize: 14, 
+                      color: NgPalette.of(context).mute)),
           Text(
             '${isExpense ? '-' : ''}${_currency.format(value.abs())}',
             style: (bold
-                    ? FlutterFlowTheme.of(context).titleSmall
-                    : FlutterFlowTheme.of(context).bodyMedium)
-                .override(
-              font: NgFonts.geist(fontWeight: FontWeight.w600),
-              color: isExpense
-                  ? FlutterFlowTheme.of(context).error
+                    ? NgFonts.geist(fontSize: 15, fontWeight: FontWeight.w600, color: NgPalette.of(context).text)
+                    : NgFonts.geist(fontSize: 14, color: NgPalette.of(context).text))
+                .copyWith(
+              fontWeight: FontWeight.w600, color: isExpense
+                  ? NgPalette.of(context).red
                   : (value < 0
-                      ? FlutterFlowTheme.of(context).error
-                      : FlutterFlowTheme.of(context).primary),
+                      ? NgPalette.of(context).red
+                      : NgPalette.of(context).acc),
             ),
           ),
         ],
@@ -658,34 +647,31 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
   /// number the whole register walks forward from - so it is stated at
   /// the top rather than hidden behind the AppBar action it used to be.
   Widget _openingBalanceBar(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Row(
       children: [
         Text('Opening Balance:',
             style: NgFonts.geist(
-                fontSize: 12, color: theme.secondaryText)),
+                fontSize: 12, color: ng.mute)),
         const SizedBox(width: 8),
         InkWell(
           onTap: _editOpeningBalance,
           borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: theme.secondaryBackground,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(_currency.format(_model.openingBalance),
+          child: NgCard(
+      radius: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      child: Text(_currency.format(_model.openingBalance),
                 style: NgFonts.geist(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: theme.primaryText)),
+                    color: ng.text)),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text('starting cash before this period',
               style: NgFonts.geist(
-                  fontSize: 11, color: theme.secondaryText)),
+                  fontSize: 11, color: ng.mute)),
         ),
       ],
     );
@@ -699,14 +685,14 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
   /// Pending have to line up for a vendor to check the day's cash. The
   /// page body must never scroll sideways, so the scroll lives here.
   Widget _registerTable(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final rows = _model.dailyRows;
     double sum(double Function(DailyAccountRow) f) =>
         rows.fold(0.0, (a, r) => a + f(r));
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(12),
       ),
       child: SingleChildScrollView(
@@ -728,7 +714,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
           headingTextStyle: NgFonts.geist(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: theme.secondaryText),
+              color: ng.mute),
           columns: const [
             DataColumn(label: Text('Date')),
             DataColumn(label: Text('Orders'), numeric: true),
@@ -752,13 +738,13 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
             // meaningless, and a vendor would still read it as money.
             DataRow(
               color: WidgetStatePropertyAll(
-                  theme.primary.withValues(alpha: 0.06)),
+                  ng.acc.withValues(alpha: 0.06)),
               cells: [
                 DataCell(Text('TOTAL - ${rows.length} day${rows.length == 1 ? '' : 's'}',
                     style: NgFonts.geist(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: theme.primaryText))),
+                        color: ng.text))),
                 DataCell(_num(context, sum((r) => r.dayOrders.length.toDouble()),
                     plain: true)),
                 DataCell(_num(context, sum((r) => r.quote))),
@@ -783,7 +769,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
   }
 
   DataRow _dataRow(BuildContext context, DailyAccountRow r) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final names = r.dayOrders
         .map((o) => o.customer.trim())
         .where((n) => n.isNotEmpty)
@@ -801,13 +787,13 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                 style: NgFonts.geist(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: theme.primaryText)),
+                    color: ng.text)),
             if (names.isNotEmpty)
               Text(names.join(', '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: NgFonts.geist(
-                      fontSize: 10, color: theme.secondaryText)),
+                      fontSize: 10, color: ng.mute)),
           ],
         )),
         DataCell(_num(context, r.dayOrders.length.toDouble(), plain: true)),
@@ -831,7 +817,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
                     'At least one order has no commission rate set, so this '
                     'is a floor. Profit can only be lower.',
                 child: Icon(Icons.warning_amber_rounded,
-                    size: 13, color: theme.warning),
+                    size: 13, color: ng.amber),
               ),
             ),
           _num(context, -r.porterCommission),
@@ -845,7 +831,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
             if (r.profitLoss < 0)
               Text('Loss',
                   style:
-                      NgFonts.geist(fontSize: 9, color: theme.error)),
+                      NgFonts.geist(fontSize: 9, color: ng.red)),
           ],
         )),
         DataCell(_num(context, r.runningBalance, bold: true)),
@@ -857,10 +843,10 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
   /// column is visibly empty instead of looking like a real zero.
   Widget _num(BuildContext context, double v,
       {bool bold = false, bool plain = false}) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     if (v == 0) {
       return _cell(Text('-',
-          style: NgFonts.geist(fontSize: 14, color: theme.secondaryText)));
+          style: NgFonts.geist(fontSize: 14, color: ng.mute)));
     }
     if (plain) {
       return _cell(Text(v.toInt().toString(),
@@ -870,7 +856,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
               fontSize: 14,
               fontFeatures: const [FontFeature.tabularFigures()],
               fontWeight: FontWeight.w600,
-              color: theme.primaryText)));
+              color: ng.text)));
     }
     // Fixed minimum width per money cell.
     //
@@ -888,7 +874,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
           // the whole point of a register is scanning one column.
           fontFeatures: const [FontFeature.tabularFigures()],
           fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-          color: v < 0 ? theme.error : theme.primaryText,
+          color: v < 0 ? ng.red : ng.text,
         )),
     );
   }

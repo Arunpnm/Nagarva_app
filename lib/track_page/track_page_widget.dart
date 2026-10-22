@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '/components/ng_widgets.dart';
 import 'package:intl/intl.dart';
 
 import '/backend/order_stages.dart';
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Public, unauthenticated order-tracking page (live-test fix brief #2,
@@ -70,9 +70,9 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Scaffold(
-      backgroundColor: theme.primaryBackground,
+      backgroundColor: ng.bg,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -88,7 +88,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
   }
 
   Widget _body(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     if (_state == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -100,7 +100,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
           Icon(
             _state == 'invalid' ? Icons.link_off : Icons.wifi_off,
             size: 52,
-            color: theme.primary,
+            color: ng.acc,
           ),
           const SizedBox(height: 18),
           Text(
@@ -111,7 +111,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
             style: NgFonts.geist(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: theme.primaryText),
+                color: ng.text),
           ),
           const SizedBox(height: 10),
           Text(
@@ -120,7 +120,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
                 : 'Pull down to try again.',
             textAlign: TextAlign.center,
             style: NgFonts.geist(
-                fontSize: 14, height: 1.45, color: theme.secondaryText),
+                fontSize: 14, height: 1.45, color: ng.mute),
           ),
         ],
       );
@@ -151,7 +151,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
         Text(
           (d['orgName'] as String?) ?? 'Your move',
           style: NgFonts.geist(
-              fontSize: 13, fontWeight: FontWeight.w600, color: theme.primary),
+              fontSize: 13, fontWeight: FontWeight.w600, color: ng.acc),
         ),
         const SizedBox(height: 4),
         Text(
@@ -159,16 +159,13 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
           style: NgFonts.geist(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: theme.primaryText),
+              color: ng.text),
         ),
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.secondaryBackground,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
+        NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Column(
             children: [
               _line(context, 'From', d['fromCity'] as String?),
               _line(context, 'To', d['toCity'] as String?),
@@ -182,7 +179,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
           style: NgFonts.geist(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: theme.primaryText),
+              color: ng.text),
         ),
         const SizedBox(height: 12),
         for (var i = 0; i < kOrderStages.length; i++)
@@ -204,16 +201,13 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
             style: NgFonts.geist(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: theme.primaryText),
+                color: ng.text),
           ),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.secondaryBackground,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
+          NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Column(
               children: [
                 _line(context, 'Vehicle', crew['vehicle'] as String?),
                 _line(context, 'Driver', crew['driver'] as String?),
@@ -227,7 +221,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
           child: Text(
             'Pull down to refresh',
             style:
-                NgFonts.geist(fontSize: 11.5, color: theme.secondaryText),
+                NgFonts.geist(fontSize: 11.5, color: ng.mute),
           ),
         ),
         const SizedBox(height: 20),
@@ -249,9 +243,9 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
     required bool isLast,
     DateTime? at,
   }) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final active = done || current;
-    final color = active ? theme.tertiary : theme.alternate;
+    final color = active ? ng.blue : ng.w08;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,7 +256,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
                 width: current ? 20 : 15,
                 height: current ? 20 : 15,
                 decoration: BoxDecoration(
-                  color: active ? color : theme.alternate,
+                  color: active ? color : ng.w08,
                   shape: BoxShape.circle,
                   border: current
                       ? Border.all(
@@ -277,7 +271,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: done ? color : theme.alternate,
+                    color: done ? color : ng.w08,
                   ),
                 ),
             ],
@@ -295,14 +289,14 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
                       fontSize: 14,
                       fontWeight: current ? FontWeight.w700 : FontWeight.w500,
                       color:
-                          active ? theme.primaryText : theme.secondaryText,
+                          active ? ng.text : ng.mute,
                     ),
                   ),
                   if (at != null)
                     Text(
                       DateFormat('d MMM, h:mm a').format(at.toLocal()),
                       style: NgFonts.geist(
-                          fontSize: 11.5, color: theme.secondaryText),
+                          fontSize: 11.5, color: ng.mute),
                     ),
                 ],
               ),
@@ -314,7 +308,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
   }
 
   Widget _line(BuildContext context, String label, String? value) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -324,7 +318,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
             flex: 4,
             child: Text(label,
                 style: NgFonts.geist(
-                    fontSize: 13, color: theme.secondaryText)),
+                    fontSize: 13, color: ng.mute)),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -335,7 +329,7 @@ class _TrackPageWidgetState extends State<TrackPageWidget> {
               style: NgFonts.geist(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
-                  color: theme.primaryText),
+                  color: ng.text),
             ),
           ),
         ],

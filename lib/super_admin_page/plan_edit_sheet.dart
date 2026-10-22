@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Create/edit sheet for a subscription_plans row. The limits/features
@@ -243,7 +242,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -251,7 +250,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
       expand: false,
       builder: (context, scrollController) => Container(
         decoration: BoxDecoration(
-          color: theme.primaryBackground,
+          color: ng.bg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: Column(
@@ -261,7 +260,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.secondaryText.withOpacity(0.3),
+                color: ng.mute.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -273,7 +272,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                     child: Text(
                       isEdit ? 'Edit Plan' : 'New Plan',
                       style: NgFonts.geist(
-                        color: theme.primaryText,
+                        color: ng.text,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
@@ -369,7 +368,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                       'is how long after the trial ends before the account '
                       'becomes read-only.',
                       style: NgFonts.geist(
-                          color: theme.secondaryText,
+                          color: ng.mute,
                           fontSize: 11.5,
                           height: 1.35),
                     ),
@@ -377,12 +376,12 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                   const SizedBox(height: 12),
                   Text('Limits',
                       style: NgFonts.geist(
-                          color: theme.primaryText,
+                          color: ng.text,
                           fontSize: 14,
                           fontWeight: FontWeight.w700)),
                   Text('-1 = unlimited',
                       style: NgFonts.geist(
-                          color: theme.secondaryText, fontSize: 11.5)),
+                          color: ng.mute, fontSize: 11.5)),
                   const SizedBox(height: 8),
                   for (final k in _limitKeys)
                     Padding(
@@ -397,7 +396,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                   const SizedBox(height: 8),
                   Text('Features',
                       style: NgFonts.geist(
-                          color: theme.primaryText,
+                          color: ng.text,
                           fontSize: 14,
                           fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
@@ -413,7 +412,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                     const SizedBox(height: 8),
                     Text(_error!,
                         style: NgFonts.geist(
-                            color: theme.error, fontSize: 13)),
+                            color: ng.red, fontSize: 13)),
                   ],
                   const SizedBox(height: 16),
                   SizedBox(
@@ -421,7 +420,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
                     child: ElevatedButton(
                       onPressed: _saving ? null : _save,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primary,
+                        backgroundColor: ng.acc,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: _saving

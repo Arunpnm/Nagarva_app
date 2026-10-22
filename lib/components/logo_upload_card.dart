@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 /// Self-contained "Company Logo" card: pick an image, upload it to the
@@ -67,11 +66,11 @@ class _LogoUploadCardState extends State<LogoUploadCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final logoUrl = AppSession.instance.currentOrgLogoUrl;
     return Container(
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
+        color: ng.s1,
         borderRadius: BorderRadius.circular(14),
       ),
       padding: const EdgeInsets.all(16),
@@ -81,7 +80,7 @@ class _LogoUploadCardState extends State<LogoUploadCard> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: theme.primaryBackground,
+              color: ng.bg,
               borderRadius: BorderRadius.circular(10),
               image: (logoUrl ?? '').isNotEmpty
                   ? DecorationImage(
@@ -89,7 +88,7 @@ class _LogoUploadCardState extends State<LogoUploadCard> {
                   : null,
             ),
             child: (logoUrl ?? '').isEmpty
-                ? Icon(Icons.image_outlined, color: theme.secondaryText)
+                ? Icon(Icons.image_outlined, color: ng.mute)
                 : null,
           ),
           const SizedBox(width: 14),
@@ -100,7 +99,7 @@ class _LogoUploadCardState extends State<LogoUploadCard> {
                 Text(
                   'Company Logo',
                   style: NgFonts.geist(
-                    color: theme.primaryText,
+                    color: ng.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -109,7 +108,7 @@ class _LogoUploadCardState extends State<LogoUploadCard> {
                 Text(
                   'Shown on invoices and the app sidebar',
                   style: NgFonts.geist(
-                      color: theme.secondaryText, fontSize: 12),
+                      color: ng.mute, fontSize: 12),
                 ),
               ],
             ),
@@ -121,7 +120,7 @@ class _LogoUploadCardState extends State<LogoUploadCard> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: theme.primary),
+                        strokeWidth: 2, color: ng.acc),
                   )
                 : const Icon(Icons.upload, size: 18),
             label: Text((logoUrl ?? '').isEmpty ? 'Upload' : 'Change'),

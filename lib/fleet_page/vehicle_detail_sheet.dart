@@ -1,6 +1,5 @@
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
@@ -87,7 +86,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
   }
 
   Future<DateTime?> _pickDate(DateTime? initial) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return showDatePicker(
       context: context,
       initialDate: initial ?? DateTime.now(),
@@ -96,17 +95,16 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
       builder: (context, child) => wrapInMaterialDatePickerTheme(
         context,
         child!,
-        headerBackgroundColor: theme.primary,
+        headerBackgroundColor: ng.acc,
         headerForegroundColor: Colors.white,
-        headerTextStyle: theme.headlineLarge.override(
-          font: NgFonts.geist(fontWeight: FontWeight.w600),
-          color: Colors.white,
+        headerTextStyle: NgFonts.geist(fontSize: 26, 
+          fontWeight: FontWeight.w600, color: Colors.white,
         ),
-        pickerBackgroundColor: theme.secondaryBackground,
-        pickerForegroundColor: theme.primaryText,
-        selectedDateTimeBackgroundColor: theme.primary,
+        pickerBackgroundColor: ng.s1,
+        pickerForegroundColor: ng.text,
+        selectedDateTimeBackgroundColor: ng.acc,
         selectedDateTimeForegroundColor: Colors.white,
-        actionButtonForegroundColor: theme.primary,
+        actionButtonForegroundColor: ng.acc,
         iconSize: 24,
       ),
     );
@@ -151,13 +149,13 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
 
   Widget _detailRow(BuildContext context, IconData icon, String label,
       String value, {Color? valueColor}) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: theme.primary),
+          Icon(icon, size: 20, color: ng.acc),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -165,13 +163,13 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
               children: [
                 Text(label,
                     style: NgFonts.geist(
-                        fontSize: 11.5, color: theme.secondaryText)),
+                        fontSize: 11.5, color: ng.mute)),
                 const SizedBox(height: 2),
                 Text(value,
                     style: NgFonts.geist(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: valueColor ?? theme.primaryText)),
+                        color: valueColor ?? ng.text)),
               ],
             ),
           ),
@@ -182,7 +180,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
 
   Widget _dateField(BuildContext context, String label, DateTime? value,
       ValueChanged<DateTime?> onChanged) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final expired = value != null && value.isBefore(DateTime.now());
     return InkWell(
       borderRadius: BorderRadius.circular(10),
@@ -196,19 +194,19 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           border:
-              Border.all(color: theme.secondaryText.withValues(alpha: 0.3)),
+              Border.all(color: ng.mute.withValues(alpha: 0.3)),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            Icon(Icons.event, size: 18, color: theme.secondaryText),
+            Icon(Icons.event, size: 18, color: ng.mute),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 value == null ? label : '$label: ${_dateFmt.format(value)}',
                 style: NgFonts.geist(
                   fontSize: 13.5,
-                  color: expired ? theme.error : theme.primaryText,
+                  color: expired ? ng.red : ng.text,
                   fontWeight: expired ? FontWeight.w700 : FontWeight.w400,
                 ),
               ),
@@ -227,7 +225,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     final v = widget.existing;
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -236,7 +234,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
       expand: false,
       builder: (context, scrollController) => Container(
         decoration: BoxDecoration(
-          color: theme.primaryBackground,
+          color: ng.bg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -246,7 +244,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.secondaryText.withValues(alpha: 0.4),
+                color: ng.mute.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -262,7 +260,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
                       style: NgFonts.geist(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: theme.primaryText,
+                        color: ng.text,
                       ),
                     ),
                   ),
@@ -286,7 +284,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
                 controller: scrollController,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 child: _editing
-                    ? _buildEditForm(theme)
+                    ? _buildEditForm(ng)
                     : _buildDetailView(context, v!),
               ),
             ),
@@ -297,7 +295,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
   }
 
   Widget _buildDetailView(BuildContext context, VehiclesRow v) {
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -313,7 +311,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
               : _dateFmt.format(v.insuranceExpiry!),
           valueColor: v.insuranceExpiry != null &&
                   v.insuranceExpiry!.isBefore(DateTime.now())
-              ? theme.error
+              ? ng.red
               : null,
         ),
         _detailRow(
@@ -323,7 +321,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
           v.permitExpiry == null ? 'Not set' : _dateFmt.format(v.permitExpiry!),
           valueColor:
               v.permitExpiry != null && v.permitExpiry!.isBefore(DateTime.now())
-                  ? theme.error
+                  ? ng.red
                   : null,
         ),
         _detailRow(context, Icons.build, 'Last service',
@@ -334,7 +332,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
     );
   }
 
-  Widget _buildEditForm(FlutterFlowTheme theme) {
+  Widget _buildEditForm(NgPalette ng) {
     return Form(
       key: _formKey,
       child: Column(
@@ -343,7 +341,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Text(_error!, style: TextStyle(color: theme.error)),
+              child: Text(_error!, style: TextStyle(color: ng.red)),
             ),
           TextFormField(
             controller: _regNo,
@@ -394,7 +392,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
             child: ElevatedButton(
               onPressed: _saving ? null : _save,
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primary,
+                backgroundColor: ng.acc,
                 foregroundColor: Colors.white,
               ),
               child: Text(_saving ? 'Saving...' : 'Save Vehicle'),

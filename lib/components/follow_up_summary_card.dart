@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '/backend/reminders_service.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -44,7 +43,7 @@ class FollowUpSummaryCardState extends State<FollowUpSummaryCard> {
     if (!_loaded || (_today == 0 && _overdue == 0)) {
       return const SizedBox.shrink();
     }
-    final theme = FlutterFlowTheme.of(context);
+    final ng = NgPalette.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: InkWell(
@@ -54,19 +53,19 @@ class FollowUpSummaryCardState extends State<FollowUpSummaryCard> {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: theme.secondaryBackground,
+            color: ng.s1,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _overdue > 0
-                  ? theme.error.withValues(alpha: 0.45)
-                  : theme.alternate,
+                  ? ng.red.withValues(alpha: 0.45)
+                  : ng.w08,
             ),
           ),
           child: Row(
             children: [
               Icon(
                 _overdue > 0 ? Icons.notification_important : Icons.today,
-                color: _overdue > 0 ? theme.error : theme.primary,
+                color: _overdue > 0 ? ng.red : ng.acc,
                 size: 22,
               ),
               const SizedBox(width: 12),
@@ -79,7 +78,7 @@ class FollowUpSummaryCardState extends State<FollowUpSummaryCard> {
                       style: NgFonts.geist(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
-                        color: theme.primaryText,
+                        color: ng.text,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -91,13 +90,13 @@ class FollowUpSummaryCardState extends State<FollowUpSummaryCard> {
                       style: NgFonts.geist(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
-                        color: _overdue > 0 ? theme.error : theme.secondaryText,
+                        color: _overdue > 0 ? ng.red : ng.mute,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: theme.secondaryText),
+              Icon(Icons.chevron_right, color: ng.mute),
             ],
           ),
         ),
