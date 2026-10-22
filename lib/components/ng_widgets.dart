@@ -1211,11 +1211,20 @@ class NgInput extends StatelessWidget {
     this.maxLines = 1,
     this.onChanged,
     this.obscure = false,
+    this.readOnly = false,
+    this.label,
   });
 
   final TextEditingController controller;
   /// Hide what is typed (access tokens, secrets).
   final bool obscure;
+
+  /// Shown but not editable (fields locked by a later stage).
+  final bool readOnly;
+
+  /// Floating label inside the field, for dense forms with no
+  /// [NgFieldLabel] above.
+  final String? label;
   final String? hint;
   final FocusNode? focusNode;
   final TextInputType? keyboardType;
@@ -1241,6 +1250,7 @@ class NgInput extends StatelessWidget {
       keyboardType: keyboardType,
       maxLines: obscure ? 1 : maxLines,
       obscureText: obscure,
+      readOnly: readOnly,
       enableSuggestions: !obscure,
       autocorrect: !obscure,
       onChanged: onChanged,
@@ -1249,8 +1259,11 @@ class NgInput extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: style.copyWith(color: c.faint),
+        labelText: label,
+        labelStyle: NgFonts.geist(fontSize: 14, color: c.mute),
+        floatingLabelStyle: NgFonts.geist(fontSize: 13, color: c.acc),
         filled: true,
-        fillColor: c.s1,
+        fillColor: readOnly ? c.inset : c.s1,
         isDense: true,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

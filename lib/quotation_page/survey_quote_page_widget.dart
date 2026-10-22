@@ -12,6 +12,7 @@ import '/flutter_flow/ng_tokens.dart';
 // the slab table can't resolve a suggestion.
 import '/index.dart';
 import 'package:flutter/material.dart';
+import '/flutter_flow/custom_functions.dart' as functions;
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '/config/app_config.dart';
@@ -881,7 +882,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -892,17 +893,18 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: ng.red.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                        color: ng.redBg,
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.error_outline,
+                          Icon(Icons.error_outline_rounded,
                               size: 18, color: ng.red),
                           const SizedBox(width: 8),
                           Expanded(
                               child: Text(_loadFailed!,
-                                  style: TextStyle(color: ng.red))),
+                                  style: NgFonts.geist(
+                                      fontSize: 13, color: ng.red))),
                         ],
                       ),
                     ),
@@ -911,7 +913,10 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   _customerCard(ng),
                   const SizedBox(height: 14),
                   _packageCard(ng),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 18),
+                  NgGroupTitle('Items',
+                      actionLabel: 'Custom item',
+                      onAction: () => _addCustomItem()),
                   _itemSearchBar(ng),
                   const SizedBox(height: 10),
                   _customItemsSection(ng),
@@ -922,22 +927,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   ..._config!.activeSurveyCats.entries
                       .map((e) => _categorySection(ng, e.key, e.value)),
                   if (_search.isNotEmpty && !_anySearchMatch())
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      child: Column(
-                        children: [
-                          Text('No items match "$_search"',
-                              style: NgFonts.geist(
-                                  fontSize: 13.5,
-                                  color: ng.mute)),
-                          const SizedBox(height: 8),
-                          TextButton.icon(
-                            onPressed: () => _addCustomItem(preset: _search),
-                            icon: const Icon(Icons.add, size: 18),
-                            label: Text('Add "$_search" as a custom item'),
-                          ),
-                        ],
-                      ),
+                    NgEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'No items match "$_search"',
+                      action: NgLinkButton('Add "$_search" as a custom item',
+                          icon: Icons.add_rounded,
+                          onTap: () => _addCustomItem(preset: _search)),
                     ),
                   const SizedBox(height: 14),
                   _chargesCard(ng),
@@ -945,20 +940,41 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   _gstCard(ng),
                   const SizedBox(height: 14),
                   _summaryCard(ng),
-                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+      bottomNavigationBar: _loading
+          ? null
+          : NgBottomActionBar(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$_totalItems items · $_totalCft CFT',
+                            style:
+                                NgFonts.geist(fontSize: 12, color: ng.mute)),
+                        Text(functions.inrFull(_total.toDouble()),
+                            style: NgFonts.mono(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w600,
+                                color: ng.text)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
+                    width: 170,
+                    child: NgPrimaryButton(
+                      icon: Icons.check_rounded,
+                      label: _saving
+                          ? 'Saving…'
+                          : _isEditing
+                              ? 'Save revision'
+                              : 'Save quote',
                       onPressed: _saving ? null : _save,
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: ng.acc,
-                          foregroundColor: Colors.white),
-                      child:
-                          Text(_saving
-                              ? 'Saving...'
-                              : _isEditing
-                                  ? 'Save Revision'
-                                  : 'Save Quotation'),
                     ),
                   ),
                 ],
@@ -967,21 +983,18 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     );
   }
 
-  Widget _card(NgPalette ng, String title, Widget child) => Container(
-        decoration: BoxDecoration(
-          color: ng.s1,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.all(14),
+  Widget _card(NgPalette ng, String title, Widget child) => NgCard(
+        radius: 20,
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(title,
                 style: NgFonts.geist(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: ng.acc)),
-            const SizedBox(height: 10),
+                    fontSize: 15,
+                    color: ng.text)),
+            const SizedBox(height: 12),
             child,
           ],
         ),
@@ -1006,34 +1019,42 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             // lead, which is where the fields came from.
             if (_isEditing)
               Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text(
-                  'Customer details are fixed while revising — change them '
-                  'on the lead.',
-                  style: TextStyle(fontSize: 11.5, color: ng.mute),
-                ),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(children: [
+                  Icon(Icons.lock_outline_rounded, size: 15, color: ng.mute),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Customer details are fixed while revising — change '
+                      'them on the lead.',
+                      style: NgFonts.geist(fontSize: 12.5, color: ng.mute),
+                    ),
+                  ),
+                ]),
               ),
-            TextField(
+            NgInput(
                 controller: _customer,
                 readOnly: _isEditing,
-                decoration: const InputDecoration(labelText: 'Customer name')),
+                label: 'Customer name'),
             const SizedBox(height: 10),
-            TextField(
+            NgInput(
                 controller: _phone,
                 readOnly: _isEditing,
-                decoration: const InputDecoration(labelText: 'Phone')),
+                label: 'Phone',
+                keyboardType: TextInputType.phone,
+                mono: true),
             const SizedBox(height: 10),
-            TextField(
+            NgInput(
                 controller: _fromAddr,
                 readOnly: _isEditing,
-                decoration:
-                    const InputDecoration(labelText: 'From city/address')),
+                label: 'From city / address',
+                icon: Icons.trip_origin_rounded),
             const SizedBox(height: 10),
-            TextField(
+            NgInput(
                 controller: _toAddr,
                 readOnly: _isEditing,
-                decoration:
-                    const InputDecoration(labelText: 'To city/address')),
+                label: 'To city / address',
+                icon: Icons.place_outlined),
           ],
         ),
       );
@@ -1049,11 +1070,11 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
 
     return Container(
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accent.withValues(alpha: 0.4)),
+        color: isError ? ng.redBg : ng.status(NgStatus.accent).bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
       ),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1067,18 +1088,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 child: Text('$_totalItems items · $_totalCft CFT',
                     style: NgFonts.geist(
                         fontWeight: FontWeight.w600,
-                        fontSize: 15,
+                        fontSize: 16,
                         color: ng.text)),
               ),
               if (!isError && !s.empty)
-                TextButton.icon(
-                  onPressed: _editSuggestion,
-                  icon: const Icon(Icons.edit, size: 15),
-                  label: Text(_hasOverride ? 'Change' : 'Override'),
-                  style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 32),
-                      padding: const EdgeInsets.symmetric(horizontal: 8)),
-                ),
+                NgLinkButton(_hasOverride ? 'Change' : 'Override',
+                    icon: Icons.edit_rounded, onTap: _editSuggestion),
             ],
           ),
           const SizedBox(height: 4),
@@ -1099,21 +1114,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             Wrap(
               spacing: 8,
               children: [
-                OutlinedButton.icon(
-                  onPressed: () =>
-                      context.pushNamed(SurveyPricingPage.routeName),
-                  icon: const Icon(Icons.settings, size: 15),
-                  label: const Text('Fix in Settings'),
-                  style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 34),
-                      foregroundColor: ng.red),
-                ),
-                TextButton.icon(
-                  onPressed: _editSuggestion,
-                  icon: const Icon(Icons.edit, size: 15),
-                  label: const Text('Set manually'),
-                  style: TextButton.styleFrom(minimumSize: const Size(0, 34)),
-                ),
+                NgLinkButton('Fix in Settings',
+                    icon: Icons.settings_outlined,
+                    onTap: () =>
+                        context.pushNamed(SurveyPricingPage.routeName)),
+                NgLinkButton('Set manually',
+                    icon: Icons.edit_rounded, onTap: _editSuggestion),
               ],
             ),
           ] else ...[
@@ -1143,17 +1149,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                         color: ng.text),
                   ),
                 ),
-                TextButton(
-                  onPressed: () => setState(() {
-                    _chosenPackage = null;
-                    _chosenVehicle = null;
-                    _chosenCrew = null;
-                  }),
-                  style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 30),
-                      padding: const EdgeInsets.symmetric(horizontal: 8)),
-                  child: const Text('Reset'),
-                ),
+                NgLinkButton('Reset',
+                    onTap: () => setState(() {
+                          _chosenPackage = null;
+                          _chosenVehicle = null;
+                          _chosenCrew = null;
+                        })),
               ],
             ),
           ],
@@ -1231,42 +1232,23 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     return Row(
       children: [
         Expanded(
-          child: TextField(
+          child: NgSearchField(
             controller: _itemSearch,
+            hint: 'Search items…',
             onChanged: (v) => setState(() => _search = v.trim()),
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: 'Search items…',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              suffixIcon: _search.isEmpty
-                  ? null
-                  : IconButton(
-                      icon: const Icon(Icons.close, size: 18),
-                      onPressed: () {
-                        _itemSearch.clear();
-                        setState(() => _search = '');
-                      },
-                    ),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
           ),
         ),
-        const SizedBox(width: 8),
-        SizedBox(
-          height: 48,
-          child: OutlinedButton.icon(
-            onPressed: () => _addCustomItem(),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Custom'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: ng.acc,
-              side: BorderSide(color: ng.acc),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
+        if (_search.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          NgHeaderButtonBox(
+            icon: Icons.close_rounded,
+            tooltip: 'Clear search',
+            onTap: () {
+              _itemSearch.clear();
+              setState(() => _search = '');
+            },
           ),
-        ),
+        ],
       ],
     );
   }
@@ -1290,24 +1272,25 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         .where((c) => _matchesSearch(_kCustomCat, c.name, 'Qty'))
         .toList();
     if (visible.isEmpty) return const SizedBox.shrink();
-    return NgCard(
-      radius: 20,
-      padding: const EdgeInsets.fromLTRB(0, 6, 0, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(_kCustomCat,
-                style: NgFonts.geist(
-                    fontWeight: FontWeight.w600, color: ng.text)),
-          ),
-          for (final c in visible)
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: NgCard(
+        radius: 20,
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: _customItemRow(ng, c),
+              padding: const EdgeInsets.fromLTRB(2, 0, 2, 10),
+              child: Text(_kCustomCat,
+                  style: NgFonts.geist(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: ng.text)),
             ),
-        ],
+            for (final c in visible) _customItemRow(ng, c),
+          ],
+        ),
       ),
     );
   }
@@ -1318,18 +1301,16 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     final zeroCft = c.cft <= 0;
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
       decoration: BoxDecoration(
-        color: qty > 0
-            ? ng.acc.withValues(alpha: 0.12)
-            : ng.bg,
-        borderRadius: BorderRadius.circular(10),
+        color: qty > 0 ? ng.status(NgStatus.accent).bg : ng.inset,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
             color: zeroCft && qty > 0
                 ? ng.amber
                 : qty > 0
-                    ? ng.acc
-                    : ng.mute.withValues(alpha: 0.3)),
+                    ? ng.acc.withValues(alpha: 0.6)
+                    : ng.w06),
       ),
       child: Row(
         children: [
@@ -1337,11 +1318,16 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             child: Row(
               children: [
                 Flexible(
-                  child: Text('${c.name} (${c.cft} cft)',
+                  child: Text.rich(
+                      TextSpan(children: [
+                        TextSpan(text: c.name),
+                        TextSpan(
+                            text: '  ${c.cft} CFT',
+                            style: NgFonts.mono(fontSize: 12, color: ng.mute)),
+                      ]),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: NgFonts.geist(
-                          fontSize: 12.5, color: ng.text)),
+                      style: NgFonts.geist(fontSize: 13.5, color: ng.text)),
                 ),
                 // Make a 0-CFT line obvious at the point of entry, not
                 // only at save time.
@@ -1472,15 +1458,30 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     final visibleItems =
         items.where((i) => _visibleSubs(i).isNotEmpty).toList();
     if (visibleItems.isEmpty) return const SizedBox.shrink();
+    final picked = _lines.entries
+        .where((e) => e.value.cat == cat && e.value.qty > 0)
+        .fold<int>(0, (s, e) => s + e.value.qty);
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: ng.s1,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: ng.w06),
         ),
         child: ExpansionTile(
+          tilePadding: const EdgeInsets.fromLTRB(16, 2, 12, 2),
+          iconColor: ng.mute,
+          collapsedIconColor: ng.mute,
+          trailing: picked > 0
+              ? Row(mainAxisSize: MainAxisSize.min, children: [
+                  NgPill('$picked', status: NgStatus.accent),
+                  const SizedBox(width: 4),
+                  Icon(Icons.expand_more_rounded, color: ng.mute),
+                ])
+              : null,
           // Auto-expand while searching so matches are visible without
           // having to open each category by hand. The ValueKey forces
           // ExpansionTile to rebuild its state when the search toggles,
@@ -1489,7 +1490,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           initiallyExpanded: _search.isNotEmpty,
           title: Text(cat,
               style: NgFonts.geist(
-                  fontWeight: FontWeight.w600, color: ng.text)),
+                  fontSize: 15, fontWeight: FontWeight.w600, color: ng.text)),
           children: [
             for (final item in visibleItems) _itemRow(ng, cat, item),
             const SizedBox(height: 6),
@@ -1512,8 +1513,8 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           Text(item.name,
               style: NgFonts.geist(
                   fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: ng.text)),
+                  fontSize: 13.5,
+                  color: ng.soft)),
           const SizedBox(height: 6),
           // Was a `Wrap` of intrinsic-width pills. Because each pill sized
           // itself to its own label ("Top Load (15 cft)" vs "Small (5
@@ -1535,26 +1536,26 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     final qty = _qtyOf(key);
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
       decoration: BoxDecoration(
-        color: qty > 0
-            ? ng.acc.withValues(alpha: 0.12)
-            : ng.bg,
-        borderRadius: BorderRadius.circular(10),
+        color: qty > 0 ? ng.status(NgStatus.accent).bg : ng.inset,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: qty > 0
-                ? ng.acc
-                : ng.mute.withValues(alpha: 0.3)),
+            color: qty > 0 ? ng.acc.withValues(alpha: 0.6) : ng.w06),
       ),
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              '${sub.label} (${sub.cft} cft)',
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: sub.label),
+                TextSpan(
+                    text: '  ${sub.cft} CFT',
+                    style: NgFonts.mono(fontSize: 12, color: ng.mute)),
+              ]),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style:
-                  NgFonts.geist(fontSize: 12.5, color: ng.text),
+              style: NgFonts.geist(fontSize: 13.5, color: ng.text),
             ),
           ),
           const SizedBox(width: 8),
@@ -1596,36 +1597,42 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     required VoidCallback? onMinus,
     required VoidCallback onPlus,
   }) {
+    Widget btn(IconData icon, VoidCallback? onTap) => SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Material(
+              color: onTap == null ? Colors.transparent : ng.s2,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: onTap,
+                child: SizedBox(
+                  width: 34,
+                  height: 34,
+                  child: Icon(icon,
+                      size: 18, color: onTap == null ? ng.faint : ng.text),
+                ),
+              ),
+            ),
+          ),
+        );
     return SizedBox(
       width: 118,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          btn(Icons.remove_rounded, onMinus),
           SizedBox(
-            width: 48,
-            height: 48,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: const Icon(Icons.remove_circle_outline, size: 20),
-              onPressed: onMinus,
-            ),
-          ),
-          SizedBox(
-            width: 22,
+            width: 26,
             child: Text('$qty',
                 textAlign: TextAlign.center,
-                style: NgFonts.geist(
-                    fontWeight: FontWeight.w600, color: ng.text)),
+                style: NgFonts.mono(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: qty > 0 ? ng.text : ng.faint)),
           ),
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: const Icon(Icons.add_circle_outline, size: 20),
-              onPressed: onPlus,
-            ),
-          ),
+          btn(Icons.add_rounded, onPlus),
         ],
       ),
     );
@@ -1782,7 +1789,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                   children: [
                     Text(f.label,
                         style: NgFonts.geist(
-                            fontSize: 13, color: ng.text)),
+                            fontSize: 14, color: ng.text)),
                     // The figure, on the row, once there is one. Without
                     // it a priced line looks exactly like an unpriced one
                     // until you scroll into its expanded fields.
@@ -1801,21 +1808,14 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 ),
               ),
               Expanded(
-                flex: 2,
-                child: DropdownButtonFormField<String>(
-                  initialValue: _billingMode[f.key] ?? 'included',
-                  isDense: true,
-                  items: const [
-                    DropdownMenuItem(
-                        value: 'included', child: Text('Incl. in freight')),
-                    // "Additional" said this line was extra without saying
-                    // what happens next. "Bill separately" names the
-                    // action, and the action is what opens the price box.
-                    DropdownMenuItem(
-                        value: 'additional', child: Text('Bill separately')),
-                  ],
-                  onChanged: (v) =>
-                      setState(() => _billingMode[f.key] = v ?? 'included'),
+                flex: 3,
+                // "Bill separately" names the action, and the action is
+                // what opens the price box.
+                child: NgSegmented(
+                  labels: const ['In freight', 'Separately'],
+                  selected: included ? 0 : 1,
+                  onSelect: (i) => setState(() =>
+                      _billingMode[f.key] = i == 0 ? 'included' : 'additional'),
                 ),
               ),
             ],
@@ -1953,38 +1953,26 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<double>(
-                    initialValue: _gstPct,
-                    decoration: const InputDecoration(labelText: 'Rate'),
-                    items: [
-                      for (final r in kGstRateOptions)
-                        DropdownMenuItem(
-                            value: r.toDouble(), child: Text('$r%'))
-                    ],
-                    onChanged: (v) =>
-                        setState(() => _gstPct = v ?? kGstDefaultPct.toDouble()),
-                  ),
+            const NgFieldLabel('Rate'),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final r in kGstRateOptions)
+                NgChip(
+                  label: '$r%',
+                  selected: _gstPct == r.toDouble(),
+                  onTap: () => setState(() => _gstPct = r.toDouble()),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _gstType,
-                    decoration: const InputDecoration(labelText: 'Type'),
-                    items: const [
-                      DropdownMenuItem(
-                          value: 'auto', child: Text('Auto-detect')),
-                      DropdownMenuItem(
-                          value: 'intra', child: Text('CGST+SGST')),
-                      DropdownMenuItem(value: 'inter', child: Text('IGST')),
-                    ],
-                    onChanged: (v) => setState(() => _gstType = v ?? 'auto'),
-                  ),
-                ),
-              ],
+            ]),
+            const SizedBox(height: 14),
+            const NgFieldLabel('Type'),
+            NgSegmented(
+              labels: const ['Auto', 'CGST+SGST', 'IGST'],
+              selected: const ['auto', 'intra', 'inter'].indexOf(_gstType) < 0
+                  ? 0
+                  : const ['auto', 'intra', 'inter'].indexOf(_gstType),
+              onSelect: (i) =>
+                  setState(() => _gstType = const ['auto', 'intra', 'inter'][i]),
             ),
+            const SizedBox(height: 12),
             // A "Show GST in PDF" switch stood here and was REMOVED on
             // 10 Sept 2026, not wired up. It had no consumer: it wrote
             // `charges['_gstShowInPdf']`, and `quote_pdf.dart` never read
@@ -2001,15 +1989,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             // "BILL (TAX INVOICE)" with the tax silently omitted, which is
             // worse than the no-op it replaced. Restore this only with the
             // answer in hand.
-            Text(
+            NgPill(
               _isInterstate
-                  ? 'Interstate → IGST ₹${_gstAmount.toStringAsFixed(0)}'
-                  : 'Intrastate → CGST ₹${(_gstAmount / 2).toStringAsFixed(0)} '
+                  ? 'Interstate · IGST ₹${_gstAmount.toStringAsFixed(0)}'
+                  : 'Intrastate · CGST ₹${(_gstAmount / 2).toStringAsFixed(0)} '
                       '+ SGST ₹${(_gstAmount / 2).toStringAsFixed(0)}',
-              style: NgFonts.geist(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: ng.acc),
+              status: NgStatus.accent,
             ),
           ],
         ),
@@ -2020,43 +2005,17 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       ('Subtotal', _subtotal),
       ('GST (${_gstPct.toStringAsFixed(0)}%)', _gstAmount),
     ];
-    return Container(
-      decoration: BoxDecoration(
-        color: ng.s1,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(14),
+    return NgCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final r in rows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(r.$1, style: NgFonts.geist(color: ng.mute)),
-                  Text('₹${r.$2.toStringAsFixed(0)}',
-                      style: NgFonts.geist(color: ng.text)),
-                ],
-              ),
-            ),
-          const Divider(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Total',
-                  style: NgFonts.geist(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: ng.text)),
-              Text('₹${_total.toStringAsFixed(0)}',
-                  style: NgFonts.geist(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: ng.acc)),
-            ],
-          ),
+            NgKeyValue(r.$1, functions.inrFull(r.$2.toDouble()), mono: true),
+          Divider(height: 18, color: ng.w06),
+          NgKeyValue('Total', functions.inrFull(_total.toDouble()),
+              mono: true, strong: true),
         ],
       ),
     );
