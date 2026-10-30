@@ -35,7 +35,15 @@ class MarketplaceTab extends StatefulWidget {
 }
 
 class _MarketplaceTabState extends State<MarketplaceTab> {
-  int _view = 0; // live, money, vendors, rules
+  int _view = 0; // live, money, vendors, rules, prices
+  // Customer prices (20261030_marketplace_pricing.sql). Loaded on their
+  // own so the rest of the tab works before that migration has run.
+  bool _pricingReady = false;
+  List<Map<String, dynamic>> _cities = const [];
+  List<Map<String, dynamic>> _ratesRows = const [];
+  List<Map<String, dynamic>> _cityPrices = const [];
+  List<Map<String, dynamic>> _catalogue = const [];
+  String? _priceCity;
   bool _loading = true;
   List<Map<String, dynamic>> _jobs = const [];
   List<Map<String, dynamic>> _rules = const [];
@@ -74,6 +82,7 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
         _orgNames = {for (final o in r[5]) '${o['id']}': '${o['name']}'};
         _loading = false;
       });
+      await _loadPricing();
     } catch (e) {
       if (mounted) setState(() => _loading = false);
       _toast('Could not load the marketplace: $e');
@@ -125,6 +134,7 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
               (1, pending > 0 ? 'Money · $pending' : 'Money'),
               (2, 'Vendors'),
               (3, 'City rules'),
+              (4, 'Prices'),
             ])
               NgChip(
                   label: label,
@@ -136,7 +146,8 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
             0 => _live(c),
             1 => _moneyView(c),
             2 => _vendorsView(c),
-            _ => _rulesView(c),
+            3 => _rulesView(c),
+            _ => _pricesView(c),
           },
         ],
       ),
@@ -649,6 +660,231 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
               'updated_at': DateTime.now().toUtc().toIso8601String(),
             }).eq('org_id', v['org_id']),
         'Score saved');
+  }
+
+  // ---- Customer prices ---------------------------------------------------
+
+  Future<void> _loadPricing() async {
+    try {
+      final r = await Future.wait([
+        _db.from('mkt_cities').select().order('city'),
+        _db.from('mkt_rates').select(),
+        _db.from('mkt_city_prices').select(),
+        _db.from('mkt_catalogue').select().order('sort'),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _cities = List<Map<String, dynamic>>.from(r[0]);
+        _ratesRows = List<Map<String, dynamic>>.from(r[1]);
+        _cityPrices = List<Map<String, dynamic>>.from(r[2]);
+        _catalogue = List<Map<String, dynamic>>.from(r[3]);
+        _priceCity ??= _cities.firstOrNull?['city'] as String?;
+        _pricingReady = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _pricingReady = false);
+    }
+  }
+
+  static const _pkgs = ['economy', 'standard', 'premium'];
+  static const _cityPriceFields = <(String, String)>[
+    ('per_floor', 'Per floor without lift (₹)'),
+    ('car_local', 'Car, within city (₹)'),
+    ('car_base', 'Car, intercity base (₹)'),
+    ('car_per_km', 'Car, intercity per km (₹)'),
+    ('bike_local', 'Two-wheeler, within city (₹)'),
+    ('bike_base', 'Two-wheeler, intercity base (₹)'),
+    ('bike_per_km', 'Two-wheeler, intercity per km (₹)'),
+    ('damage_cover', 'Damage cover (₹)'),
+    ('unpacking', 'Unpacking & arranging (₹)'),
+    ('storage_month', 'Storage per month (₹)'),
+  ];
+
+  List<Widget> _pricesView(NgPalette c) {
+    if (!_pricingReady) {
+      return const [
+        NgEmptyState(
+          icon: Icons.price_change_outlined,
+          title: 'Prices are not set up yet',
+          subtitle:
+              'Run supabase/20261030_marketplace_pricing.sql, then come back.',
+        ),
+      ];
+    }
+    final city = _priceCity;
+    final cp = _cityPrices.where((p) => p['city'] == city).firstOrNull;
+    String v(dynamic x) => x == null ? 'Not set' : _money.format(x);
+    return [
+      Text(
+          'What customers pay Nagarva. A city shows prices in the customer app only once its rates are here; anything left unset makes the quote say so instead of guessing.',
+          style: NgFonts.geist(fontSize: 12.5, height: 1.4, color: c.mute)),
+      const SizedBox(height: 10),
+      Wrap(spacing: 6, runSpacing: 6, children: [
+        for (final x in _cities)
+          NgChip(
+              label: '${x['city']}',
+              selected: x['city'] == city,
+              onTap: () => setState(() => _priceCity = '${x['city']}')),
+      ]),
+      const SizedBox(height: 14),
+      if (city != null) ...[
+        NgSectionHeader('Package rates · $city'),
+        const SizedBox(height: 8),
+        NgCardList(children: [
+          for (final pkg in _pkgs)
+            () {
+              final r = _ratesRows
+                  .where((x) => x['city'] == city && x['package'] == pkg)
+                  .firstOrNull;
+              return NgListRow(
+                title: '${pkg[0].toUpperCase()}${pkg.substring(1)}',
+                subtitle: r == null
+                    ? 'Not set'
+                    : '₹${r['per_cft']} per CFT · +₹${r['per_cft_per_km']} per CFT per km intercity · min ${_money.format(r['min_move'])}',
+                trailing: Icon(Icons.chevron_right_rounded, color: c.faint),
+                onTap: () => _editRate(city, pkg, r),
+              );
+            }(),
+        ]),
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(child: NgSectionHeader('Other prices · $city')),
+          TextButton(
+              onPressed: () => _editCityPrices(city, cp),
+              child: const Text('Edit')),
+        ]),
+        const SizedBox(height: 8),
+        NgCardList(children: [
+          for (final (k, label) in _cityPriceFields)
+            NgListRow(
+              title: label,
+              trailing: Text(v(cp?[k]),
+                  style: NgFonts.mono(
+                      fontSize: 13.5,
+                      color: cp?[k] == null ? c.faint : c.text)),
+            ),
+        ]),
+      ],
+      const SizedBox(height: 16),
+      const NgSectionHeader('Item services (all cities)'),
+      const SizedBox(height: 8),
+      NgCardList(children: [
+        for (final it in _catalogue.where((x) => (x['services'] as List).isNotEmpty))
+          NgListRow(
+            title: '${it['name']}',
+            subtitle: [
+              for (final sv in it['services'] as List)
+                '${sv['label']}: ${sv['price'] == null ? 'not set' : _money.format(sv['price'])}',
+            ].join(' · '),
+            trailing: Icon(Icons.chevron_right_rounded, color: c.faint),
+            onTap: () => _editServices(it),
+          ),
+      ]),
+    ];
+  }
+
+  Future<Map<String, num?>?> _numbersDialog(
+      String title, List<(String, String)> fields, Map<String, dynamic>? cur,
+      {bool required = true}) async {
+    final ctrls = {
+      for (final (k, _) in fields)
+        k: TextEditingController(text: cur?[k] == null ? '' : '${cur![k]}'),
+    };
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: 380,
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              for (final (k, label) in fields)
+                TextField(
+                  controller: ctrls[k],
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                      labelText: label,
+                      hintText: required ? null : 'Leave empty if not offered'),
+                ),
+            ]),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (ok != true) return null;
+    final out = <String, num?>{};
+    for (final (k, _) in fields) {
+      final t = ctrls[k]!.text.trim();
+      final n = num.tryParse(t);
+      if (t.isNotEmpty && (n == null || n < 0)) {
+        _toast('Enter a number of zero or more.');
+        return null;
+      }
+      if (required && n == null) {
+        _toast('Every field is needed.');
+        return null;
+      }
+      out[k] = n;
+    }
+    return out;
+  }
+
+  Future<void> _editRate(String city, String pkg, Map<String, dynamic>? r) async {
+    final vals = await _numbersDialog('$city · $pkg', const [
+      ('per_cft', 'Rate per CFT (₹)'),
+      ('per_cft_per_km', 'Extra per CFT per km, intercity (₹)'),
+      ('min_move', 'Minimum move charge (₹)'),
+    ], r);
+    if (vals == null) return;
+    await _run(
+        () => _db.from('mkt_rates').upsert({
+              'city': city,
+              'package': pkg,
+              ...vals,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            }, onConflict: 'city,package'),
+        'Rates saved');
+  }
+
+  Future<void> _editCityPrices(String city, Map<String, dynamic>? cp) async {
+    final vals = await _numbersDialog('$city · other prices', _cityPriceFields, cp,
+        required: false);
+    if (vals == null) return;
+    await _run(
+        () => _db.from('mkt_city_prices').upsert({
+              'city': city,
+              ...vals,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            }, onConflict: 'city'),
+        'Prices saved');
+  }
+
+  Future<void> _editServices(Map<String, dynamic> it) async {
+    final services = [
+      for (final s in it['services'] as List) Map<String, dynamic>.from(s)
+    ];
+    final vals = await _numbersDialog(
+        '${it['name']}',
+        [for (final s in services) ('${s['code']}', '${s['label']} (₹)')],
+        {for (final s in services) '${s['code']}': s['price']},
+        required: false);
+    if (vals == null) return;
+    for (final s in services) {
+      s['price'] = vals['${s['code']}'];
+    }
+    await _run(
+        () => _db
+            .from('mkt_catalogue')
+            .update({'services': services}).eq('key', it['key']),
+        'Service prices saved');
   }
 
   // ---- City rules and weights --------------------------------------------
