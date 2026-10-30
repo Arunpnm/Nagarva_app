@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400..600,0..1,0&display=block" rel="stylesheet">
+<style>body{margin:0}input::placeholder{color:#5B6372}a{color:oklch(0.74 0.16 55)}a:hover{color:oklch(0.82 0.14 55)}*{-webkit-tap-highlight-color:transparent}</style>
+</helmet>
+<div style="min-height:100vh;background:{{ c.bg }};color:{{ c.text }};font-family:'Geist',system-ui,sans-serif;font-size:14px;position:relative">
+
+  <!-- LOGIN -->
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box">
+      <div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:40px;height:40px;border-radius:12px;background:{{ c.accBtn }};display:flex;align-items:center;justify-content:center;color:#0A0C10;font-weight:700;font-size:18px">N</div><div style="flex:1"><div style="font-size:18px;font-weight:600">Nagarva Admin</div><div style="font-size:12.5px;color:{{ c.mute }}">For the Nagarva team only</div></div><div onClick="{{ cycleTheme }}" style="width:36px;height:36px;border-radius:999px;background:{{ c.s1 }};border:1px solid {{ c.w06 }};display:flex;align-items:center;justify-content:center;cursor:pointer"><span class="material-symbols-rounded" style="font-size:19px;color:{{ c.soft }}">{{ themeIcon }}</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <input value="{{ lg.email }}" onChange="{{ lg.onEmail }}" placeholder="Work email" style="height:48px;box-sizing:border-box;padding:0 14px;border-radius:12px;border:1px solid {{ c.w1 }};background:{{ c.s1 }};color:{{ c.text }};font:inherit;font-size:15px;outline:0"></input>
+          <input type="password" value="{{ lg.pw }}" onChange="{{ lg.onPw }}" placeholder="Password" style="height:48px;box-sizing:border-box;padding:0 14px;border-radius:12px;border:1px solid {{ c.w1 }};background:{{ c.s1 }};color:{{ c.text }};font:inherit;font-size:15px;outline:0"></input>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12.5px;color:{{ c.mute }}">Demo · sign in as</span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+            <sc-for list="{{ lg.people }}" as="p" hint-placeholder-count="5"><div onClick="{{ p.onClick }}" style="padding:10px 12px;border-radius:12px;cursor:pointer;border:1px solid {{ p.border }};background:{{ p.bg }}"><div style="font-size:14px;font-weight:600">{{ p.name }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:2px">{{ p.role }}</div></div></sc-for>
+          </div>
+        </div>
+        <div onClick="{{ lg.forgot }}" style="align-self:flex-end;margin-top:-12px;font-size:13px;font-weight:500;color:{{ c.acc }};cursor:pointer">Forgot password?</div>
+        <div onClick="{{ lg.signIn }}" style="height:50px;border-radius:14px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;cursor:pointer">Sign in</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:{{ c.faint }}"><span class="material-symbols-rounded" style="font-size:16px">shield_lock</span>2-step code required on new devices · every sign-in is logged</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;min-height:100vh">
+      <!-- SIDEBAR (wide) -->
+      <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+        <div style="width:236px;flex:none;box-sizing:border-box;border-right:1px solid {{ c.w06 }};background:{{ c.nav }};padding:18px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh">
+          <div style="display:flex;align-items:center;gap:10px;padding:0 8px 16px"><div style="width:32px;height:32px;border-radius:10px;background:{{ c.accBtn }};display:flex;align-items:center;justify-content:center;color:#0A0C10;font-weight:700">N</div><span style="flex:1;font-size:15px;font-weight:600">Nagarva Admin</span><div onClick="{{ cycleTheme }}" style="width:32px;height:32px;border-radius:999px;background:{{ c.s1 }};border:1px solid {{ c.w06 }};display:flex;align-items:center;justify-content:center;cursor:pointer"><span class="material-symbols-rounded" style="font-size:18px;color:{{ c.soft }}">{{ themeIcon }}</span></div></div>
+          <sc-for list="{{ nav }}" as="n" hint-placeholder-count="7"><div onClick="{{ n.onClick }}" style="height:40px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:10px;cursor:pointer;background:{{ n.bg }};color:{{ n.color }}"><span class="material-symbols-rounded" style="font-size:20px">{{ n.icon }}</span><span style="flex:1;font-size:14px;font-weight:500">{{ n.label }}</span><sc-if value="{{ n.soon }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;color:{{ c.faint }}">soon</span></sc-if></div></sc-for>
+          <div style="flex:1"></div>
+          <div style="padding:10px;border-radius:12px;background:{{ c.s1 }};display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:{{ c.sel }};display:flex;align-items:center;justify-content:center;font-weight:600">{{ me.initial }}</div><div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">{{ me.name }}</div><div style="font-size:12px;color:{{ c.mute }}">{{ me.roleL }}</div></div><span onClick="{{ changePw }}" title="Change password" class="material-symbols-rounded" style="font-size:20px;color:{{ c.mute }};cursor:pointer">key</span><span onClick="{{ logout }}" class="material-symbols-rounded" style="font-size:20px;color:{{ c.mute }};cursor:pointer">logout</span></div>
+        </div>
+      </sc-if>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+        <!-- TOP BAR (narrow) -->
+        <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+          <div style="position:sticky;top:0;z-index:5;height:56px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;gap:10px;background:{{ c.nav }};border-bottom:1px solid {{ c.w06 }}">
+            <span onClick="{{ openDrawer }}" class="material-symbols-rounded" style="font-size:24px;color:{{ c.soft }};cursor:pointer">menu</span>
+            <span style="flex:1;font-size:16px;font-weight:600">{{ title }}</span><div onClick="{{ cycleTheme }}" style="width:32px;height:32px;border-radius:999px;background:{{ c.s1 }};border:1px solid {{ c.w06 }};display:flex;align-items:center;justify-content:center;cursor:pointer"><span class="material-symbols-rounded" style="font-size:18px;color:{{ c.soft }}">{{ themeIcon }}</span></div>
+            <div style="width:32px;height:32px;border-radius:50%;background:{{ c.sel }};display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">{{ me.initial }}</div>
+          </div>
+        </sc-if>
+
+        <div style="flex:1;padding:{{ pad }};box-sizing:border-box;width:100%;max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px">
+          <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px"><div><div style="font-size:24px;font-weight:600;letter-spacing:-0.02em">{{ title }}</div><div style="font-size:13px;color:{{ c.mute }};margin-top:3px">{{ subtitle }}</div></div></div></sc-if>
+          <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:{{ c.mute }};margin-top:-4px">{{ subtitle }}</div></sc-if>
+
+          <!-- DASHBOARD -->
+          <sc-if value="{{ scr.dash }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px">
+              <sc-for list="{{ dash.tiles }}" as="s" hint-placeholder-count="6"><div onClick="{{ s.onClick }}" style="background:{{ c.s1 }};border:1px solid {{ s.border }};border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer"><div style="display:flex;align-items:center;gap:6px;color:{{ s.color }}"><span class="material-symbols-rounded" style="font-size:18px">{{ s.icon }}</span><span style="font-size:12.5px;color:{{ c.mute }}">{{ s.label }}</span></div><span style="font-size:24px;font-weight:600;letter-spacing:-0.02em;color:{{ s.valColor }}">{{ s.value }}</span><span style="font-size:12px;color:{{ c.faint }}">{{ s.sub }}</span></div></sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px">
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px"><span style="font-size:15px;font-weight:600">{{ dash.expTitle }}</span><span style="font-size:12.5px;color:{{ c.mute }}">{{ dash.expCount }}</span></div>
+                <sc-for list="{{ dash.expiring }}" as="v" hint-placeholder-count="4"><div onClick="{{ v.onOpen }}" style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid {{ c.w06 }};cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.name }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:1px">{{ v.city }} · {{ v.planL }} · {{ v.sales }}</div></div><span style="height:22px;padding:0 8px;border-radius:7px;display:flex;align-items:center;font-size:11.5px;font-weight:600;background:{{ v.stBg }};color:{{ v.stColor }}">{{ v.stLabel }}</span><span style="width:70px;text-align:right;font-size:12.5px;color:{{ v.daysColor }}">{{ v.daysL }}</span></div></sc-for>
+                <sc-if value="{{ dash.expEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:16px;border-top:1px solid {{ c.w06 }};font-size:13px;color:{{ c.mute }}">Nothing expiring in the next 7 days.</div></sc-if>
+              </div>
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                <span style="font-size:15px;font-weight:600">Sign-ups by source · Oct</span>
+                <sc-for list="{{ dash.sources }}" as="r" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:10px"><span style="width:96px;flex:none;font-size:13px;color:{{ c.soft }}">{{ r.label }}</span><div style="flex:1;height:8px;border-radius:4px;background:{{ c.w06 }};overflow:hidden"><div style="height:100%;width:{{ r.w }};background:{{ c.accBtn }};border-radius:4px"></div></div><span style="width:28px;text-align:right;font-size:13px;font-weight:600">{{ r.n }}</span></div></sc-for>
+                <span style="font-size:15px;font-weight:600;margin-top:6px">Plan mix · paying vendors</span>
+                <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px"><sc-for list="{{ dash.mix }}" as="m" hint-placeholder-count="3"><div style="height:100%;width:{{ m.w }};background:{{ m.color }}"></div></sc-for></div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px"><sc-for list="{{ dash.mix }}" as="m" hint-placeholder-count="3"><span style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:{{ c.soft }}"><span style="width:8px;height:8px;border-radius:2px;background:{{ m.color }}"></span>{{ m.label }} · {{ m.n }}</span></sc-for></div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- VENDORS -->
+          <sc-if value="{{ scr.vendors }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+              <div style="flex:1 1 260px;height:44px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;background:{{ c.s1 }};border:1px solid {{ c.w1 }}"><span class="material-symbols-rounded" style="font-size:20px;color:{{ c.faint }}">search</span><input value="{{ vl.q }}" onChange="{{ vl.onQ }}" placeholder="Business, owner, phone or city" style="flex:1;min-width:0;height:100%;border:0;background:transparent;color:{{ c.text }};font:inherit;font-size:14px;outline:0"></input></div>
+              <sc-if value="{{ vl.mineNote }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:{{ c.amber }};display:flex;align-items:center;gap:4px"><span class="material-symbols-rounded" style="font-size:16px">filter_alt</span>Showing vendors assigned to you</span></sc-if>
+            </div>
+            <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none"><sc-for list="{{ vl.chips }}" as="p" hint-placeholder-count="6"><div onClick="{{ p.onClick }}" style="flex:none;height:34px;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;background:{{ p.bg }};color:{{ p.color }};border:1px solid {{ p.border }}">{{ p.label }}<span style="opacity:0.65;font-size:12px">{{ p.n }}</span></div></sc-for></div>
+            <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none"><sc-for list="{{ vl.cities }}" as="p" hint-placeholder-count="5"><div onClick="{{ p.onClick }}" style="flex:none;height:30px;padding:0 11px;border-radius:9px;display:flex;align-items:center;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</div></sc-for></div>
+            <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden">
+              <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><div style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1fr) minmax(0,0.8fr) minmax(0,1fr);gap:12px;padding:10px 16px;font-size:12px;color:{{ c.faint }};background:{{ c.s2 }}"><span>Vendor</span><span>City</span><span>Plan</span><span>Status</span><span>Users</span><span>Sales</span></div></sc-if>
+              <sc-for list="{{ vl.list }}" as="v" hint-placeholder-count="8">
+                <div onClick="{{ v.onOpen }}" style="display:grid;grid-template-columns:{{ vl.cols }};gap:12px;align-items:center;padding:12px 16px;border-top:1px solid {{ c.w06 }};cursor:pointer">
+                  <div style="min-width:0"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.name }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.ownerLine }}</div><div style="font-size:11.5px;color:{{ c.faint }};margin-top:2px;font-family:'Geist Mono',monospace">{{ v.useLine }}</div></div>
+                  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;color:{{ c.soft }}">{{ v.city }}</span><span style="font-size:13px;color:{{ c.soft }}">{{ v.planL }}</span></sc-if>
+                  <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-start"><span style="height:22px;padding:0 8px;border-radius:7px;display:flex;align-items:center;font-size:11.5px;font-weight:600;background:{{ v.stBg }};color:{{ v.stColor }}">{{ v.stLabel }}</span><span style="font-size:11.5px;color:{{ v.daysColor }}">{{ v.daysL }}</span></div>
+                  <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;color:{{ c.soft }}">{{ v.usersL }}</span><span style="font-size:13px;color:{{ c.soft }}">{{ v.sales }}</span></sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ vl.empty }}" hint-placeholder-val="{{ false }}"><div style="padding:24px 16px;text-align:center;font-size:13.5px;color:{{ c.mute }}">No vendors match</div></sc-if>
+            </div>
+          </sc-if>
+
+          <!-- VENDOR DETAIL -->
+          <sc-if value="{{ scr.vendor }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ toVendors }}" style="display:flex;align-items:center;gap:4px;font-size:13px;color:{{ c.mute }};cursor:pointer;margin-top:-6px"><span class="material-symbols-rounded" style="font-size:18px">arrow_back</span>All vendors</div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px">
+              <div style="width:52px;height:52px;border-radius:14px;background:{{ vd.stBg }};color:{{ vd.stColor }};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700">{{ vd.initial }}</div>
+              <div style="flex:1 1 220px;min-width:0"><div style="font-size:21px;font-weight:600;letter-spacing:-0.01em">{{ vd.name }}</div><div style="font-size:13px;color:{{ c.mute }};margin-top:3px">{{ vd.id }} · {{ vd.city }} · joined {{ vd.joined }}</div></div>
+              <span style="flex:none;white-space:nowrap;height:28px;padding:0 12px;border-radius:9px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;background:{{ vd.stBg }};color:{{ vd.stColor }}">{{ vd.stLabel }} · {{ vd.daysL }}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ vd.actions }}" as="a" hint-placeholder-count="6"><div onClick="{{ a.onClick }}" style="height:38px;padding:0 13px;border-radius:11px;display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;cursor:{{ a.cursor }};background:{{ a.bg }};color:{{ a.color }};border:1px solid {{ a.border }};opacity:{{ a.op }}"><span class="material-symbols-rounded" style="font-size:18px">{{ a.icon }}</span>{{ a.label }}</div></sc-for>
+            </div>
+            <div style="display:flex;gap:4px;padding:4px;background:{{ c.s1 }};border-radius:12px;align-self:flex-start"><sc-for list="{{ vd.tabs }}" as="p" hint-placeholder-count="3"><div onClick="{{ p.onClick }}" style="height:34px;padding:0 14px;display:flex;align-items:center;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</div></sc-for></div>
+            <sc-if value="{{ vd.isOv }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size:13px;font-weight:600;color:{{ c.mute }};margin-bottom:-6px">Usage</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px"><sc-for list="{{ vd.kpis }}" as="s" hint-placeholder-count="5"><div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:14px;padding:12px 14px"><div style="font-size:12px;color:{{ c.mute }}">{{ s.label }}</div><div style="font-size:19px;font-weight:600;margin-top:4px">{{ s.value }}</div></div></sc-for></div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:14px">
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:0 16px"><sc-for list="{{ vd.info }}" as="r" hint-placeholder-count="7"><div style="display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center;border-top:{{ r.border }}"><span style="font-size:13px;color:{{ c.mute }};flex:none">{{ r.label }}</span><span style="font-size:13.5px;font-weight:500;text-align:right;font-family:{{ r.font }}">{{ r.value }}</span></div></sc-for></div>
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:0 16px"><sc-for list="{{ vd.plan }}" as="r" hint-placeholder-count="6"><div style="display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center;border-top:{{ r.border }}"><span style="font-size:13px;color:{{ c.mute }};flex:none">{{ r.label }}</span><span style="font-size:13.5px;font-weight:500;text-align:right;color:{{ r.color }}">{{ r.value }}</span></div></sc-for>
+                  <sc-if value="{{ vd.hasTrialCtl }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px;padding:12px 0 14px;border-top:1px solid {{ c.w06 }}"><span style="font-size:12.5px;color:{{ c.mute }}">Trial · {{ vd.trialEnd }}</span><div style="display:flex;gap:8px"><div onClick="{{ vd.setDate }}" style="flex:1;height:38px;border-radius:11px;border:1px solid {{ c.w08 }};display:flex;align-items:center;justify-content:center;gap:6px;font-size:13.5px;font-weight:500;cursor:pointer;opacity:{{ vd.setDateOp }}"><span class="material-symbols-rounded" style="font-size:18px">event</span>Set date</div><div onClick="{{ vd.plus14 }}" style="flex:1;height:38px;border-radius:11px;border:1px solid {{ c.w08 }};display:flex;align-items:center;justify-content:center;gap:6px;font-size:13.5px;font-weight:500;cursor:pointer"><span class="material-symbols-rounded" style="font-size:18px">more_time</span>+14 days</div></div><span style="font-size:11.5px;color:{{ c.faint }};text-wrap:pretty">+14 adds to the current end date if it hasn't passed, otherwise counts from today.</span></div></sc-if>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:14px;background:{{ c.s1 }};border:1px solid {{ c.w06 }}"><span class="material-symbols-rounded" style="font-size:19px;color:{{ c.green }}">visibility_off</span><span style="font-size:12.5px;line-height:1.45;color:{{ c.soft }};text-wrap:pretty">Nagarva staff cannot open this vendor's orders, customers or accounts. Support sees the snapshot above and the error log only.</span></div>
+            </sc-if>
+            <sc-if value="{{ vd.isPay }}" hint-placeholder-val="{{ false }}">
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden"><sc-for list="{{ vd.pays }}" as="r" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:{{ r.border }}"><span class="material-symbols-rounded" style="font-size:20px;color:{{ r.color }}">{{ r.icon }}</span><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">{{ r.label }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:1px">{{ r.sub }}</div></div><span style="font-size:14px;font-weight:600;color:{{ r.color }}">{{ r.amt }}</span></div></sc-for><sc-if value="{{ vd.noPays }}" hint-placeholder-val="{{ false }}"><div style="padding:18px 16px;font-size:13px;color:{{ c.mute }}">No payments yet · on free trial</div></sc-if></div>
+            </sc-if>
+            <sc-if value="{{ vd.isLog }}" hint-placeholder-val="{{ false }}">
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden"><sc-for list="{{ vd.log }}" as="e" hint-placeholder-count="4"><div style="display:flex;gap:12px;padding:12px 16px;border-top:{{ e.border }}"><div style="flex:1;min-width:0"><div style="font-size:12.5px;color:{{ c.mute }}"><span style="color:{{ c.text }};font-weight:600">{{ e.who }}</span> · {{ e.role }}</div><div style="font-size:14px;margin-top:2px;text-wrap:pretty">{{ e.text }}</div><sc-for list="{{ e.chg }}" as="g" hint-placeholder-count="0"><div style="font-size:12.5px;color:{{ c.soft }};margin-top:2px">{{ g.f }}: <span style="text-decoration:line-through;color:{{ c.faint }}">{{ g.o }}</span> → {{ g.n }}</div></sc-for><sc-if value="{{ e.hasReason }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:{{ c.red }};margin-top:2px">Reason: {{ e.reason }}</div></sc-if></div><span style="flex:none;font-size:12px;color:{{ c.faint }};font-family:'Geist Mono',monospace">{{ e.time }}</span></div></sc-for><sc-if value="{{ vd.noLog }}" hint-placeholder-val="{{ false }}"><div style="padding:18px 16px;font-size:13px;color:{{ c.mute }}">No admin actions yet</div></sc-if></div>
+            </sc-if>
+          </sc-if>
+
+          <!-- PLANS & PRICING -->
+          <sc-if value="{{ scr.plans }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span style="font-size:13px;color:{{ c.mute }};text-wrap:pretty">Price changes apply from each vendor's next renewal. Trial days apply to new sign-ups only.</span><sc-if value="{{ pp.canEdit }}" hint-placeholder-val="{{ true }}"><div onClick="{{ pp.newPlan }}" style="height:40px;padding:0 14px;border-radius:12px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;cursor:pointer"><span class="material-symbols-rounded" style="font-size:19px">add</span>New plan</div></sc-if></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px">
+              <sc-for list="{{ pp.plans }}" as="p" hint-placeholder-count="4">
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:17px;font-weight:600">{{ p.name }}</span><sc-if value="{{ p.isDef }}" hint-placeholder-val="{{ false }}"><span style="height:22px;padding:0 8px;border-radius:7px;display:flex;align-items:center;font-size:11.5px;font-weight:600;background:{{ c.amberBg }};color:{{ c.amber }}">Default trial</span></sc-if></div><div style="font-size:12px;color:{{ c.faint }};margin-top:3px;font-family:'Geist Mono',monospace">{{ p.code }} · {{ p.count }}</div></div><div onClick="{{ p.edit }}" style="height:32px;padding:0 10px;border-radius:9px;background:{{ c.s2 }};display:flex;align-items:center;gap:4px;font-size:13px;font-weight:500;cursor:pointer"><span class="material-symbols-rounded" style="font-size:16px">edit</span>Edit</div></div>
+                  <div style="font-size:15px;font-weight:600;font-family:'Geist Mono',monospace">{{ p.price }}</div>
+                  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px"><sc-for list="{{ p.lims }}" as="l" hint-placeholder-count="3"><div style="padding:8px 10px;border-radius:10px;background:{{ c.s2 }};min-width:0"><div style="font-size:11px;color:{{ c.mute }}">{{ l.label }}</div><div style="font-size:13.5px;font-weight:600;margin-top:2px">{{ l.value }}</div></div></sc-for></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ p.feats }}" as="f" hint-placeholder-count="4"><span style="height:26px;padding:0 9px;border-radius:8px;display:flex;align-items:center;gap:4px;font-size:12px;font-weight:500;background:{{ f.bg }};color:{{ f.color }};border:1px solid {{ c.w06 }};text-decoration:{{ f.deco }}"><span class="material-symbols-rounded" style="font-size:14px">{{ f.icon }}</span>{{ f.label }}</span></sc-for></div>
+                  <div style="font-size:12px;color:{{ c.mute }}">{{ p.tg }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div><div style="font-size:15px;font-weight:600">Approval limits</div><div style="font-size:12.5px;color:{{ c.mute }};margin-top:3px;text-wrap:pretty">Sales and support can go up to these limits. Anything above goes to a super admin for approval.</div></div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px 20px">
+                <sc-for list="{{ pp.cfg }}" as="f" hint-placeholder-count="2"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0"><div style="min-width:0"><div style="font-size:13.5px">{{ f.label }}</div><div style="font-size:12px;color:{{ c.faint }};margin-top:1px">{{ f.sub }}</div></div><div style="width:96px;flex:none;height:38px;box-sizing:border-box;display:flex;align-items:center;gap:4px;padding:0 10px;border-radius:10px;background:{{ c.s2 }};border:1px solid {{ f.border }}"><input value="{{ f.val }}" onChange="{{ f.onVal }}" disabled="{{ pp.ro }}" inputMode="numeric" style="flex:1;min-width:0;border:0;background:transparent;color:{{ c.text }};font:inherit;font-size:14px;font-family:'Geist Mono',monospace;text-align:right;outline:0"></input><span style="font-size:12.5px;color:{{ c.faint }}">{{ f.suf }}</span></div></div></sc-for>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:flex-end">
+                <span style="font-size:13px;color:{{ pp.noteColor }}">{{ pp.note }}</span>
+                <sc-if value="{{ pp.canEdit }}" hint-placeholder-val="{{ true }}"><div onClick="{{ pp.reset }}" style="height:40px;padding:0 16px;border-radius:12px;background:{{ c.s2 }};display:flex;align-items:center;font-size:14px;font-weight:500;cursor:pointer">Discard</div><div onClick="{{ pp.save }}" style="height:40px;padding:0 18px;border-radius:12px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;font-size:14px;font-weight:600;cursor:pointer">Save limits</div></sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- TEAM -->
+          <sc-if value="{{ scr.team }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px;align-items:start">
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden">
+                <sc-for list="{{ tm.list }}" as="m" hint-placeholder-count="5"><div onClick="{{ m.onOpen }}" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:{{ m.border }};cursor:pointer;background:{{ m.bg }}"><div style="width:36px;height:36px;border-radius:50%;background:{{ m.avBg }};color:{{ m.avColor }};display:flex;align-items:center;justify-content:center;font-weight:600">{{ m.initial }}</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">{{ m.name }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:1px">{{ m.roleL }} · {{ m.email }}</div></div><span style="font-size:11.5px;font-weight:600;color:{{ m.stColor }}">{{ m.stLabel }}</span></div></sc-for>
+                <div style="display:flex;gap:6px;padding:10px 12px;border-top:1px solid {{ c.w06 }};flex-wrap:wrap">
+                  <input value="{{ tm.nName }}" onChange="{{ tm.onName }}" placeholder="Name" style="flex:1 1 110px;min-width:0;height:38px;box-sizing:border-box;padding:0 10px;border-radius:10px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:13.5px;outline:0"></input>
+                  <input value="{{ tm.nEmail }}" onChange="{{ tm.onEmail }}" placeholder="Email" style="flex:1 1 150px;min-width:0;height:38px;box-sizing:border-box;padding:0 10px;border-radius:10px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:13.5px;outline:0"></input>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap"><sc-for list="{{ tm.roleChips }}" as="p" hint-placeholder-count="4"><div onClick="{{ p.onClick }}" style="height:38px;padding:0 10px;border-radius:10px;display:flex;align-items:center;font-size:12.5px;font-weight:500;cursor:pointer;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</div></sc-for></div>
+                  <div onClick="{{ tm.add }}" style="height:38px;padding:0 14px;border-radius:10px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;gap:4px;font-size:13.5px;font-weight:600;cursor:pointer"><span class="material-symbols-rounded" style="font-size:18px">person_add</span>Add</div>
+                </div>
+              </div>
+              <sc-if value="{{ tm.hasSel }}" hint-placeholder-val="{{ false }}">
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:600">{{ tm.sel.name }}</div><div style="font-size:12.5px;color:{{ c.mute }};margin-top:2px">{{ tm.sel.roleL }} · permissions</div></div><div onClick="{{ tm.toggleActive }}" style="height:34px;padding:0 12px;border-radius:10px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;background:{{ tm.actBg }};color:{{ tm.actColor }}">{{ tm.actLabel }}</div></div>
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) repeat(4,44px);gap:4px;font-size:11.5px;color:{{ c.faint }};padding:0 2px"><span>Module</span><span style="text-align:center">View</span><span style="text-align:center">Add</span><span style="text-align:center">Edit</span><span style="text-align:center">Delete</span></div>
+                  <sc-for list="{{ tm.grid }}" as="r" hint-placeholder-count="8"><div style="display:grid;grid-template-columns:minmax(0,1fr) repeat(4,44px);gap:4px;align-items:center;min-height:36px;border-top:1px solid {{ c.w06 }};padding:0 2px"><span style="font-size:13.5px">{{ r.label }}</span><sc-for list="{{ r.cells }}" as="x" hint-placeholder-count="4"><span onClick="{{ x.onClick }}" class="material-symbols-rounded" style="text-align:center;font-size:21px;cursor:{{ x.cursor }};color:{{ x.color }}">{{ x.icon }}</span></sc-for></div></sc-for>
+                  <sc-if value="{{ tm.isSales }}" hint-placeholder-val="{{ false }}"><div onClick="{{ tm.toggleAll }}" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding-top:4px"><span style="flex:1;font-size:13.5px">Sees all vendors (not just assigned)</span><div style="width:40px;height:24px;box-sizing:border-box;padding:3px;border-radius:12px;display:flex;justify-content:{{ tm.allJust }};background:{{ tm.allBg }}"><div style="width:18px;height:18px;border-radius:50%;background:#FFFFFF"></div></div></div></sc-if>
+                  <span style="font-size:12px;color:{{ c.faint }}">{{ tm.note }}</span>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:4px;border-top:1px solid {{ c.w06 }}"><div onClick="{{ tm.resetPw }}" style="height:38px;padding:0 13px;margin-top:10px;border-radius:11px;border:1px solid {{ c.w08 }};display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;cursor:pointer;opacity:{{ tm.resetOp }}"><span class="material-symbols-rounded" style="font-size:18px">lock_reset</span>Send password reset</div><div onClick="{{ tm.signOutAll }}" style="height:38px;padding:0 13px;margin-top:10px;border-radius:11px;border:1px solid {{ c.w08 }};display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;cursor:pointer;opacity:{{ tm.resetOp }}"><span class="material-symbols-rounded" style="font-size:18px">devices</span>Sign out all devices</div></div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <!-- AUDIT -->
+          <sc-if value="{{ scr.audit }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:14px;background:{{ c.s1 }};border:1px solid {{ c.w06 }}"><span class="material-symbols-rounded" style="font-size:19px;color:{{ c.green }}">lock</span><span style="font-size:12.5px;line-height:1.45;color:{{ c.soft }};text-wrap:pretty">Every admin action on vendors, plans and the team. Read-only, stored on the server, chained so changes can be detected. Vendors see actions taken on their own account.</span></div>
+            <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden"><sc-for list="{{ au.list }}" as="e" hint-placeholder-count="6"><div style="display:flex;gap:12px;padding:12px 16px;border-top:{{ e.border }}"><div style="flex:1;min-width:0"><div style="font-size:12.5px;color:{{ c.mute }}"><span style="color:{{ c.text }};font-weight:600">{{ e.who }}</span> · {{ e.role }}<sc-if value="{{ e.hasVendor }}" hint-placeholder-val="{{ false }}"> · <span onClick="{{ e.onVendor }}" style="color:{{ c.acc }};cursor:pointer">{{ e.vendor }}</span></sc-if></div><div style="font-size:14px;margin-top:2px;text-wrap:pretty">{{ e.text }}</div><sc-for list="{{ e.chg }}" as="g" hint-placeholder-count="0"><div style="font-size:12.5px;color:{{ c.soft }};margin-top:2px">{{ g.f }}: <span style="text-decoration:line-through;color:{{ c.faint }}">{{ g.o }}</span> → {{ g.n }}</div></sc-for><sc-if value="{{ e.hasReason }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:{{ c.red }};margin-top:2px">Reason: {{ e.reason }}</div></sc-if></div><span style="flex:none;font-size:12px;color:{{ c.faint }};font-family:'Geist Mono',monospace">{{ e.time }}</span></div></sc-for></div>
+          </sc-if>
+
+          <!-- APPROVALS -->
+          <sc-if value="{{ scr.approvals }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:4px;padding:4px;background:{{ c.s1 }};border-radius:12px;align-self:flex-start"><sc-for list="{{ ap.tabs }}" as="p" hint-placeholder-count="2"><div onClick="{{ p.onClick }}" style="height:34px;padding:0 14px;display:flex;align-items:center;gap:6px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}<span style="opacity:0.65;font-size:12px">{{ p.n }}</span></div></sc-for></div>
+            <sc-if value="{{ ap.sg.has }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:15px;font-weight:600">New vendor signups</span><span style="font-size:13px;color:{{ c.mute }}">{{ ap.sg.n }}</span></div>
+                <sc-for list="{{ ap.sg.list }}" as="r" hint-placeholder-count="1">
+                  <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+                      <div style="width:38px;height:38px;flex:none;border-radius:11px;background:{{ r.bg }};color:{{ r.color }};display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="font-size:20px">storefront</span></div>
+                      <div style="flex:1 1 240px;min-width:0"><div style="font-size:14.5px;font-weight:600">{{ r.name }}</div><div style="font-size:12.5px;color:{{ c.mute }};margin-top:2px">{{ r.meta }}</div><sc-if value="{{ r.hasDecision }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;margin-top:4px;color:{{ r.decColor }}">{{ r.decision }}</div></sc-if></div>
+                      <sc-if value="{{ r.canDecide }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;flex:none"><div onClick="{{ r.onReject }}" style="height:38px;padding:0 14px;border-radius:11px;border:1px solid {{ c.redLine }};color:{{ c.red }};display:flex;align-items:center;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap">Send back</div><div onClick="{{ r.onApprove }}" style="height:38px;padding:0 16px;border-radius:11px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap">Approve</div></div></sc-if>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 16px"><sc-for list="{{ r.details }}" as="d" hint-placeholder-count="3"><div style="min-width:0"><div style="font-size:12px;color:{{ c.faint }}">{{ d.k }}</div><div style="font-size:13.5px;margin-top:2px;overflow-wrap:anywhere">{{ d.v }}</div></div></sc-for></div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ r.docs }}" as="d" hint-placeholder-count="2"><div onClick="{{ d.onClick }}" style="height:32px;padding:0 12px;border-radius:9px;background:{{ c.s3 }};display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer"><span class="material-symbols-rounded" style="font-size:16px;color:{{ c.acc }}">description</span><span style="font-weight:600">{{ d.label }}</span><span style="color:{{ c.mute }}">{{ d.file }}</span></div></sc-for></div>
+                    <sc-if value="{{ r.picking }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid {{ c.w06 }}"><span style="font-size:12.5px;color:{{ c.mute }}">Pick a reason. The owner sees it in the app and on WhatsApp.</span><div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ r.reasons }}" as="w" hint-placeholder-count="4"><div onClick="{{ w.onClick }}" style="height:34px;padding:0 12px;border-radius:9px;border:1px solid {{ c.redLine }};color:{{ c.red }};display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer">{{ w.label }}</div></sc-for></div></div></sc-if>
+                    <sc-if value="{{ r.hasReason }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:{{ c.red }}">Reason: {{ r.reason }}</div></sc-if>
+                  </div>
+                </sc-for>
+                <span style="font-size:15px;font-weight:600;margin-top:6px">Plan requests</span>
+              </div>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ ap.list }}" as="r" hint-placeholder-count="2">
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:16px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+                  <div style="width:38px;height:38px;flex:none;border-radius:11px;background:{{ r.bg }};color:{{ r.color }};display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="font-size:20px">{{ r.icon }}</span></div>
+                  <div style="flex:1 1 240px;min-width:0"><div style="font-size:14.5px;font-weight:600">{{ r.title }}</div><div style="font-size:12.5px;color:{{ c.mute }};margin-top:2px"><span onClick="{{ r.onVendor }}" style="color:{{ c.acc }};cursor:pointer">{{ r.vendor }}</span> · asked by {{ r.by }} · {{ r.t }}</div><div style="font-size:13px;color:{{ c.soft }};margin-top:4px">“{{ r.reason }}”</div><sc-if value="{{ r.hasDecision }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;margin-top:4px;color:{{ r.decColor }}">{{ r.decision }}</div></sc-if></div>
+                  <sc-if value="{{ r.canDecide }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;flex:none"><div onClick="{{ r.onReject }}" style="height:38px;padding:0 14px;border-radius:11px;border:1px solid {{ c.redLine }};color:{{ c.red }};display:flex;align-items:center;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap">Reject</div><div onClick="{{ r.onApprove }}" style="height:38px;padding:0 16px;border-radius:11px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap">Approve</div></div></sc-if>
+                  <sc-if value="{{ r.isPendingMine }}" hint-placeholder-val="{{ false }}"><span style="flex:none;height:26px;padding:0 10px;border-radius:8px;display:flex;align-items:center;font-size:12px;font-weight:600;background:{{ c.amberBg }};color:{{ c.amber }};white-space:nowrap">Waiting for super admin</span></sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ ap.empty }}" hint-placeholder-val="{{ false }}"><div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:16px;padding:28px 16px;text-align:center;font-size:13.5px;color:{{ c.mute }}">{{ ap.emptyText }}</div></sc-if>
+            </div>
+          </sc-if>
+
+          <!-- PAYMENTS -->
+          <sc-if value="{{ scr.payments }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px"><sc-for list="{{ py.tiles }}" as="s" hint-placeholder-count="4"><div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12.5px;color:{{ c.mute }}">{{ s.label }}</span><span style="font-size:21px;font-weight:600;letter-spacing:-0.01em;color:{{ s.color }}">{{ s.value }}</span><span style="font-size:12px;color:{{ c.faint }}">{{ s.sub }}</span></div></sc-for></div>
+            <sc-if value="{{ py.hasMismatch }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:{{ c.redBg }};border:1px solid {{ c.redLine }}">
+                <span class="material-symbols-rounded" style="font-size:22px;color:{{ c.red }}">report</span>
+                <div style="flex:1 1 260px;min-width:0"><div style="font-size:14px;font-weight:600">Nightly check · 15 Oct · 1 payment not matched</div><div style="font-size:12.5px;color:{{ c.soft }};margin-top:3px;text-wrap:pretty">{{ py.mm }}</div></div>
+                <sc-if value="{{ py.canFix }}" hint-placeholder-val="{{ false }}"><div onClick="{{ py.onLink }}" style="flex:none;height:38px;padding:0 14px;border-radius:11px;background:{{ c.inv }};color:{{ c.invText }};display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap"><span class="material-symbols-rounded" style="font-size:18px">link</span>Link to vendor</div></sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ py.noMismatch }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;font-size:13px;color:{{ c.green }}"><span class="material-symbols-rounded" style="font-size:18px">verified</span>Nightly check · all Razorpay payments match our records</div></sc-if>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+              <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1 1 auto"><sc-for list="{{ py.chips }}" as="p" hint-placeholder-count="5"><div onClick="{{ p.onClick }}" style="flex:none;height:34px;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;background:{{ p.bg }};color:{{ p.color }};border:1px solid {{ p.border }}">{{ p.label }}<span style="opacity:0.65;font-size:12px">{{ p.n }}</span></div></sc-for></div>
+              <sc-if value="{{ py.canExport }}" hint-placeholder-val="{{ false }}"><div onClick="{{ py.onExport }}" style="flex:none;height:36px;padding:0 13px;border-radius:11px;background:{{ c.s2 }};display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap"><span class="material-symbols-rounded" style="font-size:18px;color:{{ c.green }}">table_view</span>October report · Excel</div></sc-if>
+            </div>
+            <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden">
+              <sc-for list="{{ py.list }}" as="r" hint-placeholder-count="6">
+                <div style="border-top:{{ r.border }}">
+                  <div onClick="{{ r.onToggle }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer">
+                    <span class="material-symbols-rounded" style="font-size:21px;color:{{ r.color }}">{{ r.icon }}</span>
+                    <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.vendor }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.sub }}</div></div>
+                    <div style="flex:none;text-align:right"><div style="font-size:14px;font-weight:600;font-family:'Geist Mono',monospace;color:{{ r.amtColor }}">{{ r.amt }}</div><div style="font-size:11.5px;font-weight:600;margin-top:2px;color:{{ r.color }}">{{ r.stLabel }}</div></div>
+                  </div>
+                  <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:2px 16px 14px 49px;display:flex;flex-direction:column;gap:10px">
+                      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 16px"><sc-for list="{{ r.rows }}" as="x" hint-placeholder-count="6"><div><div style="font-size:11.5px;color:{{ c.faint }}">{{ x.l }}</div><div style="font-size:13px;margin-top:1px;font-family:{{ x.font }}">{{ x.v }}</div></div></sc-for></div>
+                      <div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{ r.acts }}" as="a" hint-placeholder-count="2"><div onClick="{{ a.onClick }}" style="height:34px;padding:0 12px;border-radius:10px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;background:{{ a.bg }};color:{{ a.color }};border:1px solid {{ a.border }}"><span class="material-symbols-rounded" style="font-size:17px">{{ a.icon }}</span>{{ a.label }}</div></sc-for></div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-size:12.5px;color:{{ c.faint }};text-wrap:pretty">Payments are marked paid only by the Razorpay webhook. Nobody marks them by hand. Amounts include 18% GST.</div>
+          </sc-if>
+
+          <!-- TICKETS -->
+          <sc-if value="{{ scr.tickets }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none"><sc-for list="{{ tk.chips }}" as="p" hint-placeholder-count="4"><div onClick="{{ p.onClick }}" style="flex:none;height:34px;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;background:{{ p.bg }};color:{{ p.color }};border:1px solid {{ p.border }}">{{ p.label }}<span style="opacity:0.65;font-size:12px">{{ p.n }}</span></div></sc-for></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px;align-items:start">
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden">
+                <sc-for list="{{ tk.list }}" as="r" hint-placeholder-count="5"><div onClick="{{ r.onOpen }}" style="display:flex;gap:12px;padding:12px 14px;border-top:{{ r.border }};cursor:pointer;background:{{ r.bg }}"><span style="width:8px;height:8px;flex:none;border-radius:50%;margin-top:6px;background:{{ r.pColor }}"></span><div style="flex:1;min-width:0"><div style="display:flex;gap:8px;align-items:baseline"><span style="flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.subject }}</span><span style="flex:none;font-size:11.5px;color:{{ c.faint }};font-family:'Geist Mono',monospace">{{ r.id }}</span></div><div style="font-size:12px;color:{{ c.mute }};margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.vendor }} · {{ r.age }} · {{ r.agent }}</div></div><span style="flex:none;font-size:11.5px;font-weight:600;color:{{ r.stColor }}">{{ r.stLabel }}</span></div></sc-for>
+                <sc-if value="{{ tk.empty }}" hint-placeholder-val="{{ false }}"><div style="padding:24px 16px;text-align:center;font-size:13.5px;color:{{ c.mute }}">No tickets here</div></sc-if>
+              </div>
+              <sc-if value="{{ tk.hasSel }}" hint-placeholder-val="{{ false }}">
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                  <div><div style="font-size:16px;font-weight:600;text-wrap:pretty">{{ tk.sel.subject }}</div><div style="font-size:12.5px;color:{{ c.mute }};margin-top:3px"><span onClick="{{ tk.sel.onVendor }}" style="color:{{ c.acc }};cursor:pointer">{{ tk.sel.vendor }}</span> · {{ tk.sel.who }} · {{ tk.sel.id }}</div></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ tk.sel.meta }}" as="x" hint-placeholder-count="4"><span style="height:26px;padding:0 9px;border-radius:8px;display:flex;align-items:center;gap:5px;font-size:12px;background:{{ c.s2 }};color:{{ x.color }}"><span class="material-symbols-rounded" style="font-size:15px">{{ x.icon }}</span>{{ x.v }}</span></sc-for></div>
+                  <sc-if value="{{ tk.sel.hasErr }}" hint-placeholder-val="{{ false }}"><div style="padding:10px 12px;border-radius:11px;background:{{ c.nav }};font-family:'Geist Mono',monospace;font-size:12px;line-height:1.5;color:{{ c.red }};white-space:pre-wrap;word-break:break-word">{{ tk.sel.err }}</div></sc-if>
+                  <div style="display:flex;flex-direction:column;gap:8px"><sc-for list="{{ tk.sel.msgs }}" as="g" hint-placeholder-count="2"><div style="align-self:{{ g.align }};max-width:88%;padding:9px 12px;border-radius:13px;background:{{ g.bg }}"><div style="font-size:13.5px;line-height:1.4;text-wrap:pretty">{{ g.text }}</div><div style="font-size:11px;color:{{ c.mute }};margin-top:3px">{{ g.meta }}</div></div></sc-for></div>
+                  <sc-if value="{{ tk.canReply }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:6px"><input value="{{ tk.reply }}" onChange="{{ tk.onReply }}" placeholder="Reply · sent on WhatsApp" style="flex:1;min-width:0;height:40px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:13.5px;outline:0"></input><div onClick="{{ tk.send }}" style="flex:none;height:40px;padding:0 14px;border-radius:11px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;gap:5px;font-size:13.5px;font-weight:600;cursor:pointer"><span class="material-symbols-rounded" style="font-size:18px">send</span>Send</div></div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ tk.tools }}" as="a" hint-placeholder-count="4"><div onClick="{{ a.onClick }}" style="height:34px;padding:0 11px;border-radius:10px;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap;background:{{ c.s2 }};border:1px solid {{ c.w08 }}"><span class="material-symbols-rounded" style="font-size:17px">{{ a.icon }}</span>{{ a.label }}</div></sc-for></div>
+                  </sc-if>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end"><sc-for list="{{ tk.btns }}" as="a" hint-placeholder-count="2"><div onClick="{{ a.onClick }}" style="height:38px;padding:0 14px;border-radius:11px;display:flex;align-items:center;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;background:{{ a.bg }};color:{{ a.color }}">{{ a.label }}</div></sc-for></div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <!-- COUPONS -->
+          <sc-if value="{{ scr.coupons }}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{ cp.canEdit }}" hint-placeholder-val="{{ false }}">
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:15px;font-weight:600">New coupon</span>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                  <input value="{{ cp.code }}" onChange="{{ cp.onCode }}" placeholder="CODE e.g. DIWALI20" style="flex:1 1 160px;min-width:0;height:40px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font-size:13.5px;font-family:'Geist Mono',monospace;outline:0"></input>
+                  <div style="display:flex;gap:4px"><sc-for list="{{ cp.types }}" as="p" hint-placeholder-count="2"><div onClick="{{ p.onClick }}" style="height:40px;padding:0 12px;border-radius:11px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</div></sc-for></div>
+                  <input value="{{ cp.val }}" onChange="{{ cp.onVal }}" inputMode="numeric" placeholder="Value" style="width:90px;height:40px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font-size:13.5px;font-family:'Geist Mono',monospace;text-align:right;outline:0"></input>
+                  <input value="{{ cp.till }}" onChange="{{ cp.onTill }}" placeholder="Valid till e.g. 15 Nov" style="flex:1 1 140px;min-width:0;height:40px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:13.5px;outline:0"></input>
+                  <input value="{{ cp.max }}" onChange="{{ cp.onMax }}" inputMode="numeric" placeholder="Max uses" style="width:100px;height:40px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font-size:13.5px;font-family:'Geist Mono',monospace;text-align:right;outline:0"></input>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><span style="font-size:12.5px;color:{{ c.mute }}">Plans</span><sc-for list="{{ cp.plans }}" as="p" hint-placeholder-count="3"><div onClick="{{ p.onClick }}" style="height:32px;padding:0 11px;border-radius:9px;display:flex;align-items:center;font-size:12.5px;font-weight:500;cursor:pointer;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</div></sc-for><div style="flex:1"></div><div onClick="{{ cp.create }}" style="height:40px;padding:0 16px;border-radius:11px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap">Create coupon</div></div>
+                <span style="font-size:12px;color:{{ c.faint }}">{{ cp.note }}</span>
+              </div>
+            </sc-if>
+            <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden">
+              <sc-for list="{{ cp.list }}" as="r" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:{{ r.border }};opacity:{{ r.op }}"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:600;font-family:'Geist Mono',monospace">{{ r.code }}</span><span style="font-size:12px;font-weight:600;color:{{ c.acc }}">{{ r.off }}</span></div><div style="font-size:12px;color:{{ c.mute }};margin-top:2px">{{ r.sub }}</div></div><div style="flex:none;width:84px;display:flex;flex-direction:column;gap:4px;align-items:flex-end"><span style="font-size:12px;color:{{ c.soft }}">{{ r.usedL }}</span><div style="width:100%;height:5px;border-radius:3px;background:{{ c.w08 }};overflow:hidden"><div style="height:100%;width:{{ r.w }};background:{{ c.accBtn }}"></div></div></div><div onClick="{{ r.onToggle }}" style="flex:none;width:40px;height:24px;box-sizing:border-box;padding:3px;border-radius:12px;display:flex;justify-content:{{ r.just }};background:{{ r.tBg }};cursor:{{ r.cursor }}"><div style="width:18px;height:18px;border-radius:50%;background:#FFFFFF"></div></div></div></sc-for>
+            </div>
+            <div style="font-size:12.5px;color:{{ c.faint }};text-wrap:pretty">Vendors type the code on the Plan &amp; billing screen. The discount comes off the plan price before 18% GST. Coupons and sales discounts do not add up; the bigger one applies.</div>
+          </sc-if>
+
+          <!-- MARKETPLACE -->
+          <sc-if value="{{ scr.mkt }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><sc-for list="{{ mp.tabs }}" as="p" hint-placeholder-count="6"><div onClick="{{ p.onClick }}" style="height:36px;padding:0 14px;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;background:{{ p.bg }};color:{{ p.color }};border:1px solid {{ p.border }}">{{ p.label }}<sc-if value="{{ p.hasN }}" hint-placeholder-val="{{ false }}"><span style="min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:{{ c.red }};color:#FFFFFF;font-size:11px;display:flex;align-items:center;justify-content:center">{{ p.n }}</span></sc-if></div></sc-for><span style="flex:1"></span><div style="display:flex;gap:6px"><sc-for list="{{ mp.cities }}" as="p" hint-placeholder-count="3"><div onClick="{{ p.onClick }}" style="height:32px;padding:0 12px;border-radius:9px;display:flex;align-items:center;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</div></sc-for></div></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px"><sc-for list="{{ mp.kpis }}" as="k" hint-placeholder-count="5"><div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:14px 16px"><div style="font-size:12px;color:{{ c.mute }}">{{ k.k }}</div><div style="font-size:22px;font-weight:600;margin-top:4px;font-family:'Geist Mono',monospace;color:{{ k.color }}">{{ k.v }}</div><div style="font-size:11.5px;color:{{ c.faint }};margin-top:2px">{{ k.s }}</div></div></sc-for></div>
+
+            <sc-if value="{{ mp.isLive }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px;align-items:start"><sc-for list="{{ mp.cols }}" as="col" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px;padding:0 4px"><span style="width:8px;height:8px;border-radius:4px;background:{{ col.dot }}"></span><span style="flex:1;font-size:13px;font-weight:600">{{ col.h }}</span><span style="font-size:12px;color:{{ c.mute }}">{{ col.n }}</span></div>
+                <sc-for list="{{ col.jobs }}" as="j" hint-placeholder-count="2"><div onClick="{{ j.open }}" style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;border-color:{{ j.bc }};padding:12px;display:flex;flex-direction:column;gap:7px;cursor:pointer">
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-family:'Geist Mono',monospace;color:{{ c.mute }};white-space:nowrap">{{ j.id }}</span><span style="flex:none;height:22px;padding:0 8px;border-radius:999px;display:flex;align-items:center;font-size:11.5px;font-weight:600;white-space:nowrap;background:{{ j.pb }};color:{{ j.pc }}">{{ j.pkg }}</span><span style="margin-left:auto;font-size:11.5px;font-weight:600;font-family:'Geist Mono',monospace;color:{{ j.ac }};white-space:nowrap">{{ j.age }}</span></div>
+                  <div style="font-size:14px;font-weight:600;line-height:1.3">{{ j.route }}</div>
+                  <div style="font-size:12px;color:{{ c.mute }};line-height:1.4">{{ j.sub }}</div>
+                  <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span class="material-symbols-rounded" style="font-size:15px;color:{{ j.vic }}">{{ j.vicon }}</span><span style="flex:1;min-width:0;color:{{ c.soft }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ j.vendor }}</span></div>
+                  <sc-if value="{{ j.hasFlag }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:{{ c.redBg }};color:{{ c.red }};font-size:11.5px;font-weight:600"><span class="material-symbols-rounded" style="font-size:15px">warning</span>{{ j.flag }}</div></sc-if>
+                </div></sc-for>
+                <sc-if value="{{ col.empty }}" hint-placeholder-val="{{ false }}"><div style="padding:18px;border-radius:14px;border:1px dashed {{ c.w1 }};font-size:12.5px;color:{{ c.faint }};text-align:center">Nothing here</div></sc-if>
+              </div></sc-for></div>
+            </sc-if>
+
+            <sc-if value="{{ mp.isAlerts }}" hint-placeholder-val="{{ false }}">
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden"><sc-for list="{{ mp.alerts }}" as="a" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:{{ a.border }};flex-wrap:wrap">
+                <div style="width:36px;height:36px;flex:none;border-radius:11px;background:{{ a.ib }};display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="font-size:19px;color:{{ a.ic }}">{{ a.icon }}</span></div>
+                <div style="flex:1;min-width:200px"><div style="font-size:14px;font-weight:600">{{ a.t }}</div><div style="font-size:12.5px;color:{{ c.mute }};margin-top:2px;line-height:1.4">{{ a.s }}</div></div>
+                <span style="font-size:12px;font-family:'Geist Mono',monospace;color:{{ a.ic }};white-space:nowrap">{{ a.age }}</span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ a.acts }}" as="b" hint-placeholder-count="2"><div onClick="{{ b.onClick }}" style="height:32px;padding:0 11px;border-radius:9px;background:{{ b.bg }};color:{{ b.color }};display:flex;align-items:center;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">{{ b.label }}</div></sc-for></div>
+              </div></sc-for><sc-if value="{{ mp.noAlerts }}" hint-placeholder-val="{{ false }}"><div style="padding:28px;text-align:center;font-size:13.5px;color:{{ c.mute }}">All jobs are on time.</div></sc-if></div>
+            </sc-if>
+
+            <sc-if value="{{ mp.isDisp }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:10px"><sc-for list="{{ mp.disputes }}" as="d" hint-placeholder-count="3"><div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:15px;font-weight:600">{{ d.t }}</span><span style="flex:none;height:22px;padding:0 8px;border-radius:999px;display:flex;align-items:center;font-size:11.5px;font-weight:600;white-space:nowrap;background:{{ d.pb }};color:{{ d.pc }}">{{ d.st }}</span><span style="margin-left:auto;font-size:12px;color:{{ c.mute }};font-family:'Geist Mono',monospace;white-space:nowrap">{{ d.id }} · {{ d.job }}</span></div>
+                <div style="font-size:13px;color:{{ c.soft }};line-height:1.5;text-wrap:pretty">{{ d.desc }}</div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:{{ c.mute }}"><span>Customer · <b style="color:{{ c.text }};font-weight:600">{{ d.cust }}</b></span><span>Vendor · <b style="color:{{ c.text }};font-weight:600">{{ d.vendor }}</b></span><span>Claimed · <b style="color:{{ c.text }};font-weight:600;font-family:'Geist Mono',monospace">{{ d.amt }}</b></span><span>Evidence · {{ d.ev }}</span></div>
+                <sc-if value="{{ d.open }}" hint-placeholder-val="{{ true }}"><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ d.acts }}" as="b" hint-placeholder-count="3"><div onClick="{{ b.onClick }}" style="height:34px;padding:0 12px;border-radius:10px;background:{{ b.bg }};color:{{ b.color }};display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">{{ b.label }}</div></sc-for></div></sc-if>
+                <sc-if value="{{ d.closed }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:{{ c.green }};font-weight:600">{{ d.res }}</div></sc-if>
+              </div></sc-for></div>
+            </sc-if>
+
+            <sc-if value="{{ mp.isVend }}" hint-placeholder-val="{{ false }}">
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden"><div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,0.8fr) minmax(0,0.6fr) minmax(0,0.9fr) minmax(0,0.5fr) auto;gap:8px;padding:10px 16px;font-size:11.5px;font-weight:600;color:{{ c.mute }};text-transform:uppercase;letter-spacing:0.04em"><span>Vendor</span><span>Tier</span><span>Score</span><span>Wallet</span><span>Jobs</span><span></span></div>
+                <sc-for list="{{ mp.vendors }}" as="v" hint-placeholder-count="6"><div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,0.8fr) minmax(0,0.6fr) minmax(0,0.9fr) minmax(0,0.5fr) auto;gap:8px;align-items:center;padding:11px 16px;border-top:1px solid {{ c.w06 }};font-size:13px"><div style="min-width:0"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.name }}</div><div style="font-size:11.5px;color:{{ c.faint }}">{{ v.sub }}</div></div><span style="flex:none;height:22px;padding:0 8px;border-radius:999px;display:flex;align-items:center;font-size:11.5px;font-weight:600;white-space:nowrap;background:{{ v.tb }};color:{{ v.tc }}">{{ v.tier }}</span><span style="font-family:'Geist Mono',monospace">{{ v.score }}</span><span style="font-family:'Geist Mono',monospace;color:{{ v.wc }}">{{ v.wallet }}</span><span style="font-family:'Geist Mono',monospace">{{ v.jobs }}</span><div style="display:flex;gap:6px;justify-content:flex-end"><sc-for list="{{ v.acts }}" as="b" hint-placeholder-count="1"><div onClick="{{ b.onClick }}" style="height:30px;padding:0 10px;border-radius:9px;background:{{ b.bg }};color:{{ b.color }};display:flex;align-items:center;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">{{ b.label }}</div></sc-for></div></div></sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ mp.isMoney }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px;align-items:start">
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:600">October 2026 · {{ mp.cityL }}</span><sc-for list="{{ mp.money }}" as="x" hint-placeholder-count="6"><div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:6px 0;border-top:{{ x.border }};font-weight:{{ x.w }}"><span style="color:{{ x.kc }}">{{ x.k }}</span><span style="font-family:'Geist Mono',monospace">{{ x.v }}</span></div></sc-for></div>
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden"><div style="padding:14px 16px 8px;font-size:15px;font-weight:600">Withdrawal requests</div><sc-for list="{{ mp.wds }}" as="w" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid {{ c.w06 }};flex-wrap:wrap"><div style="flex:1;min-width:140px"><div style="font-size:13.5px;font-weight:600">{{ w.name }}</div><div style="font-size:11.5px;color:{{ c.mute }}">{{ w.sub }}</div></div><span style="font-size:13.5px;font-weight:600;font-family:'Geist Mono',monospace">{{ w.amt }}</span><sc-if value="{{ w.pend }}" hint-placeholder-val="{{ true }}"><div onClick="{{ w.pay }}" style="flex:none;height:32px;padding:0 11px;border-radius:9px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">Mark paid</div></sc-if><sc-if value="{{ w.done }}" hint-placeholder-val="{{ false }}"><span style="flex:none;height:22px;padding:0 8px;border-radius:999px;display:flex;align-items:center;font-size:11.5px;font-weight:600;white-space:nowrap;background:{{ c.greenBg }};color:{{ c.green }}">{{ w.st }}</span></sc-if></div></sc-for></div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ mp.isRet }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="font-size:12.5px;color:{{ c.mute }};line-height:1.45;text-wrap:pretty;max-width:720px">Vendors whose truck is in another city and heading home. They see bookings from that city to their home city, plus pickups on the route, marked Return load. Customers who pick a flexible date get these at a lower price.</div>
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden"><sc-for list="{{ mp.rets }}" as="r" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:{{ r.border }};flex-wrap:wrap">
+                  <div style="width:36px;height:36px;flex:none;border-radius:11px;background:{{ c.s3 }};display:flex;align-items:center;justify-content:center"><span class="material-symbols-rounded" style="font-size:19px;color:{{ r.ic }}">u_turn_left</span></div>
+                  <div style="flex:1;min-width:180px"><div style="font-size:14px;font-weight:600">{{ r.v }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:2px">{{ r.route }} · {{ r.when }} · {{ r.veh }}</div></div>
+                  <span style="font-size:13px;font-weight:600;font-family:'Geist Mono',monospace">{{ r.loads }}</span>
+                  <span style="flex:none;height:22px;padding:0 8px;border-radius:999px;display:flex;align-items:center;font-size:11.5px;font-weight:600;white-space:nowrap;background:{{ r.pb }};color:{{ r.pc }}">{{ r.st }}</span>
+                  <sc-if value="{{ r.canStop }}" hint-placeholder-val="{{ false }}"><div onClick="{{ r.stop }}" style="flex:none;height:32px;padding:0 11px;border-radius:9px;background:{{ c.s2 }};display:flex;align-items:center;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">Stop</div></sc-if>
+                </div></sc-for></div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ mp.isSet }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px;align-items:start">
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden"><div style="padding:14px 16px 6px"><div style="font-size:15px;font-weight:600">Rules for {{ mp.cityL }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:2px">Changes apply to new jobs.</div></div><sc-for list="{{ mp.rules }}" as="r" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid {{ c.w06 }}"><div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">{{ r.k }}</div><div style="font-size:11.5px;color:{{ c.mute }};margin-top:1px">{{ r.s }}</div></div><div onClick="{{ r.dec }}" style="width:30px;height:30px;border-radius:9px;background:{{ c.s2 }};display:flex;align-items:center;justify-content:center;cursor:pointer"><span class="material-symbols-rounded" style="font-size:17px">remove</span></div><span style="min-width:72px;text-align:center;font-size:13.5px;font-weight:600;font-family:'Geist Mono',monospace">{{ r.v }}</span><div onClick="{{ r.inc }}" style="width:30px;height:30px;border-radius:9px;background:{{ c.s2 }};display:flex;align-items:center;justify-content:center;cursor:pointer"><span class="material-symbols-rounded" style="font-size:17px">add</span></div></div></sc-for></div>
+                <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden"><div style="padding:14px 16px 6px"><div style="font-size:15px;font-weight:600">Tier score weights</div><div style="font-size:12px;color:{{ mp.wtc }};margin-top:2px">{{ mp.wtL }}</div></div><sc-for list="{{ mp.weights }}" as="r" hint-placeholder-count="7"><div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid {{ c.w06 }}"><span style="flex:1;font-size:13.5px;font-weight:600">{{ r.k }}</span><div onClick="{{ r.dec }}" style="width:30px;height:30px;border-radius:9px;background:{{ c.s2 }};display:flex;align-items:center;justify-content:center;cursor:pointer"><span class="material-symbols-rounded" style="font-size:17px">remove</span></div><span style="min-width:44px;text-align:center;font-size:13.5px;font-weight:600;font-family:'Geist Mono',monospace">{{ r.v }}</span><div onClick="{{ r.inc }}" style="width:30px;height:30px;border-radius:9px;background:{{ c.s2 }};display:flex;align-items:center;justify-content:center;cursor:pointer"><span class="material-symbols-rounded" style="font-size:17px">add</span></div></div></sc-for><div style="padding:12px 16px;border-top:1px solid {{ c.w06 }};font-size:12px;color:{{ c.mute }}">Gold 80+ · Silver 60–79 · Bronze below 60</div></div>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{ mp.jOpen }}" hint-placeholder-val="{{ false }}"><div style="position:fixed;inset:0;z-index:60;display:flex;justify-content:flex-end"><div onClick="{{ mp.jClose }}" style="position:absolute;inset:0;background:rgba(0,0,0,0.55)"></div><div style="position:relative;width:min(440px,100%);height:100%;overflow-y:auto;background:{{ c.bg }};border-left:1px solid {{ c.w08 }};padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div style="font-size:12px;color:{{ c.mute }};font-family:'Geist Mono',monospace">{{ mp.jd.id }}</div><div style="font-size:19px;font-weight:600;margin-top:2px">{{ mp.jd.route }}</div></div><div onClick="{{ mp.jClose }}" style="width:36px;height:36px;border-radius:50%;background:{{ c.s2 }};display:flex;align-items:center;justify-content:center;cursor:pointer"><span class="material-symbols-rounded" style="font-size:20px">close</span></div></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><sc-for list="{{ mp.jd.facts }}" as="f" hint-placeholder-count="6"><div style="padding:10px 12px;border-radius:12px;background:{{ c.s1 }}"><div style="font-size:11px;color:{{ c.mute }}">{{ f.k }}</div><div style="font-size:13.5px;font-weight:600;margin-top:2px">{{ f.v }}</div></div></sc-for></div>
+            <span style="font-size:13px;font-weight:600;color:{{ c.mute }}">Timeline</span>
+            <div style="display:flex;flex-direction:column;gap:0;padding-left:4px"><sc-for list="{{ mp.jd.tl }}" as="e" hint-placeholder-count="5"><div style="display:flex;gap:12px"><div style="display:flex;flex-direction:column;align-items:center"><span style="width:10px;height:10px;border-radius:5px;margin-top:4px;background:{{ e.dot }}"></span><span style="flex:1;width:2px;background:{{ c.w08 }}"></span></div><div style="padding-bottom:12px"><div style="font-size:13.5px;font-weight:600;color:{{ e.tc }}">{{ e.t }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:1px">{{ e.s }}</div></div></div></sc-for></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ mp.jd.acts }}" as="b" hint-placeholder-count="3"><div onClick="{{ b.onClick }}" style="flex:1;min-width:120px;height:42px;border-radius:12px;background:{{ b.bg }};color:{{ b.color }};display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:600;cursor:pointer">{{ b.label }}</div></sc-for></div>
+          </div></div></sc-if>
+
+          <!-- BROADCASTS -->
+          <sc-if value="{{ scr.broadcasts }}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{ bc.canEdit }}" hint-placeholder-val="{{ false }}">
+              <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                <span style="font-size:15px;font-weight:600">New broadcast</span>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><span style="width:64px;font-size:12.5px;color:{{ c.mute }}">Send by</span><sc-for list="{{ bc.chans }}" as="p" hint-placeholder-count="3"><div onClick="{{ p.onClick }}" style="height:34px;padding:0 12px;border-radius:10px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;cursor:pointer;background:{{ p.bg }};color:{{ p.color }}"><span class="material-symbols-rounded" style="font-size:17px">{{ p.icon }}</span>{{ p.label }}</div></sc-for></div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><span style="width:64px;font-size:12.5px;color:{{ c.mute }}">To</span><sc-for list="{{ bc.auds }}" as="p" hint-placeholder-count="5"><div onClick="{{ p.onClick }}" style="height:34px;padding:0 12px;border-radius:10px;display:flex;align-items:center;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</div></sc-for></div>
+                <sc-if value="{{ bc.hasSub }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-wrap:wrap;gap:6px;padding-left:70px"><sc-for list="{{ bc.subs }}" as="p" hint-placeholder-count="4"><div onClick="{{ p.onClick }}" style="height:30px;padding:0 10px;border-radius:9px;display:flex;align-items:center;font-size:12.5px;font-weight:500;cursor:pointer;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</div></sc-for></div></sc-if>
+                <textarea value="{{ bc.msg }}" onChange="{{ bc.onMsg }}" placeholder="Message to vendors" rows="3" style="box-sizing:border-box;padding:10px 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:14px;line-height:1.45;outline:0;resize:vertical"></textarea>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span style="flex:1 1 200px;font-size:12.5px;color:{{ c.mute }};text-wrap:pretty">{{ bc.reach }}</span><div onClick="{{ bc.send }}" style="height:42px;padding:0 18px;border-radius:12px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;opacity:{{ bc.op }}"><span class="material-symbols-rounded" style="font-size:18px">campaign</span>{{ bc.btn }}</div></div>
+              </div>
+            </sc-if>
+            <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;overflow:hidden">
+              <div style="padding:12px 16px;font-size:15px;font-weight:600">Sent</div>
+              <sc-for list="{{ bc.list }}" as="r" hint-placeholder-count="2"><div style="display:flex;gap:12px;padding:12px 16px;border-top:1px solid {{ c.w06 }}"><span class="material-symbols-rounded" style="font-size:20px;color:{{ c.mute }}">{{ r.icon }}</span><div style="flex:1;min-width:0"><div style="font-size:13.5px;line-height:1.4;text-wrap:pretty">{{ r.msg }}</div><div style="font-size:12px;color:{{ c.mute }};margin-top:3px">{{ r.sub }}</div></div><span style="flex:none;font-size:12px;color:{{ c.faint }};font-family:'Geist Mono',monospace">{{ r.t }}</span></div></sc-for>
+            </div>
+          </sc-if>
+
+          <!-- COMING NEXT -->
+          <sc-if value="{{ scr.soon }}" hint-placeholder-val="{{ false }}">
+            <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:40px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><span class="material-symbols-rounded" style="font-size:36px;color:{{ c.faint }}">{{ soonIcon }}</span><div style="font-size:16px;font-weight:600">{{ title }} is in the next batch</div><div style="font-size:13px;color:{{ c.mute }};max-width:380px;text-wrap:pretty">{{ soonSub }}</div></div>
+          </sc-if>
+
+          <sc-if value="{{ scr.denied }}" hint-placeholder-val="{{ false }}">
+            <div style="background:{{ c.s1 }};border:1px solid {{ c.w06 }};border-radius:18px;padding:40px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><span class="material-symbols-rounded" style="font-size:36px;color:{{ c.faint }}">lock</span><div style="font-size:16px;font-weight:600">No access</div><div style="font-size:13px;color:{{ c.mute }}">Ask the super admin to give you access in Admin team.</div></div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRAWER (narrow) -->
+    <sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:20;display:flex">
+        <div style="width:270px;max-width:82%;height:100%;box-sizing:border-box;background:{{ c.nav }};border-right:1px solid {{ c.w06 }};padding:16px 12px;display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:10px;padding:0 8px 14px"><div style="width:32px;height:32px;border-radius:10px;background:{{ c.accBtn }};display:flex;align-items:center;justify-content:center;color:#0A0C10;font-weight:700">N</div><span style="font-size:15px;font-weight:600">Nagarva Admin</span></div>
+          <sc-for list="{{ nav }}" as="n" hint-placeholder-count="7"><div onClick="{{ n.onClick }}" style="height:44px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:10px;cursor:pointer;background:{{ n.bg }};color:{{ n.color }}"><span class="material-symbols-rounded" style="font-size:20px">{{ n.icon }}</span><span style="flex:1;font-size:14.5px;font-weight:500">{{ n.label }}</span><sc-if value="{{ n.soon }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;color:{{ c.faint }}">soon</span></sc-if></div></sc-for>
+          <div style="flex:1"></div>
+          <div style="padding:10px;border-radius:12px;background:{{ c.s1 }};display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">{{ me.name }}</div><div style="font-size:12px;color:{{ c.mute }}">{{ me.roleL }}</div></div><span onClick="{{ changePw }}" class="material-symbols-rounded" style="font-size:20px;color:{{ c.mute }};cursor:pointer">key</span><span onClick="{{ logout }}" class="material-symbols-rounded" style="font-size:20px;color:{{ c.mute }};cursor:pointer">logout</span></div>
+        </div>
+        <div onClick="{{ closeDrawer }}" style="flex:1;background:rgba(0,0,0,0.6)"></div>
+      </div>
+    </sc-if>
+
+    <!-- PLAN EDITOR -->
+    <sc-if value="{{ pe.open }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:30;display:flex;align-items:{{ pe.align }};justify-content:center;padding:16px 0 0;box-sizing:border-box">
+        <div onClick="{{ pe.close }}" style="position:absolute;inset:0;background:rgba(0,0,0,0.6)"></div>
+        <div style="position:relative;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:{{ c.sheet }};border:1px solid {{ c.w08 }};border-radius:{{ pe.radius }};padding:18px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="flex:1;font-size:18px;font-weight:600">{{ pe.title }}</span><span onClick="{{ pe.close }}" class="material-symbols-rounded" style="font-size:22px;color:{{ c.mute }};cursor:pointer">close</span></div>
+          <sc-for list="{{ pe.basic }}" as="f" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:12px;color:{{ c.mute }}">{{ f.label }}</span><input value="{{ f.val }}" onChange="{{ f.onChange }}" inputMode="{{ f.mode }}" style="height:42px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:14px;outline:0"></input></div></sc-for>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><sc-for list="{{ pe.prices }}" as="f" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:12px;color:{{ c.mute }}">{{ f.label }}</span><input value="{{ f.val }}" onChange="{{ f.onChange }}" inputMode="{{ f.mode }}" style="height:42px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:14px;outline:0"></input></div></sc-for></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:4px 0"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">Default trial plan</div><div style="font-size:12px;color:{{ c.mute }};margin-top:2px">New sign-ups get this plan automatically</div></div><div onClick="{{ pe.onDef }}" style="width:44px;height:26px;flex:none;border-radius:13px;padding:3px;box-sizing:border-box;display:flex;justify-content:{{ pe.def.just }};background:{{ pe.def.bg }};cursor:pointer"><div style="width:20px;height:20px;border-radius:10px;background:#FFFFFF"></div></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><sc-for list="{{ pe.days }}" as="f" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:12px;color:{{ c.mute }}">{{ f.label }}</span><input value="{{ f.val }}" onChange="{{ f.onChange }}" inputMode="{{ f.mode }}" style="height:42px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:14px;outline:0"></input></div></sc-for></div>
+          <span style="font-size:12px;line-height:1.45;color:{{ c.mute }};text-wrap:pretty">Trial days apply to new sign-ups only. A vendor's end date is never recalculated; change one vendor from their page. Grace days is how long after the trial ends before the account becomes read-only.</span>
+          <div><div style="font-size:14px;font-weight:600">Limits</div><div style="font-size:12px;color:{{ c.faint }};margin-top:2px">-1 = unlimited</div></div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px"><sc-for list="{{ pe.lims }}" as="f" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:5px;min-width:0"><span style="font-size:12px;color:{{ c.mute }}">{{ f.label }}</span><input value="{{ f.val }}" onChange="{{ f.onChange }}" inputMode="{{ f.mode }}" style="height:42px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:14px;outline:0"></input></div></sc-for></div>
+          <div style="font-size:14px;font-weight:600">Features</div>
+          <div style="display:flex;flex-direction:column;gap:4px"><sc-for list="{{ pe.feats }}" as="f" hint-placeholder-count="4"><div onClick="{{ f.onClick }}" style="display:flex;align-items:center;gap:12px;min-height:42px;cursor:pointer"><span style="flex:1;font-size:14px">{{ f.label }}</span><div style="width:44px;height:26px;flex:none;border-radius:13px;padding:3px;box-sizing:border-box;display:flex;justify-content:{{ f.just }};background:{{ f.bg }}"><div style="width:20px;height:20px;border-radius:10px;background:#FFFFFF"></div></div></div></sc-for></div>
+          <sc-if value="{{ pe.hasErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:{{ c.red }};text-wrap:pretty">{{ pe.err }}</div></sc-if>
+          <div onClick="{{ pe.save }}" style="height:48px;border-radius:13px;background:{{ c.accBtn }};color:#0A0C10;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;cursor:pointer">{{ pe.btn }}</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ACTION MODAL -->
+    <sc-if value="{{ md.open }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;inset:0;z-index:30;display:flex;align-items:{{ md.align }};justify-content:center;padding:{{ md.pad }};box-sizing:border-box">
+        <div onClick="{{ md.close }}" style="position:absolute;inset:0;background:rgba(0,0,0,0.6)"></div>
+        <div style="position:relative;width:100%;max-width:440px;background:{{ c.sheet }};border:1px solid {{ c.w08 }};border-radius:{{ md.radius }};padding:18px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px">
+          <div><div style="font-size:17px;font-weight:600">{{ md.title }}</div><div style="font-size:13px;color:{{ c.mute }};margin-top:4px;text-wrap:pretty">{{ md.sub }}</div></div>
+          <sc-if value="{{ md.hasChips }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ md.chips }}" as="p" hint-placeholder-count="3"><div onClick="{{ p.onClick }}" style="height:36px;padding:0 12px;border-radius:10px;display:flex;align-items:center;font-size:13.5px;font-weight:500;cursor:pointer;background:{{ p.bg }};color:{{ p.color }};border:1px solid {{ p.border }}">{{ p.label }}</div></sc-for></div></sc-if>
+          <sc-if value="{{ md.hasNum }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:10px"><span style="flex:1;font-size:13.5px;color:{{ c.soft }}">{{ md.numLabel }}</span><div style="width:110px;height:42px;box-sizing:border-box;display:flex;align-items:center;gap:4px;padding:0 12px;border-radius:11px;background:{{ c.s2 }};border:1px solid {{ md.numBorder }}"><input value="{{ md.num }}" onChange="{{ md.onNum }}" inputMode="numeric" style="flex:1;min-width:0;border:0;background:transparent;color:{{ c.text }};font:inherit;font-size:15px;font-family:'Geist Mono',monospace;text-align:right;outline:0"></input><span style="font-size:13px;color:{{ c.faint }}">{{ md.numSuf }}</span></div></div></sc-if>
+          <sc-if value="{{ md.hasRows }}" hint-placeholder-val="{{ false }}"><div style="border-radius:12px;background:{{ c.s2 }};padding:0 12px"><sc-for list="{{ md.rows }}" as="r" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;gap:10px;min-height:38px;align-items:center;border-top:{{ r.border }}"><span style="font-size:13px;color:{{ c.mute }}">{{ r.label }}</span><span style="font-size:13.5px;font-weight:600;font-family:'Geist Mono',monospace;color:{{ c.red }}">{{ r.value }}</span></div></sc-for></div></sc-if>
+          <sc-if value="{{ md.hasPw }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:8px"><sc-for list="{{ md.pw }}" as="f" hint-placeholder-count="3"><input type="password" value="{{ f.val }}" onChange="{{ f.onChange }}" placeholder="{{ f.ph }}" style="height:44px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:14px;outline:0"></input></sc-for></div></sc-if>
+          <sc-if value="{{ md.hasDate }}" hint-placeholder-val="{{ false }}"><input type="date" value="{{ md.date }}" onChange="{{ md.onDate }}" style="height:44px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:14px;outline:0;color-scheme:dark"></input></sc-if>
+          <sc-if value="{{ md.hasType }}" hint-placeholder-val="{{ false }}"><input value="{{ md.typed }}" onChange="{{ md.onType }}" placeholder="{{ md.typePh }}" style="height:44px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.redLine }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:14px;font-family:'Geist Mono',monospace;outline:0"></input></sc-if>
+          <sc-if value="{{ md.hasReason }}" hint-placeholder-val="{{ false }}"><input value="{{ md.reason }}" onChange="{{ md.onReason }}" placeholder="{{ md.reasonPh }}" style="height:44px;box-sizing:border-box;padding:0 12px;border-radius:11px;border:1px solid {{ c.w1 }};background:{{ c.s2 }};color:{{ c.text }};font:inherit;font-size:14px;outline:0"></input></sc-if>
+          <sc-if value="{{ md.hasWarn }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:8px;padding:10px 12px;border-radius:11px;background:{{ c.amberBg }};color:{{ c.amber }};font-size:12.5px;line-height:1.4"><span class="material-symbols-rounded" style="font-size:17px">info</span><span>{{ md.warn }}</span></div></sc-if>
+          <div style="display:flex;gap:8px"><div onClick="{{ md.close }}" style="flex:1;white-space:nowrap;padding:0 12px;height:46px;border-radius:13px;background:{{ c.s3 }};display:flex;align-items:center;justify-content:center;font-size:14.5px;font-weight:600;cursor:pointer">Cancel</div><div onClick="{{ md.confirm }}" style="flex:1.3;white-space:nowrap;padding:0 12px;height:46px;border-radius:13px;background:{{ md.btnBg }};color:#0A0C10;display:flex;align-items:center;justify-content:center;font-size:14.5px;font-weight:600;cursor:pointer;opacity:{{ md.btnOp }}">{{ md.btn }}</div></div>
+        </div>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:40;max-width:calc(100% - 32px);padding:12px 16px;border-radius:12px;background:{{ c.inv }};color:{{ c.invText }};font-size:13.5px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.4)">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startRole&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;login&quot;,&quot;super&quot;,&quot;sales&quot;,&quot;support&quot;,&quot;marketing&quot;],&quot;default&quot;:&quot;login&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dash&quot;,&quot;vendors&quot;,&quot;vendor&quot;,&quot;plans&quot;,&quot;team&quot;,&quot;audit&quot;],&quot;default&quot;:&quot;dash&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;midnight&quot;,&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  ROLES = {super:'Super admin', sales:'Sales', support:'Support', marketing:'Marketing'};
+  MPJ0 = [
+    {id:'NG-30425', city:'Chennai', pkg:'std', from:'Tambaram', to:'Velachery', home:'2 BHK · 312 CFT', val:18640, adv:1864, st:'bc', tierNow:'gold', age:3, cust:'Priya Natarajan', slot:'Sat 1 Nov · 8 AM'},
+    {id:'NG-30421', city:'Chennai', pkg:'prem', from:'Adyar', to:'Bengaluru HSR', home:'3 BHK · 540 CFT', val:68420, adv:68420, st:'bc', tierNow:'gold', age:14, cust:'Sanjana Rao', slot:'Mon 3 Nov · 7 AM'},
+    {id:'NG-30419', city:'Chennai', pkg:'eco', from:'Porur', to:'Avadi', home:'1 BHK · 150 CFT', val:7240, adv:999, st:'bc', tierNow:'bronze', age:22, cust:'Karthik V', slot:'Today · 4 PM'},
+    {id:'NG-30416', city:'Chennai', pkg:'std', from:'Anna Nagar', to:'Mogappair', home:'2 BHK · 290 CFT', val:15960, adv:1596, st:'way', vendor:'Arun Packers & Movers', vt:'gold', age:38, eta:'9:00 AM', late:false, cust:'Rahul Menon', slot:'Today · 9 AM'},
+    {id:'NG-30412', city:'Chennai', pkg:'std', from:'T Nagar', to:'Perungudi', home:'3 BHK · 420 CFT', val:24800, adv:2480, st:'way', vendor:'Speedy Shift', vt:'silver', age:52, eta:'8:30 AM', late:true, cust:'Meena Iyer', slot:'Today · 8:30 AM'},
+    {id:'NG-30410', city:'Chennai', pkg:'prem', from:'Besant Nagar', to:'ECR Uthandi', home:'4 BHK · 680 CFT', val:58200, adv:5820, st:'load', vendor:'Royal Relocations', vt:'gold', age:95, photos:2, cust:'Vikram Shah', slot:'Today · 7 AM'},
+    {id:'NG-30404', city:'Chennai', pkg:'std', from:'Kilpauk', to:'Coimbatore', home:'2 BHK · 330 CFT', val:41600, adv:41600, st:'transit', vendor:'Arun Packers & Movers', vt:'gold', age:410, stuck:false, cust:'Lakshmi S', slot:'Yesterday · 6 PM'},
+    {id:'NG-30398', city:'Chennai', pkg:'eco', from:'Chromepet', to:'Guduvanchery', home:'1 BHK · 140 CFT', val:6980, adv:999, st:'transit', vendor:'Speedy Shift', vt:'silver', age:290, stuck:true, cust:'Ganesh R', slot:'Today · 6 AM'},
+    {id:'NG-30381', city:'Bengaluru', pkg:'std', from:'Koramangala', to:'Whitefield', home:'2 BHK · 300 CFT', val:17400, adv:1740, st:'bc', tierNow:'silver', age:7, cust:'Ananya K', slot:'Sun 2 Nov · 9 AM'},
+    {id:'NG-30377', city:'Bengaluru', pkg:'std', from:'HSR', to:'Electronic City', home:'3 BHK · 400 CFT', val:22600, adv:2260, st:'way', vendor:'Bangalore Movers Co', vt:'gold', age:20, eta:'10:00 AM', late:false, cust:'Rohit J', slot:'Today · 10 AM'},
+    {id:'NG-30402', city:'Coimbatore', pkg:'eco', from:'RS Puram', to:'Saibaba Colony', home:'1 BHK · 130 CFT', val:5980, adv:999, st:'bc', tierNow:'gold', age:2, cust:'Divya P', slot:'Sat 1 Nov · 11 AM'}];
+  MPD0 = [{id:'DS-118', job:'NG-30311', t:'Damaged fridge door', cust:'Deepa Krishnan', vendor:'Speedy Shift', amt:6500, ev:'4 photos · loading photos', desc:'Customer says the fridge door was dented in transit. Loading photos show the fridge wrapped; unloading photo shows the dent.', st:'open'},
+    {id:'DS-117', job:'NG-30290', t:'Charged extra for floor', cust:'Arjun S', vendor:'Royal Relocations', amt:1200, ev:'Chat log', desc:'Vendor asked for ₹1,200 extra for 2nd floor stairs. The booking already included the floor charge.', st:'open'},
+    {id:'DS-115', job:'NG-30244', t:'Vendor did not show up', cust:'Nisha M', vendor:'Quick Move Chennai', amt:999, ev:'GPS log', desc:'Vendor accepted and cancelled 40 minutes before the slot. Job re-assigned to Arun Packers & Movers.', st:'closed', res:'Advance refunded · vendor fined ₹500 · score −4'}];
+  MPV0 = [{n:'Arun Packers & Movers', city:'Chennai', tier:'gold', score:86, wallet:4250, jobs:46, st:'active'},{n:'Royal Relocations', city:'Chennai', tier:'gold', score:83, wallet:12800, jobs:71, st:'active'},{n:'Speedy Shift', city:'Chennai', tier:'silver', score:68, wallet:2600, jobs:38, st:'active'},{n:'Quick Move Chennai', city:'Chennai', tier:'bronze', score:52, wallet:1400, jobs:19, st:'active'},{n:'Safe Hands Logistics', city:'Chennai', tier:'silver', score:63, wallet:800, jobs:12, st:'active'},{n:'Bangalore Movers Co', city:'Bengaluru', tier:'gold', score:84, wallet:9100, jobs:58, st:'active'},{n:'Namma Shift', city:'Bengaluru', tier:'silver', score:71, wallet:3300, jobs:24, st:'active'},{n:'Kovai Movers', city:'Coimbatore', tier:'gold', score:81, wallet:5200, jobs:30, st:'active'}];
+  MPW0 = [{n:'Royal Relocations', city:'Chennai', amt:8000, at:'Today 10:12 AM', acct:'HDFC ••4421', st:'pend'},{n:'Bangalore Movers Co', city:'Bengaluru', amt:5000, at:'Today 9:40 AM', acct:'ICICI ••0918', st:'pend'},{n:'Arun Packers & Movers', city:'Chennai', amt:3500, at:'Yesterday', acct:'SBI ••7712', st:'paid'}];
+  MPC0 = {Chennai:{gs:5, sb:10, min:2000, com:12, adv:10, advMin:999, lateMin:15, stuckH:4, rlD:0}, Bengaluru:{gs:5, sb:10, min:2500, com:12, adv:10, advMin:999, lateMin:15, stuckH:5, rlD:0}, Coimbatore:{gs:8, sb:15, min:1500, com:10, adv:10, advMin:999, lateMin:20, stuckH:4, rlD:5}};
+  MPR0 = [{v:'Arun Packers & Movers', from:'Bengaluru', to:'Chennai', d:'Thu 30 Oct', veh:'TN 01 AB 4521', loads:3, took:0, st:'on'},{v:'Royal Relocations', from:'Coimbatore', to:'Chennai', d:'Wed 29 Oct', veh:'TN 09 CK 7710', loads:2, took:1, st:'on'},{v:'Kovai Movers', from:'Chennai', to:'Coimbatore', d:'Tue 28 Oct', veh:'TN 37 BX 2290', loads:1, took:1, st:'done'},{v:'Speedy Shift', from:'Hyderabad', to:'Chennai', d:'Mon 27 Oct', veh:'TN 22 DM 1184', loads:0, took:0, st:'stop'}];
+  MPWT0 = [['Customer rating',25],['On-time arrival',20],['Damage claims',15],['Acceptance rate',15],['Photo compliance',10],['Vendor cancellations',10],['Jobs completed',5]];
+  mpVals(C){
+    const st = this.state, tab = st.mpTab||'live', city = st.mpCity||'Chennai', canEd = this.can('mkt',2);
+    const fmt = n=>'₹'+Math.round(n).toLocaleString('en-IN'), ago = m=>m<60 ? m+' min' : Math.floor(m/60)+'h '+(m%60)+'m';
+    const JB = (st.mpJ||this.MPJ0).filter(j=>j.city===city), DS = st.mpD||this.MPD0, VN = (st.mpV||this.MPV0).filter(v=>v.city===city), WD = (st.mpW||this.MPW0).filter(w=>w.city===city), CF = {...this.MPC0[city], ...((st.mpC||{})[city]||{})}, WT = st.mpWt||this.MPWT0;
+    const setJ = (id,fn)=>this.setState(s=>({mpJ:(s.mpJ||this.MPJ0).map(x=>x.id===id ? fn({...x}) : x)})), toast = m=>this.flash(m);
+    const chip = (on,label,fn)=>({label, onClick:fn, bg: on ? C.text : C.s1, color: on ? (this.th()==='light' ? '#FFFFFF' : '#0A0C10') : C.soft, border: on ? C.text : C.w06});
+    const TCOL = {gold:[this.col(85), this.tint(85)], silver:[C.soft, C.s3], bronze:['oklch(0.66 0.11 55)', 'oklch(0.66 0.11 55 / 0.14)']}, PK = {eco:['Economy',255], std:['Standard',155], prem:['Premium',55]};
+    const btn = (label,fn,pri,danger)=>({label, onClick:fn, bg: pri ? C.accBtn : danger ? C.redBg : C.s2, color: pri ? '#0A0C10' : danger ? C.red : C.text});
+    const winLeft = j=>j.tierNow==='gold' ? CF.gs - j.age : j.tierNow==='silver' ? CF.gs + CF.sb - j.age : null;
+    const flagOf = j=>j.st==='bc' && j.tierNow==='bronze' && j.age > CF.gs+CF.sb+5 ? 'No vendor after '+ago(j.age) : j.st==='way' && j.late ? 'Late · past '+j.eta+' arrival' : j.st==='load' && (j.photos||0)<3 ? 'Loading photos '+(j.photos||0)+'/3' : j.st==='transit' && j.stuck ? 'In transit '+ago(j.age)+' · over '+CF.stuckH+'h' : '';
+    const push = j=>{ const nx = j.tierNow==='gold' ? 'silver' : 'bronze'; setJ(j.id, y=>({...y, tierNow:nx})); this.audit('Pushed '+j.id+' to '+nx, {}); toast(j.id+' is now visible to '+nx[0].toUpperCase()+nx.slice(1)); };
+    const assign = j=>{ const v = VN.find(x=>x.tier==='gold') || VN[0]; setJ(j.id, y=>({...y, st:'way', vendor:v.n, vt:v.tier, age:0, eta:'—', late:false})); this.audit('Assigned '+j.id+' to '+v.n, {}); toast(j.id+' assigned to '+v.n); this.setState({mpOpen:null}); };
+    const callV = j=>{ this.audit('Called vendor on '+j.id, {}); toast('Calling '+j.vendor+' · logged on '+j.id); };
+    const reassign = j=>{ const v = VN.find(x=>x.n!==j.vendor && x.tier==='gold') || VN.find(x=>x.n!==j.vendor); setJ(j.id, y=>({...y, vendor:v.n, vt:v.tier, age:0, late:false, stuck:false})); this.audit('Re-assigned '+j.id+' from '+j.vendor+' to '+v.n, {}); toast(j.id+' moved to '+v.n); this.setState({mpOpen:null}); };
+    const COLS = [['bc','Broadcasting',this.col(85)],['way','Accepted · on the way',this.col(255)],['load','Loading',this.col(55)],['transit','In transit',this.col(155)]];
+    const jv = j=>{ const wl = winLeft(j), fl = flagOf(j), pk = PK[j.pkg];
+      return {id:j.id, pkg:pk[0], pb:this.tint(pk[1]), pc:this.col(pk[1]), route:j.from+' → '+j.to, sub:j.home+' · '+fmt(j.val)+' · '+j.slot, age:ago(j.age), ac: fl ? C.red : C.mute,
+        vendor: j.st==='bc' ? (wl!=null && wl>0 ? j.tierNow[0].toUpperCase()+j.tierNow.slice(1)+' window · '+wl+' min left' : 'Open to '+j.tierNow[0].toUpperCase()+j.tierNow.slice(1)) : j.vendor+' · '+j.vt[0].toUpperCase()+j.vt.slice(1),
+        vicon: j.st==='bc' ? 'campaign' : 'local_shipping', vic: j.st==='bc' ? TCOL[j.tierNow][0] : TCOL[j.vt][0], hasFlag:!!fl, flag:fl, bc: fl ? C.red : C.w06, open:()=>this.setState({mpOpen:j.id})}; };
+    const all = st.mpJ||this.MPJ0, alertsJ = JB.filter(j=>flagOf(j));
+    const mp = {tabs:[['live','Live dispatch'],['alerts','Alerts'],['disp','Disputes'],['vend','Vendors'],['money','Money'],['ret','Return trips'],['set','City rules']].map(([k,l])=>{ const n = k==='alerts' ? alertsJ.length : k==='disp' ? DS.filter(d=>d.st==='open').length : 0; return {...chip(tab===k, l, ()=>this.setState({mpTab:k})), hasN: n>0, n:String(n)}; }),
+      cities:Object.keys(this.MPC0).map(c=>({label:c, onClick:()=>this.setState({mpCity:c}), bg: city===c ? C.s3 : 'transparent', color: city===c ? C.text : C.mute})), cityL:city,
+      isLive:tab==='live', isAlerts:tab==='alerts', isDisp:tab==='disp', isVend:tab==='vend', isMoney:tab==='money', isSet:tab==='set', isRet:tab==='ret'};
+    { const RTL = st.mpRt||this.MPR0; mp.rets = RTL.map((r,n)=>{ const on = r.st==='on'; return {v:r.v, route:r.from+' → '+r.to, when:r.d, veh:r.veh, loads:r.loads+' loads · '+r.took+' taken', ic: on ? C.acc : C.faint, st: on ? 'Active' : r.st==='done' ? 'Completed' : 'Stopped', pb: on ? C.greenBg : C.s3, pc: on ? C.green : C.mute, canStop: on && canEd, border: n ? '1px solid '+C.w06 : '0',
+      stop:()=>{ this.setState(s2=>({mpRt:(s2.mpRt||this.MPR0).map(x=>x===r ? {...x, st:'stop'} : x)})); this.log && this.log('mkt','edit','Return trip stopped · '+r.v+' · '+r.from+' → '+r.to); }}; }); }
+    const done = {Chennai:142, Bengaluru:61, Coimbatore:23}[city], gmv = {Chennai:2468000, Bengaluru:1105000, Coimbatore:318000}[city];
+    mp.kpis = [['Live jobs', JB.length, 'in '+city],['Waiting for vendor', JB.filter(j=>j.st==='bc').length, 'broadcasting now'],['Alerts', alertsJ.length, 'need attention', alertsJ.length ? C.red : C.green],['Accept time', city==='Coimbatore' ? '6.8 min' : '3.4 min', 'median, this week'],['Completed', done, 'this month']].map(([k,v,s,color])=>({k, v:String(v), s, color:color||C.text}));
+    mp.cols = COLS.map(([k,h,dot])=>{ const js = JB.filter(j=>j.st===k); return {h, dot, n:String(js.length), jobs:js.map(jv), empty:!js.length}; });
+    mp.alerts = alertsJ.map((j,n)=>{ const fl = flagOf(j), kind = j.st;
+      const acts = kind==='bc' ? [btn('Assign vendor', ()=>assign(j), 1)] : kind==='way' ? [btn('Call vendor', ()=>callV(j)), btn('Re-assign', ()=>reassign(j), 0, 1)] : kind==='load' ? [btn('Remind vendor', ()=>{ this.audit('Photo reminder sent on '+j.id, {}); toast('Reminder sent to '+j.vendor); })] : [btn('Call vendor', ()=>callV(j)), btn('Call customer', ()=>{ this.audit('Called customer on '+j.id, {}); toast('Calling '+j.cust); })];
+      return {icon: kind==='bc' ? 'person_search' : kind==='way' ? 'schedule' : kind==='load' ? 'photo_camera' : 'route', ic:C.red, ib:C.redBg, t:j.id+' · '+fl, s:j.from+' → '+j.to+' · '+(j.vendor||'no vendor')+' · '+j.cust, age:ago(j.age), acts, border: n ? '1px solid '+C.w06 : '0'}; });
+    mp.noAlerts = !alertsJ.length;
+    mp.disputes = DS.map(d=>{ const open = d.st==='open', set = (res, txt)=>{ this.setState(s=>({mpD:(s.mpD||this.MPD0).map(x=>x.id===d.id ? {...x, st:'closed', res} : x)})); this.audit(d.id+' · '+txt, {}); toast(d.id+' resolved'); };
+      return {...d, amt:fmt(d.amt), open, closed:!open, st: open ? 'Open' : 'Resolved', pb: open ? C.redBg : C.greenBg, pc: open ? C.red : C.green,
+        acts: canEd ? [btn('Refund customer '+fmt(d.amt), ()=>set('Refunded '+fmt(d.amt)+' to customer · recovered from vendor wallet · score −3', 'refund '+fmt(d.amt)), 1), btn('Split 50/50', ()=>set('Split · '+fmt(d.amt/2)+' refunded from vendor wallet', 'split')), btn('Reject claim', ()=>set('Claim rejected · evidence supports vendor', 'rejected'), 0, 1)] : []}; });
+    mp.vendors = VN.map(v=>{ const low = v.wallet < CF.min, sus = v.st==='susp';
+      return {name:v.n, sub: sus ? 'Suspended from jobs' : low ? 'Below minimum · not getting jobs' : 'Getting jobs', tier:v.tier[0].toUpperCase()+v.tier.slice(1), tc:TCOL[v.tier][0], tb:TCOL[v.tier][1], score:String(v.score), wallet:fmt(v.wallet), wc: low ? C.red : C.text, jobs:String(v.jobs),
+        acts: canEd ? [{label: sus ? 'Restore' : 'Suspend', onClick:()=>{ this.setState(s=>({mpV:(s.mpV||this.MPV0).map(x=>x.n===v.n ? {...x, st: sus ? 'active' : 'susp'} : x)})); this.audit((sus ? 'Restored ' : 'Suspended ')+v.n+' on marketplace', {}); toast(v.n+(sus ? ' restored' : ' suspended from jobs')); }, bg: sus ? C.s2 : C.redBg, color: sus ? C.text : C.red}] : []}; });
+    const adv = Math.round(gmv*0.1), com = Math.round(gmv/1.18*CF.com/100);
+    mp.money = [['Job value (GMV)', fmt(gmv)],['Advances collected', fmt(adv)],['Commission earned ('+CF.com+'%)', fmt(com), 1],['Refunds', '− '+fmt(city==='Chennai' ? 18400 : 4200)],['Vendor wallets total', fmt(VN.reduce((a,v)=>a+v.wallet,0))],['Pending withdrawals', fmt(WD.filter(w=>w.st==='pend').reduce((a,w)=>a+w.amt,0))]].map(([k,v,b],j)=>({k, v, w: b ? '600' : '400', kc: b ? C.text : C.mute, border: j ? '1px solid '+C.w06 : '0'}));
+    mp.wds = WD.map(w=>({name:w.n, sub:w.acct+' · '+w.at, amt:fmt(w.amt), pend:w.st==='pend', done:w.st!=='pend', st:'Paid', pay:()=>{ if (!canEd) return toast('No permission'); this.setState(s=>({mpW:(s.mpW||this.MPW0).map(x=>x.n===w.n && x.at===w.at ? {...x, st:'paid'} : x)})); this.audit('Withdrawal paid · '+w.n+' · '+fmt(w.amt), {}); toast(fmt(w.amt)+' marked paid'); }}));
+    const setC = (k,d,lo,hi)=>()=>{ if (!canEd) return toast('No permission'); const v = Math.max(lo, Math.min(hi, CF[k]+d)); this.setState(s=>({mpC:{...(s.mpC||{}), [city]:{...((s.mpC||{})[city]||{}), [k]:v}}})); this.audit(city+' · '+k+' → '+v, {}); };
+    mp.rules = [['gs','Gold-only window','Before Silver sees the job',1,1,30,' min'],['sb','Silver window','Before Bronze sees the job',1,1,30,' min'],['min','Minimum wallet','Below this, vendor gets no jobs',500,0,20000,'',1],['com','Commission','On job value before GST',1,5,25,'%'],['adv','Customer advance','Paid to Nagarva at booking',1,5,30,'%'],['advMin','Minimum advance','',100,0,5000,'',1],['lateMin','Late arrival alert','After the slot start',5,5,60,' min'],['rlD','Return-load vendors see jobs','Minutes after broadcast starts. 0 = with Gold',5,0,30,' min'],['stuckH','Stuck in transit alert','Local moves',1,1,24,' h']].map(([k,l,s,step,lo,hi,u,money])=>({k:l, s, v: money ? fmt(CF[k]) : CF[k]+u, dec:setC(k,-step,lo,hi), inc:setC(k,step,lo,hi)}));
+    const wsum = WT.reduce((a,w)=>a+w[1],0);
+    mp.weights = WT.map(([k,v],n)=>({k, v:String(v), dec:()=>{ if (!canEd) return; this.setState(s=>({mpWt:(s.mpWt||this.MPWT0).map((x,m)=>m===n ? [x[0], Math.max(0,x[1]-1)] : x)})); }, inc:()=>{ if (!canEd) return; this.setState(s=>({mpWt:(s.mpWt||this.MPWT0).map((x,m)=>m===n ? [x[0], x[1]+1] : x)})); }}));
+    mp.wtL = wsum===100 ? 'Total 100 · applies to all cities' : 'Total '+wsum+' · must add up to 100 to save'; mp.wtc = wsum===100 ? C.mute : C.red;
+    const O = st.mpOpen && all.find(j=>j.id===st.mpOpen);
+    mp.jOpen = !!O; mp.jClose = ()=>this.setState({mpOpen:null});
+    if (O) { const com2 = Math.round(O.val/1.18*CF.com/100), stIdx = ['bc','way','load','transit'].indexOf(O.st);
+      const tl = [['Booked · advance '+fmt(O.adv)+' paid', O.age+12+' min ago'],['Broadcast to '+(O.tierNow ? O.tierNow[0].toUpperCase()+O.tierNow.slice(1) : 'Gold'), O.tierNow==='silver' ? 'After '+CF.gs+' min Gold window' : O.tierNow==='bronze' ? 'After Gold + Silver windows' : 'Window '+CF.gs+' min'],['Accepted by '+(O.vendor||'—'), O.vendor ? 'Tier '+O.vt : 'Waiting'],['Arrived', O.st==='way' ? (O.late ? 'Late · slot '+O.eta : 'ETA '+O.eta) : ''],['Loading photos', O.st==='load' ? (O.photos||0)+'/3' : ''],['In transit', ''],['Delivered · OTP', '']];
+      const reached = [true, true, stIdx>=1, stIdx>=2, stIdx>=2, stIdx>=3, false];
+      mp.jd = {id:O.id+' · '+O.city, route:O.from+' → '+O.to, facts:[['Package', PK[O.pkg][0]],['Home', O.home],['Slot', O.slot],['Customer', O.cust],['Job value', fmt(O.val)],['Commission', fmt(com2)]].map(([k,v])=>({k,v})),
+        tl: tl.map(([t1,s1],n)=>({t:t1, s:s1, dot: reached[n] ? (n===reached.lastIndexOf(true) ? C.acc : C.green) : C.w15, tc: reached[n] ? C.text : C.faint})),
+        acts: O.st==='bc' ? [btn('Push to next tier', ()=>push(O)), btn('Assign vendor', ()=>assign(O), 1)] : [btn('Call vendor', ()=>callV(O)), btn('Re-assign', ()=>reassign(O), 0, 1)]};
+    } else mp.jd = {id:'', route:'', facts:[], tl:[], acts:[]};
+    return mp;
+  }
+  MODS = [['dash','Dashboard'],['mkt','Marketplace'],['vendors','Vendors'],['approvals','Approvals'],['plans','Plans & pricing'],['payments','Payments'],['tickets','Support tickets'],['coupons','Coupons'],['broadcasts','Broadcasts'],['team','Admin team'],['audit','Audit log']];
+  DEF = {super:'all', sales:{dash:[1,0,0,0],vendors:[1,1,1,0],approvals:[1,1,0,0],plans:[1,0,0,0],payments:[1,0,0,0],coupons:[1,0,0,0]}, support:{dash:[1,0,0,0],mkt:[1,1,1,0],vendors:[1,0,1,0],approvals:[1,1,0,0],tickets:[1,1,1,0],payments:[1,0,0,0]}, marketing:{dash:[1,0,0,0],vendors:[1,0,0,0],coupons:[1,1,1,1],broadcasts:[1,1,1,1]}};
+  TEAM0 = [{id:'prakash',name:'Prakash Raman',email:'prakash@nagarva.in',role:'super',active:true},{id:'priya',name:'Priya Shah',email:'priya@nagarva.in',role:'sales',active:true},{id:'arjun',name:'Arjun Verma',email:'arjun@nagarva.in',role:'sales',active:true},{id:'ravi',name:'Ravi Kumar',email:'ravi@nagarva.in',role:'support',active:true},{id:'neha',name:'Neha Iyer',email:'neha@nagarva.in',role:'marketing',active:true}];
+  V0 = [
+    {id:'NV-1001',name:'Chennai Packers & Movers',owner:'Arun Prakash',phone:'98400 11223',city:'Chennai',plan:'growth',cycle:'m',status:'active',days:9,users:5,orders:46,src:'Google',sales:'Priya',gst:'33AAKCC4410M1Z2',joined:'12 Mar 2025',err:0},
+    {id:'NV-1014',name:'Sri Balaji Packers',owner:'Ganesh R',phone:'94430 22871',city:'Coimbatore',plan:'basic',cycle:'m',status:'active',days:21,users:2,orders:31,src:'Referral',sales:'Priya',gst:'33ABCFS1123K1Z8',joined:'2 Jun 2025',err:1},
+    {id:'NV-1022',name:'Kovai Movers',owner:'Prakash S',phone:'97900 61522',city:'Coimbatore',plan:'growth',cycle:'y',status:'active',days:211,users:4,orders:58,src:'Justdial',sales:'Arjun',gst:'',joined:'18 Aug 2025',err:0},
+    {id:'NV-1031',name:'Deccan Shift Logistics',owner:'Srinivas Rao',phone:'99490 33018',city:'Hyderabad',plan:'pro',cycle:'y',status:'active',days:302,users:14,orders:212,src:'Google',sales:'Arjun',gst:'36AAJCD7781H1ZQ',joined:'5 Nov 2025',err:3},
+    {id:'NV-1040',name:'Namma Bengaluru Movers',owner:'Kiran Gowda',phone:'98450 77120',city:'Bengaluru',plan:'trial',cycle:'m',status:'trial',days:4,users:3,orders:12,src:'Meta',sales:'Priya',gst:'',joined:'14 Sep 2026',err:0},
+    {id:'NV-1043',name:'Capital Relocations',owner:'Rohit Malhotra',phone:'98110 42290',city:'Delhi NCR',plan:'trial',cycle:'m',status:'trial',days:18,users:2,orders:5,src:'Google',sales:'Arjun',gst:'',joined:'1 Oct 2026',err:0},
+    {id:'NV-1036',name:'Pune Home Shifters',owner:'Sachin Patil',phone:'98220 55613',city:'Pune',plan:'basic',cycle:'m',status:'grace',days:3,users:2,orders:9,src:'Meta',sales:'Priya',gst:'',joined:'9 Jul 2026',err:2},
+    {id:'NV-1028',name:'Malabar Cargo Movers',owner:'Shibu Thomas',phone:'94470 19083',city:'Kochi',plan:'growth',cycle:'m',status:'expired',days:-12,users:4,orders:0,src:'Referral',sales:'Arjun',gst:'32AAHCM2093E1ZT',joined:'22 Jan 2026',err:0},
+    {id:'NV-1045',name:'Awadh Packers',owner:'Imran Siddiqui',phone:'94150 86271',city:'Lucknow',plan:'trial',cycle:'m',status:'trial',days:27,users:1,orders:2,src:'WhatsApp',sales:'Priya',gst:'',joined:'15 Oct 2026',err:0},
+    {id:'NV-1019',name:'Pink City Movers',owner:'Vikram Singh',phone:'98290 40115',city:'Jaipur',plan:'basic',cycle:'m',status:'suspended',days:40,users:2,orders:0,src:'Justdial',sales:'Arjun',gst:'',joined:'30 Apr 2025',err:0,reason:'Chargeback on card payment'},
+    {id:'NV-1047',name:'Hyderabad Express Shifting',owner:'Abdul Rahman',phone:'90000 71834',city:'Hyderabad',plan:'trial',cycle:'m',status:'trial',days:2,users:2,orders:7,src:'Google',sales:'Arjun',gst:'',joined:'18 Sep 2026',err:1}];
+  PLANS0 = [{k:'free',name:'Free',code:'free',pm:0,py:0,users:3,orders:20,wa:0,trialDays:0,graceDays:0,def:true,feat:{whatsapp:false,reports:false,gst_invoice:true,multi_branch:false}},{k:'basic',name:'Basic',code:'basic',pm:499,py:4990,users:5,orders:60,wa:100,trialDays:14,graceDays:7,def:false,feat:{whatsapp:true,reports:false,gst_invoice:true,multi_branch:false}},{k:'growth',name:'Growth',code:'growth',pm:1499,py:14990,users:10,orders:250,wa:500,trialDays:14,graceDays:7,def:false,feat:{whatsapp:true,reports:true,gst_invoice:true,multi_branch:false}},{k:'pro',name:'Pro',code:'pro',pm:2999,py:29990,users:-1,orders:-1,wa:2000,trialDays:14,graceDays:7,def:false,feat:{whatsapp:true,reports:true,gst_invoice:true,multi_branch:true}}];
+  FEAT = [['whatsapp','WhatsApp alerts'],['reports','P&L reports'],['gst_invoice','GST invoice'],['multi_branch','Multi-branch']];
+  LIM = [['users','Users'],['orders','Orders / month'],['wa','WhatsApp / month']];
+  slug(v){ return v.name.toLowerCase().replace(/&/g,' ').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').split('-').slice(0,3).join('-'); }
+  usage(v){ const n = parseInt(v.id.slice(3),10)||0, o = v.orders ? v.orders*5 + n%17 : (v.status==='trial' ? n%4 : 0); return {orders:o, leads: o ? Math.round(o*2.4)+n%9 : n%5+2, staff:v.users, inv: Math.round(o*0.82)}; }
+  dOf(days){ const d = new Date(2026,9,16+days); return d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getFullYear(); }
+  isoOf(days){ const d = new Date(2026,9,16+days); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  lim(n){ return n<0 ? 'Unlimited' : String(n); }
+  REQ0 = [{id:'RQ-0007', kind:'discount', vid:'NV-1036', n:20, reason:'Owner will switch to yearly if we give 20%', by:'Priya Shah', t:'16 Oct, 9:40 AM', status:'pending'},{id:'RQ-0006', kind:'extend', vid:'NV-1047', n:14, reason:'Waiting for GST registration before paying', by:'Arjun Verma', t:'15 Oct, 5:15 PM', status:'pending'},{id:'RQ-0004', kind:'discount', vid:'NV-1031', n:15, reason:'Multi-branch, 14 users', by:'Arjun Verma', t:'11 Oct, 2:00 PM', status:'rejected', dBy:'Prakash Raman', dNote:'Max 10% for yearly'}];
+  PAY0 = [
+    {id:'P-2610-021', vid:'NV-1031', plan:'Pro · yearly', base:26991, date:'12 Oct', method:'Netbanking', status:'paid', rz:'pay_Oc12Dx81', inv:'INV-2610-021', note:'10% discount applied'},
+    {id:'P-2610-020', vid:'NV-1036', plan:'Basic · monthly', base:499, date:'9 Oct', method:'UPI AutoPay', status:'retrying', rz:'pay_Oc09Pn44', inv:'', note:'Retry 1 failed · next retry 17 Oct'},
+    {id:'P-2610-019', vid:'NV-1001', plan:'Growth · monthly', base:1499, date:'7 Oct', method:'UPI AutoPay', status:'paid', rz:'pay_Oc07aK17', inv:'INV-2610-019'},
+    {id:'P-2610-018', vid:'NV-1014', plan:'Basic · monthly', base:499, date:'6 Oct', method:'UPI AutoPay', status:'paid', rz:'pay_Oc06Bq92', inv:'INV-2610-018'},
+    {id:'P-2610-017', vid:'NV-1028', plan:'Growth · monthly', base:1499, date:'4 Oct', method:'Card AutoPay', status:'failed', rz:'pay_Oc04Fz10', inv:'', note:'Card declined · retried 2× · vendor now expired'},
+    {id:'P-2610-016', vid:'NV-1019', plan:'Basic · monthly', base:499, date:'2 Oct', method:'Card', status:'refunded', rz:'pay_Oc02Ch55', inv:'INV-2610-016', note:'Chargeback · credit note CN-2610-002'},
+    {id:'P-2609-044', vid:'NV-1001', plan:'Growth · monthly', base:1499, date:'7 Sep', method:'UPI AutoPay', status:'paid', rz:'pay_Os07aK11', inv:'INV-2609-044'},
+    {id:'P-2609-041', vid:'NV-1022', plan:'Growth · yearly', base:14990, date:'18 Aug', method:'UPI', status:'paid', rz:'pay_Ag18Kv02', inv:'INV-2608-033'}];
+  TK0 = [
+    {id:'T-2231', vid:'NV-1036', who:'Sachin Patil · owner', subject:'AutoPay failed but money cut from bank', pri:'high', status:'open', agent:null, age:'25 min', screen:'Plan & billing', ver:'2.4.1 · Android 13', err:'', msgs:[['v','₹589 debited on 9 Oct but app says payment failed. Please check.','9:12 AM']]},
+    {id:'T-2229', vid:'NV-1031', who:'Srinivas Rao · owner', subject:'Quote PDF not opening on iPhone', pri:'high', status:'open', agent:'Ravi Kumar', age:'2 h', screen:'Quote preview', ver:'2.4.0 · iOS 17.5', err:'PDFRenderError: font Noto Sans Telugu not loaded\n  at QuotePdf.render (quote.js:212)', msgs:[['v','Customer says link opens blank page.','7:40 AM'],['a','Checking now, which quote number?','7:55 AM'],['v','Q-2610-118','8:02 AM']]},
+    {id:'T-2226', vid:'NV-1040', who:'Kiran Gowda · owner', subject:'How to add second branch?', pri:'low', status:'waiting', agent:'Ravi Kumar', age:'1 d', screen:'Settings', ver:'2.4.1 · Android 14', err:'', msgs:[['v','We are opening Mysuru branch, how to add?','Yesterday'],['a','Branches come with Pro plan. Shall I ask sales to call you?','Yesterday']]},
+    {id:'T-2224', vid:'NV-1014', who:'Murugan · supervisor', subject:'Forgot PIN', pri:'normal', status:'open', agent:null, age:'3 h', screen:'PIN login', ver:'2.3.8 · Android 11', err:'', msgs:[['v','Supervisor forgot PIN, owner not reachable today','6:50 AM']]},
+    {id:'T-2214', vid:'NV-1022', who:'Prakash S · owner', subject:'Owner PIN reset', pri:'normal', status:'resolved', agent:'Ravi Kumar', age:'2 d', screen:'PIN login', ver:'2.4.0 · Android 12', err:'', msgs:[['v','Locked out after 5 wrong PINs','16 Oct'],['a','Reset link sent on WhatsApp.','16 Oct'],['v','Done, thanks','16 Oct']]}];
+  CP0 = [{code:'WELCOME10', type:'pct', val:10, till:'31 Dec 2026', max:500, used:41, plans:['basic','growth','pro'], on:true, by:'Neha Iyer'},{code:'DIWALI20', type:'pct', val:20, till:'5 Nov 2026', max:100, used:12, plans:['growth','pro'], on:true, by:'Neha Iyer'},{code:'FLAT500', type:'flat', val:500, till:'30 Nov 2026', max:50, used:50, plans:['pro'], on:true, by:'Prakash Raman'},{code:'MONSOON15', type:'pct', val:15, till:'30 Sep 2026', max:200, used:88, plans:['basic','growth'], on:false, by:'Neha Iyer'}];
+  BC0 = [{chan:'wa', aud:'Trial vendors', n:4, msg:'Your free trial ends soon. Renew with WELCOME10 to get 10% off your first payment.', t:'14 Oct', by:'Neha Iyer'},{chan:'app', aud:'All vendors', n:11, msg:'New: send quotes in Telugu, Kannada and Malayalam. Change language in Settings.', t:'10 Oct', by:'Prakash Raman'}];
+  CFG0 = {disc:10, ext:7};
+  ST = {trial:['Trial',255], active:['Active',155], grace:['Grace',85], expired:['Expired',25], suspended:['Suspended',300], deactivated:['Deactivated',260]};
+  AUD0 = [
+    {t:'16 Oct, 8:50 AM', who:'Ravi Kumar', role:'Support', v:'NV-1022', text:'Owner PIN reset · ticket #T-2214'},
+    {t:'15 Oct, 6:12 PM', who:'Priya Shah', role:'Sales', v:'NV-1040', text:'Trial extended', chg:[['Trial ends','16 Oct','20 Oct']], reason:'Owner travelling, wants demo next week'},
+    {t:'14 Oct, 11:30 AM', who:'Prakash Raman', role:'Super admin', v:'NV-1019', text:'Vendor suspended', chg:[['Status','Active','Suspended']], reason:'Chargeback on card payment'},
+    {t:'12 Oct, 4:05 PM', who:'Arjun Verma', role:'Sales', v:'NV-1031', text:'Converted to paid · Pro yearly · 10% discount', chg:[['Plan','Trial','Pro · yearly'],['Discount','0%','10%']]},
+    {t:'10 Oct, 10:00 AM', who:'Prakash Raman', role:'Super admin', v:null, text:'Plans & pricing changed', chg:[['Growth · monthly','₹1,299','₹1,499']]},
+    {t:'8 Oct, 3:40 PM', who:'Prakash Raman', role:'Super admin', v:null, text:'Admin team · Neha Iyer added as Marketing'}];
+  state = {reqs:null, pays:null, pf:'all', popen:null, mmFixed:false, apTab:'pending', me:null, pick:'prakash', email:'prakash@nagarva.in', pw:'••••••••', scr:'dash', w:1200, drawer:false, vq:'', vf:'all', vc:'all', vid:null, vtab:'ov', vendors:null, plans:null, cfg:null, pDraft:null, cDraft:null, team:null, tsel:null, nName:'', nEmail:'', nRole:'sales', aud:[], md:null, toast:null};
+  componentDidMount(){ window.__ngC=this; this._ls = e=>{ if (e.key==='ng_support_tickets' || e.key==='ng_signups') this.forceUpdate(); }; window.addEventListener('storage', this._ls); this._r = ()=>this.setState({w: window.innerWidth}); this._r(); window.addEventListener('resize', this._r);
+    const P = this.props; if (P.startRole && P.startRole!=='login') { const m = this.TEAM0.find(x=>x.role===P.startRole); this.setState({me:m.id, pick:m.id, scr:P.startScreen||'dash', vid: P.startScreen==='vendor' ? 'NV-1040' : null}); } }
+  componentWillUnmount(){ window.removeEventListener('resize', this._r); window.removeEventListener('storage', this._ls); clearTimeout(this._t); }
+  SU0 = [{id:'AP-3107', ts:Date.now()-3*3600e3, phone:'9841055620', name:'Madurai Fast Movers', owner:'Karthik S', email:'karthik@maduraifast.in', city:'Madurai', biz:'pm', gst:'33AAJFM2210Q1Z5', ref:'', docs:{pan:'pan_karthik.jpg', gstc:'gst_certificate.pdf', shop:'godown.jpg'}, status:'pending', reason:''}];
+  suLs(){ try { return JSON.parse(localStorage.getItem('ng_signups')||'[]'); } catch(e){ return []; } }
+  lsT(){ try { return JSON.parse(localStorage.getItem('ng_support_tickets')||'[]'); } catch(e){ return []; } }
+  agoT(ts){ const m = Math.floor((Date.now()-ts)/60000); return m<1 ? 'Just now' : m<60 ? m+' min' : m<1440 ? Math.floor(m/60)+' h' : Math.floor(m/1440)+' d'; }
+  allTks(){ return [...this.lsT().slice().reverse().map(x=>({...x, age:this.agoT(x.ts)})), ...(this.state.tks||this.TK0)]; }
+  flash(m){ this.setState({toast:m}); clearTimeout(this._t); this._t = setTimeout(()=>this.setState({toast:null}), 2200); }
+  team(){ return this.state.team || this.TEAM0; }
+  vendors(){ const S = this.suLs(); return (this.state.vendors || this.V0).map(v=>{ const r = S.find(x=>x.vid===v.id); if (!r || !r.status) return v; if (r.trial) { const left = Math.max(0, 30-Math.floor((Date.now()-r.trialTs)/864e5)); return left ? {...v, plan:'pro', status:'trial', days:left} : {...v, plan:'free', status:'active', days:0}; } return v; }); }
+  plans(){ return this.state.plans || this.PLANS0; }
+  cfg(){ return this.state.cfg || this.CFG0; }
+  me(){ return this.team().find(x=>x.id===this.state.me); }
+  permOf(m){ if (m.perm) return m.perm; const d = this.DEF[m.role], p = {}; this.MODS.forEach(([k])=>{ p[k] = d==='all' ? [1,1,1,1] : (d[k] || [0,0,0,0]); }); return p; }
+  can(mod,i){ const m = this.me(); return !!(m && this.permOf(m)[mod][i||0]); }
+  th(){ return this.state.theme || this.props.theme || 'midnight'; }
+  col(h){ const lt = this.th()==='light'; if (h===260) return lt ? '#5E6572' : '#8A93A3'; if (lt) return h===85 ? 'oklch(0.56 0.12 75)' : `oklch(0.53 0.15 ${h})`; return h===85 ? 'oklch(0.82 0.13 85)' : `oklch(0.76 0.14 ${h})`; }
+  PAL = {
+    midnight:{bg:'#0A0C10',s1:'#12151B',s2:'#1A1E26',s3:'#1F232B',sel:'#232832',sheet:'#14171D',inset:'#0D1015',nav:'#0D1015',text:'#ECEEF2',soft:'#C3C8D1',mute:'#8A93A3',faint:'#5B6372',rgb:'255,255,255',k:1},
+    dark:{bg:'#0C1A2B',s1:'#12243A',s2:'#1A2E47',s3:'#1F3550',sel:'#26405F',sheet:'#13263D',inset:'#0E1E31',nav:'#0E1F33',text:'#EEF2F7',soft:'#C5CFDC',mute:'#93A1B6',faint:'#66768F',rgb:'255,255,255',k:1.2},
+    light:{bg:'#F4F3F0',s1:'#FFFFFF',s2:'#F2F1ED',s3:'#ECEAE5',sel:'#E9E7E1',sheet:'#FFFFFF',inset:'#F4F3F0',nav:'#FFFFFF',text:'#16181D',soft:'#3D424B',mute:'#5E6572',faint:'#7D838E',rgb:'22,24,29',k:1.4}};
+  pal(){ const th = this.th(), p = {...this.PAL[th]}, lt = th==='light';
+    for (const a of ['06','07','08','1','12','15']) p['w'+a] = 'rgba('+p.rgb+','+Math.min(0.5, parseFloat('0.'+a)*p.k).toFixed(3)+')';
+    p.inv = p.text; p.invText = lt ? '#FFFFFF' : '#0A0C10'; p.acc = lt ? 'oklch(0.56 0.17 48)' : 'oklch(0.74 0.16 55)'; p.accBtn = lt ? 'oklch(0.70 0.17 50)' : 'oklch(0.74 0.16 55)';
+    p.green = this.col(155); p.amber = this.col(85); p.red = this.col(25); p.blue = this.col(255); p.greenBg = this.tint(155); p.amberBg = this.tint(85); p.redBg = this.tint(25);
+    p.redLine = lt ? 'oklch(0.53 0.15 25 / 0.45)' : 'oklch(0.76 0.14 25 / 0.45)'; return p; }
+  tint(h){ if (h===260) return this.pal().w08; return this.th()==='light' ? `oklch(0.62 0.14 ${h} / 0.13)` : `oklch(0.76 0.14 ${h} / 0.14)`; }
+  fmt(n){ return '₹'+Number(n).toLocaleString('en-IN'); }
+  audit(text, o){ const m = this.me(), d = new Date(), hh = d.getHours(); const t = '16 Oct, '+((hh%12)||12)+':'+String(d.getMinutes()).padStart(2,'0')+' '+(hh<12?'AM':'PM');
+    this.setState(s=>({aud:[{t, who:m.name, role:this.ROLES[m.role], ...o, text}, ...s.aud]})); }
+  reqs(){ return this.state.reqs || this.REQ0; }
+  pays(){ return this.state.pays || this.PAY0; }
+  addReq(o){ const m = this.me(), d = new Date(), hh = d.getHours(); this.setState(s=>({reqs:[{id:'RQ-00'+(8+(s.reqs||this.REQ0).length-this.REQ0.length), by:m.name, t:'16 Oct, '+((hh%12)||12)+':'+String(d.getMinutes()).padStart(2,'0')+' '+(hh<12?'AM':'PM'), status:'pending', ...o}, ...(s.reqs||this.REQ0)]})); }
+  setV(id, patch){ this.setState(s=>({vendors:(s.vendors||this.V0).map(v=>v.id===id ? {...v, ...patch} : v)})); }
+  daysL(v){ return v.plan==='free' && v.status==='active' ? 'no expiry' : v.status==='expired' ? 'expired '+Math.abs(v.days)+'d ago' : v.status==='suspended' || v.status==='deactivated' ? 'no access' : v.days+' days left'; }
+  mine(v){ const m = this.me(); if (!m || m.role!=='sales' || m.allV) return true; return v.sales===m.name.split(' ')[0]; }
+
+  renderVals(){
+    const C = this.pal(), st = this.state, m = this.me(), wide = st.w>=860, A = C.accBtn;
+    const TH = ['midnight','dark','light'], thx = {c:C, themeIcon: {midnight:'dark_mode', dark:'contrast', light:'light_mode'}[this.th()], cycleTheme:()=>{ const n = TH[(TH.indexOf(this.th())+1)%3]; this.setState({theme:n}); this.flash({midnight:'Midnight',dark:'Navy',light:'Light'}[n]+' theme'); }};
+    const go = (scr, x)=>this.setState({scr, drawer:false, ...(x||{})});
+    const people = this.team().filter(x=>x.active).map(x=>({name:x.name, role:this.ROLES[x.role], bg: st.pick===x.id ? C.sel : C.s1, border: st.pick===x.id ? A : C.w08, onClick:()=>this.setState({pick:x.id, email:x.email})}));
+    const lg = {forgot:()=>{ const em = (st.email||'').trim(); this.flash(em ? 'If '+em+' is an admin account, a reset link is on its way' : 'Enter your work email first'); }, email:st.email, pw:st.pw, onEmail:e=>this.setState({email:e.target.value}), onPw:e=>this.setState({pw:e.target.value}), people,
+      signIn:()=>{ this.setState({me:st.pick, scr:'dash'}); const x = this.team().find(y=>y.id===st.pick); setTimeout(()=>this.audit('Signed in · 2-step verified', {}), 0); this.flash('Signed in as '+x.name+' · '+this.ROLES[x.role]); }};
+    if (!m) return {...thx, isLogin:true, isApp:false, lg, nav:[], me:{}, scr:{}, hasToast:!!st.toast, toast:st.toast||''};
+
+    const NAV = [['dash','Dashboard','space_dashboard'],['mkt','Marketplace','hub'],['vendors','Vendors','storefront'],['approvals','Approvals','rule'],['plans','Plans & pricing','sell'],['payments','Payments','payments'],['tickets','Support tickets','support_agent'],['coupons','Coupons','confirmation_number'],['broadcasts','Broadcasts','campaign'],['team','Admin team','admin_panel_settings'],['audit','Audit log','history']];
+    const SOON = {};
+    const cur = st.scr==='vendor' ? 'vendors' : st.scr;
+    const pendN = this.reqs().filter(r=>r.status==='pending').length + [...this.suLs(), ...this.SU0.map(x=>({...x, ...((st.suD||{})[x.id]||{})}))].filter(r=>r.status==='pending').length;
+    const nav = NAV.filter(([k])=>this.can(k,0)).map(([k,label,icon])=>({label: k==='approvals' && pendN && m.role==='super' ? label+' · '+pendN : label, icon, soon: !!SOON[k], bg: cur===k ? C.s3 : 'transparent', color: cur===k ? C.text : C.mute, onClick:()=>go(k)}));
+    const allowed = this.can(cur,0);
+    const s = !allowed ? 'denied' : SOON[cur] ? 'soon' : st.scr;
+    const scr = {mkt:s==='mkt', coupons:s==='coupons', broadcasts:s==='broadcasts', tickets:s==='tickets', approvals:s==='approvals', payments:s==='payments', dash:s==='dash', vendors:s==='vendors', vendor:s==='vendor', plans:s==='plans', team:s==='team', audit:s==='audit', soon:s==='soon', denied:s==='denied'};
+    const meV = {name:m.name, initial:m.name[0], roleL:this.ROLES[m.role]};
+    const all = this.vendors(), vis = all.filter(v=>this.mine(v)), cfg = this.cfg();
+    const stView = v=>{ const [l,h] = this.ST[v.status]; const d = v.days; return {stLabel:l, stColor:this.col(h), stBg:this.tint(h), daysL:this.daysL(v), daysColor: (v.status==='trial'||v.status==='grace') && d<=7 ? this.col(85) : v.status==='expired' ? this.col(25) : C.faint, planL: v.plan==='trial' ? 'Trial' : (this.plans().find(p=>p.k===v.plan)||{}).name+' · '+(v.cycle==='y' ? 'yearly' : 'monthly')}; };
+    const openV = id=>go('vendor',{vid:id, vtab:'ov'});
+
+    // dashboard
+    const paying = vis.filter(v=>v.status==='active' || v.status==='grace'), mrr = paying.reduce((a,v)=>{ const p = this.plans().find(x=>x.k===v.plan); return a + (p ? (v.cycle==='y' ? Math.round(p.py/12) : p.pm) : 0); },0);
+    const exp = vis.filter(v=>(v.status==='trial'||v.status==='grace'||v.status==='active') && v.days<=7).sort((a,b)=>a.days-b.days);
+    const T = (label,value,icon,h,sub,fn,red)=>({label, value:String(value), icon, sub, color:this.col(h), valColor: red ? this.col(25) : C.text, border: red ? C.redLine : C.w06, onClick: fn || (()=>{})});
+    const toV = f=>()=>go('vendors',{vf:f});
+    const tilesBy = {
+      super:[T('Active vendors',all.filter(v=>v.status==='active').length,'storefront',155,'paying now',toV('active')),T('On trial',all.filter(v=>v.status==='trial').length,'hourglass_top',255,(this.plans().find(p=>p.def)||{trialDays:30}).trialDays+'-day trial',toV('trial')),T('Expiring in 7 days',exp.length,'event_busy',85,'trial, grace or plan',toV('soon')),T('MRR',this.fmt(mrr),'trending_up',155,'monthly recurring'),T('New sign-ups · Oct',all.filter(v=>/Sep 2026|Oct 2026/.test(v.joined)).length,'person_add',55,'trials started'),T('Open tickets',this.allTks().filter(x=>x.status!=='resolved').length,'support_agent',300,'high priority first',()=>go('tickets')),T('Failed payments',this.pays().filter(p=>p.status==='failed'||p.status==='retrying').length,'credit_card_off',25,'AutoPay retry pending',()=>go('payments',{pf:'failed'})),T('Payment mismatch',st.mmFixed ? 0 : 1,'report',25,'Razorpay vs records · last night',()=>go('payments'),!st.mmFixed),T('Waiting approval',pendN,'rule',85,'discounts & extensions',()=>go('approvals'),false)],
+      sales:[T('My trials',vis.filter(v=>v.status==='trial').length,'hourglass_top',255,'assigned to you',toV('trial')),T('Expiring in 7 days',exp.length,'event_busy',85,'follow up now',toV('soon')),T('Paying vendors',vis.filter(v=>v.status==='active').length,'storefront',155,'yours',toV('active')),T('Discount limit',cfg.disc+'%','sell',55,'more needs super admin')],
+      support:[T('Open tickets',this.allTks().filter(x=>x.status!=='resolved').length,'support_agent',300,this.allTks().filter(x=>x.status!=='resolved'&&!x.agent).length+' not picked up',()=>go('tickets')),T('Vendors in grace',all.filter(v=>v.status==='grace').length,'schedule',85,'renew banner showing',toV('grace')),T('App errors today',all.reduce((a,v)=>a+v.err,0),'bug_report',25,'across vendors'),T('Suspended',all.filter(v=>v.status==='suspended').length,'block',300,'cannot log in',toV('suspended'))],
+      marketing:[T('New sign-ups · Oct',all.filter(v=>/Sep 2026|Oct 2026/.test(v.joined)).length,'person_add',55,'trials started',toV('trial')),T('Trial → paid',  '38%','conversion_path',155,'last 90 days'),T('Active vendors',all.filter(v=>v.status==='active').length,'storefront',155,'paying now'),T('Cities',new Set(all.map(v=>v.city)).size,'location_city',255,'with vendors')]};
+    const srcC = {}; vis.forEach(v=>{ srcC[v.src] = (srcC[v.src]||0)+1; }); const sMax = Math.max(1,...Object.values(srcC));
+    const mixC = {starter:0, growth:0, pro:0}; paying.forEach(v=>{ if (mixC[v.plan]!=null) mixC[v.plan]++; }); const mT = Math.max(1, paying.length);
+    const dash = {tiles: tilesBy[m.role], expTitle: m.role==='sales' ? 'Your vendors expiring soon' : 'Expiring in the next 7 days', expCount: exp.length+' vendors', expEmpty: !exp.length,
+      expiring: exp.map(v=>({...v, ...stView(v), onOpen:()=>openV(v.id)})),
+      sources: Object.entries(srcC).sort((a,b)=>b[1]-a[1]).map(([label,n])=>({label, n:String(n), w: Math.round(n/sMax*100)+'%'})),
+      mix: [['basic','Basic',C.blue],['growth','Growth',A],['pro','Pro',C.green]].map(([k,label,color])=>({label, color, n:String(mixC[k]), w: Math.max(2, mixC[k]/mT*100)+'%'}))};
+
+    // vendor list
+    const q = st.vq.trim().toLowerCase();
+    const qd = vis.filter(v=>!q || [v.name,v.owner,v.phone.replace(/\s/g,''),v.city,v.id].some(x=>x.toLowerCase().includes(q.replace(/\s/g,'')) || x.toLowerCase().includes(q)));
+    const inC = qd.filter(v=>st.vc==='all' || v.city===st.vc);
+    const fOf = {all:()=>true, trial:v=>v.status==='trial', active:v=>v.status==='active', grace:v=>v.status==='grace', soon:v=>exp.includes(v), expired:v=>v.status==='expired', suspended:v=>v.status==='suspended'||v.status==='deactivated'};
+    const vl = {q:st.vq, onQ:e=>this.setState({vq:e.target.value}), mineNote: m.role==='sales' && !m.allV, empty: !inC.filter(fOf[st.vf]).length,
+      cols: wide ? 'minmax(0,2.2fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1fr) minmax(0,0.8fr) minmax(0,1fr)' : 'minmax(0,1fr) auto',
+      chips: [['all','All'],['trial','Trial'],['active','Active'],['soon','Expiring soon'],['grace','Grace'],['expired','Expired'],['suspended','Suspended']].map(([k,label])=>{ const on = st.vf===k; return {label, n:String(inC.filter(fOf[k]).length), bg: on ? C.text : 'transparent', color: on ? C.invText : C.soft, border: on ? C.text : C.w1, onClick:()=>this.setState({vf:k})}; }),
+      cities: ['all', ...new Set(vis.map(v=>v.city))].map(c=>({label: c==='all' ? 'All cities' : c, bg: st.vc===c ? C.sel : C.s1, color: st.vc===c ? C.text : C.mute, onClick:()=>this.setState({vc:c})})),
+      list: inC.filter(fOf[st.vf]).map(v=>({...v, ...stView(v), ownerLine: v.owner+' · +91 '+v.phone+(wide ? '' : ' · '+v.city), useLine: (u=>u.orders+' orders · '+u.leads+' leads · '+u.staff+' staff')(this.usage(v)), usersL: v.users+' users', onOpen:()=>openV(v.id)}))};
+
+    // vendor detail
+    const vr = all.find(v=>v.id===st.vid) || all[0], vs = stView(vr), isSuper = m.role==='super';
+    const capped = !isSuper;
+    const act = (key,label,icon,ok,fn,danger)=>({label, icon, bg: danger ? C.redBg : C.s1, color: danger ? this.col(25) : C.text, border: danger ? C.redLine : C.w08, op: ok ? '1' : '0.4', cursor: ok ? 'pointer' : 'not-allowed', onClick:()=> ok ? this.setState({md:{kind:key, vid:vr.id, num: key==='extend' ? String(Math.min(7,cfg.ext)) : key==='discount' ? String(cfg.disc) : '', reason:'', pick: key==='plan' ? (vr.plan==='trial' ? 'growth' : vr.plan)+':'+vr.cycle : key==='assign' ? vr.sales : key==='status' ? null : null}}) : this.flash('Your role cannot do this')});
+    const blocked = vr.status==='suspended' || vr.status==='deactivated';
+    const actions = [
+      act('extend', vr.status==='trial' ? 'Extend trial' : 'Add free days','more_time', this.can('vendors',2) && m.role!=='marketing'),
+      act('plan','Change plan','swap_horiz', this.can('vendors',2) && (isSuper || m.role==='sales')),
+      act('discount','Apply discount','sell', this.can('vendors',2) && (isSuper || m.role==='sales')),
+      act('pwreset','Send password reset','lock_reset', isSuper || this.can('tickets',2)),
+      act('assign','Assign sales','person_pin', this.can('team',2)),
+      blocked ? act('activate','Activate','check_circle', this.can('vendors',3)) : act('suspend','Suspend','block', this.can('vendors',3), null, true),
+      ...(vr.status!=='deactivated' ? [act('deactivate','Deactivate','power_settings_new', this.can('vendors',3), null, true)] : []),
+      act('delorg','Delete organization','delete_forever', isSuper, null, true)];
+    const vlog = [...st.aud, ...this.AUD0].filter(e=>e.v===vr.id);
+    const pl = this.plans().find(p=>p.k===vr.plan), us = this.usage(vr), oEmail = vr.owner.split(' ')[0].toLowerCase()+'@'+this.slug(vr).replace(/-/g,'')+'.in';
+    const vd = {...vr, ...vs, initial:vr.name[0], actions,
+      tabs: [['ov','Overview'],['pay','Payments'],['log','Admin log · '+vlog.length]].map(([k,label])=>({label, bg: st.vtab===k ? C.sel : 'transparent', color: st.vtab===k ? C.text : C.mute, onClick:()=>this.setState({vtab:k})})),
+      isOv: st.vtab==='ov', isPay: st.vtab==='pay', isLog: st.vtab==='log',
+      kpis: [['Staff',vr.users+(pl && pl.users>0 ? ' / '+pl.users : '')],['Orders',String(us.orders)],['Leads',String(us.leads)],['Invoices',String(us.inv)],['App errors · 7 days',String(vr.err)]].map(([label,value])=>({label,value})),
+      info: [['Owner',vr.owner],['Owner email',oEmail],['Phone','+91 '+vr.phone],['Slug',this.slug(vr)],['City',vr.city],['GSTIN',vr.gst||'Not given'],['Sign-up source',vr.src],['Sales person',vr.sales],['Created',vr.joined]].map(([label,value],k)=>({label, value, font: ['GSTIN','Phone','Slug','Owner email'].includes(label) ? "'Geist Mono',monospace" : 'inherit', border: k ? '1px solid '+C.w06 : '0'})),
+      hasTrialCtl: ['trial','grace','expired'].includes(vr.status), trialEnd: vr.status==='expired' ? 'Ended '+this.dOf(vr.days) : 'Ends '+this.dOf(vr.days),
+      setDate:()=> isSuper ? this.setState({md:{kind:'tdate', vid:vr.id, date:this.isoOf(Math.max(vr.days,0)), reason:''}}) : this.flash('Only a super admin can set a date'), setDateOp: isSuper ? '1' : '0.4',
+      plus14:()=>{ if (!isSuper) return this.setState({md:{kind:'extend', vid:vr.id, num:'14', reason:''}}); const base = Math.max(vr.days,0), nd = base+14; this.setV(vr.id, {days:nd, status: vr.plan==='trial' ? 'trial' : (vr.status==='expired'||vr.status==='grace' ? 'active' : vr.status)}); this.audit('Trial extended +14 days', {v:vr.id, chg:[['Trial ends', vr.days<0 ? 'ended '+this.dOf(vr.days) : this.dOf(vr.days), this.dOf(nd)]]}); this.flash('Trial now ends '+this.dOf(nd)); },
+      plan: [['Plan', vs.planL, C.text],['Status', vs.stLabel, vs.stColor],[vr.status==='trial' ? 'Trial ends in' : 'Renews / expires', vs.daysL, vs.daysColor],['Billing', vr.plan==='trial' ? 'Free trial' : (vr.cycle==='y' ? 'Yearly' : 'Monthly')+' · AutoPay', C.text],['Discount', vr.disc ? vr.disc+'%' : 'None', C.text],...(vr.reason ? [['Reason', vr.reason, this.col(25)]] : [])].map(([label,value,color],k)=>({label, value, color, border: k ? '1px solid '+C.w06 : '0'})),
+      pays: vr.plan==='trial' ? [] : [[vr.status==='expired' ? 'AutoPay failed · retried 2×' : 'Renewal · '+vs.planL, vr.status==='expired' ? '4 Oct 2026 · card declined' : '7 Oct 2026 · UPI AutoPay · INV-2610-'+vr.id.slice(3), pl ? this.fmt(vr.cycle==='y' ? pl.py : pl.pm) : '', vr.status==='expired' ? 'credit_card_off' : 'check_circle', vr.status==='expired' ? 25 : 155],['Renewal · '+vs.planL,'7 Sep 2026 · UPI AutoPay', pl ? this.fmt(vr.cycle==='y' ? pl.py : pl.pm) : '', 'check_circle', 155]].map(([label,sub,amt,icon,h],k)=>({label, sub, amt, icon, color:this.col(h), border: k ? '1px solid '+C.w06 : '0'})),
+      noPays: vr.plan==='trial',
+      log: vlog.map((e,k)=>({...e, time:e.t, chg:(e.chg||[]).map(([f,o,n])=>({f,o,n})), hasReason:!!e.reason, border: k ? '1px solid '+C.w06 : '0'})), noLog: !vlog.length};
+
+    // modal
+    let md = {open:false};
+    const M = st.md;
+    if (M) { const v = all.find(x=>x.id===M.vid), setM = p=>this.setState(s2=>({md:{...s2.md, ...p}})), n = parseInt(M.num||'0',10)||0, rs = (M.reason||'').trim();
+      const close = ()=>this.setState({md:null}), base = {open:true, close, align: wide ? 'center' : 'flex-end', pad: wide ? '24px' : '0', radius: wide ? '20px' : '22px 22px 0 0', num:M.num, onNum:e=>setM({num:e.target.value.replace(/\D/g,'')}), reason:M.reason, onReason:e=>setM({reason:e.target.value}), numBorder:C.w1, btnBg:A, btnOp:'1', reasonPh:'Reason (required, shown in the log)'};
+      const chip = (on,label,fn)=>({label, onClick:fn, bg: on ? C.text : 'transparent', color: on ? C.invText : C.soft, border: on ? C.text : C.w12});
+      if (M.kind==='reject') { const r = this.reqs().find(x=>x.id===M.rid);
+        md = {...base, title:'Reject request', sub: r.by+' will see your reason.', hasReason:true, btn:'Reject', btnBg:this.col(25), btnOp: rs ? '1' : '0.5', confirm:()=>{ if (!rs) return this.flash('Add a reason'); decide(r,false,rs); close(); }}; }
+      if (M.kind==='refund') { const p = this.pays().find(x=>x.id===M.pid), vv = all.find(x=>x.id===p.vid)||{name:''};
+        md = {...base, title:'Refund '+this.fmt(p.base+Math.round(p.base*0.18)), sub: vv.name+' · '+p.id+'. Goes back through Razorpay in 5–7 days. A credit note is created automatically.', hasReason:true, btn:'Refund', btnBg:this.col(25), btnOp: rs ? '1' : '0.5',
+          confirm:()=>{ if (!rs) return this.flash('A reason is required'); setP(p.id, {status:'refunded', note:'Refunded · '+rs+' · credit note CN-2610-00'+(3+this.pays().filter(x=>x.status==='refunded').length)}); this.audit('Payment refunded · '+p.id, {v:p.vid, reason:rs, chg:[['Payment','Paid','Refunded']]}); close(); this.flash('Refund started · '+vv.name); }}; }
+      if (M.kind==='link') md = {...base, title:'Link payment to vendor', sub:'pay_Oc15Xr27 · ₹1,769 · 15 Oct', hasChips:true, chips: all.filter(x=>x.status!=='deactivated').slice(0,8).map(x=>chip(M.pick===x.id, x.name, ()=>setM({pick:x.id}))), btn:'Link payment',
+          confirm:()=>{ const vv = all.find(x=>x.id===M.pick); this.setState(s2=>({mmFixed:true, pays:[{id:'P-2610-022', vid:vv.id, plan:'Growth · monthly', base:1499, date:'15 Oct', method:'UPI', status:'paid', rz:'pay_Oc15Xr27', inv:'INV-2610-022', note:'Linked by hand after nightly check'}, ...(s2.pays||this.PAY0)]})); this.audit('Unmatched Razorpay payment linked · pay_Oc15Xr27', {v:vv.id, chg:[['Nightly check','1 mismatch','All matched']]}); close(); this.flash('Linked to '+vv.name+' · invoice created'); }};
+      if (M.kind==='extend') { const over = capped && n>cfg.ext;
+        md = {...base, title: v.status==='trial' ? 'Extend trial' : 'Add free days', sub: v.name+' · now '+this.daysL(v), hasNum:true, numLabel:'Days to add', numSuf:'days', hasReason:true, hasWarn: over || capped, warn: over ? 'More than '+cfg.ext+' days needs super admin approval. A request will be sent.' : 'You can add up to '+cfg.ext+' days. Logged with your name.', numBorder: over ? this.col(85) : base.numBorder, btn: over ? 'Send for approval' : 'Add '+n+' days', btnOp: n>0 && rs ? '1' : '0.5',
+          confirm:()=>{ if (!n || !rs) return this.flash('Enter days and a reason'); if (over) { this.addReq({kind:'extend', vid:v.id, n, reason:rs}); this.audit('Trial extension requested · '+n+' days (needs super admin)', {v:v.id, reason:rs}); close(); return this.flash('Sent to super admin for approval'); }
+            this.setV(v.id, {days:v.days+n, status: v.status==='expired' || v.status==='grace' ? (v.plan==='trial' ? 'trial' : 'active') : v.status}); this.audit(v.status==='trial' ? 'Trial extended' : 'Free days added', {v:v.id, reason:rs, chg:[['Days left',String(v.days),String(v.days+n)]]}); close(); this.flash(n+' days added · '+v.name); }}; }
+      if (M.kind==='plan') { const [pk,cy] = (M.pick||'growth:m').split(':');
+        md = {...base, title:'Change plan', sub: v.name+' · now '+stView(v).planL, hasChips:true, chips: this.plans().filter(p=>p.pm>0).flatMap(p=>[['m','monthly'],['y','yearly']].map(([c,cl])=>chip(pk===p.k && cy===c, p.name+' · '+cl+' · '+this.fmt(c==='y' ? p.py : p.pm), ()=>setM({pick:p.k+':'+c})))), hasWarn:true, warn:'Takes effect now. The vendor pays the difference at checkout; AutoPay amount updates from the next renewal.', btn:'Change plan',
+          confirm:()=>{ const was = stView(v).planL, p = this.plans().find(x=>x.k===pk); this.setV(v.id, {plan:pk, cycle:cy, status: v.status==='trial'||v.status==='expired'||v.status==='grace' ? 'active' : v.status, days: v.status==='active' ? v.days : (cy==='y' ? 365 : 30)}); this.audit(v.plan==='trial' ? 'Converted to paid' : 'Plan changed', {v:v.id, chg:[['Plan',was,p.name+' · '+(cy==='y'?'yearly':'monthly')]]}); close(); this.flash('Plan updated · '+v.name); }}; }
+      if (M.kind==='discount') { const over = capped && n>cfg.disc;
+        md = {...base, title:'Apply discount', sub: v.name+' · applies to the next payment', hasNum:true, numLabel:'Discount', numSuf:'%', hasReason:true, hasWarn:true, warn: over ? 'Above the '+cfg.disc+'% limit. A request goes to the super admin.' : capped ? 'Your limit is '+cfg.disc+'% (set in Plans & pricing).' : 'Super admin · no limit.', numBorder: over ? this.col(85) : base.numBorder, btn: over ? 'Send for approval' : 'Apply '+n+'%', btnOp: n>0 && rs ? '1' : '0.5',
+          confirm:()=>{ if (!n || !rs) return this.flash('Enter % and a reason'); if (over) { this.addReq({kind:'discount', vid:v.id, n, reason:rs}); this.audit('Discount requested · '+n+'% (above limit)', {v:v.id, reason:rs}); close(); return this.flash('Sent to super admin for approval'); }
+            this.setV(v.id, {disc:n}); this.audit('Discount applied', {v:v.id, reason:rs, chg:[['Discount',(v.disc||0)+'%',n+'%']]}); close(); this.flash(n+'% discount set · '+v.name); }}; }
+      if (M.kind==='pin') md = {...base, title:'Reset owner PIN', sub: v.owner+' gets a WhatsApp link to set a new PIN. Nagarva staff never see the PIN.', hasReason:true, btn:'Send reset link', btnOp: rs ? '1' : '0.5',
+          confirm:()=>{ if (!rs) return this.flash('Add a reason or ticket number'); this.audit('Owner PIN reset link sent', {v:v.id, reason:rs}); close(); this.flash('Reset link sent to '+v.owner); }};
+      if (M.kind==='assign') md = {...base, title:'Assign sales person', sub:v.name, hasChips:true, chips: this.team().filter(x=>x.role==='sales' && x.active).map(x=>{ const f = x.name.split(' ')[0]; return chip(M.pick===f, x.name, ()=>setM({pick:f})); }), btn:'Assign',
+          confirm:()=>{ this.setV(v.id, {sales:M.pick}); this.audit('Sales person changed', {v:v.id, chg:[['Sales',v.sales,M.pick]]}); close(); this.flash(v.name+' → '+M.pick); }};
+      if (M.kind==='apw') { const tmem = this.team().find(x=>x.id===M.tid);
+        md = {...base, title:'Send password reset?', sub:tmem.name+' gets an email at '+tmem.email+' with a link to set a new password. Their current sessions end when they set it.', btn:'Send reset email',
+          confirm:()=>{ this.audit('Password reset email sent · '+tmem.name, {}); close(); this.flash('Reset email sent to '+tmem.email); }}; }
+      if (M.kind==='mypw') { const p1 = M.p1||'', p2 = M.p2||'', okL = p1.length>=8, okM = p1===p2 && !!p2, okC = (M.p0||'').length>0;
+        md = {...base, title:'Change your password', sub:'Use at least 8 characters. Other devices are signed out.', hasPw:true, pw:[['p0','Current password',M.p0||''],['p1','New password · min. 8 characters',p1],['p2','Confirm new password',p2]].map(([k,ph,v])=>({ph, val:v, onChange:e=>setM({[k]:e.target.value})})),
+          hasWarn: (p1 && !okL) || (p2 && !okM), warn: p1 && !okL ? 'Password must be at least 8 characters' : 'Passwords do not match', btn:'Update password', btnOp: okC && okL && okM ? '1' : '0.5',
+          confirm:()=>{ if (!okC) return this.flash('Enter your current password'); if (!okL) return this.flash('Password must be at least 8 characters'); if (!okM) return this.flash('Passwords do not match'); this.audit('Changed own password', {}); close(); this.flash('Password updated'); }}; }
+      if (M.kind==='pwreset') { const em = v.owner.split(' ')[0].toLowerCase()+'@'+this.slug(v).replace(/-/g,'')+'.in';
+        md = {...base, title:'Send password reset?', sub:'A password-reset email goes to '+v.name+"'s owner at "+em+'. They open it and follow the link to set a new password. Nagarva staff never see the password.', hasReason:true, reasonPh:'Ticket number or note (optional)', btn:'Send reset email',
+          confirm:()=>{ this.audit('Owner password reset email sent', {v:v.id, reason:rs||undefined}); close(); this.flash('Password reset email sent to '+em); }}; }
+      if (M.kind==='tdate') { const dd = M.date ? Math.round((new Date(M.date+'T00:00:00') - new Date(2026,9,16))/864e5) : null;
+        md = {...base, title:'Set trial end date', sub: v.name+' · now '+(v.days<0 ? 'ended ' : 'ends ')+this.dOf(v.days), hasDate:true, date:M.date||'', onDate:e=>setM({date:e.target.value}), btn:'Set date', btnOp: dd!=null ? '1' : '0.5',
+          confirm:()=>{ if (dd==null) return this.flash('Pick a date'); this.setV(v.id, {days:dd, status: dd<0 ? 'expired' : (v.plan==='trial' ? 'trial' : (v.status==='expired'||v.status==='grace' ? 'active' : v.status))}); this.audit('Trial end date set', {v:v.id, chg:[['Trial ends', this.dOf(v.days), this.dOf(dd)]]}); close(); this.flash('Trial now ends '+this.dOf(dd)); }}; }
+      if (M.kind==='delorg') { const u = this.usage(v), sl = this.slug(v), ok = (M.typed||'').trim()===sl;
+        md = {...base, title:'Delete '+v.name+'?', sub:'This removes the organization and everything in it for good. It cannot be undone. A record stays in the audit log.', hasRows:true, rows:[['Orders',u.orders],['Leads',u.leads],['Staff',u.staff],['Invoices',u.inv],['Owner login','1']].map(([l2,n2],k)=>({label:l2, value:String(n2), border: k ? '1px solid '+C.w06 : '0'})),
+          hasType:true, typePh:'Type '+sl+' to confirm', typed:M.typed||'', onType:e=>setM({typed:e.target.value}), hasReason:true, btn:'Delete organization', btnBg:this.col(25), btnOp: ok && rs ? '1' : '0.5',
+          confirm:()=>{ if (!ok) return this.flash('Type the slug exactly to confirm'); if (!rs) return this.flash('A reason is required'); this.setState(s2=>({vendors:(s2.vendors||this.V0).filter(x=>x.id!==v.id), md:null})); this.audit('Organization deleted · '+v.name+' ('+sl+')', {reason:rs, chg:[['Data', u.orders+' orders, '+u.leads+' leads, '+u.staff+' staff', 'Deleted']]}); go('vendors'); this.flash(v.name+' deleted'); }}; }
+      if (M.kind==='suspend' || M.kind==='deactivate' || M.kind==='activate') { const to = {suspend:'suspended', deactivate:'deactivated', activate: v.plan==='trial' ? 'trial' : 'active'}[M.kind];
+        md = {...base, title: {suspend:'Suspend vendor', deactivate:'Deactivate vendor', activate:'Activate vendor'}[M.kind], sub: M.kind==='activate' ? v.name+' will get access back right away.' : M.kind==='suspend' ? v.name+' is locked out right away. Every session, owner and staff, sees the same lock screen as an expired trial.' : v.name+' and all their staff are logged out and see a contact-support screen. Their data is kept.', hasReason:true, btn: {suspend:'Suspend', deactivate:'Deactivate', activate:'Activate'}[M.kind], btnBg: M.kind==='activate' ? A : this.col(25), btnOp: rs ? '1' : '0.5',
+          confirm:()=>{ if (!rs) return this.flash('A reason is required'); this.setV(v.id, {status:to, reason: M.kind==='activate' ? null : rs}); this.audit('Vendor '+{suspend:'suspended', deactivate:'deactivated', activate:'activated'}[M.kind], {v:v.id, reason:rs, chg:[['Status',this.ST[v.status][0],this.ST[to][0]]]}); close(); this.flash(v.name+' · '+this.ST[to][0]); }}; }
+    }
+
+    // approvals
+    const RQK = {extend:['more_time',255], discount:['sell',55]};
+    const isSup = m.role==='super', mineR = r=>isSup || r.by===m.name;
+    const rqAll = this.reqs().filter(mineR), rqTab = st.apTab;
+    const decide = (r, ok, note)=>{ const v = all.find(x=>x.id===r.vid);
+      this.setState(s2=>({reqs:(s2.reqs||this.REQ0).map(x=>x.id===r.id ? {...x, status: ok ? 'approved' : 'rejected', dBy:m.name, dNote:note||''} : x)}));
+      if (ok && r.kind==='extend') { this.setV(v.id, {days:v.days+r.n}); this.audit('Approved · trial extended '+r.n+' days (asked by '+r.by+')', {v:v.id, reason:r.reason, chg:[['Days left',String(v.days),String(v.days+r.n)]]}); }
+      if (ok && r.kind==='discount') { this.setV(v.id, {disc:r.n}); this.audit('Approved · '+r.n+'% discount (asked by '+r.by+')', {v:v.id, reason:r.reason, chg:[['Discount',(v.disc||0)+'%',r.n+'%']]}); }
+      if (!ok) this.audit('Rejected · '+(r.kind==='extend' ? r.n+' day extension' : r.n+'% discount')+' (asked by '+r.by+')', {v:v.id, reason:note});
+      this.flash(ok ? 'Approved · '+v.name : 'Rejected · '+r.by+' notified'); };
+    const ap = {tabs: [['pending','Pending'],['done','Decided']].map(([k,label])=>({label, n:String(rqAll.filter(r=>k==='pending' ? r.status==='pending' : r.status!=='pending').length), bg: rqTab===k ? C.sel : 'transparent', color: rqTab===k ? C.text : C.mute, onClick:()=>this.setState({apTab:k})})),
+      list: rqAll.filter(r=>rqTab==='pending' ? r.status==='pending' : r.status!=='pending').map(r=>{ const v = all.find(x=>x.id===r.vid)||{name:r.vid}, [icon,hh] = RQK[r.kind];
+        return {icon, bg:this.tint(hh), color:this.col(hh), title: r.kind==='extend' ? 'Extend trial by '+r.n+' days (limit '+cfg.ext+')' : r.n+'% discount (limit '+cfg.disc+'%)', vendor:v.name, onVendor:()=>openV(r.vid), by:r.by, t:r.t, reason:r.reason,
+          canDecide: isSup && r.status==='pending', isPendingMine: !isSup && r.status==='pending', hasDecision: r.status!=='pending', decision: (r.status==='approved' ? 'Approved' : 'Rejected')+' by '+r.dBy+(r.dNote ? ' · '+r.dNote : ''), decColor: r.status==='approved' ? this.col(155) : this.col(25),
+          onApprove:()=>decide(r,true), onReject:()=>this.setState({md:{kind:'reject', rid:r.id, reason:''}})}; }),
+      emptyText: rqTab==='pending' ? (isSup ? 'Nothing waiting. Requests above the sales limits show here.' : 'No pending requests from you.') : 'No decisions yet.'};
+    ap.empty = !ap.list.length;
+    const suL = this.suLs(), suD = st.suD||{}, canSu = this.can('approvals',1), BTN = {pm:'Packers & movers', tr:'Transport', both:'Packers & transport'}, DOCN = {pan:'PAN card', gstc:'GST certificate', shop:'Office photo'};
+    const suAll = [...suL.slice().reverse(), ...this.SU0.map(x=>({...x, ...(suD[x.id]||{})}))];
+    const fph = p=>{ const d = String(p).replace(/\D/g,''); return d.length===10 ? d.slice(0,5)+' '+d.slice(5) : p; };
+    const suSet = (r, patch)=>{ if (suL.some(x=>x.id===r.id)) { localStorage.setItem('ng_signups', JSON.stringify(suL.map(x=>x.id===r.id ? {...x, ...patch} : x))); this.forceUpdate(); } else this.setState(s2=>({suD:{...(s2.suD||{}), [r.id]:{...((s2.suD||{})[r.id]||{}), ...patch}}})); };
+    const SRS = ['PAN card photo is not clear','GST certificate does not match the GSTIN','Business details are incomplete','This business already has an account'];
+    const suTab = suAll.filter(r=>rqTab==='pending' ? r.status==='pending' : r.status!=='pending');
+    ap.sg = {has: suTab.length>0, n:String(suTab.length), list: suTab.map(r=>({name:r.name, meta:r.owner+' · +91 '+fph(r.phone)+' · '+r.city+' · '+(BTN[r.biz]||'')+' · '+this.agoT(r.ts)+(this.agoT(r.ts)==='Just now' ? '' : ' ago'),
+      bg:this.tint(r.status==='approved' ? 155 : r.status==='rejected' ? 25 : 85), color:this.col(r.status==='approved' ? 155 : r.status==='rejected' ? 25 : 85),
+      details:[['Application',r.id],['GSTIN',r.gst||'Not registered'],['Email',r.email||'—'],['Referral code',r.ref||'—']].map(([k,v])=>({k,v})),
+      docs:Object.entries(r.docs||{}).filter(([,v])=>v).map(([k,v])=>({label:DOCN[k]||k, file:v, onClick:()=>this.flash('Opening '+v)})),
+      canDecide: canSu && r.status==='pending', picking: st.suPick===r.id && r.status==='pending', hasDecision: r.status!=='pending', decColor: r.status==='approved' ? C.green : C.red,
+      decision: (r.status==='approved' ? 'Approved' : 'Sent back')+(r.dBy ? ' by '+r.dBy : '')+(r.vid ? ' · '+r.vid : ''), hasReason: r.status==='rejected' && !!r.reason, reason:r.reason||'',
+      reasons: SRS.map(w=>({label:w, onClick:()=>{ suSet(r, {status:'rejected', reason:w, dBy:m.name}); this.setState({suPick:null}); this.audit('Signup sent back · '+r.name+' ('+r.id+')', {reason:w}); this.flash('Sent back · '+r.owner+' notified on WhatsApp'); }})),
+      onReject:()=>this.setState({suPick: st.suPick===r.id ? null : r.id}),
+      onApprove:()=>{ const id = 'NV-'+(1050+all.length); suSet(r, {status:'approved', reason:'', dBy:m.name, vid:id});
+        this.setState(s2=>({vendors:[{id, name:r.name, owner:r.owner, phone:fph(r.phone), city:r.city, plan:'free', cycle:'m', status:'active', days:0, users:1, orders:0, src: r.ref ? 'Referral' : 'App signup', sales:'—', gst:r.gst||'', joined:'16 Oct 2026', err:0}, ...(s2.vendors||this.V0)]}));
+        this.audit('Signup approved · '+r.name+' ('+r.id+')', {v:id}); this.flash(r.name+' approved · owner can start a 30-day Pro trial'); }}))};
+    ap.empty = !ap.list.length && !ap.sg.has;
+
+    // payments
+    const PST = {paid:['Paid','check_circle',155], failed:['Failed','credit_card_off',25], retrying:['Retrying','autorenew',85], refunded:['Refunded','undo',300]};
+    const gst = b=>Math.round(b*0.18), tot = p=>p.base+gst(p.base), pAll = this.pays().filter(p=>{ const v = all.find(x=>x.id===p.vid); return !v || this.mine(v); }), oct = pAll.filter(p=>/Oct/.test(p.date));
+    const setP = (id,patch)=>this.setState(s2=>({pays:(s2.pays||this.PAY0).map(p=>p.id===id ? {...p, ...patch} : p)}));
+    const pfOf = {all:()=>true, paid:p=>p.status==='paid', failed:p=>p.status==='failed'||p.status==='retrying', refunded:p=>p.status==='refunded'};
+    const canPayEdit = this.can('payments',2), canRefund = this.can('payments',3);
+    const pyList = pAll.filter(pfOf[st.pf]).map((p,k)=>{ const v = all.find(x=>x.id===p.vid)||{name:p.vid}, [l,icon,hh] = PST[p.status], open = st.popen===p.id;
+      const acts = [];
+      if (p.inv) acts.push({label:'Resend invoice', icon:'forward_to_inbox', onClick:()=>{ this.audit('Invoice '+p.inv+' resent on WhatsApp + email', {v:p.vid}); this.flash(p.inv+' sent to '+v.owner); }});
+      if ((p.status==='failed'||p.status==='retrying') && canPayEdit) acts.push({label:'Retry now', icon:'autorenew', onClick:()=>{ setP(p.id, {status:'paid', inv:'INV-'+p.id.slice(2), note:'Paid on manual retry'}); if (v.id) this.setV(v.id, {status:'active', days:30}); this.audit('AutoPay retried · payment succeeded', {v:p.vid, chg:[['Payment','Failed','Paid'],['Vendor status',(this.ST[v.status]||['—'])[0],'Active']]}); this.flash('Retry succeeded · '+v.name+' active'); }});
+      if (p.status==='paid' && canRefund) acts.push({label:'Refund', icon:'undo', danger:true, onClick:()=>this.setState({md:{kind:'refund', pid:p.id, reason:''}})});
+      acts.push({label:'Open vendor', icon:'storefront', onClick:()=>openV(p.vid)});
+      return {vendor:v.name, sub:p.date+' · '+p.plan+' · '+p.method, amt:this.fmt(tot(p)), amtColor: p.status==='refunded' ? C.faint : C.text, stLabel:l, icon, color:this.col(hh), open, border: k ? '1px solid '+C.w06 : '0',
+        onToggle:()=>this.setState({popen: open ? null : p.id}),
+        rows: [['Payment',p.id,1],['Razorpay ID',p.rz,1],['Invoice',p.inv||'—',1],['Plan price',this.fmt(p.base),1],['GST 18%',this.fmt(gst(p.base)),1],['Note',p.note||'—',0]].map(([l2,v2,mono])=>({l:l2, v:v2, font: mono ? "'Geist Mono',monospace" : 'inherit'})),
+        acts: acts.map(a=>({...a, bg: a.danger ? C.redBg : C.s2, color: a.danger ? this.col(25) : C.text, border: a.danger ? C.redLine : C.w08}))}; });
+    const paidOct = oct.filter(p=>p.status==='paid'), refOct = oct.filter(p=>p.status==='refunded');
+    const exportX = ()=>{ const cols = ['Payment ID','Date','Vendor','GSTIN','Plan','Method','Status','Plan price','GST 18%','Total','Razorpay ID','Invoice'];
+      const rows = oct.map(p=>{ const v = all.find(x=>x.id===p.vid)||{}; return [p.id,p.date+' 2026',v.name,v.gst||'',p.plan,p.method,PST[p.status][0],p.base,gst(p.base),tot(p),p.rz,p.inv]; });
+      const sum = [['','','','','','','Collected',paidOct.reduce((a,p)=>a+p.base,0),paidOct.reduce((a,p)=>a+gst(p.base),0),paidOct.reduce((a,p)=>a+tot(p),0),'',''],['','','','','','','Refunded',refOct.reduce((a,p)=>a+p.base,0),refOct.reduce((a,p)=>a+gst(p.base),0),refOct.reduce((a,p)=>a+tot(p),0),'','']];
+      const esc = x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      const html = '<html><head><meta charset="utf-8"></head><body><table border="1"><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr>'+[...rows,...sum].map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</table></body></html>';
+      try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html],{type:'application/vnd.ms-excel'})); a.download = 'nagarva-payments-oct-2026.xls'; document.body.appendChild(a); a.click(); a.remove(); } catch(e) {}
+      this.audit('October payments report exported (Excel)', {}); this.flash('October report downloaded'); };
+    const py = {tiles: [['Collected · Oct', this.fmt(paidOct.reduce((a,p)=>a+tot(p),0)), paidOct.length+' payments', C.text],['GST collected · Oct', this.fmt(paidOct.reduce((a,p)=>a+gst(p.base),0)), 'for GSTR-1', C.text],['Failed / retrying', String(pAll.filter(pfOf.failed).length), 'AutoPay retries day 1 & 3', this.col(25)],['Refunds · Oct', this.fmt(refOct.reduce((a,p)=>a+tot(p),0)), refOct.length+(refOct.length===1 ? ' credit note' : ' credit notes'), this.col(300)]].map(([label,value,sub,color])=>({label,value,sub,color})),
+      chips: [['all','All'],['paid','Paid'],['failed','Failed'],['refunded','Refunded']].map(([k,label])=>{ const on = st.pf===k; return {label, n:String(pAll.filter(pfOf[k]).length), bg: on ? C.text : 'transparent', color: on ? C.invText : C.soft, border: on ? C.text : C.w1, onClick:()=>this.setState({pf:k})}; }),
+      list: pyList, hasMismatch: !st.mmFixed && (isSup || canPayEdit), noMismatch: !!st.mmFixed && (isSup || canPayEdit), canFix: canPayEdit, canExport: isSup,
+      mm: 'Razorpay pay_Oc15Xr27 · ₹1,769 on 15 Oct · paid from 99490 12345, which is not on any vendor. Likely Deccan Shift Logistics paying from another phone.',
+      onLink:()=>this.setState({md:{kind:'link', pick:'NV-1031'}}), onExport: exportX};
+
+    // tickets
+    const tks = this.allTks(), setTk = (id,fn)=>{ const L = this.lsT(); if (L.some(x=>x.id===id)) { localStorage.setItem('ng_support_tickets', JSON.stringify(L.map(x=>{ if (x.id!==id) return x; const y = fn({...x}); delete y.age; return y; }))); this.forceUpdate(); } else this.setState(s2=>({tks:(s2.tks||this.TK0).map(x=>x.id===id ? fn({...x}) : x)})); };
+    const nowT = ()=>{ const d = new Date(), hh = d.getHours(); return ((hh%12)||12)+':'+String(d.getMinutes()).padStart(2,'0')+' '+(hh<12?'AM':'PM'); };
+    const PRI = {high:25, normal:85, low:260}, TST = {open:['Open',85], waiting:['Waiting on vendor',255], resolved:['Resolved',155]}, PO = {high:0, normal:1, low:2};
+    const tf = st.tf || 'open', tfOf = {open:x=>x.status==='open', mine:x=>x.agent===m.name && x.status!=='resolved', waiting:x=>x.status==='waiting', resolved:x=>x.status==='resolved'};
+    const tSel = tks.find(x=>x.id===st.tsel2), canTk = this.can('tickets',2);
+    const tk = {chips: [['open','Open'],['mine','Mine'],['waiting','Waiting'],['resolved','Resolved']].map(([k,label])=>{ const on = tf===k; return {label, n:String(tks.filter(tfOf[k]).length), bg: on ? C.text : 'transparent', color: on ? C.invText : C.soft, border: on ? C.text : C.w1, onClick:()=>this.setState({tf:k})}; }),
+      list: tks.filter(tfOf[tf]).sort((a,b)=>PO[a.pri]-PO[b.pri]).map((x,k)=>({id:x.id, subject:x.subject, vendor:(all.find(y=>y.id===x.vid)||{name:x.vid}).name, age:x.age, agent: x.agent ? x.agent.split(' ')[0] : 'Not picked up', pColor:this.col(PRI[x.pri]), stLabel:TST[x.status][0], stColor:this.col(TST[x.status][1]), bg: st.tsel2===x.id ? C.s2 : 'transparent', border: k ? '1px solid '+C.w06 : '0', onOpen:()=>this.setState({tsel2:x.id, reply:''})})),
+      hasSel: !!tSel, reply: st.reply||'', onReply:e=>this.setState({reply:e.target.value}), canReply: !!tSel && canTk && tSel.status!=='resolved', sel:{}, tools:[], btns:[]};
+    tk.empty = !tk.list.length;
+    if (tSel) { const v = all.find(y=>y.id===tSel.vid)||{name:tSel.vid, owner:''}, cust = tSel.who.split(' · ')[0];
+      tk.sel = {subject:tSel.subject, id:tSel.id, who:tSel.who, vendor:v.name, onVendor:()=>openV(tSel.vid), hasErr:!!tSel.err, err:tSel.err,
+        meta: [['flag',tSel.pri[0].toUpperCase()+tSel.pri.slice(1)+' priority',this.col(PRI[tSel.pri])],['smartphone',tSel.screen,C.soft],['info',tSel.ver,C.soft],['person',tSel.agent||'Not picked up',tSel.agent ? C.soft : this.col(85)], ...(tSel.topic ? [['label',tSel.topic,C.soft]] : []), ...(tSel.shot ? [['screenshot_monitor','Screenshot attached',C.soft]] : [])].map(([icon,vv,color])=>({icon, v:vv, color})),
+        msgs: tSel.msgs.map(([w,text,t2])=>({text, meta:(w==='a' ? 'Nagarva support · '+(tSel.src==='app' ? 'in app' : 'WhatsApp') : cust)+' · '+t2, align: w==='a' ? 'flex-end' : 'flex-start', bg: w==='a' ? this.tint(55) : C.s2}))};
+      tk.send = ()=>{ const t2 = (st.reply||'').trim(); if (!t2) return this.flash('Type a reply'); setTk(tSel.id, x=>({...x, msgs:[...x.msgs, ['a',t2,nowT()]], agent: x.agent||m.name, status:'waiting'})); this.setState({reply:''}); this.flash((tSel.src==='app' ? 'Reply sent in app to ' : 'Sent on WhatsApp to ')+cust); };
+      tk.tools = [['lock_reset','Reset PIN',()=>this.setState({md:{kind:'pin', vid:tSel.vid, reason:tSel.id}})],['forward_to_inbox','Resend invoice',()=>{ this.audit('Latest invoice resent · '+tSel.id, {v:tSel.vid}); this.flash('Invoice sent to '+v.owner); }],['more_time','Extend trial',()=>this.setState({md:{kind:'extend', vid:tSel.vid, num:'3', reason:tSel.id}})],['payments','Check payments',()=>go('payments',{pf:'all'})]].map(([icon,label,onClick])=>({icon,label,onClick}));
+      tk.btns = !canTk ? [] : tSel.status==='resolved' ? [{label:'Reopen', bg:C.s2, color:C.text, onClick:()=>{ setTk(tSel.id, x=>({...x, status:'open'})); this.flash('Ticket reopened'); }}] : [
+        ...(tSel.agent!==m.name ? [{label:'Assign to me', bg:C.s2, color:C.text, onClick:()=>{ setTk(tSel.id, x=>({...x, agent:m.name})); this.flash(tSel.id+' assigned to you'); }}] : []),
+        {label:'Mark resolved', bg:this.col(155), color: this.th()==='light' ? '#FFFFFF' : '#0A0C10', onClick:()=>{ setTk(tSel.id, x=>({...x, status:'resolved', agent:x.agent||m.name})); this.audit('Ticket resolved · '+tSel.id, {v:tSel.vid}); this.flash('Resolved · vendor asked to rate on WhatsApp'); }}]; }
+
+    // coupons
+    const cps = st.cps || this.CP0, canCp = this.can('coupons',1), canCpE = this.can('coupons',2), PN = {starter:'Basic', growth:'Growth', pro:'Pro'};
+    const cType = st.cType || 'pct', cPlans = st.cPlans || ['basic','growth','pro'];
+    const cp = {canEdit: canCp, code:st.cCode||'', val:st.cVal||'', till:st.cTill||'', max:st.cMax||'',
+      onCode:e=>this.setState({cCode:e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'')}), onVal:e=>this.setState({cVal:e.target.value.replace(/\D/g,'')}), onTill:e=>this.setState({cTill:e.target.value}), onMax:e=>this.setState({cMax:e.target.value.replace(/\D/g,'')}),
+      types: [['pct','% off'],['flat','₹ off']].map(([k,label])=>({label, bg: cType===k ? C.text : C.s2, color: cType===k ? C.invText : C.soft, onClick:()=>this.setState({cType:k})})),
+      plans: Object.keys(PN).map(k=>{ const on = cPlans.includes(k); return {label:PN[k], bg: on ? C.sel : 'transparent', color: on ? C.text : C.faint, onClick:()=>this.setState({cPlans: on ? cPlans.filter(x=>x!==k) : [...cPlans,k]})}; }),
+      note: m.role==='super' ? 'No limit for super admin.' : '% coupons above 30% need the super admin.',
+      create:()=>{ const code = st.cCode||'', val = parseInt(st.cVal,10)||0, max = parseInt(st.cMax,10)||0, till = (st.cTill||'').trim();
+        if (!code || !val || !till || !max || !cPlans.length) return this.flash('Fill code, value, valid till, max uses and plans');
+        if (cps.some(c=>c.code===code)) return this.flash('Code already exists');
+        if (cType==='pct' && val>30 && m.role!=='super') return this.flash('Above 30% needs the super admin');
+        this.setState({cps:[{code, type:cType, val, till, max, used:0, plans:cPlans, on:true, by:m.name}, ...cps], cCode:'', cVal:'', cTill:'', cMax:''});
+        this.audit('Coupon created · '+code+' · '+(cType==='pct' ? val+'%' : this.fmt(val))+' off', {}); this.flash(code+' is live'); },
+      list: cps.map((c,k)=>{ const full = c.used>=c.max, live = c.on && !full;
+        return {code:c.code, off: c.type==='pct' ? c.val+'% off' : this.fmt(c.val)+' off', sub: c.plans.map(p=>PN[p]).join(', ')+' · till '+c.till+' · '+(full ? 'limit reached' : c.on ? 'live' : 'paused')+' · by '+c.by.split(' ')[0], usedL: c.used+' / '+c.max, w: Math.min(100, c.used/c.max*100)+'%', op: live ? '1' : '0.55', just: c.on ? 'flex-end' : 'flex-start', tBg: c.on ? A : C.w15, cursor: canCpE ? 'pointer' : 'default', border: k ? '1px solid '+C.w06 : '0',
+          onToggle:()=>{ if (!canCpE) return this.flash('View only for your role'); this.setState({cps:cps.map(x=>x.code===c.code ? {...x, on:!x.on} : x)}); this.audit('Coupon '+c.code+(c.on ? ' paused' : ' resumed'), {}); }}; })};
+
+    // broadcasts
+    const bcs = st.bcs || this.BC0, canBc = this.can('broadcasts',1), bChan = st.bChan || 'wa', bAud = st.bAud || 'all';
+    const AUD = {all:'All vendors', plan:'By plan', city:'By city', trial:'Trial vendors', expiring:'Expiring in 7 days'}, CH = {wa:['WhatsApp','chat'], app:['In-app','notifications'], both:['Both','campaign']};
+    const subOpts = bAud==='plan' ? Object.keys(PN).map(k=>[k,PN[k]]) : bAud==='city' ? [...new Set(all.map(v=>v.city))].map(c=>[c,c]) : [];
+    const bSub = st.bSub || (subOpts[0]||[])[0];
+    const target = all.filter(v=>v.status!=='deactivated' && v.status!=='suspended').filter(v=> bAud==='all' ? true : bAud==='trial' ? v.status==='trial' : bAud==='expiring' ? exp.includes(v) : bAud==='plan' ? v.plan===bSub : v.city===bSub);
+    const bMsg = st.bMsg || '';
+    const bc = {canEdit: canBc, msg:bMsg, onMsg:e=>this.setState({bMsg:e.target.value}),
+      chans: Object.entries(CH).map(([k,[label,icon]])=>({label, icon, bg: bChan===k ? C.text : C.s2, color: bChan===k ? C.invText : C.soft, onClick:()=>this.setState({bChan:k})})),
+      auds: Object.entries(AUD).map(([k,label])=>({label, bg: bAud===k ? C.text : C.s2, color: bAud===k ? C.invText : C.soft, onClick:()=>this.setState({bAud:k, bSub:null})})),
+      hasSub: !!subOpts.length, subs: subOpts.map(([k,label])=>({label, bg: bSub===k ? C.sel : 'transparent', color: bSub===k ? C.text : C.faint, onClick:()=>this.setState({bSub:k})})),
+      reach: target.length+' vendor owners'+(bChan!=='app' ? ' · WhatsApp marketing template, about ₹'+Math.round(target.length*0.8)+' charged by Meta' : '')+'. Suspended and deactivated vendors are skipped.',
+      btn: 'Send to '+target.length, op: target.length && bMsg.trim() ? '1' : '0.5',
+      send:()=>{ const msg = bMsg.trim(); if (!msg) return this.flash('Write a message'); if (!target.length) return this.flash('No vendors in this group');
+        const audL = AUD[bAud]+(subOpts.length ? ' · '+((subOpts.find(o=>o[0]===bSub)||[])[1]||'') : '');
+        this.setState({bcs:[{chan:bChan, aud:audL, n:target.length, msg, t:'16 Oct', by:m.name}, ...bcs], bMsg:''}); this.audit('Broadcast sent · '+audL+' · '+target.length+' vendors', {}); this.flash('Sent to '+target.length+' vendors'); },
+      list: bcs.map(b=>({icon:CH[b.chan][1], msg:b.msg, sub:CH[b.chan][0]+' · '+b.aud+' · '+b.n+' vendors · by '+b.by.split(' ')[0], t:b.t}))};
+
+    // plans
+    const cD = st.cDraft || cfg, canEditP = this.can('plans',2), PE = st.pe, dirty = !!st.cDraft;
+    const num = e=>parseInt(String(e.target.value).replace(/\D/g,''),10)||0;
+    const pp = {ro: !canEditP, canEdit: canEditP, newPlan:()=> canEditP ? this.setState({pe:{ix:null, name:'', code:'', pm:'', py:'', def:false, trialDays:'30', graceDays:'7', users:'', orders:'', wa:'', feat:{whatsapp:false, reports:false, gst_invoice:false, multi_branch:false}, err:''}}) : this.flash('View only for your role'),
+      plans: this.plans().map((p,ix)=>({name:p.name, code:p.code||'—', isDef:!!p.def, price: p.pm ? this.fmt(p.pm)+' / month · '+this.fmt(p.py)+' / year' : 'Free', count: all.filter(v=>v.plan===p.k).length+' vendors', tg: p.pm ? p.trialDays+'-day trial · '+p.graceDays+'-day grace' : 'Free forever · no card needed',
+        lims: this.LIM.map(([k,l])=>({label:l, value:this.lim(p[k])})), feats: this.FEAT.map(([k,l])=>({label:l, icon: p.feat[k] ? 'check' : 'close', color: p.feat[k] ? C.text : C.faint, bg: p.feat[k] ? C.s2 : 'transparent', deco: p.feat[k] ? 'none' : 'line-through'})),
+        edit:()=> canEditP ? this.setState({pe:{ix, ...p, pm:String(p.pm), py:String(p.py), trialDays:String(p.trialDays), graceDays:String(p.graceDays), users:String(p.users), orders:String(p.orders), wa:String(p.wa), feat:{...p.feat}, err:''}}) : this.flash('View only for your role')})),
+      cfg: [['disc','Max discount by sales','above needs super admin','%'],['ext','Max extension by sales/support','per request','days']].map(([key,label,sub,suf])=>({label, sub, suf, val:String(cD[key]), border: cD[key]!==cfg[key] ? A : C.w08, onVal:e=>{ const v = num(e); this.setState(s2=>({cDraft:{...(s2.cDraft||cfg), [key]:v}})); }})),
+      note: !canEditP ? 'View only for your role' : dirty ? 'Unsaved changes' : 'No changes', noteColor: dirty ? this.col(85) : C.faint,
+      reset:()=>this.setState({cDraft:null}),
+      save:()=>{ if (!dirty) return this.flash('Nothing to save'); const chg = []; [['disc','Sales discount cap %'],['ext','Extension cap days']].forEach(([k,l])=>{ if (cD[k]!==cfg[k]) chg.push([l, String(cfg[k]), String(cD[k])]); }); this.setState({cfg:cD, cDraft:null}); this.audit('Approval limits changed', {chg}); this.flash('Limits saved'); }};
+    let pe = {open:false};
+    if (PE) { const setE = p2=>this.setState(s2=>({pe:{...s2.pe, ...p2}})), others = this.plans().filter((_,j)=>j!==PE.ix), F = (key,label,mode,hint)=>({label, hint:hint||'', val:PE[key], mode:mode||'numeric', onChange:e=>setE({[key]: mode==='text' ? e.target.value : e.target.value.replace(/[^0-9-]/g,'')})});
+      const tg = on=>({bg: on ? A : C.w12, just: on ? 'flex-end' : 'flex-start'});
+      pe = {open:true, title: PE.ix==null ? 'New plan' : 'Edit plan', btn: PE.ix==null ? 'Create plan' : 'Save changes', err:PE.err||'', hasErr:!!PE.err, align: wide ? 'center' : 'flex-end', radius: wide ? '20px' : '22px 22px 0 0',
+        close:()=>this.setState({pe:null}), basic:[F('name','Name *','text'), F('code','Code (short slug, e.g. "pro")','text')], prices:[F('pm','Monthly price (₹)'), F('py','Yearly price (₹)')], days:[F('trialDays','Trial days'), F('graceDays','Grace days')],
+        lims: this.LIM.map(([k,l])=>F(k,l)), def: tg(!!PE.def), onDef:()=>setE({def:!PE.def}),
+        feats: this.FEAT.map(([k,l])=>({label:l, ...tg(!!PE.feat[k]), onClick:()=>setE({feat:{...PE.feat, [k]:!PE.feat[k]}})})),
+        save:()=>{ if (!(PE.name||'').trim()) return setE({err:'Name is required.'});
+          const wasDef = PE.ix!=null && this.plans()[PE.ix].def;
+          if (wasDef && !PE.def && !others.some(p=>p.def)) return setE({err:'At least one plan must be the default trial plan. Set another plan as default first.'});
+          const n = (x,d)=>{ const v = parseInt(x,10); return isNaN(v) ? d : v; };
+          const rec = {k: PE.ix!=null ? this.plans()[PE.ix].k : ((PE.code||PE.name).toLowerCase().replace(/[^a-z0-9]+/g,'-')), name:PE.name.trim(), code:(PE.code||'').trim()||null, pm:n(PE.pm,0), py:n(PE.py,0), def:!!PE.def, trialDays:n(PE.trialDays,30), graceDays:n(PE.graceDays,7), users:n(PE.users,-1), orders:n(PE.orders,-1), wa:n(PE.wa,-1), feat:{...PE.feat}};
+          const list = this.plans().map((p,j)=>({...(j===PE.ix ? rec : p), ...(rec.def && j!==PE.ix ? {def:false} : {})}));
+          if (PE.ix==null) list.push(rec);
+          const old = PE.ix!=null ? this.plans()[PE.ix] : null, chg = [];
+          if (old) { [['pm','Monthly price'],['py','Yearly price'],['trialDays','Trial days'],['graceDays','Grace days'],['users','Users'],['orders','Orders / month'],['wa','WhatsApp / month']].forEach(([k,l])=>{ if (old[k]!==rec[k]) chg.push([rec.name+' · '+l, String(old[k]), String(rec[k])]); }); this.FEAT.forEach(([k,l])=>{ if (!!old.feat[k]!==!!rec.feat[k]) chg.push([rec.name+' · '+l, old.feat[k] ? 'On' : 'Off', rec.feat[k] ? 'On' : 'Off']); }); if (!!old.def!==rec.def) chg.push([rec.name+' · Default trial', old.def ? 'Yes' : 'No', rec.def ? 'Yes' : 'No']); }
+          this.setState({plans:list, pe:null}); this.audit(old ? 'Plan edited · '+rec.name : 'Plan created · '+rec.name, {chg}); this.flash(old ? rec.name+' saved' : rec.name+' created'); }};
+      pe.lims = pe.lims.map(f=>({...f, hint:'-1 = unlimited'})); }
+
+    // team
+    const tl = this.team(), sel = tl.find(x=>x.id===st.tsel), canTeam = this.can('team',2);
+    const setT = (id,fn)=>this.setState(s2=>({team:(s2.team||this.TEAM0).map(x=>x.id===id ? fn({...x}) : x)}));
+    const canPw = m.role==='super';
+    const tmx = sel ? {resetOp: canPw ? '1' : '0.4',
+      resetPw:()=> canPw ? this.setState({md:{kind:'apw', tid:sel.id, reason:''}}) : this.flash('Only a super admin can do this'),
+      signOutAll:()=>{ if (!canPw) return this.flash('Only a super admin can do this'); this.audit('Signed out on all devices · '+sel.name, {}); this.flash(sel.name+' signed out everywhere'); }} : {};
+    const tm = {...tmx, list: tl.map((x,k)=>({...x, initial:x.name[0], roleL:this.ROLES[x.role], avBg:this.tint({super:55,sales:255,support:300,marketing:155}[x.role]), avColor:this.col({super:55,sales:255,support:300,marketing:155}[x.role]), stLabel: x.active ? 'Active' : 'Off', stColor: x.active ? this.col(155) : C.faint, bg: st.tsel===x.id ? C.s2 : 'transparent', border: k ? '1px solid '+C.w06 : '0', onOpen:()=>this.setState({tsel:x.id})})),
+      nName:st.nName, nEmail:st.nEmail, onName:e=>this.setState({nName:e.target.value}), onEmail:e=>this.setState({nEmail:e.target.value}),
+      roleChips: ['sales','support','marketing','super'].map(r=>({label:this.ROLES[r], bg: st.nRole===r ? C.text : C.s2, color: st.nRole===r ? C.invText : C.soft, onClick:()=>this.setState({nRole:r})})),
+      add:()=>{ if (!canTeam) return this.flash('Only the super admin can add people'); const nm = st.nName.trim(), em = st.nEmail.trim(); if (!nm || !em) return this.flash('Enter name and email'); const id = 'u'+Date.now(); this.setState(s2=>({team:[...(s2.team||this.TEAM0), {id, name:nm, email:em, role:st.nRole, active:true}], nName:'', nEmail:'', tsel:id})); this.audit('Admin team · '+nm+' added as '+this.ROLES[st.nRole], {}); this.flash(nm+' added · invite email sent'); },
+      hasSel: !!sel};
+    if (sel) { const p = this.permOf(sel), fixed = sel.role==='super';
+      Object.assign(tm, {sel:{name:sel.name, roleL:this.ROLES[sel.role]}, isSales: sel.role==='sales', allJust: sel.allV ? 'flex-end' : 'flex-start', allBg: sel.allV ? A : C.w15,
+        toggleAll:()=>{ if (!canTeam) return this.flash('Only the super admin can change this'); setT(sel.id, x=>({...x, allV:!x.allV})); this.audit((sel.allV ? 'Limited to assigned vendors · ' : 'Allowed all vendors · ')+sel.name, {}); },
+        actLabel: sel.active ? 'Deactivate' : 'Activate', actBg: sel.active ? C.redBg : A, actColor: sel.active ? this.col(25) : '#0A0C10',
+        toggleActive:()=>{ if (!canTeam || sel.id===m.id) return this.flash(sel.id===m.id ? 'You cannot deactivate yourself' : 'Only the super admin can do this'); setT(sel.id, x=>({...x, active:!x.active})); this.audit('Admin team · '+sel.name+(sel.active ? ' deactivated' : ' activated'), {}); },
+        note: fixed ? 'Super admin always has full access.' : canTeam ? 'Tap a box to change. Changes are logged.' : 'View only',
+        grid: this.MODS.map(([k,label])=>({label, cells:[0,1,2,3].map(i=>{ const on = !!p[k][i]; return {icon: on ? 'check_box' : 'check_box_outline_blank', color: on ? A : C.faint, cursor: fixed || !canTeam ? 'default' : 'pointer',
+          onClick:()=>{ if (fixed || !canTeam) return; const np = JSON.parse(JSON.stringify(p)); np[k][i] = on ? 0 : 1; if (!on && i>0) np[k][0] = 1; if (on && i===0) np[k] = [0,0,0,0]; setT(sel.id, x=>({...x, perm:np})); this.audit('Permission changed · '+sel.name, {chg:[[label+' · '+['View','Add','Edit','Delete'][i], on ? 'Yes' : 'No', on ? 'No' : 'Yes']]}); }}; })}))}); }
+
+    // audit
+    const au = {list: [...st.aud, ...this.AUD0].map((e,k)=>{ const v = e.v ? all.find(x=>x.id===e.v) : null; return {...e, time:e.t, hasVendor:!!v, vendor: v ? v.name : '', onVendor:()=>v && openV(v.id), chg:(e.chg||[]).map(([f,o,n])=>({f,o,n})), hasReason:!!e.reason, border: k ? '1px solid '+C.w06 : '0'}; })};
+
+    const TITLES = {dash:['Dashboard', m.role==='super' ? 'All vendors · today 16 Oct 2026' : this.ROLES[m.role]+' view · '+m.name], vendors:['Vendors', vis.length+' vendors'+(m.role==='sales' && !m.allV ? ' assigned to you' : '')], vendor:['Vendor', vr.name], approvals:['Approvals', isSup ? 'Requests above the sales and support limits' : 'Your requests to the super admin'], payments:['Payments','Subscriptions via Razorpay · October 2026'], plans:['Plans & pricing', canEditP ? 'Plans, limits, features and approval rules' : 'View only'], team:['Admin team', 'People, roles and permissions'], audit:['Audit log','Admin actions'], tickets:['Support tickets','From the Help button in the vendor app'], coupons:['Coupons','Codes vendors use at checkout'], broadcasts:['Broadcasts','WhatsApp and in-app messages to vendors'], denied:['No access',''], mkt:['Marketplace','Nagarva jobs · live dispatch, alerts, disputes and city rules']};
+    const tt = TITLES[s==='soon' ? cur : s==='denied' ? cur : s] || TITLES.dash;
+    return {...thx, pe, changePw:()=>this.setState({md:{kind:'mypw', p0:'', p1:'', p2:''}, drawer:false}), isLogin:false, isApp:true, lg, wide, narrow:!wide, pad: wide ? '28px 32px 40px' : '14px 14px 32px', nav, me:meV, scr, title:tt[0], subtitle:tt[1],
+      soonIcon: (NAV.find(n=>n[0]===cur)||[])[2]||'schedule', soonSub: SOON[cur]||'',
+      dash, vl, vd, md, pp, ap, py, tk, cp, bc, tm, au, mp: this.mpVals(C), toVendors:()=>go('vendors'), drawer: st.drawer, openDrawer:()=>this.setState({drawer:true}), closeDrawer:()=>this.setState({drawer:false}),
+      logout:()=>{ this.audit('Signed out', {}); this.setState({me:null, drawer:false}); }, hasToast:!!st.toast, toast:st.toast||''};
+  }
+}
+</script>
+</body>
+</html>
