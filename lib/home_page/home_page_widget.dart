@@ -1,5 +1,6 @@
 import '/app_session.dart';
 import '/backend/commission_pricing.dart';
+import '/backend/dashboard_widgets.dart';
 import '/backend/field_expenses.dart';
 import '/backend/storage_billing.dart';
 import '/backend/supabase/supabase.dart';
@@ -85,10 +86,21 @@ class _HomePageWidgetState extends State<HomePageWidget>
   List<RemindersRow> _todayReminders = const [];
   int _overdueFollowUps = 0;
 
+  /// Fleet status and Staff attendance widgets (Setup › Dashboard
+  /// widgets). Loaded only while the owner has them switched on; null
+  /// until loaded, so the row never shows an invented 0.
+  int? _fleetActive;
+  int? _fleetInService;
+  int? _attPresent;
+  int? _attStaff;
+
+  final _widgets = DashboardWidgets.instance;
+
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => HomePageModel());
+    _widgets.addListener(_onWidgetsChanged);
 
     // On page load action.
     SchedulerBinding.instance.addPostFrameCallback((_) => _loadDashboard());
@@ -111,7 +123,49 @@ class _HomePageWidgetState extends State<HomePageWidget>
     _loadDashboard();
   }
 
+  void _onWidgetsChanged() {
+    safeSetState(() {});
+    _loadWidgetCounts();
+  }
+
+  /// Counts for the two optional widgets, read only when shown.
+  Future<void> _loadWidgetCounts() async {
+    if (_widgets.isShown(kDashWidgetFleet) &&
+        StaffPermissions.canActive('fleet', 'view')) {
+      try {
+        final v = await VehiclesTable().queryRows(queryFn: (q) => OrgScope.read(q));
+        _fleetActive = v.where((x) => (x.status ?? 'active') == 'active').length;
+        _fleetInService = v
+            .where((x) => x.status == 'maintenance' || x.status == 'service')
+            .length;
+      } catch (_) {
+        _fleetActive = _fleetInService = null;
+      }
+    }
+    if (_widgets.isShown(kDashWidgetAttendance) &&
+        StaffPermissions.canActive('staff', 'view')) {
+      try {
+        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        final att = await AttendanceTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).eq('attendance_date', today),
+        );
+        final staff = await StaffTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).eq('active', true),
+        );
+        _attPresent = att.where((a) => a.status == 'present').length;
+        _attStaff = staff.length;
+      } catch (_) {
+        _attPresent = _attStaff = null;
+      }
+    }
+    safeSetState(() {});
+  }
+
   Future<void> _loadDashboard() async {
+    // Order and visibility of the sections below. Forced, because the
+    // owner may have just changed them in Setup › Dashboard widgets.
+    await _widgets.load(force: true);
+    _loadWidgetCounts();
     // Vendor choice: only show the Porter KPI card when the org turned
     // it on in Settings (settings key 'porter_enabled').
     final porterRows = await SettingsTable().queryRows(
@@ -260,6 +314,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
   @override
   void dispose() {
+    _widgets.removeListener(_onWidgetsChanged);
     _model.dispose();
 
     super.dispose();
@@ -718,6 +773,40 @@ class _HomePageWidgetState extends State<HomePageWidget>
           rows[i],
         ],
       ],
+    );
+  }
+
+  Widget? _fleetRow(BuildContext context) {
+    if (_fleetActive == null ||
+        !StaffPermissions.canActive('fleet', 'view')) {
+      return null;
+    }
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    return DashInfoRow(
+      icon: Icons.local_shipping_outlined,
+      iconColor: c.blue,
+      title: l.dwFleet,
+      value: '${_fleetActive!}',
+      note: l.dwFleetSub(_fleetActive!, _fleetInService ?? 0),
+      onTap: _canOpen('FleetPage') ? () => openModule(context, 'FleetPage') : null,
+    );
+  }
+
+  Widget? _attendanceRow(BuildContext context) {
+    if (_attPresent == null ||
+        !StaffPermissions.canActive('staff', 'view')) {
+      return null;
+    }
+    final c = NgPalette.of(context);
+    final l = AppLocalizations.of(context);
+    return DashInfoRow(
+      icon: Icons.how_to_reg_outlined,
+      iconColor: c.green,
+      title: l.dwAttendance,
+      value: '${_attPresent!}/${_attStaff ?? 0}',
+      note: l.dwAttendanceSub,
+      onTap: _canOpen('UsersPage') ? () => openModule(context, 'UsersPage') : null,
     );
   }
 
@@ -1234,17 +1323,27 @@ class _HomePageWidgetState extends State<HomePageWidget>
     final s = AppSession.instance;
     final showInfo = StaffPermissions.canActive('financials', 'view') ||
         _overdueFollowUps > 0;
+    // Setup › Dashboard widgets decides order and visibility; each
+    // section's own permission check still applies on top.
+    Widget? widgetFor(String id) => switch (id) {
+          kDashWidgetToday => _todayRow(context),
+          kDashWidgetDue => showInfo ? _infoRows(context) : null,
+          kDashWidgetAgenda => _agendaSection(context),
+          kDashWidgetMonth => StaffPermissions.canActive('reports', 'view') ||
+                  StaffPermissions.canActive('financials', 'view')
+              ? _monthSection(context)
+              : null,
+          kDashWidgetLeads => _hotLeadsSection(context),
+          kDashWidgetFleet => _fleetRow(context),
+          kDashWidgetAttendance => _attendanceRow(context),
+          _ => null,
+        };
     final sections = <Widget>[
       _greeting(context),
       if (s.currentStaffId == null && (s.planName ?? '').trim().isNotEmpty)
         const DashPlanCard(),
-      _todayRow(context),
-      if (showInfo) _infoRows(context),
-      _agendaSection(context),
-      if (StaffPermissions.canActive('reports', 'view') ||
-          StaffPermissions.canActive('financials', 'view'))
-        _monthSection(context),
-      _hotLeadsSection(context),
+      for (final id in _widgets.shownInOrder)
+        if (widgetFor(id) case final w?) w,
       if (_model.branchStats.isNotEmpty) _branchSection(context),
     ];
     return GestureDetector(

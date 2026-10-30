@@ -4512,5 +4512,66 @@
   "btLater": "You can change this later in Settings › Modules",
   "@btLater": {
     "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "dwTitle": "Widgets",
+  "@dwTitle": {
+    "description": "Setup › Dashboard widgets (design pf_dw)"
+  },
+  "dwSub": "Choose what the owner dashboard shows",
+  "@dwSub": {
+    "description": "design pf_s_dw"
+  },
+  "dwNote": "Owner dashboard shows these in this order. Use the arrow to move one up, the switch to hide it.",
+  "@dwNote": {
+    "description": "design dw_note"
+  },
+  "dwShown": "Shown · position {n}",
+  "@dwShown": {
+    "description": "design dw_shown",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dwHidden": "Hidden",
+  "@dwHidden": {
+    "description": "design dw_hidden"
+  },
+  "dwUp": "Up",
+  "@dwUp": {
+    "description": "design dw_up"
+  },
+  "dwToday": "Today's numbers",
+  "@dwToday": {
+    "description": "Dashboard widget name (design WID0)"
+  },
+  "dwFleet": "Fleet status",
+  "@dwFleet": {
+    "description": "design wx_fleet"
+  },
+  "dwFleetSub": "{a} active · {s} in service",
+  "@dwFleetSub": {
+    "description": "design wx_fleetS",
+    "placeholders": {
+      "a": {
+        "type": "int"
+      },
+      "s": {
+        "type": "int"
+      }
+    }
+  },
+  "dwAttendance": "Staff attendance",
+  "@dwAttendance": {
+    "description": "design wx_att"
+  },
+  "dwAttendanceSub": "checked in today",
+  "@dwAttendanceSub": {
+    "description": "design wx_attS"
+  },
+  "dwSaveFailed": "Could not save. Check your connection and try again.",
+  "@dwSaveFailed": {
+    "description": "Dashboard widgets save error"
   }
 }

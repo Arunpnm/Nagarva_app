@@ -518,6 +518,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const ModulesPage(),
         ),
         FFRoute(
+          name: DashboardWidgetsPage.routeName,
+          path: DashboardWidgetsPage.routePath,
+          builder: (context, params) => const DashboardWidgetsPage(),
+        ),
+        FFRoute(
           name: WhatsAppPage.routeName,
           path: WhatsAppPage.routePath,
           builder: (context, params) => const WhatsAppPage(),

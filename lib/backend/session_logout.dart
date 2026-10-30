@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '/app_session.dart';
 import '/backend/business_modules.dart';
+import '/backend/dashboard_widgets.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/nav/nav.dart';
@@ -28,6 +29,7 @@ Future<void> performLogout(BuildContext context) async {
   StaffPermissions.clearActive();
   AppSession.instance.clear();
   BusinessModules.instance.clear();
+  DashboardWidgets.instance.clear();
   if (!context.mounted) return;
   // Bug fix (8 Aug 2026): this used to always context.go('/login') — the
   // old two-tab email/password + phone/PIN screen — regardless of device
