@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '/app_session.dart';
 import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -71,6 +72,27 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
     String tripType = 'own';
     DateTime startDate = DateTime.now();
 
+    // The branch the trip belongs to. trips carries a RESTRICTIVE
+    // branch_isolation policy and NULL matches nobody, so a trip saved
+    // without one was refused for managers and supervisors and invisible
+    // to every staff session, drivers included (CLAUDE.md, "Trips, found
+    // 17 Sept 2026"). Same rule as New Order: staff can only use their own
+    // branch; the owner picks, defaulted when there is only one.
+    final isOwner = AppSession.instance.currentStaffId == null;
+    final ownBranch = AppSession.instance.currentStaffBranch;
+    List<String> branches = const [];
+    try {
+      final rows = await BranchesTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('active', true).order('name'),
+      );
+      final all = rows.map((r) => r.name).toList();
+      branches = isOwner
+          ? all
+          : (ownBranch != null && all.contains(ownBranch) ? [ownBranch] : []);
+    } catch (_) {}
+    String? branch = branches.length == 1 ? branches.first : null;
+    if (!mounted) return;
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
@@ -86,6 +108,18 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
                       controller: tripNoCtrl,
                       decoration: const InputDecoration(labelText: 'Trip No'),
                       autofocus: true),
+                  if (branches.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      initialValue: branch,
+                      decoration: const InputDecoration(labelText: 'Branch'),
+                      items: [
+                        for (final b in branches)
+                          DropdownMenuItem(value: b, child: Text(b)),
+                      ],
+                      onChanged: branches.length == 1
+                          ? null
+                          : (v) => setDialogState(() => branch = v),
+                    ),
                   DropdownButtonFormField<String>(
                     initialValue: tripType,
                     decoration: const InputDecoration(labelText: 'Trip Type'),
@@ -134,7 +168,11 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
             FilledButton(
-                onPressed: () => Navigator.of(dialogCtx).pop(true),
+                // A branch must be chosen when the org has any; with none
+                // set up yet, the trip is saved as before (owner-only).
+                onPressed: branches.isNotEmpty && branch == null
+                    ? null
+                    : () => Navigator.of(dialogCtx).pop(true),
                 child: const Text('Create')),
           ],
         ),
@@ -155,6 +193,7 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
         if (toCtrl.text.trim().isNotEmpty) 'to_loc': toCtrl.text.trim(),
         'start_date': startDate.toIso8601String().split('T').first,
         'status': 'planned',
+        if (branch != null) 'branch': branch,
       });
       await _load();
       if (mounted && inserted.id != null) {
