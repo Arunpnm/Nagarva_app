@@ -91,6 +91,7 @@ const _kPublicRoutePrefixes = [
   '/track',
   '/pin-login',
   '/bind-org',
+  '/admin-login',
 ];
 
 bool _isPublicRoute(String path) =>
@@ -211,6 +212,17 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       redirect: (context, state) {
         final path = state.uri.path;
         if (_isPublicRoute(path)) return null;
+        // Nagarva Admin: a platform admin need not belong to any vendor
+        // org, so the panel is gated on the admin sign-in instead of the
+        // org session, and an unauthenticated visit goes to the admin
+        // login, not the vendor one. The page itself re-checks
+        // platform_admins, and RLS enforces it on every query.
+        if (path.startsWith(SuperAdminPageWidget.routePath)) {
+          final s = AppSession.instance;
+          return s.authUserId != null && s.isPlatformAdmin
+              ? null
+              : AdminLoginPage.routePath;
+        }
         if (!AppSession.instance.isAuthenticated) {
           return LoginPageWidget.routePath;
         }
@@ -396,6 +408,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: CalendarPageWidget.routeName,
           path: CalendarPageWidget.routePath,
           builder: (context, params) => const CalendarPageWidget(),
+        ),
+        FFRoute(
+          name: AdminLoginPage.routeName,
+          path: AdminLoginPage.routePath,
+          builder: (context, params) => const AdminLoginPage(),
         ),
         FFRoute(
           name: SuperAdminPageWidget.routeName,

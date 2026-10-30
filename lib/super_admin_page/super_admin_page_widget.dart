@@ -4,6 +4,8 @@ import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
+import 'admin_login_page.dart';
+import '/flutter_flow/flutter_flow_util.dart';
 import 'plans_tab.dart';
 import 'signups_tab.dart';
 import 'tenant_detail_page.dart';
@@ -79,6 +81,15 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
       _checking = false;
     });
     if (_isAdmin) await _loadOrgs();
+  }
+
+  /// Ends the admin session and returns to the admin sign-in.
+  Future<void> _signOut() async {
+    try {
+      await SupaFlow.client.auth.signOut();
+    } catch (_) {}
+    AppSession.instance.clear();
+    if (mounted) context.go(AdminLoginPage.routePath);
   }
 
   Future<void> _loadOrgs() async {
@@ -214,7 +225,16 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
       length: 3,
       child: Scaffold(
         backgroundColor: ng.bg,
-        appBar: NgSimpleBar(title: 'Platform Admin — ${_orgs.length} tenants'),
+        appBar: NgSimpleBar(
+          title: 'Platform Admin — ${_orgs.length} tenants',
+          actions: [
+            IconButton(
+              tooltip: 'Sign out',
+              icon: Icon(Icons.logout_rounded, color: ng.soft),
+              onPressed: _signOut,
+            ),
+          ],
+        ),
         body: Column(
           children: [
             TabBar(
