@@ -7,7 +7,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
-import '/index.dart';
+import '/backend/detail_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'calendar_page_model.dart';
@@ -450,28 +450,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(10),
-                    onTap: () {
-                      context.pushNamed(
-                        OrderDetailPageWidget.routeName,
-                        queryParameters: {
-                          'orderId': serializeParam(o.id, ParamType.String),
-                          'orderCustomer':
-                              serializeParam(o.customer, ParamType.String),
-                          'orderPhone':
-                              serializeParam(o.phone, ParamType.String),
-                          'orderFromCity':
-                              serializeParam(o.fromCity, ParamType.String),
-                          'orderToCity':
-                              serializeParam(o.toCity, ParamType.String),
-                          'orderAmount': serializeParam(
-                              o.amount?.toString(), ParamType.String),
-                          'orderStatus':
-                              serializeParam(o.status, ParamType.String),
-                          'orderMoveDate': serializeParam(
-                              o.moveDate.toString(), ParamType.String),
-                        }.withoutNulls,
-                      );
-                    },
+                    onTap: () => openOrderJourney(context, o),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),

@@ -253,7 +253,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
       child: Column(
         children: [
           InkWell(
-            onTap: () => openOrderDetail(context, o),
+            onTap: () => openOrderJourney(context, o),
             child: Row(
               children: [
                 NgAvatar(o.customer, status: tone, size: 40),
@@ -351,7 +351,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
         InkWell(
           onTap: _ordersById[e.orderId] == null
               ? null
-              : () => openOrderDetail(context, _ordersById[e.orderId]!),
+              : () => openOrderJourney(context, _ordersById[e.orderId]!),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             child: Row(
