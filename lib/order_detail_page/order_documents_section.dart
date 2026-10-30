@@ -55,13 +55,15 @@ class OrderDocumentsSection extends StatefulWidget {
     super.key,
     required this.orderId,
     required this.duplicating,
-    required this.onDuplicate,
+    this.onDuplicate,
     required this.onGenerateInvoice,
   });
 
   final String orderId;
   final bool duplicating;
-  final VoidCallback onDuplicate;
+  /// Null hides "Duplicate order" (the order journey, which has no
+  /// duplicate flow of its own).
+  final VoidCallback? onDuplicate;
 
   /// Tax Invoice generation stays on the parent page — it already has its
   /// own `InvoicePdf` + signature-inheritance logic (Part 8 addendum) —
@@ -1455,9 +1457,10 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       // "Duplicate order", not "Copy". Arun, 3 Sept 2026: beside two
       // clipboard actions, a button labelled "Copy" reads as a third one
       // - when it actually creates a whole new order.
-      _utilityButton('Duplicate order', Icons.control_point_duplicate_rounded,
-          widget.duplicating ? null : widget.onDuplicate,
-          color: ng.blue),
+      if (widget.onDuplicate != null)
+        _utilityButton('Duplicate order', Icons.control_point_duplicate_rounded,
+            widget.duplicating ? null : widget.onDuplicate,
+            color: ng.blue),
     ];
     return NgSectionCard(
       title: 'Documents',

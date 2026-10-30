@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '/backend/detail_navigation.dart';
 import '/backend/lead_status.dart';
 import '/backend/order_journey.dart';
 import '/backend/reminders_service.dart';
@@ -15,6 +14,7 @@ import '/l10n/gen/app_localizations.dart';
 import '/order_detail_page/invoice_generator.dart';
 import '/order_detail_page/order_addons_section.dart';
 import '/order_detail_page/order_crew_section.dart';
+import '/order_detail_page/order_documents_section.dart';
 import '/order_detail_page/order_materials_section.dart';
 import '/order_detail_page/payment_history_section.dart';
 import '/order_detail_page/quick_payment_section.dart';
@@ -209,12 +209,51 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
     }
   }
 
-  void _openLead(JourneyData d) {
-    if (d.lead != null) openLeadDetail(context, d.lead!);
+  /// Documents open over the journey in a sheet, using the generators
+  /// that already exist: the quote/survey PDFs on Lead Details' Survey &
+  /// Quote card, everything else on Order Details' documents section.
+  Future<void> _docsSheet(Widget child) async {
+    final c = NgPalette.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.sheet,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(NgRadius.sheet)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        builder: (ctx, scroll) => SingleChildScrollView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+          child: child,
+        ),
+      ),
+    );
+    await _load();
   }
 
-  void _openOrder(JourneyData d) {
-    if (d.order != null) openOrderDetail(context, d.order!);
+  void _quoteDocsSheet(JourneyData d) {
+    final lead = d.lead;
+    if (lead?.id == null) return;
+    _docsSheet(LeadDetailPageWidget.fromLead(lead!, surveyQuoteOnly: true));
+  }
+
+  void _orderDocsSheet(JourneyData d) {
+    final id = d.order?.id;
+    if (id == null) return;
+    _docsSheet(OrderDocumentsSection(
+      orderId: id,
+      duplicating: false,
+      onGenerateInvoice: () => InvoiceGenerator(
+        context,
+        orderId: id,
+        signature: d.invoiceSignature,
+      ).generate(),
+    ));
   }
 
   // ---- Build -------------------------------------------------------------
@@ -412,28 +451,28 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
         l.jrDocQuote,
         d.quotes.isNotEmpty,
         l.jrStageQuote,
-        d.lead == null ? null : () => _openLead(d),
+        d.lead == null ? null : () => _quoteDocsSheet(d),
       ),
       (
         Icons.receipt_long_rounded,
         l.jrDocInvoice,
         (d.order?.invoiceNo ?? '').isNotEmpty,
         l.jrStageInvoice,
-        () => _openOrder(d),
+        () => _orderDocsSheet(d),
       ),
       (
         Icons.receipt_rounded,
         l.jrDocReceipts,
         d.payments.isNotEmpty,
         l.jrStagePayment,
-        () => _openOrder(d),
+        () => _orderDocsSheet(d),
       ),
       (
         Icons.local_shipping_rounded,
         l.jrDocLr,
         (d.order?.lrId ?? '').isNotEmpty,
         l.jrStageMoveDay,
-        () => _openOrder(d),
+        () => _orderDocsSheet(d),
       ),
     ];
     return NgCard(
