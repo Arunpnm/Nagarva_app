@@ -27,3 +27,8 @@ linter:
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
+# The customer app is its own package with its own dependencies and its own
+# CI job; the vendor app's analysis must not try to resolve its imports.
+analyzer:
+  exclude:
+    - customer_app/**
