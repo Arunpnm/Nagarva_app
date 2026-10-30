@@ -111,6 +111,7 @@ const kPermModules = <PermModule>[
   PermModule('auto_whatsapp', 'Auto WhatsApp', 'AutoWhatsAppPage'),
   PermModule('lost_report', 'Lead rules & lost report', 'LostReportPage'),
   PermModule('referrals', 'Coupons & referrals', 'ReferralsPage'),
+  PermModule('nagarva_jobs', 'Nagarva jobs', 'MarketplaceJobsPage'),
   PermModule('daily_summary', 'Daily summary', 'DailySummaryPage'),
   PermModule('approvals', 'Approvals', 'ApprovalsPage', moneyModule: true),
   PermModule('gst', 'GST, TDS & exports', 'GstPage', moneyModule: true),

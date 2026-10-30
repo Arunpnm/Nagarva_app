@@ -828,6 +828,7 @@ class _NavBarPageState extends State<NavBarPage>
       'AutoWhatsAppPage': const AutoWhatsAppPage(),
       'LostReportPage': const LostReportPage(),
       'ReferralsPage': const ReferralsPage(),
+      'MarketplaceJobsPage': const MarketplaceJobsPage(),
       'DailySummaryPage': const DailySummaryPage(),
       'ApprovalsPage': const ApprovalsPage(),
       'GstPage': const GstPage(),

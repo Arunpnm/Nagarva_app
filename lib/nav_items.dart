@@ -247,6 +247,7 @@ const kOwnerManagerNavItems = <NavItem>[
   ),
   (name: 'LostReportPage', icon: Icons.rule_rounded, label: 'Lead rules & lost report', group: 'Sales'),
   (name: 'ReferralsPage', icon: Icons.sell_rounded, label: 'Coupons & referrals', group: 'Sales'),
+  (name: 'MarketplaceJobsPage', icon: Icons.storefront_rounded, label: 'Nagarva jobs', group: 'Sales'),
   (name: 'DailySummaryPage', icon: Icons.event_note_rounded, label: 'Daily summary', group: 'Operations'),
   (name: 'ApprovalsPage', icon: Icons.fact_check_rounded, label: 'Approvals', group: 'Money'),
   (name: 'GstPage', icon: Icons.request_page_rounded, label: 'GST, TDS & exports', group: 'Money'),
@@ -493,6 +494,7 @@ String localizedNavLabel(BuildContext context, NavItem item) {
     _ when item.name == SuperAdminPageWidget.routeName =>
       l.ngMenuPlatformAdmin,
     'DriverAppPage' => l.drvTitle,
+    'MarketplaceJobsPage' => l.mktTitle,
     _ => item.label,
   };
 }

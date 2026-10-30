@@ -4887,5 +4887,452 @@
   "drvOdoEnd": "End odometer",
   "@drvOdoEnd": {
     "description": "Driver app (design jr_odo1)"
+  },
+  "mktTitle": "Nagarva jobs",
+  "@mktTitle": {
+    "description": "Nagarva jobs (design mk_title)"
+  },
+  "mktSub": "Moves booked by customers on Nagarva",
+  "@mktSub": {
+    "description": "Nagarva jobs (design mk_sub)"
+  },
+  "mktTier": "Your tier",
+  "@mktTier": {
+    "description": "Nagarva jobs (design mk_tier)"
+  },
+  "mktWallet": "Wallet",
+  "@mktWallet": {
+    "description": "Nagarva jobs (design mk_wallet)"
+  },
+  "mktMinL": "Min {m} to get jobs",
+  "@mktMinL": {
+    "description": "Nagarva jobs (design mk_minL)",
+    "placeholders": {
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "mktLowS": "Below minimum",
+  "@mktLowS": {
+    "description": "Nagarva jobs (design mk_lowS)"
+  },
+  "mktTJobs": "Jobs",
+  "@mktTJobs": {
+    "description": "Nagarva jobs (design mk_tJobs)"
+  },
+  "mktTWallet": "Wallet",
+  "@mktTWallet": {
+    "description": "Nagarva jobs (design mk_tWallet)"
+  },
+  "mktTTier": "Tier",
+  "@mktTTier": {
+    "description": "Nagarva jobs (design mk_tTier)"
+  },
+  "mktAv": "Available for jobs",
+  "@mktAv": {
+    "description": "Nagarva jobs (design mk_av)"
+  },
+  "mktAvOn": "Getting job alerts for {c}",
+  "@mktAvOn": {
+    "description": "Nagarva jobs (design mk_avOn)",
+    "placeholders": {
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "mktAvOff": "Off. No new job alerts. Your score is not affected.",
+  "@mktAvOff": {
+    "description": "Nagarva jobs (design mk_avOff)"
+  },
+  "mktCities": "Pickup cities",
+  "@mktCities": {
+    "description": "Nagarva jobs (design mk_cities)"
+  },
+  "mktCitiesN": "You get alerts for bookings that start in these cities. Home city cannot be removed.",
+  "@mktCitiesN": {
+    "description": "Nagarva jobs (design mk_citiesN)"
+  },
+  "mktEdit": "Edit",
+  "@mktEdit": {
+    "description": "Nagarva jobs (design mk_edit)"
+  },
+  "mktDone2": "Done",
+  "@mktDone2": {
+    "description": "Nagarva jobs (design mk_done2)"
+  },
+  "mktCancel": "Cancel",
+  "@mktCancel": {
+    "description": "Nagarva jobs (design mk_cancel)"
+  },
+  "mktHome": "home",
+  "@mktHome": {
+    "description": "Nagarva jobs (design mk_home)"
+  },
+  "mktRtAsk": "Truck in another city?",
+  "@mktRtAsk": {
+    "description": "Nagarva jobs (design mk_rtAsk)"
+  },
+  "mktRtAdd": "Add",
+  "@mktRtAdd": {
+    "description": "Nagarva jobs (design mk_rtAdd)"
+  },
+  "mktRtEnd": "End",
+  "@mktRtEnd": {
+    "description": "Nagarva jobs (design mk_rtEnd)"
+  },
+  "mktRtFrom": "Truck is now in",
+  "@mktRtFrom": {
+    "description": "Nagarva jobs (design mk_rtFrom)"
+  },
+  "mktRtDate": "Leaving on",
+  "@mktRtDate": {
+    "description": "Nagarva jobs (design mk_rtDate)"
+  },
+  "mktRtOn": "Return trip · {f} → {t}",
+  "@mktRtOn": {
+    "description": "Nagarva jobs (design mk_rtOn)",
+    "placeholders": {
+      "f": {
+        "type": "String"
+      },
+      "t": {
+        "type": "String"
+      }
+    }
+  },
+  "mktRtEnded": "Return trip ended",
+  "@mktRtEnded": {
+    "description": "Nagarva jobs (design mk_rtEnded)"
+  },
+  "mktFNew": "New",
+  "@mktFNew": {
+    "description": "Nagarva jobs (design mk_fNew)"
+  },
+  "mktFAcc": "Accepted",
+  "@mktFAcc": {
+    "description": "Nagarva jobs (design mk_fAcc)"
+  },
+  "mktFDone": "Completed",
+  "@mktFDone": {
+    "description": "Nagarva jobs (design mk_fDone)"
+  },
+  "mktENew": "No new jobs right now. You will get a notification when one comes in.",
+  "@mktENew": {
+    "description": "Nagarva jobs (design mk_eNew)"
+  },
+  "mktEAcc": "No accepted jobs.",
+  "@mktEAcc": {
+    "description": "Nagarva jobs (design mk_eAcc)"
+  },
+  "mktEDone": "No completed jobs yet.",
+  "@mktEDone": {
+    "description": "Nagarva jobs (design mk_eDone)"
+  },
+  "mktEOff": "You are not available. Turn on Available for jobs to see new bookings.",
+  "@mktEOff": {
+    "description": "Nagarva jobs (design mk_eOff)"
+  },
+  "mktLow": "Wallet is below {m}. Top up {a} to see new jobs.",
+  "@mktLow": {
+    "description": "Nagarva jobs (design mk_low)",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "mktVal": "Job value (incl. GST)",
+  "@mktVal": {
+    "description": "Nagarva jobs (design mk_val)"
+  },
+  "mktCom": "Nagarva commission {p}%",
+  "@mktCom": {
+    "description": "Nagarva jobs (design mk_com)",
+    "placeholders": {
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "mktEarn": "You earn",
+  "@mktEarn": {
+    "description": "Nagarva jobs (design mk_earn)"
+  },
+  "mktAdv": "Advance paid to Nagarva",
+  "@mktAdv": {
+    "description": "Nagarva jobs (design mk_adv)"
+  },
+  "mktBal": "Collect after delivery OTP",
+  "@mktBal": {
+    "description": "Nagarva jobs (design mk_bal)"
+  },
+  "mktMasked": "Customer name and phone unlock after you accept",
+  "@mktMasked": {
+    "description": "Nagarva jobs (design mk_masked)"
+  },
+  "mktPass": "Pass",
+  "@mktPass": {
+    "description": "Nagarva jobs (design mk_pass)"
+  },
+  "mktAccept": "Accept job",
+  "@mktAccept": {
+    "description": "Nagarva jobs (design mk_accept)"
+  },
+  "mktAccepted": "{id} is yours. Customer details unlocked.",
+  "@mktAccepted": {
+    "description": "Nagarva jobs (design mk_accepted)",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "mktPassed": "Job passed",
+  "@mktPassed": {
+    "description": "Nagarva jobs (design mk_passed)"
+  },
+  "mktTaken": "Taken by another vendor",
+  "@mktTaken": {
+    "description": "Nagarva jobs (design mk_taken)"
+  },
+  "mktGoldOnly": "Gold only",
+  "@mktGoldOnly": {
+    "description": "Nagarva jobs (design mk_goldOnly)"
+  },
+  "mktRl": "Return load",
+  "@mktRl": {
+    "description": "Nagarva jobs (design mk_rl)"
+  },
+  "mktS0": "Accepted",
+  "@mktS0": {
+    "description": "Nagarva jobs (design mk_s0)"
+  },
+  "mktS1": "On the way",
+  "@mktS1": {
+    "description": "Nagarva jobs (design mk_s1)"
+  },
+  "mktS2": "Arrived",
+  "@mktS2": {
+    "description": "Nagarva jobs (design mk_s2)"
+  },
+  "mktS3": "Loading",
+  "@mktS3": {
+    "description": "Nagarva jobs (design mk_s3)"
+  },
+  "mktS4": "In transit",
+  "@mktS4": {
+    "description": "Nagarva jobs (design mk_s4)"
+  },
+  "mktS5": "Delivered",
+  "@mktS5": {
+    "description": "Nagarva jobs (design mk_s5)"
+  },
+  "mktNext": "Mark {s}",
+  "@mktNext": {
+    "description": "Nagarva jobs (design mk_next)",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "mktPhotos": "Loading photos {n}/3",
+  "@mktPhotos": {
+    "description": "Nagarva jobs (design mk_photos)",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mktNeedPh": "Add 3 loading photos first",
+  "@mktNeedPh": {
+    "description": "Nagarva jobs (design mk_needPh)"
+  },
+  "mktAddPh": "Add photo",
+  "@mktAddPh": {
+    "description": "Nagarva jobs (design mk_addPh)"
+  },
+  "mktFinish": "Verify OTP & complete",
+  "@mktFinish": {
+    "description": "Nagarva jobs (design mk_finish)"
+  },
+  "mktOtpBad": "Wrong OTP. Check with the customer.",
+  "@mktOtpBad": {
+    "description": "Nagarva jobs (design mk_otpBad)"
+  },
+  "mktDone": "Completed. {c} commission deducted, {a} advance credited.",
+  "@mktDone": {
+    "description": "Nagarva jobs (design mk_done)",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "mktRate": "Customer rating {r}",
+  "@mktRate": {
+    "description": "Nagarva jobs (design mk_rate)",
+    "placeholders": {
+      "r": {
+        "type": "String"
+      }
+    }
+  },
+  "mktNoRate": "Awaiting customer rating",
+  "@mktNoRate": {
+    "description": "Nagarva jobs (design mk_noRate)"
+  },
+  "mktTopup": "Top up",
+  "@mktTopup": {
+    "description": "Nagarva jobs (design mk_topup)"
+  },
+  "mktWBal": "Wallet balance",
+  "@mktWBal": {
+    "description": "Nagarva jobs (design w_bal)"
+  },
+  "mktWOk": "Active · you get new jobs",
+  "@mktWOk": {
+    "description": "Nagarva jobs (design w_ok)"
+  },
+  "mktWWithdraw": "Withdraw",
+  "@mktWWithdraw": {
+    "description": "Nagarva jobs (design w_withdraw)"
+  },
+  "mktWNote": "Customers pay the advance to Nagarva. When you complete a job, the advance is credited here and the {p}% commission is deducted. Keep the minimum balance to receive jobs.",
+  "@mktWNote": {
+    "description": "Nagarva jobs (design w_note)",
+    "placeholders": {
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "mktWtAdv": "Advance · {id}",
+  "@mktWtAdv": {
+    "description": "Nagarva jobs (design wt_adv)",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "mktWtCom": "Commission · {id}",
+  "@mktWtCom": {
+    "description": "Nagarva jobs (design wt_com)",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "mktWtTop": "UPI top-up",
+  "@mktWtTop": {
+    "description": "Nagarva jobs (design wt_top)"
+  },
+  "mktWtWd": "Withdrawal to bank",
+  "@mktWtWd": {
+    "description": "Nagarva jobs (design wt_wd)"
+  },
+  "mktTierF": "How your score is made",
+  "@mktTierF": {
+    "description": "Nagarva jobs (design tr_f)"
+  },
+  "mktTierBands": "Gold 80+ · Silver 60–79 · Bronze <60",
+  "@mktTierBands": {
+    "description": "Nagarva jobs (design tr_bands)"
+  },
+  "mktTierGold": "Gold",
+  "@mktTierGold": {
+    "description": "Nagarva jobs (design tr_gold)"
+  },
+  "mktTierSilver": "Silver",
+  "@mktTierSilver": {
+    "description": "Nagarva jobs (design tr_silver)"
+  },
+  "mktTierBronze": "Bronze",
+  "@mktTierBronze": {
+    "description": "Nagarva jobs (design tr_bronze)"
+  },
+  "mktTierScore": "Score {s} / 100",
+  "@mktTierScore": {
+    "description": "Nagarva jobs (design tr_score)",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "mktOtpAsk": "Ask the customer for the 4-digit delivery code.",
+  "@mktOtpAsk": {
+    "description": "Nagarva jobs: delivery code prompt"
+  },
+  "mktReqSent": "Request sent. It counts once Nagarva confirms the payment.",
+  "@mktReqSent": {
+    "description": "Nagarva jobs: wallet request sent"
+  },
+  "mktPending": "Pending",
+  "@mktPending": {
+    "description": "Nagarva jobs: pending wallet row"
+  },
+  "mktHomeCity": "Home city",
+  "@mktHomeCity": {
+    "description": "Nagarva jobs: home city field"
+  },
+  "mktExtraCities": "Other cities, separated by commas",
+  "@mktExtraCities": {
+    "description": "Nagarva jobs: extra cities field"
+  },
+  "mktNotJoined": "Set your home city to start getting Nagarva jobs.",
+  "@mktNotJoined": {
+    "description": "Nagarva jobs: vendor has no profile yet"
+  },
+  "mktFactorNote": "Nagarva works out your score from these, with these weights.",
+  "@mktFactorNote": {
+    "description": "Nagarva jobs: tier tab note"
+  },
+  "mktFRating": "Customer rating",
+  "@mktFRating": {
+    "description": "Tier factor"
+  },
+  "mktFOnTime": "On-time arrival",
+  "@mktFOnTime": {
+    "description": "Tier factor"
+  },
+  "mktFDamage": "Damage claims",
+  "@mktFDamage": {
+    "description": "Tier factor"
+  },
+  "mktFAccept": "Acceptance rate",
+  "@mktFAccept": {
+    "description": "Tier factor"
+  },
+  "mktFPhotos": "Photo compliance",
+  "@mktFPhotos": {
+    "description": "Tier factor"
+  },
+  "mktFCancel": "Vendor cancellations",
+  "@mktFCancel": {
+    "description": "Tier factor"
+  },
+  "mktFJobs": "Jobs completed",
+  "@mktFJobs": {
+    "description": "Tier factor"
+  },
+  "mktAvOnT": "You will get job alerts again",
+  "@mktAvOnT": {
+    "description": "Nagarva jobs (design mk_avOnT)"
+  },
+  "mktAvOffT": "Job alerts paused",
+  "@mktAvOffT": {
+    "description": "Nagarva jobs (design mk_avOffT)"
   }
 }

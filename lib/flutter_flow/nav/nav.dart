@@ -458,6 +458,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const StorageBillingPage(),
         ),
         FFRoute(
+          name: MarketplaceJobsPage.routeName,
+          path: MarketplaceJobsPage.routePath,
+          builder: (context, params) => const MarketplaceJobsPage(),
+        ),
+        FFRoute(
           name: DriverAppPage.routeName,
           path: DriverAppPage.routePath,
           builder: (context, params) => const DriverAppPage(),
