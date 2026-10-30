@@ -4581,5 +4581,135 @@
   "jrSendForSignature": "Send for signature",
   "@jrSendForSignature": {
     "description": "Journey Invoice stage: send the customer the signing link"
+  },
+  "lsTitle": "Login & security",
+  "@lsTitle": {
+    "description": "Login & security (design sc_title)"
+  },
+  "lsMy": "Your login",
+  "@lsMy": {
+    "description": "Login & security (design sc_my)"
+  },
+  "lsMyEmail": "Login email",
+  "@lsMyEmail": {
+    "description": "Login & security (design sc_myEmail)"
+  },
+  "lsChangePw": "Change password",
+  "@lsChangePw": {
+    "description": "Login & security (design sc_chPw)"
+  },
+  "lsCurPw": "Current password",
+  "@lsCurPw": {
+    "description": "Login & security (design sc_cur)"
+  },
+  "lsNewPw": "New password",
+  "@lsNewPw": {
+    "description": "Login & security (design sc_new)"
+  },
+  "lsConfPw": "Confirm new password",
+  "@lsConfPw": {
+    "description": "Login & security (design sc_conf)"
+  },
+  "lsPwSub": "Use at least 8 characters",
+  "@lsPwSub": {
+    "description": "Login & security (design sc_pwSub)"
+  },
+  "lsPwShort": "Password must be at least 8 characters",
+  "@lsPwShort": {
+    "description": "Login & security (design sc_pwShort)"
+  },
+  "lsPwMismatch": "Passwords do not match",
+  "@lsPwMismatch": {
+    "description": "Login & security (design sc_pwMis)"
+  },
+  "lsPwCurReq": "Enter your current password",
+  "@lsPwCurReq": {
+    "description": "Login & security (design sc_pwCur)"
+  },
+  "lsPwDone": "Password updated",
+  "@lsPwDone": {
+    "description": "Login & security (design sc_pwDone)"
+  },
+  "lsUpdatePw": "Update password",
+  "@lsUpdatePw": {
+    "description": "Login & security (design sc_upd)"
+  },
+  "lsForgot": "Forgot your password? Use \"Forgot password?\" on the login screen. We email you a reset link.",
+  "@lsForgot": {
+    "description": "Login & security (design sc_forgot)"
+  },
+  "lsStaffPins": "Staff PINs",
+  "@lsStaffPins": {
+    "description": "Login & security (design sc_staff)"
+  },
+  "lsStaffPinsSub": "Staff and supervisors log in with a PIN. Set a new one if they forget it. Repeated wrong tries lock the PIN until you reset it.",
+  "@lsStaffPinsSub": {
+    "description": "Login & security (design sc_staffSub)"
+  },
+  "lsResetPin": "Reset PIN",
+  "@lsResetPin": {
+    "description": "Login & security (design sc_reset)"
+  },
+  "lsPinSet": "PIN set",
+  "@lsPinSet": {
+    "description": "Login & security (design sc_lastSet)"
+  },
+  "lsLocked": "Locked · {n} wrong tries",
+  "@lsLocked": {
+    "description": "Login & security (design sc_locked)",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "lsNewPin": "New PIN",
+  "@lsNewPin": {
+    "description": "Login & security (design sc_newPin)"
+  },
+  "lsConfPin": "Confirm PIN",
+  "@lsConfPin": {
+    "description": "Login & security (design sc_confPin)"
+  },
+  "lsPinBad": "PIN must be 4 digits",
+  "@lsPinBad": {
+    "description": "Login & security (design sc_pinBad)"
+  },
+  "lsPinMismatch": "PINs do not match",
+  "@lsPinMismatch": {
+    "description": "Login & security (design sc_pinMis)"
+  },
+  "lsPinSetFor": "New PIN set for {name}",
+  "@lsPinSetFor": {
+    "description": "Login & security (design sc_pinSet)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lsTellStaff": "Tell the staff member their new PIN in person or by phone. It is never shown again.",
+  "@lsTellStaff": {
+    "description": "Login & security (design sc_tellStaff)"
+  },
+  "lsSetPin": "Set new PIN",
+  "@lsSetPin": {
+    "description": "Login & security (design sc_setPin)"
+  },
+  "lsSignOutAll": "Sign out all other devices",
+  "@lsSignOutAll": {
+    "description": "Login & security (design sc_signOutAll)"
+  },
+  "lsAllOut": "All other devices signed out",
+  "@lsAllOut": {
+    "description": "Login & security (design sc_allOut)"
+  },
+  "lsNoPin": "No PIN yet",
+  "@lsNoPin": {
+    "description": "Login & security: staff member has no PIN yet"
+  },
+  "lsOwnerOnly": "Only the owner can reset staff PINs.",
+  "@lsOwnerOnly": {
+    "description": "Login & security: staff PIN reset is owner-only"
   }
 }

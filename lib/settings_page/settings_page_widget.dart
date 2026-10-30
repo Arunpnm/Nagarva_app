@@ -8,6 +8,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/notification_bell.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
+import 'login_security_section.dart';
 import '/config/app_config.dart';
 import '/main.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -396,7 +397,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           _row(Icons.lock_outline_rounded, l.ngSetLogin,
               sub: l.ngSetLoginSub,
               onTap: () => _openSub(
-                  l.ngSetLogin, (_) => [const _PinSettingCard()])),
+                  l.ngSetLogin,
+                  (_) => [
+                        const _PinSettingCard(),
+                        const LoginSecuritySections(),
+                      ])),
         ]),
       _group(l.ngSetAccount, [
         if (_isOwner)
