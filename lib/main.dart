@@ -789,6 +789,7 @@ class _NavBarPageState extends State<NavBarPage>
         // not something to do silently here.
         'MyAttComingSoon': const ComingSoonPage(title: 'My Attendance'),
         'MySalComingSoon': const ComingSoonPage(title: 'My Earnings'),
+        'DriverAppPage': const DriverAppPage(),
       };
     }
     return {
@@ -836,6 +837,7 @@ class _NavBarPageState extends State<NavBarPage>
       'PayslipsPage': const PayslipsPage(),
       'StorageBillingPage': const StorageBillingPage(),
       'FuelPage': const FuelPage(),
+      'DriverAppPage': const DriverAppPage(),
       'VehicleDocsPage': const VehicleDocsPage(),
       'EwayBillsPage': const EwayBillsPage(),
       'LeadSourcesPage': const LeadSourcesPage(),

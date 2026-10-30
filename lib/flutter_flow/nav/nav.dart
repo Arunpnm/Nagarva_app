@@ -458,6 +458,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const StorageBillingPage(),
         ),
         FFRoute(
+          name: DriverAppPage.routeName,
+          path: DriverAppPage.routePath,
+          builder: (context, params) => const DriverAppPage(),
+        ),
+        FFRoute(
           name: FuelPage.routeName,
           path: FuelPage.routePath,
           builder: (context, params) => const FuelPage(),

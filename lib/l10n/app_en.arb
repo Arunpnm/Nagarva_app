@@ -4799,5 +4799,93 @@
   "qdThemeDesc1F": "Centred, double rule",
   "@qdThemeDesc1F": {
     "description": "Settings › Quote design (design qt_d1f)"
+  },
+  "drvTitle": "Driver app",
+  "@drvTitle": {
+    "description": "Driver app (design dv_title)"
+  },
+  "drvNone": "No trip assigned today",
+  "@drvNone": {
+    "description": "Driver app (design dv_none)"
+  },
+  "drvPlanned": "Planned",
+  "@drvPlanned": {
+    "description": "Driver app (design dv_planned)"
+  },
+  "drvOngoing": "On trip",
+  "@drvOngoing": {
+    "description": "Driver app (design dv_ongoing)"
+  },
+  "drvStart": "Start trip",
+  "@drvStart": {
+    "description": "Driver app (design dv_start)"
+  },
+  "drvEnd": "End trip",
+  "@drvEnd": {
+    "description": "Driver app (design dv_end)"
+  },
+  "drvDone": "Trip completed",
+  "@drvDone": {
+    "description": "Driver app (design dv_done)"
+  },
+  "drvFuel": "Fuel",
+  "@drvFuel": {
+    "description": "Driver app (design dv_fuel)"
+  },
+  "drvFuelT": "Add fuel",
+  "@drvFuelT": {
+    "description": "Driver app (design dv_fuelT)"
+  },
+  "drvToll": "Toll",
+  "@drvToll": {
+    "description": "Driver app (design dv_toll)"
+  },
+  "drvTollT": "Add toll",
+  "@drvTollT": {
+    "description": "Driver app (design dv_tollT)"
+  },
+  "drvLitres": "Litres",
+  "@drvLitres": {
+    "description": "Driver app (design dv_litres)"
+  },
+  "drvPlaza": "Plaza",
+  "@drvPlaza": {
+    "description": "Driver app (design dv_plaza)"
+  },
+  "drvAdd": "Add entry",
+  "@drvAdd": {
+    "description": "Driver app (design dv_add)"
+  },
+  "drvNeedStart": "Enter start odometer",
+  "@drvNeedStart": {
+    "description": "Driver app (design dv_need0)"
+  },
+  "drvNeedEnd": "End odometer must be more than start",
+  "@drvNeedEnd": {
+    "description": "Driver app (design dv_need1)"
+  },
+  "drvNeedAmount": "Enter the amount",
+  "@drvNeedAmount": {
+    "description": "Driver app (design dv_needA)"
+  },
+  "drvTripKm": "Trip km",
+  "@drvTripKm": {
+    "description": "Driver app (design dv_tKm)"
+  },
+  "drvTripSpend": "Trip spend",
+  "@drvTripSpend": {
+    "description": "Driver app (design dv_tExp)"
+  },
+  "drvToday": "Today’s entries",
+  "@drvToday": {
+    "description": "Driver app (design dv_today)"
+  },
+  "drvOdoStart": "Start odometer",
+  "@drvOdoStart": {
+    "description": "Driver app (design jr_odo0)"
+  },
+  "drvOdoEnd": "End odometer",
+  "@drvOdoEnd": {
+    "description": "Driver app (design jr_odo1)"
   }
 }

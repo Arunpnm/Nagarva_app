@@ -98,3 +98,4 @@ export '/whatsapp/whatsapp_page.dart';
 export '/settings_page/modules_page.dart';
 export '/settings_page/dashboard_widgets_page.dart';
 export '/settings_page/quote_design_page.dart';
+export '/driver_app_page/driver_app_page_widget.dart';

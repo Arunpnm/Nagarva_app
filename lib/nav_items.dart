@@ -266,6 +266,7 @@ const kOwnerManagerNavItems = <NavItem>[
   (name: 'LabourContractorsPage', icon: Icons.engineering_rounded, label: 'Labour contractors', group: 'People'),
   (name: 'DieselAdvancePage', icon: Icons.currency_rupee_rounded, label: 'Diesel advance', group: 'Transport'),
   (name: 'HiredTrucksPage', icon: Icons.local_shipping_rounded, label: 'Hired trucks', group: 'Transport'),
+  (name: 'DriverAppPage', icon: Icons.drive_eta_rounded, label: 'Driver app', group: 'Transport'),
   (name: 'BackupPage', icon: Icons.cloud_sync_rounded, label: 'Backup & offline', group: 'Setup'),
   (name: 'WhatsAppPage', icon: Icons.chat_rounded, label: 'WhatsApp', group: 'Setup'),
   (name: 'AutoWhatsAppPage', icon: Icons.mark_chat_read_outlined, label: 'Auto WhatsApp', group: 'Setup'),
@@ -334,6 +335,17 @@ const kFieldStaffNavItems = <NavItem>[
   ),
 ];
 
+/// Drivers get the Driver app first, then the two field-staff screens.
+const kDriverNavItems = <NavItem>[
+  (
+    name: 'DriverAppPage',
+    icon: Icons.drive_eta_rounded,
+    label: 'Driver app',
+    group: 'Field',
+  ),
+  ...kFieldStaffNavItems,
+];
+
 /// Canonical "is this session owner-or-manager" check for nav purposes —
 /// a vendor session (no staff identity) or a staff session whose role is
 /// owner-equivalent. Mirrors the permission-model decision's answer to
@@ -373,6 +385,7 @@ String homeNavNameForCurrentSession() {
     // tapped a bottom-nav item themselves.
     return 'SupervisorJobsListPage';
   }
+  if (AppSession.instance.currentStaffRole == 'driver') return 'DriverAppPage';
   return 'MySalComingSoon';
 }
 
@@ -387,7 +400,11 @@ String homeNavNameForCurrentSession() {
 List<NavItem> navItemsForCurrentSession() {
   if (!isOwnerOrManagerSession) {
     final role = AppSession.instance.currentStaffRole;
-    return role == 'supervisor' ? kSupervisorNavItems : kFieldStaffNavItems;
+    return switch (role) {
+      'supervisor' => kSupervisorNavItems,
+      'driver' => kDriverNavItems,
+      _ => kFieldStaffNavItems,
+    };
   }
   final canEditSalary = StaffPermissions.canActive('salary', 'edit');
   final items = [
@@ -475,6 +492,7 @@ String localizedNavLabel(BuildContext context, NavItem item) {
     'SupervisorAttendancePage' || 'MyAttComingSoon' => l.ngMenuMyAttendance,
     _ when item.name == SuperAdminPageWidget.routeName =>
       l.ngMenuPlatformAdmin,
+    'DriverAppPage' => l.drvTitle,
     _ => item.label,
   };
 }

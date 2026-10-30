@@ -157,6 +157,7 @@ const kTransportModules = <String>[
   'LrRegisterPage',
   'PartLoadPage',
   'FuelPage',
+  'DriverAppPage',
   'DieselAdvancePage',
   'VehicleDocsPage',
   'EwayBillsPage',

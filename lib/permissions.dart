@@ -120,6 +120,7 @@ const kPermModules = <PermModule>[
   PermModule('payslips', 'Payslips, PF & ESI', 'PayslipsPage', moneyModule: true),
   PermModule('storage_billing', 'Storage billing', 'StorageBillingPage'),
   PermModule('fuel', 'Fuel & FASTag', 'FuelPage'),
+  PermModule('driver_app', 'Driver app', 'DriverAppPage'),
   PermModule('vehicle_docs', 'Docs, tyres & battery', 'VehicleDocsPage'),
   PermModule('eway_bills', 'E-way bills', 'EwayBillsPage'),
   PermModule('lead_sources', 'Services & sources', 'LeadSourcesPage'),
