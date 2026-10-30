@@ -28,9 +28,22 @@ import '/permissions.dart';
 ///      supervisor picks their team in the field via SupervisorJobPage,
 ///      landing in the same table.
 class OrderCrewSection extends StatefulWidget {
-  const OrderCrewSection({super.key, required this.orderId, this.onCrewChanged});
+  const OrderCrewSection({
+    super.key,
+    required this.orderId,
+    this.onCrewChanged,
+    this.showClose = true,
+    this.closeOnly = false,
+  });
 
   final String orderId;
+
+  /// The order journey shows supervisor and crew in its Supervisor stage
+  /// and the close button in its Closed stage, so it renders this section
+  /// twice: once with [showClose] false, once with [closeOnly] true. Order
+  /// Details keeps the defaults (everything in one card).
+  final bool showClose;
+  final bool closeOnly;
 
   /// Fired after labour is added or removed (crew salary changes) — this
   /// section is embedded inline, not pushed as its own route, so
@@ -123,6 +136,9 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
         );
       }
       await _load();
+      // The journey moves to its next stage on this; Order Details' P&L
+      // simply re-reads, which is harmless.
+      widget.onCrewChanged?.call();
       if (mounted) {
         final name = _staffById(staffId)?.name ?? 'Supervisor';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -323,6 +339,12 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     if (AppSession.instance.currentStaffId != null) {
       return const SizedBox.shrink();
     }
+    if (widget.closeOnly) {
+      if (_loading || !StaffPermissions.canActive('orders', 'edit')) {
+        return const SizedBox.shrink();
+      }
+      return _markCompleteSection(ng);
+    }
     if (_loading) {
       return NgCard(
       radius: 20,
@@ -467,7 +489,8 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
           // the order FINANCIALLY, distinct from the job-progress status.
           // Not conditioned on labour existing (a porter-handled order can
           // have zero labour rows and still be ready to close).
-          if (StaffPermissions.canActive('orders', 'edit'))
+          if (widget.showClose &&
+              StaffPermissions.canActive('orders', 'edit'))
             _markCompleteSection(ng),
         ],
       ),

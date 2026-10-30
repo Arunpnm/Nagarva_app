@@ -12,6 +12,11 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 import '/l10n/gen/app_localizations.dart';
+import '/order_detail_page/order_addons_section.dart';
+import '/order_detail_page/order_crew_section.dart';
+import '/order_detail_page/order_materials_section.dart';
+import '/order_detail_page/payment_history_section.dart';
+import '/order_detail_page/quick_payment_section.dart';
 import '/permissions.dart';
 
 /// The order journey (Claude Design handoff, screen `jrny`): one lead or
@@ -773,16 +778,29 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
       case JourneyStage.followUp:
         return _followUpForm(context, d);
       case JourneyStage.supervisor:
-        return NgPrimaryButton(
-          label: l.jrAssignInOrder,
-          icon: Icons.engineering_rounded,
-          onPressed: canEditOrders ? () => _openOrder(d) : null,
+        // Assign the supervisor and crew here (Order Details' crew
+        // section, without its close button — that lives in Closed).
+        if (d.order?.id == null || !canEditOrders) {
+          return NgPrimaryButton(
+            label: l.jrAssignInOrder,
+            icon: Icons.engineering_rounded,
+            onPressed: null,
+          );
+        }
+        return OrderCrewSection(
+          key: ValueKey('crew-${d.order!.id}'),
+          orderId: d.order!.id!,
+          showClose: false,
+          onCrewChanged: _load,
         );
       case JourneyStage.moveDay:
-        return Row(
+        // Start/finish, crew, odometer and the delivery code stay in the
+        // field job (the supervisor's screen); materials issued and
+        // extras added to the order value are recorded right here.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: NgPrimaryButton(
+            NgPrimaryButton(
                 label: l.jrOpenFieldJob,
                 icon: Icons.local_shipping_rounded,
                 onPressed: d.order?.id == null
@@ -794,16 +812,21 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
                                 serializeParam(d.order!.id, ParamType.String),
                           }.withoutNulls,
                         ),
-              ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: NgSecondaryButton(
-                label: l.jrOpenOrder,
-                height: 50,
-                onPressed: () => _openOrder(d),
+            if (d.order?.id != null) ...[
+              const SizedBox(height: 12),
+              OrderMaterialsSection(
+                key: ValueKey('mat-${d.order!.id}'),
+                orderId: d.order!.id!,
+                onChanged: _load,
               ),
-            ),
+              const SizedBox(height: 10),
+              OrderAddonsSection(
+                key: ValueKey('addons-${d.order!.id}'),
+                orderId: d.order!.id!,
+                onChanged: _load,
+              ),
+            ],
           ],
         );
       case JourneyStage.invoice:
@@ -978,20 +1001,22 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
           ],
         ),
         const SizedBox(height: 10),
-        if (d.balance > 0)
-          NgPrimaryButton(
-            label: l.jrRecordPayment,
-            icon: Icons.payments_rounded,
-            onPressed: d.order?.id == null
-                ? null
-                : () => context.pushNamed(
-                      RecordPaymentPageWidget.routeName,
-                      queryParameters: {
-                        'orderId':
-                            serializeParam(d.order!.id, ParamType.String),
-                      }.withoutNulls,
-                    ),
+        // Record a payment right here: Order Details' Quick Payment, so
+        // receipt numbering and the ledger stay in one place.
+        if (d.balance > 0 && d.order?.id != null)
+          QuickPaymentSection(
+            key: ValueKey('pay-${d.order!.id}'),
+            orderId: d.order!.id!,
+            onSaved: _load,
           ),
+        if (d.order?.id != null && d.payments.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          PaymentHistorySection(
+            key: ValueKey('payhist-${d.order!.id}'),
+            orderId: d.order!.id!,
+            onChanged: _load,
+          ),
+        ],
         const SizedBox(height: 14),
         Text(l.jrTickets, style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
         const SizedBox(height: 6),
@@ -1070,13 +1095,23 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
             ),
           ),
         const SizedBox(height: 6),
-        NgSecondaryButton(
-          label: l.jrCloseOrder,
-          icon: Icons.task_alt_rounded,
-          iconColor: blockers.isEmpty ? c.green : c.faint,
-          height: 46,
-          onPressed: () => _openOrder(d),
-        ),
+        // Closing happens here, through Order Details' own audited close
+        // (the crew section's close-only mode), once nothing blocks it.
+        if (blockers.isEmpty && d.order?.id != null)
+          OrderCrewSection(
+            key: ValueKey('close-${d.order!.id}'),
+            orderId: d.order!.id!,
+            closeOnly: true,
+            onCrewChanged: _load,
+          )
+        else
+          NgSecondaryButton(
+            label: l.jrCloseOrder,
+            icon: Icons.task_alt_rounded,
+            iconColor: c.faint,
+            height: 46,
+            onPressed: null,
+          ),
       ],
     );
   }
