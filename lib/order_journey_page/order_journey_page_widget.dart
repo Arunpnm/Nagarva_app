@@ -61,6 +61,9 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
 
   bool _invoiceBusy = false;
 
+  /// Survey & quote opened from the follow-up stage.
+  bool _showSurveyQuote = false;
+
   // Ticket form.
   final _ticketCtrl = TextEditingController();
   bool _savingTicket = false;
@@ -773,11 +776,15 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
       case JourneyStage.lead:
       case JourneyStage.survey:
       case JourneyStage.quote:
-        return NgPrimaryButton(
-          label: l.jrOpenSurveyQuote,
-          icon: Icons.request_quote_rounded,
-          onPressed: d.lead == null ? null : () => _openLead(d),
-        );
+        // Survey request, quote, revisions, signature and convert-to-order
+        // happen right here: Lead Details' own Survey & Quote card,
+        // embedded (one copy of that logic).
+        return _surveyQuotePanel(d) ??
+            NgPrimaryButton(
+              label: l.jrOpenSurveyQuote,
+              icon: Icons.request_quote_rounded,
+              onPressed: null,
+            );
       case JourneyStage.followUp:
         return _followUpForm(context, d);
       case JourneyStage.supervisor:
@@ -970,12 +977,31 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
               child: NgSecondaryButton(
                 label: l.jrOpenSurveyQuote,
                 height: 50,
-                onPressed: () => _openLead(d),
+                onPressed: d.lead == null
+                    ? null
+                    : () => setState(
+                        () => _showSurveyQuote = !_showSurveyQuote),
               ),
             ),
           ],
         ),
+        // Moving on from follow-up: survey and quote open below, in place.
+        if (_showSurveyQuote && _surveyQuotePanel(d) != null) ...[
+          const SizedBox(height: 12),
+          _surveyQuotePanel(d)!,
+        ],
       ],
+    );
+  }
+
+  Widget? _surveyQuotePanel(JourneyData d) {
+    final lead = d.lead;
+    if (lead?.id == null) return null;
+    return LeadDetailPageWidget.fromLead(
+      lead!,
+      key: ValueKey('sq-${lead.id}'),
+      surveyQuoteOnly: true,
+      onChanged: _load,
     );
   }
 

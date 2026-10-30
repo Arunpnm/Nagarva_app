@@ -55,7 +55,30 @@ class LeadDetailPageWidget extends StatefulWidget {
     this.leadStatus,
     this.leadBranch,
     this.leadNotes,
+    this.surveyQuoteOnly = false,
+    this.onChanged,
   });
+
+  /// Builds the widget for one lead from its row, as the Leads list does.
+  factory LeadDetailPageWidget.fromLead(LeadsRow l,
+          {Key? key, bool surveyQuoteOnly = false, VoidCallback? onChanged}) =>
+      LeadDetailPageWidget(
+        key: key,
+        leadId: l.id,
+        leadCustomer: l.customer,
+        leadPhone: l.phone,
+        leadEmail: l.email,
+        leadFromCity: l.fromCity,
+        leadToCity: l.toCity,
+        leadApproxDate: l.approxDate,
+        leadService: l.service,
+        leadSource: l.source,
+        leadStatus: l.status,
+        leadBranch: l.branch,
+        leadNotes: l.notes,
+        surveyQuoteOnly: surveyQuoteOnly,
+        onChanged: onChanged,
+      );
 
   final String? leadId;
   final String? leadCustomer;
@@ -69,6 +92,15 @@ class LeadDetailPageWidget extends StatefulWidget {
   final String? leadStatus;
   final String? leadBranch;
   final String? leadNotes;
+
+  /// The order journey's Survey and Quote stages embed this page with
+  /// [surveyQuoteOnly]: just the Survey & Quote card, no scaffold, so the
+  /// survey request, quote, revisions, signature and convert-to-order run
+  /// on the one copy of that logic. [onChanged] fires after it reloads
+  /// following a change, and in place of opening Order Details once an
+  /// order is created.
+  final bool surveyQuoteOnly;
+  final VoidCallback? onChanged;
 
   static String routeName = 'LeadDetailPage';
   static String routePath = '/lead-detail';
@@ -406,6 +438,12 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(successMessage)),
       );
+      // Inside the journey the order appears in the next stages instead.
+      if (widget.surveyQuoteOnly) {
+        await _loadLinked();
+        widget.onChanged?.call();
+        return;
+      }
       context.pushNamed(
         OrderDetailPageWidget.routeName,
         queryParameters: {
@@ -612,6 +650,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
 
+  /// Set after the first load, so [LeadDetailPageWidget.onChanged] fires
+  /// on reloads only, not on opening.
+  bool _linkedLoadedOnce = false;
+
   Future<void> _loadLinked() async {
     if (widget.leadId == null) {
       setState(() => _loadingLinked = false);
@@ -702,6 +744,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       // catches up whenever the page is opened or refreshed. advanceOnly
       // semantics mean a lead already further along is never pulled back.
       await _reconcileStatusFromProgress();
+      if (_linkedLoadedOnce) widget.onChanged?.call();
+      _linkedLoadedOnce = true;
     } catch (_) {
       if (mounted) setState(() => _loadingLinked = false);
     }
@@ -2112,6 +2156,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.surveyQuoteOnly) {
+      return _loadingLinked
+          ? const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : _surveyQuoteSection(context);
+    }
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
