@@ -231,9 +231,9 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
           'end_date': endDate?.toIso8601String().split('T').first,
           'km_start': kmStart,
           'km_end': kmEnd,
-          'total_km': (kmStart != null && kmEnd != null && kmEnd >= kmStart)
-              ? kmEnd - kmStart
-              : null,
+          // total_km is GENERATED ALWAYS in the database: writing it
+          // (as this did) fails every save with 428C9. It follows
+          // km_start/km_end by itself.
           'fuel_litres': double.tryParse(fuelCtrl.text.trim()),
           'status': status,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
