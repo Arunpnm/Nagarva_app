@@ -28,6 +28,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/components/keyboard_scroll_view.dart';
+import '/backend/detail_navigation.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'arrival_code_card.dart';
@@ -324,39 +325,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Duplicated as ${created.id}.')));
-      context.pushNamed(
-        OrderDetailPageWidget.routeName,
-        queryParameters: {
-          'orderId': serializeParam(created.id, ParamType.String),
-          'orderCustomer':
-              serializeParam(created.customer, ParamType.String),
-          'orderPhone': serializeParam(created.phone, ParamType.String),
-          'orderFromCity':
-              serializeParam(created.fromCity, ParamType.String),
-          'orderToCity': serializeParam(created.toCity, ParamType.String),
-          'orderFromAddress':
-              serializeParam(created.fromAddress, ParamType.String),
-          'orderToAddress':
-              serializeParam(created.toAddress, ParamType.String),
-          'orderFromFloor':
-              serializeParam(created.fromFloor?.toString(), ParamType.String),
-          'orderToFloor':
-              serializeParam(created.toFloor?.toString(), ParamType.String),
-          'orderMoveDate': serializeParam(
-              created.moveDateOrNull?.toString(), ParamType.String),
-          'orderAmount':
-              serializeParam(created.amount?.toString(), ParamType.String),
-          'orderStatus': serializeParam(created.status, ParamType.String),
-          'orderPaymentStatus':
-              serializeParam(created.paymentStatus, ParamType.String),
-          'orderTrackingStatus':
-              serializeParam(created.trackingStatus, ParamType.String),
-          'orderService': serializeParam(created.service, ParamType.String),
-          'orderBranch': serializeParam(created.branch, ParamType.String),
-          'orderType': serializeParam(created.orderType, ParamType.String),
-          'orderNotes': serializeParam(created.notes, ParamType.String),
-        }.withoutNulls,
-      );
+      openOrderJourney(context, created);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)

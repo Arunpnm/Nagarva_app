@@ -29,6 +29,7 @@ import '/backend/issued_documents.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
+import '/backend/detail_navigation.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -444,27 +445,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         widget.onChanged?.call();
         return;
       }
-      context.pushNamed(
-        OrderDetailPageWidget.routeName,
-        queryParameters: {
-          'orderId': serializeParam(order.id, ParamType.String),
-          'orderCustomer': serializeParam(order.customer, ParamType.String),
-          'orderPhone': serializeParam(order.phone, ParamType.String),
-          'orderFromCity': serializeParam(order.fromCity, ParamType.String),
-          'orderToCity': serializeParam(order.toCity, ParamType.String),
-          'orderMoveDate':
-              serializeParam(order.moveDate.toString(), ParamType.String),
-          'orderAmount':
-              serializeParam(order.amount?.toString(), ParamType.String),
-          'orderStatus': serializeParam(order.status, ParamType.String),
-          'orderPaymentStatus':
-              serializeParam(order.paymentStatus, ParamType.String),
-          'orderTrackingStatus':
-              serializeParam(order.trackingStatus, ParamType.String),
-          'orderService': serializeParam(order.service, ParamType.String),
-          'orderBranch': serializeParam(order.branch, ParamType.String),
-        }.withoutNulls,
-      );
+      openOrderJourney(context, order);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

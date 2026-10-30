@@ -86,3 +86,23 @@ void openOrderJourney(BuildContext context, OrdersRow o) {
         .withoutNulls,
   );
 }
+
+/// [openOrderJourney] when only the order id is at hand (module lists).
+void openOrderJourneyById(BuildContext context, String? orderId) {
+  if (orderId == null || orderId.isEmpty) return;
+  context.pushNamed(
+    OrderJourneyPageWidget.routeName,
+    queryParameters: {'orderId': serializeParam(orderId, ParamType.String)}
+        .withoutNulls,
+  );
+}
+
+/// [openLeadJourney] when only the lead id is at hand.
+void openLeadJourneyById(BuildContext context, String? leadId) {
+  if (leadId == null || leadId.isEmpty) return;
+  context.pushNamed(
+    OrderJourneyPageWidget.routeName,
+    queryParameters: {'leadId': serializeParam(leadId, ParamType.String)}
+        .withoutNulls,
+  );
+}

@@ -5,7 +5,7 @@ import '/backend/supabase/supabase.dart';
 import '/components/record_module_page.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
-import '/index.dart';
+import '/backend/detail_navigation.dart';
 
 /// Daily summary (handoff Operations): today in one list — moves on
 /// today's date, money received, money spent and new leads.
@@ -86,12 +86,7 @@ class DailySummaryPage extends StatelessWidget {
             void open() {
               final oid = r['_k'] == 'move' ? r['id'] : r['order_id'];
               if (oid == null) return;
-              context.pushNamed(
-                OrderDetailPageWidget.routeName,
-                queryParameters: {
-                  'orderId': serializeParam('$oid', ParamType.String),
-                }.withoutNulls,
-              );
+              openOrderJourneyById(context, '$oid');
             }
 
             return switch (r['_k']) {

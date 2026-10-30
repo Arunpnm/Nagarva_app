@@ -8,7 +8,7 @@ import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/index.dart';
+import '/backend/detail_navigation.dart';
 
 /// WA Inbox (Session 4, Part B3) — was a ComingSoonPage stub.
 ///
@@ -371,12 +371,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
               ),
               if (contact.leadId != null)
                 TextButton(
-                  onPressed: () => context.pushNamed(
-                    LeadDetailPageWidget.routeName,
-                    queryParameters: {
-                      'leadId': serializeParam(contact.leadId, ParamType.String),
-                    }.withoutNulls,
-                  ),
+                  onPressed: () => openLeadJourneyById(context, contact.leadId),
                   child: const Text('Open Lead'),
                 ),
               IconButton(

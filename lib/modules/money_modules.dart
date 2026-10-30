@@ -5,9 +5,8 @@ import '/app_session.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/record_module_page.dart';
-import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
-import '/index.dart';
+import '/backend/detail_navigation.dart';
 
 String _human(dynamic s) => '${s ?? ''}'
     .replaceAll('_', ' ')
@@ -16,11 +15,7 @@ String _human(dynamic s) => '${s ?? ''}'
 
 void _openOrder(BuildContext context, dynamic id) {
   if (id == null || '$id'.isEmpty) return;
-  context.pushNamed(
-    OrderDetailPageWidget.routeName,
-    queryParameters: {'orderId': serializeParam('$id', ParamType.String)}
-        .withoutNulls,
-  );
+  openOrderJourneyById(context, '$id');
 }
 
 /// GST, TDS & exports (handoff Money): what the invoices already say,

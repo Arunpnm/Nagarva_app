@@ -9,7 +9,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/index.dart';
+import '/backend/detail_navigation.dart';
 
 class CustomerDetailPageWidget extends StatefulWidget {
   const CustomerDetailPageWidget({super.key, this.customerId});
@@ -423,29 +423,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
   }
 
   void _openOrder(OrdersRow o) {
-    context.pushNamed(
-      OrderDetailPageWidget.routeName,
-      queryParameters: {
-        'orderId': serializeParam(o.id, ParamType.String),
-        'orderCustomer': serializeParam(o.customer, ParamType.String),
-        'orderPhone': serializeParam(o.phone, ParamType.String),
-        'orderFromCity': serializeParam(o.fromCity, ParamType.String),
-        'orderToCity': serializeParam(o.toCity, ParamType.String),
-        'orderFromAddress': serializeParam(o.fromAddress, ParamType.String),
-        'orderToAddress': serializeParam(o.toAddress, ParamType.String),
-        'orderFromFloor': serializeParam(o.fromFloor?.toString(), ParamType.String),
-        'orderToFloor': serializeParam(o.toFloor?.toString(), ParamType.String),
-        'orderMoveDate': serializeParam(o.moveDateOrNull?.toString(), ParamType.String),
-        'orderAmount': serializeParam(o.amount?.toString(), ParamType.String),
-        'orderStatus': serializeParam(o.status, ParamType.String),
-        'orderPaymentStatus': serializeParam(o.paymentStatus, ParamType.String),
-        'orderTrackingStatus': serializeParam(o.trackingStatus, ParamType.String),
-        'orderService': serializeParam(o.service, ParamType.String),
-        'orderBranch': serializeParam(o.branch, ParamType.String),
-        'orderType': serializeParam(o.orderType, ParamType.String),
-        'orderNotes': serializeParam(o.notes, ParamType.String),
-      }.withoutNulls,
-    );
+    openOrderJourney(context, o);
   }
 
   Future<void> _deleteCustomer(CustomersRow c) async {

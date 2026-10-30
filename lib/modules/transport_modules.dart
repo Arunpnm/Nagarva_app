@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/record_module_page.dart';
-import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
-import '/index.dart';
+import '/backend/detail_navigation.dart';
 
 String _human(dynamic s) => '${s ?? ''}'
     .replaceAll('_', ' ')
@@ -378,13 +377,7 @@ class StorageBillingPage extends StatelessWidget {
             statusTone: _inStore(r) ? NgStatus.blue : NgStatus.neutral,
             onTap: r['order_id'] == null
                 ? null
-                : () => context.pushNamed(
-                      OrderDetailPageWidget.routeName,
-                      queryParameters: {
-                        'orderId':
-                            serializeParam('${r['order_id']}', ParamType.String),
-                      }.withoutNulls,
-                    ),
+                : () => openOrderJourneyById(context, '${r['order_id']}'),
           ),
           emptyText: 'Nothing in storage. Storage is booked from an '
               "order's storage card.",
