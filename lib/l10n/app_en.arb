@@ -4573,5 +4573,13 @@
   "dwSaveFailed": "Could not save. Check your connection and try again.",
   "@dwSaveFailed": {
     "description": "Dashboard widgets save error"
+  },
+  "jrShareInvoice": "Share invoice",
+  "@jrShareInvoice": {
+    "description": "Journey Invoice stage (design jr_shareInv): generate/open and share the tax invoice"
+  },
+  "jrSendForSignature": "Send for signature",
+  "@jrSendForSignature": {
+    "description": "Journey Invoice stage: send the customer the signing link"
   }
 }

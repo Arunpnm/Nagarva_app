@@ -1046,5 +1046,7 @@
   "dwFleetSub": "{a} चालू · {s} सर्विस में",
   "dwAttendance": "स्टाफ हाज़िरी",
   "dwAttendanceSub": "आज चेक-इन",
-  "dwSaveFailed": "सेव नहीं हुआ। कनेक्शन जांचें और फिर कोशिश करें।"
+  "dwSaveFailed": "सेव नहीं हुआ। कनेक्शन जांचें और फिर कोशिश करें।",
+  "jrShareInvoice": "बिल भेजें",
+  "jrSendForSignature": "साइन के लिए भेजें"
 }

@@ -12,6 +12,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 import '/l10n/gen/app_localizations.dart';
+import '/order_detail_page/invoice_generator.dart';
 import '/order_detail_page/order_addons_section.dart';
 import '/order_detail_page/order_crew_section.dart';
 import '/order_detail_page/order_materials_section.dart';
@@ -57,6 +58,8 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
   DateTime? _next;
   final _callNotes = TextEditingController();
   bool _savingCall = false;
+
+  bool _invoiceBusy = false;
 
   // Ticket form.
   final _ticketCtrl = TextEditingController();
@@ -830,10 +833,45 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
           ],
         );
       case JourneyStage.invoice:
-        return NgPrimaryButton(
-          label: l.jrOpenOrder,
-          icon: Icons.receipt_long_rounded,
-          onPressed: () => _openOrder(d),
+        // Generated and signed here, through the same InvoiceGenerator
+        // Order Details uses: numbering, GST rules and the PDF are one copy.
+        final orderId = d.order?.id;
+        final hasInvoice = (d.order?.invoiceNo ?? '').isNotEmpty;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            NgPrimaryButton(
+              label: l.jrShareInvoice,
+              icon: Icons.receipt_long_rounded,
+              onPressed: orderId == null || _invoiceBusy || !canEditOrders
+                  ? null
+                  : () async {
+                      await InvoiceGenerator(
+                        context,
+                        orderId: orderId,
+                        signature: d.invoiceSignature,
+                        onBusy: (b) {
+                          if (mounted) setState(() => _invoiceBusy = b);
+                        },
+                      ).generate();
+                      await _load();
+                    },
+            ),
+            const SizedBox(height: 8),
+            NgSecondaryButton(
+              label: l.jrSendForSignature,
+              icon: Icons.draw_rounded,
+              height: 46,
+              onPressed: orderId == null || !hasInvoice || _invoiceBusy
+                  ? null
+                  : () async {
+                      await InvoiceGenerator(context, orderId: orderId)
+                          .sendForSignature(
+                              customer: d.customer, phone: d.phone);
+                      await _load();
+                    },
+            ),
+          ],
         );
       case JourneyStage.payment:
       case JourneyStage.closed:

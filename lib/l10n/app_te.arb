@@ -1046,5 +1046,7 @@
   "dwFleetSub": "{a} యాక్టివ్ · {s} సర్వీస్‌లో",
   "dwAttendance": "సిబ్బంది హాజరు",
   "dwAttendanceSub": "ఈరోజు చెక్-ఇన్",
-  "dwSaveFailed": "సేవ్ కాలేదు. కనెక్షన్ చూసి మళ్లీ ప్రయత్నించండి."
+  "dwSaveFailed": "సేవ్ కాలేదు. కనెక్షన్ చూసి మళ్లీ ప్రయత్నించండి.",
+  "jrShareInvoice": "బిల్లు పంపు",
+  "jrSendForSignature": "సంతకానికి పంపు"
 }
