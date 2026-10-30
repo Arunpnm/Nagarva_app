@@ -4711,5 +4711,93 @@
   "lsOwnerOnly": "Only the owner can reset staff PINs.",
   "@lsOwnerOnly": {
     "description": "Login & security: staff PIN reset is owner-only"
+  },
+  "qdTitle": "Quote design",
+  "@qdTitle": {
+    "description": "Settings › Quote design (design qt_title)"
+  },
+  "qdSub": "How your quotation PDF looks to customers.",
+  "@qdSub": {
+    "description": "Settings › Quote design (design qt_sub)"
+  },
+  "qdTheme": "Theme",
+  "@qdTheme": {
+    "description": "Settings › Quote design (design qt_theme)"
+  },
+  "qdColor": "Brand colour",
+  "@qdColor": {
+    "description": "Settings › Quote design (design qt_color)"
+  },
+  "qdLogo": "Logo",
+  "@qdLogo": {
+    "description": "Settings › Quote design (design qt_logo)"
+  },
+  "qdLogoAdd": "Upload logo",
+  "@qdLogoAdd": {
+    "description": "Settings › Quote design (design qt_logoAdd)"
+  },
+  "qdLogoHint": "PNG or JPG, square works best",
+  "@qdLogoHint": {
+    "description": "Settings › Quote design (design qt_logoHint)"
+  },
+  "qdSave": "Save design",
+  "@qdSave": {
+    "description": "Settings › Quote design (design qt_save)"
+  },
+  "qdPreview": "Preview sample PDF",
+  "@qdPreview": {
+    "description": "Settings › Quote design (design qt_preview)"
+  },
+  "qdSaved": "Quote design saved",
+  "@qdSaved": {
+    "description": "Settings › Quote design (design qt_saved)"
+  },
+  "qdTheme1A": "Classic",
+  "@qdTheme1A": {
+    "description": "Settings › Quote design (design qt_t1a)"
+  },
+  "qdTheme1B": "Bold band",
+  "@qdTheme1B": {
+    "description": "Settings › Quote design (design qt_t1b)"
+  },
+  "qdTheme1C": "Sidebar",
+  "@qdTheme1C": {
+    "description": "Settings › Quote design (design qt_t1c)"
+  },
+  "qdTheme1D": "Minimal",
+  "@qdTheme1D": {
+    "description": "Settings › Quote design (design qt_t1d)"
+  },
+  "qdTheme1E": "Corporate",
+  "@qdTheme1E": {
+    "description": "Settings › Quote design (design qt_t1e)"
+  },
+  "qdTheme1F": "Letterhead",
+  "@qdTheme1F": {
+    "description": "Settings › Quote design (design qt_t1f)"
+  },
+  "qdThemeDesc1A": "Serif, ruled lines",
+  "@qdThemeDesc1A": {
+    "description": "Settings › Quote design (design qt_d1a)"
+  },
+  "qdThemeDesc1B": "Colour header, rounded panels",
+  "@qdThemeDesc1B": {
+    "description": "Settings › Quote design (design qt_d1b)"
+  },
+  "qdThemeDesc1C": "Details column on the left",
+  "@qdThemeDesc1C": {
+    "description": "Settings › Quote design (design qt_d1c)"
+  },
+  "qdThemeDesc1D": "Black and white, prints anywhere",
+  "@qdThemeDesc1D": {
+    "description": "Settings › Quote design (design qt_d1d)"
+  },
+  "qdThemeDesc1E": "Boxed form, for office moves",
+  "@qdThemeDesc1E": {
+    "description": "Settings › Quote design (design qt_d1e)"
+  },
+  "qdThemeDesc1F": "Centred, double rule",
+  "@qdThemeDesc1F": {
+    "description": "Settings › Quote design (design qt_d1f)"
   }
 }

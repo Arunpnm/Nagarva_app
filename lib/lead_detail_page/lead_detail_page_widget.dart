@@ -20,6 +20,7 @@ import '/backend/tracking_service.dart';
 import '/components/share_link_sheet.dart';
 import '/components/survey_response_section.dart';
 import '/backend/pricing_defaults.dart';
+import '/backend/quote_design.dart';
 import '/components/pdf_branding.dart';
 import '/components/survey_pdf.dart';
 import '/components/quote_pdf.dart';
@@ -1840,7 +1841,9 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       final surveyLines =
           _survey != null ? parseSurveyRooms(_survey!.rooms) : <SurveyLine>[];
 
+      final design = await QuoteDesign.load();
       final bytes = await QuotePdf.generate(
+        design: design,
         leadRef: _leadRef,
         org: org,
         boilerplate: boilerplate,

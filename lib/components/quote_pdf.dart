@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
+import '/backend/quote_design.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '/backend/pricing_defaults.dart';
@@ -89,8 +90,11 @@ class QuotePdf {
     // file used to carry is gone; see amount_in_words() in
     // nagarva_migration_009_documents.sql).
     String? amountInWords,
+    // Settings › Quote design. Defaults to the navy band quotes always had.
+    QuoteDesign design = QuoteDesign.standard,
   }) async {
     final fonts = await PdfBranding.loadFonts();
+    final accent = PdfColor.fromInt(design.colorValue);
     final now = generatedAt ?? DateTime.now();
     final validUntil = now.add(const Duration(days: 15));
 
@@ -184,9 +188,10 @@ class QuotePdf {
         header: (ctx) => ctx.pageNumber == 1
             ? pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 14),
-                child: PdfBranding.headerFull(
+                child: _header(
+                  design: design,
+                  accent: accent,
                   org: org,
-                  docLabel: 'QUOTATION',
                   fonts: fonts,
                   logoBytes: logoBytes,
                 ),
@@ -201,12 +206,12 @@ class QuotePdf {
           pw.Container(
             padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfBranding.navy, width: 1),
+              border: pw.Border.all(color: accent, width: 1),
               borderRadius: pw.BorderRadius.circular(4),
             ),
             child: pw.Text('Quotation No: $leadRef',
                 style: pw.TextStyle(
-                    font: fonts.bold, fontSize: 10, color: PdfBranding.navy)),
+                    font: fonts.bold, fontSize: 10, color: accent)),
           ),
           pw.SizedBox(height: 8),
           pw.Row(
@@ -279,7 +284,7 @@ class QuotePdf {
                           style: pw.TextStyle(
                               font: fonts.bold,
                               fontSize: 8.5,
-                              color: PdfBranding.navy)),
+                              color: accent)),
                       pw.SizedBox(height: 2),
                       pw.Text(fromAddress ?? fromCity ?? '—',
                           style: pw.TextStyle(font: fonts.regular, fontSize: 8.5)),
@@ -302,7 +307,7 @@ class QuotePdf {
                           style: pw.TextStyle(
                               font: fonts.bold,
                               fontSize: 8.5,
-                              color: PdfBranding.navy)),
+                              color: accent)),
                       pw.SizedBox(height: 2),
                       pw.Text(toAddress ?? toCity ?? '—',
                           style: pw.TextStyle(font: fonts.regular, fontSize: 8.5)),
@@ -333,7 +338,7 @@ class QuotePdf {
             ),
             children: [
               pw.TableRow(
-                decoration: const pw.BoxDecoration(color: PdfBranding.navy),
+                decoration: pw.BoxDecoration(color: accent),
                 children: [
                   pw.Padding(
                     padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -437,7 +442,7 @@ class QuotePdf {
                     padding:
                         const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: pw.BoxDecoration(
-                      color: PdfBranding.navy,
+                      color: accent,
                       borderRadius: pw.BorderRadius.circular(4),
                     ),
                     child: pw.Row(
@@ -504,7 +509,7 @@ class QuotePdf {
           // ---- Site access ------------------------------------------------
           pw.Text('SITE ACCESS',
               style:
-                  pw.TextStyle(font: fonts.bold, fontSize: 9.5, color: PdfBranding.navy)),
+                  pw.TextStyle(font: fonts.bold, fontSize: 9.5, color: accent)),
           pw.SizedBox(height: 4),
           kv('Easy Access For Vehicle', yesNo(easyAccess)),
           kv('Any Access Restrictions', yesNo(accessRestrictions)),
@@ -523,7 +528,7 @@ class QuotePdf {
               children: [
                 pw.Text('BANK DETAILS',
                     style: pw.TextStyle(
-                        font: fonts.bold, fontSize: 9, color: PdfBranding.navy)),
+                        font: fonts.bold, fontSize: 9, color: accent)),
                 pw.SizedBox(height: 4),
                 if ((org.beneficiaryName ?? '').isNotEmpty)
                   kv('Beneficiary', org.beneficiaryName!),
@@ -606,7 +611,7 @@ class QuotePdf {
           if (surveyLines.isNotEmpty) ...[
             pw.Text('MOVING ITEMS',
                 style: pw.TextStyle(
-                    font: fonts.bold, fontSize: 9.5, color: PdfBranding.navy)),
+                    font: fonts.bold, fontSize: 9.5, color: accent)),
             pw.SizedBox(height: 4),
             pw.Table(
               columnWidths: const {
@@ -619,7 +624,7 @@ class QuotePdf {
               border: pw.TableBorder.all(color: PdfColors.grey400, width: .5),
               children: [
                 pw.TableRow(
-                  decoration: const pw.BoxDecoration(color: PdfBranding.navy),
+                  decoration: pw.BoxDecoration(color: accent),
                   children: [
                     for (final h in [
                       'SR NO',
@@ -724,7 +729,7 @@ class QuotePdf {
           pw.NewPage(),
           pw.Text('TERMS & CONDITIONS',
               style:
-                  pw.TextStyle(font: fonts.bold, fontSize: 10, color: PdfBranding.navy)),
+                  pw.TextStyle(font: fonts.bold, fontSize: 10, color: accent)),
           pw.SizedBox(height: 6),
           // The vendor's own quotation terms when they have written them,
           // otherwise the standard set every document carries. NEVER an
@@ -755,6 +760,143 @@ class QuotePdf {
       ),
     );
     return doc.save();
+  }
+
+  /// The first-page header for each Quote design theme. Bold band is the
+  /// shared colour band; the others are white headers with the brand
+  /// colour in the name, the rules and the box.
+  static pw.Widget _header({
+    required QuoteDesign design,
+    required PdfColor accent,
+    required OrgProfile org,
+    required PdfFonts fonts,
+    Uint8List? logoBytes,
+  }) {
+    const docLabel = 'QUOTATION';
+    if (design.theme == '1b') {
+      return PdfBranding.headerFull(
+        org: org,
+        docLabel: docLabel,
+        fonts: fonts,
+        logoBytes: logoBytes,
+        color: accent,
+      );
+    }
+    final centre = design.theme == '1f';
+    final small = pw.TextStyle(
+        font: fonts.regular, fontSize: 8, color: PdfBranding.grey);
+    final contacts = [
+      if (org.phones.isNotEmpty) 'Ph: ${org.phones.join(', ')}',
+      if ((org.landline ?? '').isNotEmpty) 'Landline: ${org.landline}',
+      if ((org.website ?? '').isNotEmpty) org.website!,
+      if ((org.email ?? '').isNotEmpty) org.email!,
+    ].join('  |  ');
+    final logo = logoBytes == null
+        ? null
+        : pw.SizedBox(
+            width: 52,
+            height: 52,
+            child: pw.Image(pw.MemoryImage(logoBytes), fit: pw.BoxFit.contain),
+          );
+    final align =
+        centre ? pw.CrossAxisAlignment.center : pw.CrossAxisAlignment.start;
+    final identity = pw.Column(
+      crossAxisAlignment: align,
+      children: [
+        pw.Text(org.name.toUpperCase(),
+            textAlign: centre ? pw.TextAlign.center : pw.TextAlign.left,
+            style: pw.TextStyle(font: fonts.bold, fontSize: 16, color: accent)),
+        if ((org.tagline ?? '').isNotEmpty)
+          pw.Text(org.tagline!,
+              style: pw.TextStyle(font: fonts.regular, fontSize: 9)),
+        if ((org.address ?? '').isNotEmpty)
+          pw.Text(org.address!,
+              textAlign: centre ? pw.TextAlign.center : pw.TextAlign.left,
+              style: small),
+        if (contacts.isNotEmpty)
+          pw.Text(contacts,
+              textAlign: centre ? pw.TextAlign.center : pw.TextAlign.left,
+              style: small),
+      ],
+    );
+    final ids = pw.Column(
+      crossAxisAlignment:
+          centre ? pw.CrossAxisAlignment.center : pw.CrossAxisAlignment.end,
+      children: [
+        pw.Text(docLabel,
+            style: pw.TextStyle(font: fonts.bold, fontSize: 13, color: accent)),
+        if ((org.gstin ?? '').isNotEmpty)
+          pw.Text('GSTIN: ${org.gstin}', style: small),
+        if ((org.pan ?? '').isNotEmpty) pw.Text('PAN: ${org.pan}', style: small),
+      ],
+    );
+    final pw.Widget body = centre
+        ? pw.Column(children: [
+            if (logo != null) ...[logo, pw.SizedBox(height: 4)],
+            identity,
+            pw.SizedBox(height: 4),
+            ids,
+          ])
+        : pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              if (logo != null) ...[logo, pw.SizedBox(width: 12)],
+              pw.Expanded(child: identity),
+              ids,
+            ],
+          );
+    pw.Widget rule(double h) => pw.Container(height: h, color: accent);
+    switch (design.theme) {
+      case '1c': // Sidebar: a brand-colour column down the left.
+        // A Table, not a stretched Row: a Row with `stretch` in a header
+        // gets unbounded height and paints NaN (CLAUDE.md, the LR fix).
+        // TableCellVerticalAlignment.full sizes the bar to the body.
+        return pw.Table(
+          columnWidths: const {
+            0: pw.FixedColumnWidth(8),
+            1: pw.FixedColumnWidth(12),
+            2: pw.FlexColumnWidth(),
+          },
+          children: [
+            pw.TableRow(
+              verticalAlignment: pw.TableCellVerticalAlignment.full,
+              children: [
+                pw.Container(color: accent),
+                pw.SizedBox(),
+                body,
+              ],
+            ),
+          ],
+        );
+      case '1e': // Corporate: boxed.
+        return pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: accent, width: 1.2),
+          ),
+          child: body,
+        );
+      case '1f': // Letterhead: centred, double rule.
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            body,
+            pw.SizedBox(height: 8),
+            rule(1.5),
+            pw.SizedBox(height: 2),
+            rule(.5),
+          ],
+        );
+      default: // 1a Classic and 1d Minimal: one rule under the header.
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            body,
+            pw.SizedBox(height: 8),
+            rule(design.theme == '1d' ? .8 : 1.5),
+          ],
+        );
+    }
   }
 
   static pw.Widget _totalRow(String label, String value, PdfFonts fonts,

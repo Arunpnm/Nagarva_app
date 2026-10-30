@@ -97,3 +97,4 @@ export '/modules/more_modules.dart';
 export '/whatsapp/whatsapp_page.dart';
 export '/settings_page/modules_page.dart';
 export '/settings_page/dashboard_widgets_page.dart';
+export '/settings_page/quote_design_page.dart';

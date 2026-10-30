@@ -370,6 +370,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         _row(Icons.view_in_ar_outlined, l.ngSetCft,
             sub: l.ngSetCftSub,
             onTap: () => context.pushNamed(SurveyPricingPage.routeName)),
+        // The design write is owner-only in the database.
+        if (_isOwner)
+          _row(Icons.palette_outlined, l.qdTitle,
+              sub: l.qdSub,
+              onTap: () => context.pushNamed(QuoteDesignPage.routeName)),
         // Owner/admin/manager, the same people roll_over_number_series
         // accepts — offering it to staff would only end in a refusal.
         if (isOwnerOrManagerSession)
