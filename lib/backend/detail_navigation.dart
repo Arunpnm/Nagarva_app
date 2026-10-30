@@ -64,3 +64,25 @@ void openLeadDetail(BuildContext context, LeadsRow l) {
     }.withoutNulls,
   );
 }
+
+/// Opens the stage-by-stage order journey for a lead. This is the main
+/// entry from lists (Arun, 30 Oct 2026: "stage by stage, not everything in
+/// a single page"); Lead Details stays reachable from inside the journey.
+void openLeadJourney(BuildContext context, LeadsRow l) {
+  if (l.id == null) return openLeadDetail(context, l);
+  context.pushNamed(
+    OrderJourneyPageWidget.routeName,
+    queryParameters: {'leadId': serializeParam(l.id, ParamType.String)}
+        .withoutNulls,
+  );
+}
+
+/// Opens the order journey for an order. See [openLeadJourney].
+void openOrderJourney(BuildContext context, OrdersRow o) {
+  if (o.id == null) return openOrderDetail(context, o);
+  context.pushNamed(
+    OrderJourneyPageWidget.routeName,
+    queryParameters: {'orderId': serializeParam(o.id, ParamType.String)}
+        .withoutNulls,
+  );
+}

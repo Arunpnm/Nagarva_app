@@ -297,7 +297,7 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () => openLeadDetail(context, l),
+            onTap: () => openLeadJourney(context, l),
             child: Row(
               children: [
                 NgAvatar(l.customer, status: tone, size: 40),

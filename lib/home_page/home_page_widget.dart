@@ -843,7 +843,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
             '${o.fromCity ?? ''} → ${o.toCity ?? ''}',
             orderStageLabel(kOrderStages[stage]),
           ].where((x) => x.trim().isNotEmpty).join(' · '),
-          onTap: () => openOrderDetail(context, o),
+          onTap: () => openOrderJourney(context, o),
         ),
       ));
     }
@@ -889,7 +889,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                   orderStageIndex(o.trackingStatus, o.status)),
               title: l.ngAgendaMove(o.customer),
               sub: '${o.fromCity ?? ''} → ${o.toCity ?? ''}',
-              onTap: () => openOrderDetail(context, o),
+              onTap: () => openOrderJourney(context, o),
             ))
         .toList();
 
@@ -1201,7 +1201,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
                 return SizedBox(
                   width: 200,
                   child: NgCard(
-                    onTap: () => openLeadDetail(context, ld),
+                    onTap: () => openLeadJourney(context, ld),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

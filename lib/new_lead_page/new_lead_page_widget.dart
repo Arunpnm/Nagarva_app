@@ -314,7 +314,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
         );
       case 'survey' || 'confirm' || 'follow':
         // Request Survey and Confirm Order both live on Lead Details.
-        if (lead != null) openLeadDetail(context, lead);
+        if (lead != null) openLeadJourney(context, lead);
       default:
         context.pushNamed(LeadsPageWidget.routeName);
     }
