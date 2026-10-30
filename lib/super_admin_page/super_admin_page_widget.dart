@@ -6,6 +6,7 @@ import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
 import 'admin_login_page.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import 'marketplace_tab.dart';
 import 'plans_tab.dart';
 import 'signups_tab.dart';
 import 'tenant_detail_page.dart';
@@ -222,7 +223,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
     final planNameById = {for (final p in _plans) p.id!: p.name};
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: ng.bg,
         appBar: NgSimpleBar(
@@ -246,6 +247,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                 Tab(text: 'Tenants'),
                 Tab(text: 'Signups'),
                 Tab(text: 'Plans'),
+                Tab(text: 'Marketplace'),
               ],
             ),
             Expanded(
@@ -328,6 +330,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                   ),
             SignupsTab(onChanged: _loadOrgs),
             const PlansTab(),
+            const MarketplaceTab(),
           ],
         )),
           ],
