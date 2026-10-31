@@ -11,6 +11,7 @@ import '/backend/lead_status.dart';
 import '/backend/order_stages.dart';
 import '/components/dashboard_kpi_grid.dart';
 import '/components/ng_top_bar.dart';
+import '/components/nagarva_broadcast_banner.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -1340,6 +1341,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
         };
     final sections = <Widget>[
       _greeting(context),
+      // Messages from Nagarva are for the business owner, not the crew.
+      if (s.currentStaffId == null) const NagarvaBroadcastBanner(),
       if (s.currentStaffId == null && (s.planName ?? '').trim().isNotEmpty)
         const DashPlanCard(),
       for (final id in _widgets.shownInOrder)

@@ -144,6 +144,7 @@ dependency_overrides:
 
 dev_dependencies:
   sentry_dart_plugin: 3.4.0
+  http: 1.4.0 # same pin as dependency_overrides; used by test/admin_panel_render_test.dart
   flutter_lints: 4.0.0
   lints: 4.0.0
   flutter_test:

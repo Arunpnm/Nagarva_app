@@ -6,7 +6,15 @@ import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
 import 'admin_login_page.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import 'admin_common.dart';
+import 'admin_dashboard_tab.dart';
+import 'audit_tab.dart';
+import 'broadcasts_tab.dart';
+import 'coupons_tab.dart';
 import 'marketplace_tab.dart';
+import 'payments_tab.dart';
+import 'team_tab.dart';
+import 'tickets_tab.dart';
 import 'plans_tab.dart';
 import 'signups_tab.dart';
 import 'tenant_detail_page.dart';
@@ -53,6 +61,30 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
   // orgId -> {orders, leads, staff}
   final Map<String, Map<String, int>> _usage = {};
 
+  /// The signed-in admin's role (platform_role()). Before
+  /// 20261031_admin_panel.sql has run there are no roles and every admin
+  /// is treated as super, as they were.
+  String _role = 'super';
+  String? _myName;
+  String _section = 'dashboard';
+
+  /// Each section and the admin roles it is offered to (null = every
+  /// role; super sees all). The database enforces the same split; this
+  /// only avoids offering what would be refused.
+  static const _sections = <({String key, String label, IconData icon, Set<String>? roles})>[
+    (key: 'dashboard', label: 'Dashboard', icon: Icons.space_dashboard_outlined, roles: null),
+    (key: 'marketplace', label: 'Marketplace', icon: Icons.hub_outlined, roles: {'sales'}),
+    (key: 'vendors', label: 'Vendors', icon: Icons.storefront_outlined, roles: {'sales', 'support'}),
+    (key: 'signups', label: 'Approvals', icon: Icons.how_to_reg_outlined, roles: {'sales'}),
+    (key: 'plans', label: 'Plans & pricing', icon: Icons.sell_outlined, roles: {'sales'}),
+    (key: 'payments', label: 'Payments', icon: Icons.payments_outlined, roles: {'sales'}),
+    (key: 'tickets', label: 'Support tickets', icon: Icons.support_agent_rounded, roles: {'support'}),
+    (key: 'coupons', label: 'Coupons', icon: Icons.confirmation_number_outlined, roles: {'marketing', 'sales'}),
+    (key: 'broadcasts', label: 'Broadcasts', icon: Icons.campaign_outlined, roles: {'marketing'}),
+    (key: 'team', label: 'Admin team', icon: Icons.admin_panel_settings_outlined, roles: null),
+    (key: 'audit', label: 'Audit log', icon: Icons.history_rounded, roles: null),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +107,21 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
       );
     } catch (_) {
       // Table missing / RLS denies entirely — treat as not-admin, not a crash.
+    }
+    if (rows.isNotEmpty) {
+      try {
+        final me = await SupaFlow.client
+            .from('platform_admins')
+            .select('name,email,role,active')
+            .eq('user_id', userId)
+            .single();
+        _role = '${me['role'] ?? 'super'}';
+        _myName = '${me['name'] ?? me['email'] ?? ''}';
+        if (me['active'] == false) rows = [];
+      } catch (_) {
+        // No role column yet: the admin panel migration has not run.
+        _role = 'super';
+      }
     }
     if (!mounted) return;
     setState(() {
@@ -221,39 +268,130 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
     }
 
     final planNameById = {for (final p in _plans) p.id!: p.name};
-
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
+    final sections = [
+      for (final x in _sections)
+        if (x.roles == null || _role == 'super' || x.roles!.contains(_role)) x
+    ];
+    final current = sections.firstWhere((x) => x.key == _section,
+        orElse: () => sections.first);
+    Widget view(String key) => switch (key) {
+          'dashboard' => AdminDashboardTab(onOpen: (k) => setState(() => _section = k)),
+          'vendors' => _tenantsView(ng, planNameById),
+          'signups' => SignupsTab(onChanged: _loadOrgs),
+          'plans' => const PlansTab(),
+          'marketplace' => const MarketplaceTab(),
+          'payments' => const PaymentsTab(),
+          'tickets' => const TicketsTab(),
+          'coupons' => const CouponsTab(),
+          'broadcasts' => const BroadcastsTab(),
+          'team' => TeamTab(myRole: _role),
+          _ => const AuditTab(),
+        };
+    final signOut = IconButton(
+      tooltip: 'Sign out',
+      icon: Icon(Icons.logout_rounded, color: ng.soft),
+      onPressed: _signOut,
+    );
+    return LayoutBuilder(builder: (context, box) {
+      final wide = box.maxWidth >= 900;
+      final content = KeyedSubtree(key: ValueKey(current.key), child: view(current.key));
+      if (!wide) {
+        return Scaffold(
+          backgroundColor: ng.bg,
+          appBar: NgSimpleBar(title: 'Nagarva Admin', actions: [signOut]),
+          body: Column(children: [
+            SizedBox(
+              height: 48,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                children: [
+                  for (final x in sections)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: NgChip(
+                          label: x.label,
+                          selected: x.key == current.key,
+                          onTap: () => setState(() => _section = x.key)),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(child: content),
+          ]),
+        );
+      }
+      return Scaffold(
         backgroundColor: ng.bg,
-        appBar: NgSimpleBar(
-          title: 'Platform Admin — ${_orgs.length} tenants',
-          actions: [
-            IconButton(
-              tooltip: 'Sign out',
-              icon: Icon(Icons.logout_rounded, color: ng.soft),
-              onPressed: _signOut,
+        body: Row(children: [
+          Container(
+            width: 232,
+            decoration: BoxDecoration(
+                color: ng.s1, border: Border(right: BorderSide(color: ng.w08))),
+            child: SafeArea(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+                  child: Text('Nagarva Admin',
+                      style: NgFonts.geist(
+                          fontSize: 16, fontWeight: FontWeight.w600, color: ng.text)),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    children: [
+                      for (final x in sections)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Material(
+                            color: x.key == current.key ? ng.sel : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            child: ListTile(
+                              dense: true,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              leading: Icon(x.icon, size: 19, color: ng.soft),
+                              title: Text(x.label,
+                                  style: NgFonts.geist(fontSize: 14, color: ng.text)),
+                              onTap: () => setState(() => _section = x.key),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 14),
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(_myName ?? 'Admin',
+                            overflow: TextOverflow.ellipsis,
+                            style: NgFonts.geist(
+                                fontSize: 13.5, fontWeight: FontWeight.w600, color: ng.text)),
+                        Text(kAdminRoles[_role] ?? 'Admin',
+                            style: NgFonts.geist(fontSize: 12, color: ng.mute)),
+                      ]),
+                    ),
+                    signOut,
+                  ]),
+                ),
+              ]),
             ),
-          ],
-        ),
-        body: Column(
-          children: [
-            TabBar(
-              labelColor: NgPalette.of(context).text,
-              unselectedLabelColor: NgPalette.of(context).mute,
-              indicatorColor: NgPalette.of(context).acc,
-              dividerColor: NgPalette.of(context).w06,
-              tabs: const [
-                Tab(text: 'Tenants'),
-                Tab(text: 'Signups'),
-                Tab(text: 'Plans'),
-                Tab(text: 'Marketplace'),
-              ],
+          ),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1180), child: content),
             ),
-            Expanded(
-              child: TabBarView(
-          children: [
-            _loadingOrgs
+          ),
+        ]),
+      );
+    });
+  }
+
+  Widget _tenantsView(NgPalette ng, Map<String, String?> planNameById) {
+    return _loadingOrgs
                 ? const Center(child: CircularProgressIndicator())
                 : RefreshIndicator(
                     onRefresh: _loadOrgs,
@@ -327,15 +465,6 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
                         );
                       },
                     ),
-                  ),
-            SignupsTab(onChanged: _loadOrgs),
-            const PlansTab(),
-            const MarketplaceTab(),
-          ],
-        )),
-          ],
-        ),
-      ),
-    );
+                  );
   }
 }
