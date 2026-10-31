@@ -782,12 +782,12 @@ class _NavBarPageState extends State<NavBarPage>
         'SupervisorTeamPage': const SupervisorTeamPageWidget(),
         'SupervisorEarningsPage': const SupervisorEarningsPageWidget(),
         'SupervisorAttendancePage': const SupervisorAttendancePageWidget(),
-        // Field staff (driver/helper/packer) — their own two destinations
-        // are still unbuilt. Note the supervisor Earnings/Attendance
-        // screens above query by currentStaffId and would work for any
-        // role, but pointing field staff at them is a scope call for Arun,
-        // not something to do silently here.
-        'MyAttComingSoon': const ComingSoonPage(title: 'My Attendance'),
+        // Field staff (driver/helper/packer): Attendance is the crew
+        // check-in screen; My Earnings is still unbuilt. The supervisor
+        // Earnings screen above queries by currentStaffId and would work
+        // for any role, but pointing field staff at it is a scope call
+        // for Arun, not something to do silently here.
+        'FieldAttendancePage': const FieldAttendancePageWidget(),
         'MySalComingSoon': const ComingSoonPage(title: 'My Earnings'),
         'DriverAppPage': const DriverAppPage(),
       };

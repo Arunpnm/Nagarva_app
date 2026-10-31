@@ -323,10 +323,11 @@ const kSupervisorNavItems = <NavItem>[
 ];
 
 /// Field staff nav (Users Kickoff Step 2.3): driver / helper / packer.
-/// Neither screen exists yet.
+/// Attendance is the crew check-in screen (31 Oct 2026); My Earnings is
+/// still to be built.
 const kFieldStaffNavItems = <NavItem>[
   (
-    name: 'MyAttComingSoon',
+    name: 'FieldAttendancePage',
     icon: Icons.event_available,
     label: 'My Attendance',
     group: 'Field',
@@ -387,7 +388,7 @@ String homeNavNameForCurrentSession() {
     return 'SupervisorJobsListPage';
   }
   if (AppSession.instance.currentStaffRole == 'driver') return 'DriverAppPage';
-  return 'MySalComingSoon';
+  return 'FieldAttendancePage';
 }
 
 /// The full nav set for the current session type, **before** the
@@ -490,7 +491,7 @@ String localizedNavLabel(BuildContext context, NavItem item) {
     'SupervisorJobsListPage' => l.ngMenuMyJobs,
     'SupervisorTeamPage' => l.ngMenuMyTeam,
     'SupervisorEarningsPage' || 'MySalComingSoon' => l.ngMenuMyEarnings,
-    'SupervisorAttendancePage' || 'MyAttComingSoon' => l.ngMenuMyAttendance,
+    'SupervisorAttendancePage' || 'FieldAttendancePage' => l.ngMenuMyAttendance,
     _ when item.name == SuperAdminPageWidget.routeName =>
       l.ngMenuPlatformAdmin,
     'DriverAppPage' => l.drvTitle,

@@ -2,6 +2,7 @@ import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/crew_checkin_card.dart';
 import '/components/supervisor_menu_button.dart';
 import '/components/ng_top_bar.dart';
 import '/flutter_flow/ng_tokens.dart';
@@ -130,6 +131,8 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
               ),
             ),
             const SizedBox(height: 16),
+            // Today's job: rotating check-in code and the job's crew.
+            const CrewCheckinCard(),
             if (_loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 48),
@@ -180,7 +183,7 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
                 ],
               ),
               const SizedBox(height: 16),
-              const NgSectionHeader("Today's crew"),
+              const NgSectionHeader('Branch team'),
               const SizedBox(height: 10),
               NgCard(
                 radius: 20,

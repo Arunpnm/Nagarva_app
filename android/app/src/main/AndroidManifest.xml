@@ -2,6 +2,12 @@
     package="in.nagarva.app"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Supervisor check-in records where they are (crew check-in,
+         31 Oct 2026). Asked at the moment of check-in, never in the
+         background. CAMERA for the crew's code scanner is merged in by
+         mobile_scanner itself. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
 
     <application

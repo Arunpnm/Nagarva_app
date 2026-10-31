@@ -86,6 +86,29 @@ dependencies:
   # "iOS debt" note. Not added here: iOS is not the launch target, and
   # keys for a platform nobody builds are unverifiable.
   image_picker: 1.2.2
+  # Crew check-in (Arun, 31 Oct 2026: "QR + GPS, as designed"). Exact
+  # pins, chosen as settled releases rather than the newest:
+  #   qr_flutter     — DRAW the supervisor's rotating site code. Pure Dart.
+  #   mobile_scanner — SCAN it, live, from the crew member's camera. The
+  #                    one exception to the image_picker rule above: that
+  #                    rule is about capturing a photo; a scanner reads a
+  #                    live preview, which image_picker cannot do. It
+  #                    merges the CAMERA permission into the manifest and
+  #                    asks for it at runtime itself.
+  #   geolocator     — the supervisor's position at check-in.
+  #                    ACCESS_FINE/COARSE_LOCATION are declared in
+  #                    android/app/src/main/AndroidManifest.xml.
+  # iOS debt grows by NSCameraUsageDescription (already owed) and
+  # NSLocationWhenInUseUsageDescription; see CLAUDE.md.
+  qr_flutter: 4.1.0
+  mobile_scanner: 7.1.4
+  geolocator: 14.0.2
+  # Its platform packages pinned too: left free, pub picked releases
+  # under two weeks old (5.2.1 / 2.4.3 / 4.4.1, Oct 2026). These are the
+  # June 2026 releases, months in use.
+  geolocator_android: 5.0.3
+  geolocator_apple: 2.3.14
+  geolocator_platform_interface: 4.2.8
   google_fonts: 6.3.3
   gotrue: 2.12.0
   hive: 2.2.3

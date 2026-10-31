@@ -485,6 +485,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const DriverAppPage(),
         ),
         FFRoute(
+          name: FieldAttendancePageWidget.routeName,
+          path: FieldAttendancePageWidget.routePath,
+          builder: (context, params) => const FieldAttendancePageWidget(),
+        ),
+        FFRoute(
           name: FuelPage.routeName,
           path: FuelPage.routePath,
           builder: (context, params) => const FuelPage(),
@@ -870,7 +875,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           // dropped from kSupervisorNavItems as redundant with My Team,
           // which already does everything it would have — see
           // nav_items.dart.
-          ('MyAttComingSoon', '/my-att', 'My Attendance'),
           ('MySalComingSoon', '/my-sal', 'My Earnings'),
         ])
           FFRoute(
