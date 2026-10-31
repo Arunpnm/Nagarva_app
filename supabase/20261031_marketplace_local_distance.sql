@@ -292,8 +292,10 @@ begin
 end
 $$;
 
-revoke all on function public.mkt_points_km(jsonb, jsonb) from public;
-revoke all on function public.mkt_point_problem(text, jsonb) from public;
+-- Named roles too: Supabase's default privileges grant new functions to
+-- anon and authenticated by name (see the add-on slabs migration).
+revoke all on function public.mkt_points_km(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.mkt_point_problem(text, jsonb) from public, anon, authenticated;
 -- Internal: called only from mkt_quote, which runs as its owner.
 
 do $postflight$
@@ -329,6 +331,12 @@ begin
   end if;
   if not has_function_privilege('anon', 'public.mkt_quote(jsonb)', 'execute') then
     raise exception 'POSTFLIGHT: anon lost execute on mkt_quote';
+  end if;
+  if has_function_privilege('anon', 'public.mkt_point_problem(text,jsonb)', 'execute')
+     or has_function_privilege('anon', 'public.mkt_points_km(jsonb,jsonb)', 'execute')
+     or has_function_privilege('authenticated', 'public.mkt_point_problem(text,jsonb)', 'execute')
+     or has_function_privilege('authenticated', 'public.mkt_points_km(jsonb,jsonb)', 'execute') then
+    raise exception 'POSTFLIGHT: a client role can call an internal distance function';
   end if;
   if (select count(*) from mkt_local_bands) <> 0 then
     raise exception 'POSTFLIGHT: bands must start empty';

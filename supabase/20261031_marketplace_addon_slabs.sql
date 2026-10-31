@@ -323,8 +323,12 @@ $$;
 
 revoke all on function public.mkt_slab_labels() from public;
 revoke all on function public.mkt_slab_for(numeric) from public;
-revoke all on function public.mkt_move_cft(jsonb) from public;
-revoke all on function public.mkt_addon_price(text, text, numeric) from public;
+-- Supabase's default privileges grant every new function in public to
+-- anon and authenticated BY NAME, so revoking from PUBLIC alone leaves
+-- those grants in place (found when the first live run's postflight
+-- refused, 31 Oct 2026). Internal functions name all three.
+revoke all on function public.mkt_move_cft(jsonb) from public, anon, authenticated;
+revoke all on function public.mkt_addon_price(text, text, numeric) from public, anon, authenticated;
 revoke all on function public.mkt_addon_prices(jsonb) from public;
 grant execute on function public.mkt_slab_labels() to anon, authenticated;
 grant execute on function public.mkt_slab_for(numeric) to anon, authenticated;
@@ -366,8 +370,11 @@ begin
      or not has_function_privilege('anon', 'public.mkt_addon_prices(jsonb)', 'execute') then
     raise exception 'POSTFLIGHT: anon cannot ask for a price';
   end if;
-  if has_function_privilege('anon', 'public.mkt_addon_price(text,text,numeric)', 'execute') then
-    raise exception 'POSTFLIGHT: anon can call the internal mkt_addon_price';
+  if has_function_privilege('anon', 'public.mkt_addon_price(text,text,numeric)', 'execute')
+     or has_function_privilege('anon', 'public.mkt_move_cft(jsonb)', 'execute')
+     or has_function_privilege('authenticated', 'public.mkt_addon_price(text,text,numeric)', 'execute')
+     or has_function_privilege('authenticated', 'public.mkt_move_cft(jsonb)', 'execute') then
+    raise exception 'POSTFLIGHT: a client role can call an internal pricing function';
   end if;
   if (select count(*) from mkt_addon_slabs) <> 0 then
     raise exception 'POSTFLIGHT: slabs must start empty';
