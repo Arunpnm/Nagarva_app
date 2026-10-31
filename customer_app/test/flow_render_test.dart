@@ -34,8 +34,10 @@ void main() {
           for (final r in jsonDecode(kCatalogueFixture) as List)
             CatalogueItem(Map<String, dynamic>.from(r))
         ];
-    Api.cityPrices = (_) async =>
-        {'damage_cover': 1499, 'unpacking': 1800, 'storage_month': null};
+    Api.addonPrices = (_) async => {
+          'ok': true, 'cft': 90, 'slab': '1 RK / Studio',
+          'damage_cover': 1499, 'unpacking': 1800, 'storage_month': null,
+        };
     Api.quote = (_) async => {
           'ok': true, 'km': 15, 'local': true, 'cft': 90, 'move': 2999,
           'floors': 500, 'vehicles': 0, 'services': 0, 'addons': 1499,
@@ -67,6 +69,7 @@ void main() {
   testWidgets('add-ons: an unset price is not offered', (t) async {
     await _render(t, const AddonsScreen(), _booking());
     expect(find.text('Not offered yet'), findsOneWidget);
+    expect(find.text('Priced for your move size: 1 RK / Studio'), findsOneWidget);
   });
   testWidgets('review shows the server total and the advance', (t) async {
     await _render(t, const ReviewScreen(), _booking());

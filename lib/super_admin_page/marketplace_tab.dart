@@ -43,6 +43,11 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
   List<Map<String, dynamic>> _ratesRows = const [];
   List<Map<String, dynamic>> _cityPrices = const [];
   List<Map<String, dynamic>> _catalogue = const [];
+  // Add-on prices by move size (20261031_marketplace_addon_slabs.sql).
+  // _slabLabels stays empty until that migration has run, which hides
+  // the section rather than offering a save that would fail.
+  List<String> _slabLabels = const [];
+  List<Map<String, dynamic>> _addonSlabs = const [];
   String? _priceCity;
   bool _loading = true;
   List<Map<String, dynamic>> _jobs = const [];
@@ -684,7 +689,27 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
     } catch (_) {
       if (mounted) setState(() => _pricingReady = false);
     }
+    try {
+      final r = await Future.wait([
+        _db.rpc('mkt_slab_labels'),
+        _db.from('mkt_addon_slabs').select(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _slabLabels = [for (final l in (r[0] as List? ?? const [])) '$l'];
+        _addonSlabs = List<Map<String, dynamic>>.from(r[1] as List);
+      });
+    } catch (_) {
+      if (mounted) setState(() => _slabLabels = const []);
+    }
   }
+
+  static const _slabAddons = <(String, String)>[
+    ('unpacking', 'Unpacking & arranging'),
+    ('damage_cover', 'Damage cover'),
+    ('storage_month', 'Storage per month'),
+    ('per_floor', 'Per floor without lift'),
+  ];
 
   static const _pkgs = ['economy', 'standard', 'premium'];
   static const _cityPriceFields = <(String, String)>[
@@ -763,6 +788,31 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
                       fontSize: 13.5,
                       color: cp?[k] == null ? c.faint : c.text)),
             ),
+        ]),
+      ],
+      if (city != null && _slabLabels.isNotEmpty) ...[
+        const SizedBox(height: 16),
+        NgSectionHeader('Price by move size · $city'),
+        const SizedBox(height: 4),
+        Text(
+            'Uses the CFT slabs (1 BHK, 2 BHK…). Once any size has a price, that add-on is priced by size and the single price above is ignored; a size left empty is not offered.',
+            style: NgFonts.geist(fontSize: 12.5, height: 1.4, color: c.mute)),
+        const SizedBox(height: 8),
+        NgCardList(children: [
+          for (final (k, label) in _slabAddons)
+            () {
+              final rows = _addonSlabs
+                  .where((x) => x['city'] == city && x['addon'] == k)
+                  .toList();
+              return NgListRow(
+                title: label,
+                subtitle: rows.isEmpty
+                    ? 'One price for every size'
+                    : '${rows.length} of ${_slabLabels.length} sizes priced',
+                trailing: Icon(Icons.chevron_right_rounded, color: c.faint),
+                onTap: () => _editSlabs(city, k, label, rows),
+              );
+            }(),
         ]),
       ],
       const SizedBox(height: 16),
@@ -865,6 +915,46 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
               'updated_at': DateTime.now().toUtc().toIso8601String(),
             }, onConflict: 'city'),
         'Prices saved');
+  }
+
+  Future<void> _editSlabs(String city, String addon, String label,
+      List<Map<String, dynamic>> rows) async {
+    final vals = await _numbersDialog(
+        '$city · $label',
+        [for (final l in _slabLabels) (l, '$l (₹)')],
+        {for (final r in rows) '${r['slab']}': r['price']},
+        required: false);
+    if (vals == null) return;
+    final set = [
+      for (final e in vals.entries)
+        if (e.value != null)
+          {
+            'city': city,
+            'addon': addon,
+            'slab': e.key,
+            'price': e.value,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          }
+    ];
+    final cleared = [
+      for (final e in vals.entries)
+        if (e.value == null) e.key
+    ];
+    await _run(() async {
+      if (set.isNotEmpty) {
+        await _db
+            .from('mkt_addon_slabs')
+            .upsert(set, onConflict: 'city,addon,slab');
+      }
+      if (cleared.isNotEmpty) {
+        await _db
+            .from('mkt_addon_slabs')
+            .delete()
+            .eq('city', city)
+            .eq('addon', addon)
+            .inFilter('slab', cleared);
+      }
+    }, '$label prices saved');
   }
 
   Future<void> _editServices(Map<String, dynamic> it) async {

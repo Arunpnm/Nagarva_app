@@ -506,9 +506,8 @@ class _AddonsScreenState extends State<AddonsScreen> {
   @override
   void initState() {
     super.initState();
-    final city = BookingScope.read(context).fromCity;
-    Api.cityPrices(city ?? '').then((p) {
-      if (mounted) setState(() => _prices = p ?? {});
+    Api.addonPrices(BookingScope.read(context).quoteInput()).then((p) {
+      if (mounted) setState(() => _prices = p['ok'] == true ? p : {});
     }).catchError((_) {
       if (mounted) setState(() => _prices = {});
     });
@@ -541,6 +540,9 @@ class _AddonsScreenState extends State<AddonsScreen> {
     return FlowFrame(
       step: 5,
       title: 'Anything else?',
+      subtitle: p['slab'] == null
+          ? null
+          : 'Priced for your move size: ${p['slab']}',
       content: [
         addon(Icons.verified_user_outlined, 'Damage cover',
             'Cover for transit damage', price('damage_cover'), b.cover,

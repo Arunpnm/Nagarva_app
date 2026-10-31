@@ -87,11 +87,18 @@ class Api {
   static Future<List<CatalogueItem>> Function() catalogue = _catalogue;
   static Future<Map<String, dynamic>> Function(Map<String, dynamic>) quote =
       _quote;
-  static Future<Map<String, dynamic>?> Function(String city) cityPrices =
-      _cityPrices;
+  static Future<Map<String, dynamic>> Function(Map<String, dynamic>)
+      addonPrices = _addonPrices;
 
-  static Future<Map<String, dynamic>?> _cityPrices(String city) =>
-      _db.from('mkt_city_prices').select().eq('city', city).maybeSingle();
+  /// What each add-on costs for THIS move: the price depends on its size
+  /// slab (1 BHK, 2 BHK...), which the server works out from the items.
+  /// {ok, cft, slab, damage_cover, unpacking, storage_month, per_floor};
+  /// a null price means not offered.
+  static Future<Map<String, dynamic>> _addonPrices(
+      Map<String, dynamic> input) async {
+    final r = await _db.rpc('mkt_addon_prices', params: {'p': input});
+    return Map<String, dynamic>.from(r as Map);
+  }
 
   static Future<List<String>> _cities() async {
     final rows =
