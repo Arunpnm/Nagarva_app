@@ -52,6 +52,11 @@ class Booking extends ChangeNotifier {
   bool pickupLift = false;
   int dropFloor = 0;
   bool dropLift = false;
+  /// Pickup and drop points, {"lat","lng"}. Within a city with distance
+  /// bands the price depends on the km between them, measured on the
+  /// server.
+  ({double lat, double lng})? pickupPoint;
+  ({double lat, double lng})? dropPoint;
   DateTime? date;
   String? slot;
   String package = 'standard';
@@ -70,6 +75,10 @@ class Booking extends ChangeNotifier {
         'pickup_lift': pickupLift,
         'drop_floor': dropFloor,
         'drop_lift': dropLift,
+        if (pickupPoint != null)
+          'pickup': {'lat': pickupPoint!.lat, 'lng': pickupPoint!.lng},
+        if (dropPoint != null)
+          'drop': {'lat': dropPoint!.lat, 'lng': dropPoint!.lng},
         'addons': {
           'cover': cover,
           'unpack': unpack,
@@ -125,5 +134,10 @@ String quoteProblem(Map<String, dynamic> q) => switch (q['reason']) {
         'We are not taking bookings for this yet (${q['detail']}). Please check back soon.',
       'city_not_served' => 'We do not serve this city yet.',
       'no_items' => 'Add at least one item.',
+      'no_address' =>
+        'Set the pickup and drop locations: within the city the price depends on the distance.',
+      'outside_city' => 'One of the locations is outside this city.',
+      'too_far' =>
+        'These locations are too far apart for a move within the city (${q['detail']}).',
       _ => 'Something in this move cannot be priced (${q['detail'] ?? q['reason']}).',
     };

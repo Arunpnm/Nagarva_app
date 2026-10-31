@@ -48,6 +48,9 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
   // the section rather than offering a save that would fail.
   List<String> _slabLabels = const [];
   List<Map<String, dynamic>> _addonSlabs = const [];
+  // Within-city distance bands (20261031_marketplace_local_distance.sql);
+  // null until that migration has run, which hides the section.
+  List<Map<String, dynamic>>? _localBands;
   String? _priceCity;
   bool _loading = true;
   List<Map<String, dynamic>> _jobs = const [];
@@ -702,6 +705,14 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
     } catch (_) {
       if (mounted) setState(() => _slabLabels = const []);
     }
+    try {
+      final rows = await _db.from('mkt_local_bands').select().order('max_km');
+      if (mounted) {
+        setState(() => _localBands = List<Map<String, dynamic>>.from(rows));
+      }
+    } catch (_) {
+      if (mounted) setState(() => _localBands = null);
+    }
   }
 
   static const _slabAddons = <(String, String)>[
@@ -789,6 +800,49 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
                       color: cp?[k] == null ? c.faint : c.text)),
             ),
         ]),
+      ],
+      if (city != null && _localBands != null) ...[
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(child: NgSectionHeader('Distance within $city')),
+          TextButton.icon(
+              onPressed: () => _editBand(city, null),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add band')),
+        ]),
+        const SizedBox(height: 4),
+        Text(
+            'A move inside the city is priced CFT × (package rate + the band\'s rate), by the road km between the two addresses. With no bands, distance is not charged. A move longer than the last band is not taken.',
+            style: NgFonts.geist(fontSize: 12.5, height: 1.4, color: c.mute)),
+        const SizedBox(height: 8),
+        () {
+          final bands =
+              _localBands!.where((b) => b['city'] == city).toList();
+          if (bands.isEmpty) {
+            return Text('No bands: distance is not charged in $city.',
+                style: NgFonts.geist(fontSize: 13, color: c.faint));
+          }
+          return NgCardList(children: [
+            for (var i = 0; i < bands.length; i++)
+              NgListRow(
+                title:
+                    '${i == 0 ? 0 : _km(bands[i - 1]['max_km'])}–${_km(bands[i]['max_km'])} km',
+                subtitle: '+₹${bands[i]['per_cft']} per CFT',
+                trailing: IconButton(
+                  tooltip: 'Remove band',
+                  icon: Icon(Icons.delete_outline_rounded, color: c.faint),
+                  onPressed: () => _run(
+                      () => _db
+                          .from('mkt_local_bands')
+                          .delete()
+                          .eq('city', city)
+                          .eq('max_km', bands[i]['max_km']),
+                      'Band removed'),
+                ),
+                onTap: () => _editBand(city, bands[i]),
+              ),
+          ]);
+        }(),
       ],
       if (city != null && _slabLabels.isNotEmpty) ...[
         const SizedBox(height: 16),
@@ -915,6 +969,39 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
               'updated_at': DateTime.now().toUtc().toIso8601String(),
             }, onConflict: 'city'),
         'Prices saved');
+  }
+
+  static String _km(dynamic v) {
+    final n = v as num;
+    return n == n.roundToDouble() ? '${n.round()}' : '$n';
+  }
+
+  Future<void> _editBand(String city, Map<String, dynamic>? band) async {
+    final vals = await _numbersDialog(
+        band == null ? '$city · new distance band' : '$city · up to ${_km(band['max_km'])} km',
+        const [
+          ('max_km', 'Up to km (1–80)'),
+          ('per_cft', 'Extra per CFT (₹)'),
+        ],
+        band);
+    if (vals == null) return;
+    final km = vals['max_km']!;
+    if (km <= 0 || km > 80) return _toast('Up to km must be between 1 and 80.');
+    await _run(() async {
+      if (band != null && band['max_km'] != km) {
+        await _db
+            .from('mkt_local_bands')
+            .delete()
+            .eq('city', city)
+            .eq('max_km', band['max_km']);
+      }
+      await _db.from('mkt_local_bands').upsert({
+        'city': city,
+        'max_km': km,
+        'per_cft': vals['per_cft'],
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'city,max_km');
+    }, 'Band saved');
   }
 
   Future<void> _editSlabs(String city, String addon, String label,

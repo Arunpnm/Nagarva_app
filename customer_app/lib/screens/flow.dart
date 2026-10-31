@@ -652,7 +652,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
             decoration: BoxDecoration(
                 color: C.blue, borderRadius: BorderRadius.circular(22)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text('${(q['cft'] as num).round()} CFT · ${q['km']} km',
+              Text(
+                  q['km'] == null
+                      ? '${(q['cft'] as num).round()} CFT'
+                      : '${(q['cft'] as num).round()} CFT · ${q['km']} km',
                   style: geist(12.5, color: Colors.white70)),
               const SizedBox(height: 8),
               row('Moving', q['move'] as num?),
