@@ -31,8 +31,16 @@ import '/index.dart';
 /// distinction is: a MODULE is a place you go, a DETAIL is a thing you
 /// opened, and only the second one has a meaningful "previous".
 void openModule(BuildContext context, String routeName) {
-  final onDashboard =
-      GoRouterState.of(context).uri.path == HomePageWidget.routePath;
+  // The global bottom bar (4 Nov 2026) can open More from the app
+  // Navigator's own context, which sits above every route and so has no
+  // GoRouterState; read the router's current location there instead.
+  String path;
+  try {
+    path = GoRouterState.of(context).uri.path;
+  } catch (_) {
+    path = GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+  }
+  final onDashboard = path == HomePageWidget.routePath;
   if (onDashboard) {
     context.pushNamed(routeName);
   } else {

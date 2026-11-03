@@ -127,7 +127,7 @@ Future<T> allocateWithRollover<T>(
     } catch (startError) {
       // e.g. a staff session: only the owner or a manager may start it.
       throw Exception(extractDbErrorMessage(startError,
-          fallback: 'Could not start $fy numbering: $startError'));
+          fallback: 'Could not start $fy numbering: ${friendlyError(startError)}'));
     }
     return await allocate();
   }

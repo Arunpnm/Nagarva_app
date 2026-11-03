@@ -2,9 +2,11 @@ import '/components/ng_widgets.dart';
 import 'package:flutter/material.dart';
 
 import '/backend/pricing_defaults.dart';
+import 'package:go_router/go_router.dart';
 import '/backend/storage_billing.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Settings → Survey & Pricing (Item 12, 17 Aug 2026).
 ///
 /// Two tabs:
@@ -85,6 +87,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
     });
     try {
       final config = await PricingConfig.loadForCurrentOrg();
+      _rateCardName = config.rateBands.isNotEmpty ? config.rateCardName : null;
       for (final r in _rows) {
         r.dispose();
       }
@@ -101,7 +104,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
         ..clear()
         ..addAll(config.storageRates.map(_RateRowCtrl.from));
     } catch (e) {
-      _loadError = 'Could not load pricing settings: $e';
+      _loadError = 'Could not load pricing settings: ${friendlyError(e)}';
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -165,7 +168,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not save slabs: $e')));
+            SnackBar(content: Text('Could not save slabs: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _savingSlabs = false);
@@ -286,7 +289,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not save catalogue: $e')));
+            SnackBar(content: Text('Could not save catalogue: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _savingCatalogue = false);
@@ -354,7 +357,49 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
         ),
       );
 
+  /// Set when the company's default rate card has CFT bands — then the
+  /// rate card is the one source (BUG-015, Arun 3 Nov 2026) and this tab
+  /// only points there instead of editing a second, ignored copy.
+  String? _rateCardName;
+
   Widget _slabsTab(NgPalette ng) {
+    if (_rateCardName != null) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          NgCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Slabs now come from your rate card',
+                    style: NgFonts.geist(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: ng.text)),
+                const SizedBox(height: 6),
+                Text(
+                    'House type, vehicle, crew and prices for each CFT range '
+                    'are set in Rate cards › "$_rateCardName". Quotes and '
+                    'surveys use that card, so there is one place to edit.',
+                    style: NgFonts.geist(
+                        fontSize: 13, height: 1.4, color: ng.mute)),
+                const SizedBox(height: 14),
+                NgPrimaryButton(
+                  label: 'Open Rate cards',
+                  icon: Icons.price_change_outlined,
+                  onPressed: () => context.pushNamed('RateCardsPage'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    return _slabsEditor(ng);
+  }
+
+  Widget _slabsEditor(NgPalette ng) {
     // Derived From values for display.
     final froms = <num>[];
     num from = 0;
@@ -561,7 +606,7 @@ class _SurveyPricingPageState extends State<SurveyPricingPage>
             const SnackBar(content: Text('Storage rates saved.')));
       }
     } catch (e) {
-      if (mounted) setState(() => _rateError = 'Could not save: $e');
+      if (mounted) setState(() => _rateError = 'Could not save: ${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _savingRates = false);
     }

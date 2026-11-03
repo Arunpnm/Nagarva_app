@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '/app_session.dart';
 import '/backend/soft_delete.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -11,9 +12,11 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'trip_detail_page_widget.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Trips (Session 4, Part C-9) — a vehicle trip that may carry multiple
-/// orders (part-load), distinct from vehicle_trips (1:1 odometer capture
-/// on a single order, see CLAUDE.md). Live schema confirmed directly
+/// orders (part-load). Since 3 Nov 2026 this is the ONLY trip model: the
+/// supervisor's odometer readings land here too (backend/order_trip.dart),
+/// and vehicle_trips is a read-only backup. Live schema confirmed directly
 /// against the DB: trips + trip_orders + trip_expenses + trip_pnl_view.
 class TripsPageWidget extends StatefulWidget {
   const TripsPageWidget({super.key});
@@ -49,7 +52,7 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load trips: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load trips: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -71,6 +74,27 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
     String tripType = 'own';
     DateTime startDate = DateTime.now();
 
+    // The branch the trip belongs to. trips carries a RESTRICTIVE
+    // branch_isolation policy and NULL matches nobody, so a trip saved
+    // without one was refused for managers and supervisors and invisible
+    // to every staff session, drivers included (CLAUDE.md, "Trips, found
+    // 17 Sept 2026"). Same rule as New Order: staff can only use their own
+    // branch; the owner picks, defaulted when there is only one.
+    final isOwner = AppSession.instance.currentStaffId == null;
+    final ownBranch = AppSession.instance.currentStaffBranch;
+    List<String> branches = const [];
+    try {
+      final rows = await BranchesTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('active', true).order('name'),
+      );
+      final all = rows.map((r) => r.name).toList();
+      branches = isOwner
+          ? all
+          : (ownBranch != null && all.contains(ownBranch) ? [ownBranch] : []);
+    } catch (_) {}
+    String? branch = branches.length == 1 ? branches.first : null;
+    if (!mounted) return;
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
@@ -86,6 +110,18 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
                       controller: tripNoCtrl,
                       decoration: const InputDecoration(labelText: 'Trip No'),
                       autofocus: true),
+                  if (branches.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      initialValue: branch,
+                      decoration: const InputDecoration(labelText: 'Branch'),
+                      items: [
+                        for (final b in branches)
+                          DropdownMenuItem(value: b, child: Text(b)),
+                      ],
+                      onChanged: branches.length == 1
+                          ? null
+                          : (v) => setDialogState(() => branch = v),
+                    ),
                   DropdownButtonFormField<String>(
                     initialValue: tripType,
                     decoration: const InputDecoration(labelText: 'Trip Type'),
@@ -134,7 +170,11 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
             FilledButton(
-                onPressed: () => Navigator.of(dialogCtx).pop(true),
+                // A branch must be chosen when the org has any; with none
+                // set up yet, the trip is saved as before (owner-only).
+                onPressed: branches.isNotEmpty && branch == null
+                    ? null
+                    : () => Navigator.of(dialogCtx).pop(true),
                 child: const Text('Create')),
           ],
         ),
@@ -155,6 +195,7 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
         if (toCtrl.text.trim().isNotEmpty) 'to_loc': toCtrl.text.trim(),
         'start_date': startDate.toIso8601String().split('T').first,
         'status': 'planned',
+        if (branch != null) 'branch': branch,
       });
       await _load();
       if (mounted && inserted.id != null) {
@@ -166,7 +207,7 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not create trip: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not create trip: ${friendlyError(e)}')));
       }
     }
   }

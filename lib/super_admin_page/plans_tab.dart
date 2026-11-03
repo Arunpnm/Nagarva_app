@@ -5,6 +5,7 @@ import '/backend/supabase/supabase.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'plan_edit_sheet.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Step 1 (super-admin console): subscription_plans management. Was
 /// SQL-only before this — new plans/price changes needed a manual insert.
 class PlansTab extends StatefulWidget {
@@ -34,7 +35,7 @@ class _PlansTabState extends State<PlansTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load plans: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load plans: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

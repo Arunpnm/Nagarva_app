@@ -9,8 +9,9 @@ import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/index.dart';
+import '/backend/detail_navigation.dart';
 
+import '/backend/edge_function_errors.dart';
 class CustomerDetailPageWidget extends StatefulWidget {
   const CustomerDetailPageWidget({super.key, this.customerId});
   final String? customerId;
@@ -72,7 +73,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load customer: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load customer: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -174,11 +175,13 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
             TextButton(
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
-            FilledButton(
+            ListenableBuilder( // BUG-035: rebuild as the field is typed
+              listenable: nameCtrl,
+              builder: (_, __) => FilledButton(
                 onPressed: nameCtrl.text.trim().isEmpty
                     ? null
                     : () => Navigator.of(dialogCtx).pop(true),
-                child: const Text('Save')),
+                child: const Text('Save'))),
           ],
         ),
       ),
@@ -211,7 +214,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
       }
     }
   }
@@ -305,11 +308,13 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
             TextButton(
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
-            FilledButton(
+            ListenableBuilder( // BUG-035: rebuild as the field is typed
+              listenable: addressCtrl,
+              builder: (_, __) => FilledButton(
                 onPressed: addressCtrl.text.trim().isEmpty
                     ? null
                     : () => Navigator.of(dialogCtx).pop(true),
-                child: const Text('Add')),
+                child: const Text('Add'))),
           ],
         ),
       ),
@@ -331,7 +336,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add address: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add address: ${friendlyError(e)}')));
       }
     }
   }
@@ -344,7 +349,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not delete: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not delete: ${friendlyError(e)}')));
       }
     }
   }
@@ -381,11 +386,13 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
           TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(false),
               child: const Text('Cancel')),
-          FilledButton(
+          ListenableBuilder( // BUG-035: rebuild as the field is typed
+            listenable: nameCtrl,
+            builder: (_, __) => FilledButton(
               onPressed: nameCtrl.text.trim().isEmpty
                   ? null
                   : () => Navigator.of(dialogCtx).pop(true),
-              child: const Text('Add')),
+              child: const Text('Add'))),
         ],
       ),
     );
@@ -404,7 +411,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add contact: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add contact: ${friendlyError(e)}')));
       }
     }
   }
@@ -417,35 +424,13 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not delete: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not delete: ${friendlyError(e)}')));
       }
     }
   }
 
   void _openOrder(OrdersRow o) {
-    context.pushNamed(
-      OrderDetailPageWidget.routeName,
-      queryParameters: {
-        'orderId': serializeParam(o.id, ParamType.String),
-        'orderCustomer': serializeParam(o.customer, ParamType.String),
-        'orderPhone': serializeParam(o.phone, ParamType.String),
-        'orderFromCity': serializeParam(o.fromCity, ParamType.String),
-        'orderToCity': serializeParam(o.toCity, ParamType.String),
-        'orderFromAddress': serializeParam(o.fromAddress, ParamType.String),
-        'orderToAddress': serializeParam(o.toAddress, ParamType.String),
-        'orderFromFloor': serializeParam(o.fromFloor?.toString(), ParamType.String),
-        'orderToFloor': serializeParam(o.toFloor?.toString(), ParamType.String),
-        'orderMoveDate': serializeParam(o.moveDateOrNull?.toString(), ParamType.String),
-        'orderAmount': serializeParam(o.amount?.toString(), ParamType.String),
-        'orderStatus': serializeParam(o.status, ParamType.String),
-        'orderPaymentStatus': serializeParam(o.paymentStatus, ParamType.String),
-        'orderTrackingStatus': serializeParam(o.trackingStatus, ParamType.String),
-        'orderService': serializeParam(o.service, ParamType.String),
-        'orderBranch': serializeParam(o.branch, ParamType.String),
-        'orderType': serializeParam(o.orderType, ParamType.String),
-        'orderNotes': serializeParam(o.notes, ParamType.String),
-      }.withoutNulls,
-    );
+    openOrderJourney(context, o);
   }
 
   Future<void> _deleteCustomer(CustomersRow c) async {
@@ -494,7 +479,11 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                         ),
                       ),
                     )
-                  : ListView(
+                  : RefreshIndicator(
+                    // Pull-to-refresh (pending UX list item 3).
+                    onRefresh: _load,
+                    child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
                       children: [
                         NgDetailHeader(
@@ -619,7 +608,7 @@ class _CustomerDetailPageWidgetState extends State<CustomerDetailPageWidget> {
                           onTap: _deleting ? null : () => _deleteCustomer(c),
                         ),
                       ],
-                    ),
+                    )),
         ),
       ),
     );

@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
+import '/backend/private_files.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Vendor self-service branding & business identity (Settings page).
 ///
 /// Cards, mirroring the APC reference app's Settings:
@@ -238,7 +240,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
           'key': key,
           ...OrgScope.stamp(),
           'value': value,
-          'updated_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
         },
         onConflict: 'org_id,key',
       );
@@ -250,7 +252,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
           'key': key,
           ...OrgScope.stamp(),
           'value': value,
-          'updated_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
         },
         onConflict: 'org_id,key',
       );
@@ -274,7 +276,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -318,7 +320,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _savingOrgProfile = false);
@@ -368,8 +370,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Logo upload failed: $e. '
-                'Has 20260717_org_logo_url.sql been run?')));
+            content: Text('Logo upload failed: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _uploadingLogo = false);
@@ -386,8 +387,21 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
     if (bytes == null) return;
     setState(() => _savingSignature = true);
     try {
-      final url = await _uploadToBucket('$orgId/signature.png', bytes);
+      // BUG-013 (3 Nov 2026): private bucket, stored as a reference — not
+      // a public URL anyone could download the signature from.
+      final path = '$orgId/signature.png';
+      await SupaFlow.client.storage.from(kPrivateBucket).uploadBinary(
+            path,
+            bytes,
+            fileOptions:
+                const FileOptions(contentType: 'image/png', upsert: true),
+          );
+      final url = privateRef(path);
       await _saveSetting('signature_url', url);
+      // Remove the old public copy, if any (best-effort).
+      try {
+        await SupaFlow.client.storage.from('org-logos').remove([path]);
+      } catch (_) {}
       if (mounted) {
         setState(() => _signatureUrl = url);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -397,7 +411,7 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not save signature: $e')));
+            SnackBar(content: Text('Could not save signature: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _savingSignature = false);
@@ -659,9 +673,14 @@ class _BusinessSettingsSectionState extends State<BusinessSettingsSection> {
                                 style: NgFonts.geist(
                                     fontSize: 11,
                                     color: Colors.grey.shade500)))
-                        : Image.network(_signatureUrl!,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const SizedBox()),
+                        : FutureBuilder<Uint8List?>(
+                            // Private reference or old public URL.
+                            key: ValueKey(_signatureUrl),
+                            future: fetchFileBytes(_signatureUrl),
+                            builder: (_, snap) => snap.data == null
+                                ? const SizedBox()
+                                : Image.memory(snap.data!,
+                                    fit: BoxFit.contain)),
                   ),
                   const SizedBox(width: 14),
                   ElevatedButton.icon(

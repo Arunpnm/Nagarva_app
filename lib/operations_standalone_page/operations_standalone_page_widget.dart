@@ -9,6 +9,7 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Operations standalone (Session 4, Part C-4) — two tabs over
 /// `order_tracking` (the staff-side milestone log, distinct from
 /// `order_status_history`, which TrackingService already writes for the
@@ -70,7 +71,7 @@ class _OperationsStandalonePageWidgetState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -128,7 +129,7 @@ class _OperationsStandalonePageWidgetState
         'order_id': orderId,
         'status': stage,
         if (noteCtrl.text.trim().isNotEmpty) 'note': noteCtrl.text.trim(),
-        'tracked_at': DateTime.now().toIso8601String(),
+        'tracked_at': DateTime.now().toUtc().toIso8601String(),
       });
       // Keeps orders.tracking_status and the public timeline
       // (order_status_history) in step with this log — same helper every
@@ -142,7 +143,7 @@ class _OperationsStandalonePageWidgetState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not log: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not log: ${friendlyError(e)}')));
       }
     }
   }
@@ -186,13 +187,13 @@ class _OperationsStandalonePageWidgetState
         if (typeCtrl.text.trim().isNotEmpty) 'type': typeCtrl.text.trim(),
         'description': descCtrl.text.trim(),
         'status': 'open',
-        'reported_at': DateTime.now().toIso8601String(),
+        'reported_at': DateTime.now().toUtc().toIso8601String(),
       });
       _load();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not log: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not log: ${friendlyError(e)}')));
       }
     }
   }
@@ -235,7 +236,7 @@ class _OperationsStandalonePageWidgetState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not update: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not update: ${friendlyError(e)}')));
       }
     }
   }
@@ -441,11 +442,17 @@ class _OperationsStandalonePageWidgetState
                       cp.status,
                     ].join(' · '),
                   ].join('\n'),
+                  // BUG-048: NgSecondaryButton has no intrinsic width; unsized
+                  // inside a row it fails layout and blanks the whole tab
+                  // (same cause as BUG-005).
                   trailing: cp.status != 'resolved' && cp.status != 'closed'
-                      ? NgSecondaryButton(
-                          height: 34,
-                          label: 'Resolve',
-                          onPressed: () => _resolveComplaint(cp),
+                      ? SizedBox(
+                          width: 96,
+                          child: NgSecondaryButton(
+                            height: 34,
+                            label: 'Resolve',
+                            onPressed: () => _resolveComplaint(cp),
+                          ),
                         )
                       : null,
                 ),

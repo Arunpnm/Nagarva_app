@@ -87,7 +87,9 @@ class NewOrderPageModel extends FlutterFlowModel<NewOrderPageWidget> {
   // GST (20 Aug 2026). Defaults to charging GST at the configured default
   // rate: for an Indian mover a taxable invoice is the normal case, so the
   // toggle starts ON and the exception is the thing you switch off.
-  bool ordGstApplicable = true;
+  // Arun, 2 Nov 2026: GST only when the customer asks for a GST bill — a
+  // new order starts with Charge GST OFF (BUG-030).
+  bool ordGstApplicable = false;
   String? ordGstPct = '$kGstDefaultPct';
 
   bool? ordSaveSuccess = false;

@@ -207,7 +207,7 @@ class _RecordModulePageState extends State<RecordModulePage> {
       _rows[i] = rows;
       _errors.remove(i);
     } catch (e) {
-      _errors[i] = '$e';
+      _errors[i] = '${friendlyError(e)}';
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -546,7 +546,7 @@ class _AddSheetState extends State<_AddSheet> {
     } catch (e) {
       setState(() {
         _saving = false;
-        _error = extractDbErrorMessage(e, fallback: 'Could not save: $e');
+        _error = extractDbErrorMessage(e, fallback: 'Could not save: ${friendlyError(e)}');
       });
     }
   }

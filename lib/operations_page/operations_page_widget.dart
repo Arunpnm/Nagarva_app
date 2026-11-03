@@ -8,7 +8,7 @@ import '/flutter_flow/ng_tokens.dart';
 // the owner reads exactly what the supervisor selected.
 import '/supervisor_job_page/supervisor_job_page_model.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/index.dart';
+import '/backend/detail_navigation.dart';
 import '/backend/order_stages.dart';
 import '/backend/module_navigation.dart';
 import '/components/ng_top_bar.dart';
@@ -256,21 +256,10 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     final hide = AppSession.instance.isSupervisorSession &&
         ['delivered', 'closed', 'done', 'completed']
             .contains((o.status ?? '').toLowerCase());
-    context.pushNamed(
-      OrderDetailPageWidget.routeName,
-      queryParameters: {
-        'orderId': serializeParam(o.id, ParamType.String),
-        'orderCustomer': serializeParam(
-            hide ? 'Customer (hidden)' : o.customer, ParamType.String),
-        'orderPhone': serializeParam(hide ? null : o.phone, ParamType.String),
-        'orderFromCity': serializeParam(o.fromCity, ParamType.String),
-        'orderToCity': serializeParam(o.toCity, ParamType.String),
-        'orderAmount': serializeParam(o.amount?.toString(), ParamType.String),
-        'orderStatus': serializeParam(o.status, ParamType.String),
-        'orderMoveDate':
-            serializeParam(o.moveDateOrNull?.toString(), ParamType.String),
-      }.withoutNulls,
-    );
+    // A masked job keeps Order Details, the screen that hides the customer.
+    hide
+        ? openOrderDetail(context, o, hideCustomer: true)
+        : openOrderJourney(context, o);
   }
 
   /// Awaiting-approval card. Richer than a job card on purpose: this is a

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet"><style>body{margin:0;background:#f0eee9;font-family:system-ui,sans-serif}a{color:#1a1a1a}a:hover{color:#D9480F}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-grp{font:600 12px system-ui,sans-serif;color:rgba(0,0,0,.6);margin:8px 0 12px;text-transform:uppercase;letter-spacing:.06em}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;margin-bottom:34px}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{display:inline-block;margin-right:6px;font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:block;font:400 11px/1.35 system-ui,sans-serif;color:rgba(0,0,0,.6);max-width:300px}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:6px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+.ph{width:300px;box-sizing:border-box;font-family:'Patrick Hand',cursive;font-size:15px;line-height:1.25;color:#1a1a1a;padding:14px;display:flex;flex-direction:column;gap:9px}.h{font-size:21px}.bx{border:1.5px solid #1a1a1a;border-radius:8px;padding:7px 10px;display:flex;flex-direction:column;gap:4px}.row{display:flex;justify-content:space-between;align-items:center;gap:8px}.mut{color:#808080}.sm{font-size:13px}.btn{border:1.5px solid #1a1a1a;border-radius:8px;padding:7px;text-align:center;flex:1}.pri{background:#D9480F;color:#fff;border-color:#D9480F}.tag{border:1.5px solid currentColor;border-radius:20px;padding:0 7px;font-size:12px;white-space:nowrap}.acc{color:#D9480F}.ok{color:#1F7A4D}.bad{color:#B8322A}.amb{color:#A86A00}.ln{border-top:1.5px dashed #bbb}.chip{border:1.5px solid #1a1a1a;border-radius:20px;padding:1px 9px;font-size:13px}.tabs{display:flex;gap:12px;border-bottom:1.5px solid #1a1a1a;padding-bottom:4px}.on{color:#D9480F;text-decoration:underline}.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-family:'Patrick Hand',cursive;font-size:17px}.st{display:inline-block;max-width:240px;border:1.5px solid #1a1a1a;border-radius:8px;padding:6px 12px;background:#fff}</style></helmet>
+<section class="dv-turn" id="t6">
+<div class="dv-thd"><a class="dv-tid" href="#t6">6</a><span class="dv-tname">Daily summary as tabs, each fitting one phone screen without scrolling (replaces <a class="dv-oid" href="#3a">3a</a>–<a class="dv-oid" href="#3e">3e</a>)</span></div>
+<div class="flow" style="margin-bottom:22px"><span class="st">Tabs: Crew · Food · Costs · Advance · Vehicle</span>→<span class="st">✓ on each finished tab</span>→<span class="st">Review tab</span>→<span class="st acc">Submit for approval</span></div>
+<div class="dv-opts">
+<div class="dv-opt" id="6a"><div class="dv-olabel"><a class="dv-oid" href="#6a">6a</a>Crew tab: one line per person with their day wage. Tap a person to split the wage across orders in a sheet, so the list stays short.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span>←</span><span class="h">Daily summary</span><span class="sm">15 Oct</span></div>
+<div class="tabs sm"><span class="on">Crew</span><span>Food</span><span>Costs</span><span>Advance</span><span>Vehicle</span></div>
+<div class="bx"><div class="row"><b>Dinesh · Driver</b><span>₹ 900 ›</span></div><div class="sm mut">2 orders · split equal</div></div>
+<div class="bx"><div class="row"><b>Kannan · Helper</b><span>₹ 600 ›</span></div><div class="sm acc">2 orders · split edited</div></div>
+<div class="bx"><div class="row"><b>Poo · Temp</b><span>₹ 300 ›</span></div><div class="sm mut">1 order · ½ day</div></div>
+<div class="bx"><div class="row"><span>Balaji</span><span class="mut">Leave</span></div></div>
+<div class="acc sm">+ add crew</div>
+<div style="flex:1"></div>
+<div class="row"><span class="sm mut">Wages today</span><b>₹ 1,800</b></div>
+<div class="btn pri">Next: Food</div>
+</div></div></div>
+
+<div class="dv-opt" id="6b"><div class="dv-olabel"><a class="dv-oid" href="#6b">6b</a>Split sheet, opened from <a class="dv-oid" href="#6a">6a</a>: the person's day wage, their orders, and the work type for each. It closes back to the list.</div><div class="dv-card"><div class="ph" style="height:520px;background:#f4f2ee">
+<div style="opacity:.35" class="sm">Crew list behind…</div>
+<div style="flex:1"></div>
+<div class="bx" style="background:#fff;gap:8px;padding:12px"><div class="row"><b>Kannan · Helper</b><span class="mut">✕</span></div>
+<div class="row"><span>Day wage</span><b>₹ 600</b></div><div class="sm mut">last used ₹600</div><div class="ln"></div>
+<div class="row"><span>ORD-0042</span><span class="chip">Loading only</span><span>₹ 200</span></div>
+<div class="row"><span>ORD-0043</span><span class="chip">Full</span><span>₹ 400</span></div>
+<div class="row sm"><span class="acc">Reset to equal</span><span class="ok">₹600 of ₹600 ✓</span></div>
+<div class="btn pri">Done</div></div>
+</div></div></div>
+
+<div class="dv-opt" id="6c"><div class="dv-olabel"><a class="dv-oid" href="#6c">6c</a>Food tab: food, tea and room costs. Each line shows the total and who it's split between; tap to change who.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span>←</span><span class="h">Daily summary</span><span class="sm">15 Oct</span></div>
+<div class="tabs sm"><span class="ok">Crew ✓</span><span class="on">Food</span><span>Costs</span><span>Advance</span><span>Vehicle</span></div>
+<div class="bx"><div class="row"><b>Food · ORD-0042</b><span>₹ 470 ›</span></div><div class="sm mut">÷4 · ₹117–118 each</div></div>
+<div class="bx"><div class="row"><b>Tea · ORD-0043</b><span>₹ 90 ›</span></div><div class="sm mut">÷3 · ₹30 each</div></div>
+<div class="bx"><div class="row"><b>Room · Hosur</b><span>₹ 1,200 ›</span></div><div class="sm mut">÷3 roommates · not an order</div></div>
+<div class="row sm" style="justify-content:flex-start;gap:5px;flex-wrap:wrap"><span class="chip">+ Food</span><span class="chip">+ Tea</span><span class="chip">+ Room</span></div>
+<div style="flex:1"></div>
+<div class="row"><span class="sm mut">Taken from staff</span><b>₹ 1,760</b></div>
+<div class="btn pri">Next: Costs</div>
+</div></div></div>
+
+<div class="dv-opt" id="6d"><div class="dv-olabel"><a class="dv-oid" href="#6d">6d</a>Costs tab: switch between orders with chips, so only one order's costs show at a time. Add-ons can be billed to the customer.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span>←</span><span class="h">Daily summary</span><span class="sm">15 Oct</span></div>
+<div class="tabs sm"><span class="ok">Crew ✓</span><span class="ok">Food ✓</span><span class="on">Costs</span><span>Advance</span><span>Vehicle</span></div>
+<div class="row sm" style="justify-content:flex-start;gap:5px"><span class="chip" style="background:#1a1a1a;color:#fff">ORD-0042</span><span class="chip">ORD-0043</span><span class="chip">ORD-0039 · D2</span></div>
+<div class="bx"><div class="row"><span>Diesel</span><span>₹ 2,000</span></div><div class="row"><span>Material · 2 tape, 1 bubble</span><span>₹ 310</span></div><div class="row"><span>A/C uninstall</span><span>₹ 500</span></div><div class="row sm"><span class="acc">bill customer ₹ ___</span></div></div>
+<div class="row sm" style="justify-content:flex-start;gap:5px;flex-wrap:wrap"><span class="chip">+ Diesel</span><span class="chip">+ Toll</span><span class="chip">+ Material</span><span class="chip">+ Add-on</span></div>
+<div style="flex:1"></div>
+<div class="row"><span class="sm mut">Company cost today</span><b>₹ 6,810</b></div>
+<div class="btn pri">Next: Advance</div>
+</div></div></div>
+
+<div class="dv-opt" id="6e"><div class="dv-olabel"><a class="dv-oid" href="#6e">6e</a>Advance tab: a Staff/Vendor switch at the top, so the two types never appear in one list.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span>←</span><span class="h">Daily summary</span><span class="sm">15 Oct</span></div>
+<div class="tabs sm"><span class="ok">Crew ✓</span><span class="ok">Food ✓</span><span class="ok">Costs ✓</span><span class="on">Advance</span><span>Vehicle</span></div>
+<div class="row" style="gap:6px"><div class="btn pri">Staff</div><div class="btn">Vendor</div></div>
+<div class="bx"><div class="row"><span>Balaji · on leave</span><span>₹ 500</span></div><div class="sm bad">balance after −₹1,450</div></div>
+<div class="bx"><div class="row"><span>Dinesh · dinner</span><span>₹ 200</span></div></div>
+<div class="bx"><div class="row"><span>Sho · dinner</span><span>₹ 200</span></div></div>
+<div class="acc sm">+ staff advance</div>
+<div style="flex:1"></div>
+<div class="row"><span class="sm mut">Advances today</span><b>₹ 900</b></div>
+<div class="btn pri">Next: Vehicle</div>
+</div></div></div>
+
+<div class="dv-opt" id="6f"><div class="dv-olabel"><a class="dv-oid" href="#6f">6f</a>Review tab: each tab's total, with any tab still missing details highlighted. Tap a line to jump back to that tab, then submit.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span>←</span><span class="h">Review</span><span class="sm">15 Oct</span></div>
+<div class="tabs sm"><span class="ok">Crew ✓</span><span class="ok">Food ✓</span><span class="ok">Costs ✓</span><span class="ok">Adv ✓</span><span class="amb">Vehicle !</span></div>
+<div class="bx"><div class="row"><span>Wages · 3 crew</span><b>₹ 1,800 ›</b></div></div>
+<div class="bx"><div class="row"><span>Food and room</span><b>₹ 1,760 ›</b></div></div>
+<div class="bx"><div class="row"><span>Order costs · 3 orders</span><b>₹ 6,810 ›</b></div></div>
+<div class="bx"><div class="row"><span>Advances</span><b>₹ 900 ›</b></div></div>
+<div class="bx" style="border-color:#A86A00"><div class="row"><span class="amb">Vehicle · Malini, freight not set</span><b>›</b></div></div>
+<div style="flex:1"></div>
+<div class="sm mut">Saved as draft. Nothing posts until the owner approves.</div>
+<div class="btn pri">Submit for approval</div>
+</div></div></div>
+</div>
+<p class="dv-next">Next: Accounts, built in the app from <a class="dv-oid" href="#5a">5a</a>–<a class="dv-oid" href="#5f">5f</a>.</p>
+</section>
+<section class="dv-turn" id="t5">
+<div class="dv-thd"><a class="dv-tid" href="#t5">5</a><span class="dv-tname">Accounts split into tabs and stages, each fitting one phone screen without scrolling (replaces <a class="dv-oid" href="#4a">4a</a>–<a class="dv-oid" href="#4d">4d</a>)</span></div>
+<div class="flow" style="margin-bottom:22px"><span class="st">Accounts tabs: Overview · Days · Costs</span>→<span class="st">Tap a day</span>→<span class="st">Day tabs: Summary · Orders · Costs · Cash</span>→<span class="st">Tap an order: its own P&amp;L</span></div>
+<div class="dv-opts">
+<div class="dv-opt" id="5a"><div class="dv-olabel"><a class="dv-oid" href="#5a">5a</a>Overview tab: this month's numbers and the trend chart only, no day list.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span class="h">Accounts</span><span class="sm">Oct ▾</span></div>
+<div class="tabs"><span class="on">Overview</span><span>Days</span><span>Costs</span></div>
+<div class="g2"><div class="bx"><span class="sm mut">Net P&amp;L</span><b class="ok">₹1,42,074</b></div><div class="bx"><span class="sm mut">Cash now</span><b>₹1,42,074</b></div><div class="bx"><span class="sm mut">Money in</span><b>₹2,78,594</b></div><div class="bx"><span class="sm mut">Money out</span><b>₹1,36,520</b></div></div>
+<div class="bx"><div class="sm mut">In vs out per day</div>
+<div style="display:flex;align-items:flex-end;gap:6px;height:80px;border-bottom:1.5px solid #1a1a1a">
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:8px;height:58px;background:#1F7A4D"></div><div style="width:8px;height:46px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:8px;height:62px;background:#1F7A4D"></div><div style="width:8px;height:40px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:8px;height:16px;background:#1F7A4D"></div><div style="width:8px;height:4px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:8px;height:24px;background:#1F7A4D"></div><div style="width:8px;height:8px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:8px;height:44px;background:#1F7A4D"></div><div style="width:8px;height:26px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:8px;height:36px;background:#1F7A4D"></div><div style="width:8px;height:3px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:8px;height:10px;background:#1F7A4D"></div><div style="width:8px;height:3px;background:#B8322A"></div></div>
+</div></div>
+<div class="bx"><div class="row"><span>To collect</span><b class="bad">₹ 46,000</b></div><div class="row"><span>Pending approval</span><b class="amb">2 days</b></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="5b"><div class="dv-olabel"><a class="dv-oid" href="#5b">5b</a>Days tab: one line per day, no expanded detail. Tap a day to go to the next stage.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span class="h">Accounts</span><span class="sm">Oct ▾</span></div>
+<div class="tabs"><span>Overview</span><span class="on">Days</span><span>Costs</span></div>
+<div class="bx"><div class="row"><b>Fri 16</b><span class="amb">pending approval ›</span></div></div>
+<div class="bx"><div class="row"><b>Wed 14</b><span class="bad">−₹1,200 ›</span></div></div>
+<div class="bx"><div class="row"><b>Tue 13</b><span class="ok">+₹4,500 ›</span></div></div>
+<div class="bx"><div class="row"><b>Mon 12</b><span class="ok">+₹8,200 ›</span></div></div>
+<div class="bx"><div class="row"><b>Wed 7</b><span class="ok">+₹8,954 ›</span></div></div>
+<div class="bx"><div class="row"><b>Tue 6</b><span class="ok">+₹18,416 ›</span></div></div>
+<div class="bx"><div class="row"><b>Mon 5</b><span class="ok">+₹14,700 ›</span></div></div>
+<div class="sm mut">Days with no entries are hidden.</div>
+</div></div></div>
+
+<div class="dv-opt" id="5c"><div class="dv-olabel"><a class="dv-oid" href="#5c">5c</a>Costs tab: where the month's money went, by type. Tap a type to see its entries.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span class="h">Accounts</span><span class="sm">Oct ▾</span></div>
+<div class="tabs"><span>Overview</span><span>Days</span><span class="on">Costs</span></div>
+<div class="bx"><div class="row"><span>Order expenses</span><b>₹ 78,688 ›</b></div><div style="height:6px;background:#B8322A;width:58%"></div></div>
+<div class="bx"><div class="row"><span>Porter</span><b>₹ 30,066 ›</b></div><div style="height:6px;background:#B8322A;width:22%"></div></div>
+<div class="bx"><div class="row"><span>Other expenses</span><b>₹ 23,366 ›</b></div><div style="height:6px;background:#B8322A;width:17%"></div></div>
+<div class="bx"><div class="row"><span>Labour</span><b>₹ 4,400 ›</b></div><div style="height:6px;background:#B8322A;width:3%"></div></div>
+<div class="bx"><div class="row"><b>Total out</b><b>₹ 1,36,520</b></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="5d"><div class="dv-olabel"><a class="dv-oid" href="#5d">5d</a>Day stage, Summary tab: only the totals. Orders, Costs and Cash each get their own tab.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span>←</span><span class="h">Fri 2 Oct</span><span class="tag ok">Approved</span></div>
+<div class="sm mut">Accounts › Days › Fri 2</div>
+<div class="tabs"><span class="on">Summary</span><span>Orders 3</span><span>Costs</span><span>Cash</span></div>
+<div class="bx"><div class="row"><span class="ok">Money in</span><b>₹ 55,643</b></div><div class="row"><span class="bad">Money out</span><b>₹ 36,556</b></div><div class="ln"></div><div class="row"><b>Day P/L</b><b class="ok">+₹19,087</b></div></div>
+<div class="bx"><div class="row"><span>Closing cash</span><b>₹ 28,713</b></div></div>
+<div class="row" style="gap:6px"><div class="btn">‹ Thu 1</div><div class="btn">Sat 3 ›</div></div>
+</div></div></div>
+
+<div class="dv-opt" id="5e"><div class="dv-olabel"><a class="dv-oid" href="#5e">5e</a>Day stage, Orders tab: one line per order with its profit. Tap an order to open its own P&amp;L.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span>←</span><span class="h">Fri 2 Oct</span><span class="tag ok">Approved</span></div>
+<div class="sm mut">Accounts › Days › Fri 2</div>
+<div class="tabs"><span>Summary</span><span class="on">Orders 3</span><span>Costs</span><span>Cash</span></div>
+<div class="bx"><div class="row"><b>Karthikeyan</b><span class="ok">+₹6,120 ›</span></div><div class="sm mut">ORD-0031 · collected in full</div></div>
+<div class="bx"><div class="row"><b>Anandh</b><span class="ok">+₹7,400 ›</span></div><div class="sm bad">ORD-0032 · ₹2,000 still to collect</div></div>
+<div class="bx"><div class="row"><b>David</b><span class="ok">+₹8,820 ›</span></div><div class="sm mut">ORD-0033 · collected in full</div></div>
+</div></div></div>
+
+<div class="dv-opt" id="5f"><div class="dv-olabel"><a class="dv-oid" href="#5f">5f</a>Day stage, Cash tab: opening cash, plus money in, minus money out, gives closing cash. Each line opens its list of entries.</div><div class="dv-card"><div class="ph" style="height:520px">
+<div class="row"><span>←</span><span class="h">Fri 2 Oct</span><span class="tag ok">Approved</span></div>
+<div class="sm mut">Accounts › Days › Fri 2</div>
+<div class="tabs"><span>Summary</span><span>Orders 3</span><span>Costs</span><span class="on">Cash</span></div>
+<div class="bx"><div class="row"><span>Opening cash</span><b>₹ 9,626</b></div></div>
+<div class="bx"><div class="row"><span class="ok">+ Money in</span><b>₹ 55,643 ›</b></div></div>
+<div class="bx"><div class="row"><span class="bad">− Money out</span><b>₹ 36,556 ›</b></div></div>
+<div class="bx" style="border-color:#D9480F"><div class="row"><b>Closing cash</b><b>₹ 28,713</b></div></div>
+<div class="sm mut">Cash with supervisors is shown separately until they hand it over.</div>
+</div></div></div>
+</div>
+<p class="dv-next">Try next: "build <a class="dv-oid" href="#5a">5a</a>–<a class="dv-oid" href="#5f">5f</a> in the app" · "apply the same tabs to the daily summary <a class="dv-oid" href="#3a">3a</a>–<a class="dv-oid" href="#3e">3e</a>"</p>
+</section>
+<section class="dv-turn" id="t4">
+<div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">Accounts: detailed daily register, rebuilt for phone (replaces <a class="dv-oid" href="#1m">1m</a> / <a class="dv-oid" href="#1n">1n</a>)</span></div>
+<div style="font-family:'Patrick Hand',cursive;font-size:15px;max-width:980px;margin:0 0 18px;line-height:1.35">Same data as the web register's 13 columns, grouped into <b>Money in</b> (quote, advance, balance collected, extra, pending), <b>Money out</b> (salary, order expenses, other expenses, Porter) and <b>Result</b> (P/L, cash balance). Only approved entries count; pending ones show separately.</div>
+<div class="dv-opts">
+<div class="dv-opt" id="4a"><div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a>Summary up top, then one card per day showing In, Out, P/L and running cash. Tap a card to expand the full breakdown in place.</div><div class="dv-card"><div class="ph">
+<div class="row"><span class="h">Accounts</span><span class="chip">CSV</span></div>
+<div class="row sm" style="justify-content:flex-start;gap:5px;flex-wrap:wrap"><span class="chip" style="background:#1a1a1a;color:#fff">This month</span><span class="chip">Last month</span><span class="chip">7 days</span><span class="chip">Custom</span></div>
+<div class="bx"><div class="row sm mut"><span>Opening ₹0</span><span>Closing</span></div><div class="row"><b class="ok">Net ₹1,42,074</b><b class="acc">₹1,42,074</b></div><div class="row sm"><span>In ₹2,78,594</span><span>Out ₹1,36,520</span></div><div class="sm mut">Revenue 2,71,056 · Labour 4,400 · Exp 94,516 · Porter 30,066</div></div>
+<div class="bx"><div class="row"><b>Thu 1 Oct · 2 orders</b><b class="ok">+₹9,626</b></div><div class="row sm"><span class="ok">in ₹51,746</span><span class="bad">out ₹42,120</span><span>cash ₹9,626</span></div></div>
+<div class="bx" style="border-color:#D9480F"><div class="row"><b>Fri 2 Oct · 3 orders</b><b class="ok">+₹19,087</b></div><div class="ln"></div>
+<div class="sm ok">Money in ₹55,643</div><div class="row sm"><span>Advance</span><span>1,100</span></div><div class="row sm"><span>Balance collected</span><span>54,543</span></div>
+<div class="sm bad">Money out ₹36,556</div><div class="row sm"><span>Order expenses</span><span>31,975</span></div><div class="row sm"><span>Other expenses</span><span>3,253</span></div><div class="row sm"><span>Porter</span><span>1,328</span></div>
+<div class="ln"></div><div class="row sm"><span>Cash balance</span><b>₹28,713</b></div><div class="acc sm">Open day →</div></div>
+<div class="bx"><div class="row"><b>Wed 7 Oct · 1 order</b><b class="ok">+₹8,954</b></div><div class="row sm"><span class="amb">Excess ₹24,141 collected</span><span>cash ₹82,864</span></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="4b"><div class="dv-olabel"><a class="dv-oid" href="#4b">4b</a>Trend first: a daily bar chart of in vs out with the cash line. Tap a bar to see that day. Best for spotting bad days at a glance.</div><div class="dv-card"><div class="ph">
+<div class="row"><span class="h">Accounts</span><span class="sm">Oct ▾</span></div>
+<div class="g2"><div class="bx"><span class="sm mut">Net P&amp;L</span><b class="ok">₹1,42,074</b></div><div class="bx"><span class="sm mut">Cash now</span><b>₹1,42,074</b></div></div>
+<div class="bx"><div class="sm mut">In vs out per day</div>
+<div style="display:flex;align-items:flex-end;gap:5px;height:90px;border-bottom:1.5px solid #1a1a1a">
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:7px;height:62px;background:#1F7A4D"></div><div style="width:7px;height:50px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:7px;height:66px;background:#1F7A4D"></div><div style="width:7px;height:44px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:7px;height:18px;background:#1F7A4D"></div><div style="width:7px;height:4px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:7px;height:25px;background:#1F7A4D"></div><div style="width:7px;height:8px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end;outline:1.5px dashed #D9480F;outline-offset:2px"><div style="width:7px;height:48px;background:#1F7A4D"></div><div style="width:7px;height:28px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:7px;height:40px;background:#1F7A4D"></div><div style="width:7px;height:3px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:7px;height:12px;background:#1F7A4D"></div><div style="width:7px;height:3px;background:#B8322A"></div></div>
+<div style="display:flex;gap:1px;align-items:flex-end"><div style="width:7px;height:8px;background:#1F7A4D"></div><div style="width:7px;height:2px;background:#B8322A"></div></div>
+</div><div class="row sm mut"><span>1</span><span>5</span><span>10</span><span>14</span></div></div>
+<div class="bx"><div class="row"><b>Tue 6 Oct</b><b class="ok">+₹18,416</b></div><div class="row sm"><span>in ₹40,971 · out ₹22,555</span><span>cash ₹73,910</span></div><div class="acc sm">Open day →</div></div>
+<div class="sm mut">Where it went (month)</div>
+<div class="bx sm"><div class="row"><span>Order expenses</span><span>₹ 78,688 · 58%</span></div><div class="row"><span>Porter</span><span>₹ 30,066 · 22%</span></div><div class="row"><span>Labour</span><span>₹ 4,400 · 3%</span></div><div class="row"><span>Other</span><span>₹ 23,366 · 17%</span></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="4c"><div class="dv-olabel"><a class="dv-oid" href="#4c">4c</a>Month calendar where each day shows its P/L, coloured green or red. Tap a day to open its sheet. Empty days are obvious.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>‹</span><span class="h">October 2026</span><span>›</span></div>
+<div class="row sm"><span>Net <b class="ok">₹1,42,074</b></span><span>Cash <b>₹1,42,074</b></span></div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;font-size:11px;text-align:center">
+<span class="mut">M</span><span class="mut">T</span><span class="mut">W</span><span class="mut">T</span><span class="mut">F</span><span class="mut">S</span><span class="mut">S</span>
+<span></span><span></span><span></span>
+<div class="bx" style="padding:3px;gap:0"><b>1</b><span class="ok">9.6k</span></div><div class="bx" style="padding:3px;gap:0"><b>2</b><span class="ok">19k</span></div><div class="bx" style="padding:3px;gap:0"><b>3</b><span class="ok">12k</span></div><div class="bx" style="padding:3px;gap:0;opacity:.4"><b>4</b><span>—</span></div>
+<div class="bx" style="padding:3px;gap:0"><b>5</b><span class="ok">14.7k</span></div><div class="bx" style="padding:3px;gap:0;border-color:#D9480F"><b>6</b><span class="ok">18.4k</span></div><div class="bx" style="padding:3px;gap:0"><b>7</b><span class="ok">8.9k</span></div><div class="bx" style="padding:3px;gap:0;opacity:.4"><b>8</b><span>—</span></div><div class="bx" style="padding:3px;gap:0;opacity:.4"><b>9</b><span>—</span></div><div class="bx" style="padding:3px;gap:0;opacity:.4"><b>10</b><span>—</span></div><div class="bx" style="padding:3px;gap:0;opacity:.4"><b>11</b><span>—</span></div>
+<div class="bx" style="padding:3px;gap:0"><b>12</b><span class="ok">8.2k</span></div><div class="bx" style="padding:3px;gap:0"><b>13</b><span class="ok">4.5k</span></div><div class="bx" style="padding:3px;gap:0"><b>14</b><span class="bad">−1.2k</span></div><div class="bx" style="padding:3px;gap:0"><b>15</b><span class="amb">pend.</span></div><div class="bx" style="padding:3px;gap:0"><b>16</b><span class="amb">pend.</span></div><div class="bx" style="padding:3px;gap:0"><b>17</b><span class="mut">today</span></div><span></span>
+</div>
+<div class="bx"><div class="row"><b>Tue 6 Oct</b><b class="ok">+₹18,416</b></div><div class="row sm"><span>mallu, Vicky · 2 orders</span></div><div class="row sm"><span class="ok">in 40,971</span><span class="bad">out 22,555</span><span>cash 73,910</span></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="4d"><div class="dv-olabel"><a class="dv-oid" href="#4d">4d</a>Day detail, opened from <a class="dv-oid" href="#4a">4a</a>, <a class="dv-oid" href="#4b">4b</a> or <a class="dv-oid" href="#4c">4c</a>. Each order shows its quote, collected, pending and costs; day-level costs sit below; the cash walk is at the bottom. Every line links to its order or entry.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="h">Fri 2 Oct</span><span class="tag ok">Approved</span></div>
+<div class="sm mut">Orders (3)</div>
+<div class="bx"><div class="row"><b>Karthikeyan · ORD-0031</b><span class="ok">+₹6,120</span></div><div class="row sm"><span>Quote 22,400 · adv 500</span><span>coll. 21,900</span></div><div class="row sm mut"><span>exp 14,800 · Porter 1,328</span><span>pending 0</span></div></div>
+<div class="bx"><div class="row"><b>Anandh · ORD-0032</b><span class="ok">+₹7,400</span></div><div class="row sm"><span>Quote 18,243 · adv 300</span><span>coll. 17,943</span></div><div class="row sm mut"><span>exp 10,843</span><span class="bad">pending 2,000</span></div></div>
+<div class="bx"><div class="row"><b>David · ORD-0033</b><span class="ok">+₹8,820</span></div><div class="row sm"><span>Quote 15,000 · adv 300</span><span>coll. 14,700</span></div><div class="row sm mut"><span>exp 6,332</span><span>pending 0</span></div></div>
+<div class="sm mut">Day costs (not one order)</div>
+<div class="bx sm"><div class="row"><span>Room · Hosur stay</span><span>1,200</span></div><div class="row"><span>Office tea</span><span>253</span></div><div class="row"><span>Tape purchase (to stock)</span><span>1,800</span></div></div>
+<div class="bx"><div class="row sm"><span>Opening cash</span><span>9,626</span></div><div class="row sm"><span class="ok">+ in</span><span>55,643</span></div><div class="row sm"><span class="bad">− out</span><span>36,556</span></div><div class="ln"></div><div class="row"><b>Closing cash</b><b>₹28,713</b></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="4e"><div class="dv-olabel"><a class="dv-oid" href="#4e">4e</a>Full register for power users: rotate the phone (or use the web app) to get every column, with the date pinned and a column picker. Phone portrait stays on <a class="dv-oid" href="#4a">4a</a>–<a class="dv-oid" href="#4c">4c</a>.</div><div class="dv-card"><div class="ph" style="width:460px">
+<div class="row"><span class="h">Register</span><span class="row sm" style="gap:5px"><span class="chip">Columns ▾</span><span class="chip">CSV</span></span></div>
+<div class="bx sm" style="gap:5px"><div class="row mut"><span style="flex:1.3">Date</span><span style="flex:1">In</span><span style="flex:1">Salary</span><span style="flex:1">Ord exp</span><span style="flex:1">Porter</span><span style="flex:1">P/L</span><span style="flex:1">Cash</span></div><div class="ln"></div>
+<div class="row"><span style="flex:1.3">Thu 1</span><span style="flex:1">51,746</span><span style="flex:1" class="bad">4,400</span><span style="flex:1" class="bad">26,888</span><span style="flex:1" class="bad">9,832</span><b style="flex:1" class="ok">9,626</b><span style="flex:1">9,626</span></div>
+<div class="row"><span style="flex:1.3">Fri 2</span><span style="flex:1">55,643</span><span style="flex:1" class="mut">—</span><span style="flex:1" class="bad">31,975</span><span style="flex:1" class="bad">1,328</span><b style="flex:1" class="ok">19,087</b><span style="flex:1">28,713</span></div>
+<div class="row"><span style="flex:1.3">Sat 3</span><span style="flex:1">14,435</span><span style="flex:1" class="mut">—</span><span style="flex:1" class="bad">1,300</span><span style="flex:1" class="bad">1,110</span><b style="flex:1" class="ok">12,025</b><span style="flex:1">40,738</span></div>
+<div class="ln"></div><div class="row"><b style="flex:1.3">Total</b><b style="flex:1">2.78L</b><b style="flex:1">4,400</b><b style="flex:1">78.7k</b><b style="flex:1">30.1k</b><b style="flex:1" class="ok">1.42L</b><b style="flex:1">1.42L</b></div></div>
+<div class="sm mut">Columns picker: Quote, Advance, Bal coll., Extra, Pending, Salary, Ord exp, Oth exp, Porter, Total exp, P/L, Cash</div>
+</div></div></div>
+</div>
+<p class="dv-next">Try next: "<a class="dv-oid" href="#4a">4a</a> list with the <a class="dv-oid" href="#4b">4b</a> chart on top" · "<a class="dv-oid" href="#4c">4c</a> + <a class="dv-oid" href="#4d">4d</a>" · "build accounts in the app"</p>
+</section>
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Daily summary flow, updated from the Redesign Brief (diary pages 12–15 Oct)</span></div>
+<div style="font-family:'Patrick Hand',cursive;font-size:15px;max-width:980px;margin:0 0 18px;line-height:1.35">What changes from turns 1–2: pay is a <b>day wage per person</b>, typed daily and defaulting to the last amount used, then split across that day's orders (equal by default, can override). Room costs are shared by the people staying there, not by an order. Staff advance and vendor advance are separate entry types. One staged daily flow replaces separate screens, as in <a class="dv-oid" href="#1b">1b</a>.</div>
+<div class="flow" style="margin-bottom:22px"><span class="st">1 Crew and day wage</span>→<span class="st">2 Food and room</span>→<span class="st">3 Order costs</span>→<span class="st">4 Advances</span>→<span class="st">5 Hired vehicle</span>→<span class="st acc">Submit for approval</span></div>
+<div class="dv-opts">
+<div class="dv-opt" id="3a"><div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Day wage per person, then split across that day's orders. Equal by default; tap a split to change it. The work type from <a class="dv-oid" href="#2c">2c</a> sits on each order.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">Daily summary · 15 Oct</span><span class="sm">1 / 5</span></div>
+<div class="h">Crew and day wage</div>
+<div class="bx"><div class="row"><b>Dinesh · Driver</b><span>₹ 900</span></div><div class="sm mut">last used ₹900 · edit</div><div class="row sm"><span>ORD-0042 · full</span><span>₹ 450</span></div><div class="row sm"><span>ORD-0043 · full</span><span>₹ 450</span></div></div>
+<div class="bx"><div class="row"><b>Kannan · Helper</b><span>₹ 600</span></div><div class="row sm"><span>ORD-0042 · loading only</span><span class="acc">₹ 200 edited</span></div><div class="row sm"><span>ORD-0043 · full</span><span class="acc">₹ 400 edited</span></div></div>
+<div class="bx"><div class="row"><b>Poo · Temp</b><span>₹ 300</span></div><div class="row sm"><span>ORD-0043 · ½ day</span><span>₹ 300</span></div><div class="sm mut">closes to zero today</div></div>
+<div class="bx"><div class="row"><span>Leave · Balaji</span><span class="mut">no wage</span></div></div>
+<div class="btn pri">Next: Food and room</div>
+</div></div></div>
+
+<div class="dv-opt" id="3b"><div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>Food is split among that order's crew, with any leftover rupee going to the last person. Room costs are shared by the people staying in the room. Both are taken from staff.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">Daily summary · 15 Oct</span><span class="sm">2 / 5</span></div>
+<div class="h">Food and room</div>
+<div class="bx"><div class="row"><b>Food · ORD-0042</b><span>₹ 470</span></div><div class="sm">÷4 → 117 · 117 · 118 · <b>118</b></div><div class="sm mut">Dinesh · Kannan · Sadham · Balaji(last)</div></div>
+<div class="bx"><div class="row"><b>Tea · ORD-0043</b><span>₹ 90</span></div><div class="sm">÷3 → 30 each</div></div>
+<div class="bx"><div class="row"><b>Room · Hosur stay</b><span>₹ 1,200</span></div><div class="sm">rent 900 + current 300 · not an order</div><div class="sm">÷3 → 400 each · Dinesh, Sho, Sadham</div></div>
+<div class="row sm" style="flex-wrap:wrap;gap:5px;justify-content:flex-start"><span class="chip">+ Food</span><span class="chip">+ Tea</span><span class="chip">+ Room</span><span class="chip">+ A/C room</span></div>
+<div class="btn pri">Next: Order costs</div>
+</div></div></div>
+
+<div class="dv-opt" id="3c"><div class="dv-olabel"><a class="dv-oid" href="#3c">3c</a>Order costs are paid by the company. Add-ons are a cost and also billed to the customer. Costs from every day of a multi-day order add up on the same order.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">Daily summary · 15 Oct</span><span class="sm">3 / 5</span></div>
+<div class="h">Order costs</div>
+<div class="bx"><div class="row"><b>ORD-0042</b><span class="tag">Porter · 10%</span></div><div class="row sm"><span>Diesel</span><span>₹ 2,000</span></div><div class="row sm"><span>Material · 2 tape, 1 bubble</span><span>₹ 310</span></div><div class="row sm"><span>A/C uninstall · <span class="acc">bill customer ₹ ___</span></span><span>₹ 500</span></div></div>
+<div class="bx"><div class="row"><b>ORD-0039</b><span class="tag amb">Day 2 · warehouse</span></div><div class="row sm"><span>Loading 12 Oct + today dispatch</span></div><div class="row sm"><span>Diesel</span><span>₹ 4,000</span></div><div class="row sm mut"><span>adds to Day 1 costs</span><span>total ₹ 7,850</span></div></div>
+<div class="btn pri">Next: Advances</div>
+</div></div></div>
+
+<div class="dv-opt" id="3d"><div class="dv-olabel"><a class="dv-oid" href="#3d">3d</a>Two advance types that never mix. A staff advance is recovered from pay; staff on leave can take one too. A vendor advance is part of hired-vehicle freight.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">Daily summary · 15 Oct</span><span class="sm">4 / 5</span></div>
+<div class="h">Advances</div>
+<div class="row" style="gap:6px"><div class="btn pri">Staff advance</div><div class="btn">Vendor advance</div></div>
+<div class="bx"><div class="row"><span>Balaji · on leave</span><span>₹ 500</span></div><div class="row sm mut"><span>balance after</span><span class="bad">−₹ 1,450</span></div></div>
+<div class="bx"><div class="row"><span>Dinesh · dinner (trip)</span><span>₹ 200</span></div><div class="row sm mut"><span>same day as wage: OK</span></div></div>
+<div class="bx"><div class="row"><span>Sho · dinner (trip)</span><span>₹ 200</span></div></div>
+<div class="acc sm">+ staff advance</div>
+<div class="btn pri">Next: Hired vehicle</div>
+</div></div></div>
+
+<div class="dv-opt" id="3e"><div class="dv-olabel"><a class="dv-oid" href="#3e">3e</a>Hired-vehicle trip: agreed freight, minus advance paid to the driver, minus what the vendor collected from the customer. The app works out who owes whom and shows a status.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">Daily summary · 15 Oct</span><span class="sm">5 / 5</span></div>
+<div class="h">Hired vehicle</div>
+<div class="bx"><div class="row"><b>Malini Packers · 17 ft</b><span class="sm">ORD-0043</span></div><div class="row sm"><span>Agreed freight</span><span>₹ 7,000</span></div><div class="row sm"><span>− Advance to driver</span><span>₹ 2,000</span></div><div class="row sm"><span>− Vendor collected from customer</span><span>₹ 3,000</span></div><div class="ln"></div><div class="row"><b>You owe</b><b class="bad">₹ 2,000</b></div></div>
+<div class="row sm" style="justify-content:flex-start;gap:5px;flex-wrap:wrap"><span class="tag">Open</span><span class="tag bad">You owe</span><span class="tag amb">Vendor owes</span><span class="tag ok">Settled</span></div>
+<div class="acc sm">+ part payment</div>
+<div class="ln"></div>
+<div class="bx"><div class="row"><span>Entries today</span><b>₹ 15,270</b></div><div class="row sm mut"><span>wages 1,800 · food/room 1,760 · costs 6,810 · adv 900 · hire 4,000</span></div></div>
+<div class="btn pri">Submit for approval</div>
+</div></div></div>
+</div>
+<p class="dv-next">Try next: "build <a class="dv-oid" href="#3a">3a</a>–<a class="dv-oid" href="#3e">3e</a> with review from <a class="dv-oid" href="#1e">1e</a>" · "show the owner's approval for a whole day" · "crew's own view of this"</p>
+</section>
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Crew picker: what each person did (full, loading, unloading, half day). For <a class="dv-oid" href="#1a">1a</a>–<a class="dv-oid" href="#1c">1c</a> and <a class="dv-oid" href="#1e">1e</a></span></div>
+<div class="dv-opts">
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Pick people, then each picked row expands with Load / Unload switches and a Half-day option. Both switches on means a full job. One tap sets the driver.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">ORD-0042 · crew</span><span class="sm">4 picked</span></div>
+<div class="bx" style="border-color:#D9480F"><div class="row"><b>☑ Dinesh</b><span class="tag">Driver</span></div><div class="row sm"><span class="chip" style="background:#1a1a1a;color:#fff">Load</span><span class="chip" style="background:#1a1a1a;color:#fff">Unload</span><span class="chip">½ day</span><span class="acc">● drove</span></div><div class="sm ok">Full job</div></div>
+<div class="bx" style="border-color:#D9480F"><div class="row"><b>☑ Kannan</b><span class="tag">Helper</span></div><div class="row sm"><span class="chip" style="background:#1a1a1a;color:#fff">Load</span><span class="chip">Unload</span><span class="chip">½ day</span><span class="mut">○ drove</span></div><div class="sm amb">Loading only</div></div>
+<div class="bx" style="border-color:#D9480F"><div class="row"><b>☑ Poo</b><span class="tag">Temp</span></div><div class="row sm"><span class="chip">Load</span><span class="chip" style="background:#1a1a1a;color:#fff">Unload</span><span class="chip" style="background:#1a1a1a;color:#fff">½ day</span></div><div class="sm amb">Unloading · half day</div></div>
+<div class="bx"><div class="row"><span>☐ Balaji</span><span class="tag">Helper</span></div></div>
+<div class="bx"><div class="row"><span>☐ Sadham</span><span class="tag amb">on ORD-0043</span></div></div>
+<div class="acc sm">+ temp worker (name, phone)</div>
+</div></div></div>
+
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Two lanes, Pickup (loading) and Drop (unloading). Drag or tap people into a lane; anyone in both lanes counts as full. Shows who was at which end.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">ORD-0042 · T.Nagar → Porur</span><span></span></div>
+<div class="g2">
+<div class="bx" style="min-height:150px"><b>Pickup · Load</b><span class="sm mut">8:00 AM</span><span class="chip">Dinesh · D</span><span class="chip">Balaji</span><span class="chip">Kannan</span><span class="chip">Sadham ½</span></div>
+<div class="bx" style="min-height:150px"><b>Drop · Unload</b><span class="sm mut">1:30 PM</span><span class="chip">Dinesh · D</span><span class="chip">Balaji</span><span class="chip">Poo (T)</span><span class="acc sm">+ add</span></div>
+</div>
+<div class="bx sm"><div class="row"><span class="ok">Full: Dinesh, Balaji</span></div><div class="row"><span class="amb">Load only: Kannan, Sadham (½)</span></div><div class="row"><span class="amb">Unload only: Poo</span></div></div>
+<div class="sm mut">Available: Raam · Sha · sakthi · Farooq</div>
+</div></div></div>
+
+<div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Fastest for the usual case: everyone defaults to full job. Tap "Not full" only for the exceptions, which reduces taps on most jobs.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">Crew · ORD-0042</span><span></span></div>
+<div class="bx"><div class="row"><b>Same crew, full job</b><span class="tag ok">default</span></div><div class="sm">Dinesh (Driver) · Balaji · Kannan · Poo</div></div>
+<div class="sm mut">Exceptions</div>
+<div class="bx"><div class="row"><span>Kannan</span><span class="chip">Loading only ▾</span></div><div class="row"><span>Poo</span><span class="chip">Unload · ½ day ▾</span></div><div class="acc sm">+ mark someone not full</div></div>
+<div class="bx sm"><div class="row mut"><span>Options in ▾</span></div><div class="row"><span>Full · Loading only · Unloading only</span></div><div class="row"><span>Half day · Left early · Joined late</span></div></div>
+<div class="btn pri">Save crew</div>
+</div></div></div>
+
+<div class="dv-opt" id="2d"><div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Compact grid with people as rows and L / U / ½ / D as columns. Fits a 6–10 crew job on one screen, and carries straight into the owner's pay entry.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">Crew · ORD-0042</span><span class="sm">5</span></div>
+<div class="bx sm" style="gap:6px"><div class="row mut"><span style="flex:2">Name</span><span style="flex:1">Load</span><span style="flex:1">Unld</span><span style="flex:1">½</span><span style="flex:1">Drv</span></div><div class="ln"></div>
+<div class="row"><span style="flex:2">Dinesh <span class="mut">Drv</span></span><span style="flex:1">☑</span><span style="flex:1">☑</span><span style="flex:1">☐</span><span style="flex:1" class="acc">●</span></div>
+<div class="row"><span style="flex:2">Balaji <span class="mut">Hlp</span></span><span style="flex:1">☑</span><span style="flex:1">☑</span><span style="flex:1">☐</span><span style="flex:1" class="mut">○</span></div>
+<div class="row"><span style="flex:2">Kannan <span class="mut">Hlp</span></span><span style="flex:1">☑</span><span style="flex:1">☐</span><span style="flex:1">☐</span><span style="flex:1" class="mut">○</span></div>
+<div class="row"><span style="flex:2">Sadham <span class="mut">Sup</span></span><span style="flex:1">☑</span><span style="flex:1">☐</span><span style="flex:1">☑</span><span style="flex:1" class="mut">○</span></div>
+<div class="row"><span style="flex:2">Poo <span class="mut">T</span></span><span style="flex:1">☐</span><span style="flex:1">☑</span><span style="flex:1">☐</span><span style="flex:1" class="mut">○</span></div></div>
+<div class="sm mut">Multi-day job? Grid repeats per day (Day 1 load, Day 3 unload).</div>
+<div class="btn pri">Save · 2 full, 2 load, 1 unload</div>
+</div></div></div>
+</div>
+<div style="font-family:'Patrick Hand',cursive;font-size:15px;margin:0 0 6px;max-width:900px">In every option the work type shows next to each name when the owner enters pay in <a class="dv-oid" href="#1e">1e</a>, e.g. "Kannan · Loading only · ₹ ____". It's a label only; pay is still typed by the owner.</div>
+<p class="dv-next">Try next: "<a class="dv-oid" href="#2a">2a</a> with the defaults from <a class="dv-oid" href="#2c">2c</a>" · "<a class="dv-oid" href="#2d">2d</a> for big jobs" · "build it"</p>
+</section>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Crew pay, order costs, approval and accounts: wireframes</span></div>
+<div class="dv-grp">Approval flow (applies to every option)</div>
+<div class="flow" style="margin-bottom:10px"><span class="st">Supervisor fills crew, expenses, materials, cash</span>→<span class="st">Submit</span>→<span class="st acc">Pending approval</span>→<span class="st">Owner / manager reviews</span>→<span class="st ok">Approve: wages, ledger, stock, cash book update</span></div>
+<div class="flow" style="margin:0 0 30px 330px"><span>↳</span><span class="st bad">Send back with reason: nothing posts, supervisor edits and resubmits</span></div>
+
+<div class="dv-grp">A · Supervisor day close</div>
+<div class="dv-opts">
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>One long form per order. Fast when there's one job, but long to scroll.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">ORD-0042 · 2 BHK</span><span class="tag amb">Draft</span></div>
+<div class="h">Day close</div>
+<div class="sm mut">Crew (actual, not planned)</div>
+<div class="bx"><div class="row"><span>Dinesh (Driver) <span class="chip">drove</span></span><span>₹ ____</span></div><div class="row"><span>Balaji (Helper)</span><span>₹ ____</span></div><div class="row"><span>Kannan (Helper) <span class="chip">A/C</span></span><span>₹ ____</span></div><div class="acc sm">+ add crew · + temp worker (name, phone)</div></div>
+<div class="sm mut">Expenses</div>
+<div class="bx"><div class="row"><span>Tea / food · <b>split ÷3</b></span><span>₹ 450</span></div><div class="row"><span>Diesel · order</span><span>₹ 2,000</span></div><div class="row"><span>Toll · order</span><span>₹ 180</span></div><div class="acc sm">+ expense</div></div>
+<div class="sm mut">Materials used</div>
+<div class="bx"><div class="row"><span>Tape roll</span><span>2 of 6 issued</span></div><div class="row"><span>Bubble wrap</span><span>1 of 2</span></div></div>
+<div class="sm mut">Cash collected</div>
+<div class="bx"><div class="row"><span>Cash at drop</span><span>₹ 8,000</span></div></div>
+<div class="btn pri">Submit for approval</div>
+</div></div></div>
+
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Step by step: Crew → Expenses → Materials → Cash → Review. Handles 2 jobs a day without repeating crew.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">Day close · 16 Oct</span><span class="sm">2 / 5</span></div>
+<div class="row sm"><span class="ok">● Crew</span><span class="acc">● Expenses</span><span class="mut">○ Material</span><span class="mut">○ Cash</span><span class="mut">○ Review</span></div>
+<div class="h">Expenses</div>
+<div style="display:flex;flex-wrap:wrap;gap:5px"><span class="chip">Tea</span><span class="chip">Food</span><span class="chip">Diesel</span><span class="chip">Toll</span><span class="chip">Auto</span><span class="chip">Police</span><span class="chip">Vehicle hire</span><span class="chip">+</span></div>
+<div class="bx"><div class="row"><span>Food · ₹ 600</span><span class="tag acc">Personal</span></div><div class="sm">Split ÷4 = ₹150 each, cut from pay</div><div class="sm mut">Dinesh · Balaji · Kannan · Poo</div></div>
+<div class="bx"><div class="row"><span>Diesel · ₹ 2,000</span><span class="tag">Order cost</span></div><div class="sm mut">Job: ORD-0042 ▾</div></div>
+<div class="bx"><div class="row"><span>Vehicle hire · ₹ 7,000</span><span class="tag">Order cost</span></div><div class="sm mut">Malini Packers · ORD-0043 ▾</div></div>
+<div class="row" style="gap:8px"><div class="btn">Back</div><div class="btn pri">Next: Materials</div></div>
+</div></div></div>
+
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Jobs list with status. Tap a job to fill in its section; Submit unlocks when all are done.</div><div class="dv-card"><div class="ph">
+<div class="h">Today's close</div>
+<div class="bx"><div class="row"><b>ORD-0042 · T.Nagar → Porur</b></div><div class="row sm"><span class="ok">✓ Crew 4</span><span class="ok">✓ Exp ₹2,630</span><span class="amb">! Material</span><span class="ok">✓ Cash</span></div></div>
+<div class="bx"><div class="row"><b>ORD-0043 · Anna Ngr → Ambattur</b></div><div class="row sm"><span class="ok">✓ Crew 3</span><span class="mut">○ Exp</span><span class="mut">○ Material</span><span class="mut">○ Cash</span></div></div>
+<div class="bx"><div class="row"><span>Item check</span><span class="amb">2 blankets not back</span></div></div>
+<div class="bx"><div class="row"><span>Cash with me</span><b>₹ 8,000</b></div><div class="row sm mut"><span>Float given ₹3,000 · spent ₹2,630</span><span>owe ₹370</span></div></div>
+<div class="sm mut">Saved as draft. Works offline, sends later.</div>
+<div class="btn" style="opacity:.45">Submit 2 jobs for approval</div>
+</div></div></div>
+</div>
+
+<div class="dv-grp">B · Owner / manager approval</div>
+<div class="dv-opts">
+<div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Approval queue with one card per order. Approve or send back as a whole.</div><div class="dv-card"><div class="ph">
+<div class="row"><span class="h">Approvals</span><span class="tag acc">3 waiting</span></div>
+<div class="bx"><div class="row"><b>ORD-0042</b><span class="sm mut">by Lakshmanan · 9:40 PM</span></div><div class="row sm"><span>Crew 4 · wages ₹4,400</span><span>Exp ₹2,630</span></div><div class="row sm"><span>Material ₹310</span><span>Cash ₹8,000</span></div><div class="row sm"><span>Profit</span><b class="ok">₹6,860 · 48%</b></div><div class="row" style="gap:6px"><div class="btn bad">Send back</div><div class="btn pri">Approve</div></div></div>
+<div class="bx"><div class="row"><b>ORD-0043</b><span class="sm mut">by Lakshmanan</span></div><div class="row sm"><span class="amb">! Vehicle hire ₹7,000</span><span class="bad">Loss −₹1,200</span></div><div class="row" style="gap:6px"><div class="btn bad">Send back</div><div class="btn pri">Approve</div></div></div>
+<div class="bx"><div class="row"><b>Advance request</b><span class="sm">Balaji · ₹500</span></div><div class="row" style="gap:6px"><div class="btn">Reject</div><div class="btn pri">Approve</div></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Review and edit on one screen. The owner can change any amount, add or remove a line, set pay, or query one line. Edited lines keep the supervisor's original figure for the record.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">ORD-0042 · review</span><span class="tag acc">Pending</span></div>
+<div class="sm mut">Wages: you set the amounts</div>
+<div class="bx"><div class="row"><span>☑ Dinesh (Driver)</span><span>₹ 1,500</span></div><div class="row"><span>☑ Balaji (Helper)</span><span>₹ 1,000</span></div><div class="row"><span>☑ Kannan + A/C</span><span>₹ 1,000 + 500</span></div><div class="row"><span>☐ Poo (Temp)</span><span>₹ ____</span></div></div>
+<div class="sm mut">Expenses</div>
+<div class="bx"><div class="row"><span>☑ Food ÷4 (from pay)</span><span>₹ 600</span></div><div class="row"><span>☑ Diesel</span><span>₹ <s class="mut">2,400</s> 2,000 <span class="acc sm">edit</span></span></div><div class="row sm amb"><span>edited by Ponci · was ₹2,400</span></div><div class="row"><span class="bad">? Toll · "no receipt?"</span><span>₹ 180 <span class="acc sm">edit</span></span></div><div class="row"><span class="acc sm">+ add line</span><span class="bad sm">remove line</span></div></div>
+<div class="bx"><div class="row"><span>☑ Material 2 tape, 1 bubble</span><span>₹ 310</span></div><div class="row"><span>☑ Cash collected</span><span>₹ 8,000</span></div></div>
+<div class="row" style="gap:6px"><div class="btn bad">Send back (1 query)</div><div class="btn pri">Save edits and approve</div></div>
+</div></div></div>
+
+<div class="dv-opt" id="1f"><div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>Supervisor's view after sending: the order is locked while waiting. If sent back, it reopens with the owner's note.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">ORD-0042</span><span class="tag bad">Sent back</span></div>
+<div class="bx" style="border-color:#B8322A"><div class="bad">Owner: "Toll ₹180, add receipt photo"</div><div class="sm mut">Ponci (Manager) · 10:05 PM</div></div>
+<div class="bx"><div class="row"><span class="bad">Toll · ₹180</span><span class="acc">+ add photo</span></div></div>
+<div class="bx" style="opacity:.5"><div class="row"><span>Crew · 4</span><span>approved, locked</span></div><div class="row"><span>Diesel, food</span><span>approved, locked</span></div></div>
+<div class="btn pri">Resubmit</div>
+<div class="ln"></div>
+<div class="sm mut">Nothing posts to wages, stock or the cash book until it's approved.</div>
+</div></div></div>
+</div>
+
+<div class="dv-grp">C · Crew member history</div>
+<div class="dv-opts">
+<div class="dv-opt" id="1g"><div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>Matches your web app: 4 tiles, then Orders / Attendance / Ledger tabs. Each order row shows days, pay, food share and net.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span>Dinesh · Driver · Dynamic</span><span class="sm">‹ Oct ›</span></div>
+<div class="g2"><div class="bx"><span class="sm mut">Earned</span><b>₹ 5,900</b></div><div class="bx"><span class="sm mut">Paid out</span><b>₹ 1,000</b></div><div class="bx"><span class="sm mut">Advance</span><b class="bad">₹ 985</b></div><div class="bx"><span class="sm mut">Balance to pay</span><b class="ok">₹ 7,935</b></div></div>
+<div class="tabs"><span class="on">Orders</span><span>Attendance</span><span>Ledger</span></div>
+<div class="bx"><div class="row"><b>ORD-0042 · 2 days</b><b>₹ 1,500</b></div><div class="row sm mut"><span>Driver · food −₹150</span><span>net ₹1,350</span></div></div>
+<div class="bx"><div class="row"><b>ORD-0039 · 1 day</b><b>₹ 2,000</b></div><div class="row sm mut"><span>Crew + A/C ₹500 · tea −₹90</span><span>net ₹2,410</span></div></div>
+<div class="bx"><div class="row"><b>ORD-0036 · 1 day</b><span class="amb">pending approval</span></div></div>
+<div class="row" style="gap:6px"><div class="btn">+ Advance</div><div class="btn pri">Pay ₹7,935</div></div>
+</div></div></div>
+
+<div class="dv-opt" id="1h"><div class="dv-olabel"><a class="dv-oid" href="#1h">1h</a>Settlement sheet, the same as your diary's third page: Old + New − Taken = Balance, for everyone in one table.</div><div class="dv-card"><div class="ph">
+<div class="row"><span class="h">Settlement</span><span class="sm">25–29 Aug ▾</span></div>
+<div class="bx sm" style="gap:6px"><div class="row mut"><span style="flex:1.4">Staff</span><span style="flex:1">Old</span><span style="flex:1">New</span><span style="flex:1">Taken</span><span style="flex:1.1">Bal</span></div><div class="ln"></div>
+<div class="row"><span style="flex:1.4">Dinesh</span><span style="flex:1">3,020</span><span style="flex:1">5,900</span><span style="flex:1" class="bad">985</span><b style="flex:1.1">7,935</b></div>
+<div class="row"><span style="flex:1.4">Sho</span><span style="flex:1">2,310</span><span style="flex:1">5,600</span><span style="flex:1" class="bad">1,195</span><b style="flex:1.1">6,715</b></div>
+<div class="row"><span style="flex:1.4">Sadham</span><span style="flex:1">1,160</span><span style="flex:1">4,900</span><span style="flex:1" class="bad">1,675</span><b style="flex:1.1">4,385</b></div>
+<div class="row"><span style="flex:1.4">Poo</span><span style="flex:1">—</span><span style="flex:1">3,600</span><span style="flex:1" class="bad">1,950</span><b style="flex:1.1">1,650</b></div>
+<div class="row"><span style="flex:1.4">Kannan</span><span style="flex:1">—</span><span style="flex:1">3,600</span><span style="flex:1" class="bad">950</span><b style="flex:1.1">2,650</b></div></div>
+<div class="sm mut">Tap a name to see the orders behind "New" and the advances and food behind "Taken".</div>
+<div class="row" style="gap:6px"><div class="btn">Share PDF</div><div class="btn pri">Pay selected</div></div>
+</div></div></div>
+
+<div class="dv-opt" id="1i"><div class="dv-olabel"><a class="dv-oid" href="#1i">1i</a>Wage grid (staff × date), the diary's second page. Good for a quick look at who worked which day.</div><div class="dv-card"><div class="ph">
+<div class="row"><span class="h">Wage grid</span><span class="sm">Oct ▾</span></div>
+<div class="bx sm" style="gap:6px"><div class="row mut"><span style="flex:1.3"></span><span style="flex:1">14</span><span style="flex:1">15</span><span style="flex:1">16</span><span style="flex:1">17</span><span style="flex:1">Σ</span></div><div class="ln"></div>
+<div class="row"><span style="flex:1.3">Dinesh</span><span style="flex:1">1500</span><span style="flex:1">800</span><span style="flex:1 " class="mut">A</span><span style="flex:1">2000</span><b style="flex:1">4300</b></div>
+<div class="row"><span style="flex:1.3">Balaji</span><span style="flex:1">1000</span><span style="flex:1">800</span><span style="flex:1">800</span><span style="flex:1" class="mut">A</span><b style="flex:1">2600</b></div>
+<div class="row"><span style="flex:1.3">Kannan</span><span style="flex:1" class="mut">A</span><span style="flex:1">800</span><span style="flex:1">1300</span><span style="flex:1">1000</span><b style="flex:1">3100</b></div>
+<div class="row"><span style="flex:1.3">Poo <span class="tag">T</span></span><span style="flex:1" class="mut">—</span><span style="flex:1">800</span><span style="flex:1" class="mut">—</span><span style="flex:1" class="mut">—</span><b style="flex:1">800</b></div></div>
+<div class="sm mut">Amber cell = pending approval. A = absent. T = temporary worker (closes to zero the same day).</div>
+</div></div></div>
+</div>
+
+<div class="dv-grp">D · Order P&amp;L, materials, item check</div>
+<div class="dv-opts">
+<div class="dv-opt" id="1j"><div class="dv-olabel"><a class="dv-oid" href="#1j">1j</a>P&amp;L card on Order detail. Material is charged at the average cost per unit, so one tape roll used across 3–4 orders is costed per use.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">ORD-0042</span><span class="tag ok">Approved</span></div>
+<div class="tabs"><span>Details</span><span class="on">Crew &amp; costs</span><span>Docs</span></div>
+<div class="bx"><div class="row"><span>Order value</span><b>₹ 14,200</b></div><div class="ln"></div>
+<div class="row"><span>− Wages (4)</span><span>₹ 4,400</span></div><div class="row"><span>− A/C work</span><span>₹ 500</span></div><div class="row"><span>− Diesel, toll</span><span>₹ 2,180</span></div><div class="row"><span>− Material</span><span>₹ 310</span></div><div class="ln"></div>
+<div class="row"><b>Job profit</b><b class="ok">₹ 6,810 · 48%</b></div></div>
+<div class="sm mut">Food ₹600 isn't counted here because it's cut from crew pay.</div><div class="row sm"><span class="mut">Owner can still edit after approval; changes are logged</span><span class="acc">edit</span></div>
+<div class="bx sm"><div class="row"><span>Tape · 2 × ₹42.08</span><span>₹ 84</span></div><div class="row"><span>Bubble · 1 × ₹226</span><span>₹ 226</span></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="1k"><div class="dv-olabel"><a class="dv-oid" href="#1k">1k</a>Item check: load-out list before leaving, then a return check. Consumables deduct what was used; anything returnable that's missing is flagged.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span class="sm mut">Item check · ORD-0042</span><span></span></div>
+<div class="tabs"><span>Load out</span><span class="on">Return</span></div>
+<div class="bx"><div class="row"><span>Tape roll</span><span class="sm">took 6 · used <b>2</b> · back 4</span></div><div class="row"><span>Bubble wrap</span><span class="sm">took 2 · used <b>1</b> · back 1</span></div><div class="row"><span>Cartons</span><span class="sm">took 20 · used <b>14</b> · back 6</span></div></div>
+<div class="sm mut">Returnable</div>
+<div class="bx"><div class="row"><span>Blankets</span><span class="bad">10 out · 8 back ⚠</span></div><div class="row"><span>Straps</span><span class="ok">6 / 6 ✓</span></div><div class="row"><span>Trolley</span><span class="ok">1 / 1 ✓</span></div><div class="row"><span>Tool kit</span><span class="ok">✓</span></div></div>
+<div class="bx sm"><div class="row"><span>Bought on the way: tape × 2 ₹180</span></div><div class="row mut"><span>○ used fully on this job</span><span>● balance to stock</span></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="1l"><div class="dv-olabel"><a class="dv-oid" href="#1l">1l</a>Materials stock. Each purchase updates the average cost per unit; stock is held per branch or per vehicle.</div><div class="dv-card"><div class="ph">
+<div class="row"><span class="h">Materials</span><span class="chip">+ Purchase</span></div>
+<div class="row sm"><span class="chip">Godown</span><span class="chip">TN 22 CK 1180</span><span class="chip">TN 09 …</span></div>
+<div class="bx"><div class="row"><b>Tape roll</b><span>48 left</span></div><div class="row sm mut"><span>avg ₹42.08 · worth ₹2,020</span><span>reorder at 20</span></div></div>
+<div class="bx"><div class="row"><b>Bubble wrap</b><span class="bad">3 left ⚠</span></div><div class="row sm mut"><span>avg ₹226</span><span>reorder at 5</span></div></div>
+<div class="bx"><div class="row"><b>Blankets</b><span>32 / 36</span></div><div class="row sm mut"><span>returnable</span><span class="bad">4 lost this month</span></div></div>
+<div class="bx sm"><div class="row"><b>+ Purchase</b></div><div class="row"><span>Tape roll · qty 50 · ₹ 2,250</span></div><div class="row mut"><span>new avg ₹43.04</span><span>paid: cash ▾</span></div></div>
+</div></div></div>
+</div>
+
+<div class="dv-grp">E · Daily account statement</div>
+<div class="dv-opts">
+<div class="dv-opt" id="1m"><div class="dv-olabel"><a class="dv-oid" href="#1m">1m</a>Day book: opening balance, money in, money out, closing balance. Built only from approved entries.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>‹</span><span class="h">16 Oct 2026</span><span>›</span></div>
+<div class="bx"><div class="row"><span>Opening cash</span><b>₹ 12,400</b></div></div>
+<div class="sm ok">IN · ₹ 22,000</div>
+<div class="bx sm"><div class="row"><span>ORD-0042 · cash (Lakshmanan)</span><span>8,000</span></div><div class="row"><span>ORD-0041 · UPI</span><span>14,000</span></div></div>
+<div class="sm bad">OUT · ₹ 9,580</div>
+<div class="bx sm"><div class="row"><span>Wages paid · Dinesh</span><span>1,000</span></div><div class="row"><span>Advance · Balaji</span><span>500</span></div><div class="row"><span>Order exp · ORD-0042</span><span>2,630</span></div><div class="row"><span>Material purchase · tape</span><span>2,250</span></div><div class="row"><span>Vehicle hire · Malini</span><span>3,200</span></div></div>
+<div class="bx"><div class="row"><span>Closing cash</span><b>₹ 24,820</b></div><div class="row sm mut"><span>Pending approval (not counted)</span><span class="amb">₹ 7,000</span></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="1n"><div class="dv-olabel"><a class="dv-oid" href="#1n">1n</a>Accounts summary with cash and bank side by side. Tap a day to open its day book; the month's job profit appears below.</div><div class="dv-card"><div class="ph">
+<div class="row"><span class="h">Accounts</span><span class="sm">Oct ▾</span></div>
+<div class="g2"><div class="bx"><span class="sm mut">Cash in hand</span><b>₹ 24,820</b></div><div class="bx"><span class="sm mut">Bank</span><b>₹ 1,12,300</b></div><div class="bx"><span class="sm mut">With supervisors</span><b class="amb">₹ 8,000</b></div><div class="bx"><span class="sm mut">To collect</span><b class="bad">₹ 46,000</b></div></div>
+<div class="bx sm"><div class="row mut"><span>Day</span><span>In</span><span>Out</span><span>Close</span></div><div class="ln"></div><div class="row"><span>16 Oct</span><span class="ok">22,000</span><span class="bad">9,580</span><b>24,820</b></div><div class="row"><span>15 Oct</span><span class="ok">42,000</span><span class="bad">18,100</span><b>12,400</b></div><div class="row"><span>14 Oct</span><span class="ok">0</span><span class="bad">3,450</span><b>−11,500</b></div></div>
+<div class="bx"><div class="row"><span>Job profit (Oct)</span><b class="ok">₹ 84,200</b></div><div class="row sm mut"><span>− overheads (rent, EMI, office)</span><span>₹ 38,000</span></div><div class="row"><b>Net</b><b>₹ 46,200</b></div></div>
+</div></div></div>
+
+<div class="dv-opt" id="1o"><div class="dv-olabel"><a class="dv-oid" href="#1o">1o</a>Per-person permissions, like your web app. Money screens stay owner-only unless switched on for that person.</div><div class="dv-card"><div class="ph">
+<div class="row"><span>←</span><span>Lakshmanan · Supervisor</span><span></span></div>
+<div class="bx sm"><div class="row"><span>Assign crew</span><span>●━</span></div><div class="row"><span>Add expenses</span><span>●━</span></div><div class="row"><span>Use stock / item check</span><span>●━</span></div><div class="row"><span>Collect cash</span><span>●━</span></div><div class="row"><span>See crew pay (own orders)</span><span>●━</span></div></div>
+<div class="sm mut">₹ Money: off by default</div>
+<div class="bx sm"><div class="row"><span>Approve day close</span><span class="mut">━○</span></div><div class="row"><span>Set wages</span><span class="mut">━○</span></div><div class="row"><span>View P&amp;L</span><span class="mut">━○</span></div><div class="row"><span>Accounts / day book</span><span class="mut">━○</span></div></div>
+<div class="row" style="gap:6px"><div class="btn">Reset to role</div><div class="btn pri">Save</div></div>
+</div></div></div>
+</div>
+<p class="dv-next">Try next: "go with <a class="dv-oid" href="#1b">1b</a> + <a class="dv-oid" href="#1e">1e</a> + <a class="dv-oid" href="#1g">1g</a>" · "combine <a class="dv-oid" href="#1m">1m</a> and <a class="dv-oid" href="#1n">1n</a>" · "build it in the app"</p>
+</section>
+</x-dc>
+</body>
+</html>

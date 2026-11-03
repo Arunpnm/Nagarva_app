@@ -11,6 +11,7 @@ import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'new_lead_page_model.dart';
+import '/backend/edge_function_errors.dart';
 export 'new_lead_page_model.dart';
 
 /// Create a new CRM lead, or edit an existing one when [leadId] is passed.
@@ -35,6 +36,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => NewLeadPageModel());
+    _loadSources();
 
     _model.ldCustomerFieldTextController ??= TextEditingController();
     _model.ldCustomerFieldFocusNode ??= FocusNode();
@@ -82,7 +84,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
       _model.branchLoadError = null;
     } catch (e) {
       if (!mounted) return;
-      _model.branchLoadError = 'Could not load branches: $e';
+      _model.branchLoadError = 'Could not load branches: ${friendlyError(e)}';
       _model.branchesLoaded = false;
       safeSetState(() {});
       return;
@@ -100,7 +102,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
     // Only for a fresh lead — an existing one's branch is set by
     // _loadExistingLead() and must not be overwritten here.
     if (widget.leadId == null) {
-      final picked = (!isOwner && _model.availableBranches.length == 1)
+      // One branch to choose from — owner or staff — means no choice to
+      // make (BUG-034: a one-branch company still had to tap it).
+      final picked = _model.availableBranches.length == 1
           ? _model.availableBranches.first
           : null;
       _model.ldBranch = picked;
@@ -182,6 +186,38 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
     'Long Distance',
   ];
   static const _kSizes = ['1 RK', '1 BHK', '2 BHK', '3 BHK', '4+ BHK', 'Villa'];
+  /// BUG-027 (3 Nov 2026): the company's own sources from Settings ›
+  /// Services & sources (lead_sources), so the lead gets a real source_id
+  /// and "TEST JustDial" isn't saved as plain "JustDial". The fixed list
+  /// below is only the fallback for a company that set none up.
+  List<({String id, String name})> _orgSources = const [];
+
+  Future<void> _loadSources() async {
+    try {
+      final rows = await OrgScope.read(
+              SupaFlow.client.from('lead_sources').select('id,name'))
+          .eq('active', true)
+          .order('name', ascending: true);
+      if (!mounted) return;
+      setState(() => _orgSources = [
+            for (final r in rows)
+              (id: '${r['id']}', name: '${r['name'] ?? ''}')
+          ]);
+    } catch (_) {}
+  }
+
+  List<String> get _sourceOptions => _orgSources.isEmpty
+      ? _kSources
+      : [for (final s in _orgSources) s.name];
+
+  String? get _sourceId {
+    final pick = (_model.ldSource ?? '').toLowerCase();
+    for (final s in _orgSources) {
+      if (s.name.toLowerCase() == pick) return s.id;
+    }
+    return null;
+  }
+
   static const _kSources = [
     'WhatsApp',
     'Phone Call',
@@ -248,6 +284,9 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
       return;
     }
     final isEditing = widget.leadId != null;
+    // BUG-034 (3 Nov 2026): the same phone could be saved as a second
+    // lead with no warning. Ask first; the office decides.
+    if (!isEditing && !await _confirmNotDuplicate()) return;
     if (!isEditing) {
       _model.ldStatus =
           _nextStep == 'follow' ? 'follow_up' : (_model.ldStatus ?? 'new');
@@ -257,11 +296,13 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
       'customer': _model.ldCustomerFieldTextController!.text.trim(),
       'phone': _model.ldPhoneFieldTextController!.text.trim(),
       'email': _model.ldEmailFieldTextController!.text.trim(),
-      'from_city': _model.ldFromCityFieldTextController!.text.trim(),
-      'to_city': _model.ldToCityFieldTextController!.text.trim(),
+      'from_city': _blankToNull(_model.ldFromCityFieldTextController!.text),
+      'to_city': _blankToNull(_model.ldToCityFieldTextController!.text),
       'approx_date': _model.ldApproxDate?.toString(),
       'service': _model.ldService,
-      'source': _model.ldSource,
+      'source': _blankToNull(_model.ldSource ?? ''),
+      // BUG-027: the configured source's id (null for a fallback name).
+      'source_id': _sourceId,
       'status': _model.ldStatus,
       'branch': _model.ldBranch,
       'notes': _model.ldNotesFieldTextController!.text,
@@ -304,21 +345,62 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
       case 'quote':
         context.pushNamed(
           SurveyQuotePageWidget.routeName,
+          // Lead id only (BUG-031) — the quote screen reads the rest.
           queryParameters: {
             'leadId': serializeParam(lead?.id, ParamType.String),
-            'leadCustomer': serializeParam(lead?.customer, ParamType.String),
-            'leadPhone': serializeParam(lead?.phone, ParamType.String),
-            'leadFromCity': serializeParam(lead?.fromCity, ParamType.String),
-            'leadToCity': serializeParam(lead?.toCity, ParamType.String),
           }.withoutNulls,
         );
       case 'survey' || 'confirm' || 'follow':
         // Request Survey and Confirm Order both live on Lead Details.
-        if (lead != null) openLeadDetail(context, lead);
+        if (lead != null) openLeadJourney(context, lead);
       default:
         context.pushNamed(LeadsPageWidget.routeName);
     }
   }
+
+  /// True when there is no other lead with this phone, or the user chose
+  /// to save anyway.
+  Future<bool> _confirmNotDuplicate() async {
+    final digits = _model.ldPhoneFieldTextController!.text
+        .replaceAll(RegExp(r'\D'), '');
+    if (digits.length < 10) return true;
+    final last10 = digits.substring(digits.length - 10);
+    List existing = const [];
+    try {
+      existing = await OrgScope.read(SupaFlow.client
+              .from('leads')
+              .select('id,customer,status'))
+          .ilike('phone', '%$last10%')
+          .limit(3);
+    } catch (_) {
+      return true; // a failed check must not block saving a lead
+    }
+    if (existing.isEmpty || !mounted) return true;
+    final first = existing.first as Map;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('This number already has a lead'),
+        content: Text('${first['customer'] ?? 'A customer'} · '
+            '${first['status'] ?? ''}'
+            '${existing.length > 1 ? ' (and ${existing.length - 1} more)' : ''}'
+            '\n\nSave another lead for the same number?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save anyway')),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
+  /// Empty text is stored as NULL, not "" (BUG-027: blank cities were
+  /// saved as empty strings, which then looked filled-in downstream).
+  static String? _blankToNull(String s) => s.trim().isEmpty ? null : s.trim();
 
   Widget _chips(List<String> options, String? value, ValueChanged<String> onPick,
           {String Function(String)? label}) =>
@@ -406,7 +488,7 @@ class _NewLeadPageWidgetState extends State<NewLeadPageWidget> {
                   ]),
                   gap,
                   NgFieldLabel(l.nlSource),
-                  _chips(_kSources, _model.ldSource, (v) => setState(() {
+                  _chips(_sourceOptions, _model.ldSource, (v) => setState(() {
                         _model.ldSource = v;
                         _model.ldSourceDropdownValue = v;
                       })),

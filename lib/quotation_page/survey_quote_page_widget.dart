@@ -190,7 +190,10 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   final _declaredValueCtrl = <String, TextEditingController>{}; // percent_of_declared_value
   final _pctCtrl = <String, TextEditingController>{}; // percent_of_declared_value
 
-  double _gstPct = kGstDefaultPct.toDouble();
+  double _gstPct = 0.0; // GST only on request (Arun, 2 Nov 2026)
+
+  /// Rate the dropdown returns to when Charge GST is switched on.
+  double _gstRateWhenOn = kGstDefaultPct.toDouble();
   String _gstType = 'auto'; // auto | intra | inter
 
   /// Item 12C — the surveyor's override of the suggested package/vehicle/
@@ -234,6 +237,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     _phone = TextEditingController(text: widget.leadPhone ?? '');
     _fromAddr = TextEditingController(text: widget.leadFromCity ?? '');
     _toAddr = TextEditingController(text: widget.leadToCity ?? '');
+    _seedFromLead();
     _amountCtrl = {
       for (final f in kDefaultChargeFields)
         f.key: TextEditingController(text: '')
@@ -251,9 +255,11 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       if (!mounted) return;
       setState(() {
         _config = c;
-        _gstPct = kGstRateOptions.contains(kGstDefaultPct)
-            ? kGstDefaultPct.toDouble()
-            : 5.0;
+        // Arun, 2 Nov 2026: GST is added only when the customer asks for a
+        // GST bill — a NEW quote opens with no GST (BUG-030). Switching
+        // Charge GST on adds it on top at the chosen rate; a saved quote
+        // keeps its own rate (restored below).
+        if (!_isEditing) _gstPct = 0.0;
         // Org-configured default per key, from pricing_config - never a
         // Dart-hardcoded default per Rev B's decision. PricingConfig
         // already merges in kDefaultChargeBasis key-by-key when an org
@@ -414,7 +420,70 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   /// captured, and a later catalogue edit cannot rewrite it.
   ///
   /// Best-effort: a failure here leaves the builder empty and usable, which
-  /// is strictly better than blocking the vendor from quoting at all.
+  /// (Doc for _seedFromSurvey is below _seedFromLead.)
+  ///
+  /// BUG-031 (3 Nov 2026): callers used to put the customer's name, phone
+  /// and cities in the URL query string (browser history, server logs).
+  /// They now pass only `leadId`; the details are read here. Fields a
+  /// caller still passes, or the survey seeds, are not overwritten.
+  /// The lead behind this quote, once read (BUG-029: its city, service
+  /// and move date are copied onto the quote).
+  LeadsRow? _leadRow;
+
+  /// The lead's latest submitted survey, when the quote wasn't opened
+  /// from a survey (see _seedFromLead).
+  String? _leadSurveyId;
+
+  /// The lead's approximate move date as yyyy-mm-dd, when it parses.
+  String? get _leadMoveDate {
+    final d = DateTime.tryParse((_leadRow?.approxDate ?? '').trim());
+    if (d == null) return null;
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+
+  /// "Advance" typed on the quote (charges field advanceOnQuote).
+  double get _advanceOnQuote =>
+      double.tryParse(_amountCtrl['advanceOnQuote']?.text.trim() ?? '') ?? 0;
+
+  Future<void> _seedFromLead() async {
+    final id = widget.leadId;
+    if (id == null || id.isEmpty) return;
+    try {
+      final rows = await LeadsTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).eq('id', id).limit(1));
+      if (rows.isEmpty || !mounted) return;
+      final l = rows.first;
+      _leadRow = l;
+      // A quote opened from the lead (not from its survey) used to be
+      // saved with no survey link (found 3 Nov). Link the
+      // lead's latest submitted survey instead.
+      if (widget.surveyId == null) {
+        try {
+          final s = await OrgScope.read(SupaFlow.client
+                  .from('customer_surveys')
+                  .select('id'))
+              .eq('lead_id', id)
+              .not('submitted_at', 'is', null)
+              .order('submitted_at', ascending: false)
+              .limit(1);
+          if ((s as List).isNotEmpty) _leadSurveyId = '${s.first['id']}';
+        } catch (_) {}
+        if (!mounted) return;
+      }
+      setState(() {
+        if (_customer.text.isEmpty) _customer.text = l.customer;
+        if (_phone.text.isEmpty) _phone.text = l.phone ?? '';
+        if (_fromAddr.text.isEmpty) _fromAddr.text = l.fromCity ?? '';
+        if (_toAddr.text.isEmpty) _toAddr.text = l.toCity ?? '';
+      });
+    } catch (_) {}
+  }
+
+  /// Seeds the item lines from a submitted customer survey (see the
+  /// comment above _seedFromLead): CFT is taken from the survey, and a
+  /// failure leaves the builder empty and usable.
   Future<void> _seedFromSurvey() async {
     try {
       final rows = await SurveysTable().queryRows(
@@ -452,6 +521,14 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         }
         if ((survey.toAddress ?? '').isNotEmpty) {
           _toAddr.text = survey.toAddress!;
+        }
+        // Name/phone the customer typed on the survey win over the lead's
+        // (they used to arrive via the URL — BUG-031).
+        if ((survey.customerName ?? '').isNotEmpty) {
+          _customer.text = survey.customerName!;
+        }
+        if ((survey.customerPhone ?? '').isNotEmpty) {
+          _phone.text = survey.customerPhone!;
         }
       });
 
@@ -725,12 +802,26 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         // Which survey this quote came from. Gated: until the FK is
         // repointed at `surveys` this must stay absent, or the insert is
         // rejected outright — see kQuotationSurveyIdFkRepointed.
-        if (kQuotationSurveyIdFkRepointed && widget.surveyId != null)
-          'survey_id': widget.surveyId,
+        if (kQuotationSurveyIdFkRepointed &&
+            (widget.surveyId ?? _leadSurveyId) != null)
+          'survey_id': widget.surveyId ?? _leadSurveyId,
         'customer': _customer.text.trim(),
         'phone': _phone.text.trim(),
         'from_address': _fromAddr.text.trim(),
         'to_address': _toAddr.text.trim(),
+        // BUG-029 (3 Nov 2026): carry what the lead already holds, so the
+        // order, invoice and calendar don't start with gaps.
+        if ((_leadRow?.fromCity ?? '').isNotEmpty)
+          'from_city': _leadRow!.fromCity,
+        if ((_leadRow?.toCity ?? '').isNotEmpty) 'to_city': _leadRow!.toCity,
+        if ((_leadRow?.service ?? '').isNotEmpty)
+          'service': _leadRow!.service,
+        if (_leadMoveDate != null) 'move_date': _leadMoveDate,
+        if (_leadMoveDate != null) 'moving_date': _leadMoveDate,
+        // Which rate card priced this quote (BUG-028).
+        if (_config?.rateCardId != null) 'rate_card_id': _config!.rateCardId,
+        'advance_amount': _advanceOnQuote,
+        'balance_amount': (_total - _advanceOnQuote).clamp(0, double.infinity),
         'items': items,
         'charges': charges,
         'subtotal': _subtotal,
@@ -763,8 +854,8 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(extractDbErrorMessage(e,
               fallback: _isEditing
-                  ? 'Could not save the revision: $e'
-                  : 'Could not save quotation: $e')),
+                  ? 'Could not save the revision: ${friendlyError(e)}'
+                  : 'Could not save quotation: ${friendlyError(e)}')),
         ));
       }
     } finally {
@@ -869,7 +960,8 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         ],
       ),
     );
-    ctrl.dispose();
+    // After the close animation - see support_tickets_page.dart (BUG-020).
+    Future.delayed(const Duration(milliseconds: 600), ctrl.dispose);
     return value;
   }
 
@@ -1158,10 +1250,58 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
               ],
             ),
           ],
+          // BUG-028 (3 Nov 2026): quotes ignored rate cards. Show the
+          // default rate card's transport price for this CFT, one tap to
+          // use it — never filled silently over what the surveyor typed.
+          if (_rateCardPrice != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.price_check_rounded, size: 15, color: ng.acc),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    '${_config?.rateCardName ?? 'Rate card'}: transport '
+                    '₹${_rateCardPrice!.toStringAsFixed(0)}'
+                    // Say why the price moved, so it is never a mystery.
+                    '${_moveMultiplier == null ? '' : ' · ${_moveMultiplier!.name} ${_moveMultiplier!.pct}%'}',
+                    style: NgFonts.geist(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: ng.text),
+                  ),
+                ),
+                NgLinkButton('Use',
+                    onTap: () => setState(() {
+                          _basis['transport'] = 'lumpsum';
+                          _amountCtrl['transport']?.text =
+                              _rateCardPrice!.toStringAsFixed(0);
+                        })),
+              ],
+            ),
+          ],
         ],
       ),
     );
   }
+
+  /// Transport price from the default rate card for the current CFT;
+  /// null when there's no card, no matching band or the band isn't priced.
+  num? get _rateCardPrice {
+    if (_totalCft <= 0) return null;
+    final band = _config?.rateBandFor(_totalCft);
+    if (band == null) return null;
+    var p = band.priceFor(_totalCft);
+    // Rate card multipliers (e.g. festival season 120%) apply when the
+    // lead's move date falls in their dates.
+    final m = _moveMultiplier;
+    if (m != null) p = (p * m.pct / 100).roundToDouble();
+    return p > 0 ? p : null;
+  }
+
+  /// The rate card multiplier for this move's date, if any.
+  RateMultiplier? get _moveMultiplier =>
+      _config?.multiplierOn(DateTime.tryParse(_leadMoveDate ?? ''));
 
   /// Item 12C — the override affordance. Seeded from the suggestion so
   /// tweaking one field (usually crew) doesn't mean re-typing the rest.
@@ -1424,8 +1564,11 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     );
     final name = nameCtrl.text.trim();
     final cft = num.tryParse(cftCtrl.text.trim()) ?? 0;
-    nameCtrl.dispose();
-    cftCtrl.dispose();
+    // After the close animation - see support_tickets_page.dart (BUG-020).
+    Future.delayed(const Duration(milliseconds: 600), () {
+      nameCtrl.dispose();
+      cftCtrl.dispose();
+    });
     if (added != true || name.isEmpty) return;
     if (!mounted) return;
     if (_customItems.any((c) => c.name.toLowerCase() == name.toLowerCase())) {
@@ -1671,7 +1814,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           const SizedBox(height: 6),
           _basisRow(ng, 'transport'),
           const SizedBox(height: 10),
-          _amountField(ng, 'advanceOnQuote', 'Advance Paid'),
+          _amountField(ng, 'advanceOnQuote', 'Advance requested'),
           const SizedBox(height: 14),
           // Arun, 3 Sept 2026: "add price separately packing achrag,
           // loading , unloading". The prices existed from that day; what
@@ -1953,17 +2096,56 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const NgFieldLabel('Rate'),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final r in kGstRateOptions)
-                NgChip(
-                  label: '$r%',
-                  selected: _gstPct == r.toDouble(),
-                  onTap: () => setState(() => _gstPct = r.toDouble()),
+            // Arun, 3 Nov 2026: GST is a per-customer choice — a toggle
+            // (off by default) plus a rate dropdown, same as New Order.
+            // Not blocked for a company without a GSTIN. _gstPct stays the
+            // single stored value: 0 = no GST.
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _gstPct > 0,
+              onChanged: (v) => setState(() {
+                if (v) {
+                  _gstPct = _gstRateWhenOn;
+                } else {
+                  if (_gstPct > 0) _gstRateWhenOn = _gstPct;
+                  _gstPct = 0;
+                }
+              }),
+              title: const Text('Charge GST'),
+              subtitle: Text(
+                _gstPct > 0
+                    ? 'Added on top of the subtotal.'
+                    : 'No GST on this quote.',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+            if (_gstPct > 0) ...[
+              const SizedBox(height: 8),
+              DropdownButtonFormField<double>(
+                initialValue: _gstPct,
+                decoration: const InputDecoration(
+                  labelText: 'GST rate',
+                  filled: true,
                 ),
-            ]),
-            const SizedBox(height: 14),
-            const NgFieldLabel('Type'),
+                items: [
+                  for (final r in {
+                    ...kGstRateOptions.where((r) => r > 0).map((r) => r.toDouble()),
+                    _gstPct,
+                  })
+                    DropdownMenuItem(
+                      value: r,
+                      child: Text('${r.toStringAsFixed(0)}%'),
+                    ),
+                ],
+                onChanged: (v) => setState(() {
+                  if (v != null && v > 0) {
+                    _gstPct = v;
+                    _gstRateWhenOn = v;
+                  }
+                }),
+              ),
+              const SizedBox(height: 14),
+              const NgFieldLabel('Type'),
             NgSegmented(
               labels: const ['Auto', 'CGST+SGST', 'IGST'],
               selected: const ['auto', 'intra', 'inter'].indexOf(_gstType) < 0
@@ -1996,6 +2178,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                       '+ SGST ₹${(_gstAmount / 2).toStringAsFixed(0)}',
               status: NgStatus.accent,
             ),
+            ],
           ],
         ),
       );

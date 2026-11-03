@@ -5,9 +5,10 @@ import '/app_session.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/record_module_page.dart';
-import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
-import '/index.dart';
+import '/backend/crew_checkin.dart';
+import '/backend/detail_navigation.dart';
+import '/flutter_flow/flutter_flow_util.dart' show launchURL;
 
 String _human(dynamic s) => '${s ?? ''}'
     .replaceAll('_', ' ')
@@ -16,11 +17,7 @@ String _human(dynamic s) => '${s ?? ''}'
 
 void _openOrder(BuildContext context, dynamic id) {
   if (id == null || '$id'.isEmpty) return;
-  context.pushNamed(
-    OrderDetailPageWidget.routeName,
-    queryParameters: {'orderId': serializeParam('$id', ParamType.String)}
-        .withoutNulls,
-  );
+  openOrderJourneyById(context, '$id');
 }
 
 /// GST, TDS & exports (handoff Money): what the invoices already say,
@@ -356,8 +353,8 @@ class CashBookPage extends StatelessWidget {
               return const RmRow(
                 icon: Icons.info_outline_rounded,
                 title: 'Cash spent is not shown yet',
-                subtitle: 'Expenses do not record how they were paid until '
-                    'the payment-mode migration runs.',
+                subtitle: 'This will show once expenses record how they '
+                    'were paid.',
               );
             }
             final inflow = r['_in'] == true;
@@ -388,16 +385,41 @@ class CashBookPage extends StatelessWidget {
 }
 
 /// Approvals (handoff Money): what is waiting on the owner — discount
-/// approvals on quotes, and jobs the crew finished that still need
-/// closing. Deciding happens where each item lives; this is the queue.
-class ApprovalsPage extends StatelessWidget {
+/// approvals on quotes, jobs the crew finished that still need closing,
+/// and check-ins to review (a supervisor's GPS + selfie check-in, or a
+/// crew member marked present by hand; code check-ins need no review).
+/// Check-ins are decided here; the rest where each item lives.
+class ApprovalsPage extends StatefulWidget {
   const ApprovalsPage({super.key});
 
   static String routeName = 'ApprovalsPage';
   static String routePath = '/approvals';
 
+  @override
+  State<ApprovalsPage> createState() => _ApprovalsPageState();
+}
+
+class _ApprovalsPageState extends State<ApprovalsPage> {
+  // Bumped after a review so the list reloads from the server.
+  int _gen = 0;
+
   static Future<List<RmMap>> _load() async {
     final out = <RmMap>[];
+    try {
+      final since = DateTime.now().subtract(const Duration(days: 14));
+      final ci = await OrgScope.read(SupaFlow.client
+              .from('crew_checkins')
+              .select('*, staff(name)'))
+          .neq('method', 'code')
+          .gte('day', '${since.year}-${'${since.month}'.padLeft(2, '0')}-${'${since.day}'.padLeft(2, '0')}')
+          .order('checked_in_at', ascending: false)
+          .limit(200);
+      for (final c in ci as List) {
+        out.add({...Map<String, dynamic>.from(c as Map), '_kind': 'checkin'});
+      }
+    } catch (_) {
+      // Check-in tables not there yet (20261031_crew_checkin.sql).
+    }
     final qa = await OrgScope.read(
             SupaFlow.client.from('quote_approvals').select())
         .order('requested_at', ascending: false)
@@ -417,11 +439,90 @@ class ApprovalsPage extends StatelessWidget {
     return out;
   }
 
+  Future<void> _reviewCheckin(BuildContext context, RmMap r) async {
+    String? url;
+    if ('${r['selfie_path'] ?? ''}'.isNotEmpty) {
+      try {
+        url = await CrewCheckin.selfieUrl('${r['selfie_path']}');
+      } catch (_) {}
+    }
+    if (!context.mounted) return;
+    final c = NgPalette.of(context);
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${(r['staff'] as Map?)?['name'] ?? 'Staff'} · ${r['order_id']}',
+                style: NgFonts.geist(fontSize: 17, fontWeight: FontWeight.w600, color: c.text)),
+            const SizedBox(height: 4),
+            Text(_checkinLine(r), style: NgFonts.geist(fontSize: 13, color: c.mute, height: 1.4)),
+            if (url != null) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.network(url, height: 220, fit: BoxFit.cover),
+              ),
+            ],
+            if (r['lat'] != null) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                icon: const Icon(Icons.map_outlined),
+                label: const Text('See where on the map'),
+                onPressed: () => launchURL(
+                    'https://www.google.com/maps/search/?api=1&query=${r['lat']},${r['lng']}'),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx, 'flagged'), child: const Text('Flag')),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                    onPressed: () => Navigator.pop(ctx, 'ok'), child: const Text('Looks right')),
+              ),
+            ]),
+          ]),
+        ),
+      ),
+    );
+    if (choice == null || !context.mounted) return;
+    try {
+      await CrewCheckin.review('${r['id']}', choice);
+      if (mounted) setState(() => _gen++);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(checkinError(e))));
+      }
+    }
+  }
+
+  static String _checkinLine(RmMap r) => [
+        rmDate(r['checked_in_at'], 'd MMM, h:mm a'),
+        if (r['method'] == 'manual') 'marked present by the supervisor',
+        if (r['method'] == 'supervisor_gps')
+          r['distance_m'] == null
+              ? 'location recorded (site has no map location)'
+              : '${rmNum(r['distance_m']).round()} m from the site',
+        if (r['method'] == 'supervisor_gps') 'selfie',
+        if (r['late'] == true) 'after start time',
+        if ('${r['reason'] ?? ''}'.isNotEmpty) '"${r['reason']}"',
+      ].join(' · ');
+
   @override
   Widget build(BuildContext context) {
     bool pending(RmMap r) =>
-        r['_kind'] == 'job' || (r['status'] ?? 'pending') == 'pending';
+        r['_kind'] == 'job' ||
+        (r['_kind'] == 'checkin'
+            ? r['review_status'] == null
+            : (r['status'] ?? 'pending') == 'pending');
     return RecordModulePage(
+      key: ValueKey(_gen),
       title: 'Approvals',
       subtitle: 'Waiting on you',
       views: [
@@ -434,13 +535,38 @@ class ApprovalsPage extends StatelessWidget {
                 '${rows.where((r) => r['_kind'] == 'discount' && pending(r)).length}'),
             RmStat('Jobs to close',
                 '${rows.where((r) => r['_kind'] == 'job').length}'),
+            RmStat('Check-ins',
+                '${rows.where((r) => r['_kind'] == 'checkin' && pending(r)).length}'),
           ],
           filters: [
             RmFilter('Waiting', pending),
             RmFilter('Discounts', (r) => r['_kind'] == 'discount'),
             RmFilter('Jobs', (r) => r['_kind'] == 'job'),
+            RmFilter('Check-ins', (r) => r['_kind'] == 'checkin'),
           ],
           row: (context, r) {
+            if (r['_kind'] == 'checkin') {
+              final rs = r['review_status'];
+              return RmRow(
+                icon: r['method'] == 'manual'
+                    ? Icons.how_to_reg_outlined
+                    : Icons.where_to_vote_outlined,
+                tone: rs == 'flagged' ? NgStatus.red : NgStatus.blue,
+                title: '${(r['staff'] as Map?)?['name'] ?? 'Staff'} · check-in',
+                subtitle: _checkinLine(r),
+                status: switch (rs) {
+                  'ok' => 'OK',
+                  'flagged' => 'Flagged',
+                  _ => 'Review',
+                },
+                statusTone: switch (rs) {
+                  'ok' => NgStatus.green,
+                  'flagged' => NgStatus.red,
+                  _ => NgStatus.amber,
+                },
+                onTap: () => _reviewCheckin(context, r),
+              );
+            }
             if (r['_kind'] == 'job') {
               return RmRow(
                 icon: Icons.task_alt_rounded,

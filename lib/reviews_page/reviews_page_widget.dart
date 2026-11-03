@@ -11,6 +11,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/backend/vendor_identity.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Reviews (Session 4, Part B2) — was a ComingSoonPage stub.
 ///
 /// `reviews` (migration 001) has no generated Dart class — same
@@ -89,7 +90,7 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load reviews: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load reviews: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -127,7 +128,7 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
         'order_id': order.id,
         'customer_id': order.customerId,
         'channel': 'whatsapp',
-        'requested_at': DateTime.now().toIso8601String(),
+        'requested_at': DateTime.now().toUtc().toIso8601String(),
         'branch': order.branch,
       });
       await AuditLogService.log(
@@ -145,7 +146,7 @@ class _ReviewsPageWidgetState extends State<ReviewsPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not request review: $e')));
+          .showSnackBar(SnackBar(content: Text('Could not request review: ${friendlyError(e)}')));
     }
   }
 

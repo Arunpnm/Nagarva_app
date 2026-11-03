@@ -1,4 +1,5 @@
 import '/l10n/gen/app_localizations.dart';
+import '/backend/edge_function_errors.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/org_resolution.dart';
@@ -88,7 +89,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     final password = _model.vendorPasswordController!.text;
 
     if (email.isEmpty || password.isEmpty) {
-      safeSetState(() => _model.errorMessage = 'Enter email and password.');
+      safeSetState(() =>
+          _model.errorMessage = AppLocalizations.of(context).lpEnterBoth);
       return;
     }
 
@@ -212,7 +214,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         ],
       ),
     );
-    ctrl.dispose();
+    // After the close animation - see support_tickets_page.dart (BUG-020).
+    Future.delayed(const Duration(milliseconds: 600), ctrl.dispose);
     return result;
   }
 
@@ -221,34 +224,37 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   /// was being shown to users verbatim.
   String _friendlyAuthError(Object e) {
     final msg = e.toString().toLowerCase();
+    // BUG-001: these follow the chosen language.
+    final l = AppLocalizations.of(context);
     if (msg.contains('invalid_credentials') ||
-        msg.contains('invalid login credentials')) {
-      return 'Email or password is incorrect. Please try again.';
+        msg.contains('invalid login credentials') ||
+        msg.contains('invalid email or password')) {
+      return l.lpWrongPassword;
     }
     if (msg.contains('email_not_confirmed') ||
         msg.contains('email not confirmed')) {
-      return 'Please verify your email first — check your inbox for the confirmation link.';
+      return l.lpVerifyEmail;
     }
     if (msg.contains('user_already_exists') ||
         msg.contains('already registered')) {
-      return 'An account with this email already exists. Try logging in instead.';
+      return l.lpEmailExists;
     }
     if (msg.contains('rate limit') || msg.contains('too many')) {
-      return 'Too many attempts. Please wait a minute and try again.';
+      return l.lpTooMany;
     }
     if (msg.contains('network') ||
         msg.contains('socket') ||
         msg.contains('failed host lookup')) {
-      return 'Could not reach the server. Check your internet connection.';
+      return l.lpNoInternet;
     }
-    return e.toString().replaceFirst('Exception: ', '');
+    return friendlyError(e);
   }
 
   Future<void> _handleForgotPassword() async {
     final email = _model.vendorEmailController!.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       safeSetState(() => _model.errorMessage =
-          'Enter your account email above first, then tap Forgot password.');
+          AppLocalizations.of(context).lpForgotNeedsEmail);
       return;
     }
     safeSetState(() {
@@ -299,8 +305,11 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
               constraints: const BoxConstraints(maxWidth: 440),
               child: CustomScrollView(
                 slivers: [
-                  SliverFillRemaining(
-                    hasScrollBody: false,
+                  // SliverToBoxAdapter, not SliverFillRemaining: the
+                  // latter sizes from an intrinsic-height estimate that
+                  // came out ~2px short with Tamil glyphs (BOTTOM
+                  // OVERFLOWED stripe). Natural height always fits.
+                  SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
                       child: Column(
@@ -343,7 +352,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                           // Shared multi-tenant gateway: no org is known yet,
                           // so this shows the platform, never a tenant brand
                           // (CLAUDE.md known bug #5).
-                          Text('Welcome back',
+                          Text(AppLocalizations.of(context).lpWelcome,
                               style: NgFonts.geist(
                                   fontSize: 30,
                                   height: 1.15,
@@ -351,13 +360,15 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                                   letterSpacing: -0.6,
                                   color: c.text)),
                           const SizedBox(height: 8),
-                          Text('Sign in to Nagarva — industry ERP for packers '
-                              '& movers',
+                          Text(AppLocalizations.of(context).lpSubtitle,
                               style: NgFonts.geist(fontSize: 15, color: c.mute)),
                           const SizedBox(height: 28),
                           _buildVendorForm(),
-                          const Spacer(),
-                          const SizedBox(height: 22),
+                          // A Spacer here sized itself from an intrinsic-
+                          // height estimate that was short for Tamil text
+                          // (fallback font), so an error box overflowed the
+                          // page. A fixed gap always scrolls cleanly.
+                          const SizedBox(height: 32),
                           // Bound vs. unbound device get different footer
                           // links, never both. A BOUND device only reaches
                           // this page via PinLoginPage's "Use email login
@@ -369,13 +380,16 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                           DeviceOrgBinding.isBound
                               ? _bottomLink(
                                   prefix: '',
-                                  action: 'Back to PIN login',
+                                  action: AppLocalizations.of(context)
+                                      .lpBackToPin,
                                   onTap: () =>
                                       context.go(PinLoginPageWidget.routePath),
                                 )
                               : _bottomLink(
-                                  prefix: 'Joining a team? ',
-                                  action: 'Use an org or invite code',
+                                  prefix: AppLocalizations.of(context)
+                                      .lpJoiningTeam,
+                                  action:
+                                      AppLocalizations.of(context).lpUseCode,
                                   onTap: () async {
                                     await DeviceOrgBinding.unbind();
                                     if (mounted) {
@@ -390,7 +404,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                             children: [
                               Icon(Icons.lock_rounded, color: c.faint, size: 14),
                               const SizedBox(width: 5),
-                              Text('Secured & encrypted',
+                              Text(AppLocalizations.of(context).lpSecured,
                                   style: NgFonts.geist(
                                       color: c.faint, fontSize: 12)),
                             ],
@@ -441,7 +455,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Email',
+        Text(AppLocalizations.of(context).lpEmail,
             style: NgFonts.geist(
                 fontSize: 13, fontWeight: FontWeight.w500, color: c.mute)),
         const SizedBox(height: 6),
@@ -458,13 +472,13 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Expanded(
-              child: Text('Password',
+              child: Text(AppLocalizations.of(context).lpPassword,
                   style: NgFonts.geist(
                       fontSize: 13, fontWeight: FontWeight.w500, color: c.mute)),
             ),
             GestureDetector(
               onTap: _model.isLoading ? null : _handleForgotPassword,
-              child: Text('Forgot?',
+              child: Text(AppLocalizations.of(context).lpForgot,
                   style: NgFonts.geist(
                       color: c.acc, fontSize: 13, fontWeight: FontWeight.w600)),
             ),
@@ -474,7 +488,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         _textField(
           controller: _model.vendorPasswordController!,
           focusNode: _model.vendorPasswordFocusNode!,
-          hint: 'Your password',
+          hint: AppLocalizations.of(context).lpPasswordHint,
           icon: Icons.lock_outline_rounded,
           obscureText: !_model.vendorPasswordVisible,
           suffixIcon: IconButton(
@@ -514,7 +528,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Log in',
+                          Text(AppLocalizations.of(context).lpLogIn,
                               style: NgFonts.geist(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -536,9 +550,12 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           child: NgLinkButton(
             AppLocalizations.of(context).suMobileLogin,
             icon: Icons.sms_outlined,
+            // mode=login: reads as a login, not "Create your business
+            // account" (BUG-006).
             onTap: _model.isLoading
                 ? null
-                : () => context.go(VendorSignupPageWidget.routePath),
+                : () => context
+                    .go('${VendorSignupPageWidget.routePath}?mode=login'),
           ),
         ),
         if (_signupStatus != null) ...[
@@ -549,8 +566,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         // Approval-first signup by mobile number replaced the email
         // SignupPage as the way in (21 Oct 2026).
         _bottomLink(
-          prefix: 'New here? ',
-          action: 'Create an account',
+          prefix: AppLocalizations.of(context).lpNewHere,
+          action: AppLocalizations.of(context).lpCreateAccount,
           onTap: () => context.go(VendorSignupPageWidget.routePath),
         ),
       ],

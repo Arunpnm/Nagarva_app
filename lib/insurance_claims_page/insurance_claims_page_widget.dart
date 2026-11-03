@@ -8,6 +8,7 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Insurance & Claims (Session 4, Part C-8). Live schema confirmed
 /// directly against the DB: insurance_policies + claims + claim_items.
 /// Neither carries soft-delete columns — plain hard delete where offered
@@ -59,7 +60,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -199,7 +200,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not create policy: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not create policy: ${friendlyError(e)}')));
       }
     }
   }
@@ -304,7 +305,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not create claim: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not create claim: ${friendlyError(e)}')));
       }
     }
   }
@@ -463,11 +464,13 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
             TextButton(
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
-            FilledButton(
+            ListenableBuilder( // BUG-035: rebuild as the field is typed
+              listenable: nameCtrl,
+              builder: (_, __) => FilledButton(
                 onPressed: nameCtrl.text.trim().isEmpty
                     ? null
                     : () => Navigator.of(dialogCtx).pop(true),
-                child: const Text('Add')),
+                child: const Text('Add'))),
           ],
         ),
       ),
@@ -487,7 +490,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add item: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add item: ${friendlyError(e)}')));
       }
     }
   }
@@ -624,7 +627,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not update claim: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not update claim: ${friendlyError(e)}')));
       }
     }
   }

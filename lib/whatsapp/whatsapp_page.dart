@@ -10,6 +10,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/nav_items.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Account › WhatsApp (handoff `wa`): connect the vendor's OWN WhatsApp
 /// Business number through Meta's Cloud API, get Nagarva's message
 /// templates approved on it, and send a test.
@@ -74,7 +75,7 @@ class _WhatsAppPageState extends State<WhatsAppPage> {
         }
       });
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) setState(() => _error = '${friendlyError(e)}');
     }
   }
 
@@ -87,7 +88,7 @@ class _WhatsAppPageState extends State<WhatsAppPage> {
       await job();
       if (done != null && mounted) _flash(done);
     } catch (e) {
-      if (mounted) _flash('$e');
+      if (mounted) _flash('${friendlyError(e)}');
     }
     if (mounted) setState(() => _busy = false);
   }
@@ -572,7 +573,7 @@ class _AutoWhatsAppPageState extends State<AutoWhatsAppPage> {
         _sent = sent;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) setState(() => _error = '${friendlyError(e)}');
     }
   }
 
@@ -585,7 +586,7 @@ class _AutoWhatsAppPageState extends State<AutoWhatsAppPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not change it: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not change it: ${friendlyError(e)}')));
       }
     }
   }

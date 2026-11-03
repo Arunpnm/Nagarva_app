@@ -8,8 +8,9 @@ import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/index.dart';
+import '/backend/detail_navigation.dart';
 
+import '/backend/edge_function_errors.dart';
 /// WA Inbox (Session 4, Part B3) — was a ComingSoonPage stub.
 ///
 /// `wa_contacts`/`wa_messages` (migration 001) have no ingestion pipeline
@@ -75,7 +76,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load inbox: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load inbox: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -106,7 +107,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load thread: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load thread: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _threadLoading = false);
@@ -126,11 +127,11 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
         'body': body.trim(),
         if (templateName != null) 'template_name': templateName,
         'status': 'sent',
-        'sent_at': DateTime.now().toIso8601String(),
+        'sent_at': DateTime.now().toUtc().toIso8601String(),
       });
       await WaContactsTable().update(
         data: {
-          'last_message_at': DateTime.now().toIso8601String(),
+          'last_message_at': DateTime.now().toUtc().toIso8601String(),
           'last_message_text': body.trim(),
         },
         matchingRows: (q) => OrgScope.write(q).eq('id', contact.id!),
@@ -144,7 +145,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not send: $e')));
+          .showSnackBar(SnackBar(content: Text('Could not send: ${friendlyError(e)}')));
     }
   }
 
@@ -159,7 +160,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not update: $e')));
+          .showSnackBar(SnackBar(content: Text('Could not update: ${friendlyError(e)}')));
     }
   }
 
@@ -371,12 +372,7 @@ class _WaInboxPageWidgetState extends State<WaInboxPageWidget>
               ),
               if (contact.leadId != null)
                 TextButton(
-                  onPressed: () => context.pushNamed(
-                    LeadDetailPageWidget.routeName,
-                    queryParameters: {
-                      'leadId': serializeParam(contact.leadId, ParamType.String),
-                    }.withoutNulls,
-                  ),
+                  onPressed: () => openLeadJourneyById(context, contact.leadId),
                   child: const Text('Open Lead'),
                 ),
               IconButton(

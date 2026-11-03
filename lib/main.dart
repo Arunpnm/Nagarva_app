@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show ScrollDirection;
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -14,6 +13,7 @@ import '/backend/supabase/org_session_loader.dart';
 import '/backend/approval_queue.dart';
 import '/backend/auth_deep_link.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/device_lock.dart';
 import '/backend/org_resolution.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/backend/crash_reporting.dart';
@@ -29,6 +29,7 @@ import 'components/coming_soon_page.dart';
 import 'components/more_sheet.dart';
 import 'components/quick_entry_dialog.dart';
 import 'components/load_error_state.dart';
+import 'components/global_bottom_bar.dart';
 import 'components/mobile_bottom_nav.dart';
 import 'components/nav_badge.dart';
 import 'components/notification_bell.dart';
@@ -172,8 +173,18 @@ Future<void> _startApp() async {
   // queries trip the OrgScope guard rail and pages render blank, and
   // isAuthenticated / plan gating silently break after a reload.
   // Mirrors the vendor login flow: member -> org -> plan -> session.
+  // BUG-012 (3 Nov 2026): a locked device must not walk back in on the
+  // stored session. Locked = Lock was pressed, or this is a cold start on
+  // a PIN-bound device (the root route shows the PIN pad there). The
+  // Supabase session stays (staff PIN login needs it); only the in-app
+  // session is withheld until a real PIN / OTP / password login.
+  await DeviceOrgBinding.initialize();
+  await DeviceLock.initialize();
+  if (DeviceOrgBinding.isBound) await DeviceLock.lock();
   final restoredUser = SupaFlow.client.auth.currentUser;
-  if (restoredUser != null && AppSession.instance.currentOrgId == null) {
+  if (restoredUser != null &&
+      AppSession.instance.currentOrgId == null &&
+      !DeviceLock.isLocked) {
     // Shadow staff users (minted by the staff-login Edge Function) are
     // marked with user_metadata.kind == 'staff'. On reload they must be
     // restored as STAFF (filtered sidebar, no money KPIs) — never as a
@@ -507,6 +518,15 @@ class _MyAppState extends State<MyApp> {
           : DarkModeTheme().toThemeData(),
       themeMode: _themeMode,
       routerConfig: _router,
+      // Global hideable bottom bar (4 Nov 2026): wraps EVERY route once,
+      // so Lead Details, Order Details, the journey and every other
+      // pushed screen get the same bar as the shell, with no per-page
+      // code. See components/global_bottom_bar.dart.
+      builder: (context, child) => GlobalBottomBarHost(
+        router: _router,
+        navigatorKey: appNavigatorKey,
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }
@@ -534,7 +554,19 @@ class NavBarPage extends StatefulWidget {
 /// beyond how much horizontal space happens to be available. Narrow
 /// screens (<600dp): the custom MobileBottomNav (Part 5a/5b).
 class _NavBarPageState extends State<NavBarPage>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver
+    implements ShellTabHost {
+  // ShellTabHost: what the global bottom bar reads and calls.
+  @override
+  List<NavItem> get shellNavItems => _navItems;
+  @override
+  String get shellCurrentPageName => _currentPageName;
+  @override
+  void selectShellTab(String name) => _selectTabNamed(name);
+  @override
+  void openShellMore() =>
+      MoreSheet.show(context, currentPageName: _currentPageName);
+
   String _currentPageName = 'HomePage';
   late Widget? _currentPage;
 
@@ -655,6 +687,7 @@ class _NavBarPageState extends State<NavBarPage>
     // on their own home instead of the owner's Dashboard.
     _currentPageName = widget.initialPage ?? homeNavNameForCurrentSession();
     _currentPage = widget.page;
+    ShellTabBridge.instance.attach(this);
     SharedPreferences.getInstance().then((prefs) {
       final saved = prefs.getBool(_kRailExpandedKey);
       if (saved != null && mounted) safeSetState(() => _railExpanded = saved);
@@ -698,6 +731,7 @@ class _NavBarPageState extends State<NavBarPage>
     BusinessModules.instance.removeListener(_onModulesChanged);
     AppSession.instance.removeListener(_onSessionChanged);
     WidgetsBinding.instance.removeObserver(this);
+    ShellTabBridge.instance.detach(this);
     _navAnimController.dispose();
     super.dispose();
   }
@@ -782,13 +816,14 @@ class _NavBarPageState extends State<NavBarPage>
         'SupervisorTeamPage': const SupervisorTeamPageWidget(),
         'SupervisorEarningsPage': const SupervisorEarningsPageWidget(),
         'SupervisorAttendancePage': const SupervisorAttendancePageWidget(),
-        // Field staff (driver/helper/packer) — their own two destinations
-        // are still unbuilt. Note the supervisor Earnings/Attendance
-        // screens above query by currentStaffId and would work for any
-        // role, but pointing field staff at them is a scope call for Arun,
-        // not something to do silently here.
-        'MyAttComingSoon': const ComingSoonPage(title: 'My Attendance'),
+        // Field staff (driver/helper/packer): Attendance is the crew
+        // check-in screen; My Earnings is still unbuilt. The supervisor
+        // Earnings screen above queries by currentStaffId and would work
+        // for any role, but pointing field staff at it is a scope call
+        // for Arun, not something to do silently here.
+        'FieldAttendancePage': const FieldAttendancePageWidget(),
         'MySalComingSoon': const ComingSoonPage(title: 'My Earnings'),
+        'DriverAppPage': const DriverAppPage(),
       };
     }
     return {
@@ -827,6 +862,7 @@ class _NavBarPageState extends State<NavBarPage>
       'AutoWhatsAppPage': const AutoWhatsAppPage(),
       'LostReportPage': const LostReportPage(),
       'ReferralsPage': const ReferralsPage(),
+      'MarketplaceJobsPage': const MarketplaceJobsPage(),
       'DailySummaryPage': const DailySummaryPage(),
       'ApprovalsPage': const ApprovalsPage(),
       'GstPage': const GstPage(),
@@ -836,6 +872,7 @@ class _NavBarPageState extends State<NavBarPage>
       'PayslipsPage': const PayslipsPage(),
       'StorageBillingPage': const StorageBillingPage(),
       'FuelPage': const FuelPage(),
+      'DriverAppPage': const DriverAppPage(),
       'VehicleDocsPage': const VehicleDocsPage(),
       'EwayBillsPage': const EwayBillsPage(),
       'LeadSourcesPage': const LeadSourcesPage(),
@@ -890,6 +927,7 @@ class _NavBarPageState extends State<NavBarPage>
       _currentPage = null;
       _currentPageName = item.name;
     });
+    ShellTabBridge.instance.changed();
   }
 
   /// Lock behaviour under the session-swap model:
@@ -901,7 +939,11 @@ class _NavBarPageState extends State<NavBarPage>
   /// - VENDOR session active: unchanged — keep the vendor's Supabase
   ///   Auth session on the device (the Slack model), clear only the
   ///   in-app session, return to the login screen.
-  Future<void> _lockDevice() async {
+  // Same sequence as the More sheet's Lock (session_logout.dart).
+  Future<void> _lockDevice() => performLock(context);
+
+  // ignore: unused_element
+  Future<void> _lockDeviceOld() async {
     if (AppSession.instance.currentStaffId != null) {
       final restored = await StaffAuth.lockToVendor();
       if (!restored) {
@@ -912,7 +954,22 @@ class _NavBarPageState extends State<NavBarPage>
     }
     StaffPermissions.clearActive();
     AppSession.instance.clear();
-    if (mounted) context.go('/login');
+    // BUG-012: remember the lock across reloads, so no login screen can
+    // re-enter on the session Lock deliberately leaves on the device.
+    await DeviceLock.lock();
+    // BUG-010: go where this owner can actually unlock — the PIN pad on a
+    // bound device, mobile OTP for a phone-signup owner (they have no
+    // password), email/password otherwise.
+    final u = SupaFlow.client.auth.currentUser;
+    final mail = u?.email ?? '';
+    final phoneOwner = (u?.phone ?? '').isNotEmpty &&
+        (mail.isEmpty || mail.endsWith('@owner.nagarva.in'));
+    final target = DeviceOrgBinding.isBound
+        ? PinLoginPageWidget.routePath
+        : phoneOwner
+            ? VendorSignupPageWidget.routePath
+            : '/login';
+    if (mounted) context.go(target);
   }
 
   /// Logout: full sign-out. Removes the Supabase Auth session AND the
@@ -1244,81 +1301,12 @@ class _NavBarPageState extends State<NavBarPage>
         // bar's pinned Menu button, within thumb reach.
         // The module menu moved from this drawer to MoreSheet (the
         // redesign's "More" slot); see components/more_sheet.dart.
-        body: NotificationListener<UserScrollNotification>(
-          onNotification: (notification) {
-            // Scroll-aware only — no idle timer anywhere, so the nav can
-            // never disappear while the user is simply stationary.
-            if (notification.direction == ScrollDirection.reverse) {
-              if (_navVisible) {
-                _navVisible = false;
-                _navAnimController.reverse();
-              }
-            } else if (notification.direction == ScrollDirection.forward) {
-              if (!_navVisible) {
-                _navVisible = true;
-                _navAnimController.forward();
-              }
-            }
-            return false;
-          },
-          child: body ?? const SizedBox.shrink(),
-        ),
-        // NG-FIX brief, bug 2a: SizeTransition around the bar (not an
-        // internal AnimatedSlide inside MobileBottomNav) so the Scaffold's
-        // reserved bottomNavigationBar height actually shrinks to zero
-        // when hidden, instead of leaving a dead band the same height as
-        // the bar. extendBody stays false (default) — the bar keeps
-        // participating in layout, it just animates to zero height.
-        bottomNavigationBar: SizeTransition(
-          sizeFactor: _navAnimController,
-          axisAlignment: -1,
-          child: Builder(builder: (context) {
-            // Only the five everyday destinations. The bar used to render
-            // all 27 owner items and scroll horizontally, which is how a
-            // vendor ends up not knowing what the app contains — Arun,
-            // 3 Sept 2026: "we have plenty of modules which is also
-            // getting confused which is for what". Everything else is in
-            // the drawer, grouped.
-            // primaryNavItems, not a raw kPrimaryNavNames filter: every
-            // name in that set is an owner/manager destination, so a
-            // supervisor or field-staff session matched none and was left
-            // with no bar - and no drawer either. See nav_items.dart.
-            final bottomItems = primaryNavItems(_navItems);
-            if (bottomItems.isEmpty) return const SizedBox.shrink();
-            final idx =
-                bottomItems.indexWhere((e) => e.name == _currentPageName);
-            // CORRECTIONS.md B6: Operations lives in More now, so the
-            // awaiting-approval count rides on the More slot.
-            return ValueListenableBuilder<int>(
-              valueListenable: ApprovalQueue.instance.pendingCount,
-              builder: (context, pending, _) => MobileBottomNav(
-              items: bottomItems,
-              // -1 when the current screen is a module reached from More:
-              // the bar then highlights More instead of a wrong tab.
-              currentIndex: idx,
-              // By name: an index into bottomItems is NOT an index into
-              // _navItems.
-              onTap: (i) => _selectTabNamed(bottomItems[i].name),
-              // Pinned right, on every screen the shell renders: the
-              // redesign's "More", opening the grouped module sheet (which
-              // also carries Quick entry). Offered only to owner/manager —
-              // a supervisor's four destinations are all in the bar
-              // already, so a sheet would list what is under their thumb.
-              actions: isOwnerOrManagerSession
-                  ? [
-                      (
-                        icon: Icons.apps_rounded,
-                        label: AppLocalizations.of(context).ngNavMore,
-                        badge: pending,
-                        onTap: () => MoreSheet.show(context,
-                            currentPageName: _currentPageName),
-                      ),
-                    ]
-                  : const [],
-            ),
-            );
-          }),
-        ),
+        // The bottom bar is GLOBAL now (4 Nov 2026) — drawn once for
+        // every route by GlobalBottomBarHost in MyApp's router builder,
+        // with manual hide/show instead of the old scroll auto-hide. The
+        // shell only registers itself with ShellTabBridge so the bar can
+        // read and switch its tab.
+        body: body ?? const SizedBox.shrink(),
       );
     }
 
@@ -1350,7 +1338,11 @@ class _NavBarPageState extends State<NavBarPage>
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              _orgLogo(size: 34),
+                              // Logo → Home (Arun, 3 Nov 2026).
+                              GestureDetector(
+                                onTap: () => context.go('/home'),
+                                child: _orgLogo(size: 34),
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(

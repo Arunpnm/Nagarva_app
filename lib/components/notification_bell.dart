@@ -6,6 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '/backend/edge_function_errors.dart';
 const _kNotificationsEnabledKey = '__notifications_enabled__';
 
 /// Per-device notification preference (parity brief Part 2a — this
@@ -174,7 +175,7 @@ class _NotificationBellState extends State<NotificationBell> {
       // still unread in the database.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Could not mark notifications as read: $e')));
+            content: Text('Could not mark notifications as read: ${friendlyError(e)}')));
       }
       return;
     }

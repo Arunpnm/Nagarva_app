@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '/backend/soft_delete.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Settings → Deleted Items (live-test fix brief #2, item 11.6).
 ///
 /// Owner-only list of soft-deleted rows from the last 90 days with a
@@ -121,7 +122,7 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
         }
       }
     } catch (e) {
-      _error = e.toString();
+      _error = friendlyError(e);
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -291,7 +292,7 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not restore: $e')),
+          SnackBar(content: Text('Could not restore: ${friendlyError(e)}')),
         );
       }
     }

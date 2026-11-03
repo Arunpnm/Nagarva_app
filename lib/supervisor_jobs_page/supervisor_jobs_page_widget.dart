@@ -97,19 +97,21 @@ class _SupervisorJobsListPageWidgetState
     }
   }
 
-  static const _kSteps = ['Accept', 'Arrival code', 'Crew & odometer', 'Shifting', 'Handover'];
+  // BUG-041 (3 Nov 2026): crew + odometer at the office, THEN the arrival
+  // code at the customer — same order as the field job screen.
+  static const _kSteps = ['Accept', 'Crew & odometer', 'Arrival code', 'Shifting', 'Handover'];
   static const _kNextAction = [
     'Accept job',
-    'Enter arrival code',
     'Pick the crew',
+    'Enter arrival code',
     'Continue shifting',
     'Hand over',
   ];
 
   int _stepIndex(OrdersRow o) => switch (supervisorStepFor(o)) {
         SupervisorJobStep.start => 0,
-        SupervisorJobStep.arrivalCode => 1,
-        SupervisorJobStep.team => 2,
+        SupervisorJobStep.team => 1,
+        SupervisorJobStep.arrivalCode => 2,
         SupervisorJobStep.shifting => 3,
         SupervisorJobStep.completing => 4,
         SupervisorJobStep.done => 5,

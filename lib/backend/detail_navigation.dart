@@ -64,3 +64,45 @@ void openLeadDetail(BuildContext context, LeadsRow l) {
     }.withoutNulls,
   );
 }
+
+/// Opens the stage-by-stage order journey for a lead. This is the main
+/// entry from lists (Arun, 30 Oct 2026: "stage by stage, not everything in
+/// a single page"); Lead Details stays reachable from inside the journey.
+void openLeadJourney(BuildContext context, LeadsRow l) {
+  if (l.id == null) return openLeadDetail(context, l);
+  context.pushNamed(
+    OrderJourneyPageWidget.routeName,
+    queryParameters: {'leadId': serializeParam(l.id, ParamType.String)}
+        .withoutNulls,
+  );
+}
+
+/// Opens the order journey for an order. See [openLeadJourney].
+void openOrderJourney(BuildContext context, OrdersRow o) {
+  if (o.id == null) return openOrderDetail(context, o);
+  context.pushNamed(
+    OrderJourneyPageWidget.routeName,
+    queryParameters: {'orderId': serializeParam(o.id, ParamType.String)}
+        .withoutNulls,
+  );
+}
+
+/// [openOrderJourney] when only the order id is at hand (module lists).
+void openOrderJourneyById(BuildContext context, String? orderId) {
+  if (orderId == null || orderId.isEmpty) return;
+  context.pushNamed(
+    OrderJourneyPageWidget.routeName,
+    queryParameters: {'orderId': serializeParam(orderId, ParamType.String)}
+        .withoutNulls,
+  );
+}
+
+/// [openLeadJourney] when only the lead id is at hand.
+void openLeadJourneyById(BuildContext context, String? leadId) {
+  if (leadId == null || leadId.isEmpty) return;
+  context.pushNamed(
+    OrderJourneyPageWidget.routeName,
+    queryParameters: {'leadId': serializeParam(leadId, ParamType.String)}
+        .withoutNulls,
+  );
+}

@@ -1,4 +1,5 @@
 import '/app_session.dart';
+import '/backend/order_money.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/whatsapp_cloud.dart';
 import '/index.dart';
@@ -14,6 +15,7 @@ import '/flutter_flow/custom_functions.dart' as functions;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'payments_page_model.dart';
+import '/backend/edge_function_errors.dart';
 export 'payments_page_model.dart';
 
 /// Outstanding and received payment tracking.
@@ -57,14 +59,17 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
     final orders = await OrdersTable().queryRows(
       queryFn: (q) => OrgScope.read(q),
     );
+    _addons = await OrderMoney.addonsByOrder();
     _ordersById = {
       for (final o in orders)
         if (o.id != null) o.id!: o
     };
     _model.pendingList = orders
         .where((o) =>
+            // payment_status is set by a DB trigger that (until migration
+            // 20261103) ignores extras and GST on top — so it is not
+            // trusted here; the shared balance decides (BUG-036).
             (o.status ?? '').toLowerCase() != 'cancelled' &&
-            o.paymentStatus != 'paid' &&
             _due(o) > 0)
         .toList();
     safeSetState(() {});
@@ -98,9 +103,13 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
   /// Quote total when one exists, else the order amount — the same base
   /// `dashboard_kpis_view.outstanding` uses, so this screen and the
   /// dashboard tile agree.
-  static double _due(OrdersRow o) =>
-      ((o.quoteTotal ?? 0) > 0 ? o.quoteTotal! : (o.amount ?? 0)) -
-      o.paidTotal;
+  ///
+  /// 3 Nov 2026: replaced by the shared rule in order_money.dart (GST on
+  /// top when billed + extra charges). The dashboard view still needs the
+  /// same change in SQL — see migration 20261103.
+  Map<String, List<dynamic>> _addons = const {};
+  double _due(OrdersRow o) =>
+      OrderMoney.from(o, _addons[o.id] ?? const []).balance;
 
   void _record(OrdersRow o) => context.pushNamed(
         RecordPaymentPageWidget.routeName,
@@ -127,7 +136,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${friendlyError(e)}')));
       }
       return;
     }
@@ -253,7 +262,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
       child: Column(
         children: [
           InkWell(
-            onTap: () => openOrderDetail(context, o),
+            onTap: () => openOrderJourney(context, o),
             child: Row(
               children: [
                 NgAvatar(o.customer, status: tone, size: 40),
@@ -351,7 +360,7 @@ class _PaymentsPageWidgetState extends State<PaymentsPageWidget>
         InkWell(
           onTap: _ordersById[e.orderId] == null
               ? null
-              : () => openOrderDetail(context, _ordersById[e.orderId]!),
+              : () => openOrderJourney(context, _ordersById[e.orderId]!),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             child: Row(

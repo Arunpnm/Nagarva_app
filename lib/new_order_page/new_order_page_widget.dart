@@ -297,7 +297,7 @@ class _NewOrderPageWidgetState extends State<NewOrderPageWidget> {
       _model.branchLoadError = null;
     } catch (e) {
       if (!mounted) return;
-      _model.branchLoadError = 'Could not load branches: $e';
+      _model.branchLoadError = 'Could not load branches: ${friendlyError(e)}';
       _model.branchesLoaded = false;
       safeSetState(() {});
       return;

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '/app_session.dart';
 import '/backend/business_modules.dart';
+import '/backend/dashboard_widgets.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/device_lock.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/nav/nav.dart';
 import '/index.dart';
@@ -18,6 +20,36 @@ import '/staff_auth.dart';
 /// Logout tile that never called `signOut()`/`AppSession.clear()` and just
 /// navigated to LoginPage with the session fully intact) — and, per the
 /// bug fixed below, so a routing fix here doesn't need making four times.
+/// Lock (3 Nov 2026): the ONE lock sequence, shared by the sidebar and the
+/// More sheet (on phones the sidebar — and so Lock — never showed).
+/// Keeps the owner's Supabase session on the device (staff PINs keep
+/// working) but marks the device locked, so only a real PIN / OTP /
+/// password login gets back in (BUG-012), and goes where this person can
+/// unlock (BUG-010).
+Future<void> performLock(BuildContext context) async {
+  if (AppSession.instance.currentStaffId != null) {
+    final restored = await StaffAuth.lockToVendor();
+    if (!restored) {
+      try {
+        await SupaFlow.client.auth.signOut();
+      } catch (_) {}
+    }
+  }
+  StaffPermissions.clearActive();
+  AppSession.instance.clear();
+  await DeviceLock.lock();
+  if (!context.mounted) return;
+  final u = SupaFlow.client.auth.currentUser;
+  final mail = u?.email ?? '';
+  final phoneOwner = (u?.phone ?? '').isNotEmpty &&
+      (mail.isEmpty || mail.endsWith('@owner.nagarva.in'));
+  context.go(DeviceOrgBinding.isBound
+      ? PinLoginPageWidget.routePath
+      : phoneOwner
+          ? '${VendorSignupPageWidget.routePath}?mode=login'
+          : LoginPageWidget.routePath);
+}
+
 Future<void> performLogout(BuildContext context) async {
   try {
     await SupaFlow.client.auth.signOut();
@@ -28,6 +60,7 @@ Future<void> performLogout(BuildContext context) async {
   StaffPermissions.clearActive();
   AppSession.instance.clear();
   BusinessModules.instance.clear();
+  DashboardWidgets.instance.clear();
   if (!context.mounted) return;
   // Bug fix (8 Aug 2026): this used to always context.go('/login') — the
   // old two-tab email/password + phone/PIN screen — regardless of device

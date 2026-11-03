@@ -415,7 +415,9 @@ const kDefaultChargeFields = <ChargeField>[
   ChargeField('electrician', 'Electrician Charges'),
   ChargeField('bikeTransport', 'Bike Transport'),
   ChargeField('discount', 'Discount'),
-  ChargeField('advanceOnQuote', 'Advance Paid'),
+  // "Advance requested", not "Paid" (BUG-047): it is what the customer
+  // is asked to pay, not money received.
+  ChargeField('advanceOnQuote', 'Advance requested'),
 ];
 
 /// Part 8 Rev B, item 4: how a charge line is priced — per-org
@@ -616,6 +618,66 @@ List<SlabValidationError> validateSlabs(List<CftSlab> slabs) {
 /// section, falling back to the Dart defaults above key-by-key (not
 /// row-by-row) so a partial vendor customization doesn't lose the rest of
 /// APC's proven defaults.
+/// One CFT band of a rate card (`rate_card_rules`).
+class RateBand {
+  const RateBand({
+    required this.minCft,
+    this.maxCft,
+    required this.houseType,
+    required this.vehicle,
+    required this.crew,
+    required this.base,
+    required this.perCft,
+    required this.perKm,
+    required this.minCharge,
+  });
+  final num minCft;
+  final num? maxCft;
+  final String houseType;
+  final String vehicle;
+  final int crew;
+  final num base;
+  final num perCft;
+  final num perKm;
+  final num minCharge;
+
+  bool contains(num cft) =>
+      cft >= minCft && (maxCft == null || cft <= maxCft!);
+
+  /// Transport price for [cft] (and [km] when known): base + rates, never
+  /// below the minimum charge. 0 when the vendor hasn't priced this band.
+  num priceFor(num cft, {num km = 0}) {
+    final p = base + perCft * cft + perKm * km;
+    return p < minCharge ? minCharge : p;
+  }
+}
+
+/// A rate card multiplier (`rate_card_multipliers`): e.g. "Diwali rush"
+/// 120% between two dates. Blank dates mean open-ended; an empty weekday
+/// list means every day (1 = Monday … 7 = Sunday, Dart's convention).
+class RateMultiplier {
+  const RateMultiplier({
+    required this.name,
+    required this.pct,
+    this.from,
+    this.to,
+    this.weekdays = const [],
+  });
+  final String name;
+  final num pct;
+  final DateTime? from;
+  final DateTime? to;
+  final List<int> weekdays;
+
+  bool appliesOn(DateTime day) {
+    final d = DateTime(day.year, day.month, day.day);
+    if (from != null && d.isBefore(from!)) return false;
+    if (to != null && d.isAfter(to!)) return false;
+    if (weekdays.isNotEmpty && !weekdays.contains(d.weekday)) return false;
+    return true;
+  }
+}
+
 class PricingConfig {
   PricingConfig._({
     required this.surveyCats,
@@ -624,7 +686,44 @@ class PricingConfig {
     required this.porterRates,
     required this.chargeBasis,
     required this.storageRates,
+    this.rateCardId,
+    this.rateCardName,
+    this.rateBands = const [],
+    this.rateMultipliers = const [],
   });
+
+  /// The company's DEFAULT rate card (Arun, 3 Nov 2026: "rate cards are
+  /// the one source" — BUG-015/028). When it has bands, [cftRanges] and
+  /// [packages] below are built FROM it, so the quote, survey and PDFs
+  /// all follow the rate card; Settings' own slab list is only the
+  /// fallback for a company with no rate card bands.
+  final String? rateCardId;
+  final String? rateCardName;
+  final List<RateBand> rateBands;
+
+  /// The default rate card's multipliers (seasonal / weekday pricing).
+  final List<RateMultiplier> rateMultipliers;
+
+  /// The multiplier that applies to a move on [day], if any. When several
+  /// overlap the highest wins — stacking 120% × 110% would surprise the
+  /// vendor more than it would help.
+  RateMultiplier? multiplierOn(DateTime? day) {
+    if (day == null) return null;
+    RateMultiplier? best;
+    for (final m in rateMultipliers) {
+      if (m.pct == 100 || !m.appliesOn(day)) continue;
+      if (best == null || m.pct > best.pct) best = m;
+    }
+    return best;
+  }
+
+  /// The rate card band for [cft], if any.
+  RateBand? rateBandFor(num cft) {
+    for (final b in rateBands) {
+      if (b.contains(cft)) return b;
+    }
+    return null;
+  }
 
   final Map<String, List<SurveyItem>> surveyCats;
 
@@ -732,6 +831,92 @@ class PricingConfig {
         storageRates: storageRates ?? const [],
       );
 
+  /// The default active rate card and its CFT bands (one per house type,
+  /// local moves first). Null when the company has none or it has no
+  /// house-type bands. Never throws — pricing falls back to Settings.
+  static Future<
+      ({
+        String id,
+        String name,
+        List<RateBand> bands,
+        List<RateMultiplier> multipliers
+      })?> _loadDefaultRateCard() async {
+    try {
+      final cards = await OrgScope.read(SupaFlow.client
+              .from('rate_cards')
+              .select('id,name,is_default'))
+          .eq('active', true)
+          .isFilter('deleted_at', null)
+          .order('is_default', ascending: false)
+          .limit(1);
+      if ((cards as List).isEmpty) return null;
+      final card = cards.first;
+      final rules = await OrgScope.read(SupaFlow.client
+              .from('rate_card_rules')
+              .select())
+          .eq('card_id', card['id'])
+          .eq('active', true)
+          .order('min_cft', ascending: true);
+      num n(dynamic v) => num.tryParse('${v ?? ''}') ?? 0;
+      final seen = <String>{};
+      final bands = <RateBand>[];
+      final list = (rules as List).cast<Map>();
+      final local = list.where((r) => '${r['order_type'] ?? ''}' == 'local');
+      for (final r in (local.isNotEmpty ? local : list)) {
+        final house = '${r['house_type'] ?? ''}'.trim();
+        if (house.isEmpty || !seen.add(house)) continue;
+        bands.add(RateBand(
+          minCft: n(r['min_cft']),
+          maxCft: r['max_cft'] == null ? null : n(r['max_cft']),
+          houseType: house,
+          vehicle: '${r['vehicle_class'] ?? r['vehicle_type'] ?? ''}',
+          crew: n(r['suggested_crew']).toInt(),
+          base: n(r['base_amount']),
+          perCft: n(r['per_cft_rate']),
+          perKm: n(r['per_km_rate']),
+          minCharge: n(r['min_charge']),
+        ));
+      }
+      if (bands.isEmpty) return null;
+      // Ascending by CFT, sorted here: postgrest's order() defaults to
+      // DESCENDING, which put the open-ended top band first and matched
+      // every quote to "4 BHK Big" (found in the 3 Nov retest).
+      bands.sort((a, b) => a.minCft.compareTo(b.minCft));
+      // Multipliers are optional — a failure here must not lose the bands.
+      final multipliers = <RateMultiplier>[];
+      try {
+        final ms = await OrgScope.read(SupaFlow.client
+                .from('rate_card_multipliers')
+                .select('name,multiplier_pct,date_from,date_to,weekday_mask'))
+            .eq('card_id', card['id']);
+        DateTime? day(dynamic v) {
+          final d = DateTime.tryParse('${v ?? ''}');
+          return d == null ? null : DateTime(d.year, d.month, d.day);
+        }
+        for (final m in (ms as List).cast<Map>()) {
+          multipliers.add(RateMultiplier(
+            name: '${m['name'] ?? 'Multiplier'}',
+            pct: n(m['multiplier_pct']) == 0 ? 100 : n(m['multiplier_pct']),
+            from: day(m['date_from']),
+            to: day(m['date_to']),
+            weekdays: [
+              for (final w in (m['weekday_mask'] as List? ?? const []))
+                n(w).toInt()
+            ],
+          ));
+        }
+      } catch (_) {}
+      return (
+        id: '${card['id']}',
+        name: '${card['name'] ?? 'Rate card'}',
+        bands: bands,
+        multipliers: multipliers,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<PricingConfig> loadForCurrentOrg() async {
     final rows = await PricingConfigTable().queryRows(
       queryFn: (q) => OrgScope.read(q).limit(1),
@@ -748,10 +933,23 @@ class PricingConfig {
         storageRates: const [],
       );
     }
+    final rc = await _loadDefaultRateCard();
+    final bands = rc?.bands ?? const <RateBand>[];
     return PricingConfig._(
+      rateCardId: rc?.id,
+      rateCardName: rc?.name,
+      rateBands: bands,
+      rateMultipliers: rc?.multipliers ?? const [],
       surveyCats: _parseSurveyCats(config['survey_cats']) ?? kDefaultSurveyCats,
-      cftRanges: _parseCftRanges(config['cft_ranges']) ?? kDefaultCftRanges,
-      packages: _parsePackages(config['packages']) ?? kDefaultPackages,
+      cftRanges: bands.isNotEmpty
+          ? [for (final b in bands) CftRange(b.maxCft, b.houseType)]
+          : (_parseCftRanges(config['cft_ranges']) ?? kDefaultCftRanges),
+      packages: bands.isNotEmpty
+          ? [
+              for (final b in bands)
+                PackageInfo(b.houseType, b.crew, b.vehicle, b.maxCft ?? b.minCft)
+            ]
+          : (_parsePackages(config['packages']) ?? kDefaultPackages),
       porterRates: _parsePorterRates(config['porter_rates']) ??
           kDefaultPorterRates,
       chargeBasis: _parseChargeBasis(config['charge_basis']),

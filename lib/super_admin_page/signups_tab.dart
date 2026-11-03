@@ -70,8 +70,7 @@ class _SignupsTabState extends State<SignupsTab> {
         setState(() => _rows = List<Map<String, dynamic>>.from(rows as List));
       }
     } catch (e) {
-      _snack('Could not load signups. Has '
-          '20261021_vendor_signup_approval.sql been run?');
+      _snack('Could not load signups. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -80,6 +79,35 @@ class _SignupsTabState extends State<SignupsTab> {
   void _snack(String m) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
+
+  Future<void> _confirmSendBack(Map<String, dynamic> r, String reason) async {
+    final ctrl = TextEditingController(text: reason);
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Send back ${r['business_name'] ?? 'this application'}?'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: reason.isEmpty,
+          maxLines: 3,
+          decoration: const InputDecoration(
+              labelText: 'Reason the owner will see'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () {
+                final t = ctrl.text.trim();
+                if (t.isNotEmpty) Navigator.pop(ctx, t);
+              },
+              child: const Text('Send back')),
+        ],
+      ),
+    );
+    if (picked != null && mounted) await _decide(r, false, picked);
   }
 
   Future<void> _decide(Map<String, dynamic> r, bool approve,
@@ -98,10 +126,27 @@ class _SignupsTabState extends State<SignupsTab> {
       await _load();
       widget.onChanged?.call();
     } catch (e) {
-      _snack(extractDbErrorMessage(e, fallback: 'Could not save: $e'));
+      _snack(extractDbErrorMessage(e, fallback: 'Could not save: ${friendlyError(e)}'));
     } finally {
       if (mounted) setState(() => _busy = null);
     }
+  }
+
+  // BUG-008: show +91 98765 43210, not the raw stored digits.
+  String _fmtPhone(String raw) {
+    var d = raw.replaceAll(RegExp(r'\D'), '');
+    if (d.isEmpty) return '';
+    if (d.length == 12 && d.startsWith('91')) d = d.substring(2);
+    if (d.length == 10) return '+91 ${d.substring(0, 5)} ${d.substring(5)}';
+    return '+$d';
+  }
+
+  // BUG-008: unknown doc keys read as words, not snake_case keys.
+  String _docLabel(String key) {
+    final known = _kDocLabels[key];
+    if (known != null) return known;
+    final t = key.replaceAll(RegExp(r'[_\-]+'), ' ').trim();
+    return t.isEmpty ? 'Document' : t[0].toUpperCase() + t.substring(1);
   }
 
   Future<void> _openDoc(String path) async {
@@ -111,7 +156,7 @@ class _SignupsTabState extends State<SignupsTab> {
           .createSignedUrl(path, 300);
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (e) {
-      _snack('Could not open the document: $e');
+      _snack('Could not open the document: ${friendlyError(e)}');
     }
   }
 
@@ -217,7 +262,7 @@ class _SignupsTabState extends State<SignupsTab> {
                     Text(
                       [
                         r['owner_name'],
-                        '+${r['phone']}',
+                        _fmtPhone('${r['phone'] ?? ''}'),
                         r['city'],
                         _kBizLabels[r['business_type']] ?? '',
                         if (created != null)
@@ -262,7 +307,7 @@ class _SignupsTabState extends State<SignupsTab> {
                 for (final e in docs.entries)
                   ActionChip(
                     avatar: const Icon(Icons.description_outlined, size: 16),
-                    label: Text(_kDocLabels[e.key] ?? e.key),
+                    label: Text(_docLabel(e.key)),
                     onPressed: () => _openDoc(e.value as String),
                   ),
               ],
@@ -302,11 +347,22 @@ class _SignupsTabState extends State<SignupsTab> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  // BUG-007 (3 Nov 2026): one tap used to send the
+                  // application back. A chip now opens a confirm with the
+                  // reason editable; the GST chip only shows when a GSTIN
+                  // was given.
                   for (final w in _kReasons)
-                    ActionChip(
-                      label: Text(w),
-                      onPressed: busy ? null : () => _decide(r, false, w),
-                    ),
+                    if (!w.startsWith('GST') ||
+                        '${r['gstin'] ?? ''}'.trim().isNotEmpty)
+                      ActionChip(
+                        label: Text(w),
+                        onPressed:
+                            busy ? null : () => _confirmSendBack(r, w),
+                      ),
+                  ActionChip(
+                    label: const Text('Other reason…'),
+                    onPressed: busy ? null : () => _confirmSendBack(r, ''),
+                  ),
                 ],
               ),
             ],

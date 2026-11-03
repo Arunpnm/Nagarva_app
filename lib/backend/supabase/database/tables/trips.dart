@@ -81,7 +81,6 @@ class TripsRow extends SupabaseDataRow {
   set kmEnd(int? value) => setField<int>('km_end', value);
 
   int? get totalKm => getField<int>('total_km');
-  set totalKm(int? value) => setField<int>('total_km', value);
 
   double? get fuelLitres => getField<double>('fuel_litres');
   set fuelLitres(double? value) => setField<double>('fuel_litres', value);

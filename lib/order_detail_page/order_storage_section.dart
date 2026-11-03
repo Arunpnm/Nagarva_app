@@ -8,6 +8,7 @@ import '/backend/supabase/supabase.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Warehouse storage, as a revenue line ON THE ORDER.
 ///
 /// Storage is not a separate order (brief §37): the same goods flow
@@ -212,7 +213,7 @@ class OrderStorageSectionState extends State<OrderStorageSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not release: $e')));
+            SnackBar(content: Text('Could not release: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -413,7 +414,7 @@ class _StorageBookingSheetState extends State<_StorageBookingSheet> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = '$e';
+          _error = '${friendlyError(e)}';
         });
       }
     }
@@ -533,7 +534,7 @@ class _StorageBookingSheetState extends State<_StorageBookingSheet> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = '$e';
+          _error = '${friendlyError(e)}';
         });
       }
     }

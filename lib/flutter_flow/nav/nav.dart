@@ -85,16 +85,27 @@ class AppStateNotifier extends ChangeNotifier {
 const _kPublicRoutePrefixes = [
   '/login',
   '/signup',
+  // The vendor's own mobile/OTP signup (and mobile login) — public by
+  // design, and named here explicitly now that matching is by whole
+  // path segment (below).
+  '/signup-mobile',
   '/survey',
   '/quote',
   '/sign',
   '/track',
   '/pin-login',
   '/bind-org',
+  '/admin-login',
 ];
 
+/// Whole path segments only (4 Nov 2026). This used `startsWith`, so the
+/// customer pages '/survey' and '/quote' also made VENDOR screens public:
+/// '/survey-quote', '/survey-new', '/survey-pricing' and '/quote-design'
+/// all skipped the sign-in redirect below (RLS still guarded the data,
+/// but a signed-out visitor got the screen instead of the login page).
 bool _isPublicRoute(String path) =>
-    path == '/' || _kPublicRoutePrefixes.any((p) => path.startsWith(p));
+    path == '/' ||
+    _kPublicRoutePrefixes.any((p) => path == p || path.startsWith('$p/'));
 
 /// Route guard (Users Kickoff Step 2.4 / permission-model decision 4).
 ///
@@ -211,8 +222,23 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       redirect: (context, state) {
         final path = state.uri.path;
         if (_isPublicRoute(path)) return null;
+        // Nagarva Admin: a platform admin need not belong to any vendor
+        // org, so the panel is gated on the admin sign-in instead of the
+        // org session, and an unauthenticated visit goes to the admin
+        // login, not the vendor one. The page itself re-checks
+        // platform_admins, and RLS enforces it on every query.
+        if (path.startsWith(SuperAdminPageWidget.routePath)) {
+          final s = AppSession.instance;
+          return s.authUserId != null && s.isPlatformAdmin
+              ? null
+              : AdminLoginPage.routePath;
+        }
         if (!AppSession.instance.isAuthenticated) {
-          return LoginPageWidget.routePath;
+          // A locked, PIN-linked device unlocks on the PIN pad, not the
+          // email form (BUG-010/012, 3 Nov 2026).
+          return DeviceOrgBinding.isBound
+              ? PinLoginPageWidget.routePath
+              : LoginPageWidget.routePath;
         }
         final routeName = state.name;
         if (routeName != null &&
@@ -398,6 +424,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const CalendarPageWidget(),
         ),
         FFRoute(
+          name: AdminLoginPage.routeName,
+          path: AdminLoginPage.routePath,
+          builder: (context, params) => const AdminLoginPage(),
+        ),
+        FFRoute(
           name: SuperAdminPageWidget.routeName,
           path: SuperAdminPageWidget.routePath,
           builder: (context, params) => const SuperAdminPageWidget(),
@@ -458,6 +489,21 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => const StorageBillingPage(),
         ),
         FFRoute(
+          name: MarketplaceJobsPage.routeName,
+          path: MarketplaceJobsPage.routePath,
+          builder: (context, params) => const MarketplaceJobsPage(),
+        ),
+        FFRoute(
+          name: DriverAppPage.routeName,
+          path: DriverAppPage.routePath,
+          builder: (context, params) => const DriverAppPage(),
+        ),
+        FFRoute(
+          name: FieldAttendancePageWidget.routeName,
+          path: FieldAttendancePageWidget.routePath,
+          builder: (context, params) => const FieldAttendancePageWidget(),
+        ),
+        FFRoute(
           name: FuelPage.routeName,
           path: FuelPage.routePath,
           builder: (context, params) => const FuelPage(),
@@ -516,6 +562,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: ModulesPage.routeName,
           path: ModulesPage.routePath,
           builder: (context, params) => const ModulesPage(),
+        ),
+        FFRoute(
+          name: DashboardWidgetsPage.routeName,
+          path: DashboardWidgetsPage.routePath,
+          builder: (context, params) => const DashboardWidgetsPage(),
+        ),
+        FFRoute(
+          name: QuoteDesignPage.routeName,
+          path: QuoteDesignPage.routePath,
+          builder: (context, params) => const QuoteDesignPage(),
         ),
         FFRoute(
           name: WhatsAppPage.routeName,
@@ -833,7 +889,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           // dropped from kSupervisorNavItems as redundant with My Team,
           // which already does everything it would have — see
           // nav_items.dart.
-          ('MyAttComingSoon', '/my-att', 'My Attendance'),
           ('MySalComingSoon', '/my-sal', 'My Earnings'),
         ])
           FFRoute(

@@ -12,6 +12,7 @@ import 'material_detail_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'materials_page_model.dart';
+import '/backend/edge_function_errors.dart';
 export 'materials_page_model.dart';
 
 /// Packing material inventory management (Session 4 rebuild).
@@ -71,7 +72,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
           (_model.materialsOut ?? []).toList().cast<MaterialsRow>();
       _loadError = null;
     } catch (e) {
-      _loadError = 'Could not load materials: $e';
+      _loadError = 'Could not load materials: ${friendlyError(e)}';
       safeSetState(() {});
       return;
     }
@@ -132,7 +133,7 @@ class _MaterialsPageWidgetState extends State<MaterialsPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not add material: $e')));
+          .showSnackBar(SnackBar(content: Text('Could not add material: ${friendlyError(e)}')));
     }
   }
 

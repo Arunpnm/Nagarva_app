@@ -75,6 +75,17 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
     };
     _model.payments = (results[3] as List).cast<SalaryPaymentsRow>();
     _model.advances = (results[4] as List).cast<StaffAdvancesRow>();
+    // Overtime & incentives count in earnings, same as the ledger sheet
+    // (BUG-053, 3 Nov 2026) — otherwise the list shows a negative balance
+    // once the overtime is paid.
+    try {
+      _incentives = await SupaFlow.client
+          .from('staff_incentives')
+          .select('staff_id,amount,entry_date')
+          .eq('org_id', OrgScope.currentOrgId ?? '');
+    } catch (_) {
+      _incentives = const [];
+    }
     _model.loading = false;
     safeSetState(() {});
   }
@@ -97,6 +108,14 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
           a.staffId == staffId &&
           (a.status ?? 'pending').toLowerCase() == 'pending')
       .toList();
+
+  List<dynamic> _incentives = const [];
+
+  double _incentivesFor(String staffId) => _incentives
+      .where((r) =>
+          '${r['staff_id']}' == staffId &&
+          _inMonth(DateTime.tryParse('${r['entry_date']}')))
+      .fold(0.0, (s, r) => s + (num.tryParse('${r['amount']}') ?? 0));
 
   double _sumOS(List<OrderStaffRow> l) =>
       l.fold(0.0, (s, e) => s + (e.salaryAmount ?? 0));
@@ -129,7 +148,7 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
     final c = NgPalette.of(context);
     final l = AppLocalizations.of(context);
     final entries = _monthEntriesFor(s.id!);
-    final earned = _sumOS(entries);
+    final earned = _sumOS(entries) + _incentivesFor(s.id!);
     final paid = _sumPay(_monthPaymentsFor(s.id!));
     final balance = earned - paid;
     final advance = _sumAdv(_pendingAdvancesFor(s.id!));
@@ -241,7 +260,8 @@ class _SalaryPageWidgetState extends State<SalaryPageWidget>
     final staff = _model.staffList.where((s) => s.id != null).toList();
     double total(double Function(StaffRow) f) =>
         staff.fold(0.0, (a, s) => a + f(s));
-    final earned = total((s) => _sumOS(_monthEntriesFor(s.id!)));
+    final earned = total(
+        (s) => _sumOS(_monthEntriesFor(s.id!)) + _incentivesFor(s.id!));
     final paid = total((s) => _sumPay(_monthPaymentsFor(s.id!)));
     final advances = total((s) => _sumAdv(_pendingAdvancesFor(s.id!)));
     return Scaffold(

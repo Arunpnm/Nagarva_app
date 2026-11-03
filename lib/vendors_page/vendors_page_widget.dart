@@ -8,6 +8,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'vendor_detail_page_widget.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Vendors (Session 4, Part C-6) — subcontractors/suppliers this org pays
 /// (porters, vehicle owners, packing material suppliers, labour
 /// contractors). Live schema confirmed directly against the DB: vendors +
@@ -55,7 +56,7 @@ class _VendorsPageWidgetState extends State<VendorsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load vendors: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load vendors: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -126,11 +127,13 @@ class _VendorsPageWidgetState extends State<VendorsPageWidget>
             TextButton(
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
-            FilledButton(
+            ListenableBuilder( // BUG-035: rebuild as the field is typed
+              listenable: nameCtrl,
+              builder: (_, __) => FilledButton(
                 onPressed: nameCtrl.text.trim().isEmpty
                     ? null
                     : () => Navigator.of(dialogCtx).pop(true),
-                child: const Text('Create')),
+                child: const Text('Create'))),
           ],
         ),
       ),
@@ -153,7 +156,7 @@ class _VendorsPageWidgetState extends State<VendorsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not create vendor: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not create vendor: ${friendlyError(e)}')));
       }
     }
   }

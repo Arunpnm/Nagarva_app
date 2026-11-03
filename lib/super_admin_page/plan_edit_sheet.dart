@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import '/backend/edge_function_errors.dart';
 
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/ng_tokens.dart';
@@ -234,7 +235,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
         _saving = false;
       });
     }

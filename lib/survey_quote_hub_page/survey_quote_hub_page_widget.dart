@@ -11,8 +11,10 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/backend/detail_navigation.dart';
 import '/index.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Survey & Quote standalone (Session 4, Part B4) — was a ComingSoonPage
 /// stub ('SurveyComingSoon', `/survey-new`). Distinct from
 /// `SurveyQuotePageWidget` (`/survey-quote`), the itemized builder this
@@ -69,7 +71,7 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load quotes: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load quotes: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loadingQuotes = false);
@@ -244,12 +246,7 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
             IconButton(
               tooltip: 'Open lead',
               icon: Icon(Icons.person_outline_rounded, size: 19, color: c.mute),
-              onPressed: () => context.pushNamed(
-                LeadDetailPageWidget.routeName,
-                queryParameters: {
-                  'leadId': serializeParam(q.leadId, ParamType.String),
-                }.withoutNulls,
-              ),
+              onPressed: () => openLeadJourneyById(context, q.leadId),
             ),
           // Hidden until /quote is actually hosted — see kQuoteLinkHosted.
           if (kQuoteLinkHosted && (q.token ?? '').isNotEmpty)

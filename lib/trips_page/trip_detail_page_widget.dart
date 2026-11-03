@@ -8,6 +8,7 @@ import '/components/order_picker_dialog.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
+import '/backend/edge_function_errors.dart';
 class TripDetailPageWidget extends StatefulWidget {
   const TripDetailPageWidget({super.key, this.tripId});
   final String? tripId;
@@ -26,6 +27,15 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
   List<TripOrdersRow> _tripOrders = [];
   List<TripExpensesRow> _expenses = [];
   List<VendorsRow> _vendors = [];
+
+  /// Field expenses recorded on this trip's ORDERS (diesel, toll, bata…
+  /// from the supervisor screen — `expenses.order_id`). Arun, 3 Nov 2026,
+  /// option (b): shown and counted in the trip's profit here, display
+  /// only — nothing is copied into trip_expenses, so no report counts the
+  /// same rupee twice. Each is scaled by the order's share of the trip.
+  List<(ExpensesRow, double share)> _orderExpenses = [];
+  double get _orderExpTotal => _orderExpenses.fold(
+      0.0, (s, e) => s + (e.$1.amount ?? 0) * e.$2);
 
   @override
   void initState() {
@@ -55,13 +65,31 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
         queryFn: (q) =>
             OrgScope.read(q).eq('trip_id', widget.tripId!).order('expense_date', ascending: false),
       );
+      final share = <String, double>{
+        for (final to in _tripOrders)
+          if (to.orderId != null)
+            to.orderId!: ((to.allocationPct ?? 0) <= 0
+                    ? 100.0
+                    : to.allocationPct!) /
+                100,
+      };
+      _orderExpenses = share.isEmpty
+          ? []
+          : [
+              for (final e in await ExpensesTable().queryRows(
+                queryFn: (q) => OrgScope.read(q)
+                    .inFilter('order_id', share.keys.toList())
+                    .isFilter('deleted_at', null),
+              ))
+                (e, share[e.orderId] ?? 1.0),
+            ];
       _vendors = await VendorsTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eq('active', true).order('name'),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load trip: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load trip: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -231,9 +259,9 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
           'end_date': endDate?.toIso8601String().split('T').first,
           'km_start': kmStart,
           'km_end': kmEnd,
-          'total_km': (kmStart != null && kmEnd != null && kmEnd >= kmStart)
-              ? kmEnd - kmStart
-              : null,
+          // total_km is GENERATED ALWAYS in the database: writing it
+          // (as this did) fails every save with 428C9. It follows
+          // km_start/km_end by itself.
           'fuel_litres': double.tryParse(fuelCtrl.text.trim()),
           'status': status,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
@@ -244,7 +272,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
       }
     }
   }
@@ -307,7 +335,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add order: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add order: ${friendlyError(e)}')));
       }
     }
   }
@@ -320,7 +348,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not remove: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not remove: ${friendlyError(e)}')));
       }
     }
   }
@@ -399,11 +427,13 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
             TextButton(
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
-            FilledButton(
+            ListenableBuilder( // BUG-035: rebuild as the field is typed
+              listenable: amountCtrl,
+              builder: (_, __) => FilledButton(
                 onPressed: amountCtrl.text.trim().isEmpty
                     ? null
                     : () => Navigator.of(dialogCtx).pop(true),
-                child: const Text('Add')),
+                child: const Text('Add'))),
           ],
         ),
       ),
@@ -424,7 +454,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add expense: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add expense: ${friendlyError(e)}')));
       }
     }
   }
@@ -437,7 +467,7 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
     } catch (err) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not remove: $err')));
+            .showSnackBar(SnackBar(content: Text('Could not remove: ${friendlyError(err)}')));
       }
     }
   }
@@ -465,7 +495,11 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       ),
                     ),
                   )
-                : ListView(
+                : RefreshIndicator(
+                    // Pull-to-refresh (pending UX list item 3).
+                    onRefresh: _load,
+                    child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
                     children: [
                       NgDetailHeader(
@@ -486,18 +520,28 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                           const SizedBox(width: 8),
                           Expanded(
                               child: NgMiniTile(
-                                  'Net profit', _rupees(pnl.netProfit),
-                                  color: pnl.netProfit < 0 ? ng.red : ng.green)),
+                                  'Net profit',
+                                  _rupees(pnl.netProfit - _orderExpTotal),
+                                  color: pnl.netProfit - _orderExpTotal < 0
+                                      ? ng.red
+                                      : ng.green)),
                         ]),
                         const SizedBox(height: 8),
                         Row(children: [
                           Expanded(
-                              child: NgMiniTile('Expenses',
-                                  _rupees(pnl.tripExpenses + pnl.hireAmount))),
+                              child: NgMiniTile(
+                                  'Expenses',
+                                  _rupees(pnl.tripExpenses +
+                                      pnl.hireAmount +
+                                      _orderExpTotal))),
                           const SizedBox(width: 8),
                           Expanded(
-                              child:
-                                  NgMiniTile('Cost / km', _rupees(pnl.costPerKm))),
+                              child: NgMiniTile(
+                                  'Cost / km',
+                                  _rupees((t.totalKm ?? 0) > 0
+                                      ? (pnl.tripExpenses + _orderExpTotal) /
+                                          t.totalKm!
+                                      : 0))),
                         ]),
                         const SizedBox(height: 20),
                       ],
@@ -526,8 +570,25 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                       NgRowsCard(rows: [
                         for (final e in _expenses) _expenseRow(ng, e),
                       ], empty: 'No expenses logged yet.'),
+                      if (_orderExpenses.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        const NgGroupTitle('Expenses recorded on the orders'),
+                        NgRowsCard(rows: [
+                          for (final e in _orderExpenses)
+                            _orderExpenseRow(ng, e.$1, e.$2),
+                        ]),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                          child: Text(
+                            'Entered on the field job. Counted in this trip\'s '
+                            'profit above; edit them on the order.',
+                            style:
+                                NgFonts.geist(fontSize: 12, color: ng.mute),
+                          ),
+                        ),
+                      ],
                     ],
-                  ),
+                  )),
       ),
     );
   }
@@ -562,6 +623,44 @@ class _TripDetailPageWidgetState extends State<TripDetailPageWidget> {
                 icon: Icon(Icons.delete_outline_rounded,
                     size: 19, color: ng.mute),
                 onPressed: () => _removeTripOrder(to)),
+          ],
+        ),
+      );
+
+  Widget _orderExpenseRow(NgPalette ng, ExpensesRow e, double share) =>
+      Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+        child: Row(
+          children: [
+            NgIconTile(icon: Icons.local_gas_station_outlined, size: 32, iconSize: 17),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      (e.category ?? '').isEmpty
+                          ? 'Expense'
+                          : e.category![0].toUpperCase() +
+                              e.category!.substring(1).replaceAll('_', ' '),
+                      style: NgFonts.geist(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: ng.text)),
+                  Text(
+                    [
+                      e.orderId ?? '',
+                      if ((e.description ?? '').isNotEmpty) e.description!,
+                      if (share < 1) '${(share * 100).toStringAsFixed(0)}% share',
+                    ].where((x) => x.isNotEmpty).join(' · '),
+                    style: NgFonts.geist(fontSize: 12.5, color: ng.mute),
+                  ),
+                ],
+              ),
+            ),
+            Text(_rupees((e.amount ?? 0) * share),
+                style: NgFonts.mono(
+                    fontSize: 13.5, fontWeight: FontWeight.w600, color: ng.text)),
           ],
         ),
       );

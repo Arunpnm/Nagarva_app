@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400..600,0..1,0&display=block" rel="stylesheet">
+<style>body{margin:0;background:#E6E4DF}input::placeholder,textarea::placeholder{color:#7D838E}a{color:oklch(0.56 0.17 48)}a:hover{color:oklch(0.48 0.17 48)}@keyframes ngDrive{0%{left:-30px}100%{left:100%}}</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="i18n-cust.js"></script><script src="i18n-c-hi.js"></script><script src="i18n-c-ta.js"></script><script src="i18n-c-te.js"></script><script src="i18n-c-kn.js"></script><script src="i18n-c-ml.js"></script><script src="i18n-c-ta2.js"></script><script src="i18n-c-te2.js"></script><script src="i18n-c-kn2.js"></script><script src="i18n-c-ml2.js"></script>
+</helmet>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box">
+<div style="width:390px;height:844px;background:#F4F3F0;border-radius:46px;overflow:hidden;position:relative;display:flex;flex-direction:column;border:1px solid rgba(22,24,29,0.12);font-family:Geist,'Noto Sans','Noto Sans Devanagari','Noto Sans Tamil','Noto Sans Telugu','Noto Sans Kannada','Noto Sans Malayalam',system-ui,sans-serif;color:#16181D;-webkit-font-smoothing:antialiased">
+
+  <div style="height:48px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 30px 0 34px;font-size:15px;font-weight:600;background:{{ sbBg }};color:{{ sbFg }}">
+    <span>9:41</span>
+    <div style="display:flex;gap:5px;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:18px">signal_cellular_alt</span><span style="font-family:'Material Symbols Rounded';font-size:18px">wifi</span><span style="font-family:'Material Symbols Rounded';font-size:20px">battery_full</span></div>
+  </div>
+
+  <!-- LOGIN -->
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#0B2F73">
+    <div style="flex:none;padding:6px 22px 34px;display:flex;flex-direction:column;gap:18px;color:#FFFFFF">
+      <div style="height:44px;display:flex;align-items:center;gap:10px">
+        <sc-if value="{{ lgOtp }}" hint-placeholder-val="{{ false }}"><div onClick="{{ editPhone }}" style="width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:21px">arrow_back</span></div></sc-if>
+        <div style="width:36px;height:36px;border-radius:10px;overflow:hidden;flex:none;background:#FFFFFF;position:relative"><img src="assets/images/nagarva_logo.png" alt="Nagarva" style="position:absolute;width:122%;height:122%;left:-11%;top:-11%;object-fit:cover"></div>
+        <span style="font-size:20px;font-weight:700;letter-spacing:-0.03em"><span style="color:#FFFFFF">Nagar</span><span style="color:#FF8A1F">va</span></span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding-top:6px">
+        <span style="font-size:30px;font-weight:600;letter-spacing:-0.03em;line-height:1.12;text-wrap:pretty">Relocation made simple, from one room to an entire office.</span>
+        <span style="font-size:14.5px;line-height:1.5;color:#C9D6F0;text-wrap:pretty">Background-verified movers, insured transit, secure storage and a GST invoice on every booking, in cities across India.</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <sc-for list="{{ lgSvc }}" as="v" hint-placeholder-count="4">
+          <div style="height:30px;padding:0 11px 0 9px;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.16)"><span style="font-family:'Material Symbols Rounded';font-size:16px;color:#FF8A1F">{{ v.icon }}</span>{{ v.t }}</div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+        <sc-for list="{{ lgPoints }}" as="p" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:8px;padding:12px 10px;border-radius:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12)">
+            <span style="font-family:'Material Symbols Rounded';font-size:22px;color:#FF8A1F">{{ p.icon }}</span>
+            <span style="font-size:12px;font-weight:500;line-height:1.35;color:#FFFFFF">{{ p.t }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:1;background:#F4F3F0;border-radius:28px 28px 0 0;padding:22px 20px 28px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:19px;font-weight:600;letter-spacing:-0.02em">{{ lgTitle }}</span><span style="font-size:13px;color:#5E6572">{{ lgSub }}</span></div>
+      <sc-if value="{{ lgPhone }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:8px">
+          <div style="height:52px;padding:0 14px;border-radius:12px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.14);display:flex;align-items:center;font-family:'Geist Mono';font-size:15px;font-weight:500">+91</div>
+          <input value="{{ phone }}" onChange="{{ setPhone }}" inputMode="numeric" placeholder="Mobile number" style="flex:1;min-width:0;height:52px;border-radius:12px;border:1px solid rgba(22,24,29,0.14);background:#FFFFFF;padding:0 14px;font-family:'Geist Mono';font-size:16px;font-weight:500;color:#16181D;outline:none;letter-spacing:0.04em">
+        </div>
+      </sc-if>
+      <sc-if value="{{ lgOtp }}" hint-placeholder-val="{{ false }}">
+        <input value="{{ otp }}" onChange="{{ setOtp }}" inputMode="numeric" placeholder="••••" style="height:60px;border-radius:12px;border:1px solid rgba(22,24,29,0.14);background:#FFFFFF;padding:0 14px;font-family:'Geist Mono';font-size:26px;font-weight:600;color:#16181D;outline:none;letter-spacing:0.6em;text-align:center">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#5E6572"><span>Demo OTP: 1234</span><span onClick="{{ resend }}" style="font-weight:600;cursor:{{ rsCur }};color:{{ rsCol }}">{{ rsLabel }}</span></div>
+      </sc-if>
+      <div onClick="{{ lgGo }}" style="height:52px;border-radius:14px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:{{ lgBg }};color:{{ lgFg }}">{{ lgBtn }}<span style="font-family:'Material Symbols Rounded';font-size:19px">arrow_forward</span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;border:1px dashed oklch(0.70 0.17 50);background:oklch(0.62 0.14 48 / 0.08)">
+        <span style="font-family:'Material Symbols Rounded';font-size:20px;color:oklch(0.56 0.17 48)">redeem</span>
+        <span style="flex:1;font-size:12.5px;line-height:1.4;color:#16181D"><b style="font-weight:600">₹500 off your first move.</b> Use code <span style="font-family:'Geist Mono';font-weight:600">FIRST500</span> at checkout.</span>
+      </div>
+      <span style="font-size:11.5px;color:#7D838E;text-align:center;line-height:1.45">By continuing you agree to Nagarva's terms and privacy policy.</span>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px">
+        <sc-for list="{{ langs }}" as="lg" hint-placeholder-count="6">
+          <div onClick="{{ lg.pick }}" style="height:32px;padding:0 12px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;background:{{ lg.bg }};color:{{ lg.fg }};border:1px solid {{ lg.bd }}">{{ lg.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- TYPE -->
+  <sc-if value="{{ isType }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#F4F3F0">
+    <div style="flex:none;background:#0B2F73;color:#FFFFFF;padding:6px 18px 44px;display:flex;flex-direction:column;gap:16px">
+      <div style="height:44px;display:flex;align-items:center;gap:10px">
+        <div onClick="{{ typeBack }}" style="width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:21px">arrow_back</span></div>
+        <div style="width:30px;height:30px;border-radius:8px;overflow:hidden;flex:none;background:#FFFFFF;position:relative"><img src="assets/images/nagarva_logo.png" alt="Nagarva" style="position:absolute;width:122%;height:122%;left:-11%;top:-11%;object-fit:cover"></div>
+        <span style="flex:1;font-size:18px;font-weight:700;letter-spacing:-0.03em"><span>Nagar</span><span style="color:#FF8A1F">va</span></span>
+        <span style="font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,0.12);color:#C9D6F0">{{ typeStep }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:13.5px;color:#C9D6F0">{{ typeKick }}</span>
+        <span style="font-size:26px;font-weight:600;letter-spacing:-0.03em;line-height:1.15">{{ typeQ }}</span>
+      </div>
+      <div style="display:flex;gap:4px">
+        <sc-for list="{{ typeBars }}" as="b" hint-placeholder-count="2"><div style="flex:1;height:3px;border-radius:999px;background:{{ b.bg }}"></div></sc-for>
+      </div>
+    </div>
+    <div style="flex:none;margin-top:-28px;padding:0 14px 20px;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ types }}" as="t" hint-placeholder-count="3">
+        <div onClick="{{ t.pick }}" style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:16px;display:flex;flex-direction:column;gap:12px;cursor:pointer">
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <div style="width:50px;height:50px;border-radius:14px;background:#0B2F73;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:26px;color:#FF8A1F">{{ t.icon }}</span></div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:16px;font-weight:600;letter-spacing:-0.01em">{{ t.label }}</span><sc-if value="{{ t.tag }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:oklch(0.62 0.14 255 / 0.12);color:#0B3A8C">{{ t.tag }}</span></sc-if></div>
+              <span style="font-size:12.5px;color:#5E6572;line-height:1.4">{{ t.sub }}</span>
+            </div>
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:#0B3A8C;margin-top:14px">arrow_forward</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;border-top:1px solid rgba(22,24,29,0.08)">
+            <sc-for list="{{ t.feats }}" as="f" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:5px;height:28px;padding:0 10px 0 8px;border-radius:999px;background:#F4F3F0;font-size:12px;font-weight:500;color:#3D424B"><span style="font-family:'Material Symbols Rounded';font-size:15px;color:oklch(0.53 0.15 155)">check</span>{{ f }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="display:flex;justify-content:space-around;gap:8px;padding:10px 4px 0">
+        <sc-for list="{{ trust }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:#5E6572"><span style="font-family:'Material Symbols Rounded';font-size:16px;color:#0B3A8C">{{ r.icon }}</span>{{ r.t }}</div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- HOME -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding-bottom:20px;background:#F4F3F0">
+    <div style="flex:none;background:#0B2F73;color:#FFFFFF;border-radius:0 0 30px 30px;padding:8px 16px 74px;display:flex;flex-direction:column;gap:18px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-90px;top:12px;width:200px;height:200px;border-radius:999px;border:34px solid rgba(243,122,14,0.16);pointer-events:none"></div>
+      <div style="position:absolute;right:40px;top:96px;width:70px;height:70px;border-radius:999px;background:rgba(255,255,255,0.05);pointer-events:none"></div>
+      <div style="display:flex;align-items:center;gap:10px;height:40px;position:relative">
+        <div onClick="{{ goType }}" style="width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:21px;color:#FFFFFF">arrow_back</span></div>
+        <div style="flex:1;display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:9px;overflow:hidden;flex:none;background:#FFFFFF;position:relative"><img src="assets/images/nagarva_logo.png" alt="Nagarva" style="position:absolute;width:122%;height:122%;left:-11%;top:-11%;object-fit:cover"></div><span style="font-size:19px;font-weight:700;letter-spacing:-0.03em;line-height:1"><span style="color:#FFFFFF">Nagar</span><span style="color:#F37A0E">va</span></span></div>
+        <div style="width:36px;height:36px;border-radius:999px;background:#F37A0E;color:#0A0C10;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">PR</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;position:relative">
+        <div onClick="{{ goType }}" style="align-self:flex-start;display:flex;align-items:center;gap:6px;height:30px;padding:0 12px 0 8px;border-radius:999px;background:rgba(255,255,255,0.12);cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:17px;color:#F37A0E">{{ typeIcon }}</span><span style="font-size:12.5px;font-weight:600">{{ typeLabel }}</span><span style="font-family:'Material Symbols Rounded';font-size:16px;color:rgba(255,255,255,0.7)">expand_more</span></div>
+        <div style="font-size:34px;font-weight:700;letter-spacing:-0.045em;line-height:1.02;text-wrap:balance">Where are we <span style="color:#F37A0E">moving</span> you?</div>
+      </div>
+      <div style="position:relative;height:24px;margin:0 -16px">
+        <div style="position:absolute;left:0;right:0;top:12px;border-top:2px dashed rgba(255,255,255,0.22)"></div>
+        {{ truckAnim }}
+      </div>
+    </div>
+
+    <div style="flex:none;margin:-78px 16px 0;position:relative;background:#FFFFFF;border-radius:22px;box-shadow:0 18px 40px -18px rgba(11,47,115,0.45),0 2px 6px rgba(22,24,29,0.06);padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div style="position:relative;display:flex;flex-direction:column">
+        <div style="position:absolute;left:16px;top:34px;bottom:34px;border-left:2px dotted rgba(22,24,29,0.22)"></div>
+        <div onClick="{{ pickFrom }}" style="display:flex;align-items:center;gap:14px;min-height:64px;padding:8px 56px 8px 10px;box-sizing:border-box;border-radius:14px;cursor:pointer" style-hover="background:#F4F3F0">
+          <span style="width:14px;height:14px;border-radius:999px;border:3px solid oklch(0.53 0.15 155);background:#FFFFFF;box-sizing:border-box;flex:none;position:relative"></span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-size:11px;font-weight:600;letter-spacing:0.08em;color:#5E6572">PICKUP</span><span style="font-size:16px;font-weight:600;letter-spacing:-0.01em">{{ aFrom.title }}</span><span style="font-size:12px;color:{{ aFrom.subC }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ aFrom.sub }}</span></div>
+        </div>
+        <div style="height:1px;background:rgba(22,24,29,0.08);margin:0 56px 0 38px"></div>
+        <div onClick="{{ pickTo }}" style="display:flex;align-items:center;gap:14px;min-height:64px;padding:8px 56px 8px 10px;box-sizing:border-box;border-radius:14px;cursor:pointer" style-hover="background:#F4F3F0">
+          <span style="width:14px;height:14px;border-radius:4px;background:#F37A0E;flex:none;position:relative"></span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-size:11px;font-weight:600;letter-spacing:0.08em;color:#5E6572">DROP</span><span style="font-size:16px;font-weight:600;letter-spacing:-0.01em">{{ aTo.title }}</span><span style="font-size:12px;color:{{ aTo.subC }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ aTo.sub }}</span></div>
+        </div>
+        <div onClick="{{ swap }}" style="position:absolute;right:6px;top:calc(50% - 20px);width:40px;height:40px;border-radius:999px;background:#0B2F73;color:#FFFFFF;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 14px -6px rgba(11,47,115,0.6)"><span style="font-family:'Material Symbols Rounded';font-size:20px">swap_vert</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:#F4F3F0;font-size:12.5px;color:#3D424B"><span style="font-family:'Material Symbols Rounded';font-size:18px;color:#0B3A8C">route</span><span style="flex:1">{{ routeLabel }}</span><span style="font-family:'Geist Mono';font-weight:600;color:#16181D">{{ kmLabel }}</span></div>
+      <div onClick="{{ startBook }}" style="height:54px;border-radius:16px;background:#F37A0E;color:#0A0C10;font-size:15.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 20px;cursor:pointer" style-hover="background:oklch(0.66 0.17 50)"><span>Get my moving cost</span><span style="width:40px;height:40px;border-radius:12px;background:#0A0C10;color:#F37A0E;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px">arrow_forward</span></span></div>
+    </div>
+
+    <sc-if value="{{ booked }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ goTrack }}" style="flex:none;margin:0 16px;background:#16181D;color:#FFFFFF;border-radius:20px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer">
+        <div style="width:44px;height:44px;border-radius:14px;background:#F37A0E;color:#0A0C10;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:22px">local_shipping</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+          <span style="font-size:11px;font-weight:600;letter-spacing:0.08em;color:rgba(255,255,255,0.6)">YOUR MOVE</span>
+          <span style="font-size:15px;font-weight:600">{{ from }} → {{ to }}</span>
+          <span style="font-size:12.5px;color:rgba(255,255,255,0.75)">{{ stageNow }} · {{ dayLabel }}</span>
+        </div>
+        <span style="height:32px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,0.12);font-size:13px;font-weight:600;display:flex;align-items:center">Track</span>
+      </div>
+    </sc-if>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:20px;font-weight:700;letter-spacing:-0.03em;padding:4px 18px 0">How it works</div>
+      <div style="display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;scroll-snap-type:x mandatory">
+        <sc-for list="{{ how }}" as="h" hint-placeholder-count="3">
+          <div style="flex:none;width:200px;scroll-snap-align:start;background:#FFFFFF;border-radius:20px;border:1px solid rgba(22,24,29,0.08);padding:16px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box">
+            <span style="font-family:'Geist Mono';font-size:34px;font-weight:600;line-height:1;color:#F37A0E;letter-spacing:-0.04em">0{{ h.n }}</span>
+            <span style="font-size:15px;font-weight:600;letter-spacing:-0.01em">{{ h.t }}</span>
+            <span style="font-size:12.5px;color:#5E6572;line-height:1.45;text-wrap:pretty">{{ h.s }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- BOOKINGS -->
+  <sc-if value="{{ isList }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:8px 16px 20px;display:flex;flex-direction:column;gap:10px">
+    <div style="font-size:21px;font-weight:600;letter-spacing:-0.02em;padding:8px 2px">My bookings</div>
+    <sc-if value="{{ booked }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ goTrack }}" style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Geist Mono';font-size:12.5px;color:#5E6572">NGV-24817</span><span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ stTint }};color:{{ stCol }}">{{ stageNow }}</span></div>
+        <span style="font-size:15px;font-weight:600">{{ from }} → {{ to }}</span>
+        <span style="font-size:12.5px;color:#5E6572">{{ sizeLabel }} · {{ pkgName }} · {{ dayLabel }}</span>
+      </div>
+    </sc-if>
+    <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:14px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Geist Mono';font-size:12.5px;color:#5E6572">NGV-19302</span><span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:oklch(0.62 0.14 155 / 0.13);color:oklch(0.53 0.15 155)">Completed</span></div>
+      <span style="font-size:15px;font-weight:600">Kochi → Chennai</span>
+      <span style="font-size:12.5px;color:#5E6572">1BHK · Standard · 14 Mar 2026 · You rated 5★</span>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ACCOUNT -->
+  <sc-if value="{{ isAcct }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:8px 16px 20px;display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:21px;font-weight:600;letter-spacing:-0.02em;padding:8px 2px">Account</div>
+    <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:14px;display:flex;gap:12px;align-items:center">
+      <div style="width:46px;height:46px;border-radius:999px;background:#ECEAE5;display:flex;align-items:center;justify-content:center;font-weight:600">PR</div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">Priya Raman</span><span style="font-family:'Geist Mono';font-size:12.5px;color:#5E6572">+91 98401 21345</span></div>
+    </div>
+    <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:0 14px">
+      <sc-for list="{{ acctRows }}" as="r" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:12px;height:52px;border-top:1px solid {{ r.bt }}">
+          <span style="font-family:'Material Symbols Rounded';font-size:21px;color:#3D424B">{{ r.icon }}</span>
+          <span style="flex:1;font-size:14px">{{ r.label }}</span>
+          <span style="font-size:12.5px;color:#5E6572">{{ r.val }}</span>
+          <span style="font-family:'Material Symbols Rounded';font-size:20px;color:#7D838E">chevron_right</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:14px;display:flex;flex-direction:column;gap:10px"><span style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#5E6572">LANGUAGE</span><div style="display:flex;flex-wrap:wrap;gap:6px">
+        <sc-for list="{{ langs }}" as="lg" hint-placeholder-count="6">
+          <div onClick="{{ lg.pick }}" style="height:32px;padding:0 12px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:600;cursor:pointer;background:{{ lg.bg }};color:{{ lg.fg }};border:1px solid {{ lg.bd }}">{{ lg.label }}</div>
+        </sc-for>
+      </div></div>
+  </div>
+  </sc-if>
+
+  <!-- FLOW HEADER -->
+  <sc-if value="{{ inFlow }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;display:flex;flex-direction:column;gap:10px;padding:4px 16px 10px">
+      <div style="display:flex;align-items:center;gap:10px;height:40px">
+        <div onClick="{{ back }}" style="width:38px;height:38px;border-radius:11px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:21px">arrow_back</span></div>
+        <div style="flex:1;display:flex;flex-direction:column"><span style="font-size:17px;font-weight:600;letter-spacing:-0.02em">{{ flowTitle }}</span><span style="font-size:12px;color:#5E6572">{{ from }} → {{ to }}</span></div>
+        <span style="font-family:'Geist Mono';font-size:12px;color:#5E6572">{{ stepLabel }}</span>
+      </div>
+      <div style="display:flex;gap:4px">
+        <sc-for list="{{ stepBars }}" as="b" hint-placeholder-count="5"><div style="flex:1;height:3px;border-radius:999px;background:{{ b.bg }}"></div></sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- SIZE + ITEMS -->
+  <sc-if value="{{ isSize }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:8px">
+    <div style="flex:none;display:flex;justify-content:space-between;align-items:baseline;padding:2px 2px 4px">
+      <span style="font-size:12.5px;color:#5E6572">{{ itemHint }}</span>
+      <span style="font-family:'Geist Mono';font-size:12px;color:#5E6572">{{ itemSum }}</span>
+    </div>
+    <div style="flex:none;display:flex;align-items:center;gap:8px;height:46px;padding:0 12px;border-radius:12px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.14)">
+      <span style="font-family:'Material Symbols Rounded';font-size:20px;color:#5E6572">search</span>
+      <input value="{{ iq }}" onChange="{{ setIq }}" placeholder="Search items, e.g. fridge, wardrobe" style="flex:1;min-width:0;border:none;background:transparent;font:inherit;font-size:14px;color:#16181D;outline:none">
+      <sc-if value="{{ iq }}" hint-placeholder-val="{{ false }}"><span onClick="{{ clearIq }}" style="font-family:'Material Symbols Rounded';font-size:19px;color:#5E6572;cursor:pointer">close</span></sc-if>
+    </div>
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="6">
+      <div style="flex:none;background:#FFFFFF;border-radius:16px;border:1px solid rgba(22,24,29,0.08);overflow:hidden">
+        <div onClick="{{ g.tog }}" style="height:54px;display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer">
+          <span style="flex:1;font-size:15px;font-weight:600">{{ g.label }}</span>
+          <span style="font-family:'Geist Mono';font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:{{ g.nBg }};color:{{ g.nFg }}">{{ g.nL }}</span>
+          <span style="font-family:'Material Symbols Rounded';font-size:22px;color:#5E6572">{{ g.chev }}</span>
+        </div>
+        <sc-if value="{{ g.open }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;border-top:1px solid rgba(22,24,29,0.08)">
+            <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column;padding:0 14px;border-top:1px solid {{ it.bt }};background:{{ it.bg }}">
+                <div onClick="{{ it.focus }}" style="min-height:54px;display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 0;box-sizing:border-box">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:{{ it.w }}">{{ it.label }}</span><span style="font-size:12px;color:{{ it.subC }};line-height:1.35">{{ it.sub }}</span></div>
+                  <sc-if value="{{ it.inline }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:4px;flex:none">
+                      <div onClick="{{ it.dec }}" style="width:32px;height:32px;border-radius:9px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:{{ it.decC }}"><span style="font-family:'Material Symbols Rounded';font-size:18px">remove</span></div>
+                      <span style="font-family:'Geist Mono';font-size:14px;font-weight:600;width:28px;text-align:center">{{ it.n }}</span>
+                      <div onClick="{{ it.inc }}" style="width:32px;height:32px;border-radius:9px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:18px">add</span></div>
+                    </div></sc-if>
+                  <sc-if value="{{ it.expandable }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-family:'Geist Mono';font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:{{ it.nBg }};color:#FFFFFF">{{ it.nL }}</span>
+                    <span style="font-family:'Material Symbols Rounded';font-size:22px;color:#5E6572">{{ it.chev }}</span>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ it.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:6px;padding:0 0 12px">
+                    <sc-for list="{{ it.vars }}" as="v" hint-placeholder-count="3">
+                      <div style="border-radius:12px;background:{{ v.bg }};border:1px solid {{ v.bd }};padding:8px 8px 8px 12px;display:flex;flex-direction:column;gap:8px">
+                        <div style="display:flex;align-items:center;gap:10px">
+                          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-size:13.5px;font-weight:{{ v.w }}">{{ v.label }}</span><span style="font-family:'Geist Mono';font-size:11px;color:#7D838E">{{ v.cftL }}</span></div>
+                          <div style="display:flex;align-items:center;gap:4px;flex:none">
+                      <div onClick="{{ v.dec }}" style="width:32px;height:32px;border-radius:9px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;color:{{ v.decC }}"><span style="font-family:'Material Symbols Rounded';font-size:18px">remove</span></div>
+                      <span style="font-family:'Geist Mono';font-size:14px;font-weight:600;width:28px;text-align:center">{{ v.n }}</span>
+                      <div onClick="{{ v.inc }}" style="width:32px;height:32px;border-radius:9px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:18px">add</span></div>
+                    </div>
+                        </div>
+                        <sc-if value="{{ v.hasOpts }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:flex;flex-wrap:wrap;gap:6px">
+                            <sc-for list="{{ v.opts }}" as="o" hint-placeholder-count="2">
+                              <div onClick="{{ o.tog }}" style="height:30px;padding:0 11px 0 8px;gap:5px;font-size:12.5px;border-radius:999px;display:flex;align-items:center;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bd }}"><span style="font-family:'Material Symbols Rounded';font-size:15px">{{ o.icon }}</span>{{ o.label }}</div>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <div onClick="{{ it.done }}" style="align-self:flex-end;height:34px;padding:0 14px;border-radius:10px;background:#16181D;color:#FFFFFF;font-size:13px;font-weight:600;display:flex;align-items:center;cursor:pointer">Done</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+
+  <!-- DETAILS -->
+  <sc-if value="{{ isDet }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px">
+    <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:12px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;padding:0 2px 4px">
+        <span style="flex:1;font-size:15px;font-weight:600">{{ calTitle }}</span>
+        <div onClick="{{ calPrev }}" style="width:34px;height:34px;border-radius:10px;background:#F2F1ED;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:{{ calPrevO }}"><span style="font-family:'Material Symbols Rounded';font-size:20px">chevron_left</span></div>
+        <div onClick="{{ calNext }}" style="width:34px;height:34px;border-radius:10px;background:#F2F1ED;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:{{ calNextO }}"><span style="font-family:'Material Symbols Rounded';font-size:20px">chevron_right</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">
+        <sc-for list="{{ calDow }}" as="w" hint-placeholder-count="7"><span style="font-size:11px;font-weight:600;color:#7D838E;text-align:center;padding:2px 0">{{ w }}</span></sc-for>
+        <sc-for list="{{ calCells }}" as="d" hint-placeholder-count="35">
+          <div onClick="{{ d.pick }}" style="height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono';font-size:14px;font-weight:{{ d.w }};cursor:{{ d.cur }};background:{{ d.bg }};color:{{ d.fg }};border:1px solid {{ d.bd }}">{{ d.dt }}</div>
+        </sc-for>
+      </div>
+    </div>
+    <span style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#5E6572;padding:4px 2px 0">PICKUP TIME · {{ dayLabel }}</span>
+    <div style="flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+      <sc-for list="{{ slots }}" as="s" hint-placeholder-count="6">
+        <div onClick="{{ s.pick }}" style="height:46px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:{{ s.bg }};color:{{ s.fg }};border:1px solid {{ s.bd }}"><span style="font-size:13px;font-weight:600">{{ s.label }}</span><span style="font-size:11px;opacity:0.8">{{ s.time }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- PACKAGE -->
+  <sc-if value="{{ isPkg }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:10px">
+    <sc-for list="{{ pkgs }}" as="p" hint-placeholder-count="3">
+      <div onClick="{{ p.pick }}" style="flex:none;background:{{ p.bg }};color:{{ p.fg }};border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;cursor:pointer;border:1.5px solid {{ p.bd }};position:relative;overflow:hidden;box-shadow:{{ p.sh }}">
+        <div style="position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:999px;border:22px solid {{ p.orb }};pointer-events:none"></div>
+        <div style="display:flex;align-items:center;gap:12px;position:relative">
+          <span style="font-family:'Geist Mono';font-size:13px;font-weight:600;color:#F37A0E;width:24px">{{ p.no }}</span>
+          <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:18px;font-weight:700;letter-spacing:-0.025em">{{ p.name }}</span><span style="font-size:12.5px;color:{{ p.sg }}">{{ p.tag }}</span></div>
+          <div style="width:22px;height:22px;border-radius:999px;box-sizing:border-box;border:{{ p.radio }}"></div>
+          
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding-left:36px;position:relative">
+          <sc-for list="{{ p.incR }}" as="x" hint-placeholder-count="3">
+            <div style="display:flex;gap:7px;align-items:flex-start;font-size:13px;color:{{ x.c }};line-height:1.35"><span style="font-family:'Material Symbols Rounded';font-size:16px;color:{{ x.k }}">check</span>{{ x.t }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <div style="font-size:12px;color:#5E6572;line-height:1.45;padding:2px 4px">Prices are set by Nagarva from your item volume ({{ cftL }}), distance and floors. Your full price, with add-ons and GST, is shown on the review screen.</div>
+  </div>
+  </sc-if>
+
+  <!-- ADD-ONS -->
+  <sc-if value="{{ isAdd }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px">
+    <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:0 14px">
+      <sc-for list="{{ addRows }}" as="a" hint-placeholder-count="7">
+        <div onClick="{{ a.tog }}" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid {{ a.bt }};cursor:pointer">
+          <div style="width:38px;height:38px;border-radius:11px;background:#ECEAE5;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:#3D424B">{{ a.icon }}</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;font-weight:600">{{ a.label }}</span><span style="font-size:12px;color:#5E6572">{{ a.sub }}</span></div>
+          <span style="font-family:'Geist Mono';font-size:13px;font-weight:600;color:{{ a.pc }}">{{ a.priceL }}</span>
+          <div style="width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex:none;background:{{ a.cb }};border:1.5px solid {{ a.cbd }}"><span style="font-family:'Material Symbols Rounded';font-size:16px;color:#FFFFFF">{{ a.tick }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ stOn }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:14px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:baseline;gap:8px"><span style="flex:1;font-size:14.5px;font-weight:600">Storage duration</span><span style="font-family:'Geist Mono';font-size:13px;font-weight:600">{{ stTotL }}</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ stChips }}" as="c" hint-placeholder-count="5">
+            <div onClick="{{ c.pick }}" style="height:34px;padding:0 13px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:500;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ stCustom }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="flex:1;font-size:13.5px">Number of months</span>
+            <div onClick="{{ stDec }}" style="width:32px;height:32px;border-radius:9px;background:#F2F1ED;display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:18px">remove</span></div>
+            <span style="font-family:'Geist Mono';font-size:14px;font-weight:600;width:32px;text-align:center">{{ stM }}</span>
+            <div onClick="{{ stInc }}" style="width:32px;height:32px;border-radius:9px;background:#F2F1ED;display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:18px">add</span></div>
+          </div>
+        </sc-if>
+        <span style="font-size:12px;color:#5E6572;line-height:1.4">{{ stNote }}</span>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- REVIEW -->
+  <sc-if value="{{ isRev }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px">
+    <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:4px 14px">
+      <sc-for list="{{ sumRows }}" as="r" hint-placeholder-count="4">
+        <div style="display:flex;gap:10px;padding:11px 0;border-top:1px solid {{ r.bt }};font-size:13.5px"><span style="color:#5E6572;width:84px;flex:none">{{ r.k }}</span><span style="flex:1;font-weight:500">{{ r.v }}</span></div>
+      </sc-for>
+    </div>
+    <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:6px 14px 12px;display:flex;flex-direction:column">
+      <sc-for list="{{ priceRows }}" as="r" hint-placeholder-count="5">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13.5px;color:{{ r.c }}"><span>{{ r.k }}</span><span style="font-family:'Geist Mono';font-weight:500">{{ r.v }}</span></div>
+      </sc-for>
+      <div style="display:flex;gap:8px;margin-top:8px;padding-top:10px;border-top:1px solid rgba(22,24,29,0.08)">
+        <input value="{{ coupon }}" onChange="{{ setCoupon }}" placeholder="Coupon code" style="flex:1;height:42px;border-radius:12px;border:1px solid rgba(22,24,29,0.14);background:#F4F3F0;padding:0 12px;font:inherit;font-size:14px;text-transform:uppercase;outline:none;color:#16181D">
+        <div onClick="{{ applyCp }}" style="height:42px;padding:0 16px;border-radius:12px;background:#F2F1ED;border:1px solid rgba(22,24,29,0.08);display:flex;align-items:center;font-size:13.5px;font-weight:600;cursor:pointer">Apply</div>
+      </div>
+      <sc-if value="{{ cpMsg }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;padding-top:6px;color:{{ cpCol }}">{{ cpMsg }}</span></sc-if>
+    </div>
+    <div style="flex:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+      <div onClick="{{ openBill }}" style="height:46px;border-radius:12px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.14);display:flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:600;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:19px">description</span>View bill</div>
+      <div onClick="{{ shareBill }}" style="height:46px;border-radius:12px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.14);display:flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:600;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:19px">share</span>Share bill</div>
+    </div>
+    <div style="flex:none;background:#0B2F73;color:#FFFFFF;border-radius:22px;position:relative;overflow:hidden;box-shadow:0 18px 36px -20px rgba(11,47,115,0.8)">
+      <div style="position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:999px;border:26px solid rgba(243,122,14,0.18);pointer-events:none"></div>
+      <div style="padding:16px 18px 18px;display:flex;flex-direction:column;gap:4px;position:relative"><span style="font-size:11px;font-weight:600;letter-spacing:0.1em;color:rgba(255,255,255,0.7)">TOTAL · INCL. GST</span><span style="font-family:'Geist Mono';font-size:34px;font-weight:600;letter-spacing:-0.03em;line-height:1.1">{{ totalL }}</span></div>
+      <sc-if value="{{ isSplit }}" hint-placeholder-val="{{ false }}">
+        <div style="position:relative;height:0;border-top:2px dashed rgba(255,255,255,0.22);margin:0 14px"><div style="position:absolute;left:-26px;top:-11px;width:20px;height:20px;border-radius:999px;background:#F4F3F0"></div><div style="position:absolute;right:-26px;top:-11px;width:20px;height:20px;border-radius:999px;background:#F4F3F0"></div></div>
+        <div style="display:flex;position:relative">
+          <div style="flex:1;padding:14px 18px 16px;display:flex;flex-direction:column;gap:3px"><span style="font-size:12px;color:rgba(255,255,255,0.75)">Pay now to Nagarva</span><span style="font-family:'Geist Mono';font-size:20px;font-weight:600;color:#F37A0E">{{ advL }}</span><span style="font-size:11.5px;color:rgba(255,255,255,0.6)">Advance to confirm</span></div>
+          <div style="flex:1;padding:14px 18px 16px;display:flex;flex-direction:column;gap:3px;border-left:1px solid rgba(255,255,255,0.12)"><span style="font-size:12px;color:rgba(255,255,255,0.75)">Pay mover later</span><span style="font-family:'Geist Mono';font-size:20px;font-weight:600">{{ balL }}</span><span style="font-size:11.5px;color:rgba(255,255,255,0.6)">After delivery</span></div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:oklch(0.62 0.14 155 / 0.13)"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:oklch(0.45 0.13 155)">verified</span><span style="font-size:13px;color:#16181D;line-height:1.4">No hidden charges. The mover cannot ask for anything beyond this bill.</span></div>
+    <div style="font-size:12px;color:#5E6572;line-height:1.5;padding:0 4px">Free cancellation up to 72 hours before the move. 50% of the advance is refunded between 72 and 24 hours. No refund within 24 hours.</div>
+  </div>
+  </sc-if>
+
+  <!-- FLOW CTA -->
+  <sc-if value="{{ inFlow }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;display:flex;align-items:center;gap:12px;padding:12px 16px 26px;background:#FFFFFF;border-top:1px solid rgba(22,24,29,0.08)">
+      <div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-family:'Geist Mono';font-size:17px;font-weight:600">{{ ctaPrice }}</span><span style="font-size:11.5px;color:#5E6572">{{ ctaSub }}</span></div>
+      <div onClick="{{ next }}" style="height:50px;padding:0 22px;border-radius:14px;background:oklch(0.70 0.17 50);color:#0A0C10;font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px;cursor:pointer">{{ ctaLabel }}</div>
+    </div>
+  </sc-if>
+
+  <!-- CONFIRMED -->
+  <sc-if value="{{ isOk }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:none;height:44px;display:flex;align-items:center;padding:0 16px"><div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:11px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:21px">arrow_back</span></div></div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px 28px;text-align:center">
+    <div style="width:72px;height:72px;border-radius:999px;background:oklch(0.62 0.14 155 / 0.13);display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:40px;color:oklch(0.53 0.15 155)">check</span></div>
+    <span style="font-size:22px;font-weight:600;letter-spacing:-0.02em">Booking confirmed</span>
+    <span style="font-family:'Geist Mono';font-size:13px;color:#5E6572">NGV-24817 · {{ advL }} paid</span>
+    <span style="font-size:13.5px;color:#3D424B;line-height:1.5;text-wrap:pretty">We're matching you with a verified mover near {{ from }}. Their name, crew and vehicle will appear here and on WhatsApp.</span>
+    <div onClick="{{ goTrack }}" style="margin-top:8px;height:50px;width:100%;border-radius:14px;background:oklch(0.70 0.17 50);color:#0A0C10;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">Track booking</div>
+  </div>
+  </sc-if>
+
+  <!-- TRACK -->
+  <sc-if value="{{ isTrack }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:none;background:#0B2F73;color:#FFFFFF;border-radius:0 0 28px 28px;padding:4px 16px 18px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden">
+    <div style="position:absolute;right:-80px;top:8px;width:170px;height:170px;border-radius:999px;border:30px solid rgba(243,122,14,0.16);pointer-events:none"></div>
+    <div style="display:flex;align-items:center;gap:10px;height:44px;position:relative">
+      <div onClick="{{ goHome }}" style="width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:21px;color:#FFFFFF">arrow_back</span></div>
+      <span style="flex:1;font-family:'Geist Mono';font-size:12px;color:rgba(255,255,255,0.7)">NGV-24817 · {{ dayLabel }}</span>
+      <span style="height:28px;padding:0 12px;border-radius:999px;background:#F37A0E;color:#0A0C10;font-size:12px;font-weight:700;display:flex;align-items:center">{{ stageNow }}</span>
+    </div>
+    <div style="font-size:28px;font-weight:700;letter-spacing:-0.04em;line-height:1.05;position:relative">{{ from }} <span style="color:#F37A0E">→</span> {{ to }}</div>
+    <div style="position:relative;height:28px;margin:0 6px">
+      <div style="position:absolute;left:0;right:0;top:14px;border-top:2px dashed rgba(255,255,255,0.25)"></div>
+      <div style="position:absolute;left:0;top:14px;height:2px;background:#F37A0E;width:{{ trkPct }}"></div>
+      <span style="position:absolute;left:-4px;top:9px;width:12px;height:12px;border-radius:999px;border:3px solid oklch(0.70 0.15 155);background:#0B2F73;box-sizing:border-box"></span>
+      <span style="position:absolute;right:-4px;top:9px;width:12px;height:12px;border-radius:3px;background:#F37A0E"></span>
+      <span style="position:absolute;top:0;left:{{ trkPct }};transform:translateX(-50%);font-family:'Material Symbols Rounded';font-size:24px;line-height:24px;color:#FFFFFF;transition:left .6s ease">local_shipping</span>
+    </div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px">
+
+    <sc-if value="{{ cancelled }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;background:oklch(0.62 0.14 25 / 0.13);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:14.5px;font-weight:600;color:oklch(0.53 0.15 25)">Booking cancelled</span><span style="font-size:12.5px;color:#3D424B">{{ refundL }} will be refunded to your original payment method in 5–7 days.</span></div>
+    </sc-if>
+
+    <sc-if value="{{ st0 }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+        <div style="width:56px;height:56px;border-radius:999px;background:oklch(0.62 0.14 48 / 0.12);display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:28px;color:oklch(0.56 0.17 48)">person_search</span></div>
+        <span style="font-size:16px;font-weight:600">Allocating your mover</span>
+        <span style="font-size:12.5px;color:#5E6572;line-height:1.45;max-width:280px">We are assigning a verified mover for your move. You will get their details here and on WhatsApp, usually within 30 minutes.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasMover }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:14px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="width:46px;height:46px;border-radius:13px;background:#16181D;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600">SB</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+            <div style="display:flex;gap:6px;align-items:center"><span style="font-size:15px;font-weight:600">Sri Balaji Packers</span><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:oklch(0.62 0.12 80 / 0.18);color:oklch(0.50 0.11 75)">Gold</span></div>
+            <span style="font-size:12.5px;color:#5E6572">4.8★ · 312 moves on Nagarva</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#F4F3F0"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:#3D424B">badge</span><span style="flex:1;font-size:12.5px;color:#5E6572">Crew head</span><span style="font-size:14px;font-weight:600">Murugan K</span></div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;height:42px;border-radius:12px;background:#F2F1ED;border:1px solid rgba(22,24,29,0.08);display:flex;align-items:center;justify-content:center;gap:6px;font-size:13.5px;font-weight:600;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:19px">call</span>Call crew</div>
+          <div style="flex:1;height:42px;border-radius:12px;background:#F2F1ED;border:1px solid rgba(22,24,29,0.08);display:flex;align-items:center;justify-content:center;gap:6px;font-size:13.5px;font-weight:600;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:19px">chat</span>Chat</div>
+        </div>
+        <span style="font-size:11.5px;color:#7D838E;text-align:center">Calls go through Nagarva. Your number stays private.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ st3 }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);overflow:hidden">
+        <div style="height:150px;background:#ECEAE5;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#5E6572"><span style="font-family:'Material Symbols Rounded';font-size:28px">map</span><span style="font-size:12px">Live map</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:600">Near Krishnagiri</span><span style="font-size:12px;color:#5E6572">Updated 2 min ago</span></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px"><span style="font-family:'Geist Mono';font-size:15px;font-weight:600">4h 10m</span><span style="font-size:12px;color:#5E6572">to {{ to }}</span></div></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ st4 }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;background:#16181D;color:#FFFFFF;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:13px;color:#C3C8D1">Delivery OTP</span>
+        <div style="display:flex;gap:8px"><sc-for list="{{ otpD }}" as="d" hint-placeholder-count="4"><span style="width:52px;height:60px;border-radius:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;font-family:'Geist Mono';font-size:30px;font-weight:600;color:#F37A0E">{{ d }}</span></sc-for></div>
+        <span style="font-size:12.5px;color:#C3C8D1;line-height:1.45">Share this only after every item is unloaded and checked. If something is damaged, report it before sharing.</span>
+      </div>
+      <sc-if value="{{ st4bal }}" hint-placeholder-val="{{ false }}"><div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:14px;display:flex;align-items:center;gap:12px">
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:12.5px;color:#5E6572">Balance to mover</span><span style="font-family:'Geist Mono';font-size:18px;font-weight:600">{{ balL }}</span></div>
+        <div onClick="{{ payBal }}" style="height:44px;padding:0 18px;border-radius:12px;background:oklch(0.70 0.17 50);color:#0A0C10;font-size:14px;font-weight:600;display:flex;align-items:center;cursor:pointer">Pay mover</div>
+      </div></sc-if>
+      <sc-if value="{{ st4full }}" hint-placeholder-val="{{ false }}"><div onClick="{{ markDone }}" style="flex:none;height:46px;border-radius:12px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.08);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;cursor:pointer">All items received</div></sc-if>
+    </sc-if>
+
+    <sc-if value="{{ st5 }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ needRate }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ goRate }}" style="flex:none;background:#FFFFFF;border-radius:18px;border:1.5px solid oklch(0.70 0.17 50);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer">
+          <span style="font-family:'Material Symbols Rounded';font-size:26px;color:oklch(0.56 0.17 48)">star</span>
+          <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14.5px;font-weight:600">How was your move?</span><span style="font-size:12.5px;color:#5E6572">Your rating decides which movers get future bookings.</span></div>
+          <span style="font-family:'Material Symbols Rounded';font-size:20px;color:#7D838E">chevron_right</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ rated }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:none;background:oklch(0.62 0.14 155 / 0.13);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:oklch(0.45 0.13 155)">Thanks for rating {{ stars }}★</span><span style="font-size:12.5px;color:#3D424B">Invoice and payment receipts are in your bookings.</span></div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ hasPhotos }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#5E6572;padding:4px 2px 0">PHOTOS FROM CREW</span>
+        <div style="flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+          <sc-for list="{{ photos }}" as="ph" hint-placeholder-count="3">
+            <div style="min-width:0;aspect-ratio:1;border-radius:12px;background:#ECEAE5;display:flex;flex-direction:column;justify-content:flex-end;padding:7px;box-sizing:border-box;gap:1px"><span style="font-size:11px;font-weight:600;color:#3D424B">{{ ph.t }}</span><span style="font-family:'Geist Mono';font-size:10.5px;color:#5E6572">{{ ph.at }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="flex:none;background:#FFFFFF;border-radius:18px;border:1px solid rgba(22,24,29,0.08);padding:8px 14px">
+      <sc-for list="{{ timeline }}" as="t" hint-placeholder-count="6">
+        <div style="display:flex;gap:12px">
+          <div style="display:flex;flex-direction:column;align-items:center;width:18px">
+            <div style="width:18px;height:18px;border-radius:999px;margin-top:9px;flex:none;display:flex;align-items:center;justify-content:center;box-sizing:border-box;background:{{ t.dot }};border:2px solid {{ t.ring }}"><span style="font-family:'Material Symbols Rounded';font-size:13px;color:#FFFFFF">{{ t.tick }}</span></div>
+            <div style="flex:1;width:2px;background:{{ t.line }}"></div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:1px;padding:8px 0 10px"><span style="font-size:13.5px;font-weight:{{ t.w }};color:{{ t.fg }}">{{ t.label }}</span><span style="font-size:12px;color:#7D838E">{{ t.sub }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ showActs }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+      <sc-for list="{{ acts }}" as="a" hint-placeholder-count="2">
+        <div onClick="{{ a.go }}" style="height:46px;border-radius:12px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.08);display:flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:600;cursor:pointer;color:{{ a.c }}"><span style="font-family:'Material Symbols Rounded';font-size:19px">{{ a.icon }}</span>{{ a.label }}</div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ showDemo }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:12px;color:#7D838E">
+        <span>Demo</span>
+        <div onClick="{{ prevStage }}" style="padding:6px 12px;border-radius:999px;border:1px dashed rgba(22,24,29,0.25);cursor:pointer">← stage</div>
+        <div onClick="{{ nextStage }}" style="padding:6px 12px;border-radius:999px;border:1px dashed rgba(22,24,29,0.25);cursor:pointer">stage →</div>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- CLAIM -->
+  <sc-if value="{{ isClaim }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:none;display:flex;align-items:center;gap:10px;height:44px;padding:4px 16px 8px">
+    <div onClick="{{ goTrack }}" style="width:38px;height:38px;border-radius:11px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:21px">arrow_back</span></div>
+    <span style="font-size:17px;font-weight:600;letter-spacing:-0.02em">Report damage</span>
+  </div>
+  <sc-if value="{{ claimDone }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 28px;text-align:center">
+      <span style="font-family:'Material Symbols Rounded';font-size:44px;color:oklch(0.53 0.15 255)">assignment_turned_in</span>
+      <span style="font-size:20px;font-weight:600">Claim CLM-1042 raised</span>
+      <span style="font-size:13.5px;color:#3D424B;line-height:1.5">Nagarva reviews it within 48 hours with the mover's packing and unloading photos. Approved claims are paid from damage cover or recovered from the mover.</span>
+      <div onClick="{{ goTrack }}" style="margin-top:8px;height:48px;width:100%;border-radius:14px;background:#F2F1ED;border:1px solid rgba(22,24,29,0.08);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">Back to booking</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ claimOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px">
+    <span style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#5E6572;padding:4px 2px 0">WHICH ITEMS?</span>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <sc-for list="{{ claimItems }}" as="c" hint-placeholder-count="6">
+        <div onClick="{{ c.tog }}" style="height:34px;padding:0 13px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:500;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.label }}</div>
+      </sc-for>
+    </div>
+    <span style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#5E6572;padding:4px 2px 0">PHOTOS</span>
+    <div style="flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+      <sc-for list="{{ claimPh }}" as="p" hint-placeholder-count="3">
+        <div onClick="{{ p.tog }}" style="min-width:0;aspect-ratio:1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:11.5px;background:{{ p.bg }};color:{{ p.fg }};border:1.5px dashed {{ p.bd }}"><span style="font-family:'Material Symbols Rounded';font-size:24px">{{ p.icon }}</span>{{ p.label }}</div>
+      </sc-for>
+    </div>
+    <textarea value="{{ claimNote }}" onChange="{{ setClaimNote }}" placeholder="What happened?" style="min-height:90px;border-radius:12px;border:1px solid rgba(22,24,29,0.14);background:#FFFFFF;padding:10px 12px;font:inherit;font-size:14px;resize:none;outline:none;color:#16181D"></textarea>
+  </div>
+  <div style="flex:none;padding:12px 16px 26px;background:#FFFFFF;border-top:1px solid rgba(22,24,29,0.08)">
+    <div onClick="{{ submitClaim }}" style="height:50px;border-radius:14px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;background:{{ claimBtnBg }};color:{{ claimBtnFg }}">Submit claim</div>
+  </div>
+  </sc-if>
+  </sc-if>
+
+  <!-- RATE -->
+  <sc-if value="{{ isRate }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:none;display:flex;align-items:center;gap:10px;height:44px;padding:4px 16px 8px">
+    <div onClick="{{ goTrack }}" style="width:38px;height:38px;border-radius:11px;background:#FFFFFF;border:1px solid rgba(22,24,29,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:21px">close</span></div>
+    <span style="font-size:17px;font-weight:600;letter-spacing:-0.02em">Rate your move</span>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:12px 16px 16px;display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0">
+      <span style="font-size:14px;color:#5E6572">Sri Balaji Packers · Murugan K's crew</span>
+      <div style="display:flex;gap:6px">
+        <sc-for list="{{ starRow }}" as="s" hint-placeholder-count="5">
+          <span onClick="{{ s.pick }}" style="font-family:'Material Symbols Rounded';font-size:42px;cursor:pointer;font-variation-settings:'FILL' {{ s.fill }};color:{{ s.c }}">star</span>
+        </sc-for>
+      </div>
+      <span style="font-size:13px;font-weight:600;height:18px">{{ starWord }}</span>
+    </div>
+    <span style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#5E6572">{{ aspTitle }}</span>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <sc-for list="{{ aspRow }}" as="a" hint-placeholder-count="5">
+        <div onClick="{{ a.tog }}" style="height:34px;padding:0 13px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:500;cursor:pointer;background:{{ a.bg }};color:{{ a.fg }};border:1px solid {{ a.bd }}">{{ a.label }}</div>
+      </sc-for>
+    </div>
+    <textarea value="{{ note }}" onChange="{{ setNote }}" placeholder="Anything else? (optional)" style="min-height:80px;border-radius:12px;border:1px solid rgba(22,24,29,0.14);background:#FFFFFF;padding:10px 12px;font:inherit;font-size:14px;resize:none;outline:none;color:#16181D"></textarea>
+  </div>
+  <div style="flex:none;padding:12px 16px 26px;background:#FFFFFF;border-top:1px solid rgba(22,24,29,0.08)">
+    <div onClick="{{ submitRate }}" style="height:50px;border-radius:14px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;background:{{ rateBtnBg }};color:{{ rateBtnFg }}">Submit</div>
+  </div>
+  </sc-if>
+
+  <!-- TAB BAR -->
+  <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;height:78px;display:flex;background:#FFFFFF;border-top:1px solid rgba(22,24,29,0.08);padding-bottom:14px;box-sizing:border-box">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+        <div onClick="{{ t.go }}" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ t.c }}"><span style="font-family:'Material Symbols Rounded';font-size:24px;font-variation-settings:'FILL' {{ t.fill }}">{{ t.icon }}</span><span style="font-size:11px;font-weight:600">{{ t.label }}</span></div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- SHEETS -->
+  <sc-if value="{{ sheetOn }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;background:rgba(22,24,29,0.42);display:flex;flex-direction:column;justify-content:flex-end;z-index:20">
+    <div onClick="{{ closeSheet }}" style="flex:1"></div>
+    <div style="background:#FFFFFF;border-radius:28px 28px 0 0;padding:10px 16px 28px;display:flex;flex-direction:column;gap:12px;max-height:78%;overflow-y:auto">
+      <div style="width:38px;height:4px;border-radius:999px;background:rgba(22,24,29,0.15);align-self:center"></div>
+
+      <sc-if value="{{ shAddr }}" hint-placeholder-val="{{ false }}">
+        <span style="font-size:20px;font-weight:600;letter-spacing:-0.02em">{{ addrTitle }}</span>
+        <div onClick="{{ useLoc }}" style="height:44px;border-radius:12px;border:1px solid rgba(22,24,29,0.14);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:13.5px;font-weight:600;cursor:pointer;color:oklch(0.56 0.17 48)"><span style="font-family:'Material Symbols Rounded';font-size:19px">my_location</span>Use my current location</div>
+        <span style="font-size:12px;font-weight:600;letter-spacing:0.08em;color:#5E6572;padding-top:2px">CITY</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ aCities }}" as="c" hint-placeholder-count="8">
+            <div onClick="{{ c.pick }}" style="height:32px;padding:0 12px;font-size:13px;border-radius:999px;display:flex;align-items:center;font-weight:500;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bd }}">{{ c.name }}</div>
+          </sc-for>
+        </div>
+        <sc-for list="{{ aFields }}" as="f" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;gap:5px"><span style="font-size:12.5px;color:#3D424B">{{ f.label }}</span><input value="{{ f.val }}" onChange="{{ f.set }}" placeholder="{{ f.ph }}" inputMode="{{ f.im }}" style="height:44px;border-radius:12px;border:1px solid rgba(22,24,29,0.14);background:#F4F3F0;padding:0 12px;font:inherit;font-size:14px;color:#16181D;outline:none;width:100%;box-sizing:border-box"></div>
+        </sc-for>
+        <div style="display:flex;align-items:center;gap:10px;padding-top:4px">
+          <span style="flex:1;font-size:14px;font-weight:500">Floor</span>
+          <div onClick="{{ aDec }}" style="width:32px;height:32px;border-radius:9px;background:#F2F1ED;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:18px">remove</span></div>
+          <span style="font-family:'Geist Mono';font-size:14px;font-weight:600;width:60px;text-align:center">{{ aFloorL }}</span>
+          <div onClick="{{ aInc }}" style="width:32px;height:32px;border-radius:9px;background:#F2F1ED;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:18px">add</span></div>
+        </div>
+        <div onClick="{{ aLift }}" style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <div style="flex:1;display:flex;flex-direction:column;gap:1px"><span style="font-size:14px;font-weight:500">Lift available</span><span style="font-size:12px;color:#5E6572">{{ aLiftNote }}</span></div>
+          <div style="width:44px;height:26px;border-radius:999px;position:relative;flex:none;background:{{ aTBg }}"><div style="position:absolute;top:3px;left:{{ aTX }};width:20px;height:20px;border-radius:999px;background:#FFFFFF"></div></div>
+        </div>
+        <div onClick="{{ closeSheet }}" style="height:50px;border-radius:14px;background:oklch(0.70 0.17 50);color:#0A0C10;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:4px">Save address</div>
+      </sc-if>
+
+      <sc-if value="{{ shBill }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;font-size:20px;font-weight:600;letter-spacing:-0.02em">Bill before payment</span><span style="font-size:12px;color:#5E6572;white-space:nowrap;flex:none">Valid 7 days</span></div>
+        <div style="border-radius:14px;border:1px solid #E3E5EA;background:#FFFFFF;padding:16px;display:flex;flex-direction:column;gap:12px;color:#16181D">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            <div style="width:34px;height:34px;border-radius:9px;overflow:hidden;flex:none;background:#FFFFFF;border:1px solid #E3E5EA;position:relative"><img src="assets/images/nagarva_logo.png" alt="Nagarva" style="position:absolute;width:122%;height:122%;left:-11%;top:-11%;object-fit:cover"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">Nagarva Relocations</span><span style="font-family:'Geist Mono';font-size:10.5px;color:#5B6170">GSTIN 33AAKCN4821M1Z6</span></div>
+            <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px"><span style="font-size:10.5px;font-weight:700;letter-spacing:0.08em;color:#C2410C">ESTIMATE</span><span style="font-family:'Geist Mono';font-size:11px;color:#5B6170;white-space:nowrap">EST-24817</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px 0;border-top:1px solid #E3E5EA;border-bottom:1px solid #E3E5EA">
+            <sc-for list="{{ billMeta }}" as="m" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:10.5px;color:#5B6170">{{ m.k }}</span><span style="font-size:12px;font-weight:500;line-height:1.35">{{ m.v }}</span></div></sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:0.08em;color:#5B6170">ITEMS ({{ billN }})</span>
+            <sc-for list="{{ billItems }}" as="b" hint-placeholder-count="4"><div style="display:flex;gap:8px;font-size:12px;line-height:1.35"><span style="flex:1">{{ b.name }}</span><span style="font-family:'Geist Mono'">×{{ b.n }}</span></div></sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;padding-top:10px;border-top:1px solid #E3E5EA">
+            <sc-for list="{{ priceRows }}" as="r" hint-placeholder-count="4"><div style="display:flex;justify-content:space-between;font-size:12px"><span>{{ r.k }}</span><span style="font-family:'Geist Mono'">{{ r.v }}</span></div></sc-for>
+            <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding-top:6px;border-top:1px solid #E3E5EA"><span>Total payable</span><span style="font-family:'Geist Mono'">{{ totalL }}</span></div>
+            <span style="font-size:11px;color:#5B6170;line-height:1.4">{{ billTerms }}</span>
+          </div>
+        </div>
+        <sc-if value="{{ billSent }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:oklch(0.62 0.14 155 / 0.13);font-size:12.5px;color:#16181D"><span style="font-family:'Material Symbols Rounded';font-size:18px;color:oklch(0.45 0.13 155)">check_circle</span>Bill sent on WhatsApp to +91 {{ phoneL }}</div></sc-if>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+          <div onClick="{{ sendBill }}" style="height:46px;border-radius:12px;background:#F2F1ED;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:600;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:19px">chat</span>WhatsApp</div>
+          <div style="height:46px;border-radius:12px;background:#F2F1ED;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:600;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:19px">download</span>Download PDF</div>
+        </div>
+        <div onClick="{{ billPay }}" style="height:50px;border-radius:14px;background:oklch(0.70 0.17 50);color:#0A0C10;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">Pay {{ advL }}</div>
+      </sc-if>
+
+      <sc-if value="{{ shPay }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;font-weight:600;letter-spacing:-0.02em">{{ payTitle }}</span><span style="font-size:12.5px;color:#5E6572">{{ payTo }}</span></div>
+        <span style="font-family:'Geist Mono';font-size:28px;font-weight:600">{{ payAmt }}</span>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{ payRows }}" as="p" hint-placeholder-count="3">
+            <div onClick="{{ p.pick }}" style="display:flex;align-items:center;gap:12px;height:52px;padding:0 12px;border-radius:12px;cursor:pointer;border:1.5px solid {{ p.bd }}"><span style="font-family:'Material Symbols Rounded';font-size:21px;color:#3D424B">{{ p.icon }}</span><span style="flex:1;font-size:14px;font-weight:500">{{ p.label }}</span><div style="width:18px;height:18px;border-radius:999px;box-sizing:border-box;border:{{ p.radio }}"></div></div>
+          </sc-for>
+        </div>
+        <div onClick="{{ doPay }}" style="height:50px;border-radius:14px;background:oklch(0.70 0.17 50);color:#0A0C10;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">Pay {{ payAmt }}</div>
+      </sc-if>
+
+      <sc-if value="{{ shResch }}" hint-placeholder-val="{{ false }}">
+        <span style="font-size:20px;font-weight:600;letter-spacing:-0.02em">Reschedule</span>
+        <div style="display:flex;gap:6px;overflow-x:auto">
+          <sc-for list="{{ rDays }}" as="d" hint-placeholder-count="7">
+            <div onClick="{{ d.pick }}" style="flex:none;width:50px;height:62px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;background:{{ d.bg }};color:{{ d.fg }};border:1px solid {{ d.bd }}"><span style="font-size:11px">{{ d.dow }}</span><span style="font-family:'Geist Mono';font-size:17px;font-weight:600">{{ d.dt }}</span></div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+          <sc-for list="{{ rSlots }}" as="s" hint-placeholder-count="3">
+            <div onClick="{{ s.pick }}" style="flex:1;height:44px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:{{ s.bg }};color:{{ s.fg }};border:1px solid {{ s.bd }}"><span style="font-size:13px;font-weight:600">{{ s.label }}</span><span style="font-size:11px;opacity:0.8">{{ s.time }}</span></div>
+          </sc-for>
+        </div>
+        <span style="font-size:12.5px;color:#3D424B;line-height:1.45">{{ reschNote }}</span>
+        <div onClick="{{ doResch }}" style="height:50px;border-radius:14px;background:oklch(0.70 0.17 50);color:#0A0C10;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">Confirm new date</div>
+      </sc-if>
+
+      <sc-if value="{{ shCancel }}" hint-placeholder-val="{{ false }}">
+        <span style="font-size:20px;font-weight:600;letter-spacing:-0.02em">Cancel booking?</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ cReasons }}" as="r" hint-placeholder-count="4">
+            <div onClick="{{ r.pick }}" style="height:34px;padding:0 13px;border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:500;cursor:pointer;background:{{ r.bg }};color:{{ r.fg }};border:1px solid {{ r.bd }}">{{ r.label }}</div>
+          </sc-for>
+        </div>
+        <div style="background:#F4F3F0;border-radius:12px;padding:12px;display:flex;justify-content:space-between;font-size:13.5px"><span>{{ refundRule }}</span><span style="font-family:'Geist Mono';font-weight:600">{{ refundL }}</span></div>
+        <div style="display:flex;gap:8px">
+          <div onClick="{{ closeSheet }}" style="flex:1;height:48px;border-radius:14px;background:#F2F1ED;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">Keep booking</div>
+          <div onClick="{{ doCancel }}" style="flex:1;height:48px;border-radius:14px;background:oklch(0.53 0.15 25);color:#FFFFFF;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer">Cancel booking</div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;advancePct&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:10,&quot;min&quot;:5,&quot;max&quot;:30,&quot;step&quot;:1,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;showDemo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  componentDidMount(){ window.__ngC=this; }
+  _applyL(){ if(this._lA===this.state.lang) return; this._lA=this.state.lang; const go=()=>window.ngCust?window.ngCust.set(this.state.lang,document.body):setTimeout(go,100); setTimeout(go,0); }
+  CITY = {Chennai:[13.08,80.27,'Anna Nagar West','600040'],Bengaluru:[12.97,77.59,'HSR Layout','560102'],Coimbatore:[11.02,76.96,'RS Puram','641002'],Hyderabad:[17.39,78.49,'Gachibowli','500032'],Kochi:[9.93,76.27,'Kakkanad','682030'],Mumbai:[19.08,72.88,'Andheri West','400053'],Pune:[18.52,73.86,'Baner','411045'],Delhi:[28.61,77.21,'Dwarka Sector 10','110075']};
+  TYPES = [['home','home','Full house','Household goods, any size'],['office','business','Office shifting','Desks, chairs, IT and records'],['few','package_2','Up to 5 items','Fridge, sofa, a few cartons'],['bike','two_wheeler','Bike only','Scooter or motorbike, packed and shipped']];
+  SCOPE = {intra:['location_city','Within city','Pickup and drop in the same city. Most moves finish the same day.',['home','office','few'],['Full house','Office','Up to 5 items'],'Same day'],inter:['route','Intercity','Moving to another city or state, delivered door to door.',['few','bike','home'],['Full house','Bike','Up to 5 items'],'2–6 days']};
+  TFEAT = {home:['Packing material','Loading & unloading','Dismantle & assembly'],office:['IT and records handled','Weekend moves','Floor-wise labelling'],few:['Single-item booking','Doorstep pickup','Wrapped & loaded'],bike:['Bubble + foam wrap','Fuel drained & sealed','Door-to-door']};
+  TTAG = {intra:{home:'Dedicated truck',office:'Dedicated truck',few:'Mini truck'},inter:{home:'Dedicated truck',few:'Shared truck',bike:'Shared truck'}};
+  TSUB = {inter:{few:'Shared truck with other bookings · cheapest',bike:'Shared truck · door to door',home:'Dedicated truck · car add-on available'}};
+  CATS = [['bed','Bedroom'],['liv','Living'],['din','Dining & kitchen'],['app','Appliances'],['ele','Electronics'],['off','Office'],['veh','Vehicles'],['oth','Others']];
+  CATS_FOR = {home:['bed','liv','din','app','ele','oth','veh'],office:['off','ele','app','oth'],bike:['veh'],few:['bed','liv','din','app','ele','oth']};
+  IT = (()=>{const D=['dis','Dismantle & assemble',400], U=(a,b)=>[['un','Uninstall',a],['re','Reinstall',b]];
+    return {
+    cot:['bed','Cot / bed',[['Single · basic',35],['Double · basic',55],['Queen · hydraulic storage',70],['King · hydraulic storage',80],['Bunk bed',60],['Diwan / folding',25]],[D]],
+    mat:['bed','Mattress',[['Single',10],['Double / queen',18],['King',22]],[]],
+    ward:['bed','Wardrobe',[['1-door',25],['2-door',40],['3-door',55],['4-door',70],['Sliding door',75]],[D]],
+    dress:['bed','Dressing table',[['Small',15],['With mirror',22]],[D]],
+    side:['bed','Side table',[['Standard',5]],[]],
+    cradle:['bed','Baby cot / cradle',[['Standard',12]],[D]],
+    sofa:['liv','Sofa',[['1-seater',15],['2-seater',30],['3-seater',45],['L-shape',70],['Sofa cum bed',50]],[D]],
+    recl:['liv','Recliner',[['1-seater',20],['2-seater',40],['3-seater',55]],[]],
+    ctab:['liv','Centre table',[['Wooden',10],['Glass top',12],['Marble top',15]],[]],
+    tvu:['liv','TV unit',[['Small',15],['Wall-length',30]],[D]],
+    shelf:['liv','Bookshelf',[['Small',12],['Large',25]],[D]],
+    shoe:['liv','Shoe rack',[['Standard',6]],[]],
+    pooja:['liv','Pooja unit',[['Wall-mounted',6],['Floor standing',12]],[['un','Wall unmount',300],['re','Wall mount',400]]],
+    dtab:['din','Dining table',[['4-seater',25],['6-seater',35],['8-seater',50]],[D,['glass','Glass / marble top',0]]],
+    dch:['din','Dining chair',[['Wooden',6],['Cushioned',7],['Plastic',3]],[]],
+    fridge:['din','Fridge',[['Single door',25],['Double door',35],['Side-by-side',55]],[]],
+    stove:['din','Gas stove',[['2-burner',3],['3 / 4-burner',4],['Built-in hob',4]],U(200,300)],
+    cyl:['din','Gas cylinder',[['Filled',3],['Empty',3]],[]],
+    micro:['din','Microwave / OTG',[['Standard',5]],[]],
+    ro:['din','Water purifier',[['Standard',3]],U(200,400)],
+    chim:['din','Kitchen chimney',[['Standard',6]],U(400,700)],
+    ac:['app','AC',[['Split',12],['Window',15]],[...U(600,1000),['gas','Gas top-up',1500]]],
+    wm:['app','Washing machine',[['Top load',20],['Front load',22],['Semi-automatic',20]],U(150,250)],
+    gey:['app','Geyser',[['Storage',4],['Instant',3]],U(300,500)],
+    cool:['app','Air cooler',[['Personal',8],['Desert',14]],[]],
+    fan:['app','Fan',[['Ceiling',2],['Pedestal / table',4]],U(150,250)],
+    inv:['app','Inverter + battery',[['Single battery',8],['Double battery',14]],[['un','Disconnect',200],['re','Reconnect',300]]],
+    dw:['app','Dishwasher',[['Standard',15]],U(200,400)],
+    tv:['ele','TV',[['Up to 32"',6],['40–50"',10],['55–65"',14],['75" and above',18]],[['un','Wall unmount',300],['re','Wall mount',500]]],
+    pc:['ele','Desktop computer',[['With monitor',6]],[]],
+    prn:['ele','Printer',[['Home',3],['Office',8]],[]],
+    music:['ele','Music system / speakers',[['Standard',6]],[]],
+    cctv:['ele','CCTV / Wi-Fi',[['Per camera / router',1]],U(150,300)],
+    wsd:['off','Workstation desk',[['1-seater',18],['2-seater',30],['4-seater cluster',55]],[D]],
+    och:['off','Office chair',[['Revolving',7],['Visitor',5]],[]],
+    conf:['off','Conference table',[['6-seater',35],['8-seater',45],['12-seater',70]],[D]],
+    cab:['off','Filing cabinet',[['2-drawer',10],['4-drawer',18],['Steel almirah',30]],[]],
+    rec:['off','Reception desk',[['Standard',35]],[D]],
+    srv:['off','Server rack',[['Half rack',25],['Full rack',45]],[['un','Disconnect',800],['re','Reconnect',1200]]],
+    car:['veh','Car',[['Hatchback',0],['Sedan',0],['SUV / MUV',0],['Luxury',0]],[['enc','Enclosed carrier',0]]],
+    bike:['veh','Two-wheeler',[['Scooter',0],['Bike up to 200cc',0],['Premium bike',0]],[]],
+    box:['oth','Cartons',[['Small',3],['Medium',4],['Large',6]],[]],
+    study:['oth','Study table',[['Standard',18],['With hutch',25]],[D]],
+    tread:['oth','Treadmill',[['Manual',20],['Motorised',30]],[D]],
+    gym:['oth','Exercise cycle / gym',[['Cycle',12],['Multi-gym',40]],[D]],
+    cyc:['oth','Bicycle',[['Adult',10],['Kids',6]],[]],
+    plant:['oth','Plants',[['Small pot',2],['Large pot',6]],[]],
+    suit:['oth','Suitcase / trunk',[['Suitcase',4],['Steel trunk',8]],[]],
+    piano:['oth','Piano / keyboard',[['Keyboard',6],['Upright piano',45]],[]]
+  };})();
+  PRESET = (()=>{const B=[['cot',1,1,'dis'],['mat',1,1],['ward',1,1,'dis'],['sofa',2,1],['tv',1,1,'un re'],['fridge',0,1],['wm',0,1,'un re'],['stove',0,1],['cyl',0,1],['fan',0,2,'un re'],['box',1,20]];
+    return {home:{
+      '1RK':[['cot',0,1],['mat',0,1],['fridge',0,1],['tv',0,1],['stove',0,1],['cyl',0,1],['box',1,10]],
+      '1BHK':B,
+      '2BHK':[['cot',1,2,'dis'],['mat',1,2],['ward',1,2,'dis'],['sofa',2,1],['ctab',0,1],['dtab',0,1,'dis'],['dch',0,4],['tv',1,1,'un re'],['tvu',0,1],['fridge',1,1],['wm',0,1,'un re'],['ac',0,1,'un re'],['stove',0,1],['cyl',0,1],['ro',0,1,'un re'],['gey',0,1,'un re'],['fan',0,3,'un re'],['box',1,35]],
+      '3BHK':[['cot',1,2,'dis'],['cot',2,1,'dis'],['mat',1,3],['ward',2,3,'dis'],['dress',1,1],['sofa',3,1],['ctab',1,1],['dtab',1,1,'dis'],['dch',1,6],['tv',2,1,'un re'],['tv',0,1],['tvu',1,1],['fridge',1,1],['wm',1,1,'un re'],['ac',0,2,'un re'],['stove',1,1],['cyl',0,2],['ro',0,1,'un re'],['gey',0,2,'un re'],['fan',0,4,'un re'],['study',0,1],['box',1,50]],
+      '4BHK+':[['cot',3,2,'dis'],['cot',2,2,'dis'],['mat',2,4],['ward',3,4,'dis'],['dress',1,2],['sofa',3,1],['recl',1,1],['ctab',2,1],['dtab',2,1,'dis glass'],['dch',1,8],['tv',2,2,'un re'],['tvu',1,1],['fridge',2,1],['wm',1,1,'un re'],['ac',0,4,'un re'],['stove',2,1,'un re'],['cyl',0,2],['ro',0,1,'un re'],['chim',0,1,'un re'],['gey',0,3,'un re'],['fan',0,5,'un re'],['study',1,1],['box',2,70]]
+    },office:{
+      '≤10 desks':[['wsd',1,5,'dis'],['och',0,10],['cab',1,2],['conf',0,1,'dis'],['pc',0,10],['prn',1,1],['ac',0,2,'un re'],['box',1,40]],
+      '10–30':[['wsd',2,6,'dis'],['och',0,25],['cab',1,4],['conf',1,1,'dis'],['rec',0,1,'dis'],['pc',0,25],['prn',1,2],['srv',0,1,'un re'],['fridge',0,1],['ac',0,4,'un re'],['box',1,90]],
+      '30+':[['wsd',2,11,'dis'],['och',0,45],['cab',1,6],['conf',2,1,'dis'],['rec',0,1,'dis'],['pc',0,45],['prn',1,3],['srv',1,1,'un re'],['fridge',0,2],['tv',2,2,'un re'],['ac',0,8,'un re'],['box',1,150]]
+    },bike:{'':[['bike',1,1]]},few:{'':[]}};})();
+  PKG = {
+    eco:{name:'Economy',tag:'Shared truck, basic packing',base:16,km:0.04,inc:['Single-layer packing','Shared vehicle, may take 1–2 days longer','Loading and unloading']},
+    std:{name:'Standard',tag:'Most booked',base:20,km:0.05,inc:['Multi-layer packing with bubble wrap','Dedicated vehicle','Dismantle & assembly included']},
+    prem:{name:'Premium',tag:'Gold-rated movers only',base:26,km:0.06,inc:['Everything in Standard','Waterproof wrap and wooden crating for TV / glass','Unpacking & arranging included','Crew supervisor on site']}
+  };
+  SLOTS = [['a','Early','6–8 am'],['m','Morning','8–10 am'],['n','Late morning','10–12'],['b','Noon','12–2 pm'],['c','Afternoon','2–4 pm'],['e','Evening','4–6 pm']];
+  STG = [['Booked','Advance paid to Nagarva'],['Mover assigned','Crew and vehicle confirmed'],['Packing','Crew is packing your items'],['On the way','Loaded and in transit'],['Delivered','Unloaded at your new home'],['Completed','Balance paid']];
+  mk(kind,size){ const p=(this.PRESET[kind]||{})[size]||[]; return p.map(([k,v,n,o],i)=>({id:i+1,k,v,n,o:Object.fromEntries((o||'').split(' ').filter(Boolean).map(x=>[x,true]))})); }
+  state = {lang:(()=>{try{return localStorage.getItem('ng_cust_lang')||'en'}catch(e){return 'en'}})(), scr:'login', lg:'phone', scope:null, phone:'', otp:'', sheet:null, addrFor:'p', from:'Chennai', to:'Bengaluru', kind:'home', size:'', lines:[], nid:100, cat:'bed', openCat:null, openItem:null, calM:0, day:5, slot:'m',
+    pa:{area:'',flat:'',bldg:'',mark:'',pin:''}, da:{area:'',flat:'',bldg:'',mark:'',pin:''}, pF:2, pLift:false, dF:4, dLift:true,
+    pkg:'std', adds:{cover:true}, coupon:'', cpOn:false, cpTried:false, booked:false, stage:0, payM:'upi', payFor:'adv', cancelR:'Plans changed', cancelled:false, rDay:7, rSlot:'m', claimSel:{}, claimPh:{}, claimNote:'', claimDone:false, stars:0, asp:{}, rated:false, note:''};
+
+  startRs(){ clearInterval(this.rsT); this.setState({rs:30}); this.rsT=setInterval(()=>this.setState(p=>{ if(p.rs<=1){ clearInterval(this.rsT); return {rs:0}; } return {rs:p.rs-1}; }),1000); }
+  componentWillUnmount(){ clearInterval(this.rsT); }
+  km(){ const s=this.state; if(s.from===s.to) return 15; const [a,b]=this.CITY[s.from],[c,d]=this.CITY[s.to], R=6371, r=x=>x*Math.PI/180;
+    const h=Math.sin(r(c-a)/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(r(d-b)/2)**2; return Math.round(2*R*Math.asin(Math.sqrt(h))*1.25); }
+  cft(){ return this.state.lines.reduce((t,l)=>t+l.n*this.IT[l.k][2][l.v][1],0); }
+  qty(k){ return this.state.lines.filter(l=>l.k===k).reduce((t,l)=>t+l.n,0); }
+  moveCost(p){ const s=this.state, P=this.PKG[p], km=this.km(), local=s.from===s.to;
+    const rate=P.base+(local?0:km*P.km), mv=Math.max(2999,Math.round(this.cft()*rate/10)*10);
+    const fl=(s.pLift?0:s.pF)*250+(s.dLift?0:s.dF)*250; return {mv,fl}; }
+  vehCost(){ const s=this.state, km=this.km(), local=s.from===s.to, car=this.qty('car'), bike=this.qty('bike');
+    return car*(local?2500:Math.round((3500+km*6)/10)*10)+bike*(local?900:Math.round((1500+km*2)/10)*10); }
+  svcCost(){ const s=this.state; return s.lines.reduce((t,l)=>t+this.IT[l.k][3].reduce((u,[ok,,pr])=>u+(l.o[ok]&&!(ok==='dis'&&s.pkg!=='eco')?pr*l.n:0),0),0); }
+  addList(){ const s=this.state; return [
+      ['cover','verified_user','Damage cover','Up to ₹2,00,000 for transit damage',1499],
+      ['unpack','inventory_2','Unpacking & arranging','Crew unpacks and places items',s.pkg==='prem'?0:1800],
+      ['store','warehouse','Storage','Secure warehouse · ₹2,500 per month',2500*(s.stM||1)]
+    ]; }
+  quote(){ const s=this.state, onlyVeh=s.lines.every(l=>this.IT[l.k][0]==='veh'), {mv,fl}=onlyVeh?{mv:0,fl:0}:this.moveCost(s.pkg);
+    const veh=this.vehCost(), svc=this.svcCost(), addT=this.addList().reduce((t,a)=>t+(a[4]>0&&s.adds[a[0]]?a[4]:0),0);
+    const disc=s.cpOn?500:0, sub=mv+fl+veh+svc+addT-disc, gst=Math.round(sub*0.18), tot=sub+gst;
+    const pct=(this.props.advancePct??10)/100, adv=s.from!==s.to?tot:Math.min(tot,Math.max(999,Math.round(tot*pct/10)*10));
+    return {mv,fl,veh,svc,addT,disc,gst,tot,adv,bal:tot-adv}; }
+  dayObj(i){ const d=new Date(2026,9,27+i); return {dow:d.toLocaleDateString('en-IN',{weekday:'short'}), dt:d.getDate(), full:d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}; }
+  refund(){ const s=this.state, q=this.quote(), d=s.day; if(s.stage>=2||d<1) return [0,'Within 24 hours: no refund']; if(d<3) return [Math.round(q.adv/2),'24–72 hours before: 50% back']; return [q.adv,'More than 72 hours before: full refund']; }
+  flr(f){ return f?f+(f===1?'st':f===2?'nd':f===3?'rd':'th')+' floor':'Ground floor'; }
+
+  renderVals(){
+    const s=this.state, set=p=>this.setState(p), go=scr=>()=>set({scr,sheet:null}), R=n=>'₹'+n.toLocaleString('en-IN');
+    const DARK='#16181D', HL='rgba(22,24,29,0.08)', F='rgba(22,24,29,0.14)', ACC='oklch(0.70 0.17 50)', bt=i=>i?HL:'transparent';
+    const chip=(on)=>({bg:on?DARK:'#FFFFFF', fg:on?'#FFFFFF':DARK, bd:on?DARK:F});
+    const q=this.quote(), km=this.km(), local=s.from===s.to, cft=this.cft(), nItems=s.lines.reduce((t,l)=>t+l.n,0);
+    const FLOW=['size','det','pkg','add','rev'], fi=FLOW.indexOf(s.scr), inFlow=fi>=0;
+    const presets=this.PRESET[s.kind], TY=this.TYPES.find(t=>t[0]===s.kind);
+    const sizeLabel=TY[2], dO=this.dayObj(s.day), slot=this.SLOTS.find(x=>x[0]===s.slot);
+    const stage=s.stage, booked=s.booked && !s.cancelled;
+    const stCols=[['oklch(0.56 0.12 75)','oklch(0.62 0.14 85 / 0.16)'],['oklch(0.53 0.15 255)','oklch(0.62 0.14 255 / 0.13)'],['oklch(0.53 0.15 255)','oklch(0.62 0.14 255 / 0.13)'],['oklch(0.53 0.15 255)','oklch(0.62 0.14 255 / 0.13)'],['oklch(0.56 0.12 75)','oklch(0.62 0.14 85 / 0.16)'],['oklch(0.53 0.15 155)','oklch(0.62 0.14 155 / 0.13)']];
+    const stageNow=s.cancelled?'Cancelled':(stage===0?'Allocating mover':this.STG[stage][0]);
+    const [refundAmt,refundRule]=this.refund();
+    const nextF=()=>{ if(s.scr==='size'&&!nItems) return; if(s.scr==='rev') return set({sheet:'pay',payFor:'adv'}); set({scr:FLOW[fi+1]}); };
+    const backF=()=>set({scr:fi>0?FLOW[fi-1]:'home'});
+    const titles={size:TY[0]==='veh'?'Which vehicle?':'What are you moving?',det:'Move date',pkg:'Choose a package',add:'Add-ons',rev:'Review and pay'};
+    const tabKey=s.scr==='list'?'list':s.scr==='acct'?'acct':'home';
+    const payRows=[['upi','qr_code_2','UPI (GPay, PhonePe, Paytm)'],['card','credit_card','Debit / credit card'],['nb','account_balance','Net banking']].map(([k,icon,label])=>({icon,label,pick:()=>set({payM:k}),bd:s.payM===k?DARK:F,radio:s.payM===k?'6px solid '+DARK:'1.5px solid '+F}));
+    const lineName=l=>{const it=this.IT[l.k];return it[1]+(it[2].length>1?' · '+it[2][l.v][0]:'');};
+    const claimReady=Object.values(s.claimSel).some(Boolean)&&Object.values(s.claimPh).some(Boolean);
+    const starWords=['','Poor','Below average','Okay','Good','Excellent'];
+    const aspGood=['On time','Careful packing','Polite crew','No damage','Clean unloading'], aspBad=['Late arrival','Poor packing','Rude crew','Items damaged','Asked for extra money'];
+    const aspList=s.stars&&s.stars<=3?aspBad:aspGood;
+    const daysStrip=(sel,pick)=>Array.from({length:14},(_,i)=>{const d=this.dayObj(i+1), c=chip(sel===i+1); return {...d,...c,pick:()=>pick(i+1)};});
+    const slotStrip=(sel,pick)=>this.SLOTS.map(([k,label,time])=>({label,time,...chip(sel===k),pick:()=>pick(k)}));
+    const setLines=lines=>set({lines});
+    const addrOf=(k)=>{const a=s[k+'a'], f=s[k+'F'], lift=s[k+'Lift'], city=k==='p'?s.from:s.to, has=a.flat||a.area;
+      const fl=this.flr(f)+(f?(lift?', lift':', no lift'):'');
+      return {title:city, has, full:[a.flat,a.bldg,a.area,a.mark&&'near '+a.mark,city+(a.pin?' '+a.pin:'')].filter(Boolean).join(', ')+' · '+fl,
+        sub:has?[a.flat,a.bldg,a.area].filter(Boolean).join(', ')+' · '+fl:'Add full address and floor', subC:has?'#5E6572':'oklch(0.56 0.17 48)'};};
+    const aK=s.addrFor, aA=s[aK+'a'], aF=s[aK+'F'], aL=s[aK+'Lift'], aCity=aK==='p'?s.from:s.to, setA=p=>set({[aK+'a']:{...aA,...p}});
+    const lgOk=s.lg==='phone'?s.phone.replace(/\D/g,'').length===10:s.otp==='1234';
+    const catList=this.CATS_FOR[s.kind], cat=catList.includes(s.cat)?s.cat:catList[0];
+    const pickType=k=>{const sz=Object.keys(this.PRESET[k])[k==='home'?2:0], shared=s.scope==='inter'&&(k==='few'||k==='bike');
+      const to=s.scope==='intra'?s.from:(s.to===s.from?Object.keys(this.CITY).find(c=>c!==s.from):s.to);
+      set({kind:k,size:'',lines:k==='bike'?this.mk('bike',''):[],openCat:k==='bike'?'veh':null,openItem:null,cat:this.CATS_FOR[k][0],scr:'home',to,pkg:shared||k==='bike'?'eco':(s.pkg==='eco'&&s.kind!==k?'std':s.pkg),da:s.scope==='intra'?s.da:s.da});};
+    const intra=s.scope==='intra', shared=(s.kind==='few'&&!intra)||s.kind==='bike', fewCap=s.kind==='few'?5:999;
+    const T0=new Date(2026,9,27), M0=new Date(2026,9+s.calM,1), calT=M0.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+    const nd=new Date(M0.getFullYear(),M0.getMonth()+1,0).getDate(), calCells=[...Array(M0.getDay()).fill(null),...Array.from({length:nd},(_,i)=>i+1)].map(d=>{
+      if(!d) return {dt:'',bg:'transparent',fg:'transparent',bd:'transparent',w:500,cur:'default',pick:()=>{}};
+      const off=Math.round((new Date(M0.getFullYear(),M0.getMonth(),d)-T0)/864e5), ok=off>=1&&off<=90, on=off===s.day, today=off===0;
+      return {dt:d, w:on?600:500, cur:ok?'pointer':'default', bg:on?DARK:'transparent', fg:on?'#FFFFFF':ok?DARK:'#B4B8C0', bd:today?F:'transparent', pick:()=>{if(ok) set({day:off});}};});
+    return {
+      isLogin:s.scr==='login', isType:s.scr==='type',
+      truckAnim:React.createElement('span',{key:'trk',style:{position:'absolute',top:0,left:0,fontFamily:'Material Symbols Rounded',fontSize:24,lineHeight:'24px',color:'#F37A0E',animation:'ngDrive 9s linear infinite'}},'local_shipping'), trkPct:(s.cancelled?0:Math.round(s.stage/5*100))+'%', otpD:['4','8','2','9'], _l:this._applyL(), langs:[['en','English'],['hi','हिन्दी'],['ta','தமிழ்'],['te','తెలుగు'],['kn','ಕನ್ನಡ'],['ml','മലയാളം']].map(([k,label])=>{const on=s.lang===k;return {label,bg:on?'#0B2F73':'#FFFFFF',fg:on?'#FFFFFF':'#16181D',bd:on?'#0B2F73':'rgba(22,24,29,0.14)',pick:()=>{try{localStorage.setItem('ng_cust_lang',k)}catch(e){};this.setState({lang:k});}};}), isHome:s.scr==='home', isList:s.scr==='list', isAcct:s.scr==='acct', isSize:s.scr==='size', isDet:s.scr==='det', isPkg:s.scr==='pkg', isAdd:s.scr==='add', isRev:s.scr==='rev', isOk:s.scr==='ok', isTrack:s.scr==='track', isClaim:s.scr==='claim', isRate:s.scr==='rate',
+      lgPhone:s.lg==='phone', lgOtp:s.lg==='otp', phone:s.phone, otp:s.otp,
+      setPhone:e=>set({phone:e.target.value.replace(/\D/g,'').slice(0,10)}), setOtp:e=>set({otp:e.target.value.replace(/\D/g,'').slice(0,4)}),
+      editPhone:()=>{ clearInterval(this.rsT); set({lg:'phone',otp:'',rs:0,sent:0}); },
+      lgTitle:s.lg==='phone'?'Get your moving cost in 2 minutes':'Enter the OTP', lgSub:s.lg==='phone'?'Log in with your mobile number to start a booking.':'Sent to +91 '+s.phone,
+      lgBtn:s.lg==='phone'?'Continue':'Verify and continue', sbBg:s.scr==='track'||s.scr==='home'||s.scr==='login'||s.scr==='type'?'#0B2F73':'transparent', sbFg:s.scr==='track'||s.scr==='home'||s.scr==='login'||s.scr==='type'?'#FFFFFF':'#16181D', lgBg:lgOk?ACC:'#ECEAE5', lgFg:lgOk?'#0A0C10':'#7D838E',
+      lgGo:()=>{ if(!lgOk) return; if(s.lg==='phone'){ set({lg:'otp'}); this.startRs(); } else { clearInterval(this.rsT); set({scr:'type'}); } },
+      resend:()=>{ if(s.rs>0) return; set({otp:'',sent:(s.sent||0)+1}); this.startRs(); },
+      rsLabel:s.rs>0?'Resend OTP in 0:'+String(s.rs).padStart(2,'0'):(s.sent?'OTP sent again · Resend':'Resend OTP'), rsCol:s.rs>0?'#7D838E':'oklch(0.56 0.17 48)', rsCur:s.rs>0?'default':'pointer',
+      types:!s.scope?Object.entries(this.SCOPE).map(([k,[icon,label,sub,,feats,tag]])=>({icon,label,sub,feats,tag,pick:()=>set({scope:k})}))
+        :this.SCOPE[s.scope][3].map(k=>{const [,icon,label,sub]=this.TYPES.find(t=>t[0]===k);return {icon,label,sub:(this.TSUB[s.scope]||{})[k]||sub,feats:this.TFEAT[k],tag:this.TTAG[s.scope][k],pick:()=>pickType(k)};}),
+      typeStep:s.scope?'Step 2 of 2':'Step 1 of 2', typeBars:[0,1].map(i=>({bg:i<=(s.scope?1:0)?'#FF8A1F':'rgba(255,255,255,0.2)'})),
+      trust:[['verified_user','Verified movers'],['receipt_long','GST invoice'],['shield','Insured transit']].map(([icon,t])=>({icon,t})),
+      typeQ:s.scope?'What are you moving?':'Where are you moving?', typeKick:s.scope?this.SCOPE[s.scope][1]+' move':'Welcome, Priya',
+      typeKickC:s.scope?'oklch(0.56 0.17 48)':'#5E6572', typeKickW:s.scope?600:400, typeBack:()=>s.scope?set({scope:null}):set({scr:'home'}),
+      goType:()=>set({scr:'type',scope:null}), typeIcon:TY[1], typeLabel:(s.scope?this.SCOPE[s.scope][1]+' · ':'')+TY[2],
+      inFlow, showTabs:['home','list','acct'].includes(s.scr),
+      from:s.from, to:s.to, booked, cancelled:s.cancelled,
+      aFrom:addrOf('p'), aTo:addrOf('d'),
+      pickFrom:()=>set({sheet:'addr',addrFor:'p'}), pickTo:()=>set({sheet:'addr',addrFor:'d'}),
+      swap:()=>set({from:s.to,to:s.from,pa:s.da,da:s.pa,pF:s.dF,dF:s.pF,pLift:s.dLift,dLift:s.pLift}),
+      routeLabel:(local?'Within '+s.from:'Intercity move')+(shared?' · shared truck':''), kmLabel:local?'':'~'+km+' km',
+      startBook:()=>set({scr:'size'}), goTrack:go('track'), goHome:go('home'), goRate:go('rate'),
+      dayLabel:dO.full, stageNow, stCol:stCols[stage][0], stTint:stCols[stage][1], sizeLabel, pkgName:this.PKG[s.pkg].name,
+      how:[['1','Tell us what you are moving','Pick your items room by room. Your cost is worked out instantly.'],['2','Book and pay securely','A verified mover near you accepts the job, usually within 30 minutes.'],['3','Track every step','Crew photos at each stage and a delivery OTP when your items arrive.']].map(([n,t,sub],i)=>({n,t,s:sub,bt:bt(i)})),
+      acctRows:[['location_on','Saved addresses','2'],['translate','Language',({en:'English',hi:'हिन्दी',ta:'தமிழ்',te:'తెలుగు',kn:'ಕನ್ನಡ',ml:'മലയാളം'})[s.lang]],['receipt_long','Payments & refunds',''],['support_agent','Help & support','']].map(([icon,label,val],i)=>({icon,label,val,bt:bt(i)})),
+      tabs:[['home','home','Home'],['list','receipt_long','Bookings'],['acct','person','Account']].map(([k,icon,label])=>({icon,label,c:tabKey===k?DARK:'#7D838E',fill:tabKey===k?1:0,go:go(k)})),
+      back:backF, next:nextF, flowTitle:titles[s.scr]||'', stepLabel:(fi+1)+'/5',
+      stepBars:FLOW.map((_,i)=>({bg:i<=fi?DARK:'rgba(22,24,29,0.12)'})),
+      ctaPrice:s.scr==='rev'?R(q.tot):nItems+' item'+(nItems===1?'':'s'),
+      ctaSub:s.scr==='rev'?(q.bal>0?'Advance '+R(q.adv)+' now':'Incl. GST, no hidden charges'):(cft?cft+' CFT · ':'')+(local?'within city':km+' km'),
+      ctaLabel:s.scr==='rev'?'Pay '+R(q.adv):'Continue',
+      hasSizes:s.kind==='home'||s.kind==='office',
+      sizes:Object.keys(presets).map(k=>{const on=s.size===k, c=this.mk(s.kind,k).reduce((t,l)=>t+l.n*this.IT[l.k][2][l.v][1],0);return {label:k,cft:c+' CFT',bg:on?'#FFFFFF':'#F2F1ED',bd:on?DARK:'transparent',pick:()=>set({size:k,lines:this.mk(s.kind,k)})};}),
+      itemSum:s.kind==='few'?nItems+' of 5 items':nItems+(nItems===1?' item':' items')+(cft?' · '+cft+' CFT':''),
+      cats:catList.map(c=>{const nm=this.CATS.find(x=>x[0]===c)[1], n=s.lines.filter(l=>this.IT[l.k][0]===c).reduce((t,l)=>t+l.n,0);return {label:nm,nL:n||'',...chip(c===cat),pick:()=>set({cat:c})};}),
+      groups:(()=>{
+        const itemsOf=pred=>Object.entries(this.IT).filter(([k,it])=>pred(k,it)&&(s.kind!=='bike'||k==='bike')).map(([k,it],ix)=>{
+          const lines=s.lines.filter(l=>l.k===k), n=lines.reduce((t,l)=>t+l.n,0), multi=it[2].length>1, hasO=it[3].length>0, inline=!multi&&!hasO, open=!inline&&s.openItem===k;
+          const stp=k==='box'&&s.kind!=='few'?5:1, lineFor=v=>s.lines.find(l=>l.k===k&&l.v===v);
+          const incV=v=>{if(nItems>=fewCap) return; const l=lineFor(v); if(l) setLines(s.lines.map(x=>x.id===l.id?{...x,n:x.n+stp}:x)); else set({lines:[...s.lines,{id:s.nid,k,v,n:stp,o:{}}],nid:s.nid+1});};
+          const decV=v=>{const l=lineFor(v); if(!l) return; setLines(l.n<=stp?s.lines.filter(x=>x.id!==l.id):s.lines.map(x=>x.id===l.id?{...x,n:x.n-stp}:x));};
+          const summ=[...lines].sort((a,b)=>a.v-b.v).map(l=>(multi?it[2][l.v][0]+' ':'')+'×'+l.n+(it[3].some(([ok])=>l.o[ok])?' ('+it[3].filter(([ok])=>l.o[ok]).map(o=>o[1]).join(', ')+')':'')).join(' · ');
+          return {label:it[1], bt:ix?HL:'transparent', bg:open?'#FBFAF8':'#FFFFFF', w:n?600:500, inline, expandable:!inline, open,
+            nL:n||'', nBg:n?DARK:'transparent', chev:open?'expand_less':'expand_more',
+            n, dec:()=>decV(0), inc:()=>incV(0), decC:n?DARK:'#B4B8C0',
+            focus:()=>{if(!inline) set({openItem:open?null:k});}, done:()=>set({openItem:null}),
+            sub:n?summ:(multi?it[2].length+' types · '+it[2].slice(0,2).map(v=>v[0]).join(', ')+'…':(hasO?'Tap to add':'')), subC:n?'#3D424B':'#7D838E',
+            vars:it[2].map(([vl,c],vi)=>{const l=lineFor(vi), vn=l?l.n:0;
+              return {label:vl, cftL:c?c+' CFT':'', n:vn, w:vn?600:500, bg:vn?'#FFFFFF':'#F4F3F0', bd:vn?DARK:'transparent', decC:vn?DARK:'#B4B8C0', dec:()=>decV(vi), inc:()=>incV(vi),
+                hasOpts:hasO&&vn>0, opts:it[3].map(([ok,label])=>{const on=!!(l&&l.o[ok]);return {label,icon:on?'check':'add',...chip(on),tog:()=>l&&setLines(s.lines.map(x=>x.id===l.id?{...x,o:{...x.o,[ok]:!on}}:x))};})};})};});
+        const q=(s.iq||'').trim().toLowerCase();
+        if(q){ const items=itemsOf((k,it)=>catList.includes(it[0])&&(it[1].toLowerCase().includes(q)||it[2].some(v=>v[0].toLowerCase().includes(q))));
+          return [{label:items.length?'Results for “'+s.iq.trim()+'”':'No items match “'+s.iq.trim()+'”', open:items.length>0, nL:'', nBg:'transparent', nFg:'#FFFFFF', chev:'', tog:()=>{}, items}]; }
+        return catList.map(c=>{const nm=this.CATS.find(x=>x[0]===c)[1], n=s.lines.filter(l=>this.IT[l.k][0]===c).reduce((t,l)=>t+l.n,0), open=s.openCat===c;
+          return {label:nm, open, nL:n||'', nBg:n?DARK:'transparent', nFg:'#FFFFFF', chev:open?'expand_less':'expand_more', tog:()=>set({openCat:open?null:c,openItem:null}), items:open?itemsOf((k,it)=>it[0]===c):[]};});
+      })(),
+      iq:s.iq||'', setIq:e=>set({iq:e.target.value,openItem:null}), clearIq:()=>set({iq:'',openItem:null}),
+      itemHint:s.kind==='few'?'Pick up to 5 items':s.kind==='bike'?'Choose your two-wheeler':'Open a room and add what you are moving',
+      lgSvc:[['home','Home shifting'],['business','Office shifting'],['two_wheeler','Bike & car transport'],['warehouse','Storage']].map(([icon,t])=>({icon,t})),
+      lgPoints:[['verified_user','Verified and rated movers'],['shield','Transit insurance available'],['receipt_long','Itemised bill, no hidden charges']].map(([icon,t])=>({icon,t})),
+      calTitle:calT, calDow:['S','M','T','W','T','F','S'], calCells, calPrev:()=>{if(s.calM>0) set({calM:s.calM-1});}, calNext:()=>{if(s.calM<2) set({calM:s.calM+1});}, calPrevO:s.calM>0?1:0.35, calNextO:s.calM<2?1:0.35,
+      days:daysStrip(s.day,i=>set({day:i})), slots:slotStrip(s.slot,k=>set({slot:k})),
+      pkgs:Object.entries(this.PKG).filter(([k])=>!shared||k==='eco').map(([k,P])=>{const on=s.pkg===k,ov=s.lines.every(l=>this.IT[l.k][0]==='veh'),{mv,fl}=ov?{mv:0,fl:0}:this.moveCost(k);return {name:shared?'Shared truck':P.name,tag:shared?'Your items travel with other bookings on the same route':P.tag,inc:P.inc,price:R(Math.round((mv+fl+q.veh+q.svc)*1.18)),bd:on?'#0B2F73':HL,bg:on?'#0B2F73':'#FFFFFF',fg:on?'#FFFFFF':'#16181D',sg:on?'rgba(255,255,255,0.72)':'#5E6572',orb:on?'rgba(243,122,14,0.22)':'rgba(11,47,115,0.05)',sh:on?'0 16px 34px -18px rgba(11,47,115,0.7)':'none',no:'0'+(Object.keys(this.PKG).indexOf(k)+1),incR:P.inc.map(x=>({t:x,c:on?'rgba(255,255,255,0.9)':'#3D424B',k:on?'#F37A0E':'oklch(0.53 0.15 155)'})),radio:on?'7px solid #F37A0E':'1.5px solid '+F,pick:()=>set({pkg:k})};}),
+      cftL:cft+' CFT',
+      stOn:!!s.adds.store, stM:s.stM||1, stCustom:!!s.stCus, stTotL:R(2500*(s.stM||1)),
+      stChips:[1,2,3,6].map(m=>({label:m+(m===1?' month':' months'),...chip(!s.stCus&&(s.stM||1)===m),pick:()=>set({stM:m,stCus:false})})).concat([{label:'Custom',...chip(!!s.stCus),pick:()=>set({stCus:true})}]),
+      stDec:()=>set({stM:Math.max(1,(s.stM||1)-1)}), stInc:()=>set({stM:Math.min(24,(s.stM||1)+1)}),
+      stNote:'Items are inventoried and sealed at pickup. Delivery to your new address is booked when you call them back. You can extend month by month.',
+      addRows:this.addList().map(([k,icon,label,sub,price],i)=>{const inc=price===0, on=inc||!!s.adds[k];return {icon,label,sub,bt:bt(i),priceL:inc?'Included':R(price),pc:inc?'oklch(0.53 0.15 155)':DARK,cb:on?(inc?'oklch(0.53 0.15 155)':DARK):'#FFFFFF',cbd:on?(inc?'oklch(0.53 0.15 155)':DARK):F,tick:on?'check':'',tog:()=>{if(!inc) set({adds:{...s.adds,[k]:!s.adds[k]}});}};}),
+      sumRows:[['Pickup',addrOf('p').full],['Drop',addrOf('d').full],['When',dO.full+', '+slot[1]+' '+slot[2]],['Items',sizeLabel+' · '+nItems+(nItems===1?' item':' items')+(cft?' · '+cft+' CFT':'')],['Package',this.PKG[s.pkg].name]].map(([k,v],i)=>({k,v,bt:bt(i)})),
+      priceRows:[q.mv?['Moving charge',R(q.mv)]:null,q.fl?['Stair charge',R(q.fl)]:null,q.veh?['Vehicle transport',R(q.veh)]:null,q.svc?['Install / uninstall',R(q.svc)]:null,...this.addList().filter(x=>x[4]>0&&s.adds[x[0]]).map(x=>[x[0]==='store'?x[2]+' ('+(s.stM||1)+(s.stM>1?' months':' month')+')':x[2],R(x[4])]),...this.addList().filter(x=>x[4]===0).map(x=>[x[2],'Included']),q.disc?['Coupon FIRST500','− '+R(q.disc)]:null,['GST 18%',R(q.gst)]].filter(Boolean).map(([k,v])=>({k,v,c:k.startsWith('Coupon')?'oklch(0.53 0.15 155)':'#3D424B'})),
+      totalL:R(q.tot), advL:R(q.adv), balL:R(q.bal), isSplit:q.bal>0,
+      coupon:s.coupon, setCoupon:e=>set({coupon:e.target.value,cpTried:false}), applyCp:()=>set({cpOn:s.coupon.trim().toUpperCase()==='FIRST500',cpTried:true}),
+      cpMsg:s.cpTried?(s.cpOn?'₹500 off applied':'Code not valid. Try FIRST500'):'', cpCol:s.cpOn?'oklch(0.53 0.15 155)':'oklch(0.53 0.15 25)',
+      st0:booked&&stage===0, hasMover:booked&&stage>=1, st3:booked&&stage===3, st4:booked&&stage===4&&!s.balPaid, st4bal:booked&&stage===4&&!s.balPaid&&q.bal>0, st5:booked&&stage===5,
+      needRate:!s.rated, rated:s.rated, stars:s.stars,
+      hasPhotos:booked&&stage>=2,
+      photos:[['Living room packed','10:42'],['Fragile crate','11:05'],['Wardrobe wrapped','11:30'],...(stage>=3?[['Loaded in truck','13:12']]:[]),...(stage>=4?[['Unloaded','09:20'],['Items checked','09:48']]:[])].map(([t,at])=>({t,at})),
+      timeline:this.STG.map(([label,sub],i)=>{const done=!s.cancelled&&i<stage||(i===5&&stage===5), cur=!s.cancelled&&i===stage&&stage<5;return {label:i===1&&stage===0&&!s.cancelled?'Allocating mover':label,sub:i===0?R(q.adv)+(q.bal>0?' advance paid':' paid'):(i===5&&q.bal===0?'Move closed':sub),dot:done?DARK:'#FFFFFF',ring:done||cur?DARK:'rgba(22,24,29,0.18)',tick:done?'check':'',line:i===5?'transparent':(done?DARK:'rgba(22,24,29,0.12)'),fg:done||cur?DARK:'#7D838E',w:cur?600:500};}),
+      showActs:!s.cancelled&&stage<5,
+      acts:(stage<=1?[['event','Reschedule',()=>set({sheet:'resch',rDay:s.day,rSlot:s.slot}),DARK],['close','Cancel',()=>set({sheet:'cancel'}),'oklch(0.53 0.15 25)']]:[['report','Report damage',go('claim'),DARK],['support_agent','Help',()=>{},DARK]]).map(([icon,label,g,c])=>({icon,label,go:g,c})),
+      showDemo:(this.props.showDemo??true)&&booked,
+      nextStage:()=>set({stage:Math.min(5,stage+1),balPaid:stage+1===5}), prevStage:()=>set({stage:Math.max(0,stage-1),balPaid:false,rated:false}),
+      payBal:()=>set({sheet:'pay',payFor:'bal'}), st4full:booked&&stage===4&&q.bal===0, markDone:()=>set({stage:5,balPaid:true}),
+      refundL:R(refundAmt), refundRule,
+      claimDone:s.claimDone, claimOpen:!s.claimDone,
+      claimItems:s.lines.map(l=>({label:lineName(l),...chip(!!s.claimSel[l.id]),tog:()=>set({claimSel:{...s.claimSel,[l.id]:!s.claimSel[l.id]}})})),
+      claimPh:[0,1,2].map(i=>{const on=!!s.claimPh[i];return {icon:on?'check_circle':'add_a_photo',label:on?'Photo '+(i+1):'Add photo',bg:on?'oklch(0.62 0.14 155 / 0.13)':'#FFFFFF',fg:on?'oklch(0.45 0.13 155)':'#5E6572',bd:on?'oklch(0.53 0.15 155)':F,tog:()=>set({claimPh:{...s.claimPh,[i]:!on}})};}),
+      claimNote:s.claimNote, setClaimNote:e=>set({claimNote:e.target.value}),
+      submitClaim:()=>{if(claimReady) set({claimDone:true});}, claimBtnBg:claimReady?ACC:'#ECEAE5', claimBtnFg:claimReady?'#0A0C10':'#7D838E',
+      starRow:[1,2,3,4,5].map(n=>({fill:n<=s.stars?1:0,c:n<=s.stars?'oklch(0.70 0.17 50)':'#B4B8C0',pick:()=>set({stars:n,asp:{}})})),
+      starWord:starWords[s.stars], aspTitle:s.stars&&s.stars<=3?'WHAT WENT WRONG?':'WHAT WENT WELL?',
+      aspRow:aspList.map(a=>({label:a,...chip(!!s.asp[a]),tog:()=>set({asp:{...s.asp,[a]:!s.asp[a]}})})),
+      note:s.note, setNote:e=>set({note:e.target.value}),
+      submitRate:()=>{if(s.stars) set({rated:true,scr:'track'});}, rateBtnBg:s.stars?ACC:'#ECEAE5', rateBtnFg:s.stars?'#0A0C10':'#7D838E',
+      sheetOn:!!s.sheet, closeSheet:()=>set({sheet:null}),
+      shAddr:s.sheet==='addr', shBill:s.sheet==='bill', billSent:!!s.billSent, phoneL:s.phone||'98401 21345',
+      openBill:()=>set({sheet:'bill'}), shareBill:()=>set({sheet:'bill',billSent:true}), sendBill:()=>set({billSent:true}), billPay:()=>set({sheet:'pay',payFor:'adv'}),
+      billMeta:[['Customer','Priya Raman'],['Move date',dO.full+', '+slot[2]],['From',addrOf('p').title+(s.pa.area?', '+s.pa.area:'')],['To',addrOf('d').title+(s.da.area?', '+s.da.area:'')],['Service',TY[2]+(shared?' · shared truck':'')],['Package',shared?'Shared truck':this.PKG[s.pkg].name]].map(([k,v])=>({k,v})),
+      billN:nItems, billItems:s.lines.map(l=>({name:lineName(l)+(this.IT[l.k][3].some(([ok])=>l.o[ok])?' · '+this.IT[l.k][3].filter(([ok])=>l.o[ok]).map(o=>o[1].toLowerCase()).join(', '):''),n:l.n})),
+      billTerms:q.bal>0?'Pay '+R(q.adv)+' now to confirm. Balance '+R(q.bal)+' after delivery. Price includes GST; nothing extra is payable to the mover.':'Pay in full to confirm. Price includes GST; nothing extra is payable to the mover.', shPay:s.sheet==='pay', shResch:s.sheet==='resch', shCancel:s.sheet==='cancel',
+      addrTitle:aK==='p'?'Pickup address':'Drop address',
+      useLoc:()=>{const c=this.CITY[aCity]; setA({area:c[2],pin:c[3]});},
+      aCities:(intra&&aK==='d'?[s.from]:Object.keys(this.CITY).filter(c=>s.scope!=='inter'||c!==(aK==='p'?s.to:s.from))).map(name=>({name,...chip(aCity===name),pick:()=>set(intra?{from:name,to:name,[aK+'a']:{...aA,area:'',pin:''}}:{[aK==='p'?'from':'to']:name,[aK+'a']:{...aA,area:'',pin:''}})})),
+      aFields:[['area','Area / locality','e.g. '+this.CITY[aCity][2],'text'],['flat','Flat / house no.','e.g. 4B','text'],['bldg','Building / society','e.g. Green Acres','text'],['mark','Landmark (optional)','e.g. Opp. Saravana Stores','text'],['pin','Pincode','6 digits','numeric']].map(([k,label,ph,im])=>({label,ph,im,val:aA[k],set:e=>setA({[k]:k==='pin'?e.target.value.replace(/\D/g,'').slice(0,6):e.target.value})})),
+      aFloorL:aF?aF+(aF===1?'st':aF===2?'nd':aF===3?'rd':'th'):'Ground',
+      aDec:()=>set({[aK+'F']:Math.max(0,aF-1)}), aInc:()=>set({[aK+'F']:Math.min(40,aF+1)}),
+      aLift:()=>set({[aK+'Lift']:!aL}), aTBg:aL?DARK:'rgba(22,24,29,0.2)', aTX:aL?'21px':'3px',
+      aLiftNote:!aF?'Ground floor, no stairs':aL?'Big items fit in the lift':'Crew will carry items by stairs',
+      payTitle:s.payFor==='adv'?(q.bal>0?'Pay advance':'Pay for your move'):'Pay balance', payTo:s.payFor==='adv'?'To Nagarva · confirms booking NGV-24817':'To Sri Balaji Packers · NGV-24817',
+      payAmt:R(s.payFor==='adv'?q.adv:q.bal), payRows,
+      doPay:()=>s.payFor==='adv'?set({sheet:null,booked:true,cancelled:false,stage:0,scr:'ok',balPaid:false,rated:false,stars:0,claimDone:false}):set({sheet:null,balPaid:true,stage:5}),
+      rDays:daysStrip(s.rDay,i=>set({rDay:i})), rSlots:slotStrip(s.rSlot,k=>set({rSlot:k})),
+      reschNote:s.day>=3?'Free to reschedule more than 72 hours before the move. Your mover is notified automatically.':'Rescheduling within 72 hours costs ₹500. Your mover is notified automatically.',
+      doResch:()=>set({day:s.rDay,slot:s.rSlot,sheet:null}),
+      cReasons:['Plans changed','Found another mover','Price too high','Date not available'].map(r=>({label:r,...chip(s.cancelR===r),pick:()=>set({cancelR:r})})),
+      doCancel:()=>set({cancelled:true,sheet:null})
+    };
+  }
+}
+</script>
+</body>
+</html>

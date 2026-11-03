@@ -1,5 +1,6 @@
 import '/components/ng_widgets.dart';
 import '/backend/whatsapp_cloud.dart';
+import '/backend/order_money.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/keyboard_scroll_view.dart';
@@ -10,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'record_payment_page_model.dart';
+import '/backend/edge_function_errors.dart';
 export 'record_payment_page_model.dart';
 
 /// Record Payment (Week 3a rewrite).
@@ -43,7 +45,13 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
   // summed onto it by trigger. The `- advance_paid` term was dropped
   // 16 Sept 2026 (CLAUDE.md, "REPLACE, NOT REVIVE") - that column was 0
   // on every live order, so no balance on this screen moves.
-  double _balance(OrdersRow o) => (o.amount ?? 0) - o.paidTotal;
+  //
+  // 3 Nov 2026 (BUG-036): balance = shared order total (GST on top when
+  // billed + extra charges) − paid. Before this, extras could never be
+  // collected here ("No orders with balance due").
+  Map<String, List<dynamic>> _addons = const {};
+  double _balance(OrdersRow o) =>
+      OrderMoney.from(o, _addons[o.id] ?? const []).balance;
 
   @override
   void initState() {
@@ -60,11 +68,14 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
     // param on first load, or the dropdown's current pick on a reload after
     // Save Payment — so a refresh doesn't silently drop the user's choice.
     final keepId = _model.selected?.id ?? widget.orderId;
+    // No payment_status filter: that DB status ignores extras until
+    // migration 20261103 runs, so the shared balance decides instead.
     final rows = await OrdersTable().queryRows(
       queryFn: (q) => OrgScope.read(q)
-          .neqOrNull('payment_status', 'paid')
+          .neqOrNull('status', 'cancelled')
           .order('move_date', ascending: true),
     );
+    _addons = await OrderMoney.addonsByOrder();
     _model.unpaidOrders =
         rows.where((o) => _balance(o) > 0).toList().cast<OrdersRow>();
     // Bug found live-testing the parity brief's Part 1 verify step: a
@@ -166,8 +177,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Could not save: $e. '
-                'Has 20260718_payment_entries.sql been run?')));
+            content: Text('Could not save: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) safeSetState(() => _model.saving = false);
@@ -314,7 +324,7 @@ class _RecordPaymentPageWidgetState extends State<RecordPaymentPageWidget> {
                                 MainAxisAlignment.spaceBetween,
                             children: [
                               _sumCol('Total',
-                                  '₹${(selected.amount ?? 0).toStringAsFixed(0)}'),
+                                  '₹${OrderMoney.from(selected, _addons[selected.id] ?? const []).total.toStringAsFixed(0)}'),
                               _sumCol('Collected',
                                   '₹${selected.paidTotal.toStringAsFixed(0)}'),
                               _sumCol(

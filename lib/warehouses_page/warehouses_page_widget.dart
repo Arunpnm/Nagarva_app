@@ -8,6 +8,7 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Warehouses / godowns.
 ///
 /// Storage rates are set per CITY (brief §38), and a stay's rate is
@@ -82,7 +83,7 @@ class _WarehousesPageWidgetState extends State<WarehousesPageWidget> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = '$e';
+        _error = '${friendlyError(e)}';
       });
     }
   }
@@ -389,7 +390,7 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
           _error = '$e'.contains('warehouses_branch_fk')
               ? 'That branch does not exist. Leave Branch empty, or type '
                   'the exact name of a branch you have already created.'
-              : '$e';
+              : '${friendlyError(e)}';
         });
       }
     }

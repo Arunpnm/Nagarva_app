@@ -160,7 +160,12 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
     return NgCard(
       radius: 20,
       padding: const EdgeInsets.all(16),
-      onTap: () => openOrderDetail(context, o, hideCustomer: hidden),
+      // Masked (a supervisor's completed job) keeps the old detail page,
+      // which knows how to hide the customer; everyone else gets the
+      // stage-by-stage journey.
+      onTap: () => hidden
+          ? openOrderDetail(context, o, hideCustomer: true)
+          : openOrderJourney(context, o),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -6,6 +6,7 @@ import '/backend/whatsapp_cloud.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Shared "here is a customer link" sheet — WhatsApp first, copy as
 /// fallback (fix brief #2, items 3 and 6).
 ///
@@ -197,7 +198,7 @@ class _CloudSendButtonState extends State<_CloudSendButton> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$e')));
+            .showSnackBar(SnackBar(content: Text('${friendlyError(e)}')));
       }
     }
     if (mounted) setState(() => _busy = false);

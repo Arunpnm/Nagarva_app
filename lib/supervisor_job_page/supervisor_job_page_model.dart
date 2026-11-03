@@ -1,4 +1,5 @@
 import '/backend/supabase/supabase.dart';
+import '/backend/order_trip.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'supervisor_job_page_widget.dart' show SupervisorJobPageWidget;
 import 'package:flutter/material.dart';
@@ -21,7 +22,9 @@ import 'package:flutter/material.dart';
 /// was given at confirmation, which is what proves they are actually on
 /// site. `otpEntry` is gone — completion is a signature now, captured on
 /// the `completing` step itself. See the widget's header for why.
-enum SupervisorJobStep { start, arrivalCode, team, shifting, completing, done }
+/// Declared in screen order since 3 Nov 2026: crew (team) comes BEFORE
+/// the arrival code (BUG-041).
+enum SupervisorJobStep { start, team, arrivalCode, shifting, completing, done }
 
 /// Which field step an order is on. Shared by the field job screen and
 /// My jobs' checklist so the two can never disagree.
@@ -33,11 +36,14 @@ SupervisorJobStep supervisorStepFor(OrdersRow o) {
     return SupervisorJobStep.done;
   }
   if (o.status == 'transit') return SupervisorJobStep.shifting;
-  // in_progress means the job was accepted but shifting hasn't started,
-  // so the arrival code hasn't been entered yet — resume there rather
-  // than skipping the gate on a reopened screen.
+  // Real field order (Arun, 2 Nov 2026 — BUG-041): Accept -> crew +
+  // opening odometer at the OFFICE -> arrival code at the CUSTOMER ->
+  // shifting -> handover. Accepted with no crew saved yet = still at the
+  // office; crew saved = on the way / at the gate, waiting for the code.
   if (o.supervisorStatus == 'in_progress') {
-    return SupervisorJobStep.arrivalCode;
+    final team = o.jobTeam;
+    final hasCrew = team is List && team.isNotEmpty;
+    return hasCrew ? SupervisorJobStep.arrivalCode : SupervisorJobStep.team;
   }
   return SupervisorJobStep.start;
 }
@@ -89,7 +95,9 @@ class SupervisorJobPageModel extends FlutterFlowModel<SupervisorJobPageWidget> {
   /// This order's `vehicle_trips` row, if one exists yet. Null until the
   /// first odometer save (or forever, for a third-party vehicle that
   /// never gets one — see B3's "do not block" rule).
-  VehicleTripsRow? vehicleTrip;
+  /// The order's trip (odometer). `trips` via `trip_orders` since 3 Nov
+  /// 2026 — was a `vehicle_trips` row.
+  OrderTrip? vehicleTrip;
 
   SupervisorJobStep step = SupervisorJobStep.start;
 

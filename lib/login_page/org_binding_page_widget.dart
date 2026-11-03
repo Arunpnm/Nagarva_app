@@ -78,7 +78,8 @@ class _OrgBindingPageWidgetState extends State<OrgBindingPageWidget> {
       ),
     );
     final entered = code?.trim() ?? '';
-    ctrl.dispose();
+    // After the close animation - see support_tickets_page.dart (BUG-020).
+    Future.delayed(const Duration(milliseconds: 600), ctrl.dispose);
     if (entered.isEmpty) return;
 
     setState(() {

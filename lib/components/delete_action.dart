@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '/backend/soft_delete.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Shared destructive-delete flow (live-test fix brief #2, item 11.4).
 ///
 /// One implementation so every screen behaves identically: destructive
@@ -49,7 +50,7 @@ class DeleteAction {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not delete: $e')),
+          SnackBar(content: Text('Could not delete: ${friendlyError(e)}')),
         );
       }
       return false;
@@ -218,7 +219,8 @@ class DeleteAction {
     );
 
     final reason = reasonCtrl.text.trim();
-    reasonCtrl.dispose();
+    // After the close animation - see support_tickets_page.dart (BUG-020).
+    Future.delayed(const Duration(milliseconds: 600), reasonCtrl.dispose);
     return ok == true ? reason : null;
   }
 

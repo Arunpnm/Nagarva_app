@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '/backend/device_lock.dart';
+
 /// One row of `org_members` for the signed-in vendor, resolved at login.
 /// Most vendors have exactly one; a consultant/owner linked to more than
 /// one org sees a switcher (Settings page + LoginPage) built from this list.
@@ -120,9 +122,14 @@ class AppSession extends ChangeNotifier {
   }
 
   /// Days left in the trial proper (before grace starts).
+  ///
+  /// Counts a part day as a day (BUG-009, 3 Nov 2026): day 1 of a 30-day
+  /// trial read "29 days left" because inDays rounds down.
   int get trialDaysRemaining {
     if (trialEndsAt == null || planStatus != 'trial') return 9999;
-    return trialEndsAt!.difference(DateTime.now()).inDays;
+    final left = trialEndsAt!.difference(DateTime.now());
+    if (left.isNegative) return left.inDays;
+    return (left.inHours / 24).ceil();
   }
 
   /// Super-admin console, Step 3 (NAGARVA_STATUS.md) — a platform admin
@@ -185,6 +192,9 @@ class AppSession extends ChangeNotifier {
     // availableOrgs left null — keep the membership list as-is rather than
     // wiping it back to empty.
     if (availableOrgs != null) this.availableOrgs = availableOrgs;
+    // A completed login (password, OTP, owner PIN) unlocks the device
+    // (BUG-012). Cold-start restore never reaches here while locked.
+    DeviceLock.unlock();
     notifyListeners();
   }
 
@@ -199,6 +209,8 @@ class AppSession extends ChangeNotifier {
     // onto this one (org-code binding lets one device log in as several
     // different people in a row).
     currentStaffBranch = null;
+    // Staff PIN login completed — unlock (BUG-012).
+    DeviceLock.unlock();
     notifyListeners();
   }
 

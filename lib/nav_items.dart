@@ -247,6 +247,7 @@ const kOwnerManagerNavItems = <NavItem>[
   ),
   (name: 'LostReportPage', icon: Icons.rule_rounded, label: 'Lead rules & lost report', group: 'Sales'),
   (name: 'ReferralsPage', icon: Icons.sell_rounded, label: 'Coupons & referrals', group: 'Sales'),
+  (name: 'MarketplaceJobsPage', icon: Icons.storefront_rounded, label: 'Nagarva jobs', group: 'Sales'),
   (name: 'DailySummaryPage', icon: Icons.event_note_rounded, label: 'Daily summary', group: 'Operations'),
   (name: 'ApprovalsPage', icon: Icons.fact_check_rounded, label: 'Approvals', group: 'Money'),
   (name: 'GstPage', icon: Icons.request_page_rounded, label: 'GST, TDS & exports', group: 'Money'),
@@ -266,6 +267,7 @@ const kOwnerManagerNavItems = <NavItem>[
   (name: 'LabourContractorsPage', icon: Icons.engineering_rounded, label: 'Labour contractors', group: 'People'),
   (name: 'DieselAdvancePage', icon: Icons.currency_rupee_rounded, label: 'Diesel advance', group: 'Transport'),
   (name: 'HiredTrucksPage', icon: Icons.local_shipping_rounded, label: 'Hired trucks', group: 'Transport'),
+  (name: 'DriverAppPage', icon: Icons.drive_eta_rounded, label: 'Driver app', group: 'Transport'),
   (name: 'BackupPage', icon: Icons.cloud_sync_rounded, label: 'Backup & offline', group: 'Setup'),
   (name: 'WhatsAppPage', icon: Icons.chat_rounded, label: 'WhatsApp', group: 'Setup'),
   (name: 'AutoWhatsAppPage', icon: Icons.mark_chat_read_outlined, label: 'Auto WhatsApp', group: 'Setup'),
@@ -321,10 +323,11 @@ const kSupervisorNavItems = <NavItem>[
 ];
 
 /// Field staff nav (Users Kickoff Step 2.3): driver / helper / packer.
-/// Neither screen exists yet.
+/// Attendance is the crew check-in screen (31 Oct 2026); My Earnings is
+/// still to be built.
 const kFieldStaffNavItems = <NavItem>[
   (
-    name: 'MyAttComingSoon',
+    name: 'FieldAttendancePage',
     icon: Icons.event_available,
     label: 'My Attendance',
     group: 'Field',
@@ -332,6 +335,17 @@ const kFieldStaffNavItems = <NavItem>[
   (name: 'MySalComingSoon', icon: Icons.currency_rupee, label: 'My Earnings',
     group: 'Field',
   ),
+];
+
+/// Drivers get the Driver app first, then the two field-staff screens.
+const kDriverNavItems = <NavItem>[
+  (
+    name: 'DriverAppPage',
+    icon: Icons.drive_eta_rounded,
+    label: 'Driver app',
+    group: 'Field',
+  ),
+  ...kFieldStaffNavItems,
 ];
 
 /// Canonical "is this session owner-or-manager" check for nav purposes —
@@ -373,7 +387,8 @@ String homeNavNameForCurrentSession() {
     // tapped a bottom-nav item themselves.
     return 'SupervisorJobsListPage';
   }
-  return 'MySalComingSoon';
+  if (AppSession.instance.currentStaffRole == 'driver') return 'DriverAppPage';
+  return 'FieldAttendancePage';
 }
 
 /// The full nav set for the current session type, **before** the
@@ -387,7 +402,11 @@ String homeNavNameForCurrentSession() {
 List<NavItem> navItemsForCurrentSession() {
   if (!isOwnerOrManagerSession) {
     final role = AppSession.instance.currentStaffRole;
-    return role == 'supervisor' ? kSupervisorNavItems : kFieldStaffNavItems;
+    return switch (role) {
+      'supervisor' => kSupervisorNavItems,
+      'driver' => kDriverNavItems,
+      _ => kFieldStaffNavItems,
+    };
   }
   final canEditSalary = StaffPermissions.canActive('salary', 'edit');
   final items = [
@@ -472,9 +491,11 @@ String localizedNavLabel(BuildContext context, NavItem item) {
     'SupervisorJobsListPage' => l.ngMenuMyJobs,
     'SupervisorTeamPage' => l.ngMenuMyTeam,
     'SupervisorEarningsPage' || 'MySalComingSoon' => l.ngMenuMyEarnings,
-    'SupervisorAttendancePage' || 'MyAttComingSoon' => l.ngMenuMyAttendance,
+    'SupervisorAttendancePage' || 'FieldAttendancePage' => l.ngMenuMyAttendance,
     _ when item.name == SuperAdminPageWidget.routeName =>
       l.ngMenuPlatformAdmin,
+    'DriverAppPage' => l.drvTitle,
+    'MarketplaceJobsPage' => l.mktTitle,
     _ => item.label,
   };
 }

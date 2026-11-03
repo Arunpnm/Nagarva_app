@@ -50,11 +50,19 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
         OrdersTable().queryRows(
             queryFn: (q) => OrgScope.read(q).gte('created_at', first)),
         SubscriptionPlansTable().queryRows(
-            queryFn: (q) => q.eq('active', true).order('price_inr')),
+            // Cheapest first (order() is descending by default).
+            queryFn: (q) =>
+                q.eq('active', true).order('price_inr', ascending: true)),
       ]);
       _users = results[0].length;
       _ordersThisMonth = results[1].length;
-      _plans = results[2].cast<SubscriptionPlansRow>();
+      // BUG-019 (3 Nov 2026): the separate "Trial" plan (5 users, 50
+      // orders) confused vendors — a trial is now full Pro — so it isn't
+      // offered as a plan to pick.
+      _plans = results[2]
+          .cast<SubscriptionPlansRow>()
+          .where((p) => p.code != 'trial')
+          .toList();
     } catch (_) {
       // Usage is supplementary: the plan and its limits still render.
     }

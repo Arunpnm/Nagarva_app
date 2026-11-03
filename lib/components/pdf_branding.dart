@@ -447,7 +447,11 @@ class PdfBranding {
     required PdfFonts fonts,
     Uint8List? logoBytes,
     bool showBranchList = false,
+    PdfColor color = navy,
   }) {
+    // Gold reads on the navy band only; on a vendor's own brand colour
+    // (Settings › Quote design) the label and tagline go white.
+    final highlight = color == navy ? gold : PdfColors.white;
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
@@ -471,7 +475,7 @@ class PdfBranding {
         pw.Container(
           padding: const pw.EdgeInsets.all(14),
           decoration: pw.BoxDecoration(
-            color: navy,
+            color: color,
             borderRadius: pw.BorderRadius.circular(6),
           ),
           child: pw.Row(
@@ -503,7 +507,7 @@ class PdfBranding {
                     if ((org.tagline ?? '').isNotEmpty)
                       pw.Text(org.tagline!,
                           style: pw.TextStyle(
-                              font: fonts.regular, fontSize: 9, color: gold)),
+                              font: fonts.regular, fontSize: 9, color: highlight)),
                     if ((org.address ?? '').isNotEmpty)
                       pw.Text(org.address!,
                           style: pw.TextStyle(
@@ -532,7 +536,7 @@ class PdfBranding {
                 children: [
                   pw.Text(docLabel,
                       style: pw.TextStyle(
-                          font: fonts.bold, fontSize: 13, color: gold)),
+                          font: fonts.bold, fontSize: 13, color: highlight)),
                   if ((org.gstin ?? '').isNotEmpty)
                     pw.Text('GSTIN: ${org.gstin}',
                         style: pw.TextStyle(

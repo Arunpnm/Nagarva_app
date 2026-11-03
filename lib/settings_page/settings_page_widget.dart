@@ -8,6 +8,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/notification_bell.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
+import 'login_security_section.dart';
 import '/config/app_config.dart';
 import '/main.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -142,7 +143,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                       'key': 'porter_enabled',
                       ...OrgScope.stamp(),
                       'value': v.toString(),
-                      'updated_at': DateTime.now().toIso8601String(),
+                      'updated_at': DateTime.now().toUtc().toIso8601String(),
                     },
                     onConflict: 'org_id,key',
                   );
@@ -369,6 +370,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         _row(Icons.view_in_ar_outlined, l.ngSetCft,
             sub: l.ngSetCftSub,
             onTap: () => context.pushNamed(SurveyPricingPage.routeName)),
+        // The design write is owner-only in the database.
+        if (_isOwner)
+          _row(Icons.palette_outlined, l.qdTitle,
+              sub: l.qdSub,
+              onTap: () => context.pushNamed(QuoteDesignPage.routeName)),
         // Owner/admin/manager, the same people roll_over_number_series
         // accepts — offering it to staff would only end in a refusal.
         if (isOwnerOrManagerSession)
@@ -380,6 +386,9 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           _row(Icons.widgets_outlined, l.mdTitle,
               sub: l.mdSettingsSub,
               onTap: () => context.pushNamed(ModulesPage.routeName)),
+          _row(Icons.dashboard_customize_outlined, l.dwTitle,
+              sub: l.dwSub,
+              onTap: () => context.pushNamed(DashboardWidgetsPage.routeName)),
           _row(Icons.chat_outlined, l.ngSetWa,
               sub: l.ngSetWaSub,
               onTap: () => context.pushNamed(WhatsAppPage.routeName)),
@@ -393,7 +402,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           _row(Icons.lock_outline_rounded, l.ngSetLogin,
               sub: l.ngSetLoginSub,
               onTap: () => _openSub(
-                  l.ngSetLogin, (_) => [const _PinSettingCard()])),
+                  l.ngSetLogin,
+                  (_) => [
+                        const _PinSettingCard(),
+                        const LoginSecuritySections(),
+                      ])),
         ]),
       _group(l.ngSetAccount, [
         if (_isOwner)

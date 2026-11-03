@@ -8,6 +8,7 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Material detail + stock movement actions (Session 4 Materials rebuild).
 ///
 /// `materials.quantity` is maintained ENTIRELY by the `apply_stock_movement()`
@@ -121,7 +122,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not record: $e')));
+          .showSnackBar(SnackBar(content: Text('Could not record: ${friendlyError(e)}')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -211,7 +212,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
             '${m.name}',
         'amount': unit * qty,
         'status': 'completed',
-        'completed_at': DateTime.now().toIso8601String(),
+        'completed_at': DateTime.now().toUtc().toIso8601String(),
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -225,7 +226,7 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Stock recorded, but the charge could not be '
-                'added to the order: $e')));
+                'added to the order: ${friendlyError(e)}')));
       }
     }
   }
@@ -239,6 +240,9 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
     await _recordMovement(
       movementType: result.isDamage ? 'damage' : 'adjustment',
       quantity: result.delta,
+      // BUG-023 (3 Nov 2026): valued at the item's cost, so a damage /
+      // write-off shows as a real loss (was rate 0, value ₹0).
+      rate: _material?.costPerUnit ?? 0,
       note: result.note,
     );
   }

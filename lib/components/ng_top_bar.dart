@@ -8,6 +8,7 @@ import '/components/language_quick_button.dart';
 import '/components/notification_bell.dart';
 import '/components/theme_quick_button.dart';
 import '/flutter_flow/ng_tokens.dart';
+import 'package:go_router/go_router.dart';
 
 /// The redesign's shared top bar ("APP HEADER (shared)" in the handoff):
 /// business logo and name on the left with the signed-in role under it,
@@ -74,6 +75,13 @@ class NgTopBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   const SizedBox(width: 8),
                 ],
+                // Logo / company name → Home (Arun, 3 Nov 2026). The
+                // route guard sends staff to their own home screen.
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => context.go('/home'),
+                    child: Row(children: [
                 Container(
                   width: 30,
                   height: 30,
@@ -117,6 +125,9 @@ class NgTopBar extends StatelessWidget implements PreferredSizeWidget {
                         style: NgFonts.geist(fontSize: 11.5, color: c.faint),
                       ),
                     ],
+                  ),
+                ),
+                    ]),
                   ),
                 ),
                 for (final a in extraActions) ...[a, const SizedBox(width: 4)],

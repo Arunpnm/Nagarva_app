@@ -137,7 +137,7 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
       if (mounted) context.go(HomePageWidget.routePath);
     } catch (e) {
       safeSetState(() {
-        _model.errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _model.errorMessage = friendlyError(e);
         _model.isLoading = false;
       });
     }

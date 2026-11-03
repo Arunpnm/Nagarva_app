@@ -2,6 +2,7 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Soft delete, app-wide (live-test fix brief #2, item 11).
 ///
 /// Nothing is ever hard-deleted from here. Every entity carries
@@ -129,7 +130,7 @@ class SoftDeleteService {
       // as permission — this one protects GST records.
       return DeleteCheck(
         allowed: false,
-        reason: 'Could not verify whether this order can be deleted: $e',
+        reason: 'Could not verify whether this order can be deleted: ${friendlyError(e)}',
       );
     }
   }
@@ -151,7 +152,7 @@ class SoftDeleteService {
       return DeleteCheck.allow;
     } catch (e) {
       return DeleteCheck(
-          allowed: false, reason: 'Could not verify this lead: $e');
+          allowed: false, reason: 'Could not verify this lead: ${friendlyError(e)}');
     }
   }
 
@@ -182,7 +183,7 @@ class SoftDeleteService {
       return DeleteCheck.allow;
     } catch (e) {
       return DeleteCheck(
-          allowed: false, reason: 'Could not verify this payment: $e');
+          allowed: false, reason: 'Could not verify this payment: ${friendlyError(e)}');
     }
   }
 
@@ -252,7 +253,7 @@ class SoftDeleteService {
       }
       return DeleteCheck.allow;
     } catch (e) {
-      return DeleteCheck(allowed: false, reason: 'Could not verify this trip: $e');
+      return DeleteCheck(allowed: false, reason: 'Could not verify this trip: ${friendlyError(e)}');
     }
   }
 
@@ -287,7 +288,7 @@ class SoftDeleteService {
       return DeleteCheck.allow;
     } catch (e) {
       return DeleteCheck(
-          allowed: false, reason: 'Could not verify this quote: $e');
+          allowed: false, reason: 'Could not verify this quote: ${friendlyError(e)}');
     }
   }
 

@@ -20,6 +20,7 @@ import '/backend/tracking_service.dart';
 import '/components/share_link_sheet.dart';
 import '/components/survey_response_section.dart';
 import '/backend/pricing_defaults.dart';
+import '/backend/quote_design.dart';
 import '/components/pdf_branding.dart';
 import '/components/survey_pdf.dart';
 import '/components/quote_pdf.dart';
@@ -29,6 +30,9 @@ import '/backend/issued_documents.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
+import '/backend/detail_navigation.dart';
+import '/backend/lead_actions.dart';
+import '/backend/live_refresh.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +41,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'lead_detail_page_model.dart';
 import '/backend/vendor_identity.dart';
 import '/backend/order_id_allocator.dart';
+import '/backend/edge_function_errors.dart';
 export 'lead_detail_page_model.dart';
 
 /// Read-only view of a single lead with convert-to-order action.
@@ -55,7 +60,35 @@ class LeadDetailPageWidget extends StatefulWidget {
     this.leadStatus,
     this.leadBranch,
     this.leadNotes,
+    this.surveyQuoteOnly = false,
+    this.onChanged,
+    this.autoConvertQuote = false,
   });
+
+  /// Builds the widget for one lead from its row, as the Leads list does.
+  factory LeadDetailPageWidget.fromLead(LeadsRow l,
+          {Key? key,
+          bool surveyQuoteOnly = false,
+          VoidCallback? onChanged,
+          bool autoConvertQuote = false}) =>
+      LeadDetailPageWidget(
+        key: key,
+        leadId: l.id,
+        leadCustomer: l.customer,
+        leadPhone: l.phone,
+        leadEmail: l.email,
+        leadFromCity: l.fromCity,
+        leadToCity: l.toCity,
+        leadApproxDate: l.approxDate,
+        leadService: l.service,
+        leadSource: l.source,
+        leadStatus: l.status,
+        leadBranch: l.branch,
+        leadNotes: l.notes,
+        surveyQuoteOnly: surveyQuoteOnly,
+        onChanged: onChanged,
+        autoConvertQuote: autoConvertQuote,
+      );
 
   final String? leadId;
   final String? leadCustomer;
@@ -69,6 +102,21 @@ class LeadDetailPageWidget extends StatefulWidget {
   final String? leadStatus;
   final String? leadBranch;
   final String? leadNotes;
+
+  /// The order journey's Survey and Quote stages embed this page with
+  /// [surveyQuoteOnly]: just the Survey & Quote card, no scaffold, so the
+  /// survey request, quote, revisions, signature and convert-to-order run
+  /// on the one copy of that logic. [onChanged] fires after it reloads
+  /// following a change, and in place of opening Order Details once an
+  /// order is created.
+  final bool surveyQuoteOnly;
+  final VoidCallback? onChanged;
+
+  /// The journey's "Confirm booking" (after a call logged as Accepted):
+  /// once the lead loads, convert its accepted quote to an order straight
+  /// away, exactly as tapping "Convert Quote to Order" would. Runs once,
+  /// and only when the quote is accepted and no order exists yet.
+  final bool autoConvertQuote;
 
   static String routeName = 'LeadDetailPage';
   static String routePath = '/lead-detail';
@@ -134,6 +182,18 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// this lead's quotes. Read rather than inferred, for the same reason
   /// the survey and quote stages are — see [LeadStageEvidence].
   bool _hasOrder = false;
+
+  /// The order this lead became (by lead_id or through a quote), if any.
+  String? _linkedOrderId;
+
+  /// What may be done to this lead now — the ONE place that decides
+  /// (pending UX list, 15 Sept 2026). Every button below asks this.
+  LeadActions get _actions => LeadActions.resolve(
+        status: _status,
+        hasOrder: _hasOrder,
+        hasQuote: _quotation != null,
+        orderId: _linkedOrderId,
+      );
   // Session 4, A1/A2: the constructor's leadXxx params are a nav-time
   // snapshot and don't carry every column the field table/auto-creation
   // note need (from_floor/to_floor/package_type/packing_type/notes aren't
@@ -142,6 +202,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   // falls back to the matching `widget.x` so the page still renders
   // something sensible if this fetch fails.
   LeadsRow? _lead;
+
+  // The saved lead wins over the link's copy: a page opened with only
+  // leadId (search, journey, quote) had no phone, so Call / WhatsApp
+  // were greyed out.
+  String? get _leadPhone =>
+      (_lead?.phone ?? '').trim().isNotEmpty ? _lead!.phone : widget.leadPhone;
+  String? get _leadCustomer => (_lead?.customer ?? '').trim().isNotEmpty
+      ? _lead!.customer
+      : widget.leadCustomer;
   bool _loadingLinked = true;
   bool _requestingSurvey = false;
   bool _convertingQuote = false;
@@ -167,6 +236,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// Drives the journey strip and the Activity list (follow-up logs).
   JourneyData? _journey;
 
+  /// BUG-056: status changes (Mark lost, Reopen, chip taps) for the
+  /// Activity list, read from the audit trail the leads trigger writes.
+  List<(String from, String to, DateTime? at)> _statusChanges = const [];
+
   Future<void> _loadJourney() async {
     final id = widget.leadId;
     if (id == null || id.isEmpty) return;
@@ -176,6 +249,37 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } catch (_) {
       // The strip falls back to its plain title.
     }
+    try {
+      final rows = await SupaFlow.client
+          .from('audit_log')
+          .select('old:old_value->>status,new:new_value->>status,created_at')
+          .eq('entity_type', 'leads')
+          .eq('entity_id', id)
+          .eq('action', 'row_update')
+          .contains('changed_fields', ['status'])
+          .order('created_at', ascending: false)
+          .limit(20);
+      if (mounted) {
+        setState(() => _statusChanges = [
+              for (final r in rows as List)
+                (
+                  '${r['old'] ?? ''}',
+                  '${r['new'] ?? ''}',
+                  DateTime.tryParse('${r['created_at']}')?.toLocal(),
+                ),
+            ]);
+      }
+    } catch (_) {
+      // Activity still shows follow-ups and "Lead created".
+    }
+  }
+
+  String _statusChangeLabel(String from, String to) {
+    final f = canonicalLeadStatus(from);
+    final t = canonicalLeadStatus(to);
+    if (t == kLeadStatusLost) return 'Marked lost';
+    if (f == kLeadStatusLost) return 'Reopened · ${_chipLabels[t] ?? to}';
+    return 'Status changed to ${_chipLabels[t] ?? to}';
   }
   bool _deleting = false;
 
@@ -199,13 +303,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         data: {'status': next},
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.leadId!),
       );
+      _loadJourney(); // refresh Activity with this change
     } catch (e) {
       // Roll the optimistic update back so the strip can't show a stage
       // the database never accepted.
       if (mounted) {
         setState(() => _status = previous);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update status: $e')),
+          SnackBar(content: Text('Could not update status: ${friendlyError(e)}')),
         );
       }
     } finally {
@@ -277,8 +382,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           })();
 
       final customerName =
-          overrideCustomer ?? quote?.customer ?? widget.leadCustomer ?? '';
-      final phone = overridePhone ?? quote?.phone ?? widget.leadPhone;
+          overrideCustomer ?? quote?.customer ?? _leadCustomer ?? '';
+      final phone = overridePhone ?? quote?.phone ?? _leadPhone;
 
       // A5: "Call findOrCreateCustomer so orders.customer_id is set at
       // creation — same helper Quick Payment uses. Do not leave it null."
@@ -313,8 +418,11 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         if (quote != null) 'quotation_id': quote.id,
         'customer': customerName,
         'phone': phone,
-        'from_city': overrideFromCity ?? widget.leadFromCity,
-        'to_city': overrideToCity ?? widget.leadToCity,
+        // BUG-029/039 (3 Nov 2026): the LOADED lead first, the link's
+        // parameters only as a fallback — opened from the journey, the
+        // parameters are empty and the order lost its branch/cities.
+        'from_city': overrideFromCity ?? _lead?.fromCity ?? widget.leadFromCity,
+        'to_city': overrideToCity ?? _lead?.toCity ?? widget.leadToCity,
         // Survey/quote captures the full street address and floor; a lead
         // only ever has the city. Prefer the richer values when present.
         if (quote?.fromAddress != null) 'from_address': quote!.fromAddress,
@@ -323,9 +431,9 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         if (quote?.toFloor != null) 'to_floor': quote!.toFloor,
         'move_date': supaSerialize<DateTime>(moveDate),
         'amount': overrideAmount ?? quote?.total ?? 0.0,
-        'service': overrideService ?? widget.leadService,
-        'branch': widget.leadBranch,
-        'notes': widget.leadNotes,
+        'service': overrideService ?? _lead?.service ?? widget.leadService,
+        'branch': _lead?.branch ?? widget.leadBranch,
+        'notes': _lead?.notes ?? widget.leadNotes,
         'status': 'booked',
         'payment_status': 'pending',
         'tracking_status': 'Booked',
@@ -406,31 +514,17 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(successMessage)),
       );
-      context.pushNamed(
-        OrderDetailPageWidget.routeName,
-        queryParameters: {
-          'orderId': serializeParam(order.id, ParamType.String),
-          'orderCustomer': serializeParam(order.customer, ParamType.String),
-          'orderPhone': serializeParam(order.phone, ParamType.String),
-          'orderFromCity': serializeParam(order.fromCity, ParamType.String),
-          'orderToCity': serializeParam(order.toCity, ParamType.String),
-          'orderMoveDate':
-              serializeParam(order.moveDate.toString(), ParamType.String),
-          'orderAmount':
-              serializeParam(order.amount?.toString(), ParamType.String),
-          'orderStatus': serializeParam(order.status, ParamType.String),
-          'orderPaymentStatus':
-              serializeParam(order.paymentStatus, ParamType.String),
-          'orderTrackingStatus':
-              serializeParam(order.trackingStatus, ParamType.String),
-          'orderService': serializeParam(order.service, ParamType.String),
-          'orderBranch': serializeParam(order.branch, ParamType.String),
-        }.withoutNulls,
-      );
+      // Inside the journey the order appears in the next stages instead.
+      if (widget.surveyQuoteOnly) {
+        await _loadLinked();
+        widget.onChanged?.call();
+        return;
+      }
+      openOrderJourney(context, order);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$errorPrefix: $e')),
+        SnackBar(content: Text('$errorPrefix: ${friendlyError(e)}')),
       );
     }
   }
@@ -519,16 +613,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     context.pushNamed(
       SurveyQuotePageWidget.routeName,
       queryParameters: {
+        // Ids only (BUG-031): the quote screen reads the customer's
+        // details from the survey / lead, never from the URL.
         'surveyId': serializeParam(survey.id, ParamType.String),
         'leadId': serializeParam(widget.leadId, ParamType.String),
-        'leadCustomer': serializeParam(
-            survey.customerName ?? widget.leadCustomer, ParamType.String),
-        'leadPhone': serializeParam(
-            survey.customerPhone ?? widget.leadPhone, ParamType.String),
-        'leadFromCity': serializeParam(
-            survey.fromAddress ?? widget.leadFromCity, ParamType.String),
-        'leadToCity': serializeParam(
-            survey.toAddress ?? widget.leadToCity, ParamType.String),
       }.withoutNulls,
     );
   }
@@ -541,6 +629,26 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// exists — its presence is never required).
   Future<void> _confirmOrder() async {
     if (widget.leadId == null) return;
+    // BUG-056: a lost lead could be confirmed with no warning.
+    if (_canonicalStatus == kLeadStatusLost) {
+      final reopen = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('This lead is marked lost'),
+          content: const Text(
+              'Do you want to reopen it and confirm the order?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Reopen and confirm')),
+          ],
+        ),
+      );
+      if (reopen != true || !mounted) return;
+    }
     setState(() => _converting = true);
     try {
       // Picks up a quote if the lead has one, same re-query as before (a
@@ -564,8 +672,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         context: context,
         builder: (_) => _ConfirmOrderSheet(
           initialCustomer:
-              lead?.customer ?? widget.leadCustomer ?? '',
-          initialPhone: lead?.phone ?? widget.leadPhone ?? '',
+              lead?.customer ?? _leadCustomer ?? '',
+          initialPhone: lead?.phone ?? _leadPhone ?? '',
           initialFromCity: lead?.fromCity ?? widget.leadFromCity ?? '',
           initialToCity: lead?.toCity ?? widget.leadToCity ?? '',
           initialService: lead?.service ?? widget.leadService ?? '',
@@ -608,9 +716,29 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     _status = widget.leadStatus;
     _loadLinked();
     _loadJourney();
+    // Live (pending UX list item 2): when the customer submits the survey,
+    // a quote is saved or accepted, or the lead becomes an order, this
+    // page re-reads itself and its stage and buttons follow.
+    final id = widget.leadId ?? '';
+    _live = LiveRefresh.watch([
+      LiveWatch('leads', 'id', id),
+      LiveWatch('follow_up_logs', 'entity_id', id),
+      LiveWatch('customer_surveys', 'lead_id', id),
+      LiveWatch('quotations', 'lead_id', id),
+      LiveWatch('orders', 'lead_id', id),
+    ], () {
+      if (!mounted) return;
+      _loadLinked();
+      _loadJourney();
+      _remindersKey.currentState?.reload();
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
+
+  /// Set after the first load, so [LeadDetailPageWidget.onChanged] fires
+  /// on reloads only, not on opening.
+  bool _linkedLoadedOnce = false;
 
   Future<void> _loadLinked() async {
     if (widget.leadId == null) {
@@ -649,14 +777,30 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       // when one references any of its quotes. A cancelled or deleted
       // order is not evidence the job happened.
       var hasOrder = false;
+      String? linkedOrderId;
       final quoteIds =
           quotations.map((q) => q.id).whereType<String>().toList();
-      if (quoteIds.isNotEmpty) {
+      {
         try {
-          final orders = await OrdersTable().queryRows(
-            queryFn: (q) => OrgScope.read(q).inFilter('quotation_id', quoteIds),
+          // By quote OR by lead_id: an order confirmed straight from the
+          // lead (no quote) is just as much a conversion.
+          final byLead = await OrdersTable().queryRows(
+            queryFn: (q) => OrgScope.read(q)
+                .eq('lead_id', widget.leadId!)
+                .isFilter('deleted_at', null),
           );
-          hasOrder = orders.any((o) => (o.status ?? '') != 'cancelled');
+          final byQuote = quoteIds.isEmpty
+              ? <OrdersRow>[]
+              : await OrdersTable().queryRows(
+                  queryFn: (q) => OrgScope.read(q)
+                      .inFilter('quotation_id', quoteIds)
+                      .isFilter('deleted_at', null),
+                );
+          final live = [...byLead, ...byQuote]
+              .where((o) => (o.status ?? '') != 'cancelled')
+              .toList();
+          hasOrder = live.isNotEmpty;
+          linkedOrderId = live.isEmpty ? null : live.first.id;
         } catch (_) {
           // Supplemental. A failure understates progress rather than
           // inventing it — the safe direction, per LeadStageEvidence.
@@ -667,6 +811,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         _survey = surveys.isNotEmpty ? surveys.first : null;
         _quotesOnLead = quotations;
         _hasOrder = hasOrder;
+        _linkedOrderId = linkedOrderId;
         _quotation = _pickBestQuote(quotations);
         if (leads.isNotEmpty) {
           _lead = leads.first;
@@ -674,6 +819,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         }
         _loadingLinked = false;
       });
+
+      if (widget.autoConvertQuote &&
+          !_autoConvertDone &&
+          !hasOrder &&
+          _quotation?.status == 'accepted') {
+        _autoConvertDone = true;
+        await _convertQuoteToOrder();
+        return;
+      }
 
       // Item 3: refresh-after-write for the signature chip. The customer
       // signs on their own phone, so this reconcile-on-load is the only
@@ -702,6 +856,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       // catches up whenever the page is opened or refreshed. advanceOnly
       // semantics mean a lead already further along is never pulled back.
       await _reconcileStatusFromProgress();
+      if (_linkedLoadedOnce) widget.onChanged?.call();
+      _linkedLoadedOnce = true;
     } catch (_) {
       if (mounted) setState(() => _loadingLinked = false);
     }
@@ -837,6 +993,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// Derives the stage implied by the survey/quote rows and advances the
   /// lead to it if it is further along than where the lead currently sits.
   Future<void> _reconcileStatusFromProgress() async {
+    // A lost (cancelled) lead is a decision, not progress to infer: the
+    // live reload after "Close as cancelled" used to flip it straight back
+    // to "quoted" one second later (found 3 Nov 2026). Same for a lead
+    // already confirmed.
+    if (_canonicalStatus == kLeadStatusLost ||
+        _canonicalStatus == kLeadStatusConfirmed) {
+      return;
+    }
     final survey = _survey;
     final quote = _quotation;
     String? implied;
@@ -875,14 +1039,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// shared sheet — WhatsApp on this phone, or straight from the vendor's
   /// own WhatsApp number once the survey-link template is approved.
   void _showLinkDialog(String title, String link) {
-    final name = widget.leadCustomer;
+    final name = _leadCustomer;
     ShareLinkSheet.show(
       context,
       title: title,
       subtitle: 'The customer lists what they are moving. It takes about '
           'five minutes and needs no login.',
       link: link,
-      phone: widget.leadPhone,
+      phone: _leadPhone,
       message: 'Hello${(name ?? '').isEmpty ? '' : ' $name'}, this is '
           '${VendorIdentity.forSentence}. Please list the items you are '
           'moving here:',
@@ -919,8 +1083,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       final row = await SurveysTable().insert({
         ...OrgScope.stamp(),
         'lead_id': widget.leadId,
-        'customer_name': widget.leadCustomer,
-        'customer_phone': widget.leadPhone,
+        'customer_name': _leadCustomer,
+        'customer_phone': _leadPhone,
         if (from != null) 'from_address': from,
         if (to != null) 'to_address': to,
         if (orBlank(widget.leadApproxDate) != null)
@@ -933,7 +1097,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       await RemindersService.autoCreate(
         entityType: kEntityLead,
         entityId: widget.leadId!,
-        title: 'Survey follow-up: ${widget.leadCustomer ?? 'customer'}',
+        title: 'Survey follow-up: ${_leadCustomer ?? 'customer'}',
         days: kDefaultSurveyFollowUpDays,
       );
       _remindersKey.currentState?.reload();
@@ -943,7 +1107,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not create survey link: $e')),
+        SnackBar(content: Text('Could not create survey link: ${friendlyError(e)}')),
       );
     } finally {
       if (mounted) setState(() => _requestingSurvey = false);
@@ -994,6 +1158,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     }
   }
 
+  bool _autoConvertDone = false;
+
   Future<void> _convertQuoteToOrder() async {
     if (widget.leadId == null || _quotation == null) return;
     setState(() => _convertingQuote = true);
@@ -1008,8 +1174,11 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     }
   }
 
+  LiveRefresh? _live;
+
   @override
   void dispose() {
+    _live?.dispose();
     _model.dispose();
 
     super.dispose();
@@ -1095,10 +1264,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 
   // ---- Session 4, A4: quick contact row -----------------------------------
   bool get _hasUsablePhone =>
-      (widget.leadPhone ?? '').replaceAll(RegExp(r'\D'), '').length >= 10;
+      (_leadPhone ?? '').replaceAll(RegExp(r'\D'), '').length >= 10;
 
   Future<String> _leadOpeningMessage() async {
-    final customer = widget.leadCustomer ?? 'there';
+    final customer = _leadCustomer ?? 'there';
     final org = VendorIdentity.forSentence;
     // Tenant-editable template (app_settings, category 'whatsapp') with a
     // sensible default when unset — same fallback-default pattern as
@@ -1124,7 +1293,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     if (!_hasUsablePhone) return;
     final message = await _leadOpeningMessage();
     final uri =
-        Uri.parse(buildWhatsAppLink(phone: widget.leadPhone, message: message));
+        Uri.parse(buildWhatsAppLink(phone: _leadPhone, message: message));
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1134,7 +1303,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 
   Future<void> _callLead() async {
     if (!_hasUsablePhone) return;
-    final uri = Uri(scheme: 'tel', path: widget.leadPhone);
+    final uri = Uri(scheme: 'tel', path: _leadPhone);
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context)
@@ -1170,7 +1339,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             label: l.ngQuote,
             icon: Icons.request_quote_outlined,
             iconColor: c.acc,
-            onTap: widget.leadId == null
+            // A converted lead gets no new quote (LeadActions).
+            onTap: widget.leadId == null || !_actions.canBuildQuote
                 ? null
                 : () => context.pushNamed(
                       SurveyQuotePageWidget.routeName,
@@ -1178,10 +1348,10 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                         'leadId':
                             serializeParam(widget.leadId, ParamType.String),
                         'leadCustomer': serializeParam(
-                            _lead?.customer ?? widget.leadCustomer,
+                            _lead?.customer ?? _leadCustomer,
                             ParamType.String),
                         'leadPhone': serializeParam(
-                            _lead?.phone ?? widget.leadPhone,
+                            _lead?.phone ?? _leadPhone,
                             ParamType.String),
                         'leadFromCity': serializeParam(
                             _lead?.fromCity ?? widget.leadFromCity,
@@ -1201,8 +1371,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// A4) and the status pill.
   Widget _leadHeader(BuildContext context) {
     final c = NgPalette.of(context);
-    final name = _lead?.customer ?? widget.leadCustomer ?? 'Lead';
-    final phone = _lead?.phone ?? widget.leadPhone;
+    final name = _lead?.customer ?? _leadCustomer ?? 'Lead';
+    final phone = _lead?.phone ?? _leadPhone;
     final tone = leadStatusTone(_status);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -1261,6 +1431,18 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           f.notes,
           f.loggedAt,
         ),
+      for (final s in _statusChanges)
+        (
+          canonicalLeadStatus(s.$2) == kLeadStatusLost
+              ? Icons.cancel_outlined
+              : Icons.swap_horiz_rounded,
+          canonicalLeadStatus(s.$2) == kLeadStatusLost
+              ? NgStatus.red
+              : NgStatus.blue,
+          _statusChangeLabel(s.$1, s.$2),
+          null,
+          s.$3,
+        ),
       if (created != null)
         (
           Icons.add_circle_outline_rounded,
@@ -1272,7 +1454,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           null,
           created,
         ),
-    ];
+    ]..sort((a, b) => (b.$5 ?? DateTime(0)).compareTo(a.$5 ?? DateTime(0)));
     if (items.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1465,13 +1647,24 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             _linkUnavailableNote(context, 'Survey',
                 'Fill the survey in yourself from Survey & Quote.')
           else if (survey == null)
-            OutlinedButton.icon(
-              onPressed: _requestingSurvey ? null : _requestSurvey,
-              icon: const Icon(Icons.fact_check_outlined, size: 18),
-              label: Text(_requestingSurvey
-                  ? 'Creating link…'
-                  : 'Request Survey (send customer a link)'),
-            )
+            _actions.canRequestSurvey
+                ? OutlinedButton.icon(
+                    onPressed: _requestingSurvey ? null : _requestSurvey,
+                    icon: const Icon(Icons.fact_check_outlined, size: 18),
+                    label: Text(_requestingSurvey
+                        ? 'Creating link…'
+                        : 'Request Survey (send customer a link)'),
+                  )
+                : const SizedBox.shrink()
+          else if (survey.status == 'pending' && !_actions.isOpen)
+            Row(children: [
+              Icon(Icons.info_outline_rounded, size: 17, color: ng.mute),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text('The customer did not fill the survey link.',
+                    style: TextStyle(color: ng.mute)),
+              ),
+            ])
           else if (survey.status == 'pending')
             OutlinedButton.icon(
               onPressed: () => _showLinkDialog(
@@ -1487,13 +1680,17 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             // with the total CFT and the package it implies.
             SurveyResponseSection(
               survey: survey,
-              onBuildQuote: () => _openQuoteBuilder(survey),
+              onBuildQuote: _actions.canBuildQuote
+                  ? () => _openQuoteBuilder(survey)
+                  : null,
             ),
           const SizedBox(height: 10),
           // Step 2: quote (needs a survey submitted first, or can be
           // skipped straight from the lead — vendor's call).
           if (quotation == null)
-            Wrap(
+            !_actions.canBuildQuote
+                ? const SizedBox.shrink()
+                : Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
@@ -1510,9 +1707,9 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     queryParameters: {
                       'leadId': serializeParam(widget.leadId, ParamType.String),
                       'leadCustomer':
-                          serializeParam(widget.leadCustomer, ParamType.String),
+                          serializeParam(_leadCustomer, ParamType.String),
                       'leadPhone':
-                          serializeParam(widget.leadPhone, ParamType.String),
+                          serializeParam(_leadPhone, ParamType.String),
                       'leadFromCity':
                           serializeParam(widget.leadFromCity, ParamType.String),
                       'leadToCity':
@@ -1538,6 +1735,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                   ],
                 ),
                 const SizedBox(height: 8),
+                if (_actions.canConvertQuote)
                 FilledButton.icon(
                   onPressed: _convertingQuote ? null : _convertQuoteToOrder,
                   icon: const Icon(Icons.assignment_turned_in, size: 18),
@@ -1632,11 +1830,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               _linkUnavailableNote(context, 'Signature',
                   'Capture the signature in person instead — Order '
                   'Details, Documents, Capture Signature.')
-            else
+            // Was offered with no quote at all, and `quotation!` then
+            // crashed on tap. Now only when there is a quote to sign and
+            // the lead is still open.
+            else if (quotation != null && _actions.canSendForSignature)
             OutlinedButton.icon(
               onPressed: _sendingQuoteSignature
                   ? null
-                  : () => _sendQuoteForSignature(quotation!),
+                  : () => _sendQuoteForSignature(quotation),
               icon: const Icon(Icons.draw, size: 18),
               label: Text(_sendingQuoteSignature
                   ? 'Preparing…'
@@ -1657,7 +1858,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       final sig = await SignatureService.getOrCreate(
         documentType: 'quote',
         documentId: quotation.id,
-        customerName: quotation.customer ?? widget.leadCustomer,
+        customerName: quotation.customer ?? _leadCustomer,
       );
       if (!mounted) return;
       setState(() => _quoteSignature = sig);
@@ -1668,14 +1869,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         subtitle: 'The customer reviews the quotation and signs on their '
             'phone. No login needed.',
         link: sig.link,
-        phone: widget.leadPhone,
-        message: 'Hello${widget.leadCustomer == null ? '' : ' ${widget.leadCustomer}'}, '
+        phone: _leadPhone,
+        message: 'Hello${_leadCustomer == null ? '' : ' ${_leadCustomer}'}, '
             'please review and accept your quotation from $org:',
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not create signature link: $e')),
+        SnackBar(content: Text('Could not create signature link: ${friendlyError(e)}')),
       );
     } finally {
       if (mounted) setState(() => _sendingQuoteSignature = false);
@@ -1717,8 +1918,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       final lines = parseSurveyRooms(survey.rooms);
       final bytes = await SurveyPdf.generate(
         leadRef: _leadRef,
-        customerName: survey.customerName ?? widget.leadCustomer ?? 'Customer',
-        customerPhone: survey.customerPhone ?? widget.leadPhone,
+        customerName: survey.customerName ?? _leadCustomer ?? 'Customer',
+        customerPhone: survey.customerPhone ?? _leadPhone,
         moveDate: survey.moveDate,
         fromAddress: survey.fromAddress,
         toAddress: survey.toAddress,
@@ -1738,7 +1939,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not generate survey PDF: $e')),
+        SnackBar(content: Text('Could not generate survey PDF: ${friendlyError(e)}')),
       );
     } finally {
       if (mounted) setState(() => _downloadingSurveyPdf = false);
@@ -1815,12 +2016,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       final surveyLines =
           _survey != null ? parseSurveyRooms(_survey!.rooms) : <SurveyLine>[];
 
+      final design = await QuoteDesign.load();
       final bytes = await QuotePdf.generate(
+        design: design,
         leadRef: _leadRef,
         org: org,
         boilerplate: boilerplate,
-        customerName: quotation.customer ?? widget.leadCustomer ?? 'Customer',
-        customerPhone: quotation.phone ?? widget.leadPhone,
+        customerName: quotation.customer ?? _leadCustomer ?? 'Customer',
+        customerPhone: quotation.phone ?? _leadPhone,
         // No email column exists anywhere in the survey/quotation/lead
         // schema today — omitted rather than guessed; the PDF already
         // renders cleanly without it (see the isNotEmpty guard on this
@@ -1882,7 +2085,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not generate quote PDF: $e')),
+        SnackBar(content: Text('Could not generate quote PDF: ${friendlyError(e)}')),
       );
     } finally {
       if (mounted) setState(() => _downloadingQuotePdf = false);
@@ -1904,6 +2107,43 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
   /// Identity line, the other-quotes switcher, Revise, and the version
   /// list — one block, because they are one question: *which quote is
   /// this, what has it been through, and do I change it again?*
+  /// Shown instead of the status chips once the lead has become an order
+  /// (pending UX list item 4): the lead is history, and the place to work
+  /// is the order.
+  Widget _convertedBanner(BuildContext context) {
+    final ng = NgPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ng.status(NgStatus.green).bg,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle_rounded,
+              size: 20, color: ng.status(NgStatus.green).fg),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _linkedOrderId == null
+                  ? 'Converted to an order'
+                  : 'Converted to order $_linkedOrderId',
+              style: NgFonts.geist(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: ng.status(NgStatus.green).fg),
+            ),
+          ),
+          if (_linkedOrderId != null)
+            TextButton(
+              onPressed: () => openOrderJourneyById(context, _linkedOrderId),
+              child: const Text('Open'),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _quoteRevisionPanel(BuildContext context, QuotationsRow quotation) {
     final ng = NgPalette.of(context);
     final money = NumberFormat.currency(
@@ -2068,6 +2308,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                   : const Icon(Icons.visibility_outlined, size: 18),
               label: Text(_downloadingQuotePdf ? 'Opening…' : 'View'),
             ),
+            if (_actions.canReviseQuote) ...[
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton.icon(
@@ -2077,6 +2318,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                 label: Text(_revisingQuote ? 'Opening…' : 'Revise Quote'),
               ),
             ),
+            ],
           ],
         ),
       ],
@@ -2112,6 +2354,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.surveyQuoteOnly) {
+      return _loadingLinked
+          ? const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : _surveyQuoteSection(context);
+    }
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -2124,7 +2374,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           title: AppLocalizations.of(context).leadDetails,
           actions: [
             if (StaffPermissions.canActive('leads', 'edit') &&
-                widget.leadId != null)
+                widget.leadId != null &&
+                _actions.canEdit)
               NgHeaderButtonBox(
                 icon: Icons.edit_outlined,
                 tooltip: AppLocalizations.of(context).editLead,
@@ -2146,7 +2397,15 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: SingleChildScrollView(
+              // Pull-to-refresh (pending UX list item 3): re-reads the
+              // lead, survey, quotes, order link, activity and reminders.
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await Future.wait([_loadLinked(), _loadJourney()]);
+                  _remindersKey.currentState?.reload();
+                },
+                child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -2173,11 +2432,16 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                         hasOrder: _hasOrder,
                       ),
                       busy: _savingStatus,
-                      onStageTap: (stage) => _setLeadStatus(stage, force: true),
+                      onStageTap: _actions.canChangeStatus
+                          ? (stage) => _setLeadStatus(stage, force: true)
+                          : null,
                     ),
                     // Session 4, A3: the one interactive control for lead
                     // status — the strip above mirrors it, read-only.
-                    _statusChipsRow(context),
+                    if (_actions.canChangeStatus)
+                      _statusChipsRow(context)
+                    else
+                      _convertedBanner(context),
                     // Session 4, A1: one detail table, every row rendered
                     // even when empty (— for null) — replaces the old
                     // Contact/Move Details split, which didn't cover
@@ -2194,19 +2458,27 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                         key: _remindersKey,
                         entityType: kEntityLead,
                         entityId: widget.leadId!,
-                        customerName: widget.leadCustomer,
-                        customerPhone: widget.leadPhone,
+                        customerName: _leadCustomer,
+                        customerPhone: _leadPhone,
                       ),
                     if (!_loadingLinked) _surveyQuoteSection(context),
                     _leadActivity(context),
-                    NgPrimaryButton(
-                      onPressed: _converting ? null : _confirmOrder,
-                      label: _converting ? 'Confirming…' : 'Confirm Order',
-                      icon: Icons.assignment_turned_in_outlined,
-                    ),
+                    if (_actions.canConfirmOrder)
+                      NgPrimaryButton(
+                        onPressed: _converting ? null : _confirmOrder,
+                        label: _converting ? 'Confirming…' : 'Confirm Order',
+                        icon: Icons.assignment_turned_in_outlined,
+                      )
+                    else if (_linkedOrderId != null)
+                      NgPrimaryButton(
+                        onPressed: () =>
+                            openOrderJourneyById(context, _linkedOrderId),
+                        label: 'Open order $_linkedOrderId',
+                        icon: Icons.open_in_new_rounded,
+                      ),
                     // Item 11: destructive, at the bottom, deliberately
                     // separated from the primary actions above.
-                    if (widget.leadId != null)
+                    if (widget.leadId != null && _actions.canDelete)
                       DeleteAction.button(
                         context: context,
                         busy: _deleting,
@@ -2215,6 +2487,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                       ),
                   ].divide(const SizedBox(height: 12.0)),
                 ),
+              ),
               ),
             ),
           ),
@@ -2241,8 +2514,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       );
       if (deleted && mounted) {
         // Straight back to the list — staying on a detail page for a row
-        // that no longer exists would just show stale data.
-        context.pop();
+        // that no longer exists would just show stale data. BUG-056: when
+        // the page was opened directly (search, link) there is nothing to
+        // pop, so go to Leads instead of staying on a deleted lead.
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/leads');
+        }
       }
     } finally {
       if (mounted) setState(() => _deleting = false);

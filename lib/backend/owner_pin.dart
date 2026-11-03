@@ -26,6 +26,7 @@ import '/app_session.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/supabase/supabase.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Outcome of [saveOwnerPin], so callers render their own UI rather than
 /// this helper reaching into two different screens' state.
 class OwnerPinResult {
@@ -160,6 +161,6 @@ Future<OwnerPinResult> saveOwnerPin(BuildContext context, String rawPin) async {
     }
     return const OwnerPinResult.ok();
   } catch (e) {
-    return OwnerPinResult.failed('Could not update PIN: $e');
+    return OwnerPinResult.failed('Could not update PIN: ${friendlyError(e)}');
   }
 }

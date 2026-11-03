@@ -2,6 +2,7 @@ import '/components/ng_widgets.dart';
 import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/components/crew_checkin_card.dart';
 import '/components/supervisor_menu_button.dart';
 import '/components/ng_top_bar.dart';
 import '/flutter_flow/ng_tokens.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '/flutter_flow/flutter_flow_util.dart' show launchURL;
 
+import '/backend/edge_function_errors.dart';
 /// Session 2 Part C — My Team (`sup-team`). Staff in the supervisor's own
 /// branch, with today's attendance state and a mark-present action.
 class SupervisorTeamPageWidget extends StatefulWidget {
@@ -87,7 +89,7 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not mark: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not mark: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -130,6 +132,8 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
               ),
             ),
             const SizedBox(height: 16),
+            // Today's job: rotating check-in code and the job's crew.
+            const CrewCheckinCard(),
             if (_loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 48),
@@ -180,7 +184,7 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
                 ],
               ),
               const SizedBox(height: 16),
-              const NgSectionHeader("Today's crew"),
+              const NgSectionHeader('Branch team'),
               const SizedBox(height: 10),
               NgCard(
                 radius: 20,

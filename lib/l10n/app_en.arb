@@ -4512,5 +4512,907 @@
   "btLater": "You can change this later in Settings › Modules",
   "@btLater": {
     "description": "Business type / Settings › Modules (design bt_/md_)"
+  },
+  "dwTitle": "Widgets",
+  "@dwTitle": {
+    "description": "Setup › Dashboard widgets (design pf_dw)"
+  },
+  "dwSub": "Choose what the owner dashboard shows",
+  "@dwSub": {
+    "description": "design pf_s_dw"
+  },
+  "dwNote": "Owner dashboard shows these in this order. Use the arrow to move one up, the switch to hide it.",
+  "@dwNote": {
+    "description": "design dw_note"
+  },
+  "dwShown": "Shown · position {n}",
+  "@dwShown": {
+    "description": "design dw_shown",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dwHidden": "Hidden",
+  "@dwHidden": {
+    "description": "design dw_hidden"
+  },
+  "dwUp": "Up",
+  "@dwUp": {
+    "description": "design dw_up"
+  },
+  "dwToday": "Today's numbers",
+  "@dwToday": {
+    "description": "Dashboard widget name (design WID0)"
+  },
+  "dwFleet": "Fleet status",
+  "@dwFleet": {
+    "description": "design wx_fleet"
+  },
+  "dwFleetSub": "{a} active · {s} in service",
+  "@dwFleetSub": {
+    "description": "design wx_fleetS",
+    "placeholders": {
+      "a": {
+        "type": "int"
+      },
+      "s": {
+        "type": "int"
+      }
+    }
+  },
+  "dwAttendance": "Staff attendance",
+  "@dwAttendance": {
+    "description": "design wx_att"
+  },
+  "dwAttendanceSub": "checked in today",
+  "@dwAttendanceSub": {
+    "description": "design wx_attS"
+  },
+  "dwSaveFailed": "Could not save. Check your connection and try again.",
+  "@dwSaveFailed": {
+    "description": "Dashboard widgets save error"
+  },
+  "jrShareInvoice": "Share invoice",
+  "@jrShareInvoice": {
+    "description": "Journey Invoice stage (design jr_shareInv): generate/open and share the tax invoice"
+  },
+  "jrSendForSignature": "Send for signature",
+  "@jrSendForSignature": {
+    "description": "Journey Invoice stage: send the customer the signing link"
+  },
+  "lsTitle": "Login & security",
+  "@lsTitle": {
+    "description": "Login & security (design sc_title)"
+  },
+  "lsMy": "Your login",
+  "@lsMy": {
+    "description": "Login & security (design sc_my)"
+  },
+  "lsMyEmail": "Login email",
+  "@lsMyEmail": {
+    "description": "Login & security (design sc_myEmail)"
+  },
+  "lsChangePw": "Change password",
+  "@lsChangePw": {
+    "description": "Login & security (design sc_chPw)"
+  },
+  "lsCurPw": "Current password",
+  "@lsCurPw": {
+    "description": "Login & security (design sc_cur)"
+  },
+  "lsNewPw": "New password",
+  "@lsNewPw": {
+    "description": "Login & security (design sc_new)"
+  },
+  "lsConfPw": "Confirm new password",
+  "@lsConfPw": {
+    "description": "Login & security (design sc_conf)"
+  },
+  "lsPwSub": "Use at least 8 characters",
+  "@lsPwSub": {
+    "description": "Login & security (design sc_pwSub)"
+  },
+  "lsPwShort": "Password must be at least 8 characters",
+  "@lsPwShort": {
+    "description": "Login & security (design sc_pwShort)"
+  },
+  "lsPwMismatch": "Passwords do not match",
+  "@lsPwMismatch": {
+    "description": "Login & security (design sc_pwMis)"
+  },
+  "lsPwCurReq": "Enter your current password",
+  "@lsPwCurReq": {
+    "description": "Login & security (design sc_pwCur)"
+  },
+  "lsPwDone": "Password updated",
+  "@lsPwDone": {
+    "description": "Login & security (design sc_pwDone)"
+  },
+  "lsUpdatePw": "Update password",
+  "@lsUpdatePw": {
+    "description": "Login & security (design sc_upd)"
+  },
+  "lsForgot": "Forgot your password? Use \"Forgot password?\" on the login screen. We email you a reset link.",
+  "@lsForgot": {
+    "description": "Login & security (design sc_forgot)"
+  },
+  "lsStaffPins": "Staff PINs",
+  "@lsStaffPins": {
+    "description": "Login & security (design sc_staff)"
+  },
+  "lsStaffPinsSub": "Staff and supervisors log in with a PIN. Set a new one if they forget it. Repeated wrong tries lock the PIN until you reset it.",
+  "@lsStaffPinsSub": {
+    "description": "Login & security (design sc_staffSub)"
+  },
+  "lsResetPin": "Reset PIN",
+  "@lsResetPin": {
+    "description": "Login & security (design sc_reset)"
+  },
+  "lsPinSet": "PIN set",
+  "@lsPinSet": {
+    "description": "Login & security (design sc_lastSet)"
+  },
+  "lsLocked": "Locked · {n} wrong tries",
+  "@lsLocked": {
+    "description": "Login & security (design sc_locked)",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "lsNewPin": "New PIN",
+  "@lsNewPin": {
+    "description": "Login & security (design sc_newPin)"
+  },
+  "lsConfPin": "Confirm PIN",
+  "@lsConfPin": {
+    "description": "Login & security (design sc_confPin)"
+  },
+  "lsPinBad": "PIN must be 4 digits",
+  "@lsPinBad": {
+    "description": "Login & security (design sc_pinBad)"
+  },
+  "lsPinMismatch": "PINs do not match",
+  "@lsPinMismatch": {
+    "description": "Login & security (design sc_pinMis)"
+  },
+  "lsPinSetFor": "New PIN set for {name}",
+  "@lsPinSetFor": {
+    "description": "Login & security (design sc_pinSet)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lsTellStaff": "Tell the staff member their new PIN in person or by phone. It is never shown again.",
+  "@lsTellStaff": {
+    "description": "Login & security (design sc_tellStaff)"
+  },
+  "lsSetPin": "Set new PIN",
+  "@lsSetPin": {
+    "description": "Login & security (design sc_setPin)"
+  },
+  "lsSignOutAll": "Sign out all other devices",
+  "@lsSignOutAll": {
+    "description": "Login & security (design sc_signOutAll)"
+  },
+  "lsAllOut": "All other devices signed out",
+  "@lsAllOut": {
+    "description": "Login & security (design sc_allOut)"
+  },
+  "lsNoPin": "No PIN yet",
+  "@lsNoPin": {
+    "description": "Login & security: staff member has no PIN yet"
+  },
+  "lsOwnerOnly": "Only the owner can reset staff PINs.",
+  "@lsOwnerOnly": {
+    "description": "Login & security: staff PIN reset is owner-only"
+  },
+  "qdTitle": "Quote design",
+  "@qdTitle": {
+    "description": "Settings › Quote design (design qt_title)"
+  },
+  "qdSub": "How your quotation PDF looks to customers.",
+  "@qdSub": {
+    "description": "Settings › Quote design (design qt_sub)"
+  },
+  "qdTheme": "Theme",
+  "@qdTheme": {
+    "description": "Settings › Quote design (design qt_theme)"
+  },
+  "qdColor": "Brand colour",
+  "@qdColor": {
+    "description": "Settings › Quote design (design qt_color)"
+  },
+  "qdLogo": "Logo",
+  "@qdLogo": {
+    "description": "Settings › Quote design (design qt_logo)"
+  },
+  "qdLogoAdd": "Upload logo",
+  "@qdLogoAdd": {
+    "description": "Settings › Quote design (design qt_logoAdd)"
+  },
+  "qdLogoHint": "PNG or JPG, square works best",
+  "@qdLogoHint": {
+    "description": "Settings › Quote design (design qt_logoHint)"
+  },
+  "qdSave": "Save design",
+  "@qdSave": {
+    "description": "Settings › Quote design (design qt_save)"
+  },
+  "qdPreview": "Preview sample PDF",
+  "@qdPreview": {
+    "description": "Settings › Quote design (design qt_preview)"
+  },
+  "qdSaved": "Quote design saved",
+  "@qdSaved": {
+    "description": "Settings › Quote design (design qt_saved)"
+  },
+  "qdTheme1A": "Classic",
+  "@qdTheme1A": {
+    "description": "Settings › Quote design (design qt_t1a)"
+  },
+  "qdTheme1B": "Bold band",
+  "@qdTheme1B": {
+    "description": "Settings › Quote design (design qt_t1b)"
+  },
+  "qdTheme1C": "Sidebar",
+  "@qdTheme1C": {
+    "description": "Settings › Quote design (design qt_t1c)"
+  },
+  "qdTheme1D": "Minimal",
+  "@qdTheme1D": {
+    "description": "Settings › Quote design (design qt_t1d)"
+  },
+  "qdTheme1E": "Corporate",
+  "@qdTheme1E": {
+    "description": "Settings › Quote design (design qt_t1e)"
+  },
+  "qdTheme1F": "Letterhead",
+  "@qdTheme1F": {
+    "description": "Settings › Quote design (design qt_t1f)"
+  },
+  "qdThemeDesc1A": "Serif, ruled lines",
+  "@qdThemeDesc1A": {
+    "description": "Settings › Quote design (design qt_d1a)"
+  },
+  "qdThemeDesc1B": "Colour header, rounded panels",
+  "@qdThemeDesc1B": {
+    "description": "Settings › Quote design (design qt_d1b)"
+  },
+  "qdThemeDesc1C": "Details column on the left",
+  "@qdThemeDesc1C": {
+    "description": "Settings › Quote design (design qt_d1c)"
+  },
+  "qdThemeDesc1D": "Black and white, prints anywhere",
+  "@qdThemeDesc1D": {
+    "description": "Settings › Quote design (design qt_d1d)"
+  },
+  "qdThemeDesc1E": "Boxed form, for office moves",
+  "@qdThemeDesc1E": {
+    "description": "Settings › Quote design (design qt_d1e)"
+  },
+  "qdThemeDesc1F": "Centred, double rule",
+  "@qdThemeDesc1F": {
+    "description": "Settings › Quote design (design qt_d1f)"
+  },
+  "drvTitle": "Driver app",
+  "@drvTitle": {
+    "description": "Driver app (design dv_title)"
+  },
+  "drvNone": "No trip assigned today",
+  "@drvNone": {
+    "description": "Driver app (design dv_none)"
+  },
+  "drvPlanned": "Planned",
+  "@drvPlanned": {
+    "description": "Driver app (design dv_planned)"
+  },
+  "drvOngoing": "On trip",
+  "@drvOngoing": {
+    "description": "Driver app (design dv_ongoing)"
+  },
+  "drvStart": "Start trip",
+  "@drvStart": {
+    "description": "Driver app (design dv_start)"
+  },
+  "drvEnd": "End trip",
+  "@drvEnd": {
+    "description": "Driver app (design dv_end)"
+  },
+  "drvDone": "Trip completed",
+  "@drvDone": {
+    "description": "Driver app (design dv_done)"
+  },
+  "drvFuel": "Fuel",
+  "@drvFuel": {
+    "description": "Driver app (design dv_fuel)"
+  },
+  "drvFuelT": "Add fuel",
+  "@drvFuelT": {
+    "description": "Driver app (design dv_fuelT)"
+  },
+  "drvToll": "Toll",
+  "@drvToll": {
+    "description": "Driver app (design dv_toll)"
+  },
+  "drvTollT": "Add toll",
+  "@drvTollT": {
+    "description": "Driver app (design dv_tollT)"
+  },
+  "drvLitres": "Litres",
+  "@drvLitres": {
+    "description": "Driver app (design dv_litres)"
+  },
+  "drvPlaza": "Plaza",
+  "@drvPlaza": {
+    "description": "Driver app (design dv_plaza)"
+  },
+  "drvAdd": "Add entry",
+  "@drvAdd": {
+    "description": "Driver app (design dv_add)"
+  },
+  "drvNeedStart": "Enter start odometer",
+  "@drvNeedStart": {
+    "description": "Driver app (design dv_need0)"
+  },
+  "drvNeedEnd": "End odometer must be more than start",
+  "@drvNeedEnd": {
+    "description": "Driver app (design dv_need1)"
+  },
+  "drvNeedAmount": "Enter the amount",
+  "@drvNeedAmount": {
+    "description": "Driver app (design dv_needA)"
+  },
+  "drvTripKm": "Trip km",
+  "@drvTripKm": {
+    "description": "Driver app (design dv_tKm)"
+  },
+  "drvTripSpend": "Trip spend",
+  "@drvTripSpend": {
+    "description": "Driver app (design dv_tExp)"
+  },
+  "drvToday": "Today’s entries",
+  "@drvToday": {
+    "description": "Driver app (design dv_today)"
+  },
+  "drvOdoStart": "Start odometer",
+  "@drvOdoStart": {
+    "description": "Driver app (design jr_odo0)"
+  },
+  "drvOdoEnd": "End odometer",
+  "@drvOdoEnd": {
+    "description": "Driver app (design jr_odo1)"
+  },
+  "mktTitle": "Nagarva jobs",
+  "@mktTitle": {
+    "description": "Nagarva jobs (design mk_title)"
+  },
+  "mktSub": "Moves booked by customers on Nagarva",
+  "@mktSub": {
+    "description": "Nagarva jobs (design mk_sub)"
+  },
+  "mktTier": "Your tier",
+  "@mktTier": {
+    "description": "Nagarva jobs (design mk_tier)"
+  },
+  "mktWallet": "Wallet",
+  "@mktWallet": {
+    "description": "Nagarva jobs (design mk_wallet)"
+  },
+  "mktMinL": "Min {m} to get jobs",
+  "@mktMinL": {
+    "description": "Nagarva jobs (design mk_minL)",
+    "placeholders": {
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "mktLowS": "Below minimum",
+  "@mktLowS": {
+    "description": "Nagarva jobs (design mk_lowS)"
+  },
+  "mktTJobs": "Jobs",
+  "@mktTJobs": {
+    "description": "Nagarva jobs (design mk_tJobs)"
+  },
+  "mktTWallet": "Wallet",
+  "@mktTWallet": {
+    "description": "Nagarva jobs (design mk_tWallet)"
+  },
+  "mktTTier": "Tier",
+  "@mktTTier": {
+    "description": "Nagarva jobs (design mk_tTier)"
+  },
+  "mktAv": "Available for jobs",
+  "@mktAv": {
+    "description": "Nagarva jobs (design mk_av)"
+  },
+  "mktAvOn": "Getting job alerts for {c}",
+  "@mktAvOn": {
+    "description": "Nagarva jobs (design mk_avOn)",
+    "placeholders": {
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "mktAvOff": "Off. No new job alerts. Your score is not affected.",
+  "@mktAvOff": {
+    "description": "Nagarva jobs (design mk_avOff)"
+  },
+  "mktCities": "Pickup cities",
+  "@mktCities": {
+    "description": "Nagarva jobs (design mk_cities)"
+  },
+  "mktCitiesN": "You get alerts for bookings that start in these cities. Home city cannot be removed.",
+  "@mktCitiesN": {
+    "description": "Nagarva jobs (design mk_citiesN)"
+  },
+  "mktEdit": "Edit",
+  "@mktEdit": {
+    "description": "Nagarva jobs (design mk_edit)"
+  },
+  "mktDone2": "Done",
+  "@mktDone2": {
+    "description": "Nagarva jobs (design mk_done2)"
+  },
+  "mktCancel": "Cancel",
+  "@mktCancel": {
+    "description": "Nagarva jobs (design mk_cancel)"
+  },
+  "mktHome": "home",
+  "@mktHome": {
+    "description": "Nagarva jobs (design mk_home)"
+  },
+  "mktRtAsk": "Truck in another city?",
+  "@mktRtAsk": {
+    "description": "Nagarva jobs (design mk_rtAsk)"
+  },
+  "mktRtAdd": "Add",
+  "@mktRtAdd": {
+    "description": "Nagarva jobs (design mk_rtAdd)"
+  },
+  "mktRtEnd": "End",
+  "@mktRtEnd": {
+    "description": "Nagarva jobs (design mk_rtEnd)"
+  },
+  "mktRtFrom": "Truck is now in",
+  "@mktRtFrom": {
+    "description": "Nagarva jobs (design mk_rtFrom)"
+  },
+  "mktRtDate": "Leaving on",
+  "@mktRtDate": {
+    "description": "Nagarva jobs (design mk_rtDate)"
+  },
+  "mktRtOn": "Return trip · {f} → {t}",
+  "@mktRtOn": {
+    "description": "Nagarva jobs (design mk_rtOn)",
+    "placeholders": {
+      "f": {
+        "type": "String"
+      },
+      "t": {
+        "type": "String"
+      }
+    }
+  },
+  "mktRtEnded": "Return trip ended",
+  "@mktRtEnded": {
+    "description": "Nagarva jobs (design mk_rtEnded)"
+  },
+  "mktFNew": "New",
+  "@mktFNew": {
+    "description": "Nagarva jobs (design mk_fNew)"
+  },
+  "mktFAcc": "Accepted",
+  "@mktFAcc": {
+    "description": "Nagarva jobs (design mk_fAcc)"
+  },
+  "mktFDone": "Completed",
+  "@mktFDone": {
+    "description": "Nagarva jobs (design mk_fDone)"
+  },
+  "mktENew": "No new jobs right now. You will get a notification when one comes in.",
+  "@mktENew": {
+    "description": "Nagarva jobs (design mk_eNew)"
+  },
+  "mktEAcc": "No accepted jobs.",
+  "@mktEAcc": {
+    "description": "Nagarva jobs (design mk_eAcc)"
+  },
+  "mktEDone": "No completed jobs yet.",
+  "@mktEDone": {
+    "description": "Nagarva jobs (design mk_eDone)"
+  },
+  "mktEOff": "You are not available. Turn on Available for jobs to see new bookings.",
+  "@mktEOff": {
+    "description": "Nagarva jobs (design mk_eOff)"
+  },
+  "mktLow": "Wallet is below {m}. Top up {a} to see new jobs.",
+  "@mktLow": {
+    "description": "Nagarva jobs (design mk_low)",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "mktVal": "Job value (incl. GST)",
+  "@mktVal": {
+    "description": "Nagarva jobs (design mk_val)"
+  },
+  "mktCom": "Nagarva commission {p}%",
+  "@mktCom": {
+    "description": "Nagarva jobs (design mk_com)",
+    "placeholders": {
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "mktEarn": "You earn",
+  "@mktEarn": {
+    "description": "Nagarva jobs (design mk_earn)"
+  },
+  "mktAdv": "Advance paid to Nagarva",
+  "@mktAdv": {
+    "description": "Nagarva jobs (design mk_adv)"
+  },
+  "mktBal": "Collect after delivery OTP",
+  "@mktBal": {
+    "description": "Nagarva jobs (design mk_bal)"
+  },
+  "mktMasked": "Customer name and phone unlock after you accept",
+  "@mktMasked": {
+    "description": "Nagarva jobs (design mk_masked)"
+  },
+  "mktPass": "Pass",
+  "@mktPass": {
+    "description": "Nagarva jobs (design mk_pass)"
+  },
+  "mktAccept": "Accept job",
+  "@mktAccept": {
+    "description": "Nagarva jobs (design mk_accept)"
+  },
+  "mktAccepted": "{id} is yours. Customer details unlocked.",
+  "@mktAccepted": {
+    "description": "Nagarva jobs (design mk_accepted)",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "mktPassed": "Job passed",
+  "@mktPassed": {
+    "description": "Nagarva jobs (design mk_passed)"
+  },
+  "mktTaken": "Taken by another vendor",
+  "@mktTaken": {
+    "description": "Nagarva jobs (design mk_taken)"
+  },
+  "mktGoldOnly": "Gold only",
+  "@mktGoldOnly": {
+    "description": "Nagarva jobs (design mk_goldOnly)"
+  },
+  "mktRl": "Return load",
+  "@mktRl": {
+    "description": "Nagarva jobs (design mk_rl)"
+  },
+  "mktS0": "Accepted",
+  "@mktS0": {
+    "description": "Nagarva jobs (design mk_s0)"
+  },
+  "mktS1": "On the way",
+  "@mktS1": {
+    "description": "Nagarva jobs (design mk_s1)"
+  },
+  "mktS2": "Arrived",
+  "@mktS2": {
+    "description": "Nagarva jobs (design mk_s2)"
+  },
+  "mktS3": "Loading",
+  "@mktS3": {
+    "description": "Nagarva jobs (design mk_s3)"
+  },
+  "mktS4": "In transit",
+  "@mktS4": {
+    "description": "Nagarva jobs (design mk_s4)"
+  },
+  "mktS5": "Delivered",
+  "@mktS5": {
+    "description": "Nagarva jobs (design mk_s5)"
+  },
+  "mktNext": "Mark {s}",
+  "@mktNext": {
+    "description": "Nagarva jobs (design mk_next)",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "mktPhotos": "Loading photos {n}/3",
+  "@mktPhotos": {
+    "description": "Nagarva jobs (design mk_photos)",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mktNeedPh": "Add 3 loading photos first",
+  "@mktNeedPh": {
+    "description": "Nagarva jobs (design mk_needPh)"
+  },
+  "mktAddPh": "Add photo",
+  "@mktAddPh": {
+    "description": "Nagarva jobs (design mk_addPh)"
+  },
+  "mktFinish": "Verify OTP & complete",
+  "@mktFinish": {
+    "description": "Nagarva jobs (design mk_finish)"
+  },
+  "mktOtpBad": "Wrong OTP. Check with the customer.",
+  "@mktOtpBad": {
+    "description": "Nagarva jobs (design mk_otpBad)"
+  },
+  "mktDone": "Completed. {c} commission deducted, {a} advance credited.",
+  "@mktDone": {
+    "description": "Nagarva jobs (design mk_done)",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "mktRate": "Customer rating {r}",
+  "@mktRate": {
+    "description": "Nagarva jobs (design mk_rate)",
+    "placeholders": {
+      "r": {
+        "type": "String"
+      }
+    }
+  },
+  "mktNoRate": "Awaiting customer rating",
+  "@mktNoRate": {
+    "description": "Nagarva jobs (design mk_noRate)"
+  },
+  "mktTopup": "Top up",
+  "@mktTopup": {
+    "description": "Nagarva jobs (design mk_topup)"
+  },
+  "mktWBal": "Wallet balance",
+  "@mktWBal": {
+    "description": "Nagarva jobs (design w_bal)"
+  },
+  "mktWOk": "Active · you get new jobs",
+  "@mktWOk": {
+    "description": "Nagarva jobs (design w_ok)"
+  },
+  "mktWWithdraw": "Withdraw",
+  "@mktWWithdraw": {
+    "description": "Nagarva jobs (design w_withdraw)"
+  },
+  "mktWNote": "Customers pay the advance to Nagarva. When you complete a job, the advance is credited here and the {p}% commission is deducted. Keep the minimum balance to receive jobs.",
+  "@mktWNote": {
+    "description": "Nagarva jobs (design w_note)",
+    "placeholders": {
+      "p": {
+        "type": "String"
+      }
+    }
+  },
+  "mktWtAdv": "Advance · {id}",
+  "@mktWtAdv": {
+    "description": "Nagarva jobs (design wt_adv)",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "mktWtCom": "Commission · {id}",
+  "@mktWtCom": {
+    "description": "Nagarva jobs (design wt_com)",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "mktWtTop": "UPI top-up",
+  "@mktWtTop": {
+    "description": "Nagarva jobs (design wt_top)"
+  },
+  "mktWtWd": "Withdrawal to bank",
+  "@mktWtWd": {
+    "description": "Nagarva jobs (design wt_wd)"
+  },
+  "mktTierF": "How your score is made",
+  "@mktTierF": {
+    "description": "Nagarva jobs (design tr_f)"
+  },
+  "mktTierBands": "Gold 80+ · Silver 60–79 · Bronze <60",
+  "@mktTierBands": {
+    "description": "Nagarva jobs (design tr_bands)"
+  },
+  "mktTierGold": "Gold",
+  "@mktTierGold": {
+    "description": "Nagarva jobs (design tr_gold)"
+  },
+  "mktTierSilver": "Silver",
+  "@mktTierSilver": {
+    "description": "Nagarva jobs (design tr_silver)"
+  },
+  "mktTierBronze": "Bronze",
+  "@mktTierBronze": {
+    "description": "Nagarva jobs (design tr_bronze)"
+  },
+  "mktTierScore": "Score {s} / 100",
+  "@mktTierScore": {
+    "description": "Nagarva jobs (design tr_score)",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "mktOtpAsk": "Ask the customer for the 4-digit delivery code.",
+  "@mktOtpAsk": {
+    "description": "Nagarva jobs: delivery code prompt"
+  },
+  "mktReqSent": "Request sent. It counts once Nagarva confirms the payment.",
+  "@mktReqSent": {
+    "description": "Nagarva jobs: wallet request sent"
+  },
+  "mktPending": "Pending",
+  "@mktPending": {
+    "description": "Nagarva jobs: pending wallet row"
+  },
+  "mktHomeCity": "Home city",
+  "@mktHomeCity": {
+    "description": "Nagarva jobs: home city field"
+  },
+  "mktExtraCities": "Other cities, separated by commas",
+  "@mktExtraCities": {
+    "description": "Nagarva jobs: extra cities field"
+  },
+  "mktNotJoined": "Set your home city to start getting Nagarva jobs.",
+  "@mktNotJoined": {
+    "description": "Nagarva jobs: vendor has no profile yet"
+  },
+  "mktFactorNote": "Nagarva works out your score from these, with these weights.",
+  "@mktFactorNote": {
+    "description": "Nagarva jobs: tier tab note"
+  },
+  "mktFRating": "Customer rating",
+  "@mktFRating": {
+    "description": "Tier factor"
+  },
+  "mktFOnTime": "On-time arrival",
+  "@mktFOnTime": {
+    "description": "Tier factor"
+  },
+  "mktFDamage": "Damage claims",
+  "@mktFDamage": {
+    "description": "Tier factor"
+  },
+  "mktFAccept": "Acceptance rate",
+  "@mktFAccept": {
+    "description": "Tier factor"
+  },
+  "mktFPhotos": "Photo compliance",
+  "@mktFPhotos": {
+    "description": "Tier factor"
+  },
+  "mktFCancel": "Vendor cancellations",
+  "@mktFCancel": {
+    "description": "Tier factor"
+  },
+  "mktFJobs": "Jobs completed",
+  "@mktFJobs": {
+    "description": "Tier factor"
+  },
+  "mktAvOnT": "You will get job alerts again",
+  "@mktAvOnT": {
+    "description": "Nagarva jobs (design mk_avOnT)"
+  },
+  "mktAvOffT": "Job alerts paused",
+  "@mktAvOffT": {
+    "description": "Nagarva jobs (design mk_avOffT)"
+  },
+  "lpWelcome": "Welcome back",
+  "@lpWelcome": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpSubtitle": "Sign in to Nagarva — industry ERP for packers & movers",
+  "@lpSubtitle": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpEmail": "Email",
+  "@lpEmail": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpPassword": "Password",
+  "@lpPassword": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpForgot": "Forgot?",
+  "@lpForgot": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpPasswordHint": "Your password",
+  "@lpPasswordHint": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpLogIn": "Log in",
+  "@lpLogIn": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpNewHere": "New here? ",
+  "@lpNewHere": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpCreateAccount": "Create an account",
+  "@lpCreateAccount": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpJoiningTeam": "Joining a team? ",
+  "@lpJoiningTeam": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpUseCode": "Use an org or invite code",
+  "@lpUseCode": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpBackToPin": "Back to PIN login",
+  "@lpBackToPin": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpSecured": "Secured & encrypted",
+  "@lpSecured": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpEnterBoth": "Enter email and password.",
+  "@lpEnterBoth": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpWrongPassword": "Email or password is incorrect. Please try again.",
+  "@lpWrongPassword": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpVerifyEmail": "Please verify your email first — check your inbox for the confirmation link.",
+  "@lpVerifyEmail": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpEmailExists": "An account with this email already exists. Try logging in instead.",
+  "@lpEmailExists": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpTooMany": "Too many attempts. Please wait a minute and try again.",
+  "@lpTooMany": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpNoInternet": "Could not reach the server. Check your internet connection.",
+  "@lpNoInternet": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpForgotNeedsEmail": "Enter your account email above first, then tap Forgot password.",
+  "@lpForgotNeedsEmail": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
   }
 }

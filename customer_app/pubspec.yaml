@@ -1,0 +1,40 @@
+name: nagarva_customer
+description: "Nagarva customer app: book a move with Nagarva."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+# Pinned like the vendor app (../pubspec.yaml): exact versions, Flutter
+# 3.35.5. Same supabase_flutter and intl as the vendor app, so both apps
+# talk to the one Supabase project the same way.
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: 2.9.0
+  intl: 0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 4.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/Geist-Regular.ttf
+        - asset: assets/fonts/Geist-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Geist-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Geist-Bold.ttf
+          weight: 700
+    - family: GeistMono
+      fonts:
+        - asset: assets/fonts/GeistMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/GeistMono-SemiBold.ttf
+          weight: 600

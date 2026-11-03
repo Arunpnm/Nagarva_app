@@ -209,8 +209,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
       setState(() {
         _digits.setAll(0, ['', '', '', '']);
         _focusedBox = 0;
-        _error = extractFunctionErrorMessage(e,
-            fallback: e.toString().replaceFirst('Exception: ', ''));
+        _error = extractFunctionErrorMessage(e, fallback: friendlyError(e));
       });
     } finally {
       if (mounted) setState(() => _busy = false);

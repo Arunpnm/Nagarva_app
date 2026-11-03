@@ -7,6 +7,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Extra charges on an order: anything billed on top of the quote.
 ///
 /// Mostly extra WORK agreed after the quote, which often happens on a
@@ -103,7 +104,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Could not load add-ons: $e';
+        _error = 'Could not load add-ons: ${friendlyError(e)}';
         _loading = false;
       });
     }
@@ -214,7 +215,7 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
       }
       await _afterWrite();
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not save add-on: $e');
+      if (mounted) setState(() => _error = 'Could not save add-on: ${friendlyError(e)}');
     }
   }
 
@@ -228,13 +229,13 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
             // reopened, so completed_at can never describe a row that is
             // not actually complete.
             'completed_at':
-                status == 'completed' ? DateTime.now().toIso8601String() : null,
+                status == 'completed' ? DateTime.now().toUtc().toIso8601String() : null,
           })
           .eq('id', row['id'])
           .eq('org_id', AppSession.instance.currentOrgId!);
       await _afterWrite();
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not update: $e');
+      if (mounted) setState(() => _error = 'Could not update: ${friendlyError(e)}');
     }
   }
 

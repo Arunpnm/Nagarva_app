@@ -354,6 +354,13 @@ goal, not scheduled.
    items during a survey"), because App Review rejects a generic one.
    Android needs nothing — see the reasoning in `pubspec.yaml` beside
    the pin.
+   **31 Oct 2026, crew check-in added two more:** `mobile_scanner`
+   (needs `NSCameraUsageDescription`, already owed above) and
+   `geolocator` (needs **`NSLocationWhenInUseUsageDescription`**). Same
+   rule, same trigger: added with the first iOS build, copy naming the
+   purpose ("to check you in at the job site"). Android declares
+   ACCESS_FINE/COARSE_LOCATION in its manifest; CAMERA comes with
+   mobile_scanner.
 7. **Phase 1 multi-tenancy groundwork laid 13 Jul 2026; DB migration
    ~~NOT been run yet~~ REPORTED RUN 13 Jul 2026 ("Phase 0b" sync, not
    independently verified from this session).** `org_id` getters were added

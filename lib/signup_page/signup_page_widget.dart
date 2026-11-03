@@ -212,7 +212,7 @@ class _SignupPageWidgetState extends State<SignupPageWidget> {
     } catch (e) {
       safeSetState(() {
         _model.errorMessage = extractFunctionErrorMessage(e,
-            fallback: e.toString().replaceFirst('Exception: ', ''));
+            fallback: friendlyError(e));
         _model.isLoading = false;
       });
     }

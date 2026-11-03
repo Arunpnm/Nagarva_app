@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 
+import '/backend/edge_function_errors.dart';
+import 'package:intl/intl.dart';
+
 class RateCardDetailPageWidget extends StatefulWidget {
   const RateCardDetailPageWidget({super.key, this.cardId});
   final String? cardId;
@@ -68,7 +71,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -85,14 +88,14 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Add Charge'),
+        // BUG-022 (3 Nov 2026): no more "Charge Key" — vendors type the
+        // name they know ("Packing", "AC removal"); the key is made from it.
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(
-              controller: keyCtrl,
-              decoration: const InputDecoration(labelText: 'Charge Key'),
-              autofocus: true),
-          TextField(
               controller: labelCtrl,
-              decoration: const InputDecoration(labelText: 'Label')),
+              autofocus: true,
+              decoration: const InputDecoration(
+                  labelText: 'Charge name', hintText: 'e.g. Packing')),
           TextField(
               controller: rateCtrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -108,7 +111,12 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
         ],
       ),
     );
-    if (result != true || keyCtrl.text.trim().isEmpty) return;
+    keyCtrl.text = labelCtrl.text
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
+    if (result != true || keyCtrl.text.isEmpty) return;
     try {
       await RateCardChargesTable().insert({
         ...OrgScope.stamp(),
@@ -122,7 +130,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
       }
     }
   }
@@ -144,7 +152,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
       }
     }
   }
@@ -207,7 +215,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
       }
     }
   }
@@ -221,20 +229,27 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
 
   Future<void> _addFloorCharge() async {
     try {
-      await RateCardFloorChargesTable().insert({
+      final row = await RateCardFloorChargesTable().insert({
         ...OrgScope.stamp(),
         'card_id': widget.cardId,
       });
       _load();
+      // BUG-022: open the new row straight away instead of leaving a
+      // blank ₹0 line for the vendor to find and edit.
+      // Cancel on a brand-new row removes it, so no blank ₹0 line stays.
+      if (mounted && !await _editFloorCharge(row)) {
+        await _deleteFloorCharge(row);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
       }
     }
   }
 
-  Future<void> _editFloorCharge(RateCardFloorChargesRow f) async {
+  /// Returns true when the vendor pressed Save.
+  Future<bool> _editFloorCharge(RateCardFloorChargesRow f) async {
     final fromCtrl = TextEditingController(text: '${f.floorFrom}');
     final toCtrl = TextEditingController(text: '${f.floorTo}');
     final amountCtrl = TextEditingController(text: f.amount.toStringAsFixed(0));
@@ -276,7 +291,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
         ),
       ),
     );
-    if (result != true || f.id == null) return;
+    if (result != true || f.id == null) return false;
     try {
       await RateCardFloorChargesTable().update(
         data: {
@@ -291,9 +306,10 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
       }
     }
+    return true;
   }
 
   Future<void> _deleteFloorCharge(RateCardFloorChargesRow f) async {
@@ -306,45 +322,110 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
   Future<void> _addMultiplier() async {
     final nameCtrl = TextEditingController();
     final pctCtrl = TextEditingController(text: '100');
+    // BUG-022: the table has date_from / date_to but the dialog never
+    // asked, so a festive-season multiplier could not be limited to its
+    // dates. Both are optional: blank means "always".
+    DateTime? from;
+    DateTime? to;
+    Future<DateTime?> pick(BuildContext ctx, DateTime? initial) =>
+        showDatePicker(
+          context: ctx,
+          initialDate: initial ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+        );
     final result = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Add Multiplier'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Name'),
-              autofocus: true),
-          TextField(
-              controller: pctCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Multiplier %')),
-        ]),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Add')),
-        ],
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Multiplier'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+                controller: nameCtrl,
+                decoration:
+                    const InputDecoration(labelText: 'Name (e.g. Diwali rush)'),
+                autofocus: true),
+            TextField(
+                controller: pctCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                    labelText: 'Multiplier %',
+                    helperText: '120 means 20% more than the card price')),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final d = await pick(context, from);
+                    if (d != null) setDialogState(() => from = d);
+                  },
+                  child: Text(from == null
+                      ? 'From date'
+                      : DateFormat('d MMM yyyy').format(from!)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () async {
+                    final d = await pick(context, to ?? from);
+                    if (d != null) setDialogState(() => to = d);
+                  },
+                  child: Text(to == null
+                      ? 'To date'
+                      : DateFormat('d MMM yyyy').format(to!)),
+                ),
+              ),
+            ]),
+            if (from != null && to != null && to!.isBefore(from!))
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text('To date is before From date',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.error)),
+              ),
+          ]),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: (from != null && to != null && to!.isBefore(from!))
+                    ? null
+                    : () => Navigator.of(context).pop(true),
+                child: const Text('Add')),
+          ],
+        ),
       ),
     );
     if (result != true) return;
+    String? ymd(DateTime? d) =>
+        d == null ? null : DateFormat('yyyy-MM-dd').format(d);
     try {
       await RateCardMultipliersTable().insert({
         ...OrgScope.stamp(),
         'card_id': widget.cardId,
         'name': nameCtrl.text.trim().isEmpty ? null : nameCtrl.text.trim(),
         'multiplier_pct': double.tryParse(pctCtrl.text.trim()) ?? 100,
+        'date_from': ymd(from),
+        'date_to': ymd(to),
       });
       _load();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
       }
     }
+  }
+
+  String _multiplierWhen(RateCardMultipliersRow m) {
+    String f(DateTime d) => DateFormat('d MMM yyyy').format(d);
+    final a = m.dateFrom, b = m.dateTo;
+    if (a == null && b == null) return 'All dates';
+    if (a != null && b != null) return '${f(a)} – ${f(b)}';
+    return a != null ? 'From ${f(a)}' : 'Until ${f(b!)}';
   }
 
   Future<void> _deleteMultiplier(RateCardMultipliersRow m) async {
@@ -394,7 +475,11 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
           required String empty,
           required String addLabel,
           required VoidCallback onAdd}) =>
-      ListView(
+      // Pull-to-refresh on every tab (pending UX list item 3).
+      RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           NgRowsCard(rows: rows, empty: empty),
@@ -407,6 +492,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
             onPressed: onAdd,
           ),
         ],
+      ),
       );
 
   Widget _row(NgPalette ng,
@@ -498,7 +584,7 @@ class _RateCardDetailPageWidgetState extends State<RateCardDetailPageWidget>
         for (final m in _multipliers)
           _row(ng,
               title: m.name?.isNotEmpty == true ? m.name! : 'Multiplier',
-              subtitle: 'Applies to ${m.appliesTo}',
+              subtitle: _multiplierWhen(m),
               value: '${m.multiplierPct}%',
               onDelete: () => _deleteMultiplier(m)),
       ],

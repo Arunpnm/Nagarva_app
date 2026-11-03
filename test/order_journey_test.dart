@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arun_p_k_r_s/backend/order_journey.dart';
 import 'package:arun_p_k_r_s/backend/supabase/supabase.dart';
 
-/// The journey reads its nine stages from evidence, the same rule as
+/// The journey reads its eight stages from evidence, the same rule as
 /// lead_stage_evidence.dart: a stage is done because its record exists,
 /// and a stage with no record that a later stage has passed is SKIPPED,
 /// never ticked. These pin that rule on the shapes the app really holds.
@@ -21,19 +21,30 @@ void main() {
 
   Map<JourneyStage, JourneyState> states(JourneyData d) => d.states;
 
-  test('a fresh lead is on follow-up, everything after waits', () {
+  // Follow-up is not a stage (Arun, 3 Nov 2026): calls happen inside the
+  // Lead, Survey and Quote stages, and the Lead stage is done only once a
+  // survey, quote or order exists.
+  test('a fresh lead is on the Lead stage, everything after waits', () {
     final s = states(JourneyData(lead: lead()));
-    expect(s[JourneyStage.lead], JourneyState.done);
-    expect(s[JourneyStage.followUp], JourneyState.current);
-    for (final st in JourneyStage.values.skip(2)) {
+    expect(s[JourneyStage.lead], JourneyState.current);
+    for (final st in JourneyStage.values.skip(1)) {
       expect(s[st], JourneyState.pending, reason: '$st');
     }
+  });
+
+  test('logging calls never moves the journey off the Lead stage', () {
+    final d = JourneyData(lead: lead('follow_up'), followUps: [
+      FollowUpLogsRow({'id': 'f1', 'logged_at': '2026-10-01T10:00:00Z'}),
+      FollowUpLogsRow({'id': 'f2', 'logged_at': '2026-10-02T10:00:00Z'}),
+    ]);
+    expect(d.current, JourneyStage.lead);
+    expect(d.followUpsIn(JourneyStage.lead), hasLength(2));
   });
 
   test('a confirmed order with no calls or survey skips them, not ticks them',
       () {
     final s = states(JourneyData(lead: lead('confirmed'), order: order({})));
-    expect(s[JourneyStage.followUp], JourneyState.skipped);
+    expect(s[JourneyStage.lead], JourneyState.done);
     expect(s[JourneyStage.survey], JourneyState.skipped);
     expect(s[JourneyStage.quote], JourneyState.done);
     expect(s[JourneyStage.supervisor], JourneyState.current);
@@ -44,7 +55,6 @@ void main() {
     final s = states(d);
     expect(d.isDirect, isTrue);
     expect(s[JourneyStage.lead], JourneyState.skipped);
-    expect(s[JourneyStage.followUp], JourneyState.skipped);
     expect(s[JourneyStage.survey], JourneyState.skipped);
     expect(s[JourneyStage.supervisor], JourneyState.done);
     expect(s[JourneyStage.moveDay], JourneyState.current);

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '/app_session.dart';
+import 'support_tickets_page.dart';
 
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
@@ -123,6 +125,24 @@ class HelpAboutPage extends StatelessWidget {
                 title: 'Call support',
                 subtitle: kNagarvaSupportPhone,
                 onTap: () => _open(context, 'tel:$kNagarvaSupportPhone'),
+              ),
+            ]),
+            const SizedBox(height: 22),
+          ],
+
+          // ---- Ask Nagarva (support tickets) ---------------------------
+          // Works without the support phone: it is a ticket the Nagarva
+          // team answers in the admin panel, replies shown in the app.
+          if (AppSession.instance.currentOrgId != null) ...[
+            _sectionLabel(ng, 'Ask Nagarva'),
+            _card(ng, [
+              _row(
+                ng,
+                icon: Icons.support_agent_rounded,
+                title: 'Questions & replies',
+                subtitle: 'Write to Nagarva support',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const SupportTicketsPage())),
               ),
             ]),
             const SizedBox(height: 22),

@@ -7,6 +7,7 @@ import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Per-staff ledger sheet (Week 3b), modelled on the APC "Salary & Staff"
 /// reference: four summary chips (Month Earnings / Paid Out / Balance to
 /// Pay / Advance Balance), Pay Salary + Give Advance + Settle Advance
@@ -71,8 +72,48 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
   bool _busy = false;
   bool _dirty = false;
 
-  double get earned => widget.monthOrderStaff
-      .fold(0.0, (s, e) => s + (e.salaryAmount ?? 0));
+  /// Overtime & incentives (staff_incentives) dated in [month] — part of
+  /// what this person earned (BUG-053, 3 Nov 2026). Before this they were
+  /// recorded on Overtime & incentives and never reached the salary.
+  double _incentives = 0;
+  List<String> _unpaidIncentiveIds = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIncentives();
+  }
+
+  Future<void> _loadIncentives() async {
+    try {
+      final m = widget.month;
+      final from = DateTime(m.year, m.month, 1);
+      final to = DateTime(m.year, m.month + 1, 1);
+      String d(DateTime x) =>
+          '${x.year}-${x.month.toString().padLeft(2, '0')}-${x.day.toString().padLeft(2, '0')}';
+      final rows = await SupaFlow.client
+          .from('staff_incentives')
+          .select('id,amount,paid')
+          .eq('org_id', OrgScope.currentOrgId ?? '')
+          .eq('staff_id', widget.staff.id!)
+          .gte('entry_date', d(from))
+          .lt('entry_date', d(to));
+      if (!mounted) return;
+      setState(() {
+        _incentives = rows.fold<double>(
+            0, (s, r) => s + (num.tryParse('${r['amount']}') ?? 0));
+        _unpaidIncentiveIds = [
+          for (final r in rows)
+            if (r['paid'] != true) '${r['id']}'
+        ];
+      });
+    } catch (_) {}
+  }
+
+  double get earned =>
+      widget.monthOrderStaff
+          .fold(0.0, (s, e) => s + (e.salaryAmount ?? 0)) +
+      _incentives;
   double get paid =>
       widget.monthPayments.fold(0.0, (s, e) => s + e.amount);
   double get balance => earned - paid;
@@ -122,29 +163,108 @@ class _StaffLedgerSheetState extends State<StaffLedgerSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Failed: $e. '
-                'Has 20260718_salary_payments.sql been run?')));
+            content: Text('Could not save: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  /// Arun, 2 Nov 2026: the outstanding advance is deducted AUTOMATICALLY
+  /// when salary is paid (BUG-053). The dialog pre-fills
+  /// balance − advance; on Pay the advance (up to the balance) is recorded
+  /// as recovered from salary and the advances are settled oldest-first —
+  /// partly, if the balance does not cover all of it.
   Future<void> _paySalary() async {
-    final v = await _askAmount('Pay salary to ${widget.staff.name}',
-        suggested: balance > 0 ? balance : null, confirmLabel: 'Pay');
-    if (v == null || v <= 0) return;
+    final monthLabel = DateFormat('MMM yyyy').format(widget.month);
+    final recover = (advance > 0 && balance > 0)
+        ? (advance < balance ? advance : balance)
+        : 0.0;
+    final cashDue = balance - recover;
+    double? v;
+    if (cashDue > 0 || recover <= 0) {
+      v = await _askAmount(
+          recover > 0
+              ? 'Pay ${widget.staff.name}: earned ₹${balance.toStringAsFixed(0)} − advance ₹${recover.toStringAsFixed(0)}'
+              : 'Pay salary to ${widget.staff.name}',
+          suggested: cashDue > 0 ? cashDue : null,
+          confirmLabel: 'Pay');
+      if (v == null || v <= 0) return;
+    } else {
+      // The advance covers the whole balance: nothing to pay in cash.
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dc) => AlertDialog(
+          title: const Text('Recover from advance?'),
+          content: Text(
+              '${widget.staff.name} earned ₹${balance.toStringAsFixed(0)} and has ₹${advance.toStringAsFixed(0)} advance outstanding. '
+              'The whole ₹${balance.toStringAsFixed(0)} is recovered from the advance; nothing is paid in cash.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(dc).pop(false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.of(dc).pop(true),
+                child: const Text('Recover')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    final double cash = v ?? 0;
     await _run(() async {
-      await SalaryPaymentsTable().insert({
-        ...OrgScope.stamp(),
-        'staff_id': widget.staff.id,
-        'amount': v,
-        'note': 'Salary ${DateFormat('MMM yyyy').format(widget.month)}',
-      });
+      if (cash > 0) {
+        await SalaryPaymentsTable().insert({
+          ...OrgScope.stamp(),
+          'staff_id': widget.staff.id,
+          'amount': cash,
+          'note': 'Salary $monthLabel',
+        });
+      }
+      if (recover > 0) {
+        // Counts toward what was paid for the month, but is not cash out.
+        await SalaryPaymentsTable().insert({
+          ...OrgScope.stamp(),
+          'staff_id': widget.staff.id,
+          'amount': recover,
+          'note': 'Advance recovered from salary $monthLabel',
+        });
+        var left = recover;
+        final pending = [...widget.pendingAdvances]
+          ..sort((a, b) => (a.advanceDate ?? '').compareTo(b.advanceDate ?? ''));
+        for (final a in pending) {
+          if (left <= 0) break;
+          final amt = a.amount ?? 0;
+          if (amt <= left) {
+            await StaffAdvancesTable().update(
+              data: {'status': 'settled'},
+              matchingRows: (q) => OrgScope.write(q).eq('id', a.id!),
+            );
+            left -= amt;
+          } else {
+            // Partly recovered: the rest stays pending.
+            await StaffAdvancesTable().update(
+              data: {'amount': amt - left},
+              matchingRows: (q) => OrgScope.write(q).eq('id', a.id!),
+            );
+            left = 0;
+          }
+        }
+      }
+      // Overtime / incentives of the month are now paid.
+      if (_unpaidIncentiveIds.isNotEmpty &&
+          cash + recover >= balance - 0.5) {
+        await SupaFlow.client
+            .from('staff_incentives')
+            .update({'paid': true})
+            .eq('org_id', OrgScope.currentOrgId ?? '')
+            .inFilter('id', _unpaidIncentiveIds);
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                '₹${v.toStringAsFixed(0)} paid to ${widget.staff.name}.')));
+            content: Text(recover > 0
+                ? '₹${cash.toStringAsFixed(0)} paid to ${widget.staff.name}; ₹${recover.toStringAsFixed(0)} recovered from advance.'
+                : '₹${cash.toStringAsFixed(0)} paid to ${widget.staff.name}.')));
         Navigator.of(context).pop(true);
       }
     });

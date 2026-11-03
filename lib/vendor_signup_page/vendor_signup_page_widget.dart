@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/edge_function_errors.dart';
@@ -91,9 +92,15 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
 
   void _flash(String msg) {
     if (!mounted) return;
+    // BUG-003: float the message ABOVE the bottom Continue button — it
+    // used to cover the button and swallow the next tap for ~4 s.
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
+      ..showSnackBar(SnackBar(
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+      ));
   }
 
   String _fmtPhone(String p) {
@@ -111,6 +118,28 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
     final user = SupaFlow.client.auth.currentUser;
     if (user == null || (user.phone ?? '').isEmpty) {
       setState(() => _step = _Step.phone);
+      return;
+    }
+    // Lock keeps the owner's Supabase session on the device (Slack
+    // model, main.dart _lockDevice). A surviving session that already
+    // belongs to an org is therefore NOT proof the person holding the
+    // phone is the owner - auto-entering here let anyone tap "Log in
+    // with mobile number" after Lock and walk into the dashboard (full
+    // test 1 Nov 2026, BUG-012). Signed-up owners must re-verify with
+    // OTP; only an unfinished signup (no org yet) resumes silently.
+    try {
+      final members = await SupaFlow.client
+          .from('org_members')
+          .select('org_id')
+          .eq('user_id', user.id)
+          .limit(1);
+      if ((members as List).isNotEmpty) {
+        _phone.text = _fmtPhone(user.phone ?? '').replaceAll(' ', '');
+        if (mounted) setState(() => _step = _Step.phone);
+        return;
+      }
+    } catch (_) {
+      if (mounted) setState(() => _step = _Step.phone);
       return;
     }
     await _routeAfterAuth(user);
@@ -445,8 +474,24 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
         _ => -1,
       };
 
+  /// BUG-006 (3 Nov 2026): reached from "Log in with mobile number", Lock
+  /// or an expired session (`?mode=login`), an existing owner was told
+  /// "Create your business account · Step 1 of 4". In login mode the
+  /// mobile/OTP steps read as a login and the signup progress is hidden.
+  bool get _loginMode {
+    try {
+      return GoRouterState.of(context).uri.queryParameters['mode'] ==
+          'login';
+    } catch (_) {
+      return false;
+    }
+  }
+
   Widget _header(NgPalette c) {
-    final idx = _formIndex;
+    final idx = (_loginMode &&
+            (_step == _Step.phone || _step == _Step.otp))
+        ? -1
+        : _formIndex;
     final names = [_l.suS1, _l.suS2, _l.suS3, _l.suS4];
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
@@ -578,13 +623,19 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
               width: 52, height: 52, fit: BoxFit.cover),
         ),
         const SizedBox(height: 20),
-        _title(c, _l.suCreate, _l.suPhS),
+        _loginMode
+            ? _title(c, 'Log in with your mobile',
+                'We will send a one-time code to this number.')
+            : _title(c, _l.suCreate, _l.suPhS),
         const SizedBox(height: 20),
         _label(c, _l.suPh),
         TextField(
           controller: _phone,
           keyboardType: TextInputType.phone,
           maxLength: 10,
+          // BUG-002: digits only — letters/symbols used to eat the
+          // 10-character limit.
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           autofocus: true,
           onSubmitted: (_) => _sendOtp(),
           style: NgFonts.geist(
@@ -864,11 +915,17 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
               icon: Icon(Icons.close_rounded, color: c.mute),
             )
           else
-            NgSecondaryButton(
-              label: _l.suUpload,
-              icon: Icons.upload_rounded,
-              height: 38,
-              onPressed: _uploading != null ? null : () => _pickDoc(key),
+            // Fixed width: NgSecondaryButton's inner Row stretches, and as a
+            // non-flex child of this Row it got unbounded width - the whole
+            // Documents step failed layout and rendered blank (test 31 Oct).
+            SizedBox(
+              width: 120,
+              child: NgSecondaryButton(
+                label: _l.suUpload,
+                icon: Icons.upload_rounded,
+                height: 38,
+                onPressed: _uploading != null ? null : () => _pickDoc(key),
+              ),
             ),
         ],
       ),

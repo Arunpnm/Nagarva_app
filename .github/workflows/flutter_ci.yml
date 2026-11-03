@@ -24,6 +24,28 @@ jobs:
 
       - run: flutter test --reporter expanded
 
+  # The customer booking app (customer_app/) is a separate package.
+  customer_app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: customer_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.5'
+          channel: 'stable'
+          cache: true
+
+      - run: flutter pub get
+
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - run: flutter test --reporter expanded
+
   # Installable test APK, attached to the run as an artifact.
   # No android/key.properties in CI, so build.gradle signs the release
   # APK with the debug key: fine for side-loading onto a test phone,

@@ -20,11 +20,17 @@ class KeyboardScrollView extends StatefulWidget {
     required this.child,
     this.padding,
     this.autofocus = true,
+    this.onRefresh,
   });
 
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final bool autofocus;
+
+  /// Pull-to-refresh (pending UX list item 3, 3 Nov 2026). When given,
+  /// pulling down from the top re-runs it — the one refresh contract
+  /// every page using this scroll view gets for free.
+  final Future<void> Function()? onRefresh;
 
   @override
   State<KeyboardScrollView> createState() => _KeyboardScrollViewState();
@@ -112,11 +118,21 @@ class _KeyboardScrollViewState extends State<KeyboardScrollView> {
         // focus to the scroll view, so arrows work again after editing.
         behavior: HitTestBehavior.translucent,
         onTap: () => _focusNode.requestFocus(),
-        child: SingleChildScrollView(
-          controller: _controller,
-          padding: widget.padding,
-          child: widget.child,
-        ),
+        child: widget.onRefresh == null
+            ? SingleChildScrollView(
+                controller: _controller,
+                padding: widget.padding,
+                child: widget.child,
+              )
+            : RefreshIndicator(
+                onRefresh: widget.onRefresh!,
+                child: SingleChildScrollView(
+                  controller: _controller,
+                  padding: widget.padding,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: widget.child,
+                ),
+              ),
       ),
     );
   }

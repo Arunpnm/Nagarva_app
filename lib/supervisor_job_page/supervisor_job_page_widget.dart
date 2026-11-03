@@ -6,6 +6,8 @@ import '/backend/crew_sync_service.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/order_trip.dart';
+import '/backend/edge_function_errors.dart';
 import '/components/signature_pad.dart';
 import '/components/supervisor_menu_button.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
@@ -52,8 +54,9 @@ const List<String> kJobExpenseCategories = [
 /// Details' "Open Field Job").
 ///
 /// Corrections vs. the master parity brief this session's kickoff caught:
-///   - The closing odometer reading lives in `vehicle_trips`
-///     (`km_start`/`km_end`, keyed by `order_id`), NOT `orders` — there is
+///   - The odometer readings live on the order's trip (`trips.km_start`/
+///     `km_end`, linked by `trip_orders`; was `vehicle_trips` until
+///     3 Nov 2026), NOT `orders` — there is
 ///     no `orders.start_km`.
 ///   - Verified completion also creates a `pod_records` row and marks
 ///     `attendance` for the crew — neither was in the original brief.
@@ -142,9 +145,6 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         OrderStaffTable().queryRows(
           queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
         ),
-        VehicleTripsTable().queryRows(
-          queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
-        ),
       ]);
       final orders = results[0].cast<OrdersRow>();
       if (orders.isEmpty) {
@@ -158,8 +158,9 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       // Session 2 Part A: crew now read from order_staff — the table
       // CrewSyncService keeps in sync with job_team — not job_team itself.
       _model.crew = results[2].cast<OrderStaffRow>();
-      final trips = results[3].cast<VehicleTripsRow>();
-      _model.vehicleTrip = trips.isNotEmpty ? trips.first : null;
+      // One trip model (3 Nov 2026): the odometer lives on the order's
+      // trip in `trips`, not a `vehicle_trips` row.
+      _model.vehicleTrip = await OrderTrip.load(widget.orderId!);
       _model.kmStartController!.text =
           _model.vehicleTrip?.kmStart?.toStringAsFixed(0) ?? '';
       _model.kmEndController!.text =
@@ -194,7 +195,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       _model.loadError = null;
     } catch (e) {
       _model.isLoading = false;
-      _model.loadError = e.toString();
+      _model.loadError = friendlyError(e);
     }
     safeSetState(() {});
   }
@@ -212,7 +213,13 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   /// nothing new needed there.
   Future<void> _changeStatus(String newStatus, String note) async {
     await OrdersTable().update(
-      data: {'status': newStatus},
+      data: {
+        'status': newStatus,
+        // BUG-043: keep the customer-facing ladder in step, so Order
+        // Details and the tracking link move with the field job.
+        if (newStatus == 'transit') 'tracking_status': 'In Transit',
+        if (newStatus == 'delivered') 'tracking_status': 'Delivered',
+      },
       matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
     );
     await OrderTrackingTable().insert({
@@ -237,10 +244,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
       );
       _model.order!.supervisorStatus = 'in_progress';
-      // Arrival code first (18 Aug 2026) — accepting the job no longer
-      // goes straight to team selection. The code is what evidences the
-      // supervisor is actually on site with the customer.
-      _model.step = SupervisorJobStep.arrivalCode;
+      // BUG-041 (Arun, 2 Nov 2026): the crew is picked and the opening
+      // odometer read at the OFFICE, before the vehicle leaves; the
+      // arrival code comes after, at the customer's door.
+      _model.step = SupervisorJobStep.team;
     } catch (e) {
       _showError(e);
     } finally {
@@ -248,26 +255,65 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
   }
 
-  Future<void> _startShifting() async {
+  /// Step 2 (at the office): save the crew and the opening odometer, then
+  /// wait for the arrival code at the customer (BUG-041). The opening
+  /// reading is saved here with the crew — no separate Save tap that
+  /// could be missed (BUG-037).
+  Future<void> _confirmCrewAndLeave() async {
     if (_model.selectedTeamIds.isEmpty) {
       _showError('Select at least one team member first.');
+      return;
+    }
+    final opening = _model.kmStartController!.text.trim();
+    if (opening.isNotEmpty && double.tryParse(opening) == null) {
+      _showError('Enter the opening odometer as a number.');
       return;
     }
     setState(() => _model.saving = true);
     try {
       final teamIds = _model.selectedTeamIds.toList();
       await OrdersTable().update(
-        data: {
-          'job_team': teamIds,
-          'job_start_time': DateTime.now().toIso8601String(),
-        },
+        data: {'job_team': teamIds},
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
       );
+      _model.order!.jobTeam = teamIds;
       // Session 2, Part A: propagate to order_staff on every job_team
       // write — the fix for the P&L Staff Salary under-report.
       await CrewSyncService.syncFromJobTeam(
           orderId: widget.orderId!, teamIds: teamIds);
-      await _changeStatus('transit', '📦 Shifting started — team assigned');
+      final crewRows = await OrderStaffTable().queryRows(
+        queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
+      );
+      _model.crew = crewRows;
+    } catch (e) {
+      _showError(e);
+      if (mounted) setState(() => _model.saving = false);
+      return;
+    }
+    if (mounted) setState(() => _model.saving = false);
+    if (opening.isNotEmpty) await _saveOdometer();
+    if (mounted) setState(() => _model.step = SupervisorJobStep.arrivalCode);
+  }
+
+  /// Step 3 (at the customer): the arrival code is confirmed, shifting
+  /// starts.
+  Future<void> _startShifting() async {
+    setState(() => _model.saving = true);
+    try {
+      final teamIds = _model.selectedTeamIds.isNotEmpty
+          ? _model.selectedTeamIds.toList()
+          : [
+              for (final m in _model.crew)
+                if (m.staffId != null) m.staffId!
+            ];
+      await OrdersTable().update(
+        data: {
+          if (teamIds.isNotEmpty) 'job_team': teamIds,
+          'job_start_time': DateTime.now().toUtc().toIso8601String(),
+        },
+        matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId!),
+      );
+      await _changeStatus('transit', '📦 Shifting started — arrived at customer');
       _model.order!.status = 'transit';
       WhatsAppCloud.moveStarted(_model.order);
       // Refresh crew from order_staff now that the sync has run.
@@ -340,48 +386,28 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
     }
   }
 
-  /// Session 2 B3: reads/writes `vehicle_trips`, not `orders`. Creates the
-  /// row on first save (with whichever of km_start/km_end was entered);
-  /// updates it on subsequent saves.
+  /// Odometer on the order's trip (`trips` via `trip_orders`, 3 Nov 2026;
+  /// was `vehicle_trips`). Creates a local trip linked to the order on
+  /// first save; updates it after that.
   Future<void> _saveOdometer() async {
     final kmStart = double.tryParse(_model.kmStartController!.text.trim());
     final kmEnd = double.tryParse(_model.kmEndController!.text.trim());
     if (kmStart == null && kmEnd == null) return;
     setState(() => _model.saving = true);
     try {
-      final orgId = OrgScope.currentOrgId!;
-      final existing = _model.vehicleTrip;
-      final data = {
-        if (kmStart != null) 'km_start': kmStart,
-        if (kmEnd != null) 'km_end': kmEnd,
-      };
-      if (existing?.id != null) {
-        await SupaFlow.client
-            .from('vehicle_trips')
-            .update(data)
-            .eq('id', existing!.id!);
-      } else {
-        final o = _model.order!;
-        final inserted = await SupaFlow.client
-            .from('vehicle_trips')
-            .insert({
-              ...OrgScope.stamp(orgId: orgId),
-              'order_id': widget.orderId,
-              'vehicle_no': o.vehicleNo,
-              'driver_name': o.driverName,
-              'trip_date': DateTime.now().toIso8601String().split('T').first,
-              'trip_type': 'order',
-              ...data,
-            })
-            .select()
-            .single();
-        _model.vehicleTrip = VehicleTripsTable().createRow(inserted);
-      }
-      // Re-read so kmStart/kmEnd reflect exactly what's persisted.
-      final rows = await VehicleTripsTable().queryRows(
-        queryFn: (q) => OrgScope.read(q).eq('order_id', widget.orderId!),
+      final o = _model.order!;
+      // Re-read inside saveOdometer so kmStart/kmEnd reflect exactly
+      // what's persisted.
+      _model.vehicleTrip = await OrderTrip.saveOdometer(
+        orderId: widget.orderId!,
+        existingTripId: _model.vehicleTrip?.id,
+        kmStart: kmStart,
+        kmEnd: kmEnd,
+        vehicleNo: o.vehicleNo,
+        driverName: o.driverName,
+        fromLoc: o.fromCity,
+        toLoc: o.toCity,
       );
-      if (rows.isNotEmpty) _model.vehicleTrip = rows.first;
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Odometer saved.')));
@@ -396,10 +422,31 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   /// B3's gate: disabled while an opening reading exists but no closing
   /// one does. Never blocks when no opening reading was ever captured —
   /// the vehicle may be third-party.
-  bool get _shiftingCompletionBlocked {
+  ///
+  /// 3 Nov 2026 (BUG-037): this gate could never work — it blocked going
+  /// TO the handover until a closing reading existed, but the closing
+  /// reading is entered AT the handover (and km_end defaults to 0, so it
+  /// never fired). The check now lives in [_completeJob], where the
+  /// closing reading is actually typed.
+  bool get _shiftingCompletionBlocked => false;
+
+  /// Closing odometer check at completion (BUG-037). Saves a typed reading
+  /// itself; returns false (with a message) when it's missing or not more
+  /// than the opening one.
+  Future<bool> _closingOdometerOk() async {
     final trip = _model.vehicleTrip;
-    if (trip == null) return false;
-    return trip.kmStart != null && trip.kmEnd == null;
+    final opening = trip?.kmStart;
+    if (opening == null || opening <= 0) return true; // no opening taken
+    final typed = double.tryParse(_model.kmEndController!.text.trim());
+    final saved = (trip?.kmEnd ?? 0) > 0 ? trip!.kmEnd : null;
+    final closing = typed ?? saved;
+    if (closing == null || closing <= opening) {
+      _showError('Enter the closing odometer reading (more than the opening '
+          '${opening.toStringAsFixed(0)} km).');
+      return false;
+    }
+    if (typed != null && typed != saved) await _saveOdometer();
+    return true;
   }
 
   /// The status-history note. Says how the job was proven complete, so
@@ -429,7 +476,11 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         return;
       }
       _model.arrivalCodeError = false;
-      _model.step = SupervisorJobStep.team;
+      // BUG-041: crew was already set at the office — arrival starts the
+      // shifting straight away.
+      if (mounted) setState(() => _model.saving = false);
+      await _startShifting();
+      return;
     } catch (e) {
       _showError(e);
     } finally {
@@ -469,6 +520,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       _showError('Select a reason why the customer could not sign.');
       return;
     }
+    if (!await _closingOdometerOk()) return;
 
     setState(() => _model.saving = true);
     try {
@@ -482,13 +534,13 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
       final orderUpdate = <String, dynamic>{
         'supervisor_status': 'completed_pending',
         'supervisor_notes': _model.notesController!.text,
-        'job_end_time': now.toIso8601String(),
+        'job_end_time': now.toUtc().toIso8601String(),
         'job_team': teamIds,
       };
       // 4: advance to delivered + stamp delivered_at, if not already.
       if (!wasDelivered) {
         orderUpdate['status'] = 'delivered';
-        orderUpdate['delivered_at'] = now.toIso8601String();
+        orderUpdate['delivered_at'] = now.toUtc().toIso8601String();
       }
       await OrdersTable().update(
         data: orderUpdate,
@@ -546,7 +598,7 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         if (method == kCompletionNotAvailable &&
             _model.notAvailableNoteController!.text.trim().isNotEmpty)
           'remarks': _model.notAvailableNoteController!.text.trim(),
-        'delivered_at': now.toIso8601String(),
+        'delivered_at': now.toUtc().toIso8601String(),
         'captured_by': AppSession.instance.currentStaffName ?? 'Supervisor',
         if (_model.receivedByNameController!.text.trim().isNotEmpty)
           'received_by_name': _model.receivedByNameController!.text.trim(),
@@ -685,7 +737,9 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
   void _showError(Object e) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString())),
+      // Our own messages (strings) pass through; anything thrown by the
+      // database is turned into one plain line.
+      SnackBar(content: Text(e is String ? e : friendlyError(e))),
     );
   }
 
@@ -740,16 +794,16 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
 
   static const _kStepLabels = [
     'Accept',
-    'Arrive',
     'Crew',
+    'Arrive',
     'Shifting',
     'Handover',
   ];
 
   int get _stepIndex => switch (_model.step) {
         SupervisorJobStep.start => 0,
-        SupervisorJobStep.arrivalCode => 1,
-        SupervisorJobStep.team => 2,
+        SupervisorJobStep.team => 1,
+        SupervisorJobStep.arrivalCode => 2,
         SupervisorJobStep.shifting => 3,
         SupervisorJobStep.completing => 4,
         SupervisorJobStep.done => 5,
@@ -890,7 +944,8 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
           context,
           icon: Icons.assignment_turned_in_outlined,
           title: 'Ready to start this job?',
-          body: 'Accepting will let you pick the labour team and begin shifting.',
+          body: 'Next: pick the crew and note the opening odometer before '
+              'leaving the office.',
           buttonLabel: 'Accept job',
           onPressed: _startJob,
         );
@@ -984,9 +1039,9 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
         _openingOdometerCard(context),
         const SizedBox(height: 16),
         NgPrimaryButton(
-          icon: Icons.play_arrow_rounded,
-          label: _model.saving ? 'Please wait…' : 'Start shifting',
-          onPressed: _model.saving ? null : _startShifting,
+          icon: Icons.local_shipping_rounded,
+          label: _model.saving ? 'Please wait…' : 'Leave for customer',
+          onPressed: _model.saving ? null : _confirmCrewAndLeave,
         ),
       ],
     );
