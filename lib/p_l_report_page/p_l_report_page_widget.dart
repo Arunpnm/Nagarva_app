@@ -1,4 +1,5 @@
 import '/backend/commission_pricing.dart';
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/margin_availability.dart';
@@ -116,7 +117,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
       _model.loadError = null;
     } catch (e) {
       _model.isLoading = false;
-      _model.loadError = e.toString();
+      _model.loadError = friendlyError(e);
     }
     safeSetState(() {});
   }

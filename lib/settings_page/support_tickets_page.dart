@@ -56,8 +56,14 @@ class _SupportTicketsPageState extends AdminSectionState<SupportTicketsPage> {
       ),
     );
     final s = subject.text.trim(), d = details.text.trim();
-    subject.dispose();
-    details.dispose();
+    // Dispose only after the sheet's closing animation: its TextFields are
+    // still mounted for ~300 ms after pop, and disposing their controllers
+    // immediately threw a framework assertion and replaced this screen with
+    // "Something went wrong" (full test 1 Nov 2026, BUG-020).
+    Future.delayed(const Duration(milliseconds: 600), () {
+      subject.dispose();
+      details.dispose();
+    });
     if (ok != true) return;
     if (s.length < 3 || d.isEmpty) return toast('Add a short subject and the details.');
     final org = _org;

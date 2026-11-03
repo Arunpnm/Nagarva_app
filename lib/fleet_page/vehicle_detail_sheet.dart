@@ -4,6 +4,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Fleet vehicle detail view + edit sheet (parity brief Part 2c).
 ///
 /// FleetPage previously only rendered a read-only list with no way to open,
@@ -141,7 +142,7 @@ class _VehicleDetailSheetState extends State<VehicleDetailSheet> {
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not save: $e');
+      if (mounted) setState(() => _error = 'Could not save: ${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _saving = false);
     }

@@ -143,7 +143,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                       'key': 'porter_enabled',
                       ...OrgScope.stamp(),
                       'value': v.toString(),
-                      'updated_at': DateTime.now().toIso8601String(),
+                      'updated_at': DateTime.now().toUtc().toIso8601String(),
                     },
                     onConflict: 'org_id,key',
                   );

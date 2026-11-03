@@ -1,4 +1,6 @@
 import '/backend/commission_pricing.dart';
+import '/backend/edge_function_errors.dart';
+import '/backend/order_money.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/ng_top_bar.dart';
@@ -96,6 +98,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
       final orders = results[0].cast<OrdersRow>();
       final expenses = results[1].cast<ExpensesRow>();
       final orderStaff = results[2].cast<OrderStaffRow>();
+      // 3 Nov 2026: extra charges per order, for the shared money rule.
+      _addonsByOrder = await OrderMoney.addonsByOrder();
       final settingsRows = results[3].cast<SettingsRow>();
 
       _model.openingBalance = settingsRows.isNotEmpty
@@ -106,10 +110,13 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
       _model.loadError = null;
     } catch (e) {
       _model.isLoading = false;
-      _model.loadError = e.toString();
+      _model.loadError = friendlyError(e);
     }
     safeSetState(() {});
   }
+
+  /// Extra charges per order (3 Nov 2026, shared money rule).
+  Map<String, List<dynamic>> _addonsByOrder = const {};
 
   /// Mirrors apc_webapp App.jsx AccountsPage's `dailyRows` computation
   /// (lines ~8568-8610) — see accounts_page_model.dart's DailyAccountRow
@@ -151,10 +158,15 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         // GST-exclusive subtotal, else total minus the tax, so rows
         // written before subtotal was stored still exclude it. An order
         // with no GST is unchanged.
-        final gross = o.amount ?? 0;
-        final subtotal = o.quoteSubtotal ?? 0;
-        final amount =
-            subtotal != 0 ? subtotal : gross - (o.quoteGstAmount ?? 0);
+        //
+        // 3 Nov 2026 (BUG-051/044, Arun's rule of 2 Nov): one shared rule.
+        // Revenue = ex-GST base + extra charges; gross (what the customer
+        // owes) = that + GST only when billed. A direct order with GST on
+        // top no longer has the GST carved out of its amount.
+        final money =
+            OrderMoney.from(o, _addonsByOrder[o.id] ?? const []);
+        final gross = money.total;
+        final amount = money.taxable;
         // orderQuote(o) in the reference app: amount minus extra charges.
         // extra_charges isn't modeled as a column here yet, so quote ==
         // amount until that field is ported (tracked separately).
@@ -206,7 +218,8 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         // and into the day's profit/loss. A day that contains an unpriced
         // order now reports commission as a floor and says so; see
         // /backend/commission_pricing.dart.
-        final comm = commissionAmount(order: o, revenueBase: amount);
+        // Commission on the move (base), not on extras' GST or storage.
+        final comm = commissionAmount(order: o, revenueBase: money.base);
         if (comm == null) {
           unpricedCommission.add(o.id ?? '—');
         } else {
@@ -294,7 +307,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         'key': _openingBalanceKey,
         ...OrgScope.stamp(),
         'value': result.toString(),
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       },
       onConflict: 'org_id,key',
     );

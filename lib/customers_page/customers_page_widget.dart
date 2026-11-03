@@ -10,6 +10,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'customer_detail_page_widget.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Customers (Session 4, Part C-7). Live schema confirmed directly against
 /// the DB: customers + customer_addresses + customer_contacts +
 /// customer_360_view. The list reads from customer_360_view so it can show
@@ -56,7 +57,7 @@ class _CustomersPageWidgetState extends State<CustomersPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load customers: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load customers: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -98,11 +99,17 @@ class _CustomersPageWidgetState extends State<CustomersPageWidget>
           TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(false),
               child: const Text('Cancel')),
-          FilledButton(
-              onPressed: nameCtrl.text.trim().isEmpty
-                  ? null
-                  : () => Navigator.of(dialogCtx).pop(true),
-              child: const Text('Create')),
+          // BUG-035 (1 Nov 2026 test): onPressed used to be computed once
+          // when the dialog opened (name empty), so Create stayed disabled
+          // forever and no customer could be added here. Rebuild on typing.
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: nameCtrl,
+            builder: (_, v, __) => FilledButton(
+                onPressed: v.text.trim().isEmpty
+                    ? null
+                    : () => Navigator.of(dialogCtx).pop(true),
+                child: const Text('Create')),
+          ),
         ],
       ),
     );
@@ -125,7 +132,7 @@ class _CustomersPageWidgetState extends State<CustomersPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not create customer: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not create customer: ${friendlyError(e)}')));
       }
     }
   }

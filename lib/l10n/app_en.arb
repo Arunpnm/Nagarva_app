@@ -5334,5 +5334,85 @@
   "mktAvOffT": "Job alerts paused",
   "@mktAvOffT": {
     "description": "Nagarva jobs (design mk_avOffT)"
+  },
+  "lpWelcome": "Welcome back",
+  "@lpWelcome": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpSubtitle": "Sign in to Nagarva — industry ERP for packers & movers",
+  "@lpSubtitle": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpEmail": "Email",
+  "@lpEmail": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpPassword": "Password",
+  "@lpPassword": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpForgot": "Forgot?",
+  "@lpForgot": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpPasswordHint": "Your password",
+  "@lpPasswordHint": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpLogIn": "Log in",
+  "@lpLogIn": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpNewHere": "New here? ",
+  "@lpNewHere": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpCreateAccount": "Create an account",
+  "@lpCreateAccount": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpJoiningTeam": "Joining a team? ",
+  "@lpJoiningTeam": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpUseCode": "Use an org or invite code",
+  "@lpUseCode": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpBackToPin": "Back to PIN login",
+  "@lpBackToPin": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpSecured": "Secured & encrypted",
+  "@lpSecured": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpEnterBoth": "Enter email and password.",
+  "@lpEnterBoth": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpWrongPassword": "Email or password is incorrect. Please try again.",
+  "@lpWrongPassword": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpVerifyEmail": "Please verify your email first — check your inbox for the confirmation link.",
+  "@lpVerifyEmail": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpEmailExists": "An account with this email already exists. Try logging in instead.",
+  "@lpEmailExists": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpTooMany": "Too many attempts. Please wait a minute and try again.",
+  "@lpTooMany": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpNoInternet": "Could not reach the server. Check your internet connection.",
+  "@lpNoInternet": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
+  },
+  "lpForgotNeedsEmail": "Enter your account email above first, then tap Forgot password.",
+  "@lpForgotNeedsEmail": {
+    "description": "LoginPage (BUG-001, 3 Nov 2026)"
   }
 }

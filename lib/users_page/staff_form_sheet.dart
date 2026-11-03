@@ -319,7 +319,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
         _saving = false;
         _error = extractDbErrorMessage(
           e,
-          fallback: extractFunctionErrorMessage(e, fallback: e.toString()),
+          fallback: extractFunctionErrorMessage(e, fallback: friendlyError(e)),
         );
       });
     }
@@ -416,7 +416,7 @@ class _StaffFormSheetState extends State<StaffFormSheet> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = extractFunctionErrorMessage(e, fallback: e.toString());
+          _error = extractFunctionErrorMessage(e, fallback: friendlyError(e));
         });
       }
     }

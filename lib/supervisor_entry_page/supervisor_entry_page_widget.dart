@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '/backend/order_id_allocator.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Session 2 Part C — Job Entry (`sup-entry`). Minimal field-side order
 /// creation: customer, phone, route, date, service. Deliberately thin —
 /// no pricing/quote fields, matching the brief's "minimal form" scope.
@@ -112,7 +113,7 @@ class _SupervisorEntryPageWidgetState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not create order: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not create order: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

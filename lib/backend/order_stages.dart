@@ -97,12 +97,17 @@ String? canonicalOrderStage(String? raw) {
 /// plots correctly from its real status. Returns 0 (Confirmed) rather
 /// than -1 when neither maps, so the timeline always shows *something*.
 int orderStageIndex(String? trackingStatus, String? status) {
-  final fromTracking = canonicalOrderStage(trackingStatus);
-  final fromStatus = canonicalOrderStage(status);
-  final stage = fromTracking ?? fromStatus;
-  if (stage == null) return 0;
-  final idx = kOrderStages.indexOf(stage);
-  return idx < 0 ? 0 : idx;
+  // BUG-043 (3 Nov 2026): the FURTHER of the two, not tracking first. The
+  // field job moves `status` (transit, delivered) while `tracking_status`
+  // stayed 'Booked', so Order Details showed "Confirmed 1/6 · Mark as
+  // Packing" on a delivered job.
+  int idx(String? raw) {
+    final s = canonicalOrderStage(raw);
+    return s == null ? -1 : kOrderStages.indexOf(s);
+  }
+
+  final best = [idx(trackingStatus), idx(status)].reduce((a, b) => a > b ? a : b);
+  return best < 0 ? 0 : best;
 }
 
 /// Redesign status hue for an order stage index (see [orderStageIndex]):

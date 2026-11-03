@@ -8,6 +8,7 @@ import '/backend/supabase/supabase.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// REMINDERS section for Lead Details and the quote screen (live-test fix
 /// brief #2, item 10).
 ///
@@ -432,7 +433,7 @@ class _AddReminderSheetState extends State<_AddReminderSheet> {
                       if (context.mounted) {
                         setState(() => _saving = false);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Could not save: $e')),
+                          SnackBar(content: Text('Could not save: ${friendlyError(e)}')),
                         );
                       }
                     }
@@ -611,7 +612,7 @@ class _LogCallSheetState extends State<_LogCallSheet> {
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not log follow-up: $e')),
+          SnackBar(content: Text('Could not log follow-up: ${friendlyError(e)}')),
         );
       }
     }

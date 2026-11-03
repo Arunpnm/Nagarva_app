@@ -62,6 +62,16 @@ function staffEmail(staffId: string): string {
   return `staff-${staffId}@staff.nagarva.in`;
 }
 
+// BUG-011 (3 Nov 2026): owners who signed up with mobile OTP have no email,
+// and sessions are minted through an email magic link, so their correct
+// PIN was accepted by verify_org_pin and then refused with "Owner account
+// not found". Give such an owner an internal anchor email (never mailed,
+// same idea as the staff scheme) the first time they use their PIN. Their
+// phone login is untouched. The app hides @owner.nagarva.in addresses.
+function ownerAnchorEmail(userId: string): string {
+  return `owner-${userId}@owner.nagarva.in`;
+}
+
 async function mintSession(email: string) {
   const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
     type: "magiclink",
@@ -151,10 +161,22 @@ Deno.serve(async (req: Request) => {
     if (v.kind === "owner") {
       const { data: userRes, error: getErr } = await admin.auth.admin
         .getUserById(v.user_id);
-      if (getErr || !userRes?.user?.email) {
+      if (getErr || !userRes?.user) {
         return json({ error: "Owner account not found" }, 500);
       }
-      const minted = await mintSession(userRes.user.email);
+      let ownerEmail = userRes.user.email ?? "";
+      if (!ownerEmail) {
+        ownerEmail = ownerAnchorEmail(userRes.user.id);
+        const { error: updErr } = await admin.auth.admin.updateUserById(
+          userRes.user.id,
+          { email: ownerEmail, email_confirm: true },
+        );
+        if (updErr) {
+          console.error("owner anchor email:", updErr.message);
+          return json({ error: "Could not start owner session" }, 500);
+        }
+      }
+      const minted = await mintSession(ownerEmail);
       if ("error" in minted) return json({ error: minted.error }, 500);
       return json({
         kind: "owner",

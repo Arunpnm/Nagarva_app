@@ -17,6 +17,7 @@ import '/l10n/gen/app_localizations.dart';
 import '/permissions.dart';
 import 'quick_payment_section.dart';
 
+import '/backend/edge_function_errors.dart';
 /// The top half of Order Details, per the Claude Design handoff
 /// ("ORDER DETAIL"): journey strip, who and where, Call / WhatsApp / Maps,
 /// the 6-step Progress card with its next action, Crew & vehicle, and the
@@ -111,10 +112,11 @@ class OrderOverviewSectionState extends State<OrderOverviewSection> {
 
   /// Same revenue base as the Payments screen and Close Order: the quote
   /// when there is one, else the booked amount.
-  double get _total {
-    final q = _order?.quoteTotal ?? 0;
-    return q > 0 ? q : (_order?.amount ?? 0);
-  }
+  ///
+  /// 3 Nov 2026: the shared money rule (JourneyData.money → OrderMoney:
+  /// base + GST when billed + extra charges). This card still used quote
+  /// total / amount and showed 1002 as "₹25,000 · Paid" with ₹4,500 GST due.
+  double get _total => _data?.orderValue ?? 0;
 
   double get _paid => _order?.paidTotal ?? 0;
   double get _balance => (_total - _paid) < 0 ? 0 : _total - _paid;
@@ -158,7 +160,7 @@ class OrderOverviewSectionState extends State<OrderOverviewSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$e')));
+            .showSnackBar(SnackBar(content: Text('${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _advancing = false);
@@ -197,7 +199,7 @@ class OrderOverviewSectionState extends State<OrderOverviewSection> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${friendlyError(e)}')));
       }
       return;
     }

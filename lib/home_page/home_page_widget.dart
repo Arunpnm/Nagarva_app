@@ -26,6 +26,7 @@ import '/permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'home_page_model.dart';
+import '/backend/edge_function_errors.dart';
 export 'home_page_model.dart';
 
 /// Staff/vendor dashboard. Multi-tenant: must be scoped to
@@ -1071,7 +1072,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not save target: $e')));
+            SnackBar(content: Text('Could not save target: ${friendlyError(e)}')));
       }
     }
   }

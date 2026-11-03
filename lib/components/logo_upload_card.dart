@@ -7,6 +7,7 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Self-contained "Company Logo" card: pick an image, upload it to the
 /// `org-logos` storage bucket at `<org_id>/logo.png`, stamp
 /// `organizations.logo_url`, and refresh `AppSession` so the sidebar/
@@ -57,7 +58,7 @@ class _LogoUploadCardState extends State<LogoUploadCard> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Logo upload failed: $e')));
+            .showSnackBar(SnackBar(content: Text('Logo upload failed: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _uploading = false);

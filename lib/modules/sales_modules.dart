@@ -1,7 +1,47 @@
 import 'package:flutter/material.dart';
 
+import '/backend/lead_status.dart';
+import '/backend/supabase/org_scope.dart';
+import '/backend/supabase/supabase.dart';
 import '/components/record_module_page.dart';
 import '/flutter_flow/ng_tokens.dart';
+
+/// BUG-042 (3 Nov 2026): Mark lost → Reopen → Mark lost left two
+/// `quote_outcomes` rows, so one lead counted twice ("Lost 2"). Keep only
+/// the LATEST lost outcome per lead, and only while that lead is still
+/// lost (a reopened lead drops out). Also carries the customer's name —
+/// the rows didn't say who was lost.
+Future<List<RmMap>> _lostDeals() async {
+  final outs = await OrgScope.read(
+          SupaFlow.client.from('quote_outcomes').select())
+      .eq('outcome', 'lost')
+      .order('recorded_at', ascending: false);
+  final latest = <String, RmMap>{};
+  final noLead = <RmMap>[];
+  for (final r in (outs as List).cast<Map<String, dynamic>>()) {
+    final lid = '${r['lead_id'] ?? ''}';
+    if (lid.isEmpty) {
+      noLead.add(r);
+    } else {
+      latest.putIfAbsent(lid, () => r);
+    }
+  }
+  if (latest.isEmpty) return noLead;
+  final leads = await OrgScope.read(
+          SupaFlow.client.from('leads').select('id,customer,status'))
+      .inFilter('id', latest.keys.toList());
+  final out = <RmMap>[];
+  for (final l in (leads as List).cast<Map<String, dynamic>>()) {
+    if (canonicalLeadStatus('${l['status'] ?? ''}') != kLeadStatusLost) {
+      continue;
+    }
+    final r = latest['${l['id']}'];
+    if (r != null) out.add({...r, '_customer': l['customer']});
+  }
+  out.sort((a, b) =>
+      '${b['recorded_at'] ?? ''}'.compareTo('${a['recorded_at'] ?? ''}'));
+  return [...out, ...noLead];
+}
 
 String _human(dynamic s) => '${s ?? ''}'
     .replaceAll('_', ' ')
@@ -25,9 +65,7 @@ class LostReportPage extends StatelessWidget {
       views: [
         RmView(
           label: 'Lost deals',
-          table: 'quote_outcomes',
-          orderBy: 'recorded_at',
-          query: (q) => q.eq('outcome', 'lost'),
+          load: _lostDeals,
           stats: (rows) {
             final gaps = rows
                 .map((r) => r['price_gap_pct'])
@@ -60,7 +98,12 @@ class LostReportPage extends StatelessWidget {
           row: (context, r) => RmRow(
             icon: Icons.trending_down_rounded,
             tone: NgStatus.red,
-            title: _human(r['reason_code']),
+            title: [
+              if ('${r['_customer'] ?? ''}'.isNotEmpty) '${r['_customer']}',
+              _human(r['reason_code']).isEmpty
+                  ? 'No reason given'
+                  : _human(r['reason_code']),
+            ].join(' · '),
             subtitle: [
               if ('${r['competitor_name'] ?? ''}'.isNotEmpty)
                 'Went to ${r['competitor_name']}',

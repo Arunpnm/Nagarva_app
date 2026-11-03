@@ -9,6 +9,7 @@ import '/components/delete_action.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
+import '/backend/edge_function_errors.dart';
 class VendorDetailPageWidget extends StatefulWidget {
   const VendorDetailPageWidget({super.key, this.vendorId});
   final String? vendorId;
@@ -52,7 +53,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load vendor: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load vendor: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -183,11 +184,13 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
             TextButton(
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
-            FilledButton(
+            ListenableBuilder( // BUG-035: rebuild as the field is typed
+              listenable: nameCtrl,
+              builder: (_, __) => FilledButton(
                 onPressed: nameCtrl.text.trim().isEmpty
                     ? null
                     : () => Navigator.of(dialogCtx).pop(true),
-                child: const Text('Save')),
+                child: const Text('Save'))),
           ],
         ),
       ),
@@ -227,7 +230,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
       }
     }
   }
@@ -307,11 +310,13 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
             TextButton(
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
-            FilledButton(
+            ListenableBuilder( // BUG-024/035: rebuild as the field is typed
+              listenable: taxableCtrl,
+              builder: (_, __) => FilledButton(
                 onPressed: taxableCtrl.text.trim().isEmpty
                     ? null
                     : () => Navigator.of(dialogCtx).pop(true),
-                child: const Text('Add')),
+                child: const Text('Add'))),
           ],
         ),
       ),
@@ -343,7 +348,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add bill: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add bill: ${friendlyError(e)}')));
       }
     }
   }
@@ -597,11 +602,13 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
             TextButton(
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
-            FilledButton(
+            ListenableBuilder( // BUG-035: rebuild as the amount is typed
+              listenable: amountCtrl,
+              builder: (_, __) => FilledButton(
                 onPressed: (double.tryParse(amountCtrl.text.trim()) ?? 0) <= 0
                     ? null
                     : () => Navigator.of(dialogCtx).pop(true),
-                child: const Text('Save')),
+                child: const Text('Save'))),
           ],
         ),
       ),
@@ -616,7 +623,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
         'amount': amount,
         'mode': mode,
         if (refCtrl.text.trim().isNotEmpty) 'reference': refCtrl.text.trim(),
-        'paid_at': paidAt.toIso8601String(),
+        'paid_at': paidAt.toUtc().toIso8601String(),
         if (noteCtrl.text.trim().isNotEmpty) 'note': noteCtrl.text.trim(),
       });
       final newPaid = bill.paidAmount + amount;
@@ -639,7 +646,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not record payment: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not record payment: ${friendlyError(e)}')));
       }
     }
   }
@@ -692,7 +699,11 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                         ),
                       ),
                     )
-                  : ListView(
+                  : RefreshIndicator(
+                    // Pull-to-refresh (pending UX list item 3).
+                    onRefresh: _load,
+                    child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
                       children: [
                         NgDetailHeader(
@@ -767,7 +778,7 @@ class _VendorDetailPageWidgetState extends State<VendorDetailPageWidget> {
                           onTap: _deleting ? null : () => _deleteVendor(v),
                         ),
                       ],
-                    ),
+                    )),
         ),
       ),
     );

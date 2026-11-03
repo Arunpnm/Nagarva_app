@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../main.dart';
 
 
+import '/backend/edge_function_errors.dart';
 export 'lat_lng.dart';
 export 'place.dart';
 export 'uploaded_file.dart';
@@ -207,7 +208,7 @@ Future launchURL(String url) async {
   try {
     await launchUrl(uri);
   } catch (e) {
-    throw 'Could not launch $uri: $e';
+    throw 'Could not launch $uri: ${friendlyError(e)}';
   }
 }
 

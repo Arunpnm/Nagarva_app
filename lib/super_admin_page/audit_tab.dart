@@ -4,6 +4,7 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'admin_common.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Admin › Audit log: every admin action on vendors, plans, the team,
 /// coupons, broadcasts and tickets. Read-only and written only by database
 /// triggers; each row's hash covers the one before, and "Check" asks the
@@ -39,7 +40,7 @@ class _AuditTabState extends AdminSectionState<AuditTab> {
           ? 'Chain intact: no entry has been changed or removed.'
           : 'Entry #$bad does not match the chain. It was changed or an entry before it was removed.');
     } catch (e) {
-      toast('Could not check: $e');
+      toast('Could not check: ${friendlyError(e)}');
     }
   }
 

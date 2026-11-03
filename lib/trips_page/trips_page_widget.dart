@@ -12,9 +12,11 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'trip_detail_page_widget.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Trips (Session 4, Part C-9) — a vehicle trip that may carry multiple
-/// orders (part-load), distinct from vehicle_trips (1:1 odometer capture
-/// on a single order, see CLAUDE.md). Live schema confirmed directly
+/// orders (part-load). Since 3 Nov 2026 this is the ONLY trip model: the
+/// supervisor's odometer readings land here too (backend/order_trip.dart),
+/// and vehicle_trips is a read-only backup. Live schema confirmed directly
 /// against the DB: trips + trip_orders + trip_expenses + trip_pnl_view.
 class TripsPageWidget extends StatefulWidget {
   const TripsPageWidget({super.key});
@@ -50,7 +52,7 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load trips: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load trips: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -205,7 +207,7 @@ class _TripsPageWidgetState extends State<TripsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not create trip: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not create trip: ${friendlyError(e)}')));
       }
     }
   }

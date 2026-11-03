@@ -363,7 +363,12 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  '${l.fromCity ?? '-'} → ${l.toCity ?? '-'}',
+                  // No cities yet reads as words, not "- → -".
+                  ((l.fromCity ?? '').trim().isEmpty &&
+                          (l.toCity ?? '').trim().isEmpty)
+                      ? 'Route not added'
+                      : '${(l.fromCity ?? '').trim().isEmpty ? '?' : l.fromCity} → '
+                          '${(l.toCity ?? '').trim().isEmpty ? '?' : l.toCity}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: NgFonts.geist(fontSize: 13, color: c.mute),
@@ -438,13 +443,10 @@ class _LeadsPageWidgetState extends State<LeadsPageWidget>
                   onPressed: () => context.pushNamed(
                     SurveyQuotePageWidget.routeName,
                     queryParameters: {
+                      // Lead id only — the quote screen reads name, phone
+                      // and cities itself (BUG-031: no personal data in
+                      // the URL).
                       'leadId': serializeParam(l.id, ParamType.String),
-                      'leadCustomer':
-                          serializeParam(l.customer, ParamType.String),
-                      'leadPhone': serializeParam(l.phone, ParamType.String),
-                      'leadFromCity':
-                          serializeParam(l.fromCity, ParamType.String),
-                      'leadToCity': serializeParam(l.toCity, ParamType.String),
                     }.withoutNulls,
                   ),
                 ),

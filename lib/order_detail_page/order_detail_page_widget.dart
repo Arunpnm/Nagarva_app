@@ -35,6 +35,7 @@ import 'arrival_code_card.dart';
 import 'order_detail_page_model.dart';
 import '/backend/vendor_identity.dart';
 import '/backend/order_id_allocator.dart';
+import '/backend/edge_function_errors.dart';
 export 'order_detail_page_model.dart';
 
 /// Read-only view of a single order.
@@ -173,7 +174,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not cancel: $e')),
+          SnackBar(content: Text('Could not cancel: ${friendlyError(e)}')),
         );
       }
     }
@@ -329,7 +330,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not duplicate: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not duplicate: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _duplicating = false);
@@ -445,7 +446,8 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
       final token = await TrackingService.tokenForOrder(widget.orderId!);
       if (token == null) {
         throw Exception(
-            'This order has no tracking token yet. Run the 28 Jul migration.');
+            'The tracking link for this order is not ready yet. Please try '
+            'again in a moment.');
       }
       if (!mounted) return;
       final org = VendorIdentity.forSentence;
@@ -462,7 +464,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not create tracking link: $e')),
+        SnackBar(content: Text('Could not create tracking link: ${friendlyError(e)}')),
       );
     } finally {
       if (mounted) setState(() => _sharingTracking = false);
@@ -570,7 +572,7 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not check the signature: $e')));
+          SnackBar(content: Text('Could not check the signature: ${friendlyError(e)}')));
     }
   }
 
@@ -650,6 +652,16 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: KeyboardScrollView(
+                // Pull-to-refresh: everything onPageRefresh reloads, plus
+                // the order row and the sections it doesn't cover.
+                onRefresh: () async {
+                  onPageRefresh();
+                  _storageKey.currentState?.reload();
+                  _addonsKey.currentState?.reload();
+                  _materialsKey.currentState?.reload();
+                  _paymentHistoryKey.currentState?.reload();
+                  await _loadRowFallback();
+                },
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -883,9 +895,13 @@ class _OrderDetailPageWidgetState extends State<OrderDetailPageWidget>
                     ]),
                     NgPrimaryButton(
                       onPressed: _generatingInvoice ? null : _generateInvoice,
+                      // BUG-047: once issued, the same button re-opens
+                      // the SAME invoice (no new number) — say so.
                       label: _generatingInvoice
                           ? 'Generating…'
-                          : 'Generate Invoice',
+                          : (_rowFallback?.invoiceNo ?? '').isNotEmpty
+                              ? 'View invoice ${_rowFallback!.invoiceNo}'
+                              : 'Generate Invoice',
                       icon: Icons.receipt_long_outlined,
                     ),
                     // Order Details Session 1, item 4: the 8-document grid

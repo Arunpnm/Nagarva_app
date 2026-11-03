@@ -11,6 +11,7 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Tasks & Activities (Session 4, Part C-12; entity picker generalized in
 /// the corrections session, 7 Aug 2026). Live schema confirmed directly
 /// against the DB: tasks + activities, both polymorphic via
@@ -70,7 +71,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -216,11 +217,13 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
             TextButton(
                 onPressed: () => Navigator.of(dialogCtx).pop(false),
                 child: const Text('Cancel')),
-            FilledButton(
+            ListenableBuilder( // BUG-035: rebuild as the field is typed
+              listenable: titleCtrl,
+              builder: (_, __) => FilledButton(
                 onPressed: titleCtrl.text.trim().isEmpty
                     ? null
                     : () => Navigator.of(dialogCtx).pop(true),
-                child: const Text('Create')),
+                child: const Text('Create'))),
           ],
         ),
       ),
@@ -244,7 +247,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not create task: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not create task: ${friendlyError(e)}')));
       }
     }
   }
@@ -288,7 +291,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not complete task: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not complete task: ${friendlyError(e)}')));
       }
     }
   }
@@ -304,7 +307,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not cancel task: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not cancel task: ${friendlyError(e)}')));
       }
     }
   }
@@ -439,7 +442,7 @@ class _TasksPageWidgetState extends State<TasksPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not log activity: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not log activity: ${friendlyError(e)}')));
       }
     }
   }

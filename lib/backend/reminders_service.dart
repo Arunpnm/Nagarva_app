@@ -74,6 +74,15 @@ String followUpOutcomeLabel(String? o) {
       return 'Not interested';
     case 'converted':
       return 'Converted';
+    // Quote-stage customer responses (3 Nov 2026).
+    case 'accepted':
+      return 'Accepted';
+    case 'negotiation':
+      return 'Negotiation';
+    case 'rejected':
+      return 'Rejected';
+    case 'no_response':
+      return 'No response';
     default:
       return '—';
   }
@@ -222,7 +231,7 @@ class RemindersService {
       'channel': channel,
       'outcome': outcome,
       'notes': notes,
-      'next_action_at': nextActionAt?.toIso8601String(),
+      'next_action_at': nextActionAt?.toUtc().toIso8601String(),
       'logged_by': SupaFlow.client.auth.currentUser?.id,
     });
 

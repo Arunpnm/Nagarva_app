@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '/backend/commission_pricing.dart';
+import '/backend/order_money.dart';
 import '/backend/field_expenses.dart';
 import '/backend/storage_billing.dart';
 import '/backend/supabase/supabase.dart';
@@ -106,11 +107,13 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
   /// Falling back to `total - gst` rather than to `total` matters for
   /// rows written before subtotal was stored. An order with no quote and
   /// no GST (a direct booking) lands on `amount` unchanged.
-  double get _revenueBase {
-    if (_quoteSubtotal != 0) return _quoteSubtotal;
-    final gross = _quoteTotal != 0 ? _quoteTotal : _amount;
-    return gross - _quoteGstAmount;
-  }
+  ///
+  /// 3 Nov 2026 (BUG-044, Arun's rule of 2 Nov): the base comes from the
+  /// shared OrderMoney rule. A directly-booked order with GST ON TOP
+  /// (1002: 25,000 + 4,500 GST) used to have the GST carved out of its
+  /// amount here (revenue 20,500); its base is the 25,000.
+  double _sharedBase = 0;
+  double get _revenueBase => _sharedBase;
 
   double get _revenueFinal =>
       _revenueBase + _addonsTotal + _storageIncome;
@@ -129,7 +132,9 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
       case CommissionState.unpriced:
         return null;
       case CommissionState.priced:
-        return _revenueFinal * (_commissionPct! / 100);
+        // Commission is on the move, not on warehouse rent (BUG-054):
+        // storage income is excluded.
+        return (_revenueBase + _addonsTotal) * (_commissionPct! / 100);
     }
   }
 
@@ -252,6 +257,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
         _quoteSubtotal = order.quoteSubtotal ?? 0;
         _quoteGstAmount = order.quoteGstAmount ?? 0;
         _amount = order.amount ?? 0;
+        _sharedBase = OrderMoney.from(order).base;
         _commissionExpected = order.commissionExpected ?? false;
         _commissionPct = order.commissionPct;
         _status = order.status;
@@ -462,10 +468,15 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
           // being excluded. Same reasoning as the 'Order Amount'
           // fallback row directly above: the column has to visibly add
           // up, or the vendor cannot check it.
-          if (_quoteGstAmount > 0)
+          // 3 Nov 2026: only when the GST sits INSIDE the amount shown
+          // above (a quote-converted order). GST added on top of a direct
+          // order is never in the amount, so nothing is taken off.
+          if (((_quoteTotal != 0 ? _quoteTotal : _amount) - _revenueBase) >
+              0.5)
             _row(ng,
                 label: 'Less GST (collected for govt)',
-                amount: -_quoteGstAmount),
+                amount: -((_quoteTotal != 0 ? _quoteTotal : _amount) -
+                    _revenueBase)),
           if (_addonsCount > 0)
             _row(ng, label: 'Add-ons ($_addonsCount)', amount: _addonsTotal),
           // Storage rent is revenue, and it is shown as its own line so a

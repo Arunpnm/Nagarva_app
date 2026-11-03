@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '/app_session.dart';
 import '/backend/lead_status.dart';
+import '/backend/detail_navigation.dart';
 import '/backend/order_journey.dart';
+import '/backend/live_refresh.dart';
 import '/backend/reminders_service.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
@@ -20,6 +23,7 @@ import '/order_detail_page/payment_history_section.dart';
 import '/order_detail_page/quick_payment_section.dart';
 import '/permissions.dart';
 
+import '/backend/edge_function_errors.dart';
 /// The order journey (Claude Design handoff, screen `jrny`): one lead or
 /// order shown as nine stages from enquiry to a closed, paid job.
 ///
@@ -64,9 +68,16 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
   /// Survey & quote opened from the follow-up stage.
   bool _showSurveyQuote = false;
 
+  /// Set by "Confirm booking" after an Accepted call; see _logCall.
+  bool _autoConvert = false;
+
   // Ticket form.
   final _ticketCtrl = TextEditingController();
   bool _savingTicket = false;
+
+  /// Owner chose "Close without signature" (BUG-040) — for a job where the
+  /// customer could not sign in person and never opened the link.
+  bool _closeWithoutSignature = false;
 
   static final _money =
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
@@ -82,8 +93,39 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
   @override
   void onPageRefresh() => _load();
 
+  /// Live (pending UX list item 2): the journey moves to the next stage by
+  /// itself when the customer submits the survey, signs, pays, or the
+  /// office converts the lead. Started after the first load, once the
+  /// lead and order ids are known; restarted if they change.
+  LiveRefresh? _live;
+  String _liveKey = '';
+
+  void _watch(JourneyData d) {
+    final leadId = d.lead?.id ?? widget.leadId ?? '';
+    final orderId = d.order?.id ?? widget.orderId ?? '';
+    final key = '$leadId|$orderId';
+    if (key == _liveKey) return;
+    _liveKey = key;
+    _live?.dispose();
+    _live = LiveRefresh.watch([
+      LiveWatch('leads', 'id', leadId),
+      // A call logged on another phone shows here with its notes.
+      LiveWatch('follow_up_logs', 'entity_id', leadId),
+      LiveWatch('customer_surveys', 'lead_id', leadId),
+      LiveWatch('quotations', 'lead_id', leadId),
+      LiveWatch('orders', 'lead_id', leadId),
+      LiveWatch('orders', 'id', orderId),
+      LiveWatch('payment_entries', 'order_id', orderId),
+      LiveWatch('pod_records', 'order_id', orderId),
+      LiveWatch('document_signatures', 'order_id', orderId),
+    ], () {
+      if (mounted) _load();
+    });
+  }
+
   @override
   void dispose() {
+    _live?.dispose();
     _callNotes.dispose();
     _ticketCtrl.dispose();
     super.dispose();
@@ -102,6 +144,7 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
         _data = d;
         _loading = false;
       });
+      _watch(d);
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -125,14 +168,29 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
     'not_interested',
   ];
 
+  /// Quote stage: the customer's response (Arun, 3 Nov 2026).
+  static const _quoteOutcomes = <String>[
+    'accepted',
+    'negotiation',
+    'rejected',
+    'no_response',
+  ];
+
+  /// Call or WhatsApp, for the entry being logged.
+  String _channel = 'call';
+
   String _outcomeLabel(AppLocalizations l, String o) => switch (o) {
+        'accepted' => 'Accepted',
+        'negotiation' => 'Negotiation',
+        'rejected' => 'Rejected',
+        'no_response' => 'No response',
         'no_answer' => l.jrOutNoAnswer,
         'callback_requested' => l.jrOutCallback,
         'connected' => l.jrOutInterested,
         _ => l.jrOutNotInterested,
       };
 
-  Future<void> _logCall(JourneyData d) async {
+  Future<void> _logCall(JourneyData d, JourneyStage stage) async {
     final l = AppLocalizations.of(context);
     final leadId = d.lead?.id;
     if (leadId == null) return;
@@ -140,34 +198,198 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
       _toast(l.jrPickOutcome);
       return;
     }
+    final outcome = _outcome!;
     setState(() => _savingCall = true);
     try {
       await RemindersService.logFollowUp(
         entityType: kEntityLead,
         entityId: leadId,
-        channel: 'call',
-        outcome: _outcome,
+        channel: _channel,
+        outcome: outcome,
         notes: _callNotes.text.trim().isEmpty ? null : _callNotes.text.trim(),
         nextActionAt: _next,
       );
-      // Logging a call is evidence the lead has been followed up. The
-      // never-downgrade rule decides whether that moves the status.
-      final next = advanceLeadStatus(d.lead?.status, kLeadStatusFollowUp);
-      if (next != canonicalLeadStatus(d.lead?.status)) {
-        await LeadsTable().update(
-          data: {'status': next},
-          matchingRows: (q) => OrgScope.write(q).eq('id', leadId),
-        );
+      // The lead's own status label (not the journey stage) notes that it
+      // has been followed up; never downgrades. Only in the Lead stage.
+      if (stage == JourneyStage.lead) {
+        final next = advanceLeadStatus(d.lead?.status, kLeadStatusFollowUp);
+        if (next != canonicalLeadStatus(d.lead?.status)) {
+          await LeadsTable().update(
+            data: {'status': next},
+            matchingRows: (q) => OrgScope.write(q).eq('id', leadId),
+          );
+        }
+      }
+      // Accepted: the quote is marked accepted so "Convert Quote to Order"
+      // appears in the Survey & Quote card above.
+      if (outcome == 'accepted' && d.quotes.isNotEmpty) {
+        final q = d.quotes.first;
+        if (q.id != null && q.status != 'accepted') {
+          await QuotationsTable().update(
+            data: {
+              'status': 'accepted',
+              'accepted_by_name': d.customer.isEmpty ? null : d.customer,
+            },
+            matchingRows: (r) => OrgScope.write(r).eq('id', q.id!),
+          );
+        }
       }
       _callNotes.clear();
       _outcome = null;
       _next = null;
+      _channel = 'call';
       if (mounted) _toast(l.jrCallLogged);
       await _load();
+      if (!mounted) return;
+      if (outcome == 'accepted') {
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Customer accepted the quote'),
+            content: const Text(
+                'Confirm the booking now? This creates the order and moves '
+                'the journey to the Order stage.'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Later')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Confirm booking')),
+            ],
+          ),
+        );
+        if (confirm == true && mounted && d.lead != null) {
+          // Convert right here: the Survey & Quote panel on this stage is
+          // rebuilt with autoConvertQuote, creates the order exactly as its
+          // "Convert Quote to Order" button does, and its onChanged reloads
+          // this page onto the Order stage. (Used to open Lead Details and
+          // leave the person to find that button themselves.)
+          setState(() {
+            _autoConvert = true;
+            _showSurveyQuote = true;
+          });
+        }
+      } else if (outcome == 'rejected' || outcome == 'not_interested') {
+        // Rejected: keep following up, or close as cancelled with a
+        // mandatory reason (Arun, 3 Nov 2026).
+        final close = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(outcome == 'rejected'
+                ? 'Customer rejected the quote'
+                : 'Customer not interested'),
+            content: const Text(
+                'Keep following up, or close this lead as cancelled?'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Keep following up')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Close as cancelled')),
+            ],
+          ),
+        );
+        if (close == true && mounted) await _cancelLead(d);
+      }
     } catch (e) {
-      if (mounted) _toast(l.jrCouldNotSave('$e'));
+      if (mounted) _toast(l.jrCouldNotSave('${friendlyError(e)}'));
     } finally {
       if (mounted) setState(() => _savingCall = false);
+    }
+  }
+
+  /// Close the journey as Cancelled. A reason is mandatory (Arun, 3 Nov
+  /// 2026); it is kept in quote_outcomes, the same record the Lost report
+  /// reads, and the lead is marked lost.
+  Future<void> _cancelLead(JourneyData d) async {
+    final leadId = d.lead?.id;
+    if (leadId == null) return;
+    const reasons = <(String, String)>[
+      ('price', 'Price too high'),
+      ('competitor', 'Chose another company'),
+      ('timing', 'Move date changed'),
+      ('customer_cancelled', 'Customer cancelled the move'),
+      ('service_scope', 'We can\'t do this job'),
+      ('other', 'Other'),
+    ];
+    String? code;
+    final note = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) {
+          final valid = code != null &&
+              (code != 'other' || note.text.trim().isNotEmpty);
+          return AlertDialog(
+            title: const Text('Close as cancelled'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Why is the customer not going ahead?'),
+                const SizedBox(height: 10),
+                Wrap(spacing: 6, runSpacing: 6, children: [
+                  for (final r in reasons)
+                    ChoiceChip(
+                      label: Text(r.$2),
+                      selected: code == r.$1,
+                      onSelected: (_) => setD(() => code = r.$1),
+                    ),
+                ]),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: note,
+                  maxLines: 2,
+                  onChanged: (_) => setD(() {}),
+                  decoration: InputDecoration(
+                    labelText: code == 'other'
+                        ? 'Reason (required)'
+                        : 'Notes (optional)',
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Back')),
+              TextButton(
+                  onPressed: valid ? () => Navigator.pop(ctx, true) : null,
+                  child: const Text('Close lead')),
+            ],
+          );
+        },
+      ),
+    );
+    if (ok != true || code == null) return;
+    try {
+      final quote = d.quotes.isNotEmpty ? d.quotes.first : null;
+      await LeadsTable().update(
+        data: {'status': kLeadStatusLost},
+        matchingRows: (q) => OrgScope.write(q).eq('id', leadId),
+      );
+      if (quote?.id != null) {
+        await QuotationsTable().update(
+          data: {'status': 'lost'},
+          matchingRows: (q) => OrgScope.write(q).eq('id', quote!.id!),
+        );
+      }
+      await SupaFlow.client.from('quote_outcomes').insert({
+        ...OrgScope.stamp(),
+        'lead_id': leadId,
+        if (quote?.id != null) 'quote_id': quote!.id,
+        'outcome': 'lost',
+        'reason_code': code,
+        if (note.text.trim().isNotEmpty) 'reason_note': note.text.trim(),
+        if (quote?.total != null) 'our_price': quote!.total,
+        'recorded_by': AppSession.instance.currentStaffName ?? 'Owner',
+      });
+      if (mounted) _toast('Lead closed as cancelled.');
+      await _load();
+    } catch (e) {
+      if (mounted) _toast('Could not close the lead: ${friendlyError(e)}');
     }
   }
 
@@ -182,13 +404,13 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
         'order_id': d.order!.id,
         'description': text,
         'status': 'open',
-        'reported_at': DateTime.now().toIso8601String(),
+        'reported_at': DateTime.now().toUtc().toIso8601String(),
       });
       _ticketCtrl.clear();
       if (mounted) _toast(l.jrTicketRaised);
       await _load();
     } catch (e) {
-      if (mounted) _toast(l.jrCouldNotSave('$e'));
+      if (mounted) _toast(l.jrCouldNotSave('${friendlyError(e)}'));
     } finally {
       if (mounted) setState(() => _savingTicket = false);
     }
@@ -205,7 +427,7 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
       if (mounted) _toast(l.jrTicketResolved);
       await _load();
     } catch (e) {
-      if (mounted) _toast(l.jrCouldNotSave('$e'));
+      if (mounted) _toast(l.jrCouldNotSave('${friendlyError(e)}'));
     }
   }
 
@@ -331,6 +553,18 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
             ),
         ],
       ),
+      // BUG-033 (3 Nov 2026): Mark lost, Confirm order and Delete lead live
+      // on Lead Details, which nothing in the app opened. While there is no
+      // live order, the lead's own screen is one tap away.
+      if (d.lead != null && !d.hasLiveOrder) ...[
+        const SizedBox(height: 8),
+        NgSecondaryButton(
+          label: 'Lead details — confirm order, mark lost, delete',
+          icon: Icons.tune_rounded,
+          height: 40,
+          onPressed: () => openLeadDetail(context, d.lead!),
+        ),
+      ],
       const SizedBox(height: 12),
       Row(
         children: [
@@ -341,7 +575,15 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
                   ? (d.lead?.approxDate ?? l.jrNotSet)
                   : DateFormat('d MMM').format(moveDate)
             ),
-            (l.jrRoute, '${d.fromCity ?? '-'} → ${d.toCity ?? '-'}'),
+            (
+              l.jrRoute,
+              // Blank cities read "Not set", not a bare arrow.
+              ((d.fromCity ?? '').trim().isEmpty &&
+                      (d.toCity ?? '').trim().isEmpty)
+                  ? l.jrNotSet
+                  : '${(d.fromCity ?? '').trim().isEmpty ? '?' : d.fromCity} → '
+                      '${(d.toCity ?? '').trim().isEmpty ? '?' : d.toCity}'
+            ),
             (
               l.jrOrderValue,
               d.order == null ? l.jrNotSet : _money.format(d.orderValue)
@@ -415,7 +657,6 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
 
   String _stageName(AppLocalizations l, JourneyStage s) => switch (s) {
         JourneyStage.lead => l.jrStageLead,
-        JourneyStage.followUp => l.jrStageFollowUp,
         JourneyStage.survey => l.jrStageSurvey,
         JourneyStage.quote => l.jrStageQuote,
         JourneyStage.supervisor => l.jrStageSupervisor,
@@ -427,7 +668,6 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
 
   static const _stageIcons = <JourneyStage, IconData>{
     JourneyStage.lead: Icons.person_search_rounded,
-    JourneyStage.followUp: Icons.phone_in_talk_rounded,
     JourneyStage.survey: Icons.checklist_rounded,
     JourneyStage.quote: Icons.request_quote_rounded,
     JourneyStage.supervisor: Icons.engineering_rounded,
@@ -567,24 +807,6 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
               (Icons.home_work_rounded, l.jrService(lead.service!), ''),
           ]
         );
-      case JourneyStage.followUp:
-        return (
-          d.followUps.isEmpty
-              ? l.jrNoCalls
-              : l.jrCallsLogged('${d.followUps.length}'),
-          [
-            for (final f in d.followUps)
-              (
-                Icons.call_rounded,
-                followUpOutcomeLabel(f.outcome),
-                [
-                  date(f.loggedAt),
-                  RemindersService.actorLabel(f.loggedBy),
-                  if ((f.notes ?? '').isNotEmpty) f.notes!,
-                ].where((x) => x.isNotEmpty).join(' · '),
-              ),
-          ]
-        );
       case JourneyStage.survey:
         final sv = d.survey;
         if (sv == null) return (l.jrNoSurvey, const []);
@@ -642,15 +864,20 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
         );
       case JourneyStage.invoice:
         final no = d.order?.invoiceNo ?? '';
-        final signed = d.invoiceSignature?.isSigned ?? false;
+        final onlineSigned = d.invoiceSignature?.isSigned ?? false;
+        final signed = d.customerSigned;
         return (
           no.isEmpty ? l.jrNoInvoice : l.jrInvoiceNo(no),
           [
             if (no.isNotEmpty)
               (
                 signed ? Icons.draw_rounded : Icons.edit_off_rounded,
-                signed ? l.jrSigned : l.jrNotSigned,
-                signed ? date(d.invoiceSignature?.signedAt) : '',
+                onlineSigned
+                    ? l.jrSigned
+                    : signed
+                        ? 'Signed in person at handover'
+                        : l.jrNotSigned,
+                onlineSigned ? date(d.invoiceSignature?.signedAt) : '',
               ),
           ]
         );
@@ -818,14 +1045,32 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
         // Survey request, quote, revisions, signature and convert-to-order
         // happen right here: Lead Details' own Survey & Quote card,
         // embedded (one copy of that logic).
-        return _surveyQuotePanel(d) ??
+        final panel = _surveyQuotePanel(d) ??
             NgPrimaryButton(
               label: l.jrOpenSurveyQuote,
               icon: Icons.request_quote_rounded,
               onPressed: null,
             );
-      case JourneyStage.followUp:
-        return _followUpForm(context, d);
+        // Arun, 3 Nov 2026: Lead -> Survey -> Quote -> Order / Cancelled.
+        // Follow-up happens INSIDE each of these stages, with its own call
+        // history and a fresh entry form, until there is an order or the
+        // lead is cancelled. Logging a call never moves the journey.
+        final open = d.lead != null &&
+            !d.hasLiveOrder &&
+            canonicalLeadStatus(d.lead!.status) != kLeadStatusLost;
+        if (!open) return panel;
+        if (s == JourneyStage.lead) {
+          // The form's own "Open survey & quote" button reveals the panel.
+          return _followUpCard(context, d, s);
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            panel,
+            const SizedBox(height: 16),
+            _followUpCard(context, d, s),
+          ],
+        );
       case JourneyStage.supervisor:
         // Assign the supervisor and crew here (Order Details' crew
         // section, without its close button — that lives in Closed).
@@ -925,7 +1170,94 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
     }
   }
 
-  Widget _followUpForm(BuildContext context, JourneyData d) {
+  /// Follow-up after the survey / quote: every call so far with its notes,
+  /// newest first, then the same "log a call" form as the Follow-up stage.
+  Widget _followUpCard(BuildContext context, JourneyData d, JourneyStage stage) {
+    final c = NgPalette.of(context);
+    // Each stage keeps its own history (Arun, 3 Nov 2026).
+    final calls = d.followUpsIn(stage);
+    String when(DateTime? t) =>
+        t == null ? '' : DateFormat('d MMM, h:mm a').format(t.toLocal());
+    return NgCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+              switch (stage) {
+                JourneyStage.lead => 'Follow up on the enquiry',
+                JourneyStage.survey => 'Follow up on the survey',
+                _ => 'Follow up until the customer decides',
+              },
+              style: NgFonts.geist(
+                  fontSize: 14.5, fontWeight: FontWeight.w600, color: c.text)),
+          const SizedBox(height: 4),
+          Text(
+            calls.isEmpty
+                ? 'No calls logged yet.'
+                : '${calls.length} call${calls.length == 1 ? '' : 's'} so far — '
+                    'read the last one before you call.',
+            style: NgFonts.geist(fontSize: 12.5, color: c.mute),
+          ),
+          for (final f in calls) ...[
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                    f.channel == 'whatsapp'
+                        ? Icons.chat_outlined
+                        : Icons.call_rounded,
+                    size: 17,
+                    color: c.mute),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        [
+                          followUpOutcomeLabel(f.outcome),
+                          when(f.loggedAt),
+                          RemindersService.actorLabel(f.loggedBy),
+                        ].where((x) => x.isNotEmpty).join(' · '),
+                        style: NgFonts.geist(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: c.text),
+                      ),
+                      if ((f.notes ?? '').isNotEmpty)
+                        Text(f.notes!,
+                            style: NgFonts.geist(
+                                fontSize: 13, height: 1.35, color: c.soft)),
+                      if (f.nextActionAt != null)
+                        Text('Next call: ${when(f.nextActionAt)}',
+                            style: NgFonts.geist(
+                                fontSize: 12, color: c.mute)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 14),
+          Divider(height: 1, color: c.w06),
+          const SizedBox(height: 14),
+          _followUpForm(context, d,
+              stage: stage,
+              showSurveyQuoteToggle: stage == JourneyStage.lead),
+        ],
+      ),
+    );
+  }
+
+  Widget _followUpForm(BuildContext context, JourneyData d,
+      {JourneyStage stage = JourneyStage.lead,
+      bool showSurveyQuoteToggle = true}) {
+    // Quote stage records the CUSTOMER'S RESPONSE; earlier stages the
+    // call result.
+    final outcomes =
+        stage == JourneyStage.quote ? _quoteOutcomes : _outcomes;
     final c = NgPalette.of(context);
     final l = AppLocalizations.of(context);
     final now = DateTime.now();
@@ -946,14 +1278,26 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l.jrOutcomeQ,
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          for (final ch in const [('call', 'Call'), ('whatsapp', 'WhatsApp')])
+            NgChip(
+              label: ch.$2,
+              selected: _channel == ch.$1,
+              onTap: () => setState(() => _channel = ch.$1),
+            ),
+        ]),
+        const SizedBox(height: 10),
+        Text(
+            stage == JourneyStage.quote
+                ? "Customer's response"
+                : l.jrOutcomeQ,
             style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 6,
           runSpacing: 6,
           children: [
-            for (final o in _outcomes)
+            for (final o in outcomes)
               NgChip(
                 label: _outcomeLabel(l, o),
                 selected: _outcome == o,
@@ -1008,9 +1352,10 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
               child: NgPrimaryButton(
                 label: l.jrLogCall,
                 icon: Icons.call_rounded,
-                onPressed: _savingCall ? null : () => _logCall(d),
+                onPressed: _savingCall ? null : () => _logCall(d, stage),
               ),
             ),
+            if (showSurveyQuoteToggle) ...[
             const SizedBox(width: 8),
             Expanded(
               child: NgSecondaryButton(
@@ -1022,10 +1367,13 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
                         () => _showSurveyQuote = !_showSurveyQuote),
               ),
             ),
+            ],
           ],
         ),
         // Moving on from follow-up: survey and quote open below, in place.
-        if (_showSurveyQuote && _surveyQuotePanel(d) != null) ...[
+        if (showSurveyQuoteToggle &&
+            _showSurveyQuote &&
+            _surveyQuotePanel(d) != null) ...[
           const SizedBox(height: 12),
           _surveyQuotePanel(d)!,
         ],
@@ -1038,9 +1386,12 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
     if (lead?.id == null) return null;
     return LeadDetailPageWidget.fromLead(
       lead!,
-      key: ValueKey('sq-${lead.id}'),
+      // A new key when auto-convert is asked for, so a fresh copy loads
+      // and converts; the plain copy never converts on its own.
+      key: ValueKey('sq-${lead.id}${_autoConvert ? '-auto' : ''}'),
       surveyQuoteOnly: true,
       onChanged: _load,
+      autoConvertQuote: _autoConvert,
     );
   }
 
@@ -1200,7 +1551,47 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
         const SizedBox(height: 6),
         // Closing happens here, through Order Details' own audited close
         // (the crew section's close-only mode), once nothing blocks it.
-        if (blockers.isEmpty && d.order?.id != null)
+        // BUG-040: the owner may close without the customer's signature
+        // when that is the ONLY thing left (balance, invoice and tickets
+        // still have to be clear).
+        if (!_closeWithoutSignature &&
+            blockers.length == 1 &&
+            blockers.first == CloseBlocker.noSignature &&
+            AppSession.instance.currentStaffId == null &&
+            d.order?.id != null) ...[
+          NgSecondaryButton(
+            label: 'Close without signature',
+            icon: Icons.gpp_maybe_rounded,
+            height: 46,
+            onPressed: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Close without signature?'),
+                  content: const Text(
+                      'The customer has not signed (in person or online). '
+                      'Only do this if the job is really finished and paid.'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel')),
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Yes, close')),
+                  ],
+                ),
+              );
+              if (ok == true && mounted) {
+                setState(() => _closeWithoutSignature = true);
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+        if ((blockers.isEmpty ||
+                (_closeWithoutSignature &&
+                    blockers.every((b) => b == CloseBlocker.noSignature))) &&
+            d.order?.id != null)
           OrderCrewSection(
             key: ValueKey('close-${d.order!.id}'),
             orderId: d.order!.id!,
@@ -1234,7 +1625,6 @@ class JourneyEntryCard extends StatelessWidget {
 
   static String stageName(AppLocalizations l, JourneyStage s) => switch (s) {
         JourneyStage.lead => l.jrStageLead,
-        JourneyStage.followUp => l.jrStageFollowUp,
         JourneyStage.survey => l.jrStageSurvey,
         JourneyStage.quote => l.jrStageQuote,
         JourneyStage.supervisor => l.jrStageSupervisor,

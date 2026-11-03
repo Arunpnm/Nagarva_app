@@ -262,6 +262,21 @@ class _MoreSheetState extends State<MoreSheet> {
                     ),
                   ),
                   const SizedBox(width: 8),
+                  // Lock on phones too (3 Nov 2026 — it lived only in the
+                  // wide-screen sidebar, so Arun found "there is no lock").
+                  Expanded(
+                    child: _FooterButton(
+                      icon: Icons.lock_outline_rounded,
+                      label: 'Lock',
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        if (widget.host.mounted) {
+                          await performLock(widget.host);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _FooterButton(
                       icon: Icons.logout_rounded,

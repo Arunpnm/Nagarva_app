@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'fleet_page_model.dart';
 import 'vehicle_detail_sheet.dart';
+import '/backend/edge_function_errors.dart';
 export 'fleet_page_model.dart';
 
 /// Fleet vehicle management.
@@ -62,7 +63,7 @@ class _FleetPageWidgetState extends State<FleetPageWidget>
           (_model.vehiclesOut ?? []).toList().cast<VehiclesRow>();
       _loadError = null;
     } catch (e) {
-      _loadError = 'Could not load vehicles: $e';
+      _loadError = 'Could not load vehicles: ${friendlyError(e)}';
     }
     safeSetState(() {});
   }

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '/flutter_flow/flutter_flow_util.dart' show launchURL;
 
+import '/backend/edge_function_errors.dart';
 /// Session 2 Part C — My Team (`sup-team`). Staff in the supervisor's own
 /// branch, with today's attendance state and a mark-present action.
 class SupervisorTeamPageWidget extends StatefulWidget {
@@ -88,7 +89,7 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not mark: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not mark: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);

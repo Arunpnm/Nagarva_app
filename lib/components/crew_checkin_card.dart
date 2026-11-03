@@ -156,7 +156,8 @@ class _CrewCheckinCardState extends State<CrewCheckinCard> {
       ),
     );
     final reason = ctrl.text.trim();
-    ctrl.dispose();
+    // After the close animation - see support_tickets_page.dart (BUG-020).
+    Future.delayed(const Duration(milliseconds: 600), ctrl.dispose);
     if (ok != true) return;
     try {
       await CrewCheckin.markPresent(_orderId!, '${s['id']}', reason);

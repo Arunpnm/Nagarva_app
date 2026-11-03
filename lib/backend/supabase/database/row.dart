@@ -45,7 +45,19 @@ dynamic supaSerialize<T>(T? value) {
 
   switch (T) {
     case DateTime:
-      return (value as DateTime).toIso8601String();
+      // A local DateTime's toIso8601String() carries NO offset, so a
+      // timestamptz column read IST wall-clock time as UTC and every such
+      // write landed 5h30m in the future (full test 1 Nov 2026, BUG-014).
+      // Emit the offset explicitly: timestamptz gets the true instant, a
+      // `date` column still takes the local calendar date, and a
+      // `timestamp without time zone` column is unchanged.
+      final d = value as DateTime;
+      if (d.isUtc) return d.toIso8601String();
+      final off = d.timeZoneOffset;
+      final sign = off.isNegative ? '-' : '+';
+      final hh = off.inHours.abs().toString().padLeft(2, '0');
+      final mm = (off.inMinutes.abs() % 60).toString().padLeft(2, '0');
+      return '${d.toIso8601String()}$sign$hh:$mm';
     case PostgresTime:
       return (value as PostgresTime).toIso8601String();
     case LatLng:

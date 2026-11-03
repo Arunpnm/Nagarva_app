@@ -11,6 +11,7 @@ import '/components/load_error_state.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/permissions.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Day-close crew sheet — the per-job staff record from the staff-pay
 /// brief §4, filled at end of day by the supervisor.
 ///
@@ -225,7 +226,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
       _loadError = _order == null ? 'That order could not be found.' : null;
       _lastAcAmount = '';
     } catch (e) {
-      _loadError = 'Could not load the crew sheet. $e';
+      _loadError = 'Could not load the crew sheet. ${friendlyError(e)}';
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -336,8 +337,11 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
 
     final name = nameCtrl.text.trim();
     final phone = phoneCtrl.text.trim();
-    nameCtrl.dispose();
-    phoneCtrl.dispose();
+    // After the close animation - see support_tickets_page.dart (BUG-020).
+    Future.delayed(const Duration(milliseconds: 600), () {
+      nameCtrl.dispose();
+      phoneCtrl.dispose();
+    });
     if (confirmed != true || name.isEmpty || !mounted) return;
 
     // Brief §2: "Never force the vendor to create a second person for the
@@ -398,7 +402,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
       await _load();
       if (mounted) _toast('$name added and marked present.');
     } catch (e) {
-      if (mounted) _toast('Could not add $name: $e');
+      if (mounted) _toast('Could not add $name: ${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -553,7 +557,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
             '₹${money.format(savedWages + savedAc)} total.');
       }
     } catch (e) {
-      if (mounted) _toast('Could not save the crew sheet: $e');
+      if (mounted) _toast('Could not save the crew sheet: ${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -569,7 +573,7 @@ class _CrewSheetPageWidgetState extends State<CrewSheetPageWidget> {
       await _load();
       if (mounted) _toast('$name removed from this job.');
     } catch (e) {
-      if (mounted) _toast('Could not remove $name: $e');
+      if (mounted) _toast('Could not remove $name: ${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _saving = false);
     }

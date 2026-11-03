@@ -85,6 +85,10 @@ class AppStateNotifier extends ChangeNotifier {
 const _kPublicRoutePrefixes = [
   '/login',
   '/signup',
+  // The vendor's own mobile/OTP signup (and mobile login) — public by
+  // design, and named here explicitly now that matching is by whole
+  // path segment (below).
+  '/signup-mobile',
   '/survey',
   '/quote',
   '/sign',
@@ -94,8 +98,14 @@ const _kPublicRoutePrefixes = [
   '/admin-login',
 ];
 
+/// Whole path segments only (4 Nov 2026). This used `startsWith`, so the
+/// customer pages '/survey' and '/quote' also made VENDOR screens public:
+/// '/survey-quote', '/survey-new', '/survey-pricing' and '/quote-design'
+/// all skipped the sign-in redirect below (RLS still guarded the data,
+/// but a signed-out visitor got the screen instead of the login page).
 bool _isPublicRoute(String path) =>
-    path == '/' || _kPublicRoutePrefixes.any((p) => path.startsWith(p));
+    path == '/' ||
+    _kPublicRoutePrefixes.any((p) => path == p || path.startsWith('$p/'));
 
 /// Route guard (Users Kickoff Step 2.4 / permission-model decision 4).
 ///
@@ -224,7 +234,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               : AdminLoginPage.routePath;
         }
         if (!AppSession.instance.isAuthenticated) {
-          return LoginPageWidget.routePath;
+          // A locked, PIN-linked device unlocks on the PIN pad, not the
+          // email form (BUG-010/012, 3 Nov 2026).
+          return DeviceOrgBinding.isBound
+              ? PinLoginPageWidget.routePath
+              : LoginPageWidget.routePath;
         }
         final routeName = state.name;
         if (routeName != null &&

@@ -8,6 +8,7 @@ import '/flutter_flow/custom_functions.dart' as functions;
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
+import '/backend/edge_function_errors.dart';
 /// LR Register (Session 4, Part C-3) — a searchable register behind the
 /// LR document generation that already existed (Session 3,
 /// order_documents_section.dart's _genLr). Read-only: this doesn't
@@ -54,7 +55,7 @@ class _LrRegisterPageWidgetState extends State<LrRegisterPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load LR register: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load LR register: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

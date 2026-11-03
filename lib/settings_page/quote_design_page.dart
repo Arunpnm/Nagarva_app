@@ -12,6 +12,7 @@ import '/components/quote_pdf.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/l10n/gen/app_localizations.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Settings › Quote design (Claude Design handoff, screen `qtheme`): the
 /// quotation PDF's theme and brand colour, the logo, a sample preview and
 /// Save. QuotePdf reads the saved [QuoteDesign] when a quote is printed.
@@ -100,7 +101,7 @@ class _QuoteDesignPageState extends State<QuoteDesignPage> {
       await PdfViewPage.open(context,
           title: AppLocalizations.of(context).qdTitle, bytes: bytes);
     } catch (e) {
-      _toast('$e');
+      _toast('${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _previewing = false);
     }

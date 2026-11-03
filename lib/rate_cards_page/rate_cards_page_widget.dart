@@ -10,6 +10,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'rate_card_detail_page_widget.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Rate Cards (Session 4, Part C-2). Live schema confirmed directly
 /// against the DB (rate_cards + 4 child tables — charges/rules/
 /// floor_charges/multipliers). Every org has one seeded "Standard Rate
@@ -53,7 +54,7 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load rate cards: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load rate cards: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -108,7 +109,7 @@ class _RateCardsPageWidgetState extends State<RateCardsPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not create: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not create: ${friendlyError(e)}')));
       }
     }
   }

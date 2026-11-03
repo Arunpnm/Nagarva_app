@@ -353,8 +353,8 @@ class CashBookPage extends StatelessWidget {
               return const RmRow(
                 icon: Icons.info_outline_rounded,
                 title: 'Cash spent is not shown yet',
-                subtitle: 'Expenses do not record how they were paid until '
-                    'the payment-mode migration runs.',
+                subtitle: 'This will show once expenses record how they '
+                    'were paid.',
               );
             }
             final inflow = r['_in'] == true;

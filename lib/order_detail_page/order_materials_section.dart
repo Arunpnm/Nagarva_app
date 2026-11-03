@@ -7,6 +7,7 @@ import '/backend/supabase/org_scope.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Materials used on this order, recorded FROM the order.
 ///
 /// Arun, 3 Sept 2026: *"i need this materials usage within orders page not
@@ -97,7 +98,7 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Could not load materials: $e';
+        _error = 'Could not load materials: ${friendlyError(e)}';
         _loading = false;
       });
     }
@@ -112,7 +113,7 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
         queryFn: (q) => OrgScope.read(q).order('name', ascending: true),
       );
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not load materials: $e');
+      if (mounted) setState(() => _error = 'Could not load materials: ${friendlyError(e)}');
       return;
     }
     // Only what there is stock of. Offering an out-of-stock item leads
@@ -148,7 +149,7 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
             .showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not record usage: $e');
+      if (mounted) setState(() => _error = 'Could not record usage: ${friendlyError(e)}');
     }
   }
 

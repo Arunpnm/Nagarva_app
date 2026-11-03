@@ -46,7 +46,7 @@ class _FyNumberingCardState extends State<FyNumberingCard> {
       _preview = _target == cur ? now : await FyNumbering.preview(_target);
     } catch (e) {
       _error = extractDbErrorMessage(e,
-          fallback: 'Could not read numbering: $e');
+          fallback: 'Could not read numbering: ${friendlyError(e)}');
     }
     if (mounted) setState(() => _busy = false);
   }
@@ -85,7 +85,7 @@ class _FyNumberingCardState extends State<FyNumberingCard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(extractDbErrorMessage(e,
-                fallback: 'Could not start numbering: $e'))));
+                fallback: 'Could not start numbering: ${friendlyError(e)}'))));
       }
     }
     await _load();

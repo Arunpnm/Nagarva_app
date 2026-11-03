@@ -11,6 +11,7 @@ import '/backend/detail_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'calendar_page_model.dart';
+import '/backend/edge_function_errors.dart';
 export 'calendar_page_model.dart';
 
 /// Calendar with reminders and follow-up tracking.
@@ -165,7 +166,7 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save reminder: $e')),
+          SnackBar(content: Text('Could not save reminder: ${friendlyError(e)}')),
         );
       }
     }

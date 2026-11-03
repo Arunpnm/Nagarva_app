@@ -8,6 +8,7 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Super Admin › Marketplace (Claude Design handoff, Nagarva Admin.dc.html
 /// "Marketplace"): live dispatch, money, vendors and city rules for the
 /// Nagarva marketplace (`supabase/20261030_marketplace_vendor.sql`).
@@ -93,7 +94,7 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
       await _loadPricing();
     } catch (e) {
       if (mounted) setState(() => _loading = false);
-      _toast('Could not load the marketplace: $e');
+      _toast('Could not load the marketplace: ${friendlyError(e)}');
     }
   }
 
@@ -109,7 +110,7 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
       await f();
       _toast(done);
     } catch (e) {
-      _toast('Could not save: $e');
+      _toast('Could not save: ${friendlyError(e)}');
     }
     await _load();
   }

@@ -14,6 +14,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/backend/detail_navigation.dart';
 import '/index.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Survey & Quote standalone (Session 4, Part B4) — was a ComingSoonPage
 /// stub ('SurveyComingSoon', `/survey-new`). Distinct from
 /// `SurveyQuotePageWidget` (`/survey-quote`), the itemized builder this
@@ -70,7 +71,7 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not load quotes: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not load quotes: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loadingQuotes = false);

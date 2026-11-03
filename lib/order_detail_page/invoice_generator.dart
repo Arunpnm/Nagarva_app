@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 
 import '/app_session.dart';
@@ -8,7 +7,9 @@ import '/backend/gst_state_codes.dart';
 import '/backend/invoice_compliance.dart';
 import '/backend/issued_documents.dart';
 import '/backend/module_navigation.dart';
+import '/backend/order_money.dart';
 import '/backend/pricing_defaults.dart';
+import '/backend/private_files.dart';
 import '/backend/signature_service.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
@@ -20,6 +21,7 @@ import '/components/pdf_view_page.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Tax invoice generation for one order: Rule 46 check, the GST-rate
 /// refusal, gapless numbering through `next_doc_number`, the inclusive
 /// GST back-out and the branded PDF dialog.
@@ -49,6 +51,10 @@ class InvoiceGenerator {
   final void Function(bool busy)? onBusy;
 
   OrdersRow? _row;
+
+  /// Set by generate(): the order's money under the shared rule, incl.
+  /// extra charges that become invoice lines.
+  OrderMoney? _money;
 
   String? get _orderAmount => _row?.amount?.toString();
   String? get _orderFromCity => _row?.fromCity;
@@ -261,7 +267,7 @@ class InvoiceGenerator {
         await OrdersTable().update(
           data: {
             'invoice_no': invoiceNo,
-            'invoice_issued_at': DateTime.now().toIso8601String(),
+            'invoice_issued_at': DateTime.now().toUtc().toIso8601String(),
           },
           matchingRows: (q) => OrgScope.write(q).eq('id', orderId),
         );
@@ -304,10 +310,21 @@ class InvoiceGenerator {
       // "Taxable Value" line reading Rs29,512.
       //
       // base = total / (1 + pct/100); tax = total - base.
-      final baseAmount = gstPct <= 0
-          ? amount
-          : (amount / (1 + gstPct / 100));
-      final taxTotal = amount - baseAmount;
+      //
+      // 3 Nov 2026 (BUG-036 / BUG-044, Arun's rule of 2 Nov): the order's
+      // money now comes from the shared OrderMoney rule. A quote-converted
+      // order (GST inside the quote total) gives the same split as the
+      // back-out above; a directly-booked order now gets GST ON TOP of
+      // its amount instead of having it carved out of it; and the order's
+      // extra charges are added as their own invoice lines.
+      final money = await OrderMoney.load(_row!);
+      _money = money;
+      final baseAmount = money.taxable;
+      final taxTotal = money.gstTotal;
+      final invoiceTotal = money.total;
+      if (amount <= 0 && invoiceTotal <= 0) {
+        throw 'This order has no amount to invoice.';
+      }
       final igst = interstate ? double.parse(taxTotal.toStringAsFixed(2)) : 0.0;
       final sgst = interstate
           ? 0.0
@@ -323,7 +340,7 @@ class InvoiceGenerator {
         igst: igst,
         sgst: sgst,
         cgst: cgst,
-        total: amount,
+        total: invoiceTotal,
         // Part 8 addendum item 3: lets _buildInvoicePdfBytes fall back to
         // the quote's signature when this order has none of its own yet.
         quotationId:
@@ -332,7 +349,7 @@ class InvoiceGenerator {
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not generate invoice: $e')),
+        SnackBar(content: Text('Could not generate invoice: ${friendlyError(e)}')),
       );
     } finally {
       onBusy?.call(false);
@@ -341,14 +358,8 @@ class InvoiceGenerator {
 
   /// Fetches bytes for a public image URL (logo/signature). Best-effort:
   /// invoice generation never fails just because an image is missing.
-  Future<Uint8List?> _fetchBytes(String? url) async {
-    if (url == null || url.isEmpty) return null;
-    try {
-      final res = await http.get(Uri.parse(url));
-      if (res.statusCode == 200) return res.bodyBytes;
-    } catch (_) {}
-    return null;
-  }
+  // Handles private-bucket references too (signature, BUG-013).
+  Future<Uint8List?> _fetchBytes(String? url) => fetchFileBytes(url);
 
   /// Loads the vendor's business profile + branding saved on the Settings
   /// page (settings keys business_profile / signature_url, org logo_url)
@@ -467,6 +478,18 @@ class InvoiceGenerator {
           }
         }
       } catch (_) {}
+    }
+    // Extra charges as their own lines (Arun, 2 Nov 2026). When there is no
+    // quote breakdown, the order's own base goes first so the lines still
+    // add up to the taxable value.
+    final extras = _money?.addons ?? const <OrderAddon>[];
+    if (extras.isNotEmpty) {
+      if (particulars.isEmpty) {
+        particulars.add(MapEntry('Freight / Transport', _money!.base));
+      }
+      for (final a in extras) {
+        particulars.add(MapEntry(a.description, a.amount));
+      }
     }
 
     String? amountInWords;
@@ -770,7 +793,7 @@ class InvoiceGenerator {
     } catch (e) {
       if (!context.mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not create signature link: $e')),
+        SnackBar(content: Text('Could not create signature link: ${friendlyError(e)}')),
       );
       return null;
     }

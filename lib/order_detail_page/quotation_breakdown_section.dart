@@ -130,8 +130,28 @@ class QuotationBreakdownSectionState
     // mode (included / additional) can be resolved per line below.
     final chargeLines = <(String, num, String)>[];
     for (final f in kDefaultChargeFields) {
+      // An advance is money asked for up front, not a charge — the PDF and
+      // the invoice already leave it out of the lines.
+      if (f.key == 'advanceOnQuote') continue;
       final v = charges[f.key];
-      if (v is num && v > 0) chargeLines.add((f.label, v, f.key));
+      if (v is num && v > 0) {
+        chargeLines.add((f.label, v, f.key));
+      } else if (v is Map) {
+        // BUG-047: packing / unpacking / materials are stored as
+        // {qty, rate, basis, amount}, so the old `is num` test dropped
+        // them — a ₹2,600 packing charge vanished from the breakdown.
+        final amt = v['amount'] is num
+            ? v['amount'] as num
+            : num.tryParse('${v['amount']}') ?? 0;
+        if (amt > 0) {
+          final qty = v['qty'];
+          final rate = v['rate'];
+          final detail = v['basis'] == 'per_cft' && qty != null && rate != null
+              ? ' ($qty CFT × ₹$rate)'
+              : '';
+          chargeLines.add(('${f.label}$detail', amt, f.key));
+        }
+      }
     }
 
     return NgSectionCard(

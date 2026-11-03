@@ -8,6 +8,7 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/l10n/gen/app_localizations.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Settings › Login & security (Claude Design handoff, screen `sec`), the
 /// parts below the owner's App PIN card: login email, change password,
 /// staff PIN resets and signing out other devices.
@@ -32,7 +33,21 @@ class _LoginSecuritySectionsState extends State<LoginSecuritySections> {
   /// set_staff_pin() is owner-only in the database.
   bool get _isOwner => AppSession.instance.currentStaffId == null;
 
-  String? get _email => SupaFlow.client.auth.currentUser?.email;
+  /// The owner's REAL login email. Phone-signup owners have none (Supabase
+  /// returns ""), and owner PIN login gives them an internal anchor
+  /// address (@owner.nagarva.in, pin-login) that is never shown or mailed.
+  String? get _email {
+    final e = SupaFlow.client.auth.currentUser?.email;
+    if (e == null || e.isEmpty || e.endsWith('@owner.nagarva.in')) {
+      return null;
+    }
+    return e;
+  }
+
+  String? get _phone {
+    final p = SupaFlow.client.auth.currentUser?.phone;
+    return (p == null || p.isEmpty) ? null : p;
+  }
 
   @override
   void initState() {
@@ -107,6 +122,29 @@ class _LoginSecuritySectionsState extends State<LoginSecuritySections> {
             ],
           ),
         ],
+        // BUG-018 (3 Nov 2026): a mobile-signup owner saw a blank "Login
+        // email" row and a Change password that asked for a password they
+        // never had. Show the mobile they log in with, and let them add an
+        // email + password as a second way in.
+        if (email == null && _phone != null && _isOwner) ...[
+          const SizedBox(height: 18),
+          NgSectionHeader(l.lsMy),
+          const SizedBox(height: 8),
+          NgCardList(children: [
+            NgListRow(
+              icon: Icons.phone_iphone_rounded,
+              title: 'Login mobile',
+              subtitle: '+${_phone!.replaceAll('+', '')}',
+            ),
+            NgListRow(
+              icon: Icons.mail_outline_rounded,
+              title: 'Add login email & password',
+              subtitle: 'Optional — a second way to sign in besides OTP',
+              trailing: Icon(Icons.chevron_right_rounded, color: c.faint),
+              onTap: _addEmail,
+            ),
+          ]),
+        ],
         const SizedBox(height: 18),
         NgSectionHeader(l.lsStaffPins),
         const SizedBox(height: 6),
@@ -120,7 +158,7 @@ class _LoginSecuritySectionsState extends State<LoginSecuritySections> {
           )
         else if (_staff.isNotEmpty)
           NgCardList(children: [for (final s in _staff) _staffRow(c, l, s)]),
-        if (email != null) ...[
+        if (email != null || _phone != null) ...[
           const SizedBox(height: 18),
           Material(
             color: c.redBg,
@@ -197,7 +235,7 @@ class _LoginSecuritySectionsState extends State<LoginSecuritySections> {
       _toast(l.lsPinSetFor(s.name));
       await _load();
     } catch (e) {
-      _toast('$e');
+      _toast('${friendlyError(e)}');
     }
   }
 
@@ -210,6 +248,18 @@ class _LoginSecuritySectionsState extends State<LoginSecuritySections> {
     if (done == true) _toast(l.lsPwDone);
   }
 
+  Future<void> _addEmail() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => const _AddEmailDialog(),
+    );
+    if (ok == true) {
+      _toast('Saved. Check that inbox for a confirmation link to finish '
+          'setting up email login.');
+      if (mounted) setState(() {});
+    }
+  }
+
   Future<void> _signOutOthers() async {
     final l = AppLocalizations.of(context);
     setState(() => _signingOut = true);
@@ -217,7 +267,7 @@ class _LoginSecuritySectionsState extends State<LoginSecuritySections> {
       await SupaFlow.client.auth.signOut(scope: SignOutScope.others);
       _toast(l.lsAllOut);
     } catch (e) {
-      _toast('$e');
+      _toast('${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _signingOut = false);
     }
@@ -304,6 +354,104 @@ class _PinDialogState extends State<_PinDialog> {
   }
 }
 
+/// Adds an email + password to a phone-signup owner (BUG-018). No current
+/// password is asked for: they never had one, and they are already signed
+/// in on this device.
+class _AddEmailDialog extends StatefulWidget {
+  const _AddEmailDialog();
+
+  @override
+  State<_AddEmailDialog> createState() => _AddEmailDialogState();
+}
+
+class _AddEmailDialogState extends State<_AddEmailDialog> {
+  final _mail = TextEditingController();
+  final _new = TextEditingController();
+  final _conf = TextEditingController();
+  String? _err;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _mail.dispose();
+    _new.dispose();
+    _conf.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final l = AppLocalizations.of(context);
+    final mail = _mail.text.trim();
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(mail)) {
+      return setState(() => _err = 'Enter a valid email address.');
+    }
+    if (_new.text.length < 8) return setState(() => _err = l.lsPwShort);
+    if (_new.text != _conf.text) return setState(() => _err = l.lsPwMismatch);
+    setState(() {
+      _busy = true;
+      _err = null;
+    });
+    try {
+      await SupaFlow.client.auth
+          .updateUser(UserAttributes(email: mail, password: _new.text));
+      if (mounted) Navigator.pop(context, true);
+    } on AuthException catch (e) {
+      if (mounted) setState(() => _err = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _err = '${friendlyError(e)}');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = NgPalette.of(context);
+    return AlertDialog(
+      title: const Text('Add login email'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _mail,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(labelText: 'Email'),
+          ),
+          TextField(
+            controller: _new,
+            obscureText: true,
+            decoration: InputDecoration(labelText: l.lsNewPw),
+          ),
+          TextField(
+            controller: _conf,
+            obscureText: true,
+            decoration: InputDecoration(labelText: l.lsConfPw),
+          ),
+          const SizedBox(height: 8),
+          Text('You can keep using mobile OTP as well.',
+              style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+          if (_err != null) ...[
+            const SizedBox(height: 8),
+            Text(_err!, style: NgFonts.geist(fontSize: 12.5, color: c.red)),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.pop(context),
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+        TextButton(
+          onPressed: _busy ? null : _save,
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
 class _PasswordDialog extends StatefulWidget {
   const _PasswordDialog({required this.email});
   final String email;
@@ -347,7 +495,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
     } on AuthException catch (e) {
       if (mounted) setState(() => _err = e.message);
     } catch (e) {
-      if (mounted) setState(() => _err = '$e');
+      if (mounted) setState(() => _err = '${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

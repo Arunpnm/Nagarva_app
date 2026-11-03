@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'staff_form_sheet.dart';
 import 'users_page_model.dart';
+import '/backend/edge_function_errors.dart';
 export 'users_page_model.dart';
 
 /// Staff Management (Week 2 of the v1 launch plan).
@@ -72,7 +73,7 @@ class _UsersPageWidgetState extends State<UsersPageWidget>
       _model.staffList = (_model.staffOut ?? []).toList().cast<StaffRow>();
       _loadError = null;
     } catch (e) {
-      _loadError = 'Could not load staff: $e';
+      _loadError = 'Could not load staff: ${friendlyError(e)}';
     }
     safeSetState(() {});
   }

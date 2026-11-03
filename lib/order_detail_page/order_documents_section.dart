@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,6 +15,9 @@ import '/backend/supabase/org_scope.dart';
 import '/components/pdf_view_page.dart';
 import '/backend/issued_documents.dart';
 import '/backend/upi_payment.dart';
+import '/backend/private_files.dart';
+import '/backend/order_money.dart';
+import '/backend/order_trip.dart';
 import '/components/pdf_branding.dart';
 import '/components/lr_pdf.dart';
 import '/components/money_receipt_pdf.dart';
@@ -27,6 +29,7 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/backend/vendor_identity.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Order Details Session 1, item 4 — the documents grid + signature
 /// companion + utility row.
 ///
@@ -148,14 +151,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   String _rupees(num v) => '₹${v.toStringAsFixed(2).replaceAllMapped(
       RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}';
 
-  Future<Uint8List?> _fetchBytes(String? url) async {
-    if (url == null || url.isEmpty) return null;
-    try {
-      final res = await http.get(Uri.parse(url));
-      if (res.statusCode == 200) return res.bodyBytes;
-    } catch (_) {}
-    return null;
-  }
+  // Handles private-bucket references too (signature, BUG-013).
+  Future<Uint8List?> _fetchBytes(String? url) => fetchFileBytes(url);
 
   /// Same business_profile/logo lookup the Tax Invoice already uses, kept
   /// local here rather than shared to avoid a cross-file dependency for a
@@ -337,7 +334,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     if (sig == null) return;
     final orgId = OrgScope.currentOrgId;
     if (orgId == null) return;
-    final signedAt = (_heldSignatureAt ?? DateTime.now()).toIso8601String();
+    final signedAt =
+        (_heldSignatureAt ?? DateTime.now()).toUtc().toIso8601String();
     final encoded = base64Encode(sig);
     for (final docType in _companionDocTypes) {
       try {
@@ -539,7 +537,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not generate: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not generate: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) {
@@ -814,6 +812,11 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
   static const _lrCopyTypes = ['driver', 'consignor', 'consignee', 'transporter'];
 
+  static String? _nz(dynamic v) {
+    final s = (v ?? '').toString().trim();
+    return s.isEmpty ? null : s;
+  }
+
   Future<void> _genLr() => _run(() async {
         final o = _order;
         if (o == null) return;
@@ -867,7 +870,64 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         } catch (_) {}
 
         final (org, boilerplate, logoBytes) = await _loadOrgProfile();
-        final freight = o.amount ?? 0;
+
+        // BUG-046 (3 Nov 2026): the LR printed blank vehicle/driver, 0
+        // packages and 0 GST on a GST bill, and never linked back to the
+        // order. Fill from what the app already knows: the field job's
+        // trip, the crew's driver and his vehicle in Fleet, the handover's
+        // package count, and the shared money rule.
+        final money = await OrderMoney.load(o);
+        final freight = money.taxable;
+        String? vehicleNo =
+            (o.vehicleNo ?? '').trim().isEmpty ? null : o.vehicleNo;
+        String? driverName =
+            (o.driverName ?? '').trim().isEmpty ? null : o.driverName;
+        var packages = 0;
+        try {
+          // The order's trip (`trips` via `trip_orders` since 3 Nov 2026).
+          final trip = await OrderTrip.load(o.id!);
+          vehicleNo ??= _nz(trip?.vehicleNo);
+          driverName ??= _nz(trip?.driverName);
+          if (driverName == null) {
+            final crew = await SupaFlow.client
+                .from('order_staff')
+                .select('staff_id')
+                .eq('org_id', orgId)
+                .eq('order_id', o.id!);
+            final ids = [for (final r in crew) '${r['staff_id']}'];
+            if (ids.isNotEmpty) {
+              final drivers = await SupaFlow.client
+                  .from('staff')
+                  .select('name')
+                  .eq('org_id', orgId)
+                  .inFilter('id', ids)
+                  .ilike('role', 'driver')
+                  .limit(1);
+              if ((drivers as List).isNotEmpty) {
+                driverName = _nz(drivers.first['name']);
+              }
+            }
+          }
+          if (vehicleNo == null && driverName != null) {
+            final v = await SupaFlow.client
+                .from('vehicles')
+                .select('reg_no')
+                .eq('org_id', orgId)
+                .eq('driver_name', driverName)
+                .limit(1);
+            if ((v as List).isNotEmpty) vehicleNo = _nz(v.first['reg_no']);
+          }
+          final pod = await SupaFlow.client
+              .from('pod_records')
+              .select('packages_delivered')
+              .eq('org_id', orgId)
+              .eq('order_id', o.id!)
+              .limit(1)
+              .maybeSingle();
+          packages = (pod?['packages_delivered'] as num?)?.toInt() ?? 0;
+        } catch (_) {
+          // Best-effort: an LR with a blank field beats no LR.
+        }
 
         final inserted = await SupaFlow.client
             .from('lr_register')
@@ -885,11 +945,14 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               'consignee_phone': o.phone,
               'from_place': o.fromCity,
               'to_place': o.toCity,
-              'vehicle_no': o.vehicleNo,
-              'driver_name': o.driverName,
+              'vehicle_no': vehicleNo,
+              'driver_name': driverName,
+              'package_count': packages,
               'freight_amount': freight,
               'basic_freight': freight,
-              'total_amount': freight,
+              'gst_pct': money.gstPct,
+              'gst_amount': money.gstTotal,
+              'total_amount': money.total,
               'invoice_no': o.invoiceNo,
               'branch': o.branch,
             })
@@ -898,6 +961,21 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
         final lrId = inserted['id'] as String;
         final gstPayableBy = (inserted['gst_payable_by'] as String?) ?? 'consignor';
+        // Link the LR to the order (the journey's LR tile reads lr_id), and
+        // keep the vehicle/driver found above on the order too.
+        try {
+          await SupaFlow.client
+              .from('orders')
+              .update({
+                'lr_id': lrId,
+                if ((o.vehicleNo ?? '').isEmpty && vehicleNo != null)
+                  'vehicle_no': vehicleNo,
+                if ((o.driverName ?? '').isEmpty && driverName != null)
+                  'driver_name': driverName,
+              })
+              .eq('org_id', orgId)
+              .eq('id', o.id!);
+        } catch (_) {}
 
         await _showDocDialog(
             'LR $lrNo', 'LR_${lrNo.replaceAll('/', '-')}.pdf', () async {
@@ -919,18 +997,18 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             consigneePhone: o.phone,
             fromPlace: o.fromCity,
             toPlace: o.toCity,
-            vehicleNo: o.vehicleNo,
-            driverName: o.driverName,
+            vehicleNo: vehicleNo,
+            driverName: driverName,
             description: (inserted['description'] as String?),
-            packageCount: (inserted['package_count'] as int?) ?? 0,
+            packageCount: (inserted['package_count'] as int?) ?? packages,
             actualWeightKg: (inserted['actual_weight_kg'] as num?) ?? 0,
             chargedWeightKg: (inserted['charged_weight_kg'] as num?) ?? 0,
             freightMode: (inserted['freight_mode'] as String?) ?? 'paid',
             freightAmount: freight,
             basicFreight: freight,
-            gstPct: 0,
-            gstAmount: 0,
-            totalAmount: freight,
+            gstPct: money.gstPct,
+            gstAmount: money.gstTotal,
+            totalAmount: money.total,
             invoiceNo: o.invoiceNo,
             gstPayableBy:
                 gstPayableBy[0].toUpperCase() + gstPayableBy.substring(1),
@@ -1274,7 +1352,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not copy UPI: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not copy UPI: ${friendlyError(e)}')));
       }
     }
   }
@@ -1357,7 +1435,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not copy link: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not copy link: ${friendlyError(e)}')));
       }
     }
   }

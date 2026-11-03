@@ -168,7 +168,7 @@ class _SuperAdminPageWidgetState extends State<SuperAdminPageWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not load tenants: $e')));
+            SnackBar(content: Text('Could not load tenants: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _loadingOrgs = false);

@@ -10,6 +10,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/l10n/gen/app_localizations.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Transport › Driver app (Claude Design handoff, screen `drv`): one trip
 /// at a time — start and end odometer, Start / End trip, fuel and toll
 /// entries, and the trip's km and spend.
@@ -150,7 +151,7 @@ class _DriverAppPageState extends State<DriverAppPage> {
       if (ongoing) _toast(l.drvDone);
       await _load();
     } catch (e) {
-      _toast('$e');
+      _toast('${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

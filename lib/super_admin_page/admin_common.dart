@@ -5,6 +5,7 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Shared by the Nagarva Admin sections in this directory: load with a
 /// spinner, say plainly when the section's migration has not run yet,
 /// pull to refresh, and run a write with a toast.
@@ -44,9 +45,9 @@ abstract class AdminSectionState<T extends StatefulWidget> extends State<T> {
       // 42P01 / PGRST205: relation missing; 42883 / PGRST202: function
       // missing. Both mean the migration has not been run.
       missing = const {'42P01', 'PGRST205', '42883', 'PGRST202'}.contains(e.code);
-      error = missing ? null : e.message;
+      error = missing ? null : friendlyError(e);
     } catch (e) {
-      error = '$e';
+      error = '${friendlyError(e)}';
     }
     if (mounted) setState(() => loading = false);
   }
@@ -69,9 +70,9 @@ abstract class AdminSectionState<T extends StatefulWidget> extends State<T> {
     } on PostgrestException catch (e) {
       toast(e.code == 'P0001' || e.code == '42501'
           ? (e.code == '42501' ? 'Your admin role cannot do this.' : e.message)
-          : 'Could not save: ${e.message}');
+          : 'Could not save: ${friendlyError(e)}');
     } catch (e) {
-      toast('Could not save: $e');
+      toast('Could not save: ${friendlyError(e)}');
     }
     return false;
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '/app_session.dart';
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/record_module_page.dart';
@@ -188,6 +189,79 @@ class DieselAdvancePage extends StatefulWidget {
 class _DieselAdvancePageState extends State<DieselAdvancePage> {
   List<RmMap>? _staff;
 
+  /// Bumped after a settle so the list reloads.
+  int _rev = 0;
+
+  /// BUG-050 (3 Nov 2026): advances could be given but never settled —
+  /// the "Settled" filter could never fill and staff cash-out couldn't be
+  /// reconciled. Owner taps an open advance, enters what was spent; the
+  /// rest is what came back.
+  Future<void> _settle(RmMap r, String who) async {
+    final issued = rmNum(r['issued_amount']);
+    final ctrl = TextEditingController(text: issued.toStringAsFixed(0));
+    final spent = await showDialog<double>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) {
+          final s = double.tryParse(ctrl.text.trim());
+          final back = s == null ? null : issued - s;
+          return AlertDialog(
+            title: Text('Settle advance — $who'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Given: ${rmMoney(issued)}'),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  decoration:
+                      const InputDecoration(labelText: 'Actually spent (₹)'),
+                  onChanged: (_) => setD(() {}),
+                ),
+                const SizedBox(height: 8),
+                if (back != null)
+                  Text(back >= 0
+                      ? 'Returned in cash: ${rmMoney(back)}'
+                      : 'Spent ${rmMoney(-back)} more than given — pay it back to them'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel')),
+              TextButton(
+                  onPressed: s == null || s < 0
+                      ? null
+                      : () => Navigator.pop(ctx, s),
+                  child: const Text('Settle')),
+            ],
+          );
+        },
+      ),
+    );
+    if (spent == null) return;
+    try {
+      await OrgScope.write(SupaFlow.client.from('job_expense_floats').update({
+        'status': 'reconciled',
+        'reconciled_amount': spent,
+        'reconciled_at': DateTime.now().toUtc().toIso8601String(),
+        'reconciled_by': SupaFlow.client.auth.currentUser?.id,
+      })).eq('id', '${r['id']}');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Advance settled — spent ${rmMoney(spent)}, '
+              'returned ${rmMoney(issued - spent)}.')));
+      setState(() => _rev++);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not settle. ${friendlyError(e)}')));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -209,7 +283,9 @@ class _DieselAdvancePageState extends State<DieselAdvancePage> {
     }
     final names = {for (final s in staff) '${s['id']}': '${s['name'] ?? ''}'};
     bool open(RmMap r) => r['status'] != 'reconciled';
+    final isOwner = AppSession.instance.currentStaffId == null;
     return RecordModulePage(
+      key: ValueKey('diesel-$_rev'),
       title: 'Diesel advance',
       subtitle: 'Cash given for a job, and what came back',
       // job_expense_floats INSERT is owner-only in RLS (is_org_owner), so
@@ -271,8 +347,11 @@ class _DieselAdvancePageState extends State<DieselAdvancePage> {
               if ('${r['notes'] ?? ''}'.isNotEmpty) '${r['notes']}',
             ].join(' · '),
             amount: rmMoney(r['issued_amount']),
-            status: open(r) ? 'Open' : 'Settled',
+            status: open(r) ? 'Open · tap to settle' : 'Settled',
             statusTone: open(r) ? NgStatus.amber : NgStatus.green,
+            onTap: open(r) && isOwner
+                ? () => _settle(r, names['${r['staff_id']}'] ?? 'Staff')
+                : null,
           ),
           emptyText: 'No advances given.',
         ),
@@ -560,9 +639,9 @@ Widget _awaitingMigration(String title, String subtitle) => RecordModulePage(
         RmView(
           label: title,
           load: () async => const [],
-          note: 'This module needs a database update that has not been run '
-              'yet (supabase/20261021_staff_leave_and_incentives.sql). '
-              'It switches on once that is done.',
+          // Needs supabase/20261021_staff_leave_and_incentives.sql.
+          note: 'This section is not switched on yet. It will open once '
+              'Nagarva enables it for your company.',
           row: (context, r) => const RmRow(title: ''),
           emptyText: 'Nothing to show yet.',
         ),

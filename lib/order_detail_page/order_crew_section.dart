@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '/app_session.dart';
 import '/backend/approval_queue.dart';
 import '/backend/audit_log_service.dart';
+import '/backend/order_money.dart';
 import '/backend/tracking_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -15,6 +16,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 import '/permissions.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Order crew management, embedded in Order Details (owner view).
 ///
 /// Two responsibilities Arun flagged as missing from the order flow:
@@ -147,7 +149,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not assign: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not assign: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -250,7 +252,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not add: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -268,7 +270,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not remove: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not remove: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -325,7 +327,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -646,18 +648,11 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     // computed balance = -paid_total on every directly-booked order — i.e.
     // Close Order would NOT hard-warn about a genuinely outstanding
     // balance, which is the one thing this dialog exists to do.
-    double revenueFinal = (o.quoteTotal ?? 0) != 0
-        ? (o.quoteTotal ?? 0)
-        : (o.amount ?? 0);
-    try {
-      final addonsRows = await OrgScope.read(
-              SupaFlow.client.from('addons').select('amount,status'))
-          .eq('order_id', widget.orderId)
-          .neq('status', 'cancelled');
-      revenueFinal += addonsRows.fold<double>(
-          0, (s, r) => s + (num.tryParse('${r['amount']}') ?? 0));
-    } catch (_) {}
-    final balance = revenueFinal - o.paidTotal;
+    // 3 Nov 2026 (BUG-036): one shared money rule — base + GST only when
+    // billed + extra charges. The old inline add-ons read failed silently
+    // and closed order 1001 with ₹1,400 owed and balance_at_close 0.
+    final money = await OrderMoney.load(o);
+    final balance = money.balance;
     final hasInvoice = (o.invoiceNo ?? '').isNotEmpty;
 
     if (!mounted) return;
@@ -670,6 +665,16 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (money.addonsReadFailed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '⚠ Could not read this order\'s extra charges — the balance below may be incomplete.',
+                  style: TextStyle(
+                      color: NgPalette.of(context).red,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
             if (balance != 0)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -725,7 +730,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
       await OrdersTable().update(
         data: {
           'status': 'closed',
-          'closed_at': closedAt.toIso8601String(),
+          'closed_at': closedAt.toUtc().toIso8601String(),
           'supervisor_status': 'approved',
         },
         matchingRows: (q) => OrgScope.write(q).eq('id', widget.orderId),
@@ -767,7 +772,7 @@ class _OrderCrewSectionState extends State<OrderCrewSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not close order: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not close order: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _markingComplete = false);

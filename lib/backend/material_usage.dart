@@ -113,7 +113,7 @@ class MaterialUsage {
       // the goods have already changed hands. This is money owed, not
       // work outstanding.
       'status': 'completed',
-      'completed_at': DateTime.now().toIso8601String(),
+      'completed_at': DateTime.now().toUtc().toIso8601String(),
     });
 
     return 'Charged to the order: ${_qtyLabel(qty)} x ${material.name} '

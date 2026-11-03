@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '/backend/audit_log_service.dart';
 import '/backend/customer_lookup.dart';
 import '/backend/edge_function_errors.dart';
+import '/backend/order_money.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/upi_payment.dart';
@@ -82,8 +83,11 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
     // trigger sums payment_entries onto it. `- advance_paid` was removed
     // 16 Sept 2026 (see CLAUDE.md) - it was 0 on every live order, so
     // this is the same number today, and one source instead of two.
-    return (o.amount ?? 0) - o.paidTotal;
+    // 3 Nov 2026: shared money rule (GST when billed + extra charges).
+    return _money?.balance ?? (o.amount ?? 0) - o.paidTotal;
   }
+
+  OrderMoney? _money;
 
   @override
   void initState() {
@@ -110,9 +114,12 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
       final rows = await OrdersTable().queryRows(
         queryFn: (q) => OrgScope.read(q).eq('id', widget.orderId),
       );
+      final money =
+          rows.isNotEmpty ? await OrderMoney.load(rows.first) : null;
       if (!mounted) return;
       setState(() {
         _order = rows.isNotEmpty ? rows.first : null;
+        _money = money;
         _notFound = rows.isEmpty;
         _loading = false;
       });
@@ -316,7 +323,7 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save: $e')));
+            .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -355,7 +362,7 @@ class QuickPaymentSectionState extends State<QuickPaymentSection> {
     try {
       payee = await resolveOrgUpiPayee();
     } catch (e) {
-      error = '$e';
+      error = '${friendlyError(e)}';
     }
     if (!mounted) return;
     setState(() => _requesting = false);

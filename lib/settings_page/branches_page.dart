@@ -7,6 +7,7 @@ import '/backend/supabase/database/database.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/load_error_state.dart';
 
+import '/backend/edge_function_errors.dart';
 /// Settings → Branches (27 Aug 2026).
 ///
 /// Exists because a fresh tenant could not create anything at all. New
@@ -102,7 +103,7 @@ class _BranchesPageState extends State<BranchesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = 'Could not load branches: $e';
+        _loadError = 'Could not load branches: ${friendlyError(e)}';
         _loading = false;
       });
     }
@@ -139,7 +140,7 @@ class _BranchesPageState extends State<BranchesPage> {
       await _load();
       _toast('Branch "${result.name}" added.');
     } catch (e) {
-      _toast('Could not add branch: $e', isError: true);
+      _toast('Could not add branch: ${friendlyError(e)}', isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -167,7 +168,7 @@ class _BranchesPageState extends State<BranchesPage> {
           ? 'Renamed to "${result.name}". Signed-in staff must log out and back in.'
           : 'Branch updated.');
     } catch (e) {
-      _toast('Could not update branch: $e', isError: true);
+      _toast('Could not update branch: ${friendlyError(e)}', isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -246,7 +247,7 @@ class _BranchesPageState extends State<BranchesPage> {
           ? '"${branch.name}" restored.'
           : '"${branch.name}" archived.');
     } catch (e) {
-      _toast('Could not update branch: $e', isError: true);
+      _toast('Could not update branch: ${friendlyError(e)}', isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

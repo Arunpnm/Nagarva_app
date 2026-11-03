@@ -19,15 +19,20 @@
 library;
 
 import '/backend/lead_status.dart';
+import '/backend/order_money.dart';
 import '/backend/order_stages.dart';
 import '/backend/reminders_service.dart';
 import '/backend/signature_service.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
 
+/// Lead → Survey → Quote → Order (supervisor … closed) / Cancelled.
+/// Arun, 3 Nov 2026: follow-up is not a stage of its own — it happens
+/// INSIDE the Lead, Survey and Quote stages, each with its own call
+/// history (see [JourneyData.followUpsIn]). Creating a quote moves the
+/// journey to Quote; logging a call never moves it.
 enum JourneyStage {
   lead,
-  followUp,
   survey,
   quote,
   supervisor,
@@ -56,7 +61,24 @@ class JourneyData {
     this.payments = const [],
     this.tickets = const [],
     this.invoiceSignature,
+    this.addonRows = const [],
+    this.podMethod,
   });
+
+  /// How the field job was handed over (pod_records.completion_method):
+  /// 'signature' = the customer signed in person at handover. That counts
+  /// as the customer's signature for closing (BUG-040, 3 Nov 2026) —
+  /// before, only the ONLINE invoice signature did, so a customer who
+  /// never opened the link kept the order open forever.
+  final String? podMethod;
+
+  bool get signedInPerson => podMethod == 'signature';
+  bool get customerSigned =>
+      (invoiceSignature?.isSigned ?? false) || signedInPerson;
+
+  /// Raw `addons` rows of the order (extra charges) — part of what the
+  /// customer owes (BUG-036).
+  final List<dynamic> addonRows;
 
   final LeadsRow? lead;
   final OrdersRow? order;
@@ -87,11 +109,49 @@ class JourneyData {
 
   bool get isLost => canonicalLeadStatus(lead?.status) == kLeadStatusLost;
 
+  /// When the Survey stage began: the first survey row (link sent or
+  /// visit booked). Null when no survey was ever started.
+  DateTime? get surveyStartedAt => survey?.createdAt;
+
+  /// When the Quote stage began: the FIRST quote's creation.
+  DateTime? get quoteStartedAt {
+    DateTime? first;
+    for (final q in quotes) {
+      final t = q.createdAt;
+      if (t != null && (first == null || t.isBefore(first))) first = t;
+    }
+    return first;
+  }
+
+  /// The follow-ups logged while the journey was in [stage], newest first
+  /// — each stage keeps its own history (Arun, 3 Nov 2026). Calls are
+  /// placed by WHEN they were logged against when the survey and the first
+  /// quote began; nothing has to be tagged at write time.
+  List<FollowUpLogsRow> followUpsIn(JourneyStage stage) {
+    final s = surveyStartedAt;
+    final q = quoteStartedAt;
+    JourneyStage stageAt(DateTime? t) {
+      if (t == null) return JourneyStage.lead;
+      if (q != null && !t.isBefore(q)) return JourneyStage.quote;
+      if (s != null && !t.isBefore(s)) return JourneyStage.survey;
+      return JourneyStage.lead;
+    }
+
+    return followUps.where((f) => stageAt(f.loggedAt) == stage).toList()
+      ..sort((a, b) => (b.loggedAt ?? DateTime(0))
+          .compareTo(a.loggedAt ?? DateTime(0)));
+  }
+
   bool get isClosed => (order?.status ?? '').toLowerCase() == 'closed';
 
-  double get orderValue => order?.amount ?? 0;
+  /// Shared money rule (lib/backend/order_money.dart): base + GST only when
+  /// billed + extra charges. Before 3 Nov this was `order.amount - paid`,
+  /// so extras never showed as due (BUG-036).
+  OrderMoney? get money =>
+      order == null ? null : OrderMoney.from(order!, addonRows);
+  double get orderValue => money?.total ?? 0;
   double get paid => order?.paidTotal ?? 0;
-  double get balance => orderValue - paid;
+  double get balance => money?.balance ?? 0;
 
   List<ComplaintsRow> get openTickets => tickets
       .where((t) => t.status.toLowerCase() != 'resolved')
@@ -113,7 +173,7 @@ class JourneyData {
   List<CloseBlocker> get closeBlockers => [
         if (openTickets.isNotEmpty) CloseBlocker.openTicket,
         if (balance > 0) CloseBlocker.balanceDue,
-        if (!(invoiceSignature?.isSigned ?? false)) CloseBlocker.noSignature,
+        if (!customerSigned) CloseBlocker.noSignature,
         if ((order?.invoiceNo ?? '').isEmpty) CloseBlocker.noInvoice,
       ];
 
@@ -121,16 +181,23 @@ class JourneyData {
   bool _evidence(JourneyStage s) {
     switch (s) {
       case JourneyStage.lead:
-        return lead != null;
-      case JourneyStage.followUp:
-        return followUps.isNotEmpty;
+        // The Lead stage (enquiry, requirements, follow-up) is complete
+        // once a survey is under way or a quote exists. A logged call is
+        // NOT evidence of moving on (Arun, 3 Nov 2026).
+        return lead != null &&
+            (survey != null || quotes.isNotEmpty || hasLiveOrder);
       case JourneyStage.survey:
         return (survey?.status ?? '').toLowerCase() == 'submitted';
       case JourneyStage.quote:
         return hasLiveOrder ||
             canonicalLeadStatus(lead?.status) == kLeadStatusConfirmed;
       case JourneyStage.supervisor:
-        return (order?.supervisorId ?? '').isNotEmpty;
+        // A supervisor assigned, OR the field job was run by someone (the
+        // owner) — crew saved / job accepted. Before, an owner-run job
+        // read "No supervisor yet · Skipped" (3 Nov 2026).
+        return (order?.supervisorId ?? '').isNotEmpty ||
+            (order?.supervisorStatus ?? '').isNotEmpty ||
+            crew.isNotEmpty;
       case JourneyStage.moveDay:
         return moveFinished;
       case JourneyStage.invoice:
@@ -149,11 +216,18 @@ class JourneyData {
     final ev = {for (final s in JourneyStage.values) s: _evidence(s)};
     if (isDirect) {
       ev[JourneyStage.lead] = false;
-      ev[JourneyStage.followUp] = false;
       ev[JourneyStage.survey] = false;
     }
-    final lastEvidence = JourneyStage.values
+    var lastEvidence = JourneyStage.values
         .lastWhere((s) => ev[s]!, orElse: () => JourneyStage.lead);
+    // A quote exists → the journey is in Quote (until there is an order),
+    // whether or not a survey was done: creating the quote is the trigger.
+    // Below, stages before `lastEvidence` with no record read "skipped"
+    // (an unsubmitted survey was passed by), and Quote itself — having no
+    // order yet — becomes the current stage.
+    if (quotes.isNotEmpty && lastEvidence.index < JourneyStage.quote.index) {
+      lastEvidence = JourneyStage.quote;
+    }
     final out = <JourneyStage, JourneyState>{};
     var currentSet = false;
     for (final s in JourneyStage.values) {
@@ -265,7 +339,27 @@ class JourneyLoader {
                 OrgScope.read(q).eq('id', order!.supervisorId!)))
       else
         Future.value(null),
+      if (oid != null)
+        _safe<List<dynamic>>(() async => await SupaFlow.client
+            .from('addons')
+            .select('description,amount,status')
+            .eq('order_id', oid)
+            .eq('org_id', OrgScope.currentOrgId ?? ''))
+      else
+        Future.value(null),
+      if (oid != null)
+        _safe<List<dynamic>>(() async => await SupaFlow.client
+            .from('pod_records')
+            .select('completion_method')
+            .eq('order_id', oid)
+            .eq('org_id', OrgScope.currentOrgId ?? ''))
+      else
+        Future.value(null),
     ]);
+    final pods = (results[8] as List<dynamic>?) ?? const [];
+    final podMethods = [
+      for (final p in pods) '${(p as Map)['completion_method'] ?? ''}'
+    ];
 
     final surveys = (results[1] as List<SurveysRow>?) ?? const [];
     final sup = (results[6] as List<StaffRow>?) ?? const [];
@@ -280,6 +374,10 @@ class JourneyLoader {
       tickets: (results[4] as List<ComplaintsRow>?) ?? const [],
       invoiceSignature: results[5] as SignatureRequest?,
       supervisorName: sup.firstOrNull?.name,
+      addonRows: (results[7] as List<dynamic>?) ?? const [],
+      podMethod: podMethods.contains('signature')
+          ? 'signature'
+          : podMethods.firstOrNull,
     );
   }
 
