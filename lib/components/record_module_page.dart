@@ -129,11 +129,17 @@ class RmView {
 class RmAdd {
   const RmAdd({
     required this.title,
-    required this.fields,
-    required this.table,
+    this.fields = const [],
+    this.table = '',
     this.prepare,
     this.saveLabel = 'Save',
+    this.custom,
   });
+
+  /// A module whose "add" is more than a form of plain fields (a file
+  /// upload, say) opens its own sheet here and returns true when it saved
+  /// something, so the list reloads (4 Nov 2026).
+  final Future<bool> Function(BuildContext context)? custom;
 
   final String title;
   final List<RmField> fields;
@@ -214,6 +220,10 @@ class _RecordModulePageState extends State<RecordModulePage> {
 
   Future<void> _openAdd() async {
     final add = widget.add!;
+    if (add.custom != null) {
+      if (await add.custom!(context)) _load();
+      return;
+    }
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,

@@ -75,17 +75,29 @@ class _MoreSheetState extends State<MoreSheet> {
             ? (StaffPermissions.activeStaffPages ??
                 const {'HomePage', 'OrdersPage', 'OperationsPage'})
             : null;
-    final q = _query.text.trim().toLowerCase();
+    // Spaces are ignored, so "P&L" finds "P & L" (4 Nov 2026).
+    String norm(String s) => s.toLowerCase().replaceAll(RegExp(r'\s+'), '');
+    final q = norm(_query.text);
     return navItemsForCurrentSession()
         .where((e) => allowed == null || allowed.contains(e.name))
-        // Matches the English name or the label in the app's language,
-        // so a Tamil user can type either.
+        // Matches the English name, the label in the app's language (so a
+        // Tamil user can type either) or a few plain words for the module.
         .where((e) =>
             q.isEmpty ||
-            e.label.toLowerCase().contains(q) ||
-            localizedNavLabel(context, e).toLowerCase().contains(q))
+            norm(e.label).contains(q) ||
+            norm(localizedNavLabel(context, e)).contains(q) ||
+            (_kSearchWords[e.name] ?? const <String>[])
+                .any((w) => norm(w).contains(q)))
         .toList();
   }
+
+  /// Words people type that are not in the module's label.
+  static const _kSearchWords = <String, List<String>>{
+    'PLReportPage': ['profit', 'loss', 'pnl', 'p&l', 'income'],
+    'AccountsPage': ['cash', 'register', 'ledger', 'balance'],
+    'ExpensePage': ['spend', 'cost', 'bill'],
+    'SalaryPage': ['wages', 'pay', 'advance'],
+  };
 
   void _open(String name) {
     final host = widget.host;

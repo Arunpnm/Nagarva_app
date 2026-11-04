@@ -894,7 +894,10 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           FFRoute(
             name: entry.$1,
             path: entry.$2,
-            builder: (context, params) => ComingSoonPage(title: entry.$3),
+            // My Earnings is real since 4 Nov 2026 (BUG-055).
+            builder: (context, params) => entry.$1 == 'MySalComingSoon'
+                ? const SupervisorEarningsPageWidget()
+                : ComingSoonPage(title: entry.$3),
           ),
         // Session 4, Part B2: real screen — see nav_items.dart/main.dart's
         // matching updates (same "route + _tabs map must both change"

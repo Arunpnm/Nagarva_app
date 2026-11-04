@@ -1,4 +1,5 @@
 import 'fy_numbering_card.dart';
+import 'doc_prefix_card.dart';
 import '/nav_items.dart';
 import '/app_session.dart';
 import '/backend/owner_pin.dart';
@@ -380,7 +381,12 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         if (isOwnerOrManagerSession)
           _row(Icons.event_repeat_outlined, l.ngSetFy,
               sub: l.ngSetFySub,
-              onTap: () => _openSub(l.ngSetFy, (_) => [const FyNumberingCard()])),
+              onTap: () => _openSub(l.ngSetFy, (_) => [
+                    const FyNumberingCard(),
+                    const SizedBox(height: 22),
+                    // Owner can set their own prefixes (BUG-017).
+                    const DocPrefixCard(),
+                  ])),
         // The `whatsapp` function refuses anyone else, so staff don't see it.
         if (isOwnerOrManagerSession) ...[
           _row(Icons.widgets_outlined, l.mdTitle,

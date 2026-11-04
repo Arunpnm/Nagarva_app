@@ -1,11 +1,10 @@
 import '/app_session.dart';
-import '/backend/commission_pricing.dart';
 import '/backend/dashboard_widgets.dart';
-import '/backend/field_expenses.dart';
-import '/backend/storage_billing.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/margin_availability.dart';
+import '/backend/money_book.dart';
+import '/backend/order_money.dart';
 import '/backend/detail_navigation.dart';
 import '/backend/lead_status.dart';
 import '/backend/order_stages.dart';
@@ -56,16 +55,8 @@ class _HomePageWidgetState extends State<HomePageWidget>
   List<ExpensesRow> _allExpenses = [];
   List<OrderStaffRow> _allOrderStaff = [];
 
-  /// Raw `stock_movements` consumption rows (order_id + value), org-scoped.
-  /// Materials are the third place a job's costs are recorded, alongside
-  /// the `expenses` table and orders.field_expenses.
-  List<dynamic> _allConsumption = const [];
-
-  /// Storage stays, org-scoped. Warehouse rent is REVENUE the order earns
-  /// and it lives in neither `orders.amount` nor any quote, so without
-  /// this the dashboard under-reports what the business actually made -
-  /// the mirror of the materials/field-expense gaps on the cost side.
-  List<dynamic> _allStorage = const [];
+  /// Everything MoneyBook needs beyond orders/expenses/crew.
+  MoneyExtras _extras = MoneyExtras();
   // Current-state fields from dashboard_kpis_view that do NOT follow the
   // period filter (see HomePageModel.periodType doc comment).
   double _activeLeads = 0;
@@ -218,35 +209,22 @@ class _HomePageWidgetState extends State<HomePageWidget>
     _allExpenses = results[1].cast<ExpensesRow>();
     _allOrderStaff = results[2].cast<OrderStaffRow>();
 
-    // Material consumed on a job is a cost, and it lives in
-    // stock_movements - not in `expenses`, and not in
-    // orders.field_expenses either. Order Details already charges it
-    // ("Materials (1) - Rs2,700"); the dashboard did not, so the same job
-    // showed one profit on the order and a higher one here. Same shape as
-    // the field-expenses gap fixed earlier the same day - a third place
-    // costs are recorded, and the dashboard knew about only one of them.
-    //
-    // Valued exactly as order_pnl_section values it: abs(value) on rows
-    // with movement_type 'consumption', so the two cannot disagree.
-    try {
-      _allConsumption = await OrgScope.read(SupaFlow.client
-              .from('stock_movements')
-              .select('order_id,value'))
-          .eq('movement_type', 'consumption');
-    } catch (_) {
-      // Never let a stock read blank the dashboard; costs simply stay as
-      // known so far rather than the page failing.
-      _allConsumption = const [];
-    }
-
-    try {
-      _allStorage = await OrgScope.read(SupaFlow.client.from('storage_jobs').select(
-              'order_id,in_date,out_date,billing_mode,rate,min_billing_days,'
-              'handling_in_charge,handling_out_charge'))
-          .isFilter('deleted_at', null);
-    } catch (_) {
-      _allStorage = const [];
-    }
+    // Materials, storage rent, trip/fuel/service/vendor costs and
+    // overtime: every other place money is recorded, loaded once by the
+    // shared MoneyBook so the dashboard, P&L report and daily summary
+    // cannot disagree (BUG-051/052, 4 Nov 2026).
+    _extras = await MoneyExtras.load();
+    // To collect: what customers still owe on live orders, by the same
+    // rule as each order's own balance (value before GST + extra charges +
+    // GST billed − paid). dashboard_kpis_view counted cancelled orders and
+    // left out GST added on top (OBS-2, 4 Nov 2026).
+    _outstandingAmount = _allOrders
+        .where((o) => (o.status ?? '').toLowerCase() != 'cancelled')
+        .fold<double>(0.0, (s, o) {
+      final due =
+          OrderMoney.from(o, _extras.addonsByOrder[o.id] ?? const []).balance;
+      return due > 0 ? s + due : s;
+    });
     _recomputePeriodKpis();
     safeSetState(() {});
     await _loadReminders();
@@ -421,118 +399,34 @@ class _HomePageWidgetState extends State<HomePageWidget>
 
   void _recomputePeriodKpis() {
     final (start, end) = _periodRange();
-    // OrdersRow.moveDate throws (getField<DateTime>('move_date')!) for any
-    // order whose move_date is null in the DB — found while fixing the
-    // Calendar page's identical crash (item 5, NAGARVA_STATUS.md). Guard
-    // here too since this method reads every org order unfiltered.
-    final periodOrders = _allOrders.where((o) {
-      final d = o.getField<DateTime>('move_date');
-      return d != null && _inRange(d, start, end);
-    }).toList();
-    final periodOrderIds = periodOrders.map((o) => o.id).toSet();
-
-    // GROSS is what the customer pays. It is NOT revenue, and it is not
-    // profit: the GST component is collected on the government's behalf and
-    // owed straight back to it, so counting it as earnings overstates both
-    // (Arun, 2 Sep 2026 - "gst wont comes under profit").
-    //
-    // On the live test order that was 37,800 gross carrying 1,800 of GST -
-    // so Revenue read 37.8K and Profit 34.6K when the business had actually
-    // earned 36,000 and made 32,800.
-    //
-    // Orders with no recorded GST (quote_gst_amount null - a direct booking
-    // that never went through a quote) net to their gross, which is correct:
-    // no GST was charged, so none is owed.
-    final grossRevenue = periodOrders.fold(0.0, (s, o) => s + (o.amount ?? 0));
-    final gstCollected =
-        periodOrders.fold(0.0, (s, o) => s + (o.quoteGstAmount ?? 0));
-    // Storage rent earned on the period's orders, priced by the very same
-    // function the order card and the P&L use so all three agree.
-    final storageIncome = _allStorage.fold<double>(0.0, (s, r) {
-      final oid = r['order_id'];
-      if (oid == null || !periodOrderIds.contains(oid)) return s;
-      final inDate = DateTime.tryParse('${r['in_date']}');
-      if (inDate == null) return s;
-      final rawOut = r['out_date'];
-      final rate = (num.tryParse('${r['rate']}') ?? 0).toDouble();
-      return s +
-          computeStorageCharge(
-            inDate: inDate,
-            outDate: rawOut == null ? null : DateTime.tryParse('$rawOut'),
-            mode: storageBillingModeFromWire(r['billing_mode'] as String?),
-            rate: rate,
-            minBillingDays: (num.tryParse('${r['min_billing_days']}') ?? 0)
-                .toInt(),
-            handlingIn:
-                (num.tryParse('${r['handling_in_charge']}') ?? 0).toDouble(),
-            handlingOut:
-                (num.tryParse('${r['handling_out_charge']}') ?? 0).toDouble(),
-            customAmount: rate,
-          ).total;
-    });
-    final revenue = grossRevenue - gstCollected + storageIncome;
-    final labour = periodOrders.fold(
-        0.0,
-        (s, o) =>
-            s +
-            _allOrderStaff
-                .where((os) => os.orderId == o.id)
-                .fold(0.0, (a, os) => a + (os.salaryAmount ?? 0)));
-    // Unlike PLReportPage (which faithfully keeps the reference app's
-    // quirk of never date-filtering non-order-linked expenses), a
-    // period *toggle* on the dashboard should make "other expenses" move
-    // with the selected period too — that's the whole point of the UI.
-    final expensesFromTable = _allExpenses
-        .where((e) => _inRange(
-            e.orderId != null
-                ? (e.expenseDate ?? DateTime.now())
-                : (e.expenseDate ?? e.createdAt ?? DateTime.now()),
-            start,
-            end))
-        .fold(0.0, (s, e) => s + (e.amount ?? 0));
-    // Plus what supervisors logged in the field. These are real costs on
-    // orders.field_expenses (fuel, parking, crane), and the dashboard used
-    // to ignore them entirely: a job could carry Rs2,500 of fuel, show it
-    // on the Order Details P&L, and STILL report "No expenses recorded"
-    // here with margin suppressed as "Needs expense data" (found 2 Sep
-    // 2026, on the very order that had just been delivered). Same period
-    // window as the order itself, since a field expense belongs to its job.
-    final fieldExpenses = periodOrders.fold(
-        0.0, (s, o) => s + sumFieldExpenses(o.data['field_expenses']).$1);
-    // Materials consumed on the period's orders. Scoped by order rather
-    // than by movement date so a job's material cost always sits in the
-    // same period as the job's revenue.
-    final materials = _allConsumption.fold<double>(0.0, (s, r) {
-      final oid = r['order_id'];
-      if (oid == null || !periodOrderIds.contains(oid)) return s;
-      return s + (num.tryParse('${r['value']}') ?? 0).abs().toDouble();
-    });
-    final expenses = expensesFromTable + fieldExpenses + materials;
-    // Commission at each order's own snapshotted rate. Orders with no
-    // rate are EXCLUDED and counted, never costed at a substitute — this
-    // read `?? 16` (APC's porter rate) until 2 Sept 2026, which quietly
-    // put an invented cost into every tenant's dashboard profit.
-    final commissionRollup = _model.porterEnabled
-        ? rollUpCommission(periodOrders, (o) => o.amount ?? 0)
-        : CommissionRollup.empty;
-    final porterCommission = commissionRollup.total;
-    _model.unpricedCommissionCount = commissionRollup.unpricedCount;
+    // One money rule (lib/backend/money_book.dart): revenue before GST
+    // with extra charges and storage rent; labour = crew wages + overtime;
+    // expenses from every place a cost is recorded; commission on each
+    // order's value before GST.
+    final m = MoneyBook.compute(
+      orders: _allOrders,
+      expenses: _allExpenses,
+      orderStaff: _allOrderStaff,
+      extras: _extras,
+      inPeriod: (d) => _inRange(d, start, end),
+      porterEnabled: _model.porterEnabled,
+    );
+    _model.unpricedCommissionCount = m.unpricedCommissionCount;
 
     // Progress against the monthly target uses the same net figure the
     // Revenue tile shows, so the two cannot disagree on screen.
-    _model.periodNetRevenue = revenue;
-    _model.periodGstCollected = gstCollected;
-    _model.periodNetProfit =
-        revenue - labour - expenses - porterCommission;
+    _model.periodNetRevenue = m.revenue;
+    _model.periodGstCollected = m.gst;
+    _model.periodNetProfit = m.profit;
 
     _model.kpiList = [
       DashboardKpisViewRow({
-        'revenue_this_month': revenue,
-        'labour_this_month': labour,
-        'expenses_this_month': expenses,
-        'porter_comm_this_month': porterCommission,
-        'net_profit_this_month': revenue - labour - expenses - porterCommission,
-        'orders_this_month': periodOrderIds.length.toDouble(),
+        'revenue_this_month': m.revenue,
+        'labour_this_month': m.labour,
+        'expenses_this_month': m.expenses,
+        'porter_comm_this_month': m.commission,
+        'net_profit_this_month': m.profit,
+        'orders_this_month': m.orderCount.toDouble(),
         'active_leads': _activeLeads,
         'outstanding_amount': _outstandingAmount,
         'reminders_today': _remindersToday,

@@ -1,4 +1,5 @@
 import '/backend/commission_pricing.dart';
+import '/backend/money_book.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -47,6 +48,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
   List<ExpensesRow> _allExpenses = [];
   List<OrderStaffRow> _allOrderStaff = [];
   List<LeadsRow> _allLeads = [];
+  MoneyExtras _extras = MoneyExtras();
   bool _porterEnabled = false;
   // Was a hardcoded Chennai/Bengaluru/Coimbatore/Hyderabad const (kPLReportBranches,
   // "matching apc_webapp App.jsx's BRANCHES constant") — an APC-shaped
@@ -99,6 +101,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
         BranchesTable().queryRows(
             queryFn: (q) => OrgScope.read(q).eq('active', true)),
       ]);
+      _extras = await MoneyExtras.load();
       _allOrders = results[0].cast<OrdersRow>();
       _allExpenses = results[1].cast<ExpensesRow>();
       _allOrderStaff = results[2].cast<OrderStaffRow>();
@@ -123,80 +126,73 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
   }
 
   void _recompute() {
-    final fo = _allOrders.where((o) {
-      final move = o.moveDateOrNull;
-      return move != null && _inPeriod(move, _model.period);
-    }).toList();
-    final foIds = fo.map((o) => o.id).toSet();
+    // One money rule shared with the dashboard and Accounts
+    // (lib/backend/money_book.dart). This page used to take `amount`
+    // with GST inside it as revenue, ignore extra charges, trip, fuel,
+    // service and vendor costs, and never date-filter other expenses —
+    // so it showed a third profit for the same month (BUG-052).
+    final m = MoneyBook.compute(
+      orders: _allOrders,
+      expenses: _allExpenses,
+      orderStaff: _allOrderStaff,
+      extras: _extras,
+      inPeriod: (d) => _inPeriod(d, _model.period),
+      porterEnabled: _porterEnabled,
+    );
+    const orderLinked = {'Order expenses', 'Field expenses', 'Materials'};
+    double sumKinds(bool linked) => m.expensesByKind.entries
+        .where((e) => orderLinked.contains(e.key) == linked)
+        .fold(0.0, (s, e) => s + e.value);
 
-    final revenue = fo.fold(0.0, (s, o) => s + (o.amount ?? 0));
-    final labour = fo.fold(
-        0.0,
-        (s, o) =>
-            s +
-            _allOrderStaff
-                .where((os) => os.orderId == o.id)
-                .fold(0.0, (a, os) => a + (os.salaryAmount ?? 0)));
-    final orderExpenses = _allExpenses
-        .where((e) => e.orderId != null && foIds.contains(e.orderId))
-        .fold(0.0, (s, e) => s + (e.amount ?? 0));
-    // Faithful to the reference app: otherExp is NOT period-filtered there
-    // (`expenses.filter(e=>!e.order_id)`, no date check) — same here.
-    final otherExpenses = _allExpenses
-        .where((e) => e.orderId == null)
-        .fold(0.0, (s, e) => s + (e.amount ?? 0));
-    // Commission at each order's own snapshotted rate, with unpriced
-    // orders excluded and counted rather than costed at a substitute.
-    // Read `?? 16` (APC's porter rate) until 2 Sept 2026 — see
-    // /backend/commission_pricing.dart.
-    final commissionRollup = rollUpCommission(fo, (o) => o.amount ?? 0);
-    final porterCommission = commissionRollup.total;
-
-    _model.revenue = revenue;
+    _model.revenue = m.revenue;
+    _model.gstCollected = m.gst;
     // Drives marginIsShowable: "no expenses" is only a contradiction
     // when work actually happened in the period.
-    _model.orderCount = fo.length;
-    _model.labour = labour;
-    _model.orderExpenses = orderExpenses;
-    _model.otherExpenses = otherExpenses;
-    _model.porterCommission = _porterEnabled ? porterCommission : 0.0;
-    _model.unpricedCommissionCount =
-        _porterEnabled ? commissionRollup.unpricedCount : 0;
+    _model.orderCount = m.orderCount;
+    _model.labour = m.labour;
+    _model.orderExpenses = sumKinds(true);
+    _model.otherExpenses = sumKinds(false);
+    _model.expensesByKind = m.expensesByKind;
+    _model.porterCommission = m.commission;
+    _model.unpricedCommissionCount = m.unpricedCommissionCount;
 
     _model.branchPL = _branchNames.map((branch) {
-      final branchOrders = fo.where((o) => o.branch == branch).toList();
-      final branchIds = branchOrders.map((o) => o.id).toSet();
-      final rev = branchOrders.fold(0.0, (s, o) => s + (o.amount ?? 0));
-      final lab = branchOrders.fold(
-          0.0,
-          (s, o) =>
-              s +
-              _allOrderStaff
-                  .where((os) => os.orderId == o.id)
-                  .fold(0.0, (a, os) => a + (os.salaryAmount ?? 0)));
-      final exp = _allExpenses
-          .where((e) => e.orderId != null && branchIds.contains(e.orderId))
-          .fold(0.0, (s, e) => s + (e.amount ?? 0));
+      final b = MoneyBook.compute(
+        orders: _allOrders,
+        expenses: _allExpenses,
+        orderStaff: _allOrderStaff,
+        extras: _extras,
+        inPeriod: (d) => _inPeriod(d, _model.period),
+        porterEnabled: _porterEnabled,
+        branch: branch,
+      );
       return BranchPL(
           branch: branch,
-          revenue: rev,
-          labour: lab,
-          expenses: exp,
-          profit: rev - lab - exp);
+          revenue: b.revenue,
+          labour: b.labour,
+          expenses: b.expenses + b.commission,
+          profit: b.profit);
     }).toList();
 
     final fl = _allLeads
         .where((l) => _inPeriod(l.createdAt ?? DateTime.now(), _model.period))
         .toList();
-    _model.leadSources = kPLReportSources
-        .map((src) {
-          final leadsForSrc = fl.where((l) => l.source == src).toList();
-          final converted =
-              leadsForSrc.where((l) => l.status == 'confirmed').length;
-          return LeadSourceStat(
-              source: src, total: leadsForSrc.length, converted: converted);
-        })
-        .where((s) => s.total > 0)
+    // Grouped by the source each lead actually carries. This matched a
+    // hardcoded list of lowercase keys ('phone', 'justdial'...) while
+    // leads store the label the vendor picked ('Phone Call', 'JustDial'),
+    // so every month read "No leads" (BUG-052).
+    final bySource = <String, List<LeadsRow>>{};
+    for (final l in fl) {
+      final src = (l.source ?? '').trim();
+      (bySource[src.isEmpty ? 'Not recorded' : src] ??= []).add(l);
+    }
+    _model.leadSources = bySource.entries
+        .map((e) => LeadSourceStat(
+            source: e.key,
+            total: e.value.length,
+            converted: e.value
+                .where((l) => (l.status ?? '').toLowerCase() == 'confirmed')
+                .length))
         .toList()
       ..sort((a, b) => b.total.compareTo(a.total));
   }
@@ -303,7 +299,7 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
                           for (final s in _model.leadSources)
                             _leadSourceRow(context, s),
                         ]),
-                      section('GST summary (5%, approx.)'),
+                      section('GST charged to customers'),
                       _gstSummary(context),
                     ],
                   ),
@@ -399,8 +395,8 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
     final c = NgPalette.of(context);
     final rows = [
       ('Labour', _model.labour),
-      ('Order expenses', _model.orderExpenses),
-      ('Other expenses', _model.otherExpenses),
+      // Every place a cost is recorded, by kind (MoneyBook).
+      for (final e in _model.expensesByKind.entries) (e.key, e.value),
       if (_model.porterCommission > 0) ('Commission', _model.porterCommission),
     ];
     return NgCardList(children: [
@@ -506,9 +502,12 @@ class _PLReportPageWidgetState extends State<PLReportPageWidget>
     return NgCard(
       child: Column(
         children: [
-          _gstRow(context, 'Taxable value', _model.gstTaxable),
-          _gstRow(context, 'CGST (2.5%)', _model.gstHalf),
-          _gstRow(context, 'SGST (2.5%)', _model.gstHalf),
+          // From the GST actually added to each order, not a flat 5% of
+          // revenue (which also charged GST to non-GST jobs). Owed to the
+          // government, so it is never part of revenue or profit.
+          _gstRow(context, 'Revenue before GST', _model.revenue),
+          _gstRow(context, 'CGST (half)', _model.gstHalf),
+          _gstRow(context, 'SGST (half)', _model.gstHalf),
           Divider(color: c.w06, height: 16),
           _gstRow(context, 'Total GST', _model.gstTotal, bold: true),
         ],

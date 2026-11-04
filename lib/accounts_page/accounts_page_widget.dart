@@ -1,4 +1,5 @@
 import '/backend/commission_pricing.dart';
+import '/backend/money_book.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/order_money.dart';
 import '/backend/supabase/supabase.dart';
@@ -94,12 +95,19 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
         SettingsTable().queryRows(
           queryFn: (q) => OrgScope.read(q).eq('key', _openingBalanceKey),
         ),
+        SettingsTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).eq('key', 'porter_enabled'),
+        ),
       ]);
+      final porterRows = results[4].cast<SettingsRow>();
+      _porterEnabled = porterRows.isNotEmpty &&
+          (porterRows.first.value ?? '').toLowerCase() == 'true';
+      // 4 Nov 2026 (BUG-051/052): every other place money is recorded,
+      // for the shared MoneyBook the dashboard and P&L report also use.
+      _extras = await MoneyExtras.load();
       final orders = results[0].cast<OrdersRow>();
       final expenses = results[1].cast<ExpensesRow>();
       final orderStaff = results[2].cast<OrderStaffRow>();
-      // 3 Nov 2026: extra charges per order, for the shared money rule.
-      _addonsByOrder = await OrderMoney.addonsByOrder();
       final settingsRows = results[3].cast<SettingsRow>();
 
       _model.openingBalance = settingsRows.isNotEmpty
@@ -115,8 +123,9 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
     safeSetState(() {});
   }
 
-  /// Extra charges per order (3 Nov 2026, shared money rule).
-  Map<String, List<dynamic>> _addonsByOrder = const {};
+  /// Everything MoneyBook needs beyond orders/expenses/crew.
+  MoneyExtras _extras = MoneyExtras();
+  bool _porterEnabled = false;
 
   /// Mirrors apc_webapp App.jsx AccountsPage's `dailyRows` computation
   /// (lines ~8568-8610) — see accounts_page_model.dart's DailyAccountRow
@@ -126,140 +135,103 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
     List<ExpensesRow> expenses,
     List<OrderStaffRow> orderStaff,
   ) {
+    DateTime day(DateTime d) {
+      final l = d.toLocal();
+      return DateTime(l.year, l.month, l.day);
+    }
+
     final byDate = <DateTime, List<OrdersRow>>{};
     for (final o in orders) {
+      if ((o.status ?? '').toLowerCase() == 'cancelled') continue;
       final move = o.moveDateOrNull;
       if (move == null) continue;
-      final d = DateTime(move.year, move.month, move.day);
-      byDate.putIfAbsent(d, () => []).add(o);
+      byDate.putIfAbsent(day(move), () => []).add(o);
+    }
+    // A day with only office costs (rent, fuel, a vendor bill) is still a
+    // row: its costs belong in the running balance (4 Nov 2026). Before,
+    // only days with a move appeared and those costs vanished here while
+    // the P&L report counted them.
+    final days = <DateTime>{...byDate.keys};
+    for (final e in expenses) {
+      if (e.orderId != null) continue;
+      final d = DateTime.tryParse(e.date ?? '') ?? e.expenseDate ?? e.createdAt;
+      if (d != null) days.add(day(d));
+    }
+    for (final c in _extras.otherCosts) {
+      if (c.date != null) days.add(day(c.date!));
+    }
+    for (final r in _extras.incentives) {
+      final d = DateTime.tryParse('${r['entry_date']}');
+      if (d != null) days.add(day(d));
     }
 
     final rows = <DailyAccountRow>[];
-    for (final entry in byDate.entries) {
-      final date = entry.key;
-      final dayOrders = entry.value;
-      final dayOrderIds = dayOrders.map((o) => o.id).toSet();
+    for (final date in days) {
+      final dayOrders = byDate[date] ?? const <OrdersRow>[];
+      // Revenue, labour, costs and commission: the shared MoneyBook, so
+      // this register, the dashboard and the P&L report agree.
+      final m = MoneyBook.compute(
+        orders: orders,
+        expenses: expenses,
+        orderStaff: orderStaff,
+        extras: _extras,
+        inPeriod: (d) => day(d) == date,
+        porterEnabled: _porterEnabled,
+      );
+      const orderLinked = {'Order expenses', 'Field expenses', 'Materials'};
+      double kinds(bool linked) => m.expensesByKind.entries
+          .where((e) => orderLinked.contains(e.key) == linked)
+          .fold(0.0, (s, e) => s + e.value);
 
-      double revenue = 0, quote = 0, collections = 0, advance = 0;
-      double overCollected = 0, pending = 0, salary = 0, porterCommission = 0;
-      final unpricedCommission = <String>[];
-
+      // Cash columns: what the customer owes includes GST billed; only
+      // revenue is before GST.
+      double quote = 0, collections = 0, advance = 0;
+      double overCollected = 0, pending = 0;
+      final unpriced = <String>[];
       for (final o in dayOrders) {
-        // GST IS NOT REVENUE. (Arun's standing rule, 2 Sept 2026.)
-        //
-        // This register read `orders.amount`, the GST-INCLUSIVE total, so
-        // the same Coimbatore order showed Rs35,990 here, Rs37,640 on the
-        // order P&L and Rs37.6K on the dashboard - three screens, three
-        // revenue figures for one job. GST collected is held for the
-        // government and remitted; counting it inflates revenue, profit
-        // and the running cash balance together.
-        //
-        // Same basis as OrderPnlSection._revenueBase: prefer the stored
-        // GST-exclusive subtotal, else total minus the tax, so rows
-        // written before subtotal was stored still exclude it. An order
-        // with no GST is unchanged.
-        //
-        // 3 Nov 2026 (BUG-051/044, Arun's rule of 2 Nov): one shared rule.
-        // Revenue = ex-GST base + extra charges; gross (what the customer
-        // owes) = that + GST only when billed. A direct order with GST on
-        // top no longer has the GST carved out of its amount.
         final money =
-            OrderMoney.from(o, _addonsByOrder[o.id] ?? const []);
+            OrderMoney.from(o, _extras.addonsByOrder[o.id] ?? const []);
         final gross = money.total;
-        final amount = money.taxable;
-        // orderQuote(o) in the reference app: amount minus extra charges.
-        // extra_charges isn't modeled as a column here yet, so quote ==
-        // amount until that field is ported (tracked separately).
-        // Follows revenue's tax-exclusive basis, so the Extra column
-        // (revenue - quote) stays 0 rather than becoming the GST.
-        final orderQuote = amount;
-        // Money in, from the ONE source that holds it: payment_entries,
-        // summed onto orders.paid_total by the sync_order_paid_total
-        // trigger.
-        //
-        // This read `orders.advance_paid` until 16 Sept 2026. That column
-        // was 0 on all 8 live orders while paid_total was non-zero on one,
-        // so every cash column below - Collected, Advance, Pending,
-        // Over-collected - was computed from a figure nothing writes:
-        // the one genuinely paid order reported Rs0 collected and its full
-        // gross still pending, on a register an owner reads to decide who
-        // to chase. Not an error state; a wrong number that looks like a
-        // right one. See CLAUDE.md, "orders.advance_paid - SETTLED
-        // 11 Sept 2026: REPLACE, NOT REVIVE".
+        quote += money.taxable;
         final received = o.paidTotal;
-        // Collections are cash actually received, which includes the GST
-        // the customer paid - so this stays on the GROSS figure. Only
-        // revenue excludes tax; the money in the drawer does not.
-        final bookingAdvance =
-            gross; // no dedicated booking_advance column yet
-
-        revenue += amount;
-        quote += orderQuote;
         collections += received;
-        advance += [bookingAdvance, received]
+        advance += [gross, received]
             .reduce((a, b) => a < b ? a : b)
             .clamp(0, double.infinity);
-        // Both compare against GROSS, not the ex-GST figure. What the
-        // customer still owes, and any over-payment, are cash positions -
-        // the customer pays the tax too. Only `revenue` and `quote` are
-        // tax-exclusive; every cash column on this register is gross, or
-        // Pending would understate the bill by the GST on it.
         overCollected += (received - gross).clamp(0, double.infinity);
         pending += (gross - received).clamp(0, double.infinity);
-
-        salary += orderStaff
-            .where((os) => os.orderId == o.id)
-            .fold(0.0, (s, os) => s + (os.salaryAmount ?? 0));
-
-        // Commission is the rate SNAPSHOTTED on the order at order time
-        // (`orders.commission_pct`, from the lead source it came from).
-        // This used to read `?? 16` — APC's own porter rate — so an order
-        // nobody had priced silently carried a cost into this register
-        // and into the day's profit/loss. A day that contains an unpriced
-        // order now reports commission as a floor and says so; see
-        // /backend/commission_pricing.dart.
-        // Commission on the move (base), not on extras' GST or storage.
-        final comm = commissionAmount(order: o, revenueBase: money.base);
-        if (comm == null) {
-          unpricedCommission.add(o.id ?? '—');
-        } else {
-          porterCommission += comm;
+        if (_porterEnabled &&
+            commissionAmount(order: o, revenueBase: money.base) == null) {
+          unpriced.add(o.id ?? '—');
         }
       }
-
-      final orderExpenses = expenses
-          .where((e) => e.orderId != null && dayOrderIds.contains(e.orderId))
-          .fold(0.0, (s, e) => s + (e.amount ?? 0));
-      final otherExpenses = expenses
-          .where((e) =>
-              e.orderId == null &&
-              e.expenseDate != null &&
-              _sameDay(e.expenseDate!, date))
-          .fold(0.0, (s, e) => s + (e.amount ?? 0));
 
       rows.add(DailyAccountRow(
         date: date,
         dayOrders: dayOrders,
-        revenue: revenue,
+        revenue: m.revenue,
         quote: quote,
         collections: collections,
         advance: advance,
         overCollected: overCollected,
         pending: pending,
-        salary: salary,
-        orderExpenses: orderExpenses,
-        otherExpenses: otherExpenses,
-        porterCommission: porterCommission,
-        unpricedCommissionOrderIds: unpricedCommission,
+        salary: m.labour,
+        orderExpenses: kinds(true),
+        otherExpenses: kinds(false),
+        porterCommission: m.commission,
+        unpricedCommissionOrderIds: unpriced,
       ));
     }
 
     // Running balance walks chronologically (oldest -> newest) from the
-    // opening balance, matching the reference app's `balance += profitLoss`.
+    // opening balance by cash actually received minus spent. The reference
+    // app adds profitLoss, which counts unpaid revenue as cash; this tile is
+    // labelled "Cash now" next to Money in / Money out, so it must equal
+    // opening + in - out (4 Nov 2026).
     rows.sort((a, b) => a.date.compareTo(b.date));
     var running = _model.openingBalance;
     for (final r in rows) {
-      running += r.profitLoss;
+      running += r.cashFlow;
       r.runningBalance = running;
     }
 
@@ -316,7 +288,7 @@ class _AccountsPageWidgetState extends State<AccountsPageWidget>
     var running = result;
     final chronological = _model.dailyRows.reversed.toList();
     for (final r in chronological) {
-      running += r.profitLoss;
+      running += r.cashFlow;
       r.runningBalance = running;
     }
     _model.dailyRows = chronological.reversed.toList();

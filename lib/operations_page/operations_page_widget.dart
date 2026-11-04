@@ -14,6 +14,7 @@ import '/backend/module_navigation.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
 import '/l10n/gen/app_localizations.dart';
+import '/backend/order_money.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'operations_page_model.dart';
@@ -164,10 +165,11 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     // dialog. If those two formulas are ever reconciled, reconcile this
     // with _markComplete, not with QuickPaymentSection.
     final addonTotals = <String, double>{};
+    final addonRowsByOrder = <String, List<dynamic>>{};
     if (orderIds.isNotEmpty) {
       try {
         final addonRows = await OrgScope.read(
-                SupaFlow.client.from('addons').select('order_id,amount,status'))
+                SupaFlow.client.from('addons').select('order_id,description,amount,status'))
             .inFilter('order_id', orderIds)
             .neq('status', 'cancelled');
         for (final r in addonRows) {
@@ -175,6 +177,7 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
           if (oid == null) continue;
           addonTotals[oid] =
               (addonTotals[oid] ?? 0) + (num.tryParse('${r['amount']}') ?? 0);
+          (addonRowsByOrder[oid] ??= []).add(r);
         }
       } catch (_) {}
     }
@@ -229,10 +232,11 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
       // must stay identical to _markComplete's own calculation, or this
       // queue would show ₹0 due on exactly the orders Close Order is
       // about to warn on. See order_pnl_section._revenueBase.
-      final base =
-          (o.quoteTotal ?? 0) != 0 ? (o.quoteTotal ?? 0) : (o.amount ?? 0);
-      final revenueFinal = base + (addonTotals[o.id!] ?? 0);
-      _awaitingBalances[o.id!] = revenueFinal - o.paidTotal;
+      // The shared money rule (OrderMoney): value before GST + extra
+      // charges + GST on both, minus paid — what the invoice, journey and
+      // Close Order (_markComplete) all use since 3 Nov 2026.
+      _awaitingBalances[o.id!] =
+          OrderMoney.from(o, addonRowsByOrder[o.id!] ?? const []).balance;
     }
 
     final supIds =

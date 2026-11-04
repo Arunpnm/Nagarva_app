@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '/app_session.dart';
 import '/backend/edge_function_errors.dart';
+import '/backend/fy_numbering.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/record_module_page.dart';
@@ -9,6 +10,7 @@ import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
+import 'staff_document_upload.dart';
 
 String _human(dynamic s) => '${s ?? ''}'
     .replaceAll('_', ' ')
@@ -28,9 +30,77 @@ class BusinessAccountsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _WithRows(
+      // Any customer can hold a contract; business ones are listed first.
+      load: () => _rows(OrgScope.read(SupaFlow.client
+              .from('customers')
+              .select('id, name, company_name, gstin, customer_type'))
+          .isFilter('deleted_at', null)
+          .order('name', ascending: true)),
+      builder: (customers) => _page(context, customers),
+    );
+  }
+
+  Widget _page(BuildContext context, List<RmMap> customers) {
+    bool isBusiness(RmMap c) =>
+        '${c['gstin'] ?? ''}'.isNotEmpty ||
+        (c['customer_type'] != null && c['customer_type'] != 'individual');
+    final sorted = [
+      ...customers.where(isBusiness),
+      ...customers.where((c) => !isBusiness(c)),
+    ];
     return RecordModulePage(
       title: 'Business accounts',
       subtitle: 'Companies you bill on credit',
+      // Contracts could be listed but never added (BUG-026, 4 Nov 2026).
+      // The number comes from the org's own contract series.
+      add: RmAdd(
+        title: 'New contract',
+        table: 'contracts',
+        saveLabel: 'Save contract',
+        fields: [
+          RmField('customer_id', 'Customer',
+              kind: RmKind.choice,
+              required: true,
+              options: [for (final c in sorted) '${c['id']}'],
+              optionLabels: [
+                for (final c in sorted) '${c['company_name'] ?? c['name'] ?? ''}'
+              ]),
+          const RmField('title', 'Contract title', required: true),
+          const RmField('contract_type', 'Type',
+              kind: RmKind.choice,
+              options: ['rate_contract', 'annual', 'project', 'other'],
+              optionLabels: ['Rate contract', 'Annual', 'One project', 'Other']),
+          const RmField('start_date', 'Starts', kind: RmKind.date, required: true),
+          const RmField('end_date', 'Ends', kind: RmKind.date, required: true),
+          const RmField('contract_value', 'Contract value ₹', kind: RmKind.number),
+          const RmField('billing_cycle', 'Billing',
+              kind: RmKind.choice,
+              options: ['per_job', 'weekly', 'monthly', 'quarterly'],
+              optionLabels: ['Per job', 'Weekly', 'Monthly', 'Quarterly']),
+          const RmField('credit_days', 'Credit days', kind: RmKind.number),
+          const RmField('notes', 'Notes'),
+        ],
+        prepare: (v) async {
+          final f = DateTime.parse('${v['start_date']}');
+          final t = DateTime.parse('${v['end_date']}');
+          if (t.isBefore(f)) throw '"Ends" is before "Starts".';
+          final out = <String, dynamic>{...v, 'status': 'active'};
+          if (v['credit_days'] != null) {
+            out['credit_days'] = rmNum(v['credit_days']).round();
+          }
+          final no = await allocateWithRollover(
+              context,
+              () async => await SupaFlow.client.rpc('next_doc_number', params: {
+                    'p_org': AppSession.instance.currentOrgId,
+                    'p_doc_type': 'contract',
+                    'p_branch': null,
+                    'p_fy': rmCurrentFy(),
+                  }));
+          if (no != null) out['contract_no'] = '$no';
+          return out;
+        },
+      ),
       views: [
         RmView(
           label: 'Accounts',
@@ -267,7 +337,7 @@ class _DieselAdvancePageState extends State<DieselAdvancePage> {
     super.initState();
     _rows(OrgScope.read(SupaFlow.client.from('staff').select('id, name, role'))
             .eq('active', true)
-            .order('name'))
+            .order('name', ascending: true))
         .then((s) => mounted ? setState(() => _staff = s) : null)
         .catchError((_) => mounted ? setState(() => _staff = const []) : null);
   }
@@ -430,7 +500,7 @@ class HiredTrucksPage extends StatelessWidget {
 }
 
 /// Staff documents (handoff People): files attached to staff records,
-/// from `documents`. Uploading happens from the staff member's record.
+/// from `documents`, uploaded with + (private storage).
 class StaffDocumentsPage extends StatelessWidget {
   const StaffDocumentsPage({super.key});
 
@@ -455,6 +525,11 @@ class StaffDocumentsPage extends StatelessWidget {
     return RecordModulePage(
       title: 'Staff documents',
       subtitle: 'ID, licence and joining papers',
+      // Uploading was impossible anywhere in the app (BUG-026, 4 Nov 2026).
+      add: const RmAdd(
+        title: 'Upload staff document',
+        custom: showStaffDocumentUpload,
+      ),
       views: [
         RmView(
           label: 'Documents',
@@ -479,8 +554,9 @@ class StaffDocumentsPage extends StatelessWidget {
               '${r['file_name'] ?? ''}',
               rmDate(r['created_at']),
             ].where((x) => x.isNotEmpty).join(' · '),
+            onTap: () => openStaffDocument(context, r),
           ),
-          emptyText: 'No staff documents uploaded.',
+          emptyText: 'No staff documents yet. Tap + to upload one.',
         ),
       ],
     );
@@ -597,6 +673,41 @@ class BackupPage extends StatelessWidget {
 }
 
 /// Shared staff loader for the two People modules below.
+/// Loads rows once, then builds (a form's choice list, say).
+class _WithRows extends StatefulWidget {
+  const _WithRows({required this.load, required this.builder});
+  final Future<List<RmMap>> Function() load;
+  final Widget Function(List<RmMap> rows) builder;
+
+  @override
+  State<_WithRows> createState() => _WithRowsState();
+}
+
+class _WithRowsState extends State<_WithRows> {
+  List<RmMap>? _r;
+
+  @override
+  void initState() {
+    super.initState();
+    widget
+        .load()
+        .then((r) => mounted ? setState(() => _r = r) : null)
+        .catchError((_) => mounted ? setState(() => _r = const []) : null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = _r;
+    if (r == null) {
+      return Scaffold(
+        backgroundColor: NgPalette.of(context).bg,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    return widget.builder(r);
+  }
+}
+
 class _WithStaff extends StatefulWidget {
   const _WithStaff({required this.builder});
   final Widget Function(List<RmMap> staff) builder;
@@ -613,7 +724,7 @@ class _WithStaffState extends State<_WithStaff> {
     super.initState();
     _rows(OrgScope.read(SupaFlow.client.from('staff').select('id, name, role'))
             .eq('active', true)
-            .order('name'))
+            .order('name', ascending: true))
         .then((s) => mounted ? setState(() => _s = s) : null)
         .catchError((_) => mounted ? setState(() => _s = const []) : null);
   }

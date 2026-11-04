@@ -56,13 +56,66 @@ class DailySummaryPage extends StatelessWidget {
     for (final r in results[3] as List) {
       out.add({...Map<String, dynamic>.from(r as Map), '_k': 'lead'});
     }
+    // Money spent today outside the expenses table — the same places the
+    // P&L counts (lib/backend/money_book.dart). "Spent" used to miss trip
+    // expenses, fuel and servicing entirely (BUG-049). Each read is
+    // separate so one failing table never blanks the day.
+    Future<List<dynamic>> extra(String table, String cols, String dateCol,
+        [bool notFromExpense = false]) async {
+      try {
+        var q = OrgScope.read(SupaFlow.client.from(table).select(cols))
+            .eq(dateCol, today);
+        if (notFromExpense) q = q.isFilter('expense_id', null);
+        return await q;
+      } catch (_) {
+        return const [];
+      }
+    }
+
+    final extras = await Future.wait([
+      extra('trip_expenses', 'id, amount, expense_type, note', 'expense_date'),
+      extra('fuel_fills', 'id, amount, order_id, litres', 'fill_date', true),
+      extra('vehicle_service_logs', 'id, total_cost, service_type',
+          'service_date'),
+    ]);
+    for (final r in extras[0]) {
+      out.add({
+        'id': r['id'],
+        'amount': r['amount'],
+        'category': 'Trip · ${r['expense_type'] ?? 'expense'}',
+        'description': r['note'] ?? '',
+        '_k': 'out',
+      });
+    }
+    for (final r in extras[1]) {
+      out.add({
+        'id': r['id'],
+        'amount': r['amount'],
+        'category': 'Fuel',
+        'description': r['litres'] == null ? '' : '${r['litres']} L',
+        'order_id': r['order_id'],
+        '_k': 'out',
+      });
+    }
+    for (final r in extras[2]) {
+      out.add({
+        'id': r['id'],
+        'amount': r['total_cost'],
+        'category': 'Vehicle service',
+        'description': r['service_type'] ?? '',
+        '_k': 'out',
+      });
+    }
     return out;
   }
 
   @override
   Widget build(BuildContext context) {
+    // A Porter advance is money Porter holds, not cash the vendor
+    // received today, so it is listed but not counted as Collected
+    // (BUG-049).
     double sum(List<RmMap> rows, String k) => rows
-        .where((r) => r['_k'] == k)
+        .where((r) => r['_k'] == k && '${r['mode'] ?? ''}' != 'porter')
         .fold<double>(0, (s, r) => s + rmNum(r['amount']));
     return RecordModulePage(
       title: 'Daily summary',
@@ -101,7 +154,7 @@ class DailySummaryPage extends StatelessWidget {
               'in' => RmRow(
                   icon: Icons.south_west_rounded,
                   tone: NgStatus.green,
-                  title: 'Received · ${r['order_id'] ?? ''}',
+                  title: '${r['mode'] == 'porter' ? 'Porter advance (not cash)' : 'Received'} · ${r['order_id'] ?? ''}',
                   subtitle: [
                     '${r['mode'] ?? ''}'.toUpperCase(),
                     if (r['receipt_no'] != null) '${r['receipt_no']}',
