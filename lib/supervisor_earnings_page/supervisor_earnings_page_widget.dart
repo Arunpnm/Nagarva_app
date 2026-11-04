@@ -9,10 +9,20 @@ import '/flutter_flow/ng_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-/// Session 2 Part C — My Earnings (`sup-sal`). This supervisor's own
-/// `order_staff` rows (their per-job salary_amount, same table Order
-/// Details' P&L card and Team & Salary section read), grouped by month,
-/// plus their `staff_advances` balance.
+/// My Earnings (`sup-sal`) — for EVERY staff session since 4 Nov 2026
+/// (supervisor, driver, helper, packer; BUG-055 — field staff had a
+/// "coming soon" page and could not see their own pay).
+///
+/// Same money rule as the owner's Salary ledger (staff_ledger_sheet.dart),
+/// so the two can never disagree:
+///   earned this month  = job wages on orders moving this month
+///                        + overtime & incentives dated this month
+///   paid this month    = salary_payments this month (incl. advance
+///                        recovered from salary)
+///   balance to be paid = earned − paid
+///   advance            = pending staff_advances (all time)
+/// Before this the balance was ALL-TIME wages minus advances, ignoring
+/// every salary already paid.
 class SupervisorEarningsPageWidget extends StatefulWidget {
   const SupervisorEarningsPageWidget({super.key});
 
@@ -36,6 +46,12 @@ class _SupervisorEarningsPageWidgetState
   /// Pending advances: (date, amount, note).
   List<({String date, double amount, String note})> _advances = const [];
 
+  /// This month's overtime & incentives: (date, kind, amount).
+  List<({String date, String kind, double amount})> _incentives = const [];
+
+  /// Salary paid this month (incl. advance recovered from salary).
+  double _paidThisMonth = 0;
+
   @override
   void initState() {
     super.initState();
@@ -52,15 +68,23 @@ class _SupervisorEarningsPageWidgetState
       final orgId = OrgScope.currentOrgId!;
       final rows = await SupaFlow.client
           .from('order_staff')
-          .select('salary_amount,order_id,orders!inner(move_date)')
+          // A LEFT join (4 Nov 2026): with `!inner` a wage vanished whenever
+          // this person could not read the order itself — e.g. an order with
+          // no branch is hidden from every staff session by branch_isolation,
+          // so a helper's ₹600 for a job he worked simply disappeared. The
+          // wage row is his; the order's date is only for grouping.
+          .select('salary_amount,order_id,created_at,orders(move_date)')
           .eq('org_id', orgId)
           .eq('staff_id', staffId);
 
       final byMonth = <String, double>{};
       final jobs = <({DateTime? date, String orderId, double amount})>[];
       for (final r in rows) {
-        final moveDate = r['orders']?['move_date'] as String?;
-        final date = moveDate == null ? null : DateTime.tryParse(moveDate);
+        final moveDate = (r['orders'] is Map ? r['orders']['move_date'] : null)
+            as String?;
+        // Order not readable: the day he was put on the crew stands in.
+        final date = DateTime.tryParse(moveDate ?? '') ??
+            DateTime.tryParse('${r['created_at'] ?? ''}')?.toLocal();
         final key =
             date == null ? 'Unscheduled' : DateFormat('MMM y').format(date);
         final amount = (r['salary_amount'] as num?)?.toDouble() ?? 0;
@@ -90,8 +114,43 @@ class _SupervisorEarningsPageWidgetState
       ];
       final balance = advances.fold<double>(0, (s, a) => s + a.amount);
 
+      final now = DateTime.now();
+      final from = DateFormat('yyyy-MM-dd').format(DateTime(now.year, now.month));
+      final to =
+          DateFormat('yyyy-MM-dd').format(DateTime(now.year, now.month + 1));
+      var incentives = <({String date, String kind, double amount})>[];
+      var paid = 0.0;
+      try {
+        final inc = await SupaFlow.client
+            .from('staff_incentives')
+            .select('entry_date,kind,amount')
+            .eq('org_id', orgId)
+            .eq('staff_id', staffId)
+            .gte('entry_date', from)
+            .lt('entry_date', to);
+        incentives = [
+          for (final r in inc)
+            (
+              date: (r['entry_date'] ?? '').toString(),
+              kind: (r['kind'] ?? '').toString(),
+              amount: (r['amount'] as num?)?.toDouble() ?? 0,
+            ),
+        ];
+        final pay = await SupaFlow.client
+            .from('salary_payments')
+            .select('amount')
+            .eq('org_id', orgId)
+            .eq('staff_id', staffId)
+            .gte('paid_date', from)
+            .lt('paid_date', to);
+        paid = pay.fold<double>(
+            0, (s, r) => s + ((r['amount'] as num?)?.toDouble() ?? 0));
+      } catch (_) {}
+
       if (mounted) {
         setState(() {
+          _incentives = incentives;
+          _paidThisMonth = paid;
           _byMonth
             ..clear()
             ..addAll(byMonth);
@@ -116,9 +175,11 @@ class _SupervisorEarningsPageWidgetState
             j.date!.year == now.year &&
             j.date!.month == now.month)
         .toList();
-    final monthGross = monthJobs.fold<double>(0, (s, j) => s + j.amount);
-    final total = _byMonth.values.fold(0.0, (s, v) => s + v);
-    final balance = total - _advanceBalance;
+    final monthWages = monthJobs.fold<double>(0, (s, j) => s + j.amount);
+    final monthIncentives =
+        _incentives.fold<double>(0, (s, i) => s + i.amount);
+    final monthGross = monthWages + monthIncentives;
+    final balance = monthGross - _paidThisMonth;
     Widget line(String label, String sub, String amt, Color color, bool first) =>
         Container(
           constraints: const BoxConstraints(minHeight: 46),
@@ -220,7 +281,7 @@ class _SupervisorEarningsPageWidgetState
                     const SizedBox(height: 2),
                     Text(
                         '${monthJobs.length} job${monthJobs.length == 1 ? '' : 's'}'
-                        ' · balance ${functions.inrFull(balance < 0 ? 0 : balance)}',
+                        ' · still to be paid ${functions.inrFull(balance < 0 ? 0 : balance)}',
                         style: NgFonts.geist(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -229,16 +290,29 @@ class _SupervisorEarningsPageWidgetState
                     line(
                         'Job wages',
                         '${monthJobs.length} × job',
-                        functions.inrFull(monthGross),
+                        functions.inrFull(monthWages),
                         c.text,
                         true),
+                    for (final i in _incentives)
+                      line(
+                          i.kind.toLowerCase().contains('over')
+                              ? 'Overtime'
+                              : 'Incentive',
+                          i.date,
+                          functions.inrFull(i.amount),
+                          c.text,
+                          false),
+                    if (_paidThisMonth > 0)
+                      line('Paid this month', '',
+                          '−${functions.inrFull(_paidThisMonth)}', c.mute,
+                          false),
                     for (final a in _advances)
                       line(
-                          'Advance taken',
+                          'Advance to be recovered',
                           [a.date, a.note]
                               .where((x) => x.trim().isNotEmpty)
                               .join(' · '),
-                          '−${functions.inrFull(a.amount)}',
+                          functions.inrFull(a.amount),
                           c.red,
                           false),
                   ],
@@ -247,13 +321,12 @@ class _SupervisorEarningsPageWidgetState
               const SizedBox(height: 16),
               Row(
                 children: [
-                  tile('Earned', functions.inrFull(total), c.text),
+                  tile('Earned', functions.inrFull(monthGross), c.text),
                   const SizedBox(width: 8),
-                  tile('Advances', '−${functions.inrFull(_advanceBalance)}',
+                  tile('Paid', functions.inrFull(_paidThisMonth), c.mute),
+                  const SizedBox(width: 8),
+                  tile('Advance due', functions.inrFull(_advanceBalance),
                       c.red),
-                  const SizedBox(width: 8),
-                  tile('Balance', functions.inrFull(balance < 0 ? 0 : balance),
-                      c.green),
                 ],
               ),
               const SizedBox(height: 18),

@@ -60,11 +60,28 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
           .select('staff_id')
           .eq('org_id', orgId)
           .eq('attendance_date', _today);
+      // One attendance truth (BUG-055, 4 Nov 2026): someone on the crew of
+      // a job moving today is at work, the same way Salary counts them,
+      // even if nobody tapped "mark present". Before this the three crew
+      // of a running job showed "Not marked" here while Salary paid them.
+      final present = attRows.map((r) => r['staff_id'] as String).toSet();
+      try {
+        final crew = await SupaFlow.client
+            .from('order_staff')
+            .select('staff_id,orders!inner(move_date,status)')
+            .eq('org_id', orgId)
+            .eq('orders.move_date', _today);
+        for (final r in crew) {
+          final st = '${r['orders']?['status'] ?? ''}'.toLowerCase();
+          if (st == 'cancelled') continue;
+          final id = r['staff_id'];
+          if (id != null) present.add('$id');
+        }
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _team = rows;
-          _presentToday =
-              attRows.map((r) => r['staff_id'] as String).toSet();
+          _presentToday = present;
           _loading = false;
         });
       }

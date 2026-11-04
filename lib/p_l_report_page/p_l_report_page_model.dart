@@ -93,9 +93,13 @@ class PLReportPageModel extends FlutterFlowModel<PLReportPageWidget> {
   // GST summary — reference app only computes the 5% bracket, others are
   // dead code there too. This app doesn't have a per-order gst_pct column
   // yet, so a flat 5% is assumed for the whole period's order revenue.
-  double get gstTaxable => (revenue / 1.05).roundToDouble();
-  double get gstTotal => revenue - gstTaxable;
-  double get gstHalf => gstTotal / 2;
+  /// GST added to the period's orders (MoneyBook). Not revenue.
+  double gstCollected = 0;
+  double get gstTotal => gstCollected;
+  double get gstHalf => gstCollected / 2;
+
+  /// Costs by where they were recorded (MoneyBook.expensesByKind).
+  Map<String, double> expensesByKind = const {};
 
   @override
   void initState(BuildContext context) {}

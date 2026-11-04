@@ -70,8 +70,22 @@ class _FieldAttendancePageWidgetState extends State<FieldAttendancePageWidget> {
             Map<String, dynamic>.from(x['orders'] as Map)
       ];
       _job = jobs.firstOrNull;
-      _presentDays = {for (final a in r[1] as List) '${a['attendance_date']}'};
-      _checkedInToday = _presentDays.contains(today);
+      // One attendance truth (BUG-055): a day on a job's crew is a day at
+      // work, as Salary counts it, whether or not a check-in was made.
+      _presentDays = {
+        for (final a in r[1] as List) '${a['attendance_date']}',
+        for (final x in r[0] as List)
+          if (x['orders'] is Map &&
+              x['orders']['move_date'] != null &&
+              '${x['orders']['status']}' != 'cancelled' &&
+              !DateTime.parse('${x['orders']['move_date']}').isBefore(
+                  DateTime(monday.year, monday.month, monday.day)))
+            '${x['orders']['move_date']}',
+      };
+      // The scan card still asks for a real check-in (site QR, GPS) —
+      // only an attendance row counts for that.
+      _checkedInToday =
+          (r[1] as List).any((a) => '${a['attendance_date']}' == today);
       _supervisor = null;
       final sup = _job?['supervisor_id'];
       if (sup != null) {

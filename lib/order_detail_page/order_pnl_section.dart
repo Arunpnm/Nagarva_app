@@ -132,9 +132,11 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
       case CommissionState.unpriced:
         return null;
       case CommissionState.priced:
-        // Commission is on the move, not on warehouse rent (BUG-054):
-        // storage income is excluded.
-        return (_revenueBase + _addonsTotal) * (_commissionPct! / 100);
+        // Commission is on the move value before GST — not on extra
+        // charges or warehouse rent (BUG-054). Same rule as the shared
+        // MoneyBook every report uses (4 Nov 2026), so this card and the
+        // dashboard/P&L report agree.
+        return (_revenueBase * (_commissionPct! / 100)).roundToDouble();
     }
   }
 
@@ -225,7 +227,7 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
         ),
         OrgScope.read(SupaFlow.client
                 .from('vendor_bills')
-                .select('total_amount,status,deleted_at'))
+                .select('taxable_amount,total_amount,status,deleted_at'))
             .eq('order_id', widget.orderId)
             .then((v) => v),
         OrgScope.read(
@@ -275,8 +277,9 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
                 fieldExpensesTotal;
         _expensesCount = expenseRows.length + fieldExpensesCount;
 
+        // Before GST, as the shared MoneyBook counts vendor bills.
         _vendorCostTotal = vendorBillRows.fold(
-            0.0, (s, r) => s + _asNum(r['total_amount']));
+            0.0, (s, r) => s + _asNum(r['taxable_amount'] ?? r['total_amount']));
         _vendorCount = vendorBillRows.length;
 
         _materialsTotal =

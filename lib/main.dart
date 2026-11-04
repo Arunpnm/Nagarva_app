@@ -817,12 +817,11 @@ class _NavBarPageState extends State<NavBarPage>
         'SupervisorEarningsPage': const SupervisorEarningsPageWidget(),
         'SupervisorAttendancePage': const SupervisorAttendancePageWidget(),
         // Field staff (driver/helper/packer): Attendance is the crew
-        // check-in screen; My Earnings is still unbuilt. The supervisor
-        // Earnings screen above queries by currentStaffId and would work
-        // for any role, but pointing field staff at it is a scope call
-        // for Arun, not something to do silently here.
+        // check-in screen. My Earnings is the same screen supervisors use
+        // (it reads the signed-in person's own pay by currentStaffId) —
+        // Arun, 4 Nov 2026: complete the staff app (BUG-055).
         'FieldAttendancePage': const FieldAttendancePageWidget(),
-        'MySalComingSoon': const ComingSoonPage(title: 'My Earnings'),
+        'MySalComingSoon': const SupervisorEarningsPageWidget(),
         'DriverAppPage': const DriverAppPage(),
       };
     }

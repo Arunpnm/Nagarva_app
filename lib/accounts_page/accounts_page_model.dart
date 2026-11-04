@@ -93,8 +93,15 @@ class DailyAccountRow {
   /// mark it rather than presenting it as settled.
   double get profitLoss => revenue - totalExpenses;
 
-  /// Set after all rows are computed: cumulative balance starting from the
-  /// editable opening balance, walking forward in chronological order.
+  /// Cash that actually moved this day: money received minus money spent.
+  /// The running balance walks THIS, not [profitLoss] (4 Nov 2026): it is
+  /// shown as "Cash now" beside Money in and Money out, and adding profit
+  /// counted revenue not yet collected as cash in hand.
+  double get cashFlow => collections - totalExpenses;
+
+  /// Set after all rows are computed: cumulative CASH balance starting from
+  /// the editable opening balance, walking forward in chronological order
+  /// by [cashFlow].
   double runningBalance = 0.0;
 }
 
