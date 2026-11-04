@@ -103,6 +103,11 @@ dependencies:
   qr_flutter: 4.1.0
   mobile_scanner: 7.1.4
   geolocator: 14.0.2
+  # Group-photo attendance (4 Nov 2026): counts faces ON the phone, offline.
+  # 0.14.0, not the latest 0.15.x: 0.15 needs Dart 3.12 and Flutter 3.35.5
+  # ships Dart 3.9 (pinned, see CLAUDE.md). Android/iOS only - the web
+  # build uses a stub (lib/backend/face_count/).
+  google_mlkit_face_detection: 0.14.0
   # Its platform packages pinned too: left free, pub picked releases
   # under two weeks old (5.2.1 / 2.4.3 / 4.4.1, Oct 2026). These are the
   # June 2026 releases, months in use.

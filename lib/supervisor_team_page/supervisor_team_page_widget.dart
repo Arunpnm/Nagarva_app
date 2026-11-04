@@ -3,6 +3,7 @@ import '/app_session.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/crew_checkin_card.dart';
+import '/components/group_photo_attendance_sheet.dart';
 import '/components/supervisor_menu_button.dart';
 import '/components/ng_top_bar.dart';
 import '/flutter_flow/ng_tokens.dart';
@@ -29,6 +30,10 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
   List<StaffRow> _team = [];
   Set<String> _presentToday = {};
   bool _busy = false;
+
+  /// The supervisor's branch. Attendance is branch-scoped: a row saved
+  /// without it is refused for a staff session and invisible to staff.
+  String? _myBranch;
 
   String get _today => DateTime.now().toIso8601String().split('T').first;
 
@@ -81,6 +86,7 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
       if (mounted) {
         setState(() {
           _team = rows;
+          _myBranch = myBranch;
           _presentToday = present;
           _loading = false;
         });
@@ -100,6 +106,7 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
         'staff_id': s.id,
         'attendance_date': _today,
         'status': 'present',
+        if (_myBranch != null) 'branch': _myBranch,
         'marked_by': AppSession.instance.currentStaffName ?? 'Supervisor',
       });
       if (mounted) setState(() => _presentToday.add(s.id!));
@@ -199,6 +206,29 @@ class _SupervisorTeamPageWidgetState extends State<SupervisorTeamPageWidget> {
                     ),
                   ],
                 ],
+              ),
+              const SizedBox(height: 12),
+              NgSecondaryButton(
+                label: 'Group photo attendance',
+                icon: Icons.photo_camera_rounded,
+                onPressed: _busy
+                    ? null
+                    : () async {
+                        final saved = await showGroupPhotoAttendance(
+                          context,
+                          team: _team,
+                          alreadyPresent: _presentToday,
+                          branch: _myBranch,
+                        );
+                        if (saved) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Attendance saved.')));
+                          }
+                          _load();
+                        }
+                      },
               ),
               const SizedBox(height: 16),
               const NgSectionHeader('Branch team'),

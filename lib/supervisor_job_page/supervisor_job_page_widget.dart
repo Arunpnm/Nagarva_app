@@ -639,6 +639,10 @@ class _SupervisorJobPageWidgetState extends State<SupervisorJobPageWidget> {
             'staff_id': c.staffId,
             'attendance_date': today,
             'status': 'present',
+            // The job's branch (4 Nov 2026): attendance is branch-scoped,
+            // and a row with no branch was refused for a supervisor's
+            // session (the catch below hid it) and invisible to staff.
+            if (o.branch != null) 'branch': o.branch,
             'marked_by': AppSession.instance.currentStaffName ?? 'Supervisor',
           });
         } catch (_) {
