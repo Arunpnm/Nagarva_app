@@ -1,11 +1,11 @@
 {
-    "name": "nagarva_customer",
-    "short_name": "nagarva_customer",
+    "name": "Nagarva \u00b7 Book a move",
+    "short_name": "Nagarva",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Book a home or office move with Nagarva.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
