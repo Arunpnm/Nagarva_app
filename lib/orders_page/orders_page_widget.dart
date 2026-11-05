@@ -6,6 +6,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/backend/detail_navigation.dart';
 import '/backend/order_stages.dart';
+import '/backend/order_money.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/custom_functions.dart' as functions;
@@ -156,7 +157,10 @@ class _OrdersPageWidgetState extends State<OrdersPageWidget>
         : '${orderStageLabel(kOrderStages[idx])} · ${idx + 1}/${kOrderStages.length}';
     final pay = _payLook(l, c, o);
     final svc = (o.service ?? '').trim();
-    final total = (o.quoteTotal ?? 0) > 0 ? o.quoteTotal! : (o.amount ?? 0);
+    // The shared money rule (4 Nov 2026): quote_total is a copy that can
+    // disagree with the order — APC-1004 holds 3,02,94,039 against an
+    // amount of 20,000 — so the card never reads it directly.
+    final total = OrderMoney.from(o).total;
     return NgCard(
       radius: 20,
       padding: const EdgeInsets.all(16),

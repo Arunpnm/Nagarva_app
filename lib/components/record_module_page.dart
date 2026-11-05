@@ -159,11 +159,17 @@ class RecordModulePage extends StatefulWidget {
     this.subtitle,
     required this.views,
     this.add,
+    this.header,
   });
 
   final String title;
   final String? subtitle;
   final List<RmView> views;
+
+  /// Optional card under the title (Backup's "Download all my data").
+  /// Gets a reload callback so the lists can refresh after an action.
+  final Widget Function(BuildContext context, Future<void> Function() reload)?
+      header;
 
   /// Null hides the + button (read-only modules).
   final RmAdd? add;
@@ -267,6 +273,13 @@ class _RecordModulePageState extends State<RecordModulePage> {
               ],
             ),
             const SizedBox(height: 14),
+            if (widget.header != null) ...[
+              widget.header!(context, () async {
+                _rows.clear(); // other tabs re-read when opened
+                await _load();
+              }),
+              const SizedBox(height: 14),
+            ],
             if (widget.views.length > 1) ...[
               NgSegmented(
                 labels: [for (final x in widget.views) x.label],

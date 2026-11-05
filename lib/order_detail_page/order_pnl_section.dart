@@ -255,7 +255,12 @@ class OrderPnlSectionState extends State<OrderPnlSection> {
 
       if (!mounted) return;
       setState(() {
-        _quoteTotal = order.quoteTotal ?? 0;
+        // Shown as "Quote Amount" only when it agrees with the order
+        // (4 Nov 2026): APC-1004's quote_total is 3,02,94,039 against an
+        // amount of 20,000, which printed a ₹3 crore quote and an equal
+        // "Less GST". Revenue never used it; now the display doesn't either.
+        final qt = order.quoteTotal ?? 0;
+        _quoteTotal = (qt - (order.amount ?? 0)).abs() < 1 ? qt : 0;
         _quoteSubtotal = order.quoteSubtotal ?? 0;
         _quoteGstAmount = order.quoteGstAmount ?? 0;
         _amount = order.amount ?? 0;

@@ -346,6 +346,25 @@ class InvoiceGenerator {
         quotationId:
             existing.isNotEmpty ? existing.first.quotationId : null,
       );
+      // Keep the issued copy even when nobody taps View / Print / Share
+      // (5 Nov 2026). The number is issued above, but the PDF — and with it
+      // the stored copy the customer's tracking page lists — was only built
+      // by those buttons, so an invoice opened and closed was issued with
+      // no copy: TEST-1002 showed "No documents yet" beside its invoice
+      // number. Only when no copy exists yet, so the first issued copy is
+      // never replaced by a regenerated one. Never awaited, never throws.
+      _storeIssuedCopyIfMissing(
+        invoiceNo: invoiceNo,
+        gstPct: gstPct,
+        baseAmount: baseAmount,
+        interstate: interstate,
+        igst: igst,
+        sgst: sgst,
+        cgst: cgst,
+        total: invoiceTotal,
+        quotationId:
+            existing.isNotEmpty ? existing.first.quotationId : null,
+      );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -353,6 +372,44 @@ class InvoiceGenerator {
       );
     } finally {
       onBusy?.call(false);
+    }
+  }
+
+  Future<void> _storeIssuedCopyIfMissing({
+    required String invoiceNo,
+    required double gstPct,
+    required double baseAmount,
+    required bool interstate,
+    required double igst,
+    required double sgst,
+    required double cgst,
+    required double total,
+    String? quotationId,
+  }) async {
+    try {
+      final List have = await OrgScope.read(
+              SupaFlow.client.from('documents').select('id'))
+          .eq('entity_type', 'order')
+          .eq('entity_id', orderId)
+          .eq('doc_type', 'invoice')
+          .isFilter('deleted_at', null)
+          .limit(1);
+      if (have.isNotEmpty) return;
+      // Builds the PDF; _buildInvoicePdfBytes stores it on the way out.
+      await _buildInvoicePdfBytes(
+        invoiceNo: invoiceNo,
+        gstPct: gstPct,
+        baseAmount: baseAmount,
+        interstate: interstate,
+        igst: igst,
+        sgst: sgst,
+        cgst: cgst,
+        total: total,
+        quotationId: quotationId,
+      );
+    } catch (_) {
+      // Best-effort, like IssuedDocuments itself: the invoice is issued
+      // either way, and View / Print / Share still store a copy.
     }
   }
 

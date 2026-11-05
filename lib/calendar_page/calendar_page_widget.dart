@@ -48,8 +48,12 @@ class _CalendarPageWidgetState extends State<CalendarPageWidget>
 
   Future<void> _loadCalendarData() async {
     // Phase 1 multi-tenancy pass — see supabase/phase1_add_org_id.sql.
+    // Open reminders only (4 Nov 2026, BUG-049): the Calendar is what is
+    // still to do. It listed every reminder ever made, with nothing marking
+    // done or cancelled ones, so follow-ups for customers who had already
+    // booked or said no kept showing as calls to make.
     _model.remindersViewOut = await RemindersViewTable().queryRows(
-      queryFn: (q) => OrgScope.read(q),
+      queryFn: (q) => OrgScope.read(q).eq('status', 'open'),
     );
     _model.remindersViewList =
         (_model.remindersViewOut ?? []).toList().cast<RemindersViewRow>();

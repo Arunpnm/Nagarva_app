@@ -38,7 +38,7 @@
 
     <div class="doccard">
       <div class="docrow docrow-head">
-        <span>Move</span><span id="m-ref"></span>
+        <span id="m-ref-label">Booking</span><span id="m-ref"></span>
       </div>
       <div class="docrow" id="m-route-row" hidden>
         <span>Route</span><span id="m-route"></span>
@@ -351,6 +351,10 @@
       "Everything your moving company has issued for this job, in one "
       + "place. Nothing here expires.";
 
+    // Say what the number is (5 Nov 2026): the row read "Move" over the
+    // INVOICE number, which looks like a move number to a customer.
+    document.getElementById("m-ref-label").textContent =
+      res.invoice_no ? "Invoice" : "Booking";
     document.getElementById("m-ref").textContent =
       res.invoice_no || res.order_ref || "";
 
@@ -384,9 +388,27 @@
     // contact affordance that goes nowhere.
     var phone = (res.vendor_phone || "").trim();
     if (phone) {
+      // Readable and tappable (5 Nov 2026): it printed "919999900001".
+      var digits = phone.replace(/\D/g, "");
+      var local = digits.length === 12 && digits.indexOf("91") === 0
+        ? digits.slice(2)
+        : (digits.length === 11 && digits.charAt(0) === "0"
+            ? digits.slice(1) : digits);
+      var shown = local.length === 10
+        ? "+91 " + local.slice(0, 5) + " " + local.slice(5)
+        : phone;
+      var dial = local.length === 10 ? "+91" + local
+        : (phone.charAt(0) === "+" ? "+" + digits : digits);
       var cv = document.getElementById("callvendor");
       cv.textContent = "Questions about this move? Call " +
-        (res.vendor_name || "your moving company") + " on " + phone + ".";
+        (res.vendor_name || "your moving company") + " on ";
+      var a = document.createElement("a");
+      a.href = "tel:" + dial;
+      a.textContent = shown;
+      a.style.color = "inherit";
+      a.style.fontWeight = "600";
+      cv.appendChild(a);
+      cv.appendChild(document.createTextNode("."));
       cv.hidden = false;
     }
 

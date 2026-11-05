@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '/app_session.dart';
+import '/backend/data_export.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/fy_numbering.dart';
+import '/backend/save_file.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
+import '/components/ng_widgets.dart';
 import '/components/record_module_page.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -617,8 +620,9 @@ class LabourContractorsPage extends StatelessWidget {
   }
 }
 
-/// Backup & offline (handoff Setup): backups and exports that have been
-/// run. Starting one needs a server job that does not exist yet.
+/// Backup & offline (handoff Setup). "Download all my data" builds one
+/// Excel workbook in the app (5 Nov 2026, lib/backend/data_export.dart);
+/// the lists below show what has been exported or backed up.
 class BackupPage extends StatelessWidget {
   const BackupPage({super.key});
 
@@ -630,14 +634,14 @@ class BackupPage extends StatelessWidget {
     return RecordModulePage(
       title: 'Backup & offline',
       subtitle: 'Copies of your data',
+      header: (context, reload) => _ExportAllCard(onDone: reload),
       views: [
         RmView(
           label: 'Backups',
           table: 'backup_registry',
           orderBy: 'created_at',
-          note: 'Starting a backup or a full export from the app is not '
-              'built yet. Every list in the app can still be read in full; '
-              'nothing locks your data in.',
+          note: 'Automatic scheduled backups are not built yet. Use '
+              '"Download all my data" above for a full copy any time.',
           row: (context, r) => RmRow(
             icon: Icons.cloud_done_outlined,
             tone: r['status'] == 'completed' ? NgStatus.green : NgStatus.amber,
@@ -668,6 +672,109 @@ class BackupPage extends StatelessWidget {
           emptyText: 'No exports yet.',
         ),
       ],
+    );
+  }
+}
+
+/// "Download all my data": one Excel file, a sheet per record type.
+class _ExportAllCard extends StatefulWidget {
+  const _ExportAllCard({required this.onDone});
+  final Future<void> Function() onDone;
+
+  @override
+  State<_ExportAllCard> createState() => _ExportAllCardState();
+}
+
+class _ExportAllCardState extends State<_ExportAllCard> {
+  bool _busy = false;
+  int _done = 0;
+  int _total = kExportTables.length;
+  String? _result;
+  bool _failed = false;
+
+  Future<void> _run() async {
+    setState(() {
+      _busy = true;
+      _done = 0;
+      _result = null;
+      _failed = false;
+    });
+    try {
+      final r = await exportAllData(
+        onProgress: (d, t) {
+          if (mounted) {
+            setState(() {
+              _done = d;
+              _total = t;
+            });
+          }
+        },
+      );
+      final where = await saveExcelFile(r.fileName, r.bytes);
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _result = where == null
+            ? 'The file was not saved.'
+            : 'Saved ${r.fileName}.xlsx · ${r.totalRows} rows'
+                '${r.skipped.isEmpty ? '' : ' · ${r.skipped.length} lists not readable with this login'}';
+        _failed = where == null;
+      });
+      await widget.onDone();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _failed = true;
+        _result = 'Could not build the export. Try again.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
+    return NgCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            Icon(Icons.download_rounded, color: c.acc),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text('Download all my data',
+                  style: NgFonts.geist(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w600,
+                      color: c.text)),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          Text(
+              'One Excel file with a sheet for orders, leads, customers, '
+              'payments, expenses, staff, fleet and settings. Opens in Excel '
+              'or Google Sheets. PINs and link codes are left out.',
+              style: NgFonts.geist(fontSize: 12.5, height: 1.4, color: c.mute)),
+          const SizedBox(height: 12),
+          if (_busy) ...[
+            LinearProgressIndicator(value: _total == 0 ? null : _done / _total),
+            const SizedBox(height: 6),
+            Text('Reading $_done of $_total lists…',
+                style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+          ] else
+            NgPrimaryButton(
+              label: 'Download Excel',
+              icon: Icons.file_download_outlined,
+              onPressed: _run,
+            ),
+          if (_result != null) ...[
+            const SizedBox(height: 8),
+            Text(_result!,
+                style: NgFonts.geist(
+                    fontSize: 13, color: _failed ? c.red : c.green)),
+          ],
+        ],
+      ),
     );
   }
 }

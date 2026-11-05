@@ -447,6 +447,14 @@ class _QuickExpensePageWidgetState extends State<QuickExpensePageWidget> {
                                 return;
                               }
                               if (!context.mounted) return;
+                              // Say it worked (BUG-049): the screen used to
+                              // close with no word, so people re-entered it.
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Expense of ₹${amount % 1 == 0 ? amount.toStringAsFixed(0) : amount.toStringAsFixed(2)} saved.'),
+                                ),
+                              );
                               context.pop();
 
                               safeSetState(() {});
