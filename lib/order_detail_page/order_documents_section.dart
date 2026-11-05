@@ -630,9 +630,10 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           // card, Close Order's balance warning, and the Awaiting Approval
           // queue (see CLAUDE.md's changelog on the quote_total/amount
           // split): a directly-booked order has no quote_total.
-          final revenueBase =
-              (o.quoteTotal ?? 0) != 0 ? o.quoteTotal! : (o.amount ?? 0);
-          isFinal = o.paidTotal >= revenueBase && revenueBase > 0;
+          // The shared money rule (4 Nov 2026), add-ons included: a stray
+          // quote_total must not decide whether a receipt is the final one.
+          final due = (await OrderMoney.load(o)).total;
+          isFinal = o.paidTotal >= due && due > 0;
 
           String? amountInWords;
           try {
@@ -769,7 +770,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           'p_branch': null,
           'p_fy': _currentFy(),
         }) as String);
-        final amount = o.quoteTotal ?? o.amount ?? 0;
+        // What the customer will owe, by the shared rule (4 Nov 2026).
+        final amount = (await OrderMoney.load(o)).total;
         final (profile, logoBytes) = await _loadBranding();
         await _showDocDialog('Proforma $docNo', 'Proforma_$docNo.pdf',
             () => SimpleDocumentPdf.generate(

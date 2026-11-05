@@ -9,6 +9,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 
 import '/backend/edge_function_errors.dart';
+import '/backend/fy_numbering.dart';
 /// Insurance & Claims (Session 4, Part C-8). Live schema confirmed
 /// directly against the DB: insurance_policies + claims + claim_items.
 /// Neither carries soft-delete columns — plain hard delete where offered
@@ -207,6 +208,24 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
 
   // ---- Claims ---------------------------------------------------------------
 
+  /// A claim's name for people: its number, else "Claim · <order>" — never
+  /// the database id (BUG-054).
+  static String _claimLabel(ClaimsRow c) {
+    final no = (c.claimNo ?? '').trim();
+    if (no.isNotEmpty) return no;
+    final order = (c.orderId ?? '').trim();
+    return order.isEmpty ? 'Claim (no number)' : 'Claim · $order';
+  }
+
+  /// A policy's name for people: "policy <no>", else the insurer, else a
+  /// plain phrase — never the database id (BUG-054).
+  static String _policyLabel(InsurancePoliciesRow p) {
+    final no = (p.policyNo ?? '').trim();
+    if (no.isNotEmpty) return 'policy $no';
+    final insurer = (p.insurerName ?? '').trim();
+    return insurer.isNotEmpty ? '$insurer policy' : "this order's policy";
+  }
+
   Future<void> _newClaim() async {
     final order = await OrderPickerDialog.show(context);
     if (order == null || !mounted) return;
@@ -236,7 +255,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
                   if (matchingPolicy != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: Text('Linked to policy ${matchingPolicy.policyNo ?? matchingPolicy.id}',
+                      child: Text('Linked to ${_policyLabel(matchingPolicy)}',
                           style: NgFonts.geist(fontSize: 11.5, color: Colors.grey)),
                     ),
                   DropdownButtonFormField<String>(
@@ -289,8 +308,21 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
     );
     if (ok != true) return;
     try {
+      // The company's own claim number from its CLM- series (4 Nov 2026,
+      // BUG-054): claims were listed by their database id because nothing
+      // ever filled claim_no.
+      final claimNo = await allocateWithRollover(
+          context,
+          () async => await SupaFlow.client.rpc('next_doc_number', params: {
+                'p_org': OrgScope.currentOrgId,
+                'p_doc_type': 'claim',
+                'p_branch': null,
+                'p_fy': currentFy(),
+              }) as String);
+      if (claimNo == null) return;
       await ClaimsTable().insert({
         ...OrgScope.stamp(),
+        'claim_no': claimNo,
         'order_id': order.id,
         'customer_id': order.customerId,
         if (matchingPolicy != null) 'policy_id': matchingPolicy.id,
@@ -338,7 +370,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
             controller: scrollController,
             padding: const EdgeInsets.all(16),
             children: [
-              Text(claim.claimNo ?? claim.id ?? '(claim)',
+              Text(_claimLabel(claim),
                   style: NgFonts.geist(
                       fontSize: 17, fontWeight: FontWeight.w700, color: ng.text)),
               _statusChip(ng, claim.status),
@@ -832,7 +864,7 @@ class _InsuranceClaimsPageWidgetState extends State<InsuranceClaimsPageWidget>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(cl.claimNo ?? cl.id ?? '(claim)',
+                  Text(_claimLabel(cl),
                       style: NgFonts.mono(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

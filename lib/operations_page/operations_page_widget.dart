@@ -563,7 +563,12 @@ class _OperationsPageWidgetState extends State<OperationsPageWidget>
     for (final v in _vehicles) {
       final exp = v.insuranceExpiry;
       if (exp == null || exp.isAfter(soon)) continue;
-      final days = exp.difference(DateTime.now()).inDays;
+      // From today's date, not this instant (4 Nov 2026, BUG-050): counting
+      // from "now" rounded down and showed one day fewer than Fleet.
+      final t = DateTime.now();
+      final days = DateTime(exp.year, exp.month, exp.day)
+          .difference(DateTime(t.year, t.month, t.day))
+          .inDays;
       out.add(_alertRow(
         icon: Icons.shield_outlined,
         tone: days < 0 ? NgStatus.red : NgStatus.amber,

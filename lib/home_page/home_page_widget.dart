@@ -628,8 +628,7 @@ class _HomePageWidgetState extends State<HomePageWidget>
   int get _paymentsDueCount => _allOrders.where((o) {
         final st = (o.status ?? '').toLowerCase();
         if (st == 'cancelled') return false;
-        final base = (o.quoteTotal ?? 0) > 0 ? o.quoteTotal! : (o.amount ?? 0);
-        return base > 0 && o.paymentStatus != 'paid';
+        return OrderMoney.from(o).total > 0 && o.paymentStatus != 'paid';
       }).length;
 
   Widget _infoRows(BuildContext context) {

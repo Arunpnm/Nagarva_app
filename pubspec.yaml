@@ -50,6 +50,12 @@ dependencies:
   # vendor logo picker on the Settings page.
   pdf: ^3.11.1
   printing: ^5.13.2
+  # Backup & export (5 Nov 2026). archive is already in the tree via pdf;
+  # pinned here because lib/backend/xlsx_writer.dart imports it directly.
+  archive: 4.0.9
+  # Saves the export: browser download on web, Downloads on Android.
+  # 0.3.1, not 0.4+: those need Dart 3.11+, Flutter 3.35.5 ships 3.9.
+  file_saver: 0.3.1
   # TWO FILE-SELECTION STACKS, AND THEY ARE NOT INTERCHANGEABLE.
   # Reach for the wrong one and you get a flow the vendor cannot
   # complete — a supervisor standing in a customer's front room being
@@ -120,7 +126,8 @@ dependencies:
   intl: 0.20.2
   json_path: 0.7.2
   page_transition: 2.1.0
-  path_provider: 2.1.4
+  # 2.1.5 (was 2.1.4): file_saver 0.3.1 needs ^2.1.5. Patch bump only.
+  path_provider: 2.1.5
   path_provider_android: 2.2.10
   path_provider_foundation: 2.4.0
   path_provider_linux: 2.2.1
