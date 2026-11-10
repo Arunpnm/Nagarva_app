@@ -28,6 +28,7 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
   bool _loading = true;
   bool _togglingActive = false;
   bool _updatingTrial = false;
+  bool _updatingStatus = false;
   bool _resettingPassword = false;
   String? _ownerEmail;
   bool _ownerEmailUnavailable = false;
@@ -181,6 +182,74 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
       if (mounted) setState(() => _updatingTrial = false);
     }
   }
+
+  /// Paid or trial (10 Nov 2026). admin-update-org has accepted
+  /// plan_status since 16 Aug and logs a plan_status_changed billing event,
+  /// but no screen sent it, so a vendor could only ever be "on trial" with
+  /// a date pushed out by hand. 'active' = paid: org_effective_plan() only
+  /// ever locks a TRIAL whose date and grace have passed, so a paid company
+  /// is never locked by its old trial date.
+  Future<void> _setPlanStatus(String status) async {
+    final paid = status == 'active';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(paid ? 'Mark as paid?' : 'Move back to trial?'),
+        content: Text(paid
+            ? '${_org.name} becomes a paying customer on its current plan. '
+                'The trial date no longer locks it.'
+            : '${_org.name} goes back to trial. It locks again once the '
+                'trial date and grace days have passed.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(paid ? 'Mark as paid' : 'Move to trial'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _updatingStatus = true);
+    try {
+      final res = await SupaFlow.client.functions.invoke(
+        'admin-update-org',
+        body: {'org_id': _org.id, 'plan_status': status},
+      );
+      final body = res.data;
+      if (body is! Map || body['ok'] != true) {
+        throw Exception(
+          (body is Map ? body['error'] as String? : null) ??
+              'Could not update plan status.',
+        );
+      }
+      setState(() => _org.planStatus = status);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(paid
+                ? '${_org.name} is now marked as paid.'
+                : '${_org.name} is back on trial.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(extractFunctionErrorMessage(e,
+                fallback: 'Could not update plan status.'))));
+      }
+    } finally {
+      if (mounted) setState(() => _updatingStatus = false);
+    }
+  }
+
+  static String _statusLabel(String? s) => switch (s) {
+        'active' => 'Paid',
+        'trial' => 'Trial',
+        'grace' => 'Grace',
+        null || '' => '—',
+        _ => s,
+      };
 
   Future<void> _pickTrialDate() async {
     final now = DateTime.now();
@@ -338,7 +407,28 @@ class _TenantDetailPageState extends State<TenantDetailPage> {
                               ? '${_org.createdAt!.toLocal()}'.split('.').first
                               : '—'),
                       _row(ng, 'Plan', planName ?? '—'),
-                      _row(ng, 'Plan status', _org.planStatus ?? '—'),
+                      _row(ng, 'Plan status', _statusLabel(_org.planStatus)),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2, bottom: 6),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: _org.planStatus == 'active'
+                              ? OutlinedButton(
+                                  onPressed: _updatingStatus
+                                      ? null
+                                      : () => _setPlanStatus('trial'),
+                                  child: const Text('Move back to trial'),
+                                )
+                              : FilledButton.icon(
+                                  onPressed: _updatingStatus
+                                      ? null
+                                      : () => _setPlanStatus('active'),
+                                  icon: const Icon(Icons.verified_rounded,
+                                      size: 18),
+                                  label: const Text('Mark as paid'),
+                                ),
+                        ),
+                      ),
                       _row(
                           ng,
                           'Trial ends',
