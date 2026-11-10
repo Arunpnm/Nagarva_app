@@ -97,8 +97,15 @@ Deno.serve(async (req: Request) => {
     ) {
       return json({ error: "trial_ends_at must be a valid ISO date string" }, 400);
     }
-    if (hasPlanStatusChange && typeof plan_status !== "string") {
-      return json({ error: "plan_status must be a string" }, 400);
+    // 10 Nov 2026: only the statuses the app understands. 'active' = paid;
+    // org_effective_plan() locks only a 'trial' whose date and grace have
+    // passed. Anything else would leave a company in a state no screen and
+    // no rule knows about.
+    if (
+      hasPlanStatusChange &&
+      !["trial", "active", "grace"].includes(String(plan_status))
+    ) {
+      return json({ error: "plan_status must be trial, active or grace" }, 400);
     }
 
     // ---- Caller must be a real, signed-in platform admin. Service role
