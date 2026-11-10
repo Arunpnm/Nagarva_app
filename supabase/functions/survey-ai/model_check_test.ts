@@ -5,7 +5,7 @@ Deno.env.set("SUPABASE_URL", "https://stub.supabase.test");
 Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "service");
 // deno-lint-ignore no-explicit-any
 (Deno as any).serve = () => ({});
-const { modelLooksRight } = await import("./index.ts");
+const { modelLooksRight, geminiBody } = await import("./index.ts");
 
 Deno.test("real model names pass", () => {
   assertEquals(modelLooksRight("gemini", "gemini-3.8-flash"), true);
@@ -31,4 +31,18 @@ Deno.test("keys, provider names and junk are refused", () => {
   assertEquals(modelLooksRight("gemini", '"gemini-3.8-flash"'), false);
   assertEquals(modelLooksRight("gemini", "gemini-" + "a".repeat(60)), false);
   assertEquals(modelLooksRight("nobody", "gemini-3.8-flash"), false);
+});
+
+Deno.test("gemini 3+ is asked to think LOW; older models get no thinking setting", () => {
+  const img = [{ data: "/9j/AAAA", mediaType: "image/jpeg" }];
+  const b3 = geminiBody("gemini-3.8-flash", "p", img);
+  assertEquals(b3.generationConfig, {
+    responseMimeType: "application/json",
+    thinkingConfig: { thinkingLevel: "low" },
+  });
+  assertEquals(geminiBody("gemini-4-flash", "p", img).generationConfig.thinkingConfig,
+    { thinkingLevel: "low" });
+  assertEquals(geminiBody("gemini-2.5-flash", "p", img).generationConfig,
+    { responseMimeType: "application/json" });
+  assertEquals(b3.contents[0].parts.length, 2); // photo, then the prompt
 });

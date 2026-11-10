@@ -258,17 +258,7 @@ async function askProvider(
             "content-type": "application/json",
             "x-goog-api-key": cfg.key,
           },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                ...images.map((i) => ({
-                  inline_data: { mime_type: i.mediaType, data: i.data },
-                })),
-                { text: prompt },
-              ],
-            }],
-            generationConfig: { responseMimeType: "application/json" },
-          }),
+          body: JSON.stringify(geminiBody(cfg.model, prompt, images)),
         },
       );
       if (!r.ok) throw new ProviderError(r.status, await why(r));
@@ -279,6 +269,30 @@ async function askProvider(
     }
     throw new Error("unknown provider");
   }
+}
+
+/** Gemini request body. Gemini 3 and 4 models "think" before answering,
+ *  at MEDIUM by default (Google's thinking guide, checked 10 Nov 2026), and
+ *  a live check with gemini-3.8-flash on one room photo did not answer
+ *  within 55 seconds. Counting furniture against a numbered list needs no
+ *  deep reasoning, so those models are asked for LOW, which every Gemini 3
+ *  and 4 model accepts. Older models (2.x) do not accept the setting at all,
+ *  so it is sent only to 3+. */
+export function geminiBody(model: string, prompt: string, images: Img[]) {
+  const gen: Record<string, unknown> = { responseMimeType: "application/json" };
+  const major = Number((/^gemini-(\d+)/.exec(model) ?? [])[1]);
+  if (major >= 3) gen.thinkingConfig = { thinkingLevel: "low" };
+  return {
+    contents: [{
+      parts: [
+        ...images.map((i) => ({
+          inline_data: { mime_type: i.mediaType, data: i.data },
+        })),
+        { text: prompt },
+      ],
+    }],
+    generationConfig: gen,
+  };
 }
 
 async function sha256Hex(s: string): Promise<string> {
