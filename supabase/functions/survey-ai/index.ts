@@ -67,10 +67,38 @@ const DEFAULT_MODEL: Record<string, string> = {
   anthropic: "claude-haiku-5-5",
 };
 
+/** A model id, not something else pasted into AI_SURVEY_MODEL (10 Nov
+ *  2026: an API key was pasted there once, sent to Google as the model
+ *  name and then written into ai_survey_usage.model, where company members
+ *  can read it). A value that fails this check switches photos OFF rather
+ *  than being sent anywhere or stored. Lower-case letters, digits, dots and
+ *  dashes; the provider's own family prefix; at most 64 characters. */
+const MODEL_SHAPE: Record<string, RegExp> = {
+  anthropic: /^claude-[a-z0-9][a-z0-9.-]{0,56}$/,
+  gemini: /^gemini-[a-z0-9][a-z0-9.-]{0,56}$/,
+  openai: /^[a-z][a-z0-9.-]{1,63}$/,
+};
+export function modelLooksRight(provider: string, model: string): boolean {
+  const shape = MODEL_SHAPE[provider];
+  if (!shape || !shape.test(model)) return false;
+  // Key prefixes that happen to fit the lower-case shape.
+  return !/^(sk-|aiza|aq\.)/.test(model);
+}
+
+let warnedModel = false;
 function configured(): { provider: string; model: string; key: string } | null {
   const key = KEYS[PROVIDER];
-  const model = MODEL || DEFAULT_MODEL[PROVIDER] || "";
+  // Google's own samples write "models/gemini-…"; the URL adds that part.
+  const model = (MODEL || DEFAULT_MODEL[PROVIDER] || "").replace(/^models\//, "");
   if (!key || !model) return null;
+  if (!modelLooksRight(PROVIDER, model)) {
+    if (!warnedModel) {
+      // The value itself is never logged: it may be a key.
+      console.error(`survey-ai: AI_SURVEY_MODEL does not look like a ${PROVIDER} model name, photos are off`);
+      warnedModel = true;
+    }
+    return null;
+  }
   return { provider: PROVIDER, model, key };
 }
 
@@ -108,14 +136,58 @@ async function why(r: Response): Promise<string> {
   }
 }
 
-async function askProvider(
+/** A refusal from the provider, with its HTTP status so the caller can
+ *  tell "busy, try again" from "wrong request". */
+class ProviderError extends Error {
+  constructor(readonly status: number, detail: string) {
+    super(`provider ${status} ${detail}`);
+  }
+}
+/** Statuses that mean "not now" rather than "never": overloaded, rate
+ *  limited, or a passing server fault. Seen live 10 Nov 2026: Gemini
+ *  answered 503 "high demand" twice in a row. */
+const RETRYABLE = new Set([429, 500, 502, 503, 504, 529]);
+/** Whole budget for one photo check, across both attempts. The page waits
+ *  for the answer, so this bounds what a customer sits through. */
+const TOTAL_MS = 55_000;
+/** A second attempt only starts if at least this much budget is left. */
+const RETRY_NEEDS_MS = 20_000;
+
+/** One try, and one more if the provider said "busy" quickly enough to
+ *  leave room. Both attempts share one deadline. */
+async function askWithRetry(
   cfg: { provider: string; model: string; key: string },
   prompt: string,
   images: Img[],
 ): Promise<string> {
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 50_000);
+  const started = Date.now();
+  const timer = setTimeout(() => ctl.abort(), TOTAL_MS);
   try {
+    try {
+      return await askProvider(cfg, prompt, images, ctl.signal);
+    } catch (e) {
+      const left = TOTAL_MS - (Date.now() - started);
+      if (!(e instanceof ProviderError) || !RETRYABLE.has(e.status) || left < RETRY_NEEDS_MS) {
+        throw e;
+      }
+      console.error("survey-ai provider busy, trying once more:", e.message);
+      await new Promise((r) => setTimeout(r, 1500));
+      return await askProvider(cfg, prompt, images, ctl.signal);
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function askProvider(
+  cfg: { provider: string; model: string; key: string },
+  prompt: string,
+  images: Img[],
+  signal: AbortSignal,
+): Promise<string> {
+  const ctl = { signal };
+  {
     if (cfg.provider === "anthropic") {
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -140,7 +212,7 @@ async function askProvider(
           }],
         }),
       });
-      if (!r.ok) throw new Error(`provider ${r.status} ${await why(r)}`);
+      if (!r.ok) throw new ProviderError(r.status, await why(r));
       const j = await r.json();
       return (j.content ?? [])
         .filter((c: { type: string }) => c.type === "text")
@@ -170,7 +242,7 @@ async function askProvider(
           }],
         }),
       });
-      if (!r.ok) throw new Error(`provider ${r.status} ${await why(r)}`);
+      if (!r.ok) throw new ProviderError(r.status, await why(r));
       const j = await r.json();
       return String(j.choices?.[0]?.message?.content ?? "");
     }
@@ -199,15 +271,13 @@ async function askProvider(
           }),
         },
       );
-      if (!r.ok) throw new Error(`provider ${r.status} ${await why(r)}`);
+      if (!r.ok) throw new ProviderError(r.status, await why(r));
       const j = await r.json();
       return (j.candidates?.[0]?.content?.parts ?? [])
         .map((p: { text?: string }) => p.text ?? "")
         .join("\n");
     }
     throw new Error("unknown provider");
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -332,7 +402,13 @@ Deno.serve(async (req) => {
     const month = await admin.from("ai_survey_usage")
       .select("id", { count: "exact", head: true })
       .eq("org_id", orgId).gte("created_at", monthStart)
-      .or("ok.is.null,ok.eq.true");
+      // A row still "in flight" only counts while it could really be in
+      // flight. The check gives up after TOTAL_MS, so anything older with
+      // no result was cut off (the function was stopped) and was not
+      // answered: it must not use up the vendor's allowance for the month.
+      .or(`ok.eq.true,and(ok.is.null,created_at.gte.${
+        new Date(Date.now() - 10 * 60 * 1000).toISOString()
+      })`);
     if (month.error) return no("unavailable");
     if ((month.count ?? 0) >= monthCap) return no("month_limit");
   }
@@ -352,7 +428,7 @@ Deno.serve(async (req) => {
   let answer: ReturnType<typeof readAnswer> = null;
   let failed = "";
   try {
-    const text = await askProvider(cfg, buildPrompt(lines, room), images);
+    const text = await askWithRetry(cfg, buildPrompt(lines, room), images);
     answer = readAnswer(text, lines);
     if (!answer) failed = "unreadable";
   } catch (e) {

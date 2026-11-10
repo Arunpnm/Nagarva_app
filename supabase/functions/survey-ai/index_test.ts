@@ -27,6 +27,7 @@ const state = {
   providerCalls: 0,
   providerReply: '{"items":[{"n":1,"qty":1},{"n":2,"qty":2}],"other":["Treadmill"]}',
   providerStatus: 200,
+  providerQueue: [] as number[], // statuses for the next calls, then providerStatus
   surveyOk: true,
   plan: "pro" as "pro" | "other" | "broken",
   lastProviderBody: "" as string,
@@ -47,7 +48,8 @@ globalThis.fetch = async (input: Request | URL | string, init?: RequestInit) => 
   if (url.host === "api.anthropic.com") {
     state.providerCalls++;
     state.lastProviderBody = await req.text();
-    if (state.providerStatus !== 200) return j({ error: "x" }, state.providerStatus);
+    const status = state.providerQueue.length ? state.providerQueue.shift()! : state.providerStatus;
+    if (status !== 200) return j({ error: "x" }, status);
     return j({ content: [{ type: "text", text: state.providerReply }] });
   }
   if (url.host !== "stub.supabase.test") return realFetch(input, init);
@@ -78,11 +80,14 @@ globalThis.fetch = async (input: Request | URL | string, init?: RequestInit) => 
     if (state.usageBroken) return j({ message: "relation does not exist" }, 404);
     if (req.method === "HEAD") {
       const byLink = url.searchParams.get("link_hash");
-      const monthly = url.searchParams.has("or"); // only the monthly count
+      const monthly = url.searchParams.get("or"); // only the monthly count
+      const fresh = monthly ? Date.parse(monthly.match(/created_at\.gte\.([^)]+)\)/)![1]) : 0;
       const n = state.usage.filter((u) =>
         byLink
           ? `eq.${u.link_hash}` === byLink
-          : u.org_id === ORG && (!monthly || u.ok !== false)
+          : u.org_id === ORG && (!monthly || u.ok === true ||
+            ((u.ok === null || u.ok === undefined) &&
+              Date.parse(String(u.created_at ?? new Date().toISOString())) >= fresh))
       ).length;
       return j(null, 200, { "content-range": `*/${n}` });
     }
@@ -120,6 +125,7 @@ function reset() {
   state.usageBroken = false;
   state.providerCalls = 0;
   state.providerStatus = 200;
+  state.providerQueue = [];
   state.surveyOk = true;
   state.plan = "pro";
   state.monthCap = -1;
@@ -267,6 +273,43 @@ Deno.test("a locked company (trial and grace over) gets nothing that costs money
   assertEquals((await call({ token: TOKEN, images: [JPEG] })).reason, "not_in_plan");
   assertEquals(state.providerCalls, 0);
   assertEquals(state.usage.length, 0);
+});
+
+Deno.test("a check cut off long ago (no result) is not charged to the month", async () => {
+  reset();
+  state.monthCap = 1;
+  state.usage = [{ id: "c", org_id: ORG, link_hash: "o3", ok: null,
+    created_at: new Date(Date.now() - 3600_000).toISOString() }];
+  assertEquals((await call({ token: TOKEN, images: [JPEG] })).ok, true);
+  assertEquals(state.providerCalls, 1);
+});
+
+Deno.test("a check really in flight still counts towards the month", async () => {
+  reset();
+  state.monthCap = 1;
+  state.usage = [{ id: "d", org_id: ORG, link_hash: "o4", ok: null,
+    created_at: new Date().toISOString() }];
+  assertEquals((await call({ token: TOKEN, images: [JPEG] })).reason, "month_limit");
+  assertEquals(state.providerCalls, 0);
+});
+
+Deno.test("provider busy: one retry, then a plain refusal; a wrong request is not retried", async () => {
+  reset();
+  state.providerQueue = [503];
+  assertEquals((await call({ token: TOKEN, images: [JPEG] })).ok, true);
+  assertEquals(state.providerCalls, 2);
+  assertEquals(state.usage.length, 1); // one check, one row
+  assertEquals(state.usage[0].ok, true);
+
+  reset();
+  state.providerQueue = [503, 503];
+  assertEquals((await call({ token: TOKEN, images: [JPEG] })).reason, "try_again");
+  assertEquals(state.providerCalls, 2); // never a third
+
+  reset();
+  state.providerQueue = [400];
+  assertEquals((await call({ token: TOKEN, images: [JPEG] })).reason, "try_again");
+  assertEquals(state.providerCalls, 1);
 });
 
 Deno.test("no usage table = no calls (fail closed)", async () => {

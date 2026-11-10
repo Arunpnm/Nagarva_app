@@ -35,6 +35,21 @@
     color: var(--text); }
   .ai-msg { font-size: 13.5px; margin: 12px 0 0; color: var(--teal); }
   .ai-msg.bad { color: var(--danger); }
+  .ai-found { margin: 0 0 12px; border: 1px solid var(--line);
+    border-radius: var(--r-sm); }
+  .ai-found-row { display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; font-size: 13.5px; }
+  .ai-found-row + .ai-found-row { border-top: 1px solid var(--line); }
+  .ai-found-row span { flex: 1; }
+  .ai-found-row.staying span { color: var(--muted, #888); text-decoration: line-through; }
+  .ai-keep { border: 1px solid var(--line); background: transparent;
+    color: var(--text); border-radius: 999px; padding: 5px 11px;
+    font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+  .ai-keep.moving { background: var(--teal); border-color: var(--teal);
+    color: var(--ink); font-weight: 700; }
+  .ai-note { font-size: 12.5px; margin: 0 0 12px; opacity: .8; }
+  .ai-opt { display: flex; align-items: center; gap: 8px; margin: 6px 0;
+    font-size: 14px; cursor: pointer; }
   .ai-tag { font-size: 10.5px; font-weight: 700; color: var(--ink);
     background: var(--teal); border-radius: 4px; padding: 1px 5px;
     margin-left: 6px; vertical-align: 1px; }
@@ -83,8 +98,10 @@
 
   <section id="ai-card" class="ai-card" hidden>
     <h2>Quicker: take photos of each room</h2>
-    <p>Pick a room, add up to 4 photos of it, and we'll list the items for you. You can correct the counts below before sending.</p>
+    <p>Pick a room, add up to 4 photos of it, and we'll suggest the items. Don't forget the loft, cupboards, balcony and terrace.</p>
+    <p class="ai-note">These are suggestions from your photos. Check the counts below before sending — your moving company will also check the list.</p>
     <div class="ai-rooms" id="ai-rooms"></div>
+    <div class="ai-found" id="ai-found" hidden></div>
     <div class="ai-thumbs" id="ai-thumbs"></div>
     <input type="file" id="ai-file" accept="image/*" multiple hidden>
     <div class="ai-actions">
@@ -98,6 +115,17 @@
   <div class="field">
     <label for="notes">Anything else they should know? <span class="hint">(optional)</span></label>
     <textarea id="notes" rows="3" maxlength="2000" placeholder="Fragile items, narrow staircase, lift not working, preferred timing…"></textarea>
+  </div>
+
+  <!-- Shown once photos were used: what the photos could not show is the
+       usual reason a moving-day load is bigger than the survey. -->
+  <div class="field" id="ai-missed" hidden>
+    <label>Is there anything you didn't photograph?</label>
+    <p class="ai-note">Loft, cupboards, store room, balcony, terrace, garage, things at another place…</p>
+    <label class="ai-opt"><input type="radio" name="ai-missed" value="no"> No, everything is in the list</label>
+    <label class="ai-opt"><input type="radio" name="ai-missed" value="yes"> Yes, there's more</label>
+    <textarea id="ai-missed-text" rows="2" maxlength="400" hidden
+      placeholder="What, and roughly how much — e.g. loft: 6 boxes and an old cot"></textarea>
   </div>
 
   <div id="submit-error" class="errline" hidden></div>
@@ -361,11 +389,16 @@
   //
   // The card stays hidden unless the function says photos are switched on
   // (an AI provider is configured), so this page is safe to deploy first.
-  var AI_ROOMS = ["Living room", "Bedroom", "Kitchen", "Dining", "Balcony", "Other"];
+  // Loft, cupboards, store room, terrace and garage are named on purpose:
+  // they are what customers forget to photograph, and the usual reason a
+  // moving-day load is bigger than the survey.
+  var AI_ROOMS = ["Living room", "Bedroom", "Kitchen", "Dining", "Balcony",
+    "Loft", "Cupboards", "Store room", "Terrace", "Garage", "Other"];
   var AI_MAX_PHOTOS = 4; // must match MAX_IMAGES in survey_ai_util.ts
   var aiRoom = AI_ROOMS[0];
   var aiPhotos = [];                       // data URLs, already shrunk
-  var aiByRoom = Object.create(null);      // room -> { key: qty } last added
+  var aiByRoom = Object.create(null);      // room -> { key: qty } added to the list (moving only)
+  var aiFound = Object.create(null);       // room -> [{ key, label, qty, staying }]
   var aiRoomsUsed = [];
   var aiBusy = false;
   var AI_ERRORS = {
@@ -415,7 +448,7 @@
       var b = document.createElement("button");
       b.type = "button";
       b.className = "ai-room" + (r === aiRoom ? " on" : "") +
-        (aiByRoom[r] ? " done" : "");
+        (aiFound[r] ? " done" : "");
       b.textContent = r;
       b.disabled = aiBusy;
       b.addEventListener("click", function () {
@@ -444,7 +477,50 @@
     var go = document.getElementById("ai-go");
     go.disabled = aiBusy || aiPhotos.length === 0;
     go.textContent = aiBusy ? "Looking at your photos…"
-      : (aiByRoom[aiRoom] ? "Check this room again" : "Find items");
+      : (aiFound[aiRoom] ? "Check this room again" : "Find items");
+
+    // What the photos found in THIS room, each one moving or staying.
+    var box = document.getElementById("ai-found");
+    var list = aiFound[aiRoom] || [];
+    box.innerHTML = "";
+    box.hidden = !list.length;
+    list.forEach(function (f, i) {
+      var row = document.createElement("div");
+      row.className = "ai-found-row" + (f.staying ? " staying" : "");
+      var t = document.createElement("span");
+      t.textContent = f.label + " × " + f.qty;
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ai-keep" + (f.staying ? "" : " moving");
+      b.textContent = f.staying ? "Staying" : "Moving";
+      b.setAttribute("aria-pressed", f.staying ? "false" : "true");
+      b.setAttribute("aria-label", f.label + ": " + (f.staying ? "staying, tap if it is moving" : "moving, tap if it is staying"));
+      b.disabled = aiBusy;
+      b.addEventListener("click", function () { aiToggle(aiRoom, i); });
+      row.appendChild(t); row.appendChild(b); box.appendChild(row);
+    });
+    document.getElementById("ai-missed").hidden = !aiRoomsUsed.length;
+  }
+
+  // Moving <-> staying for one thing the photos found. Staying takes this
+  // room's share back off the list; moving puts it back. The mover is told
+  // what was seen but is staying, so it is not a surprise either way.
+  function aiToggle(room, i) {
+    var f = (aiFound[room] || [])[i];
+    if (!f || !setters[f.key]) return;
+    var now = selections[f.key] ? selections[f.key].qty : 0;
+    var share = aiByRoom[room] || (aiByRoom[room] = Object.create(null));
+    if (f.staying) {
+      setters[f.key](now + f.qty, true);
+      share[f.key] = (share[f.key] || 0) + f.qty;
+      f.staying = false;
+    } else {
+      setters[f.key](Math.max(0, now - f.qty));
+      share[f.key] = Math.max(0, (share[f.key] || 0) - f.qty);
+      if (!share[f.key]) delete share[f.key];
+      f.staying = true;
+    }
+    aiRender();
   }
 
   // Phone photos are 3-12 MB. Shrunk to 1280 px JPEG (~150-300 KB) so they
@@ -493,7 +569,7 @@
       var now = selections[key] ? selections[key].qty : 0;
       setters[key](Math.max(0, now - prev[key]));
     });
-    var added = Object.create(null), lines = 0, pieces = 0;
+    var added = Object.create(null), lines = 0, pieces = 0, found = [];
     (items || []).forEach(function (it) {
       var key = it.cat + "|" + it.item + "|" + it.sub;
       var qty = Math.floor(Number(it.qty));
@@ -501,9 +577,11 @@
       var now = selections[key] ? selections[key].qty : 0;
       setters[key](now + qty, true);
       added[key] = (added[key] || 0) + qty;
+      found.push({ key: key, label: it.item + " · " + it.sub, qty: qty, staying: false });
       lines++; pieces += qty;
     });
-    if (lines) aiByRoom[room] = added; else delete aiByRoom[room];
+    if (lines) { aiByRoom[room] = added; aiFound[room] = found; }
+    else { delete aiByRoom[room]; delete aiFound[room]; }
     var at = aiRoomsUsed.indexOf(room);
     if (lines && at < 0) aiRoomsUsed.push(room);
     if (!lines && at >= 0) aiRoomsUsed.splice(at, 1);
@@ -520,7 +598,7 @@
       aiSay("We couldn't spot any items in those photos. Try a wider photo, or pick the items below.", true);
     } else {
       aiSay("Added " + pieces + (pieces === 1 ? " item" : " items") + " from the " +
-        room.toLowerCase() + ". Check the counts below, then do the next room." +
+        room.toLowerCase() + ". Tap “Moving” on anything that is staying, then do the next room." +
         (extra.length ? " A few things not on the list were added to your note." : ""));
     }
   }
@@ -556,6 +634,12 @@
         e.target.value = "";
       });
       document.getElementById("ai-go").addEventListener("click", aiGo);
+      Array.prototype.forEach.call(document.getElementsByName("ai-missed"), function (r) {
+        r.addEventListener("change", function () {
+          var more = document.querySelector('input[name="ai-missed"]:checked');
+          document.getElementById("ai-missed-text").hidden = !(more && more.value === "yes");
+        });
+      });
       aiRender();
       document.getElementById("ai-card").hidden = false;
     }).catch(function () { /* photos stay hidden; the list still works */ });
@@ -603,6 +687,24 @@
     err.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
+  function instructions(missed) {
+    var tail = [];
+    if (aiRoomsUsed.length) tail.push("(Items suggested from photos: " + aiRoomsUsed.join(", ") + ")");
+    var staying = [];
+    Object.keys(aiFound).forEach(function (room) {
+      aiFound[room].forEach(function (f) {
+        if (f.staying) staying.push(room + " – " + f.label + " × " + f.qty);
+      });
+    });
+    if (staying.length) tail.push("(Seen in photos but staying: " + staying.join("; ") + ")");
+    if (missed) tail.push(missed);
+    var end = tail.join("\n").slice(0, 1200);
+    var notes = (document.getElementById("notes").value || "").replace(/^\s+|\s+$/g, "");
+    var room = 2000 - end.length - (end && notes ? 1 : 0);
+    var all = (notes.slice(0, Math.max(0, room)) + (end && notes ? "\n" : "") + end);
+    return all || null;
+  }
+
   function submit() {
     var btn = document.getElementById("submit");
     var err = document.getElementById("submit-error");
@@ -619,6 +721,21 @@
       return;
     }
 
+    // Photos were used: the "anything not photographed?" question must be
+    // answered. Asked here, at the end, because the photos cannot show it.
+    var missed = "";
+    if (aiRoomsUsed.length) {
+      var pick = document.querySelector('input[name="ai-missed"]:checked');
+      if (!pick) { fail("Please answer: is there anything you didn't photograph?"); return; }
+      if (pick.value === "yes") {
+        var what = (document.getElementById("ai-missed-text").value || "").trim();
+        if (!what) { fail("Tell your movers what you didn't photograph."); return; }
+        missed = "(Not photographed: " + what + ")";
+      } else {
+        missed = "(Customer says nothing else beyond this list)";
+      }
+    }
+
     err.hidden = true;
     btn.disabled = true;
     btn.textContent = "Sending…";
@@ -626,13 +743,12 @@
     rpc("public_submit_survey", {
       p_token: token,
       p_rooms: rooms,
-      // The mover is told which rooms were listed from photos, so they
-      // know to double-check those counts. Plain text in the note: the
-      // server's shape check accepts no extra fields on an item.
-      p_instructions: ((document.getElementById("notes").value || "") +
-        (aiRoomsUsed.length
-          ? "\n(Items suggested from photos: " + aiRoomsUsed.join(", ") + ")"
-          : "")).replace(/^\s+/, "").slice(0, 2000) || null
+      // The mover is told which rooms were listed from photos (so they
+      // double-check those counts), what was seen but is staying, and the
+      // answer to "anything not photographed?". Plain text in the note:
+      // the server's shape check accepts no extra fields on an item. The
+      // customer's own note is shortened first, never these lines.
+      p_instructions: instructions(missed)
     }).then(function (res) {
       if (res && res.ok) { show("view-done"); window.scrollTo(0, 0); return; }
       if (res && (res.reason === "expired" || res.reason === "not_submittable")) {
