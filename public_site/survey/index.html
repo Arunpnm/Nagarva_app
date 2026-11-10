@@ -9,6 +9,36 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Inter+Tight:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/nagarva.css">
+<style>
+  /* Photo survey (10 Nov 2026). */
+  .ai-card { background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r-md); padding: 16px; margin: 0 0 18px; }
+  .ai-card h2 { font-size: 16px; margin: 0 0 4px; }
+  .ai-card p { color: var(--muted); font-size: 13.5px; margin: 0 0 12px; }
+  .ai-rooms { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+  .ai-room { border: 1px solid var(--line); background: transparent;
+    color: var(--text); border-radius: 999px; padding: 7px 13px;
+    font: inherit; font-size: 13.5px; cursor: pointer; }
+  .ai-room.on { background: var(--gold); border-color: var(--gold);
+    color: var(--ink); font-weight: 700; }
+  .ai-room.done::after { content: " ✓"; }
+  .ai-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+  .ai-thumb { position: relative; width: 72px; height: 72px;
+    border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--line); }
+  .ai-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ai-thumb button { position: absolute; top: 2px; right: 2px; width: 22px;
+    height: 22px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65);
+    color: #fff; font-size: 13px; line-height: 22px; padding: 0; cursor: pointer; }
+  .ai-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ai-actions .btn { flex: 1 1 140px; }
+  .btn-ghost { background: transparent; border: 1px solid var(--line);
+    color: var(--text); }
+  .ai-msg { font-size: 13.5px; margin: 12px 0 0; color: var(--teal); }
+  .ai-msg.bad { color: var(--danger); }
+  .ai-tag { font-size: 10.5px; font-weight: 700; color: var(--ink);
+    background: var(--teal); border-radius: 4px; padding: 1px 5px;
+    margin-left: 6px; vertical-align: 1px; }
+</style>
 </head>
 <body>
 
@@ -51,6 +81,18 @@
     <div class="trip-meta" id="move-date"></div>
   </div>
 
+  <section id="ai-card" class="ai-card" hidden>
+    <h2>Quicker: take photos of each room</h2>
+    <p>Pick a room, add up to 4 photos of it, and we'll list the items for you. You can correct the counts below before sending.</p>
+    <div class="ai-rooms" id="ai-rooms"></div>
+    <div class="ai-thumbs" id="ai-thumbs"></div>
+    <input type="file" id="ai-file" accept="image/*" multiple hidden>
+    <div class="ai-actions">
+      <button type="button" class="btn btn-ghost" id="ai-add">Add photos</button>
+      <button type="button" class="btn btn-primary" id="ai-go" disabled>Find items</button>
+    </div>
+    <div class="ai-msg" id="ai-msg" hidden></div>
+  </section>
   <div id="cats"></div>
 
   <div class="field">
@@ -85,6 +127,9 @@
 
   // selections[cat|item|sub] = { cat, item, sub, cft, qty }
   var selections = Object.create(null);
+  // setters[key](n) sets a line's count; filled by buildCatalogue so the
+  // photo survey changes counts through the same path as the + button.
+  var setters = Object.create(null);
   var METER_FULL = 1200; // 3 BHK Big — the bar is a sense of scale, not a limit
 
   function rpc(fn, body) {
@@ -282,6 +327,17 @@
             set((selections[key] ? selections[key].qty : 0) + 1);
           });
 
+          setters[key] = function (n, fromPhotos) {
+            set(n);
+            if (fromPhotos && n > 0 && !line.querySelector(".ai-tag")) {
+              var tag = document.createElement("span");
+              tag.className = "ai-tag";
+              tag.textContent = "from photo";
+              line.querySelector(".sub-label").appendChild(tag);
+              wrap.classList.add("open");
+              head.setAttribute("aria-expanded", "true");
+            }
+          };
           stepper.appendChild(minus);
           stepper.appendChild(qty);
           stepper.appendChild(plus);
@@ -296,6 +352,213 @@
       wrap.appendChild(body);
       host.appendChild(wrap);
     });
+  }
+
+  // ---- Photo survey (10 Nov 2026) --------------------------------------
+  // Room photos -> the survey-ai function -> SUGGESTED counts on the same
+  // list the customer can tick by hand. Nothing is sent to the mover until
+  // "Send list"; the customer corrects anything the photos got wrong.
+  //
+  // The card stays hidden unless the function says photos are switched on
+  // (an AI provider is configured), so this page is safe to deploy first.
+  var AI_ROOMS = ["Living room", "Bedroom", "Kitchen", "Dining", "Balcony", "Other"];
+  var AI_MAX_PHOTOS = 4; // must match MAX_IMAGES in survey_ai_util.ts
+  var aiRoom = AI_ROOMS[0];
+  var aiPhotos = [];                       // data URLs, already shrunk
+  var aiByRoom = Object.create(null);      // room -> { key: qty } last added
+  var aiRoomsUsed = [];
+  var aiBusy = false;
+  var AI_ERRORS = {
+    not_configured: "Photos aren't available right now. Please pick your items from the list below.",
+    not_in_plan: "Photos aren't available right now. Please pick your items from the list below.",
+    no_catalogue: "Photos aren't available right now. Please pick your items from the list below.",
+    unavailable: "Photos aren't available right now. Please pick your items from the list below.",
+    busy_today: "Photos are busy right now. Please pick your items from the list below.",
+    month_limit: "Photos aren't available right now. Please pick your items from the list below.",
+    link_limit: "You've used all the photo checks for this link. Please adjust the list below by hand.",
+    bad_photo: "One of those photos couldn't be read. Remove it and try another.",
+    too_many_photos: "Use up to " + AI_MAX_PHOTOS + " photos per room.",
+    no_photos: "Add at least one photo of the room.",
+    timeout: "That took too long. Try again with fewer photos.",
+    try_again: "We couldn't read those photos. Try again, or pick the items below.",
+    expired: "This link has expired. Ask your moving company for a fresh one.",
+    already_submitted: "This list has already been sent.",
+    invalid: "This link isn't valid any more. Ask your moving company for a fresh one."
+  };
+
+  function aiFn(body) {
+    return fetch(CFG.SUPABASE_URL + "/functions/v1/survey-ai", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": CFG.SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + CFG.SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  function aiSay(text, bad) {
+    var m = document.getElementById("ai-msg");
+    m.textContent = text || "";
+    m.className = "ai-msg" + (bad ? " bad" : "");
+    m.hidden = !text;
+  }
+
+  function aiRender() {
+    var rooms = document.getElementById("ai-rooms");
+    rooms.innerHTML = "";
+    AI_ROOMS.forEach(function (r) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ai-room" + (r === aiRoom ? " on" : "") +
+        (aiByRoom[r] ? " done" : "");
+      b.textContent = r;
+      b.disabled = aiBusy;
+      b.addEventListener("click", function () {
+        if (r === aiRoom) return;
+        aiRoom = r; aiPhotos = []; aiSay(""); aiRender();
+      });
+      rooms.appendChild(b);
+    });
+    var th = document.getElementById("ai-thumbs");
+    th.innerHTML = "";
+    aiPhotos.forEach(function (url, i) {
+      var d = document.createElement("div");
+      d.className = "ai-thumb";
+      var img = document.createElement("img");
+      img.src = url; img.alt = aiRoom + " photo " + (i + 1);
+      var x = document.createElement("button");
+      x.type = "button"; x.textContent = "×";
+      x.setAttribute("aria-label", "Remove photo " + (i + 1));
+      x.disabled = aiBusy;
+      x.addEventListener("click", function () { aiPhotos.splice(i, 1); aiRender(); });
+      d.appendChild(img); d.appendChild(x); th.appendChild(d);
+    });
+    var add = document.getElementById("ai-add");
+    add.disabled = aiBusy || aiPhotos.length >= AI_MAX_PHOTOS;
+    add.textContent = aiPhotos.length ? "Add another photo" : "Add photos";
+    var go = document.getElementById("ai-go");
+    go.disabled = aiBusy || aiPhotos.length === 0;
+    go.textContent = aiBusy ? "Looking at your photos…"
+      : (aiByRoom[aiRoom] ? "Check this room again" : "Find items");
+  }
+
+  // Phone photos are 3-12 MB. Shrunk to 1280 px JPEG (~150-300 KB) so they
+  // upload on weak mobile data and stay under the server's size limit.
+  function aiShrink(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var max = 1280, w = img.naturalWidth, h = img.naturalHeight;
+        var k = Math.min(1, max / Math.max(w, h));
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(w * k));
+        c.height = Math.max(1, Math.round(h * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", 0.72));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("image")); };
+      img.src = url;
+    });
+  }
+
+  function aiPick(files) {
+    var list = Array.prototype.slice.call(files || [])
+      .slice(0, AI_MAX_PHOTOS - aiPhotos.length);
+    if (!list.length) return;
+    aiSay("");
+    Promise.all(list.map(function (f) {
+      return aiShrink(f).catch(function () { return null; });
+    })).then(function (urls) {
+      var bad = 0;
+      urls.forEach(function (u) { if (u) aiPhotos.push(u); else bad++; });
+      if (bad) aiSay("One of those files isn't a photo we can read.", true);
+      aiRender();
+    });
+  }
+
+  function aiApply(room, items, other) {
+    // Checking a room again REPLACES what that room added last time, so a
+    // second look never double-counts. Counts the customer changed by hand
+    // in between are kept: only this room's earlier share is taken back.
+    var prev = aiByRoom[room] || {};
+    Object.keys(prev).forEach(function (key) {
+      if (!setters[key]) return;
+      var now = selections[key] ? selections[key].qty : 0;
+      setters[key](Math.max(0, now - prev[key]));
+    });
+    var added = Object.create(null), lines = 0, pieces = 0;
+    (items || []).forEach(function (it) {
+      var key = it.cat + "|" + it.item + "|" + it.sub;
+      var qty = Math.floor(Number(it.qty));
+      if (!setters[key] || !(qty > 0)) return;
+      var now = selections[key] ? selections[key].qty : 0;
+      setters[key](now + qty, true);
+      added[key] = (added[key] || 0) + qty;
+      lines++; pieces += qty;
+    });
+    if (lines) aiByRoom[room] = added; else delete aiByRoom[room];
+    var at = aiRoomsUsed.indexOf(room);
+    if (lines && at < 0) aiRoomsUsed.push(room);
+    if (!lines && at >= 0) aiRoomsUsed.splice(at, 1);
+
+    var extra = (other || []).filter(function (t) { return t; });
+    if (extra.length) {
+      var notes = document.getElementById("notes");
+      var line = room + " also has: " + extra.join(", ") + ".";
+      if (notes.value.indexOf(line) < 0) {
+        notes.value = (notes.value ? notes.value.replace(/\s+$/, "") + "\n" : "") + line;
+      }
+    }
+    if (!lines && !extra.length) {
+      aiSay("We couldn't spot any items in those photos. Try a wider photo, or pick the items below.", true);
+    } else {
+      aiSay("Added " + pieces + (pieces === 1 ? " item" : " items") + " from the " +
+        room.toLowerCase() + ". Check the counts below, then do the next room." +
+        (extra.length ? " A few things not on the list were added to your note." : ""));
+    }
+  }
+
+  function aiGo() {
+    if (aiBusy || !aiPhotos.length) return;
+    var room = aiRoom;
+    aiBusy = true; aiSay(""); aiRender();
+    aiFn({ token: token, room: room, images: aiPhotos }).then(function (res) {
+      aiBusy = false;
+      if (res && res.ok) {
+        aiApply(room, res.items, res.other);
+        aiPhotos = [];
+      } else {
+        aiSay(AI_ERRORS[res && res.reason] || AI_ERRORS.try_again, true);
+      }
+      aiRender();
+    }).catch(function () {
+      aiBusy = false;
+      aiSay("Your photos didn't send. Check your connection and try again.", true);
+      aiRender();
+    });
+  }
+
+  function aiBoot() {
+    aiFn({ action: "status", token: token }).then(function (res) {
+      if (!res || !res.ok || !res.enabled) return;
+      document.getElementById("ai-add").addEventListener("click", function () {
+        document.getElementById("ai-file").click();
+      });
+      document.getElementById("ai-file").addEventListener("change", function (e) {
+        aiPick(e.target.files);
+        e.target.value = "";
+      });
+      document.getElementById("ai-go").addEventListener("click", aiGo);
+      aiRender();
+      document.getElementById("ai-card").hidden = false;
+    }).catch(function () { /* photos stay hidden; the list still works */ });
   }
 
   // MUST MATCH THE SERVER. public_submit_survey_impl refuses more than
@@ -363,7 +626,13 @@
     rpc("public_submit_survey", {
       p_token: token,
       p_rooms: rooms,
-      p_instructions: document.getElementById("notes").value || null
+      // The mover is told which rooms were listed from photos, so they
+      // know to double-check those counts. Plain text in the note: the
+      // server's shape check accepts no extra fields on an item.
+      p_instructions: ((document.getElementById("notes").value || "") +
+        (aiRoomsUsed.length
+          ? "\n(Items suggested from photos: " + aiRoomsUsed.join(", ") + ")"
+          : "")).replace(/^\s+/, "").slice(0, 2000) || null
     }).then(function (res) {
       if (res && res.ok) { show("view-done"); window.scrollTo(0, 0); return; }
       if (res && (res.reason === "expired" || res.reason === "not_submittable")) {
@@ -410,6 +679,7 @@
     buildCatalogue(res.survey_cats || {});
     recalc();
     show("view-form");
+    aiBoot();
     document.getElementById("submit").addEventListener("click", submit);
   }).catch(function () {
     blocked("network");

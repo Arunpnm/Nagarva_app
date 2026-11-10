@@ -374,6 +374,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
       'fleet': 'Fleet tracking',
       'salary': 'Salary & PF',
       'multi_branch': 'Multiple branches',
+      'ai_survey': 'AI photo survey',
     };
     return labels[key] ??
         (key.isEmpty ? key : key[0].toUpperCase() + key.substring(1).replaceAll('_', ' '));
