@@ -57,6 +57,9 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
     'max_users',
     'max_orders_per_month',
     'max_whatsapp_per_month',
+    // 10 Nov 2026: AI photo checks a month, read by the survey-ai
+    // Edge Function (org_limit). -1 = no monthly limit.
+    'max_ai_survey_per_month',
   ];
 
   // Toggles shown for these specific keys. Corrected 27 Jul 2026 after
@@ -73,6 +76,8 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
     'reports': 'P&L Reports',
     'gst_invoice': 'GST Invoice',
     'multi_branch': 'Multi-Branch',
+    // 10 Nov 2026: read by the survey-ai Edge Function. Pro and Trial.
+    'ai_survey': 'AI Photo Survey',
   };
 
   late final TextEditingController _code;

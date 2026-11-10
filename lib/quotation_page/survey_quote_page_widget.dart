@@ -3,6 +3,7 @@ import 'dart:math';
 
 import '/backend/gst_state_codes.dart';
 import '/backend/pricing_defaults.dart';
+import '/components/photo_item_finder_sheet.dart';
 import '/components/survey_response_section.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
@@ -98,6 +99,10 @@ String _hexToken() {
 class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   PricingConfig? _config;
   bool _loading = true;
+
+  /// AI photo survey: true once the server says a provider is configured.
+  /// The button stays hidden otherwise.
+  bool _photoSurveyOn = false;
   bool _saving = false;
 
   /// Quote lines, keyed "cat|item|sub".
@@ -238,6 +243,9 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     _fromAddr = TextEditingController(text: widget.leadFromCity ?? '');
     _toAddr = TextEditingController(text: widget.leadToCity ?? '');
     _seedFromLead();
+    photoSurveyEnabled().then((on) {
+      if (mounted && on) setState(() => _photoSurveyOn = true);
+    });
     _amountCtrl = {
       for (final f in kDefaultChargeFields)
         f.key: TextEditingController(text: '')
@@ -1011,6 +1019,14 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                       onAction: () => _addCustomItem()),
                   _itemSearchBar(ng),
                   const SizedBox(height: 10),
+                  if (_photoSurveyOn) ...[
+                    NgSecondaryButton(
+                      label: 'Find items from photos',
+                      icon: Icons.photo_camera_rounded,
+                      onPressed: _findItemsFromPhotos,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   _customItemsSection(ng),
                   // Item 12A: the picker shows active items only. Items
                   // already on this quote resolve through `surveyCats`
@@ -1366,6 +1382,27 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       _chosenVehicle = (veh.isEmpty || veh == s.info?.vehicle) ? null : veh;
       _chosenCrew = (crew == null || crew == s.info?.crew) ? null : crew;
     });
+  }
+
+  /// AI photo survey (10 Nov 2026): room photos -> suggested catalogue
+  /// lines, confirmed by the surveyor in the sheet, then added here through
+  /// the same [_bump] the + button uses (so the cft is captured from our
+  /// own catalogue, as for any other line).
+  Future<void> _findItemsFromPhotos() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final res = await showPhotoItemFinder(context,
+        catalogue: _config!.activeSurveyCats);
+    if (res == null || !mounted) return;
+    var added = 0;
+    for (final it in res.items) {
+      _bump('${it.cat}|${it.item}|${it.sub}',
+          delta: it.qty, cat: it.cat, item: it.item, sub: it.sub, cft: it.cft);
+      added += it.qty;
+    }
+    messenger.showSnackBar(SnackBar(
+        content: Text(res.other.isEmpty
+            ? 'Added $added ${added == 1 ? 'item' : 'items'} from photos.'
+            : 'Added $added from photos. Not in your list: ${res.other.join(', ')}.')));
   }
 
   Widget _itemSearchBar(NgPalette ng) {
