@@ -1,5 +1,7 @@
 import '/l10n/gen/app_localizations.dart';
+import '/backend/edge_function_errors.dart';
 import '/backend/supabase/org_scope.dart';
+import '/backend/supabase/org_session_loader.dart';
 import '/backend/supabase/supabase.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
@@ -25,8 +27,22 @@ class PlanPageWidget extends StatefulWidget {
   State<PlanPageWidget> createState() => _PlanPageWidgetState();
 }
 
-class _PlanPageWidgetState extends State<PlanPageWidget> {
+class _PlanPageWidgetState extends State<PlanPageWidget>
+    with WidgetsBindingObserver {
   late PlanPageModel _model;
+
+  /// Autopay (11 Nov 2026): what plan-billing last said. Null until it
+  /// answers; [_billingReady] stays false when online payment is not set
+  /// up, and the page then looks exactly as it did before Autopay.
+  Map<String, dynamic>? _sub;
+  Map<String, Map<String, dynamic>> _priceByCode = {};
+  bool _billingReady = false;
+  bool _billingTest = false;
+  bool _billingBusy = false;
+
+  /// Set after the vendor is sent to Razorpay, so coming back to the app
+  /// checks the payment without a tap.
+  bool _awaitingApproval = false;
 
   /// Live usage for the limit bars. Null until counted, so a bar never
   /// shows a zero that was not measured.
@@ -38,8 +54,170 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => PlanPageModel());
+    WidgetsBinding.instance.addObserver(this);
     _loadUsage();
+    _loadBilling();
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _awaitingApproval) {
+      _loadBilling();
+    }
+  }
+
+  /// Only the company owner pays: plan-billing refuses anyone else, and
+  /// org_members.role = 'owner' is what it checks. A staff PIN session
+  /// never sees the buttons (same owner-only gate as Business settings).
+  bool get _isOwner => AppSession.instance.currentStaffId == null;
+
+  Future<Map<String, dynamic>> _billing(Map<String, dynamic> body) async {
+    final orgId = AppSession.instance.currentOrgId;
+    if (orgId == null) throw Exception('Please sign in again.');
+    final res = await SupaFlow.client.functions
+        .invoke('plan-billing', body: {...body, 'org_id': orgId});
+    final data = res.data;
+    return data is Map ? Map<String, dynamic>.from(data) : {};
+  }
+
+  Future<void> _loadBilling() async {
+    if (!_isOwner) return;
+    try {
+      final before = _sub?['status'];
+      final data = await _billing({'action': 'status'});
+      final plans = (data['plans'] as List?) ?? const [];
+      _priceByCode = {
+        for (final p in plans)
+          if (p is Map) '${p['code']}': Map<String, dynamic>.from(p),
+      };
+      _sub = data['subscription'] is Map
+          ? Map<String, dynamic>.from(data['subscription'] as Map)
+          : null;
+      _billingTest = data['test_mode'] == true;
+      _billingReady = true;
+      final now = _sub?['status'];
+      if (now == 'active' || now == 'authenticated') _awaitingApproval = false;
+      // A payment (or a stop) moved the company: reload the plan the
+      // whole app reads, not just this page.
+      if (before != now) await _reloadSessionPlan();
+    } catch (_) {
+      // Not set up (no keys) or offline: keep the page as it was.
+      _billingReady = _billingReady && _sub != null;
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _reloadSessionPlan() async {
+    final orgId = AppSession.instance.currentOrgId;
+    if (orgId == null) return;
+    try {
+      final d = await loadOrgSessionData(orgId);
+      AppSession.instance.setOrgOnly(
+        orgId: d.orgId,
+        limits: d.limits,
+        features: d.features,
+        planName: d.planName,
+        planStatus: d.planStatus,
+        trialEndsAt: d.trialEndsAt,
+        graceDays: d.graceDays,
+        orgActive: d.orgActive,
+        trialFallsBackToFree: d.trialFallsBackToFree,
+        trialEndedToFree: d.trialEndedToFree,
+      );
+    } catch (_) {}
+  }
+
+  void _say(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  Future<void> _startAutopay(SubscriptionPlansRow p) async {
+    final price = _priceByCode[p.code];
+    if (price == null) return;
+    final total = functions.inrFull((price['total_inr'] as num).toDouble());
+    final base = functions.inrFull((price['price_inr'] as num).toDouble());
+    final per = price['billing_period'] == 'annual' ? 'year' : 'month';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Pay for ${p.name} with Autopay?'),
+        content: Text(
+            '$total a $per ($base + ${price['gst_pct']}% GST).\n\n'
+            'You approve UPI Autopay once on the Razorpay page. It is then '
+            'charged every $per until you stop it here.'
+            '${_billingTest ? '\n\nTest mode: no real money is taken.' : ''}'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Continue')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _billingBusy = true);
+    try {
+      final data = await _billing({'action': 'start', 'plan_code': p.code});
+      final url = data['short_url'] as String?;
+      if (url == null || url.isEmpty) throw Exception();
+      _awaitingApproval = true;
+      await launchURL(url);
+      _say('Finish the approval on the Razorpay page, then come back here.');
+      await _loadBilling();
+    } catch (e) {
+      _say(friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _billingBusy = false);
+    }
+  }
+
+  Future<void> _stopAutopay() async {
+    final until = _paidUntil();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Stop Autopay?'),
+        content: Text(until == null
+            ? 'No more payments will be taken.'
+            : 'No more payments will be taken. Your plan stays until $until.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep Autopay')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Stop Autopay')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _billingBusy = true);
+    try {
+      await _billing({'action': 'cancel'});
+      _say(until == null
+          ? 'Autopay stopped.'
+          : 'Autopay stopped. Your plan stays until $until.');
+      await _loadBilling();
+    } catch (e) {
+      _say(friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _billingBusy = false);
+    }
+  }
+
+  String? _paidUntil() {
+    final raw = _sub?['current_period_end'];
+    final dt = raw is String ? DateTime.tryParse(raw)?.toLocal() : null;
+    return dt == null ? null : _formatDate(dt);
+  }
+
+  /// Autopay that is set up and taking (or about to take) payments.
+  bool get _autopayRunning => const {'authenticated', 'active', 'pending'}
+      .contains(_sub?['status']);
 
   Future<void> _loadUsage() async {
     try {
@@ -71,6 +249,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _model.dispose();
     super.dispose();
   }
@@ -170,8 +349,12 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                             ? 'Ended'
                             : onTrial
                                 ? 'Trial'
-                                : 'Active',
-                        status: tone),
+                                : session.planStatus == 'grace'
+                                    ? 'Autopay off'
+                                    : 'Active',
+                        status: session.planStatus == 'grace'
+                            ? NgStatus.amber
+                            : tone),
                   ],
                 ),
                 if (onTrial) ...[
@@ -224,6 +407,10 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
               ],
             ),
           ),
+          if (_billingReady && _isOwner) ...[
+            const SizedBox(height: 10),
+            _autopayCard(session),
+          ],
           if (features.isNotEmpty) ...[
             _sectionTitle('What your plan includes'),
             Wrap(
@@ -254,9 +441,11 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    session.isTrialExpired
-                        ? 'Your trial has ended. Contact Nagarva support to activate your plan.'
-                        : 'Contact Nagarva support to change your plan.',
+                    _billingReady && _isOwner
+                        ? 'Need help with your plan or a payment? Contact Nagarva support.'
+                        : session.isTrialExpired
+                            ? 'Your trial has ended. Contact Nagarva support to activate your plan.'
+                            : 'Contact Nagarva support to change your plan.',
                     style: NgFonts.geist(
                         fontSize: 13.5, height: 1.4, color: c.text),
                   ),
@@ -280,6 +469,15 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
     }
 
     final price = p.priceInr ?? 0;
+    final session = AppSession.instance;
+    final gst = _billingReady ? _priceByCode[p.code] : null;
+    // Buy button: owner, online payment set up, a paid plan, and no
+    // Autopay already running (changing plan = stop, then pay again).
+    // An unfinished approval for another plan is replaced by a new one.
+    final canBuy = _isOwner &&
+        gst != null &&
+        !_autopayRunning &&
+        !(_sub?['status'] == 'created' && _sub?['plan_code'] == p.code);
     final lines = [
       lim('max_users', 'users'),
       lim('max_orders_per_month', 'orders a month'),
@@ -314,6 +512,16 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                       fontSize: 15, fontWeight: FontWeight.w600, color: c.text)),
             ],
           ),
+          if (gst != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                    '+ ${gst['gst_pct']}% GST = ${functions.inrFull((gst['total_inr'] as num).toDouble())}',
+                    style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+              ),
+            ),
           const SizedBox(height: 10),
           for (final line in lines)
             Padding(
@@ -327,6 +535,113 @@ class _PlanPageWidgetState extends State<PlanPageWidget> {
                 ),
               ]),
             ),
+          if (canBuy) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _billingBusy ? null : () => _startAutopay(p),
+                icon: const Icon(Icons.autorenew_rounded, size: 18),
+                label: Text(isCurrent && session.planStatus == 'active'
+                    ? 'Turn on Autopay'
+                    : 'Pay with Autopay'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// The Autopay state in one card: what is set up, what was paid, what
+  /// to do next. Every line is plain words (app rule).
+  Widget _autopayCard(AppSession session) {
+    final c = NgPalette.of(context);
+    final st = _sub?['status'] as String?;
+    final until = _paidUntil();
+    final amount = _sub?['amount_inr'] is num
+        ? functions.inrFull((_sub!['amount_inr'] as num).toDouble())
+        : null;
+    final plan = _sub?['plan_name'] as String? ?? '';
+    final endsAtEnd = _sub?['ends_at_period_end'] == true;
+
+    String text;
+    NgStatus tone = NgStatus.neutral;
+    final buttons = <Widget>[];
+    switch (st) {
+      case 'created':
+        text = 'Autopay for $plan is not approved yet. Open the Razorpay '
+            'page to finish, then come back here.';
+        tone = NgStatus.amber;
+        final url = _sub?['short_url'] as String?;
+        if (url != null && url.isNotEmpty) {
+          buttons.add(FilledButton(
+              onPressed: _billingBusy
+                  ? null
+                  : () {
+                      _awaitingApproval = true;
+                      launchURL(url);
+                    },
+              child: const Text('Open approval page')));
+        }
+        buttons.add(OutlinedButton(
+            onPressed: _billingBusy ? null : _loadBilling,
+            child: const Text('Check payment')));
+        break;
+      case 'authenticated':
+        text = 'Autopay for $plan is approved. The first payment is on its '
+            'way; this page updates when it is received.';
+        tone = NgStatus.blue;
+        buttons.add(OutlinedButton(
+            onPressed: _billingBusy ? null : _loadBilling,
+            child: const Text('Check payment')));
+        break;
+      case 'active':
+        text = endsAtEnd
+            ? 'Autopay is stopped. $plan stays until ${until ?? 'the end of this month'}.'
+            : 'Autopay is on for $plan${amount == null ? '' : ' at $amount'}. '
+                'Paid until ${until ?? '—'}.';
+        tone = endsAtEnd ? NgStatus.amber : NgStatus.green;
+        break;
+      case 'pending':
+        text = 'The last Autopay payment did not go through. Razorpay will '
+            'try again in the next few days; please keep money in the account.';
+        tone = NgStatus.amber;
+        break;
+      default:
+        text = session.planStatus == 'grace'
+            ? 'Autopay is off. Your plan is paid until ${_formatDate(session.trialEndsAt ?? DateTime.now())}. Pay with Autopay below to keep it.'
+            : 'Pay for your plan with UPI Autopay: approve once, and it is '
+                'charged every month until you stop it. GST is added to the plan price.';
+        tone = session.planStatus == 'grace' ? NgStatus.amber : NgStatus.blue;
+    }
+    if (_autopayRunning && !endsAtEnd) {
+      buttons.add(TextButton(
+          onPressed: _billingBusy ? null : _stopAutopay,
+          child: const Text('Stop Autopay')));
+    }
+
+    return NgCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            NgIconTile(
+                icon: Icons.autorenew_rounded, status: tone, size: 36, iconSize: 19),
+            const SizedBox(width: 10),
+            Text('Autopay',
+                style: NgFonts.geist(
+                    fontSize: 15, fontWeight: FontWeight.w600, color: c.text)),
+            const Spacer(),
+            if (_billingTest) const NgPill('Test mode', status: NgStatus.amber),
+          ]),
+          const SizedBox(height: 10),
+          Text(text,
+              style: NgFonts.geist(fontSize: 13.5, height: 1.4, color: c.soft)),
+          if (buttons.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(spacing: 8, runSpacing: 8, children: buttons),
+          ],
         ],
       ),
     );
