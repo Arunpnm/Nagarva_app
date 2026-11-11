@@ -89,15 +89,22 @@ Future<OrgSessionData> loadOrgSessionData(String orgId) async {
   // Trial with a fallback plan (vendor signup, 21 Oct 2026). Mirrors
   // org_effective_plan(): once the trial has ended the org IS on the
   // fallback plan, not in grace and not read-only.
+  //
+  // 11 Nov 2026 (Autopay): 'grace' -- Autopay stopped, trial_ends_at holds
+  // the date it was paid up to -- ends the same way in org_effective_plan,
+  // so it is mirrored here. Only a TRIAL gets the "trial ends / moved to
+  // Free" wording; a lapsed payer is told on the Plan page instead.
   final fallbackId = org?.trialFallbackPlanId;
-  final onTrial = org?.planStatus == 'trial' && org?.trialEndsAt != null;
+  final isTrial = org?.planStatus == 'trial';
+  final onTrial = (isTrial || org?.planStatus == 'grace') &&
+      org?.trialEndsAt != null;
   var planStatus = org?.planStatus;
   DateTime? trialEndsAt = org?.trialEndsAt;
   var fallsBack = false;
   var endedToFree = false;
   if (fallbackId != null && onTrial) {
     if (trialEndsAt!.isAfter(DateTime.now())) {
-      fallsBack = true;
+      fallsBack = isTrial;
     } else {
       try {
         final fb = await SubscriptionPlansTable()
@@ -115,7 +122,7 @@ Future<OrgSessionData> loadOrgSessionData(String orgId) async {
       } catch (_) {}
       planStatus = 'active';
       trialEndsAt = null;
-      endedToFree = true;
+      endedToFree = isTrial;
     }
   }
 
