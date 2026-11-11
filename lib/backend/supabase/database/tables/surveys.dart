@@ -73,6 +73,10 @@ class SurveysRow extends SupabaseDataRow {
   DateTime? get createdAt => getField<DateTime>('created_at');
   set createdAt(DateTime? value) => setField<DateTime>('created_at', value);
 
+  /// When the customer link stops working (column default: 14 days after
+  /// it was created). Read-only here: a new link is a new row.
+  DateTime? get expiresAt => getField<DateTime>('expires_at');
+
   // Added by nagarva_migration_009_documents (Session 3) — same
   // access/floor/lift/declared-value answers as quotations, captured here
   // first since the survey is where the customer actually answers them.

@@ -90,11 +90,14 @@ begin
   if n <> 0 then
     raise exception '% open reminders still sit on confirmed/lost leads', n;
   end if;
-  -- the sync trigger did its part: nothing closed is still marked not done
+  -- the sync trigger did its part: done = (status = 'done'), so a 'done'
+  -- reminder is marked done and a 'cancelled' one is NOT (11 Nov 2026: the
+  -- first version expected cancelled rows to be done too, and refused).
   select count(*) into n from public.reminders
-   where status in ('done', 'cancelled') and coalesce(done, false) = false;
+   where (status = 'done' and coalesce(done, false) = false)
+      or (status = 'cancelled' and coalesce(done, false) = true);
   if n <> 0 then
-    raise exception '% closed reminders still have done = false -- the sync trigger did not follow', n;
+    raise exception '% closed reminders disagree with their done flag -- the sync trigger did not follow', n;
   end if;
 end $$;
 

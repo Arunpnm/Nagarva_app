@@ -1665,6 +1665,41 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                     style: TextStyle(color: ng.mute)),
               ),
             ])
+          else if (survey.status == 'pending' &&
+              survey.expiresAt != null &&
+              survey.expiresAt!.isBefore(DateTime.now()))
+            // 11 Nov 2026 (Arun, testing on his phone): the link had
+            // expired, the customer page said "ask your moving company for
+            // a fresh one", and this screen kept offering the SAME dead
+            // link with no way to make another. A fresh link is a new
+            // survey row; the page loads surveys newest-first, so it takes
+            // over at once and the old one simply stops being shown.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Icon(Icons.timer_off_outlined, size: 17, color: ng.mute),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                        'The survey link expired on '
+                        '${DateFormat('d MMM').format(survey.expiresAt!.toLocal())} '
+                        'without a reply.',
+                        style: TextStyle(color: ng.mute)),
+                  ),
+                ]),
+                if (_actions.canRequestSurvey) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: _requestingSurvey ? null : _requestSurvey,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: Text(_requestingSurvey
+                        ? 'Creating link…'
+                        : 'Send a new link'),
+                  ),
+                ],
+              ],
+            )
           else if (survey.status == 'pending')
             OutlinedButton.icon(
               onPressed: () => _showLinkDialog(

@@ -325,7 +325,12 @@ String buildWhatsAppLink({String? phone, required String message}) {
 // browser — verified that way, not from a deploy log.
 const bool kSurveyLinkHosted = true;
 const bool kSignLinkHosted = true;
-const bool kQuoteLinkHosted = false;
+/// True since 11 Nov 2026: /quote serves the customer quote page
+/// (public_site/quote, public_get_quote / public_respond_quote). Verified
+/// by opening a real TEST Movers quote token on link.nagarva.in and
+/// sending "Ask for changes" from it: figures matched the quote, and the
+/// follow-up and owner notification arrived.
+const bool kQuoteLinkHosted = true;
 /// True since 7 Sept 2026: /track serves the customer document hub
 /// (status timeline, issued documents as downloads, rate-the-move and
 /// report-a-problem), deployed from `public_site/track/`.

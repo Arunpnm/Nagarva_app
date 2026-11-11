@@ -3,58 +3,453 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="robots" content="noindex">
-<title>Link unavailable</title>
+<meta name="robots" content="noindex, nofollow">
+<title>Your quotation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Inter+Tight:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/nagarva.css">
 <style>
-  :root { color-scheme: light dark; }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; padding: 24px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                 "Helvetica Neue", Arial, sans-serif;
-    background: #f4f6f8; color: #16202c;
-  }
-  .card {
-    width: 100%; max-width: 440px; background: #fff; border-radius: 14px;
-    padding: 30px 26px; box-shadow: 0 1px 3px rgba(0,0,0,.08),
-                                    0 8px 28px rgba(0,0,0,.06);
-  }
-  .mark { width: 44px; height: 44px; border-radius: 11px; background: #e8b640;
-          display: flex; align-items: center; justify-content: center;
-          margin-bottom: 18px; }
-  .mark svg { width: 24px; height: 24px; }
-  h1 { font-size: 19px; line-height: 1.35; margin: 0 0 10px; font-weight: 700; }
-  p  { font-size: 14.5px; line-height: 1.6; margin: 0 0 12px; color: #445; }
-  .foot { margin-top: 22px; padding-top: 16px; border-top: 1px solid #e6e9ed;
-          font-size: 12px; color: #8792a2; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #10151c; color: #e8edf3; }
-    .card { background: #182029; box-shadow: none; }
-    p { color: #a9b6c6; }
-    .foot { border-top-color: #26313d; color: #7d8b9c; }
-  }
+  /* Customer quote link (11 Nov 2026). The figures here come from
+     public_get_quote, which builds the charge lines with the same rules
+     as the app's quote PDF, so this page and the PDF always agree. */
+  .card { background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--r-md); padding: 16px; margin: 0 0 16px; }
+  .card h2 { font-size: 15px; margin: 0 0 10px; }
+  .ref { font-size: 12.5px; color: var(--muted); margin: -12px 0 18px; }
+  .row { display: flex; justify-content: space-between; gap: 12px;
+    font-size: 14px; padding: 7px 0; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row .amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .row.muted { color: var(--muted); }
+  .row.total { font-size: 17px; font-weight: 800; color: var(--gold);
+    border-top: 2px solid var(--line); margin-top: 4px; padding-top: 10px; }
+  .note { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .two .k { font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--muted); margin-bottom: 3px; }
+  .two .v { font-size: 13.5px; }
+  .items { margin: 0; padding: 0; list-style: none; }
+  .items li { display: flex; justify-content: space-between; gap: 10px;
+    font-size: 13.5px; padding: 6px 0; }
+  .items li + li { border-top: 1px solid var(--line); }
+  .items .q { color: var(--muted); white-space: nowrap; }
+  .more { background: none; border: 0; color: var(--teal); font: inherit;
+    font-size: 13px; padding: 8px 0 0; cursor: pointer; }
+  .banner { border-radius: var(--r-md); padding: 14px 16px; margin: 0 0 16px;
+    font-size: 14px; border: 1px solid var(--line); }
+  .banner.ok { background: rgba(47, 182, 168, .14); border-color: var(--teal); }
+  .banner.warn { background: var(--gold-soft); border-color: var(--gold); }
+  .actions { display: grid; gap: 10px; margin: 6px 0 24px; }
+  .panel { display: none; }
+  .panel.open { display: block; }
+  .field input, .field textarea { width: 100%; box-sizing: border-box; }
+  .call { color: var(--teal); text-decoration: none; font-weight: 700; }
+  .pdf { display: inline-block; margin-top: 10px; color: var(--teal);
+    font-size: 13.5px; font-weight: 600; text-decoration: none; }
+  .okline { color: var(--teal); font-size: 14px; margin: 10px 0 0; }
 </style>
 </head>
 <body>
-  <main class="card">
-    <div class="mark" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#16202c" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path>
-        <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"></path>
-      </svg>
+
+<div id="view-loading" class="state">
+  <div class="spinner"></div>
+  <p>Opening your quotation…</p>
+</div>
+
+<div id="view-blocked" class="state" hidden>
+  <div class="mark" id="blocked-mark">🔗</div>
+  <h2 id="blocked-title">This link isn't working</h2>
+  <p id="blocked-body">Ask your moving company to send it again.</p>
+</div>
+
+<main id="view-quote" class="wrap" hidden>
+  <div class="masthead">
+    <span class="logo" id="vendor">&nbsp;</span>
+    <span class="tag">Quotation</span>
+  </div>
+
+  <h1 id="greeting">Your quotation</h1>
+  <p class="ref" id="ref"></p>
+
+  <div id="state-banner" class="banner" hidden></div>
+
+  <div class="trip">
+    <div class="trip-route">
+      <span id="from-addr">—</span>
+      <span class="arrow">→</span>
+      <span id="to-addr">—</span>
     </div>
-    <h1>This link isn&rsquo;t available right now</h1>
-    <p>
-      Nothing is wrong on your side, and the link you were sent was a real
-      one. This page is temporarily unable to open it.
-    </p>
-    <p>
-      Please contact your moving company and ask them to send the link
-      again. They can also collect the same details over the phone.
-    </p>
-    <div class="foot">This link was sent to you by your moving company.</div>
-  </main>
+    <div class="trip-meta" id="move-date"></div>
+  </div>
+
+  <section class="card" id="where" hidden>
+    <div class="two">
+      <div><div class="k">Pickup</div><div class="v" id="from-detail"></div></div>
+      <div><div class="k">Drop</div><div class="v" id="to-detail"></div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Charges</h2>
+    <div id="lines"></div>
+    <p class="note" id="included" hidden></p>
+    <a class="pdf" id="pdf" href="#" target="_blank" rel="noopener" hidden>Download the quotation (PDF)</a>
+  </section>
+
+  <section class="card" id="items-card" hidden>
+    <h2 id="items-title">Items</h2>
+    <ul class="items" id="items"></ul>
+    <button type="button" class="more" id="items-more" hidden></button>
+  </section>
+
+  <div id="respond">
+    <div class="actions" id="action-buttons">
+      <button type="button" class="btn btn-primary btn-block" id="btn-accept">Accept this quotation</button>
+      <button type="button" class="btn btn-ghost btn-block" id="btn-changes">Ask for changes</button>
+    </div>
+
+    <section class="card panel" id="panel-accept">
+      <h2>Accept this quotation</h2>
+      <div class="field">
+        <label for="acc-name">Your name</label>
+        <input id="acc-name" type="text" maxlength="80" autocomplete="name">
+      </div>
+      <p class="note">By accepting, you agree to the charges above. Your moving company will contact you to confirm the booking.</p>
+      <div class="actions">
+        <button type="button" class="btn btn-primary btn-block" id="acc-go">Accept</button>
+        <button type="button" class="btn btn-ghost btn-block" data-close>Cancel</button>
+      </div>
+    </section>
+
+    <section class="card panel" id="panel-changes">
+      <h2>Ask for changes</h2>
+      <div class="field">
+        <label for="chg-note">What would you like changed?</label>
+        <textarea id="chg-note" rows="4" maxlength="500" placeholder="e.g. Can the date move to the 20th? Please add packing for the kitchen."></textarea>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-primary btn-block" id="chg-go">Send</button>
+        <button type="button" class="btn btn-ghost btn-block" data-close>Cancel</button>
+      </div>
+    </section>
+
+    <div id="respond-error" class="errline" hidden></div>
+  </div>
+
+  <p class="note" id="contact" hidden></p>
+</main>
+
+<script src="/config.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var CFG = window.NAGARVA_CONFIG || {};
+  var token = new URLSearchParams(location.search).get("token") || "";
+  var Q = null;
+  var busy = false;
+
+  function rpc(fn, body) {
+    return fetch(CFG.SUPABASE_URL + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": CFG.SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + CFG.SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  function show(id) {
+    ["view-loading", "view-blocked", "view-quote"].forEach(function (v) {
+      document.getElementById(v).hidden = (v !== id);
+    });
+  }
+
+  var BLOCKED = {
+    unavailable: ["🔗", "This quotation isn't available", "Please contact your moving company directly."],
+    not_found:   ["🔗", "This link isn't working", "The link may have been cut short. Ask your moving company to send it again."],
+    invalid:     ["🔗", "This link isn't working", "Ask your moving company to send it again."],
+    closed:      ["📁", "This quotation is closed", "Contact your moving company if you'd still like to move with them."],
+    network:     ["📡", "Couldn't open your quotation", "Check your connection and reload the page."]
+  };
+
+  // The browser tab and the header carry the VENDOR's name, never the
+  // platform's (Arun, 8 Sept 2026). Unknown name = blank, not a fallback.
+  function setVendor(name) {
+    var n = name && String(name).trim();
+    document.getElementById("vendor").textContent = n || "";
+    document.title = n ? "Your quotation — " + n : "Your quotation";
+  }
+
+  function blocked(reason, res) {
+    var m = BLOCKED[reason] || BLOCKED.not_found;
+    if (res) setVendor(res.vendor_name);
+    document.getElementById("blocked-mark").textContent = m[0];
+    document.getElementById("blocked-title").textContent = m[1];
+    var body = m[2];
+    document.getElementById("blocked-body").textContent = body;
+    if (res && res.vendor_phone) {
+      var a = document.createElement("a");
+      a.className = "call"; a.href = telHref(res.vendor_phone);
+      a.textContent = " Call " + fmtPhone(res.vendor_phone);
+      document.getElementById("blocked-body").appendChild(a);
+    }
+    show("view-blocked");
+  }
+
+  function rupees(n) {
+    var v = Math.round(Number(n) || 0);
+    return "₹" + v.toLocaleString("en-IN");
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "";
+    var s = String(iso);
+    var d = new Date(s.length === 10 ? s + "T00:00:00" : s);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  // An Indian number shows as +91 XXXXX XXXXX; anything else as typed.
+  function digits(p) { return String(p || "").replace(/[^\d+]/g, ""); }
+  function telHref(p) {
+    var d = digits(p);
+    if (/^\d{10}$/.test(d)) d = "+91" + d;
+    return "tel:" + d;
+  }
+  function fmtPhone(p) {
+    var d = digits(p);
+    if (/^\d{10}$/.test(d)) return "+91 " + d.slice(0, 5) + " " + d.slice(5);
+    if (/^\+91\d{10}$/.test(d)) return "+91 " + d.slice(3, 8) + " " + d.slice(8);
+    return String(p);
+  }
+
+  function floorText(floor, lift) {
+    var parts = [];
+    if (floor != null && floor !== "") {
+      parts.push(Number(floor) === 0 ? "Ground floor" : "Floor " + floor);
+    }
+    if (lift === true) parts.push("lift available");
+    if (lift === false) parts.push("no lift");
+    return parts.join(", ");
+  }
+
+  function row(host, label, value, cls) {
+    var r = document.createElement("div");
+    r.className = "row" + (cls ? " " + cls : "");
+    var a = document.createElement("span"); a.textContent = label;
+    var b = document.createElement("span"); b.className = "amt"; b.textContent = value;
+    r.appendChild(a); r.appendChild(b); host.appendChild(r);
+  }
+
+  function renderState() {
+    var banner = document.getElementById("state-banner");
+    var respond = document.getElementById("respond");
+    banner.hidden = true; banner.className = "banner";
+    respond.hidden = false;
+    if (Q.accepted) {
+      banner.hidden = false; banner.className = "banner ok";
+      banner.textContent = "You accepted this quotation" +
+        (Q.accepted_at ? " on " + fmtDate(Q.accepted_at) : "") +
+        (Q.accepted_by_name ? " as " + Q.accepted_by_name : "") +
+        ". Your moving company will contact you to confirm the booking.";
+      respond.hidden = true;
+    } else if (Q.expired) {
+      banner.hidden = false; banner.className = "banner warn";
+      banner.textContent = "This quotation was valid until " + fmtDate(Q.valid_until) +
+        ". You can still ask for changes, or contact your moving company for a fresh one.";
+      document.getElementById("btn-accept").hidden = true;
+    }
+  }
+
+  function render(res) {
+    Q = res;
+    setVendor(res.vendor_name);
+    if (res.customer_name) {
+      document.getElementById("greeting").textContent = "Hi " + res.customer_name + ", here's your quotation";
+    }
+    var ref = "Quotation " + (res.quote_ref || "");
+    if (res.version > 1) ref += " · revision " + res.version;
+    if (res.quote_date) ref += " · " + fmtDate(res.quote_date);
+    if (res.valid_until && !res.expired) ref += " · valid until " + fmtDate(res.valid_until);
+    document.getElementById("ref").textContent = ref;
+
+    document.getElementById("from-addr").textContent = res.from_city || res.from_address || "Pickup";
+    document.getElementById("to-addr").textContent = res.to_city || res.to_address || "Drop";
+    document.getElementById("move-date").textContent = res.move_date ? "Moving date: " + fmtDate(res.move_date) : "";
+
+    var fromD = [res.from_address, floorText(res.from_floor, res.from_has_lift)].filter(Boolean).join(" · ");
+    var toD = [res.to_address, floorText(res.to_floor, res.to_has_lift)].filter(Boolean).join(" · ");
+    if (fromD || toD) {
+      document.getElementById("from-detail").textContent = fromD || "—";
+      document.getElementById("to-detail").textContent = toD || "—";
+      document.getElementById("where").hidden = false;
+    }
+
+    // Charges — the same lines, in the same order, as the quote PDF.
+    var host = document.getElementById("lines");
+    host.innerHTML = "";
+    (res.lines || []).forEach(function (l) { row(host, l.label, rupees(l.amount)); });
+    if (Number(res.discount) > 0) row(host, "Discount", "− " + rupees(res.discount));
+    row(host, "Sub total", rupees(res.subtotal), "muted");
+    if (Number(res.gst_amount) > 0) {
+      row(host, "GST @ " + Number(res.gst_pct) + "%", rupees(res.gst_amount), "muted");
+    }
+    row(host, "Total", rupees(res.total), "total");
+    if (Number(res.advance) > 0) {
+      row(host, "Advance to confirm the booking", rupees(res.advance));
+      row(host, "Balance", rupees(Number(res.total) - Number(res.advance)), "muted");
+    }
+    var inc = res.included || [];
+    if (inc.length) {
+      var el = document.getElementById("included");
+      el.textContent = inc.join(", ") + " included in Freight / Transport.";
+      el.hidden = false;
+    }
+    if (res.pdf && res.pdf.url) {
+      var a = document.getElementById("pdf");
+      a.href = res.pdf.url; a.hidden = false;
+    }
+
+    // Items — first 8, then "Show all".
+    var items = res.items || [];
+    if (items.length) {
+      var ul = document.getElementById("items");
+      var title = "Items (" + items.length + (Number(res.total_cft) > 0 ? " · " + Number(res.total_cft) + " cft" : "") + ")";
+      document.getElementById("items-title").textContent = title;
+      function fill(n) {
+        ul.innerHTML = "";
+        items.slice(0, n).forEach(function (it) {
+          var li = document.createElement("li");
+          var a = document.createElement("span");
+          a.textContent = it.item + (it.sub ? " · " + it.sub : "");
+          var b = document.createElement("span"); b.className = "q";
+          b.textContent = "× " + Number(it.qty || 1);
+          li.appendChild(a); li.appendChild(b); ul.appendChild(li);
+        });
+      }
+      fill(8);
+      var more = document.getElementById("items-more");
+      if (items.length > 8) {
+        more.hidden = false;
+        more.textContent = "Show all " + items.length + " items";
+        more.onclick = function () { fill(items.length); more.hidden = true; };
+      }
+      document.getElementById("items-card").hidden = false;
+    }
+
+    if (res.vendor_phone) {
+      var c = document.getElementById("contact");
+      c.textContent = "Questions? ";
+      var t = document.createElement("a");
+      t.className = "call"; t.href = telHref(res.vendor_phone);
+      t.textContent = "Call " + fmtPhone(res.vendor_phone);
+      c.appendChild(t); c.hidden = false;
+    }
+
+    renderState();
+    show("view-quote");
+  }
+
+  // ---- respond ----------------------------------------------------------
+  var RESPOND_ERRORS = {
+    name_required: "Please type your name to accept.",
+    note_required: "Please write what you'd like changed.",
+    already_accepted: "This quotation has already been accepted.",
+    expired: "This quotation has expired. Ask your moving company for a fresh one.",
+    closed: "This quotation is closed. Please contact your moving company.",
+    too_many: "We've received several messages already today. Your moving company will contact you.",
+    unavailable: "This quotation isn't available right now. Please contact your moving company.",
+    not_found: "This link isn't working. Ask your moving company to send it again.",
+    invalid: "This link isn't working. Ask your moving company to send it again."
+  };
+
+  function errorLine(text) {
+    var e = document.getElementById("respond-error");
+    e.textContent = text || ""; e.hidden = !text;
+  }
+
+  function openPanel(id) {
+    errorLine("");
+    ["panel-accept", "panel-changes"].forEach(function (p) {
+      document.getElementById(p).classList.toggle("open", p === id);
+    });
+    document.getElementById("action-buttons").hidden = !!id;
+    if (id) {
+      var f = document.querySelector("#" + id + " input, #" + id + " textarea");
+      if (f) f.focus();
+    }
+  }
+
+  function respond(action, name, note, btn) {
+    if (busy) return;
+    busy = true; errorLine("");
+    var label = btn.textContent;
+    btn.disabled = true; btn.textContent = "Sending…";
+    rpc("public_respond_quote", {
+      p_token: token, p_action: action, p_name: name || null, p_note: note || null
+    }).then(function (res) {
+      busy = false; btn.disabled = false; btn.textContent = label;
+      if (res && res.ok) {
+        if (action === "accept") {
+          Q.accepted = true; Q.accepted_at = res.accepted_at; Q.accepted_by_name = name;
+          openPanel(null); renderState();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          openPanel(null);
+          document.getElementById("chg-note").value = "";
+          var ok = document.createElement("p");
+          ok.className = "okline";
+          ok.textContent = "Your message was sent. Your moving company will get back to you.";
+          var old = document.querySelector(".okline");
+          if (old) old.remove();
+          document.getElementById("action-buttons").appendChild(ok);
+        }
+        return;
+      }
+      if (res && res.reason === "already_accepted") {
+        Q.accepted = true; openPanel(null); renderState(); return;
+      }
+      errorLine(RESPOND_ERRORS[res && res.reason] || "That didn't go through. Please try again.");
+    }).catch(function () {
+      busy = false; btn.disabled = false; btn.textContent = label;
+      errorLine("That didn't send. Check your connection and try again.");
+    });
+  }
+
+  document.getElementById("btn-accept").addEventListener("click", function () {
+    var n = document.getElementById("acc-name");
+    if (!n.value && Q && Q.customer_name) n.value = Q.customer_name;
+    openPanel("panel-accept");
+  });
+  document.getElementById("btn-changes").addEventListener("click", function () { openPanel("panel-changes"); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function (b) {
+    b.addEventListener("click", function () { openPanel(null); });
+  });
+  document.getElementById("acc-go").addEventListener("click", function () {
+    var name = document.getElementById("acc-name").value.trim();
+    if (name.length < 2) { errorLine(RESPOND_ERRORS.name_required); return; }
+    respond("accept", name, null, this);
+  });
+  document.getElementById("chg-go").addEventListener("click", function () {
+    var note = document.getElementById("chg-note").value.trim();
+    if (note.length < 3) { errorLine(RESPOND_ERRORS.note_required); return; }
+    respond("changes", null, note, this);
+  });
+
+  // ---- boot ----
+  if (!token) { blocked("invalid"); return; }
+  rpc("public_get_quote", { p_token: token }).then(function (res) {
+    if (!res || !res.ok) { blocked(res && res.reason, res); return; }
+    render(res);
+  }).catch(function () { blocked("network"); });
+})();
+</script>
 </body>
 </html>
