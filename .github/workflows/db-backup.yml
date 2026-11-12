@@ -1,0 +1,159 @@
+# Nagarva daily backup (11 Nov 2026)
+#
+# Why: the Supabase project is on the Free plan, which has NO automatic
+# backups, and Supabase's own advice for Free projects is to export the data
+# regularly and keep it off-site. This job does that every night and then
+# PROVES the copy is usable by restoring it into a throwaway Postgres 17
+# and checking every table's row count. A backup nobody restored is a hope.
+#
+# What it keeps (encrypted with BACKUP_PASSPHRASE, 30 days of copies, as
+# GitHub artifacts on this repo):
+#   public.dump        all app tables, functions, policies, grants (pg_dump -Fc)
+#   auth-data.dump     logins (auth schema DATA; a new Supabase project has
+#                      the auth tables already)
+#   storage-data.dump  the storage bucket/object records
+#   files/             every stored file (logos, documents, signatures, photos)
+#   counts-before.tsv  row count of every public table just before the dump
+#   counts-after.tsv   ... and just after
+#
+# Side effect, on purpose: a few queries every day keep the Free project
+# from being paused for inactivity.
+#
+# Secrets (repo Settings -> Secrets and variables -> Actions):
+#   SUPABASE_DB_URL            Session pooler connection string (Supabase ->
+#                              Connect -> Session pooler), with the DB password.
+#                              NOT the direct db.<ref>.supabase.co address:
+#                              GitHub runners cannot reach it (IPv6 only).
+#   SUPABASE_URL               https://hqqcapifefsaqvotqvlt.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY  for downloading stored files
+#   BACKUP_PASSPHRASE          long random text; KEEP A COPY OFF GITHUB. Without
+#                              it the backups cannot be opened.
+#
+# Restore steps: docs/BACKUP_RESTORE.md
+
+name: Nagarva daily backup
+
+on:
+  schedule:
+    - cron: '41 20 * * *'   # 02:11 IST every day
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      # Throwaway database for the restore check. Postgres 17 = the live
+      # server's major version.
+      check:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: check
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      CHECK_DB_URL: postgresql://postgres:check@localhost:5432/postgres
+      OUT: ${{ github.workspace }}/backup
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the secrets are set
+        run: |
+          missing=""
+          for v in SUPABASE_DB_URL SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY BACKUP_PASSPHRASE; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing (see the top of this file)"
+            exit 1
+          fi
+          case "$SUPABASE_DB_URL" in
+            *pooler.supabase.com*) ;;
+            *) echo "::error::SUPABASE_DB_URL must be the Session pooler string (…pooler.supabase.com:5432…)"; exit 1 ;;
+          esac
+
+      - name: Install Postgres 17 client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Count rows before the dump
+        run: |
+          mkdir -p "$OUT/files"
+          psql "$SUPABASE_DB_URL" -X -v ON_ERROR_STOP=1 -At -F $'\t' \
+            -f scripts/backup/counts.sql > "$OUT/counts-before.tsv"
+          echo "$(wc -l < "$OUT/counts-before.tsv") tables counted"
+
+      - name: Dump the database
+        run: |
+          pg_dump --version
+          pg_dump "$SUPABASE_DB_URL" -Fc --no-owner --schema=public \
+            -f "$OUT/public.dump"
+          pg_dump "$SUPABASE_DB_URL" -Fc --no-owner --data-only --schema=auth \
+            -f "$OUT/auth-data.dump"
+          pg_dump "$SUPABASE_DB_URL" -Fc --no-owner --data-only \
+            -t storage.buckets -t storage.objects \
+            -f "$OUT/storage-data.dump"
+          ls -l "$OUT"
+
+      - name: Count rows after the dump
+        run: |
+          psql "$SUPABASE_DB_URL" -X -v ON_ERROR_STOP=1 -At -F $'\t' \
+            -f scripts/backup/counts.sql > "$OUT/counts-after.tsv"
+
+      - name: Download stored files
+        run: bash scripts/backup/download_storage.sh "$OUT/files"
+
+      - name: Restore check (throwaway Postgres 17)
+        run: |
+          psql "$CHECK_DB_URL" -X -q -v ON_ERROR_STOP=1 -f scripts/backup/restore_check_setup.sql
+          # Errors are expected for a few Supabase-only objects; the row
+          # counts below are the real test. Only error lines are logged,
+          # without DETAIL lines (those can quote row values).
+          pg_restore --no-owner -d "$CHECK_DB_URL" "$OUT/public.dump" 2> restore.log || true
+          echo "Restore messages (expected for Supabase-only objects):"
+          grep -E '^pg_restore: (error|warning)' restore.log | cut -c1-220 | sort | uniq -c | head -40 || true
+          psql "$CHECK_DB_URL" -X -v ON_ERROR_STOP=1 -At -F $'\t' \
+            -f scripts/backup/counts.sql > restored.tsv
+          python3 scripts/backup/compare_counts.py \
+            "$OUT/counts-before.tsv" "$OUT/counts-after.tsv" restored.tsv
+
+      - name: Encrypt
+        run: |
+          stamp=$(TZ=Asia/Kolkata date +%Y-%m-%d_%H%M)
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          tar -C "$OUT" -czf "nagarva-backup-$stamp.tar.gz" .
+          gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 \
+            --passphrase-fd 0 -o "nagarva-backup-$stamp.tar.gz.gpg" \
+            "nagarva-backup-$stamp.tar.gz" <<< "$BACKUP_PASSPHRASE"
+          rm -rf "$OUT" "nagarva-backup-$stamp.tar.gz" restored.tsv restore.log
+          ls -l nagarva-backup-*.gpg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nagarva-backup-${{ env.STAMP }}
+          path: nagarva-backup-*.tar.gz.gpg
+          retention-days: 30
+          if-no-files-found: error
