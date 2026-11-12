@@ -136,8 +136,8 @@ class _PlanPageWidgetState extends State<PlanPageWidget>
   Future<void> _startAutopay(SubscriptionPlansRow p) async {
     final price = _priceByCode[p.code];
     if (price == null) return;
-    final total = functions.inrFull((price['total_inr'] as num).toDouble());
-    final base = functions.inrFull((price['price_inr'] as num).toDouble());
+    final total = _inrPaise((price['total_inr'] as num).toDouble());
+    final base = _inrPaise((price['price_inr'] as num).toDouble());
     final per = price['billing_period'] == 'annual' ? 'year' : 'month';
     final ok = await showDialog<bool>(
       context: context,
@@ -518,7 +518,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget>
               child: Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                    '+ ${gst['gst_pct']}% GST = ${functions.inrFull((gst['total_inr'] as num).toDouble())}',
+                    '+ ${gst['gst_pct']}% GST = ${_inrPaise((gst['total_inr'] as num).toDouble())}',
                     style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
               ),
             ),
@@ -560,7 +560,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget>
     final st = _sub?['status'] as String?;
     final until = _paidUntil();
     final amount = _sub?['amount_inr'] is num
-        ? functions.inrFull((_sub!['amount_inr'] as num).toDouble())
+        ? _inrPaise((_sub!['amount_inr'] as num).toDouble())
         : null;
     final plan = _sub?['plan_name'] as String? ?? '';
     final endsAtEnd = _sub?['ends_at_period_end'] == true;
@@ -696,4 +696,14 @@ class _PlanPageWidgetState extends State<PlanPageWidget>
   }
 
   String _formatDate(DateTime dt) => DateFormat('d MMM yyyy').format(dt);
+
+  /// Rupees with paise when there are any: a plan + 18% GST is rarely a
+  /// round number (Pro = Rs 3,538.82), and the amount charged must read
+  /// exactly as Razorpay shows it -- inrFull rounds to whole rupees.
+  String _inrPaise(double amount) {
+    final cents = (amount * 100).round();
+    final whole = functions.inrFull((cents ~/ 100).toDouble());
+    final p = cents % 100;
+    return p == 0 ? whole : '$whole.${p.toString().padLeft(2, '0')}';
+  }
 }
