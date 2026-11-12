@@ -262,6 +262,10 @@ class _NotificationBellState extends State<NotificationBell> {
                                 switch (n.type) {
                                   'order_assigned' => Icons.assignment_ind,
                                   'otp_completed' => Icons.task_alt,
+                                  // Customer quote link (11-12 Nov 2026).
+                                  'quote_accepted' => Icons.thumb_up_alt_outlined,
+                                  'quote_changes' => Icons.edit_note_rounded,
+                                  'quote_advance_paid' => Icons.currency_rupee_rounded,
                                   _ => Icons.person_add_alt_1,
                                 },
                                 color: n.read
