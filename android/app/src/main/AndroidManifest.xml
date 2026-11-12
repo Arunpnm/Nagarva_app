@@ -2,6 +2,9 @@
     package="in.nagarva.app"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Push alerts (12 Nov 2026). Android 13+ asks the user once;
+         lib/backend/push_registration.dart makes the request. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Supervisor check-in records where they are (crew check-in,
          31 Oct 2026). Asked at the moment of check-in, never in the
          background. CAMERA for the crew's code scanner is merged in by

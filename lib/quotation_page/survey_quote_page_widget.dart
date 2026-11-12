@@ -234,14 +234,26 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   late final TextEditingController _phone;
   late final TextEditingController _fromAddr;
   late final TextEditingController _toAddr;
+  // 12 Nov 2026 (Arun: "no option for full address and which floor"):
+  // city/area, full address, floor and lift are separate now. The quote
+  // table, the quote PDF and quote -> order conversion already carried
+  // from_city / from_floor / from_has_lift; this screen never filled them.
+  late final TextEditingController _fromCity;
+  late final TextEditingController _toCity;
+  int? _fromFloor;
+  int? _toFloor;
+  bool? _fromLift;
+  bool? _toLift;
 
   @override
   void initState() {
     super.initState();
     _customer = TextEditingController(text: widget.leadCustomer ?? '');
     _phone = TextEditingController(text: widget.leadPhone ?? '');
-    _fromAddr = TextEditingController(text: widget.leadFromCity ?? '');
-    _toAddr = TextEditingController(text: widget.leadToCity ?? '');
+    _fromCity = TextEditingController(text: widget.leadFromCity ?? '');
+    _toCity = TextEditingController(text: widget.leadToCity ?? '');
+    _fromAddr = TextEditingController();
+    _toAddr = TextEditingController();
     _seedFromLead();
     photoSurveyEnabled().then((on) {
       if (mounted && on) setState(() => _photoSurveyOn = true);
@@ -321,8 +333,14 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         _editing = q;
         if ((q.customer ?? '').isNotEmpty) _customer.text = q.customer!;
         if ((q.phone ?? '').isNotEmpty) _phone.text = q.phone!;
+        if ((q.fromCity ?? '').isNotEmpty) _fromCity.text = q.fromCity!;
+        if ((q.toCity ?? '').isNotEmpty) _toCity.text = q.toCity!;
         if ((q.fromAddress ?? '').isNotEmpty) _fromAddr.text = q.fromAddress!;
         if ((q.toAddress ?? '').isNotEmpty) _toAddr.text = q.toAddress!;
+        _fromFloor = q.fromFloor;
+        _toFloor = q.toFloor;
+        _fromLift = q.fromHasLift;
+        _toLift = q.toHasLift;
 
         // ---- items ----
         final items = q.items;
@@ -483,8 +501,12 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       setState(() {
         if (_customer.text.isEmpty) _customer.text = l.customer;
         if (_phone.text.isEmpty) _phone.text = l.phone ?? '';
-        if (_fromAddr.text.isEmpty) _fromAddr.text = l.fromCity ?? '';
-        if (_toAddr.text.isEmpty) _toAddr.text = l.toCity ?? '';
+        if (_fromCity.text.isEmpty) _fromCity.text = l.fromCity ?? '';
+        if (_toCity.text.isEmpty) _toCity.text = l.toCity ?? '';
+        if (_fromAddr.text.isEmpty) _fromAddr.text = l.fromAddress ?? '';
+        if (_toAddr.text.isEmpty) _toAddr.text = l.toAddress ?? '';
+        _fromFloor ??= l.fromFloor;
+        _toFloor ??= l.toFloor;
       });
     } catch (_) {}
   }
@@ -530,6 +552,10 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         if ((survey.toAddress ?? '').isNotEmpty) {
           _toAddr.text = survey.toAddress!;
         }
+        _fromFloor = _floorFrom(survey.fromFloor) ?? _fromFloor;
+        _toFloor = _floorFrom(survey.toFloor) ?? _toFloor;
+        _fromLift = survey.fromHasLift ?? _fromLift;
+        _toLift = survey.toHasLift ?? _toLift;
         // Name/phone the customer typed on the survey win over the lead's
         // (they used to arrive via the URL — BUG-031).
         if ((survey.customerName ?? '').isNotEmpty) {
@@ -561,6 +587,8 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
     _phone.dispose();
     _fromAddr.dispose();
     _toAddr.dispose();
+    _fromCity.dispose();
+    _toCity.dispose();
     _itemSearch.dispose();
     for (final c in _amountCtrl.values) {
       c.dispose();
@@ -691,7 +719,8 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
   bool get _isInterstate {
     if (_gstType == 'intra') return false;
     if (_gstType == 'inter') return true;
-    return isInterState(_fromAddr.text, _toAddr.text);
+    return isInterState('${_fromCity.text} ${_fromAddr.text}',
+        '${_toCity.text} ${_toAddr.text}');
   }
 
   double get _gstAmount => (_subtotal * (_gstPct / 100)).roundToDouble();
@@ -818,10 +847,21 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
         'from_address': _fromAddr.text.trim(),
         'to_address': _toAddr.text.trim(),
         // BUG-029 (3 Nov 2026): carry what the lead already holds, so the
-        // order, invoice and calendar don't start with gaps.
-        if ((_leadRow?.fromCity ?? '').isNotEmpty)
+        // order, invoice and calendar don't start with gaps. Since 12 Nov
+        // the city is typed here (prefilled from the lead), so a walk-in
+        // quote has one too.
+        if (_fromCity.text.trim().isNotEmpty)
+          'from_city': _fromCity.text.trim()
+        else if ((_leadRow?.fromCity ?? '').isNotEmpty)
           'from_city': _leadRow!.fromCity,
-        if ((_leadRow?.toCity ?? '').isNotEmpty) 'to_city': _leadRow!.toCity,
+        if (_toCity.text.trim().isNotEmpty)
+          'to_city': _toCity.text.trim()
+        else if ((_leadRow?.toCity ?? '').isNotEmpty)
+          'to_city': _leadRow!.toCity,
+        'from_floor': _fromFloor,
+        'to_floor': _toFloor,
+        'from_has_lift': _fromLift,
+        'to_has_lift': _toLift,
         if ((_leadRow?.service ?? '').isNotEmpty)
           'service': _leadRow!.service,
         if (_leadMoveDate != null) 'move_date': _leadMoveDate,
@@ -1151,21 +1191,125 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
                 label: 'Phone',
                 keyboardType: TextInputType.phone,
                 mono: true),
-            const SizedBox(height: 10),
-            NgInput(
-                controller: _fromAddr,
-                readOnly: _isEditing,
-                label: 'From city / address',
-                icon: Icons.trip_origin_rounded),
-            const SizedBox(height: 10),
-            NgInput(
-                controller: _toAddr,
-                readOnly: _isEditing,
-                label: 'To city / address',
-                icon: Icons.place_outlined),
+            const SizedBox(height: 14),
+            _placeBlock(ng,
+                title: 'Pickup',
+                icon: Icons.trip_origin_rounded,
+                city: _fromCity,
+                address: _fromAddr,
+                floor: _fromFloor,
+                lift: _fromLift,
+                onFloor: (v) => setState(() => _fromFloor = v),
+                onLift: (v) => setState(() => _fromLift = v)),
+            const SizedBox(height: 14),
+            _placeBlock(ng,
+                title: 'Drop',
+                icon: Icons.place_outlined,
+                city: _toCity,
+                address: _toAddr,
+                floor: _toFloor,
+                lift: _toLift,
+                onFloor: (v) => setState(() => _toFloor = v),
+                onLift: (v) => setState(() => _toLift = v)),
           ],
         ),
       );
+
+  /// "Ground", "3", "G", "3rd floor" from the customer survey -> a floor
+  /// number; anything else -> null (left for the surveyor to pick).
+  static int? _floorFrom(String? raw) {
+    final s = (raw ?? '').trim().toLowerCase();
+    if (s.isEmpty) return null;
+    if (s.startsWith('g')) return 0;
+    final m = RegExp(r'\d+').firstMatch(s);
+    return m == null ? null : int.tryParse(m.group(0)!);
+  }
+
+  static String _floorLabel(int f) {
+    if (f == 0) return 'Ground floor';
+    final suffix = (f % 100 >= 11 && f % 100 <= 13)
+        ? 'th'
+        : switch (f % 10) { 1 => 'st', 2 => 'nd', 3 => 'rd', _ => 'th' };
+    return '$f$suffix floor';
+  }
+
+  /// One end of the move: city/area, full address, floor and lift.
+  /// Locked while revising, like the rest of the customer details.
+  Widget _placeBlock(
+    NgPalette ng, {
+    required String title,
+    required IconData icon,
+    required TextEditingController city,
+    required TextEditingController address,
+    required int? floor,
+    required bool? lift,
+    required ValueChanged<int?> onFloor,
+    required ValueChanged<bool?> onLift,
+  }) {
+    final locked = _isEditing;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(title,
+            style: NgFonts.geist(
+                fontSize: 13, fontWeight: FontWeight.w600, color: ng.text)),
+        const SizedBox(height: 8),
+        NgInput(
+            controller: city,
+            readOnly: locked,
+            label: '$title city / area',
+            icon: icon),
+        const SizedBox(height: 10),
+        NgInput(
+            controller: address,
+            readOnly: locked,
+            maxLines: 3,
+            label: 'Full address (house, street, landmark)'),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              // Keyed on the value: initialValue is read once, and the floor
+              // can arrive after the first build (lead / survey prefill).
+              child: DropdownButtonFormField<int?>(
+                key: ValueKey('$title-floor-$floor'),
+                initialValue: floor,
+                isExpanded: true,
+                isDense: true,
+                decoration:
+                    const InputDecoration(labelText: 'Floor', isDense: true),
+                items: [
+                  const DropdownMenuItem<int?>(
+                      value: null, child: Text('Not set')),
+                  for (var f = 0; f <= 30; f++)
+                    DropdownMenuItem<int?>(
+                        value: f,
+                        child: Text(_floorLabel(f),
+                            overflow: TextOverflow.ellipsis)),
+                ],
+                onChanged: locked ? null : onFloor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text('Lift',
+                style: NgFonts.geist(fontSize: 12.5, color: ng.mute)),
+            const SizedBox(width: 6),
+            NgChip(
+                label: 'Yes',
+                selected: lift == true,
+                onTap: locked ? () {} : () => onLift(lift == true ? null : true)),
+            const SizedBox(width: 6),
+            NgChip(
+                label: 'No',
+                selected: lift == false,
+                onTap:
+                    locked ? () {} : () => onLift(lift == false ? null : false)),
+          ],
+        ),
+      ],
+    );
+  }
 
   Widget _packageCard(NgPalette ng) {
     final s = _suggestion;
@@ -2023,15 +2167,21 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       children: [
         Expanded(
           flex: 2,
+          // isExpanded (12 Nov 2026): without it the dropdown sizes to its
+          // longest label, which is wider than this column on a phone, and
+          // Flutter painted an "OVERFLOWED BY .. PIXELS" stripe over it.
           child: DropdownButtonFormField<String>(
             initialValue: basis,
             isDense: true,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'Basis', isDense: true),
             items: [
               for (final b in kChargeBasisOptions)
                 DropdownMenuItem(
                   value: b,
                   child: Text(kChargeBasisLabels[b]!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 12)),
                 ),
             ],

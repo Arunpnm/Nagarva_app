@@ -2,6 +2,9 @@ plugins {
    id "com.android.application"
    id "kotlin-android"
    id "dev.flutter.flutter-gradle-plugin"
+   // Push notifications (12 Nov 2026): Firebase project "nagarva",
+   // config in google-services.json beside this file.
+   id "com.google.gms.google-services"
 }
 
 def localProperties = new Properties()

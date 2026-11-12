@@ -3156,6 +3156,30 @@
   "@suView": {
     "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
   },
+  "suOtherUser": "This browser is now logged in as another account. Log in again with your mobile number.",
+  "@suOtherUser": {
+    "description": "VendorSignupPage / status: the session changed (another login in the same browser)"
+  },
+  "suNowOk": "Good news! Your application is approved.",
+  "@suNowOk": {
+    "description": "VendorSignupPage / status: shown when an automatic check finds the approval"
+  },
+  "bioReason": "Unlock Nagarva",
+  "@bioReason": {"description": "Fingerprint prompt title (PIN screen)"},
+  "bioAsk": "Use fingerprint or face next time?",
+  "@bioAsk": {"description": "Offer after a PIN login"},
+  "bioAskSub": "Log in with your fingerprint or face instead of typing your PIN. Your PIN is kept safely on this phone only.",
+  "@bioAskSub": {"description": "Offer after a PIN login, body"},
+  "bioYes": "Yes, use it",
+  "@bioYes": {"description": "Offer button"},
+  "bioNo": "Not now",
+  "@bioNo": {"description": "Offer button"},
+  "bioPinChanged": "Your PIN has changed. Enter your PIN once.",
+  "@bioPinChanged": {"description": "Saved PIN refused"},
+  "bioSetting": "Fingerprint / face login",
+  "@bioSetting": {"description": "Settings switch"},
+  "bioSettingSub": "On this phone. Turn on at your next PIN login.",
+  "@bioSettingSub": {"description": "Settings switch subtitle"},
   "suSent": "Application submitted",
   "@suSent": {
     "description": "VendorSignupPage / trial (handoff 21 Oct 2026)"
@@ -3985,6 +4009,14 @@
   "ngSetNotifications": "Notifications",
   "@ngSetNotifications": {
     "description": "Dashboard redesign"
+  },
+  "ngSetSound": "Alert sound",
+  "@ngSetSound": {
+    "description": "Settings: chime + vibration on a new notification"
+  },
+  "ngSetSoundSub": "Play a sound and vibrate for new alerts",
+  "@ngSetSoundSub": {
+    "description": "Settings: subtitle of the alert sound switch"
   },
   "ngSetNotificationsSub": "Show alerts while the app is open",
   "@ngSetNotificationsSub": {

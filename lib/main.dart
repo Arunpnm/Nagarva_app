@@ -18,6 +18,7 @@ import '/backend/org_resolution.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/backend/crash_reporting.dart';
 import '/backend/platform_admin_status.dart';
+import '/backend/push_registration.dart';
 import '/backend/session_logout.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
@@ -378,6 +379,10 @@ Future<void> _startApp() async {
   await FlutterFlowTheme.initialize();
   await NotificationPrefs.initialize();
   await DeviceOrgBinding.initialize();
+  // Phone push (Android only; a no-op on web). After session restore, so
+  // a returning user's phone registers straight away.
+  await PushRegistration.init();
+  unawaited(PushRegistration.sync());
 
   await FFLocalizations.initialize();
 

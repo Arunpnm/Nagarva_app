@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "834741879024",
+    "project_id": "nagarva",
+    "storage_bucket": "nagarva.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:834741879024:android:fd609b3a9fec9ad190c235",
+        "android_client_info": {
+          "package_name": "in.nagarva.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAx8iu0E-5bE6lWaOPLQvwFqzZwj-JR774"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

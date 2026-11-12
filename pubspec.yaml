@@ -153,6 +153,29 @@ dependencies:
   supabase_flutter: 2.9.0
   timeago: 3.7.1
   uuid: 4.5.3
+  # 12 Nov 2026: the phone's share menu, so a link can go to WhatsApp
+  # Business, SMS or any app (share_link_sheet.dart "Other apps").
+  share_plus: 10.1.4
+  # 12 Nov 2026: a short chime when a new notification arrives while the
+  # app is open (assets/audios/notify.wav, made for Nagarva, no licence
+  # needed). 6.5.1, not 6.8.x: 6.8 needs Flutter 3.44; 6.5.1 needs >=3.27.
+  audioplayers: 6.5.1
+  # 12 Nov 2026: phone push notifications (Firebase Cloud Messaging) for
+  # alerts while the app is closed. Android only; the web build never
+  # initialises Firebase (lib/backend/push_registration.dart). Settled
+  # Sept 2026 releases, a matched pair; both need Flutter >=3.27.
+  firebase_core: 4.15.0
+  firebase_messaging: 16.7.0
+  # 12 Nov 2026: fingerprint / face unlock on the PIN screen. The PIN is
+  # kept in the phone's secure store (Android Keystore) and released only
+  # after the fingerprint matches; the server still checks it as usual.
+  # local_auth 2.3.0 + local_auth_android 1.0.56: the 3.x line and
+  # local_auth_android 2.0.9+ need newer Flutter/Dart than the pinned
+  # 3.35.5 / 3.9 (or change the API mid-pin). Needs MainActivity to be a
+  # FlutterFragmentActivity.
+  local_auth: 2.3.0
+  local_auth_android: 1.0.56
+  flutter_secure_storage: 9.2.4
   url_launcher: 6.3.1
   url_launcher_android: 6.3.16
   url_launcher_ios: 6.3.3

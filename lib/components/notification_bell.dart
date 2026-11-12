@@ -3,11 +3,14 @@ import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '/backend/edge_function_errors.dart';
 const _kNotificationsEnabledKey = '__notifications_enabled__';
+const _kNotificationSoundKey = '__notification_sound__';
 
 /// Per-device notification preference (parity brief Part 2a — this
 /// control previously did nothing at all). Gates only the disruptive
@@ -24,6 +27,36 @@ class NotificationPrefs {
 
   static Future<void> setPopupsEnabled(bool value) async =>
       _prefs?.setBool(_kNotificationsEnabledKey, value);
+
+  /// Chime + vibration on a new notification while the app is open
+  /// (Arun, 12 Nov 2026). On by default, per device.
+  static bool get soundEnabled =>
+      _prefs?.getBool(_kNotificationSoundKey) ?? true;
+
+  static Future<void> setSoundEnabled(bool value) async =>
+      _prefs?.setBool(_kNotificationSoundKey, value);
+}
+
+/// Plays the notification chime once per notification, however many
+/// bells are on screen (sidebar and top bar each hold one, and each gets
+/// the same Realtime insert). The sound file ships inside the app, so it
+/// needs no network.
+class NotificationChime {
+  static final _player = AudioPlayer();
+  static final _played = <String>{};
+
+  static Future<void> play(String id) async {
+    if (!NotificationPrefs.soundEnabled || !_played.add(id)) return;
+    if (_played.length > 200) _played.remove(_played.first);
+    try {
+      HapticFeedback.mediumImpact();
+      await _player.stop();
+      await _player.play(AssetSource('audios/notify.wav'));
+    } catch (_) {
+      // A browser that blocks sound before the first tap, or no audio
+      // device: the badge and popup still show, which is enough.
+    }
+  }
 }
 
 /// Sidebar notification bell (v1 in-app notifications).
@@ -134,6 +167,7 @@ class _NotificationBellState extends State<NotificationBell> {
             if (!_forMe(row) || !mounted) return;
             setState(() => _items.insert(0, NotificationsRow(row)));
             if (!NotificationPrefs.popupsEnabled) return;
+            NotificationChime.play('${row['id']}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(

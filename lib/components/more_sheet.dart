@@ -8,6 +8,7 @@ import '/backend/session_logout.dart';
 import '/backend/vendor_identity.dart';
 import '/components/ng_widgets.dart';
 import '/components/quick_entry_dialog.dart';
+import '/components/vendor_logo.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -322,16 +323,11 @@ class _MoreSheetState extends State<MoreSheet> {
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Image.asset('assets/images/nagarva_logo.png',
-                fit: BoxFit.cover),
+          VendorLogo(
+            url: AppSession.instance.currentOrgLogoUrl,
+            name: VendorIdentity.forDocument,
+            size: 40,
+            radius: 12,
           ),
           const SizedBox(width: 12),
           Expanded(

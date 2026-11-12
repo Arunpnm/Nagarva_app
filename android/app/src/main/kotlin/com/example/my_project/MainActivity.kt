@@ -1,6 +1,9 @@
 package `in`.nagarva.app
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity: FlutterActivity() {
+// FlutterFragmentActivity, not FlutterActivity (12 Nov 2026): the
+// fingerprint / face prompt (local_auth) needs a FragmentActivity and
+// fails without one.
+class MainActivity: FlutterFragmentActivity() {
 }

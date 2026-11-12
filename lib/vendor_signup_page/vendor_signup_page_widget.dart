@@ -46,7 +46,8 @@ class VendorSignupPageWidget extends StatefulWidget {
 enum _Step { loading, phone, otp, biz, docs, review, status }
 
 
-class _VendorSignupPageState extends State<VendorSignupPageWidget> {
+class _VendorSignupPageState extends State<VendorSignupPageWidget>
+    with WidgetsBindingObserver {
   _Step _step = _Step.loading;
   bool _busy = false;
 
@@ -73,14 +74,43 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
   Timer? _resendTimer;
   int _resendIn = 0;
 
+  /// While an application waits for review, the status screen asks the
+  /// server again every 30 s and whenever the app comes back to the
+  /// front, so an approval shows up without the applicant hunting for a
+  /// refresh button (Arun, 12 Nov 2026: approved in Super Admin, the
+  /// applicant's screen still said "under review").
+  Timer? _statusPoll;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _statusPoll = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (_step == _Step.status && _waitingReview) {
+        _refreshStatus(quiet: true);
+      }
+    });
     _resume();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        _step == _Step.status &&
+        _waitingReview) {
+      _refreshStatus(quiet: true);
+    }
+  }
+
+  bool get _waitingReview {
+    final s = _app?['status'];
+    return s != null && s != 'approved' && s != 'rejected';
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _statusPoll?.cancel();
     _resendTimer?.cancel();
     for (final c in [_phone, _code, _name, _owner, _city, _email, _gst, _ref]) {
       c.dispose();
@@ -352,7 +382,18 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
 
   Future<void> _refreshStatus({bool quiet = false}) async {
     final uid = SupaFlow.client.auth.currentUser?.id;
-    if (uid == null) return;
+    // The login is shared by every tab of a browser. If someone logged in
+    // as a different account in another tab (or logged out), this screen
+    // can no longer read the application, and used to keep showing the old
+    // status forever. Say so and ask for the mobile login again.
+    final owner = _app?['auth_user_id'] as String?;
+    if (uid == null || (owner != null && owner != uid)) {
+      _app = null;
+      if (mounted) setState(() => _step = _Step.phone);
+      _flash(_l.suOtherUser);
+      return;
+    }
+    final before = _app?['status'];
     try {
       final row = await SupaFlow.client
           .from('vendor_signups')
@@ -362,6 +403,11 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
       if (row != null) _app = row;
       if (_app?['status'] == 'approved') await _loadProPlan();
       if (mounted) setState(() {});
+      if (before != null &&
+          before != 'approved' &&
+          _app?['status'] == 'approved') {
+        _flash(_l.suNowOk);
+      }
     } catch (_) {
       if (!quiet) _flash(_l.suSendFailed);
     }
@@ -375,7 +421,7 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
       final user = SupaFlow.client.auth.currentUser;
       if (user == null) return;
       _flash(trial ? _l.suTrOn('${_trialDays()}') : _l.suFreeOn);
-      await _enterApp(user);
+      await _enterApp(user, firstRun: true);
     } catch (e) {
       _flash(extractDbErrorMessage(e, fallback: _l.suSendFailed));
     } finally {
@@ -386,7 +432,10 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
   /// Same landing as the email login (login_page_widget.dart), so a
   /// mobile-signup owner gets the org resolution, saved-org restore and
   /// first-run PIN prompt every other owner gets.
-  Future<void> _enterApp(User user) async {
+  /// [firstRun]: the plan was chosen a moment ago, so this company has no
+  /// logo, address or GST on file yet. Go through business setup (after
+  /// the PIN) rather than straight to an empty dashboard.
+  Future<void> _enterApp(User user, {bool firstRun = false}) async {
     final orgs = await resolveVendorOrgs(user);
     if (!mounted) return;
     final resolved = await resolveActiveOrg(
@@ -400,10 +449,18 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget> {
     await establishVendorSession(user, resolved.orgId, orgs);
     if (!mounted) return;
     if (await ownerNeedsPin(orgId: resolved.orgId, userId: user.id)) {
-      if (mounted) context.go(SetOwnerPinPageWidget.routePath);
+      if (mounted) {
+        context.go(firstRun
+            ? '${SetOwnerPinPageWidget.routePath}?next=setup'
+            : SetOwnerPinPageWidget.routePath);
+      }
       return;
     }
-    if (mounted) context.go(HomePageWidget.routePath);
+    if (mounted) {
+      context.go(firstRun
+          ? OrgSetupPageWidget.routePath
+          : HomePageWidget.routePath);
+    }
   }
 
   int _trialDays() => (_proPlan?['trial_days'] as int?) ?? 30;

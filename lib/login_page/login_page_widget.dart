@@ -13,6 +13,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/app_session.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show TextInput;
 import '/components/language_quick_button.dart';
 import '/components/theme_quick_button.dart';
 import '/components/ng_top_bar.dart';
@@ -146,6 +147,11 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       // resolveActiveOrg persists the choice itself — one writer, so the
       // call sites cannot drift apart on when it is stored.
       await establishVendorSession(user, resolved.orgId, availableOrgs);
+
+      // "Remember me" (Arun, 12 Nov 2026): tell the phone's / browser's
+      // password manager the sign-in worked, so it offers to save the
+      // email and password. The app itself never stores a password.
+      TextInput.finishAutofillContext();
 
       // First-run PIN bootstrap (28 Aug 2026). A brand-new org has
       // pin_hash NULL and zero staff, so its PIN screen cannot succeed
@@ -452,7 +458,8 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
 
   Widget _buildVendorForm() {
     final c = NgPalette.of(context);
-    return Column(
+    return AutofillGroup(
+        child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(AppLocalizations.of(context).lpEmail,
@@ -465,6 +472,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           hint: 'owner@company.com',
           icon: Icons.mail_outline_rounded,
           keyboardType: TextInputType.emailAddress,
+          autofillHints: const [AutofillHints.email, AutofillHints.username],
         ),
         const SizedBox(height: 14),
         Row(
@@ -491,6 +499,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           hint: AppLocalizations.of(context).lpPasswordHint,
           icon: Icons.lock_outline_rounded,
           obscureText: !_model.vendorPasswordVisible,
+          autofillHints: const [AutofillHints.password],
           suffixIcon: IconButton(
             icon: Icon(
               _model.vendorPasswordVisible
@@ -571,7 +580,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
           onTap: () => context.go(VendorSignupPageWidget.routePath),
         ),
       ],
-    );
+    ));
   }
 
   /// A mobile-signup application still on this device's session: show
@@ -664,12 +673,14 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     TextInputType? keyboardType,
     bool obscureText = false,
     Widget? suffixIcon,
+    Iterable<String>? autofillHints,
   }) {
     final c = NgPalette.of(context);
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
       obscureText: obscureText,
+      autofillHints: autofillHints,
       keyboardType: keyboardType,
       cursorColor: c.acc,
       style: NgFonts.geist(color: c.text, fontSize: 15),
