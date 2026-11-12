@@ -134,7 +134,14 @@ class _OrgSetupPageWidgetState extends State<OrgSetupPageWidget> {
         return;
       }
 
-      if (mounted) context.go(HomePageWidget.routePath);
+      // A company on its trial goes on to the Plan page, where the Autopay
+      // card offers to keep the plan running after the trial (nothing is
+      // charged until then). Arun, 12 Nov 2026.
+      if (mounted) {
+        context.go(AppSession.instance.planStatus == 'trial'
+            ? PlanPageWidget.routePath
+            : HomePageWidget.routePath);
+      }
     } catch (e) {
       safeSetState(() {
         _model.errorMessage = friendlyError(e);

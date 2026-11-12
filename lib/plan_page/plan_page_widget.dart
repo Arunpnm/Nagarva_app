@@ -133,21 +133,42 @@ class _PlanPageWidgetState extends State<PlanPageWidget>
         .showSnackBar(SnackBar(content: Text(text)));
   }
 
+  /// On a trial with more than a day left, Autopay waits for the trial
+  /// end before the first charge (plan-billing sets start_at; 12 Nov 2026).
+  DateTime? get _trialEnd {
+    final s = AppSession.instance;
+    final end = s.trialEndsAt;
+    if (s.planStatus != 'trial' || end == null) return null;
+    return end.isAfter(DateTime.now().add(const Duration(days: 1)))
+        ? end
+        : null;
+  }
+
   Future<void> _startAutopay(SubscriptionPlansRow p) async {
     final price = _priceByCode[p.code];
     if (price == null) return;
     final total = _inrPaise((price['total_inr'] as num).toDouble());
     final base = _inrPaise((price['price_inr'] as num).toDouble());
     final per = price['billing_period'] == 'annual' ? 'year' : 'month';
+    final trialEnd = _trialEnd;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Pay for ${p.name} with Autopay?'),
-        content: Text(
-            '$total a $per ($base + ${price['gst_pct']}% GST).\n\n'
-            'You approve UPI Autopay once on the Razorpay page. It is then '
-            'charged every $per until you stop it here.'
-            '${_billingTest ? '\n\nTest mode: no real money is taken.' : ''}'),
+        title: Text(trialEnd == null
+            ? 'Pay for ${p.name} with Autopay?'
+            : 'Turn on Autopay for ${p.name}?'),
+        content: Text(trialEnd == null
+            ? '$total a $per ($base + ${price['gst_pct']}% GST).\n\n'
+                'You approve UPI Autopay once on the Razorpay page. It is then '
+                'charged every $per until you stop it here.'
+                '${_billingTest ? '\n\nTest mode: no real money is taken.' : ''}'
+            : 'Nothing is charged today. Razorpay takes a ₹5 check and '
+                'gives it back.\n\n'
+                'Your trial ends on ${_formatDate(trialEnd)}. On that day '
+                '$total ($base + ${price['gst_pct']}% GST) is charged, and then '
+                'every $per, so ${p.name} continues without a break. Stop it '
+                'here any time before then and nothing is charged.'
+                '${_billingTest ? '\n\nTest mode: no real money is taken.' : ''}'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -542,7 +563,8 @@ class _PlanPageWidgetState extends State<PlanPageWidget>
               child: FilledButton.icon(
                 onPressed: _billingBusy ? null : () => _startAutopay(p),
                 icon: const Icon(Icons.autorenew_rounded, size: 18),
-                label: Text(isCurrent && session.planStatus == 'active'
+                label: Text(isCurrent &&
+                        (session.planStatus == 'active' || _trialEnd != null)
                     ? 'Turn on Autopay'
                     : 'Pay with Autopay'),
               ),
@@ -589,8 +611,16 @@ class _PlanPageWidgetState extends State<PlanPageWidget>
             child: const Text('Check payment')));
         break;
       case 'authenticated':
-        text = 'Autopay for $plan is approved. The first payment is on its '
-            'way; this page updates when it is received.';
+        final startRaw = _sub?['starts_at'];
+        final DateTime? start = startRaw is String
+            ? DateTime.tryParse(startRaw)?.toLocal()
+            : null;
+        text = start != null && start.isAfter(DateTime.now())
+            ? 'Autopay is on for $plan. Nothing is charged during your trial. '
+                'The first payment${amount == null ? '' : ' of $amount'} is on '
+                '${_formatDate(start)}, when the trial ends.'
+            : 'Autopay for $plan is approved. The first payment is on its '
+                'way; this page updates when it is received.';
         tone = NgStatus.blue;
         buttons.add(OutlinedButton(
             onPressed: _billingBusy ? null : _loadBilling,
@@ -611,8 +641,12 @@ class _PlanPageWidgetState extends State<PlanPageWidget>
       default:
         text = session.planStatus == 'grace'
             ? 'Autopay is off. Your plan is paid until ${_formatDate(session.trialEndsAt ?? DateTime.now())}. Pay with Autopay below to keep it.'
-            : 'Pay for your plan with UPI Autopay: approve once, and it is '
-                'charged every month until you stop it. GST is added to the plan price.';
+            : _trialEnd != null
+                ? 'Your trial ends on ${_formatDate(_trialEnd!)}. Turn on '
+                    'Autopay now so your plan continues without a break. '
+                    'Nothing is charged until the trial ends.'
+                : 'Pay for your plan with UPI Autopay: approve once, and it is '
+                    'charged every month until you stop it. GST is added to the plan price.';
         tone = session.planStatus == 'grace' ? NgStatus.amber : NgStatus.blue;
     }
     if (_autopayRunning && !endsAtEnd) {

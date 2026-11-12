@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '/backend/whatsapp_cloud.dart';
@@ -62,6 +63,25 @@ class ShareLinkSheet extends StatelessWidget {
   String get _fullMessage =>
       message.contains(link) ? message : '$message\n\n$link';
 
+  /// The phone's own share menu (WhatsApp Business, SMS, email, ...). On a
+  /// computer without one, the message is copied instead.
+  Future<void> _shareOther(BuildContext context) async {
+    final box = context.findRenderObject() as RenderBox?;
+    try {
+      await Share.share(
+        _fullMessage,
+        sharePositionOrigin:
+            box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+      );
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: _fullMessage));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Message copied. Paste it in any app.')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ng = NgPalette.of(context);
@@ -121,6 +141,11 @@ class ShareLinkSheet extends StatelessWidget {
             const SizedBox(height: 16),
             if (cloud != null && (phone ?? '').trim().isNotEmpty)
               _CloudSendButton(cloud: cloud!, phone: phone!),
+            // 12 Nov 2026 (Arun: "it opens WhatsApp but I use WhatsApp
+            // Business"). The WhatsApp button opens the phone's DEFAULT
+            // WhatsApp for wa.me links; "Other apps" opens the phone's own
+            // share menu, which lists WhatsApp Business, SMS, Telegram,
+            // email and the rest -- the vendor picks.
             Row(
               children: [
                 Expanded(
@@ -141,24 +166,40 @@ class ShareLinkSheet extends StatelessWidget {
                       },
                       icon: const Icon(Icons.chat, size: 19),
                       label: const Text('WhatsApp'),
-                      
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
-                SizedBox(
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: link));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Link copied')),
-                      );
-                    },
-                    icon: const Icon(Icons.copy, size: 18),
-                    label: const Text('Copy'),
-                    
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _shareOther(context),
+                      icon: const Icon(Icons.ios_share_rounded, size: 18),
+                      label: const Text('Other apps'),
+                    ),
                   ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Using WhatsApp Business? Tap Other apps and pick it.',
+                    style: NgFonts.geist(fontSize: 12, color: ng.mute),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: link));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Link copied')),
+                    );
+                  },
+                  icon: const Icon(Icons.copy, size: 16),
+                  label: const Text('Copy link'),
                 ),
               ],
             ),

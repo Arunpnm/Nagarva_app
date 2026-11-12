@@ -36,6 +36,12 @@ class QuotationsRow extends SupabaseDataRow {
   String? get toAddress => getField<String>('to_address');
   set toAddress(String? value) => setField<String>('to_address', value);
 
+  String? get fromCity => getField<String>('from_city');
+  set fromCity(String? value) => setField<String>('from_city', value);
+
+  String? get toCity => getField<String>('to_city');
+  set toCity(String? value) => setField<String>('to_city', value);
+
   int? get fromFloor => getField<int>('from_floor');
   set fromFloor(int? value) => setField<int>('from_floor', value);
 

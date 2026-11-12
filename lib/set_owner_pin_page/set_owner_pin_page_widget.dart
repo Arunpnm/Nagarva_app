@@ -59,7 +59,15 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
     super.dispose();
   }
 
-  void _continue() => context.go(HomePageWidget.routePath);
+  /// `?next=setup` is set for a company's very first login (mobile
+  /// sign-up, right after the plan choice), so the PIN step hands over to
+  /// business setup instead of skipping it (Arun, 12 Nov 2026).
+  void _continue() {
+    final next = GoRouterState.of(context).uri.queryParameters['next'];
+    context.go(next == 'setup'
+        ? OrgSetupPageWidget.routePath
+        : HomePageWidget.routePath);
+  }
 
   Future<void> _save() async {
     final pin = _pinController.text.trim();

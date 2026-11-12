@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '/l10n/gen/app_localizations.dart';
 
 import '/app_session.dart';
+import '/backend/biometric_unlock.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/edge_function_errors.dart';
 import '/backend/org_resolution.dart';
@@ -48,11 +49,74 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
   String? _error;
   late final AnimationController _shakeCtrl;
 
+  /// Fingerprint / face unlock (12 Nov 2026, lib/backend/biometric_unlock.dart).
+  bool _bioAvailable = false;
+  String? _bioName; // non-null = saved on this phone
+  bool _usedBio = false;
+
   @override
   void initState() {
     super.initState();
     _shakeCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 400));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initBio());
+  }
+
+  Future<void> _initBio() async {
+    final ok = await BiometricUnlock.available();
+    final name = ok ? await BiometricUnlock.savedName() : null;
+    if (!mounted) return;
+    setState(() {
+      _bioAvailable = ok;
+      _bioName = name;
+    });
+    // Saved: ask straight away, like a banking app. Cancel falls back to
+    // the keypad, and the fingerprint key stays there to try again.
+    if (name != null) _bioLogin();
+  }
+
+  Future<void> _bioLogin() async {
+    if (_busy) return;
+    final pin = await BiometricUnlock.unlockPin(
+        AppLocalizations.of(context).bioReason);
+    if (pin == null || !mounted) return;
+    setState(() {
+      _digits.setAll(0, pin.split(''));
+      _focusedBox = 3;
+      _usedBio = true;
+    });
+    await _submit();
+  }
+
+  /// After a PIN login that did not use the fingerprint: offer to save it.
+  Future<void> _offerBio(String pin) async {
+    if (!_bioAvailable || _bioName != null || !mounted) return;
+    final l = AppLocalizations.of(context);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.fingerprint_rounded, size: 36),
+        title: Text(l.bioAsk),
+        content: Text(l.bioAskSub),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l.bioNo)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l.bioYes)),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    // A real match before saving, so the PIN is only ever stored behind a
+    // finger or face that this phone has just recognised.
+    if (!await BiometricUnlock.confirm(l.bioReason)) return;
+    final s = AppSession.instance;
+    await BiometricUnlock.save(
+      pin: pin,
+      name: s.currentStaffName ?? s.currentOrgName ?? '',
+    );
   }
 
   @override
@@ -197,8 +261,18 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
       }
 
       if (!mounted) return;
+      if (!_usedBio) await _offerBio(pin);
+      if (!mounted) return;
       context.go(HomePageWidget.routePath);
     } catch (e) {
+      // The saved PIN was refused: it was changed since. Forget it and
+      // ask for the PIN once; the offer comes back after that login.
+      if (_usedBio && e is FunctionException && e.status == 401) {
+        await BiometricUnlock.turnOff();
+        _bioName = null;
+      }
+      final wasBio = _usedBio;
+      _usedBio = false;
       // `invoke` throws FunctionException on any non-2xx response (17 Aug
       // 2026 finding — see edge_function_errors.dart) — a wrong PIN (401)
       // or a rate-limit lockout (429) both land here, not in the
@@ -209,7 +283,9 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
       setState(() {
         _digits.setAll(0, ['', '', '', '']);
         _focusedBox = 0;
-        _error = extractFunctionErrorMessage(e, fallback: friendlyError(e));
+        _error = wasBio && _bioName == null
+            ? AppLocalizations.of(context).bioPinChanged
+            : extractFunctionErrorMessage(e, fallback: friendlyError(e));
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -430,7 +506,15 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(width: keyWidth, height: 66),
+                            // Bottom-left: fingerprint / face when saved
+                            // on this phone, else empty as before.
+                            _bioName != null
+                                ? _numKey('',
+                                    width: keyWidth,
+                                    icon: Icon(Icons.fingerprint_rounded,
+                                        size: 30, color: c.acc),
+                                    onTap: _bioLogin)
+                                : SizedBox(width: keyWidth, height: 66),
                             const SizedBox(width: gap),
                             _numKey('0',
                                 width: keyWidth, onTap: () => _tapDigit('0')),

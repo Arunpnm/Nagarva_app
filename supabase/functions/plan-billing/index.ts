@@ -127,6 +127,11 @@ function describe(sub: any) {
     amount_inr: sub.amount_inr != null ? Number(sub.amount_inr) : null,
     current_period_end: sub.current_period_end,
     short_url: sub.status === "created" ? sub.short_url : null,
+    // Autopay set up during a trial: the first charge waits for the trial
+    // to end. Only meaningful before the first payment.
+    starts_at: ["created", "authenticated"].includes(sub.status)
+      ? sub.current_period_start
+      : null,
     ends_at_period_end: sub.cancel_reason === "cancelled_by_vendor" &&
       RUNNING.includes(sub.status),
     test_mode: sub.gateway_mode === "test",
@@ -260,11 +265,28 @@ Deno.serve(async (req: Request) => {
         if (!gp) throw new Error("could not save the gateway plan");
       }
 
+      // On a trial that still has more than a day left, the first charge
+      // waits for the trial to end (Arun, 12 Nov 2026: "after trial end it
+      // auto move to pro"). Razorpay then takes only a Rs 5 check now and
+      // refunds it; the plan price is first charged on start_at.
+      const { data: org } = await admin
+        .from("organizations")
+        .select("plan_status, trial_ends_at")
+        .eq("id", orgId)
+        .maybeSingle();
+      const trialEnd = org?.plan_status === "trial" && org?.trial_ends_at
+        ? new Date(org.trial_ends_at)
+        : null;
+      const startAt = trialEnd && trialEnd.getTime() > Date.now() + 86_400_000
+        ? trialEnd
+        : null;
+
       const sub = await call("POST", "/subscriptions", {
         plan_id: gp.gateway_plan_id,
         total_count: plan.billing_period === "annual" ? 10 : 120,
         quantity: 1,
         customer_notify: true,
+        ...(startAt ? { start_at: Math.floor(startAt.getTime() / 1000) } : {}),
         notes: { org_id: orgId, plan_code: plan.code },
       });
       const ins = await admin.from("org_subscriptions").insert({
@@ -273,7 +295,7 @@ Deno.serve(async (req: Request) => {
         status: "created",
         billing_period: plan.billing_period,
         amount_inr: amount / 100,
-        current_period_start: null,
+        current_period_start: startAt ? startAt.toISOString() : null,
         gateway: "razorpay",
         gateway_sub_id: sub.id,
         gateway_mode: mode,

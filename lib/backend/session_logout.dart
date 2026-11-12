@@ -5,6 +5,7 @@ import '/backend/business_modules.dart';
 import '/backend/dashboard_widgets.dart';
 import '/backend/device_org_binding.dart';
 import '/backend/device_lock.dart';
+import '/backend/push_registration.dart';
 import '/backend/supabase/supabase.dart';
 import '/flutter_flow/nav/nav.dart';
 import '/index.dart';
@@ -51,6 +52,8 @@ Future<void> performLock(BuildContext context) async {
 }
 
 Future<void> performLogout(BuildContext context) async {
+  // Before sign-out: this phone stops getting this person's push alerts.
+  await PushRegistration.unregister();
   try {
     await SupaFlow.client.auth.signOut();
   } catch (_) {

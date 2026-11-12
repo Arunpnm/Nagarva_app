@@ -9,6 +9,8 @@ import '/backend/supabase/org_scope.dart';
 import '/components/notification_bell.dart';
 import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
+import '/components/vendor_logo.dart';
+import '/backend/biometric_unlock.dart';
 import 'login_security_section.dart';
 import '/config/app_config.dart';
 import '/main.dart';
@@ -289,23 +291,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       NgCard(
         child: Row(
           children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(13),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: logo.isNotEmpty
-                  ? Image.network(logo,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                          'assets/images/nagarva_logo.png',
-                          fit: BoxFit.cover))
-                  : Image.asset('assets/images/nagarva_logo.png',
-                      fit: BoxFit.cover),
-            ),
+            VendorLogo(
+                url: logo,
+                name: s.currentOrgName ?? '',
+                size: 46,
+                radius: 13),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -357,6 +347,46 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               NotificationPrefs.setPopupsEnabled(v);
             },
           ),
+        ),
+        _row(
+          Icons.volume_up_outlined,
+          l.ngSetSound,
+          sub: l.ngSetSoundSub,
+          trailing: Switch(
+            value: NotificationPrefs.soundEnabled,
+            onChanged: (v) async {
+              await NotificationPrefs.setSoundEnabled(v);
+              safeSetState(() {});
+              if (v) NotificationChime.play('test-${DateTime.now().millisecondsSinceEpoch}');
+            },
+          ),
+        ),
+        // Fingerprint / face login (12 Nov 2026). Turned ON from the PIN
+        // screen after a PIN login (it needs the PIN once); here it can
+        // only be turned off. Hidden where the phone has no fingerprint
+        // or face set up, and on web.
+        FutureBuilder<List<bool>>(
+          future: Future.wait(
+              [BiometricUnlock.available(), BiometricUnlock.isOn()]),
+          builder: (context, snap) {
+            final ok = snap.data?[0] ?? false;
+            final on = snap.data?[1] ?? false;
+            if (!ok) return const SizedBox.shrink();
+            return _row(
+              Icons.fingerprint_rounded,
+              l.bioSetting,
+              sub: l.bioSettingSub,
+              trailing: Switch(
+                value: on,
+                onChanged: on
+                    ? (_) async {
+                        await BiometricUnlock.turnOff();
+                        safeSetState(() {});
+                      }
+                    : null,
+              ),
+            );
+          },
         ),
       ]),
       _group(l.ngSetBusiness, [

@@ -7,6 +7,7 @@ import '/components/global_search_delegate.dart';
 import '/components/language_quick_button.dart';
 import '/components/notification_bell.dart';
 import '/components/theme_quick_button.dart';
+import '/components/vendor_logo.dart';
 import '/flutter_flow/ng_tokens.dart';
 import 'package:go_router/go_router.dart';
 
@@ -82,25 +83,7 @@ class NgTopBar extends StatelessWidget implements PreferredSizeWidget {
                     behavior: HitTestBehavior.opaque,
                     onTap: () => context.go('/home'),
                     child: Row(children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: logo.isNotEmpty
-                      ? Image.network(
-                          logo,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Image.asset(
-                              'assets/images/nagarva_logo.png',
-                              fit: BoxFit.cover),
-                        )
-                      : Image.asset('assets/images/nagarva_logo.png',
-                          fit: BoxFit.cover),
-                ),
+                VendorLogo(url: logo, name: org),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
