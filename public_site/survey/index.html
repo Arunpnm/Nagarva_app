@@ -98,14 +98,21 @@
 
   <section id="ai-card" class="ai-card" hidden>
     <h2>Quicker: take photos of each room</h2>
-    <p>Pick a room, add up to 4 photos of it, and we'll suggest the items. Don't forget the loft, cupboards, balcony and terrace.</p>
+    <p>Pick a room, take or choose up to 4 photos of it, and we'll suggest the items. Don't forget the loft, cupboards, balcony and terrace.</p>
     <p class="ai-note">These are suggestions from your photos. Check the counts below before sending — your moving company will also check the list.</p>
     <div class="ai-rooms" id="ai-rooms"></div>
     <div class="ai-found" id="ai-found" hidden></div>
     <div class="ai-thumbs" id="ai-thumbs"></div>
+    <!-- Two pickers on purpose (11 Nov 2026): an input that allows several
+         files opens only the gallery on most Android phones -- the camera
+         is not offered -- so "Take photo" has its own single-photo input
+         that opens the back camera directly. On a computer, capture is
+         ignored and it opens the normal file picker. -->
+    <input type="file" id="ai-cam" accept="image/*" capture="environment" hidden>
     <input type="file" id="ai-file" accept="image/*" multiple hidden>
     <div class="ai-actions">
-      <button type="button" class="btn btn-ghost" id="ai-add">Add photos</button>
+      <button type="button" class="btn btn-ghost" id="ai-shoot">Take photo</button>
+      <button type="button" class="btn btn-ghost" id="ai-add">From gallery</button>
       <button type="button" class="btn btn-primary" id="ai-go" disabled>Find items</button>
     </div>
     <div class="ai-msg" id="ai-msg" hidden></div>
@@ -471,9 +478,11 @@
       x.addEventListener("click", function () { aiPhotos.splice(i, 1); aiRender(); });
       d.appendChild(img); d.appendChild(x); th.appendChild(d);
     });
+    var full = aiBusy || aiPhotos.length >= AI_MAX_PHOTOS;
     var add = document.getElementById("ai-add");
-    add.disabled = aiBusy || aiPhotos.length >= AI_MAX_PHOTOS;
-    add.textContent = aiPhotos.length ? "Add another photo" : "Add photos";
+    add.disabled = full;
+    var shoot = document.getElementById("ai-shoot");
+    shoot.disabled = full;
     var go = document.getElementById("ai-go");
     go.disabled = aiBusy || aiPhotos.length === 0;
     go.textContent = aiBusy ? "Looking at your photos…"
@@ -629,9 +638,14 @@
       document.getElementById("ai-add").addEventListener("click", function () {
         document.getElementById("ai-file").click();
       });
-      document.getElementById("ai-file").addEventListener("change", function (e) {
-        aiPick(e.target.files);
-        e.target.value = "";
+      document.getElementById("ai-shoot").addEventListener("click", function () {
+        document.getElementById("ai-cam").click();
+      });
+      ["ai-file", "ai-cam"].forEach(function (id) {
+        document.getElementById(id).addEventListener("change", function (e) {
+          aiPick(e.target.files);
+          e.target.value = "";
+        });
       });
       document.getElementById("ai-go").addEventListener("click", aiGo);
       Array.prototype.forEach.call(document.getElementsByName("ai-missed"), function (r) {

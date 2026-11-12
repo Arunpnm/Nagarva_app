@@ -48,6 +48,20 @@
   .pdf { display: inline-block; margin-top: 10px; color: var(--teal);
     font-size: 13.5px; font-weight: 600; text-decoration: none; }
   .okline { color: var(--teal); font-size: 14px; margin: 10px 0 0; }
+  /* UPI advance (12 Nov 2026) */
+  .pay-amt { font-family: "Inter Tight", Inter, sans-serif; font-size: 30px;
+    font-weight: 800; color: var(--gold); margin: 2px 0 2px; }
+  .pay-to { font-size: 13.5px; color: var(--muted); margin: 0 0 14px;
+    word-break: break-all; }
+  .pay-grid { display: grid; gap: 10px; }
+  .qr { background: #fff; border-radius: var(--r-md); padding: 12px;
+    width: 196px; margin: 4px auto 6px; }
+  .qr svg { display: block; width: 100%; height: auto; }
+  .qr-cap { text-align: center; font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
+  .linkbtn { background: none; border: 0; color: var(--teal); font: inherit;
+    font-size: 13.5px; font-weight: 600; cursor: pointer; padding: 6px 0; }
+  .divider { border-top: 1px solid var(--line); margin: 14px 0; }
+  #pay-app { display: block; text-align: center; text-decoration: none; }
 </style>
 </head>
 <body>
@@ -73,6 +87,31 @@
   <p class="ref" id="ref"></p>
 
   <div id="state-banner" class="banner" hidden></div>
+
+  <!-- UPI advance (12 Nov 2026): shown only after the customer accepts, when
+       the vendor asked for an advance on this quote and has a UPI ID. The
+       money goes straight to the vendor; Nagarva never holds it. -->
+  <section class="card" id="pay" hidden>
+    <h2>Pay the advance to confirm your booking</h2>
+    <div class="pay-amt" id="pay-amt"></div>
+    <p class="pay-to" id="pay-to"></p>
+    <div class="pay-grid">
+      <a class="btn btn-primary btn-block" id="pay-app" href="#">Pay with a UPI app</a>
+    </div>
+    <div class="qr" id="pay-qr" aria-hidden="true"></div>
+    <p class="qr-cap">Paying from another phone? Scan this with any UPI app.</p>
+    <button type="button" class="linkbtn" id="pay-copy">Copy UPI ID</button>
+    <div class="divider"></div>
+    <div id="pay-report">
+      <div class="field">
+        <label for="pay-ref">Paid? Enter the UPI reference <span class="hint">(optional, 12 digits)</span></label>
+        <input id="pay-ref" type="text" inputmode="numeric" maxlength="40" autocomplete="off">
+      </div>
+      <button type="button" class="btn btn-ghost btn-block" id="pay-done">I've paid</button>
+      <div id="pay-error" class="errline" hidden></div>
+    </div>
+    <p class="okline" id="pay-reported" hidden></p>
+  </section>
 
   <div class="trip">
     <div class="trip-route">
@@ -141,6 +180,7 @@
 </main>
 
 <script src="/config.js"></script>
+<script src="/quote/qrcode.js"></script>
 <script>
 (function () {
   "use strict";
@@ -255,16 +295,57 @@
     respond.hidden = false;
     if (Q.accepted) {
       banner.hidden = false; banner.className = "banner ok";
-      banner.textContent = "You accepted this quotation" +
-        (Q.accepted_at ? " on " + fmtDate(Q.accepted_at) : "") +
-        (Q.accepted_by_name ? " as " + Q.accepted_by_name : "") +
-        ". Your moving company will contact you to confirm the booking.";
+      banner.textContent = Q.booked
+        ? "Your booking is confirmed. Your moving company will be in touch about the move."
+        : "You accepted this quotation" +
+          (Q.accepted_at ? " on " + fmtDate(Q.accepted_at) : "") +
+          (Q.accepted_by_name ? " as " + Q.accepted_by_name : "") +
+          (Q.pay && !Q.pay.reported_at
+            ? ". Pay the advance below to confirm your booking."
+            : ". Your moving company will contact you to confirm the booking.");
       respond.hidden = true;
     } else if (Q.expired) {
       banner.hidden = false; banner.className = "banner warn";
       banner.textContent = "This quotation was valid until " + fmtDate(Q.valid_until) +
         ". You can still ask for changes, or contact your moving company for a fresh one.";
       document.getElementById("btn-accept").hidden = true;
+    }
+  }
+
+  // ---- UPI advance ---------------------------------------------------------
+  function upiLink(p) {
+    // The "@" stays as it is: some UPI apps do not decode %40 in the ID.
+    return "upi://pay?pa=" + encodeURIComponent(p.upi_id).replace(/%40/g, "@") +
+      "&pn=" + encodeURIComponent(p.payee || "") +
+      "&am=" + Number(p.amount).toFixed(2) +
+      "&cu=INR&tn=" + encodeURIComponent(p.note || "");
+  }
+
+  function renderPay() {
+    var box = document.getElementById("pay");
+    var p = Q && Q.pay;
+    box.hidden = !p;
+    if (!p) return;
+    var link = upiLink(p);
+    document.getElementById("pay-amt").textContent = rupees(p.amount);
+    document.getElementById("pay-to").textContent = "to " + (p.payee || "your moving company") + " · " + p.upi_id;
+    document.getElementById("pay-app").href = link;
+    var qrHost = document.getElementById("pay-qr");
+    qrHost.innerHTML = "";
+    if (window.qrcode) {
+      try {
+        var qr = window.qrcode(0, "M");
+        qr.addData(link); qr.make();
+        qrHost.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+      } catch (e) { qrHost.hidden = true; }
+    } else { qrHost.hidden = true; }
+    var reported = !!p.reported_at;
+    document.getElementById("pay-report").hidden = reported;
+    var done = document.getElementById("pay-reported");
+    done.hidden = !reported;
+    if (reported) {
+      done.textContent = "Thanks. You told " + (Q.vendor_name || "your moving company") +
+        " the advance is paid. They'll check it and confirm your booking.";
     }
   }
 
@@ -354,6 +435,7 @@
     }
 
     renderState();
+    renderPay();
     show("view-quote");
   }
 
@@ -362,6 +444,7 @@
     name_required: "Please type your name to accept.",
     note_required: "Please write what you'd like changed.",
     already_accepted: "This quotation has already been accepted.",
+    not_accepted: "Please accept the quotation first.",
     expired: "This quotation has expired. Ask your moving company for a fresh one.",
     closed: "This quotation is closed. Please contact your moving company.",
     too_many: "We've received several messages already today. Your moving company will contact you.",
@@ -401,6 +484,10 @@
           Q.accepted = true; Q.accepted_at = res.accepted_at; Q.accepted_by_name = name;
           openPanel(null); renderState();
           window.scrollTo({ top: 0, behavior: "smooth" });
+          // Reload: the advance (if any) is only sent once accepted.
+          rpc("public_get_quote", { p_token: token }).then(function (fresh) {
+            if (fresh && fresh.ok) render(fresh);
+          }).catch(function () { /* the banner already says what happens next */ });
         } else {
           openPanel(null);
           document.getElementById("chg-note").value = "";
@@ -441,6 +528,34 @@
     var note = document.getElementById("chg-note").value.trim();
     if (note.length < 3) { errorLine(RESPOND_ERRORS.note_required); return; }
     respond("changes", null, note, this);
+  });
+
+  document.getElementById("pay-copy").addEventListener("click", function () {
+    var btn = this, id = Q && Q.pay ? Q.pay.upi_id : "";
+    if (!id) return;
+    var ok = function () { btn.textContent = "Copied"; setTimeout(function () { btn.textContent = "Copy UPI ID"; }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(id).then(ok, function () { window.prompt("UPI ID", id); });
+    } else { window.prompt("UPI ID", id); }
+  });
+  document.getElementById("pay-done").addEventListener("click", function () {
+    if (busy) return;
+    var btn = this, ref = document.getElementById("pay-ref").value.trim();
+    var err = document.getElementById("pay-error");
+    busy = true; err.hidden = true; btn.disabled = true; btn.textContent = "Sending…";
+    rpc("public_respond_quote", { p_token: token, p_action: "paid", p_name: null, p_note: ref || null })
+      .then(function (res) {
+        busy = false; btn.disabled = false; btn.textContent = "I've paid";
+        if (res && res.ok) {
+          Q.pay.reported_at = res.reported_at; renderState(); renderPay(); return;
+        }
+        err.textContent = RESPOND_ERRORS[res && res.reason] || "That didn't go through. Please try again.";
+        err.hidden = false;
+      }).catch(function () {
+        busy = false; btn.disabled = false; btn.textContent = "I've paid";
+        err.textContent = "That didn't send. Check your connection and try again.";
+        err.hidden = false;
+      });
   });
 
   // ---- boot ----
