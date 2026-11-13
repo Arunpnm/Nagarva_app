@@ -30,6 +30,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/backend/vendor_identity.dart';
 
 import '/backend/edge_function_errors.dart';
+
 /// Order Details Session 1, item 4 — the documents grid + signature
 /// companion + utility row.
 ///
@@ -64,6 +65,7 @@ class OrderDocumentsSection extends StatefulWidget {
 
   final String orderId;
   final bool duplicating;
+
   /// Null hides "Duplicate order" (the order journey, which has no
   /// duplicate flow of its own).
   final VoidCallback? onDuplicate;
@@ -129,7 +131,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       final signedAt = rows.first['signed_at'] as String?;
       setState(() {
         _heldSignature = base64Decode(data);
-        _heldSignatureAt = signedAt == null ? null : DateTime.tryParse(signedAt);
+        _heldSignatureAt =
+            signedAt == null ? null : DateTime.tryParse(signedAt);
       });
     } catch (_) {
       // Best-effort — a reload failure just means the banner starts
@@ -148,8 +151,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     return '$startYear-${((startYear + 1) % 100).toString().padLeft(2, '0')}';
   }
 
-  String _rupees(num v) => '₹${v.toStringAsFixed(2).replaceAllMapped(
-      RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}';
+  String _rupees(num v) =>
+      '₹${v.toStringAsFixed(2).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}';
 
   // Handles private-bucket references too (signature, BUG-013).
   Future<Uint8List?> _fetchBytes(String? url) => fetchFileBytes(url);
@@ -198,7 +201,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   /// the resolved form the rebuilt LR/Money Receipt/Quotation generators
   /// use, as opposed to [_loadBranding]'s raw jsonb map (kept for the
   /// SimpleDocumentPdf-based documents this session didn't rebuild).
-  Future<(OrgProfile, DocumentBoilerplate, Uint8List?)> _loadOrgProfile() async {
+  Future<(OrgProfile, DocumentBoilerplate, Uint8List?)>
+      _loadOrgProfile() async {
     final (profile, logoBytes) = await _loadBranding();
     String? signatureUrl;
     try {
@@ -211,8 +215,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     try {
       final orgId = OrgScope.currentOrgId;
       if (orgId != null) {
-        final rows =
-            await OrganizationsTable().queryRows(queryFn: (q) => q.eq('id', orgId));
+        final rows = await OrganizationsTable()
+            .queryRows(queryFn: (q) => q.eq('id', orgId));
         if (rows.isNotEmpty) orgRow = rows.first;
       }
     } catch (_) {}
@@ -384,8 +388,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     // the storing hook lives here: one place cannot drift, eight can. The
     // invoice path already did this by hand, which is why its stored name
     // was correct and these were not.
-    final safeFilename =
-        filename.replaceAll(RegExp(r'[\/:*?"<>|]'), '-');
+    final safeFilename = filename.replaceAll(RegExp(r'[\/:*?"<>|]'), '-');
 
     // Generated once per press and reused by View, Print and Download, so
     // tapping all three does not rebuild the PDF three times — and, more
@@ -403,6 +406,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       }
       return b;
     }
+
     return showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -418,8 +422,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             // the scrim - undiscoverable, and impossible on a build that
             // hangs.
             TextButton(
-              onPressed:
-                  busy ? null : () => Navigator.of(dialogContext).pop(),
+              onPressed: busy ? null : () => Navigator.of(dialogContext).pop(),
               child: const Text('Close'),
             ),
             // Same View as the invoice dialog, for the same reason: Arun,
@@ -536,8 +539,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       await action();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not generate: ${friendlyError(e)}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not generate: ${friendlyError(e)}')));
       }
     } finally {
       if (mounted) {
@@ -612,12 +615,14 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           // One org-wide series per doc type per FY, not per-branch (12
           // Aug 2026 numbering-scheme decision — see
           // order_detail_page_widget.dart's _nextInvoiceNo).
-          receiptNo = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_doc_number', params: {
-            'p_org': orgId,
-            'p_doc_type': 'receipt',
-            'p_branch': null,
-            'p_fy': _currentFy(),
-          }) as String);
+          receiptNo = await allocateWithRollover(
+              context,
+              () async => await SupaFlow.client.rpc('next_doc_number', params: {
+                    'p_org': orgId,
+                    'p_doc_type': 'receipt',
+                    'p_branch': null,
+                    'p_fy': _currentFy(),
+                  }) as String);
           receiptDate = DateTime.now();
           amount = toReceipt.fold<num>(0, (s, p) => s + p.amount);
           final modes = toReceipt.map((p) => p.mode).toSet();
@@ -637,8 +642,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
           String? amountInWords;
           try {
-            amountInWords = await SupaFlow.client.rpc('amount_in_words',
-                params: {'amt': amount}) as String?;
+            amountInWords = await SupaFlow.client
+                .rpc('amount_in_words', params: {'amt': amount}) as String?;
           } catch (_) {}
 
           // orders.invoice_issued_at (stamped once, at first Tax Invoice
@@ -715,8 +720,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final amountInWords = existingReceipt?.amountInWords ??
             await () async {
               try {
-                return await SupaFlow.client.rpc('amount_in_words',
-                    params: {'amt': amount}) as String?;
+                return await SupaFlow.client
+                    .rpc('amount_in_words', params: {'amt': amount}) as String?;
               } catch (_) {
                 return null;
               }
@@ -764,18 +769,22 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final orgId = OrgScope.currentOrgId!;
         // One org-wide series per doc type per FY, not per-branch (12 Aug
         // 2026 numbering-scheme decision).
-        final docNo = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_doc_number', params: {
-          'p_org': orgId,
-          'p_doc_type': 'proforma',
-          'p_branch': null,
-          'p_fy': _currentFy(),
-        }) as String);
+        final docNo = await allocateWithRollover(
+            context,
+            () async => await SupaFlow.client.rpc('next_doc_number', params: {
+                  'p_org': orgId,
+                  'p_doc_type': 'proforma',
+                  'p_branch': null,
+                  'p_fy': _currentFy(),
+                }) as String);
         // What the customer will owe, by the shared rule (4 Nov 2026).
         final amount = (await OrderMoney.load(o)).total;
         final (profile, logoBytes) = await _loadBranding();
-        await _showDocDialog('Proforma $docNo', 'Proforma_$docNo.pdf',
+        await _showDocDialog(
+            'Proforma $docNo',
+            'Proforma_$docNo.pdf',
             () => SimpleDocumentPdf.generate(
-              terms: _standardTerms,
+                  terms: _standardTerms,
                   docLabel: 'PROFORMA INVOICE',
                   docNo: docNo,
                   orgName: VendorIdentity.forDocument,
@@ -783,10 +792,9 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                   logoBytes: logoBytes,
                   metaLeft: [
                     MapEntry('Prepared For', o.customer),
-                    if ((o.phone ?? '').isNotEmpty)
-                      MapEntry('Phone', o.phone!),
-                    MapEntry('Route',
-                        '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}'),
+                    if ((o.phone ?? '').isNotEmpty) MapEntry('Phone', o.phone!),
+                    MapEntry(
+                        'Route', '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}'),
                   ],
                   metaRight: [
                     MapEntry('No', docNo),
@@ -801,7 +809,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                   notesBlock:
                       'This is a preliminary estimate, not a tax invoice. '
                       'Final billed amount may vary based on actuals.',
-                ), docType: 'proforma');
+                ),
+            docType: 'proforma');
         await AuditLogService.log(
           entityType: 'orders',
           entityId: o.id!,
@@ -812,7 +821,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
 
   // ---- LR / Bilty (field spec §2 — full rebuild, task #43) --------------
 
-  static const _lrCopyTypes = ['driver', 'consignor', 'consignee', 'transporter'];
+  static const _lrCopyTypes = [
+    'driver',
+    'consignor',
+    'consignee',
+    'transporter'
+  ];
 
   static String? _nz(dynamic v) {
     final s = (v ?? '').toString().trim();
@@ -832,11 +846,13 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         // under doc_type 'lr' so a future consolidation is a no-op). One
         // org-wide series per FY, not per-branch — same 12 Aug 2026
         // numbering-scheme decision as every other doc type here.
-        final lrNo = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_lr_number', params: {
-          'p_org': orgId,
-          'p_branch': null,
-          'p_fy': fy,
-        }) as String);
+        final lrNo = await allocateWithRollover(
+            context,
+            () async => await SupaFlow.client.rpc('next_lr_number', params: {
+                  'p_org': orgId,
+                  'p_branch': null,
+                  'p_fy': fy,
+                }) as String);
 
         // Consignee from the linked customer record when available;
         // falls back to the order's own plain fields otherwise.
@@ -962,7 +978,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             .single();
 
         final lrId = inserted['id'] as String;
-        final gstPayableBy = (inserted['gst_payable_by'] as String?) ?? 'consignor';
+        final gstPayableBy =
+            (inserted['gst_payable_by'] as String?) ?? 'consignor';
         // Link the LR to the order (the journey's LR tile reads lr_id), and
         // keep the vehicle/driver found above on the order too.
         try {
@@ -979,8 +996,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
               .eq('id', o.id!);
         } catch (_) {}
 
-        await _showDocDialog(
-            'LR $lrNo', 'LR_${lrNo.replaceAll('/', '-')}.pdf', () async {
+        await _showDocDialog('LR $lrNo', 'LR_${lrNo.replaceAll('/', '-')}.pdf',
+            () async {
           return LrPdf.generate(
             org: org,
             boilerplate: boilerplate,
@@ -1113,9 +1130,11 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final items = await _showItemModal('Add all items being packed');
         if (items == null || items.isEmpty) return;
         final (profile, logoBytes) = await _loadBranding();
-        await _showDocDialog('Packing List', 'PackingList_${o.id}.pdf',
+        await _showDocDialog(
+            'Packing List',
+            'PackingList_${o.id}.pdf',
             () => SimpleDocumentPdf.generate(
-              terms: _standardTerms,
+                  terms: _standardTerms,
                   docLabel: 'PACKING LIST',
                   docNo: o.id!,
                   orgName: VendorIdentity.forDocument,
@@ -1144,9 +1163,11 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final items = await _showItemModal('Add all items being loaded');
         if (items == null || items.isEmpty) return;
         final (profile, logoBytes) = await _loadBranding();
-        await _showDocDialog('Loading Slip', 'LoadingSlip_${o.id}.pdf',
+        await _showDocDialog(
+            'Loading Slip',
+            'LoadingSlip_${o.id}.pdf',
             () => SimpleDocumentPdf.generate(
-              terms: _standardTerms,
+                  terms: _standardTerms,
                   docLabel: 'LOADING SLIP',
                   docNo: o.id!,
                   orgName: VendorIdentity.forDocument,
@@ -1189,7 +1210,7 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             'Vehicle Condition Report',
             'VehicleCondition_${o.id}.pdf',
             () => SimpleDocumentPdf.generate(
-              terms: _standardTerms,
+                  terms: _standardTerms,
                   docLabel: 'VEHICLE CONDITION REPORT',
                   docNo: o.id!,
                   orgName: VendorIdentity.forDocument,
@@ -1235,7 +1256,159 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           return;
         }
         await _showDocDialog(
-            'Proof of Delivery', 'POD-${o.id}.pdf', () async => bytes, docType: 'pod');
+            'Proof of Delivery', 'POD-${o.id}.pdf', () async => bytes,
+            docType: 'pod');
+      });
+
+  // ---- Insurance / owner's risk declaration (13 Nov 2026) ------------
+  //
+  // The form the customer signs before loading: goods insured in transit
+  // for a value THEY declare, or carried at owner's risk. The declared
+  // value is typed here, never suggested (app rule: no suggested money).
+  Future<void> _genRiskDeclaration() => _run(() async {
+        final o = _order;
+        if (o == null) return;
+        var insured = true;
+        final valueCtrl = TextEditingController();
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => StatefulBuilder(
+            builder: (dialogContext, setD) => AlertDialog(
+              backgroundColor: NgPalette.of(context).s1,
+              title: const Text('Insurance declaration'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RadioListTile<bool>(
+                    contentPadding: EdgeInsets.zero,
+                    value: true,
+                    groupValue: insured,
+                    onChanged: (v) => setD(() => insured = v ?? true),
+                    title: const Text('Transit insurance taken'),
+                  ),
+                  RadioListTile<bool>(
+                    contentPadding: EdgeInsets.zero,
+                    value: false,
+                    groupValue: insured,
+                    onChanged: (v) => setD(() => insured = v ?? false),
+                    title: const Text("Owner's risk (no insurance)"),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: valueCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Value of goods declared by customer (₹)',
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: const Text('Cancel')),
+                FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: const Text('Make document')),
+              ],
+            ),
+          ),
+        );
+        if (ok != true) return;
+        final declared = double.tryParse(valueCtrl.text.trim());
+        final (profile, logoBytes) = await _loadBranding();
+        final text = insured
+            ? 'I declare that the value of my goods stated above is true and '
+                'correct, and I have asked for them to be insured in transit '
+                'for this value. I understand that a claim is settled by the '
+                'insurance company under its own terms, on the documents it '
+                'asks for, and that damage or loss must be noted on the '
+                'delivery receipt at the time of delivery.'
+            : 'I have been offered transit insurance for my goods and have '
+                'chosen NOT to take it. I understand that my goods are '
+                "carried at OWNER'S RISK, and that the mover's liability for "
+                'loss or damage in transit is limited to what the law and '
+                'the terms of the consignment note provide.';
+        await _showDocDialog(
+            insured ? 'Insurance Declaration' : "Owner's Risk Declaration",
+            'RiskDeclaration_${o.id}.pdf',
+            () => SimpleDocumentPdf.generate(
+                  terms: _standardTerms,
+                  docLabel: insured
+                      ? 'TRANSIT INSURANCE DECLARATION'
+                      : "OWNER'S RISK DECLARATION",
+                  docNo: o.id!,
+                  orgName: VendorIdentity.forDocument,
+                  profile: profile,
+                  logoBytes: logoBytes,
+                  metaLeft: [
+                    MapEntry('Customer', o.customer),
+                    if ((o.phone ?? '').isNotEmpty) MapEntry('Phone', o.phone!),
+                    MapEntry(
+                        'Route', '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}'),
+                  ],
+                  metaRight: [
+                    MapEntry('Order Ref', o.id!),
+                    MapEntry('Date', PdfBranding.fmtDate(DateTime.now())),
+                  ],
+                  tableHeaders: const ['PARTICULARS', 'DETAILS'],
+                  tableRows: [
+                    [
+                      'Cover chosen',
+                      insured ? 'Transit insurance' : "Owner's risk"
+                    ],
+                    [
+                      'Value of goods declared by customer',
+                      declared == null ? '________________' : _rupees(declared)
+                    ],
+                  ],
+                  notesBlock: text,
+                  signatureBytes: _heldSignature,
+                ));
+      });
+
+  // ---- Customer declaration (13 Nov 2026) -----------------------------
+  //
+  // The undertaking signed before packing: nothing prohibited or
+  // high-value in the consignment, and the goods are the customer's own.
+  Future<void> _genCustomerDeclaration() => _run(() async {
+        final o = _order;
+        if (o == null) return;
+        final (profile, logoBytes) = await _loadBranding();
+        await _showDocDialog(
+            'Customer Declaration',
+            'CustomerDeclaration_${o.id}.pdf',
+            () => SimpleDocumentPdf.generate(
+                  terms: _standardTerms,
+                  docLabel: 'CUSTOMER DECLARATION',
+                  docNo: o.id!,
+                  orgName: VendorIdentity.forDocument,
+                  profile: profile,
+                  logoBytes: logoBytes,
+                  metaLeft: [
+                    MapEntry('Customer', o.customer),
+                    if ((o.phone ?? '').isNotEmpty) MapEntry('Phone', o.phone!),
+                    MapEntry(
+                        'Route', '${o.fromCity ?? '—'} to ${o.toCity ?? '—'}'),
+                  ],
+                  metaRight: [
+                    MapEntry('Order Ref', o.id!),
+                    MapEntry('Date', PdfBranding.fmtDate(DateTime.now())),
+                  ],
+                  notesBlock: 'I declare that:\n\n'
+                      '1. The goods handed over for moving are my own household or office goods, and I have the right to move them.\n\n'
+                      '2. The consignment contains NO cash, jewellery, gold, silver, precious stones, or important original documents.\n\n'
+                      '3. The consignment contains NO liquor, narcotics, arms, ammunition, explosives, gas cylinders, acids, or any item banned by law.\n\n'
+                      '4. The consignment contains NO inflammable or perishable goods, live plants or animals.\n\n'
+                      '5. Fuel has been drained from any vehicle or appliance handed over, as far as possible.\n\n'
+                      '6. I have checked the packing list and it matches the goods handed over.\n\n'
+                      'I understand that the mover is not responsible for any '
+                      'item listed in points 2 to 4 if it is placed in the '
+                      'consignment, or for any loss, penalty or delay that '
+                      'results from it.',
+                  signatureBytes: _heldSignature,
+                ));
       });
 
   Future<void> _genVoucher() => _run(() async {
@@ -1285,17 +1458,18 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
         final orgId = OrgScope.currentOrgId!;
         // One org-wide series per doc type per FY, not per-branch (12 Aug
         // 2026 numbering-scheme decision).
-        final docNo = await allocateWithRollover(context, () async => await SupaFlow.client.rpc('next_doc_number', params: {
-          'p_org': orgId,
-          'p_doc_type': 'voucher',
-          'p_branch': null,
-          'p_fy': _currentFy(),
-        }) as String);
+        final docNo = await allocateWithRollover(
+            context,
+            () async => await SupaFlow.client.rpc('next_doc_number', params: {
+                  'p_org': orgId,
+                  'p_doc_type': 'voucher',
+                  'p_branch': null,
+                  'p_fy': _currentFy(),
+                }) as String);
         final (profile, logoBytes) = await _loadBranding();
-        await _showDocDialog('Voucher $docNo', 'Voucher_$docNo.pdf',
-            () async {
+        await _showDocDialog('Voucher $docNo', 'Voucher_$docNo.pdf', () async {
           return SimpleDocumentPdf.generate(
-              terms: _standardTerms,
+            terms: _standardTerms,
             docLabel: 'PAYMENT VOUCHER',
             docNo: docNo,
             orgName: VendorIdentity.forDocument,
@@ -1303,9 +1477,11 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
             logoBytes: logoBytes,
             metaLeft: [
               MapEntry('Paid To', paidToCtrl.text.trim()),
-              MapEntry('Purpose', purposeCtrl.text.trim().isEmpty
-                  ? '—'
-                  : purposeCtrl.text.trim()),
+              MapEntry(
+                  'Purpose',
+                  purposeCtrl.text.trim().isEmpty
+                      ? '—'
+                      : purposeCtrl.text.trim()),
               MapEntry('Against Order', o.id!),
             ],
             metaRight: [
@@ -1353,8 +1529,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
           .showSnackBar(SnackBar(content: Text('UPI ID copied: ${payee.vpa}')));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not copy UPI: ${friendlyError(e)}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not copy UPI: ${friendlyError(e)}')));
       }
     }
   }
@@ -1430,14 +1606,15 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       // "{origin}?track={orderId}" shape — that would expose tracking by
       // guessable order id with no token check, a real regression versus
       // the token-based access control already built for this link.
-      await Clipboard.setData(ClipboardData(text: buildTokenLink('/track', token)));
+      await Clipboard.setData(
+          ClipboardData(text: buildTokenLink('/track', token)));
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Tracking link copied.')));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not copy link: ${friendlyError(e)}')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not copy link: ${friendlyError(e)}')));
       }
     }
   }
@@ -1523,14 +1700,25 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
       ('LR / Bilty', Icons.local_shipping_outlined, _genLr),
       ('Packing List', Icons.inventory_2_outlined, _genPackingList),
       ('Loading Slip', Icons.numbers_rounded, _genLoadingSlip),
-      ('Vehicle Condition', Icons.directions_car_outlined, _genVehicleCondition),
+      (
+        'Vehicle Condition',
+        Icons.directions_car_outlined,
+        _genVehicleCondition
+      ),
+      ('Insurance / Owner\'s Risk', Icons.shield_outlined, _genRiskDeclaration),
+      (
+        'Customer Declaration',
+        Icons.fact_check_outlined,
+        _genCustomerDeclaration
+      ),
       ('Payment Voucher', Icons.payments_outlined, _genVoucher),
       ('Proof of Delivery', Icons.assignment_turned_in_outlined, _genPod),
     ];
     final utilities = <Widget>[
       if (!paid)
         _utilityButton('Copy UPI', Icons.content_copy_rounded, _copyUpi),
-      if (!paid) _utilityButton('Send pay link', Icons.send_rounded, _sendPayLink),
+      if (!paid)
+        _utilityButton('Send pay link', Icons.send_rounded, _sendPayLink),
       // Live since 7 Sept 2026 — /track serves the customer document hub.
       if (kTrackLinkHosted)
         _utilityButton('Copy track link', Icons.link_rounded, _copyTrackLink),

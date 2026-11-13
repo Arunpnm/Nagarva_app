@@ -9,6 +9,8 @@ import '/components/ng_widgets.dart';
 import '/components/pdf_branding.dart';
 import '/components/pdf_view_page.dart';
 import '/components/quote_pdf.dart';
+import '/components/simple_document_pdf.dart';
+import '/backend/vendor_identity.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/l10n/gen/app_localizations.dart';
 
@@ -58,6 +60,8 @@ class _QuoteDesignPageState extends State<QuoteDesignPage> {
     setState(() => _saving = true);
     try {
       await d.save();
+      // Every other document reads the same choice (13 Nov 2026).
+      PdfBranding.forgetDesign();
       _toast(l.qdSaved);
     } catch (e) {
       _toast(l.dwSaveFailed);
@@ -107,6 +111,58 @@ class _QuoteDesignPageState extends State<QuoteDesignPage> {
     }
   }
 
+  /// The same choice on the other documents (invoice, receipt, LR,
+  /// packing list ...): a sample proforma in the chosen layout and
+  /// colour, before anything is saved.
+  Future<void> _previewOther() async {
+    final d = _design;
+    if (d == null) return;
+    setState(() => _previewing = true);
+    PdfBranding.designOverride = d;
+    try {
+      Map<String, dynamic> profile = const {};
+      try {
+        final rows = await SettingsTable().queryRows(
+          queryFn: (q) => OrgScope.read(q).eq('key', 'business_profile'),
+        );
+        profile = rows.isEmpty ? {} : (rows.first.valueJson ?? {});
+      } catch (_) {}
+      final logo =
+          await PdfBranding.fetchBytes(AppSession.instance.currentOrgLogoUrl);
+      final bytes = await SimpleDocumentPdf.generate(
+        terms: kDefaultStandardTerms,
+        docLabel: 'PROFORMA INVOICE',
+        docNo: 'SAMPLE',
+        orgName: VendorIdentity.forDocument,
+        profile: profile,
+        logoBytes: logo,
+        metaLeft: const [
+          MapEntry('Prepared For', 'Sample customer'),
+          MapEntry('Route', 'Chennai to Bengaluru'),
+        ],
+        metaRight: [
+          const MapEntry('No', 'SAMPLE'),
+          MapEntry('Date', PdfBranding.fmtDate(DateTime.now())),
+        ],
+        tableHeaders: const ['DESCRIPTION', 'AMOUNT'],
+        tableRows: const [
+          ['Sample moving charges', '₹12,000.00'],
+          ['Sample packing', '₹3,000.00'],
+        ],
+        totalLabel: 'SAMPLE TOTAL',
+        totalValue: '₹15,000.00',
+      );
+      if (!mounted) return;
+      await PdfViewPage.open(context, title: 'Sample document', bytes: bytes);
+    } catch (e) {
+      _toast(friendlyError(e));
+    } finally {
+      PdfBranding.designOverride = null;
+      PdfBranding.forgetDesign();
+      if (mounted) setState(() => _previewing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = NgPalette.of(context);
@@ -142,8 +198,10 @@ class _QuoteDesignPageState extends State<QuoteDesignPage> {
                   NgSectionHeader(l.qdColor),
                   const SizedBox(height: 8),
                   NgCard(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // Twelve colours since 13 Nov 2026: wraps to two rows.
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
                         for (final hex in kQuoteColors)
                           _swatch(c, d, hex),
@@ -159,6 +217,12 @@ class _QuoteDesignPageState extends State<QuoteDesignPage> {
                     label: l.qdPreview,
                     icon: Icons.picture_as_pdf_outlined,
                     onPressed: _previewing ? null : _preview,
+                  ),
+                  const SizedBox(height: 10),
+                  NgSecondaryButton(
+                    label: 'Preview invoice, receipt and other documents',
+                    icon: Icons.description_outlined,
+                    onPressed: _previewing ? null : _previewOther,
                   ),
                   const SizedBox(height: 10),
                   NgPrimaryButton(

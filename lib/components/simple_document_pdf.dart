@@ -97,7 +97,7 @@ class SimpleDocumentPdf {
                 children: [
                   pw.TableRow(
                     decoration:
-                        const pw.BoxDecoration(color: PdfBranding.navy),
+                        pw.BoxDecoration(color: PdfBranding.primary),
                     children: [
                       for (var i = 0; i < tableHeaders.length; i++)
                         pw.Padding(
@@ -118,7 +118,7 @@ class SimpleDocumentPdf {
                     pw.TableRow(
                       decoration: pw.BoxDecoration(
                           color:
-                              r.isOdd ? PdfBranding.lightRow : PdfColors.white),
+                              r.isOdd ? PdfBranding.tint : PdfColors.white),
                       children: [
                         for (var i = 0; i < tableRows[r].length; i++)
                           pw.Padding(
@@ -145,7 +145,7 @@ class SimpleDocumentPdf {
                   padding:
                       const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: pw.BoxDecoration(
-                    color: PdfBranding.navy,
+                    color: PdfBranding.primary,
                     borderRadius: pw.BorderRadius.circular(4),
                   ),
                   child: pw.Row(
@@ -160,7 +160,7 @@ class SimpleDocumentPdf {
                           style: pw.TextStyle(
                               font: fonts.bold,
                               fontSize: 11,
-                              color: PdfBranding.gold)),
+                              color: PdfBranding.accent)),
                     ],
                   ),
                 ),
@@ -170,7 +170,7 @@ class SimpleDocumentPdf {
               pw.SizedBox(height: 14),
               pw.Text('NOTES',
                   style: pw.TextStyle(
-                      font: fonts.bold, fontSize: 8.5, color: PdfBranding.navy)),
+                      font: fonts.bold, fontSize: 8.5, color: PdfBranding.primary)),
               pw.SizedBox(height: 3),
               pw.Text(notesBlock,
                   style: pw.TextStyle(font: fonts.regular, fontSize: 8.5)),

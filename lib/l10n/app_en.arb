@@ -4814,11 +4814,11 @@
   "@lsOwnerOnly": {
     "description": "Login & security: staff PIN reset is owner-only"
   },
-  "qdTitle": "Quote design",
+  "qdTitle": "Document design",
   "@qdTitle": {
     "description": "Settings › Quote design (design qt_title)"
   },
-  "qdSub": "How your quotation PDF looks to customers.",
+  "qdSub": "How your quotation, invoice, receipts and every other document look to customers.",
   "@qdSub": {
     "description": "Settings › Quote design (design qt_sub)"
   },
@@ -4850,7 +4850,7 @@
   "@qdPreview": {
     "description": "Settings › Quote design (design qt_preview)"
   },
-  "qdSaved": "Quote design saved",
+  "qdSaved": "Document design saved",
   "@qdSaved": {
     "description": "Settings › Quote design (design qt_saved)"
   },

@@ -108,7 +108,7 @@ class SurveyPdf {
                     const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 margin: const pw.EdgeInsets.only(bottom: 3),
                 decoration: pw.BoxDecoration(
-                  color: PdfBranding.lightRow,
+                  color: PdfBranding.tint,
                   borderRadius: pw.BorderRadius.circular(3),
                 ),
                 child: pw.Row(
@@ -118,13 +118,13 @@ class SurveyPdf {
                         style: pw.TextStyle(
                             font: fonts.bold,
                             fontSize: 10,
-                            color: PdfBranding.navy)),
+                            color: PdfBranding.primary)),
                     pw.Text(
                         '${surveyTotalCft(entry.value).toStringAsFixed(0)} CFT',
                         style: pw.TextStyle(
                             font: fonts.bold,
                             fontSize: 10,
-                            color: PdfBranding.navy)),
+                            color: PdfBranding.primary)),
                   ],
                 ),
               ),
@@ -152,7 +152,7 @@ class SurveyPdf {
           pw.Container(
             padding: const pw.EdgeInsets.all(10),
             decoration: pw.BoxDecoration(
-              color: PdfBranding.navy,
+              color: PdfBranding.primary,
               borderRadius: pw.BorderRadius.circular(6),
             ),
             child: pw.Row(
@@ -163,7 +163,7 @@ class SurveyPdf {
                         pw.TextStyle(font: fonts.regular, fontSize: 9, color: PdfColors.white)),
                 pw.Text('${totalCft.toStringAsFixed(0)} CFT',
                     style: pw.TextStyle(
-                        font: fonts.bold, fontSize: 12, color: PdfBranding.gold)),
+                        font: fonts.bold, fontSize: 12, color: PdfBranding.accent)),
               ],
             ),
           ),

@@ -251,7 +251,7 @@ class InvoicePdf {
                               style: pw.TextStyle(
                                   font: fonts.bold,
                                   fontSize: 9,
-                                  color: PdfBranding.navy)),
+                                  color: PdfBranding.primary)),
                           pw.SizedBox(height: 3),
                           pw.Text(resolvedBillToName,
                               style:
@@ -278,7 +278,7 @@ class InvoicePdf {
                                     style: pw.TextStyle(
                                         font: fonts.bold,
                                         fontSize: 8.5,
-                                        color: PdfBranding.navy)),
+                                        color: PdfBranding.primary)),
                                 pw.Text(fromAddress ?? fromCity ?? '—',
                                     style: pw.TextStyle(
                                         font: fonts.regular, fontSize: 8.5)),
@@ -293,7 +293,7 @@ class InvoicePdf {
                                     style: pw.TextStyle(
                                         font: fonts.bold,
                                         fontSize: 8.5,
-                                        color: PdfBranding.navy)),
+                                        color: PdfBranding.primary)),
                                 pw.Text(toAddress ?? toCity ?? '—',
                                     style: pw.TextStyle(
                                         font: fonts.regular, fontSize: 8.5)),
@@ -349,7 +349,7 @@ class InvoicePdf {
                   children: [
                     pw.TableRow(
                       decoration:
-                          const pw.BoxDecoration(color: PdfBranding.navy),
+                          pw.BoxDecoration(color: PdfBranding.primary),
                       children: [
                         for (final h in ['PARTICULARS', 'SAC', 'AMOUNT'])
                           pw.Padding(
@@ -370,7 +370,7 @@ class InvoicePdf {
                       pw.TableRow(
                         decoration: pw.BoxDecoration(
                             color: i.isOdd
-                                ? PdfBranding.lightRow
+                                ? PdfBranding.tint
                                 : PdfColors.white),
                         children: [
                           pw.Padding(
@@ -462,7 +462,7 @@ class InvoicePdf {
                             padding: const pw.EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 6),
                             decoration: pw.BoxDecoration(
-                              color: PdfBranding.navy,
+                              color: PdfBranding.primary,
                               borderRadius: pw.BorderRadius.circular(4),
                             ),
                             child: pw.Row(
@@ -478,7 +478,7 @@ class InvoicePdf {
                                     style: pw.TextStyle(
                                         font: fonts.bold,
                                         fontSize: 11,
-                                        color: PdfBranding.gold)),
+                                        color: PdfBranding.accent)),
                               ],
                             ),
                           ),
@@ -493,7 +493,7 @@ class InvoicePdf {
                     padding: const pw.EdgeInsets.symmetric(
                         horizontal: 10, vertical: 6),
                     decoration: pw.BoxDecoration(
-                      color: PdfBranding.lightRow,
+                      color: PdfBranding.tint,
                       borderRadius: pw.BorderRadius.circular(4),
                     ),
                     child: pw.RichText(
@@ -503,7 +503,7 @@ class InvoicePdf {
                             style: pw.TextStyle(
                                 font: fonts.bold,
                                 fontSize: 8.5,
-                                color: PdfBranding.navy)),
+                                color: PdfBranding.primary)),
                         pw.TextSpan(
                             text: amountInWords,
                             style:
@@ -536,7 +536,7 @@ class InvoicePdf {
                                   style: pw.TextStyle(
                                       font: fonts.bold,
                                       fontSize: 8.5,
-                                      color: PdfBranding.navy)),
+                                      color: PdfBranding.primary)),
                               pw.SizedBox(height: 3),
                               if ((org.beneficiaryName ?? '').isNotEmpty)
                                 kv('Beneficiary', org.beneficiaryName!),
@@ -616,7 +616,7 @@ class InvoicePdf {
                 pw.SizedBox(height: 14),
                 pw.Text('NOTE',
                     style: pw.TextStyle(
-                        font: fonts.bold, fontSize: 8.5, color: PdfBranding.navy)),
+                        font: fonts.bold, fontSize: 8.5, color: PdfBranding.primary)),
                 pw.SizedBox(height: 3),
                 pw.Text(boilerplate.invoiceNote,
                     style: pw.TextStyle(
