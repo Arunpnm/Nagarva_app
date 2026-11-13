@@ -1,3 +1,4 @@
+import 'dart:async';
 import '/components/ng_widgets.dart';
 import '/order_journey_page/order_journey_page_widget.dart';
 import '/backend/whatsapp_cloud.dart';
@@ -838,6 +839,14 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             documentId: quote.id,
           );
           if (mounted) setState(() => _quoteSignature = sig);
+          // The signed copy is the final accepted document (report 4.1 /
+          // 4.2). The customer signs on their own phone, so the first
+          // time the vendor's app sees the signature it files the signed
+          // PDF, which is also what the customer's "Download signed
+          // quotation" button then serves. Once per signature.
+          if (sig != null && sig.isSigned && sig.signatureBytes != null) {
+            unawaited(_fileSignedQuote(quote, sig));
+          }
         } catch (_) {
           // Supplemental — never blank the page over this.
         }
@@ -858,6 +867,27 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       _linkedLoadedOnce = true;
     } catch (_) {
       if (mounted) setState(() => _loadingLinked = false);
+    }
+  }
+
+  static final Set<String> _signedQuoteFiled = <String>{};
+
+  Future<void> _fileSignedQuote(
+      QuotationsRow quote, SignatureRequest sig) async {
+    final key = '${quote.id}:${sig.signedAt?.toIso8601String() ?? ''}';
+    if (!_signedQuoteFiled.add(key)) return;
+    try {
+      await QuoteDocument.build(
+        quote,
+        leadId: widget.leadId,
+        fromCity: _lead?.fromCity ?? widget.leadFromCity,
+        toCity: _lead?.toCity ?? widget.leadToCity,
+        fallbackName: _leadCustomer,
+        fallbackPhone: _leadPhone,
+        knownSignature: sig,
+      );
+    } catch (_) {
+      _signedQuoteFiled.remove(key);
     }
   }
 
@@ -1713,7 +1743,11 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             // with the total CFT and the package it implies.
             SurveyResponseSection(
               survey: survey,
-              onBuildQuote: _actions.canBuildQuote
+              // 13 Nov 2026, Arun's report 1.1: once this lead has a
+              // quote, a second "build" made a duplicate quotation.
+              // Changes go through Revise Quote, which keeps the number
+              // and the V1/V2 history.
+              onBuildQuote: _actions.canBuildQuote && quotation == null
                   ? () => _openQuoteBuilder(survey)
                   : null,
             ),
@@ -2091,6 +2125,7 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             const SizedBox(width: 6),
             Expanded(
               child: Text(
+                '${(quotation.quoteNo ?? '').isEmpty ? '' : '${quotation.quoteNo} · '}'
                 'v${quotation.version ?? 1} · ${money.format(quotation.total ?? 0)}'
                 '${created == null ? '' : ' · ${DateFormat('d MMM yyyy').format(created.toLocal())}'}',
                 style: NgFonts.geist(

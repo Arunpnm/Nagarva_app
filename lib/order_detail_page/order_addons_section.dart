@@ -8,6 +8,12 @@ import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 import '/backend/edge_function_errors.dart';
+import '/backend/tracking_service.dart';
+import '/backend/vendor_identity.dart';
+import '/components/share_link_sheet.dart';
+import '/config/app_config.dart';
+import '/nav_items.dart';
+
 /// Extra charges on an order: anything billed on top of the quote.
 ///
 /// Mostly extra WORK agreed after the quote, which often happens on a
@@ -49,6 +55,20 @@ import '/backend/edge_function_errors.dart';
 ///
 /// A cancelled row is kept rather than deleted, so "we agreed this and
 /// then dropped it" survives as a record of what was discussed.
+///
+/// **The customer's yes (13 Nov 2026).** Arun's phone test, report 7.1:
+/// *"the vendor can add additional charges during Move Day without
+/// obtaining customer approval"*, with a pending AC install already
+/// "included in the balance due". Every charge now carries an approval
+/// beside its work status:
+///  * `awaiting` — asked, not answered. NOT in any balance.
+///  * `approved` — the customer said yes on their tracking page (or the
+///    office recorded a yes given on the phone). Billed.
+///  * `rejected` — the customer said no. Never billed.
+/// The database holds `amount` at zero until approval and keeps the
+/// asked figure in `requested_amount`, so every screen that adds up
+/// add-ons is right without knowing any of this. This screen is the one
+/// place that shows the asked figure.
 class OrderAddonsSection extends StatefulWidget {
   const OrderAddonsSection({
     super.key,
@@ -93,7 +113,9 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
       final rows = await OrgScope.read(SupaFlow.client
               .from('addons')
               .select(
-                  'id,description,amount,status,assigned_to,completed_at,created_at'))
+                  'id,description,amount,requested_amount,approval,'
+                  'approval_at,approval_by,approval_note,status,assigned_to,'
+                  'completed_at,created_at'))
           .eq('order_id', widget.orderId)
           .order('created_at', ascending: true);
       if (!mounted) return;
@@ -110,11 +132,199 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
     }
   }
 
-  double get _pendingTotal => _rows
-      .where((r) => r['status'] == 'pending')
-      .fold(0.0, (s, r) => s + (num.tryParse('${r['amount']}') ?? 0));
+  static String _approval(Map<String, dynamic> r) =>
+      '${r['approval'] ?? 'approved'}';
 
-  int get _pendingCount => _rows.where((r) => r['status'] == 'pending').length;
+  /// The figure asked for. `amount` is zero until the customer approves.
+  static double _asked(Map<String, dynamic> r) =>
+      (num.tryParse('${r['requested_amount'] ?? r['amount']}') ?? 0)
+          .toDouble();
+
+  bool _live(Map<String, dynamic> r) => r['status'] != 'cancelled';
+
+  /// Approved work not yet done: money agreed, job outstanding.
+  Iterable<Map<String, dynamic>> get _pendingRows => _rows
+      .where((r) => r['status'] == 'pending' && _approval(r) == 'approved');
+
+  double get _pendingTotal => _pendingRows.fold(0.0, (s, r) => s + _asked(r));
+
+  int get _pendingCount => _pendingRows.length;
+
+  Iterable<Map<String, dynamic>> get _awaitingRows =>
+      _rows.where((r) => _live(r) && _approval(r) == 'awaiting');
+
+  int get _awaitingCount => _awaitingRows.length;
+
+  double get _awaitingTotal =>
+      _awaitingRows.fold(0.0, (s, r) => s + _asked(r));
+
+  /// Sends the customer their tracking link, where each waiting charge
+  /// has Approve and Reject. The same link they already use to follow
+  /// the move, so there is nothing new for them to learn.
+  Future<void> _sendForApproval() async {
+    try {
+      final token = await TrackingService.tokenForOrder(widget.orderId);
+      if (token == null) throw Exception('not ready');
+      String? phone;
+      String? name;
+      try {
+        final o = await OrgScope.read(
+                SupaFlow.client.from('orders').select('phone,customer'))
+            .eq('id', widget.orderId)
+            .limit(1);
+        if (o.isNotEmpty) {
+          phone = o.first['phone'] as String?;
+          name = o.first['customer'] as String?;
+        }
+      } catch (_) {}
+      if (!mounted) return;
+      final lines = _awaitingRows
+          .map((r) => '• ${r['description']}: ${functions.inrFull(_asked(r))}')
+          .join('\n');
+      await ShareLinkSheet.show(
+        context,
+        title: 'Ask the customer to approve',
+        subtitle: 'They open the link and tap Approve or Reject on each '
+            'charge. Only approved charges are added to the bill.',
+        link: buildTokenLink('/track', token),
+        phone: phone,
+        message: 'Hello${(name ?? '').isEmpty ? '' : ' $name'}, '
+            '${VendorIdentity.forSentence} needs your approval for:\n'
+            '$lines\n\nPlease approve or reject here:',
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error =
+            'Could not open the approval link. Please try again.');
+      }
+    }
+  }
+
+  Future<void> _setApproval(Map<String, dynamic> row, String approval) async {
+    try {
+      await SupaFlow.client
+          .from('addons')
+          .update({
+            'approval': approval,
+            if (approval == 'approved') 'approval_by': 'vendor',
+          })
+          .eq('id', row['id'])
+          .eq('org_id', AppSession.instance.currentOrgId!);
+      await _afterWrite();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = 'Could not update. Please try again.');
+      }
+    }
+  }
+
+  /// The office records a yes the customer gave by phone or in person.
+  /// Owner and manager only, and logged as recorded by the office, so it
+  /// can never be mistaken for the customer's own tap.
+  Future<void> _recordVerbalYes(Map<String, dynamic> row) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NgPalette.of(context).s1,
+        title: const Text('Customer agreed?'),
+        content: Text(
+            'Use this only when the customer has told you yes for '
+            '${_desc(row)} at ${functions.inrFull(_asked(row))}. '
+            'It is saved as approved by your office, with the time.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Yes, customer agreed')),
+        ],
+      ),
+    );
+    if (ok == true) await _setApproval(row, 'approved');
+  }
+
+  static String _desc(Map<String, dynamic> r) => '${r['description'] ?? ''}';
+
+  Future<void> _showHistory() async {
+    List<Map<String, dynamic>> log = const [];
+    try {
+      final rows = await SupaFlow.client
+          .from('addon_approval_log')
+          .select('event,amount,description,actor,note,at')
+          .eq('order_id', widget.orderId)
+          .order('at', ascending: true);
+      log = List<Map<String, dynamic>>.from(rows);
+    } catch (_) {}
+    if (!mounted) return;
+    final ng = NgPalette.of(context);
+    String label(Map<String, dynamic> e) {
+      final who = e['actor'] == 'customer' ? 'customer' : 'office';
+      return switch ('${e['event']}') {
+        'requested' => 'Sent for approval',
+        'approved' => 'Approved by $who',
+        'rejected' => 'Rejected by $who',
+        'amount_changed' => 'Amount changed',
+        'cancelled' => 'Cancelled',
+        _ => '${e['event']}',
+      };
+    }
+
+    String when(dynamic v) {
+      final d = DateTime.tryParse('$v')?.toLocal();
+      if (d == null) return '';
+      String two(int n) => n.toString().padLeft(2, '0');
+      const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
+      return '${d.day} ${m[d.month - 1]} ${d.year}, $h:${two(d.minute)} '
+          '${d.hour < 12 ? 'AM' : 'PM'}';
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ng.s1,
+        title: const Text('Approval history'),
+        content: SizedBox(
+          width: 420,
+          child: log.isEmpty
+              ? Text('Nothing recorded yet.',
+                  style: NgFonts.geist(fontSize: 13, color: ng.mute))
+              : ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final e in log)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                '${e['description'] ?? ''} · '
+                                '${functions.inrFull((num.tryParse('${e['amount']}') ?? 0).toDouble())}',
+                                style: NgFonts.geist(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: ng.text)),
+                            Text(
+                                '${label(e)} · ${when(e['at'])}'
+                                '${(e['note'] ?? '').toString().isEmpty ? '' : '\n${e['note']}'}',
+                                style: NgFonts.geist(
+                                    fontSize: 12, color: ng.mute)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Close')),
+        ],
+      ),
+    );
+  }
 
   /// After a write the whole row set is RE-READ rather than patched in
   /// place. CLAUDE.md's standing rule, learned three times over: the DB
@@ -130,9 +340,9 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
     final descCtrl =
         TextEditingController(text: '${existing?['description'] ?? ''}');
     final amountCtrl = TextEditingController(
-        text: existing == null || existing['amount'] == null
-            ? ''
-            : '${(num.tryParse('${existing['amount']}') ?? 0).toInt()}');
+        text: existing == null ? '' : '${_asked(existing).toInt()}');
+    final wasApproved =
+        existing != null && _approval(existing) == 'approved';
     String? err;
 
     final saved = await showDialog<bool>(
@@ -160,6 +370,19 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                 // No suggested figure. What this extra work costs is the
                 // vendor's call and varies by job.
                 decoration: const InputDecoration(labelText: 'Amount'),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                existing == null
+                    ? 'The customer approves this before it is added to '
+                        'the bill.'
+                    : wasApproved
+                        ? 'If you change the amount, the customer has to '
+                            'approve it again.'
+                        : 'The customer approves this before it is added '
+                            'to the bill.',
+                style: TextStyle(
+                    fontSize: 12, color: NgPalette.of(context).mute),
               ),
               if (err != null) ...[
                 const SizedBox(height: 10),
@@ -214,6 +437,11 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
             .eq('org_id', AppSession.instance.currentOrgId!);
       }
       await _afterWrite();
+      // Straight to the ask: a charge that is saved and never sent is a
+      // charge that never gets approved.
+      if (mounted && _awaitingCount > 0 && existing == null) {
+        await _sendForApproval();
+      }
     } catch (e) {
       if (mounted) setState(() => _error = 'Could not save add-on: ${friendlyError(e)}');
     }
@@ -263,11 +491,16 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
               // the thing a vendor needs to see without reading the
               // rows - it is money not yet earned and a job not yet
               // finished.
-              if (_pendingCount > 0) ...[
+              if (_awaitingCount > 0) ...[
+                const SizedBox(width: 8),
+                NgPill('$_awaitingCount to approve', status: NgStatus.amber),
+              ] else if (_pendingCount > 0) ...[
                 const SizedBox(width: 8),
                 NgPill('$_pendingCount pending', status: NgStatus.amber),
               ],
               const Spacer(),
+              if (_rows.isNotEmpty)
+                NgLinkButton('History', onTap: _showHistory),
               if (!widget.readOnly)
                 NgLinkButton('Add',
                     icon: Icons.add_rounded, onTap: () => _addOrEdit()),
@@ -287,13 +520,45 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
               child: Text(
                 'Anything charged on top of the quote — an AC install the '
                 'next day, a carpenter, a second trip, or materials the '
-                'customer bought. Pending items count toward the balance '
-                'until they are done.',
+                'customer bought. The customer approves each one before it '
+                'is added to the bill.',
                 style: NgFonts.geist(
                     fontSize: 13, height: 1.4, color: ng.mute),
               ),
             )
           else ...[
+            if (_awaitingCount > 0)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(top: 12, bottom: 4),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: ng.amberBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$_awaitingCount waiting for the customer · '
+                      '${functions.inrFull(_awaitingTotal)}. Not in the '
+                      'bill until they approve.',
+                      style: NgFonts.geist(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: ng.text),
+                    ),
+                    if (!widget.readOnly) ...[
+                      const SizedBox(height: 8),
+                      FilledButton.icon(
+                        onPressed: _sendForApproval,
+                        icon: const Icon(Icons.send_rounded, size: 16),
+                        label: const Text('Send approval link'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             if (_pendingCount > 0)
               Container(
                 width: double.infinity,
@@ -327,24 +592,49 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
 
   Widget _addonRow(NgPalette ng, Map<String, dynamic> r) {
     final status = '${r['status'] ?? 'pending'}';
-    final amount = (num.tryParse('${r['amount']}') ?? 0).toDouble();
+    final approval = _approval(r);
+    final amount = _asked(r);
     final cancelled = status == 'cancelled';
     final done = status == 'completed';
+    final awaiting = !cancelled && approval == 'awaiting';
+    final rejected = !cancelled && approval == 'rejected';
+    final struck = cancelled || rejected;
 
-    final (Color chipColor, String chipLabel, IconData icon) = switch (status) {
-      'completed' => (ng.green, 'Done', Icons.check_rounded),
-      'cancelled' => (ng.mute, 'Cancelled', Icons.block_rounded),
-      _ => (ng.amber, 'Pending', Icons.schedule_rounded),
-    };
+    final (Color chipColor, String chipLabel, IconData icon) = cancelled
+        ? (ng.mute, 'Cancelled', Icons.block_rounded)
+        : rejected
+            ? (ng.red, 'Customer said no · not billed', Icons.close_rounded)
+            : awaiting
+                ? (
+                    ng.amber,
+                    'Waiting for customer approval',
+                    Icons.hourglass_top_rounded
+                  )
+                : done
+                    ? (ng.green, 'Approved · Done', Icons.check_rounded)
+                    : (
+                        ng.amber,
+                        'Approved · work pending',
+                        Icons.schedule_rounded
+                      );
 
-    final pending = !done && !cancelled;
+    String sub = chipLabel;
+    if (!cancelled && approval == 'approved' && r['approval_at'] != null) {
+      final d = DateTime.tryParse('${r['approval_at']}')?.toLocal();
+      final by = r['approval_by'] == 'customer' ? 'customer' : 'office';
+      if (d != null) {
+        sub = '$chipLabel\nApproved by $by · ${d.day}/${d.month}/${d.year}';
+      }
+    }
+    final note = '${r['approval_note'] ?? ''}'.trim();
+    if (rejected && note.isNotEmpty) sub = '$sub\n"$note"';
+
+    final pending = !done && !struck;
+    final office = isOwnerOrManagerSession;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       padding: const EdgeInsets.fromLTRB(10, 10, 0, 10),
       decoration: BoxDecoration(
-        // A pending charge is money not yet earned and work not yet
-        // done. It gets a tint so it cannot be skimmed past as if it
-        // were finished.
         color: pending ? ng.amberBg : ng.inset,
         borderRadius: BorderRadius.circular(14),
       ),
@@ -352,10 +642,10 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
         children: [
           NgIconTile(
               icon: icon,
-              status: done
-                  ? NgStatus.green
-                  : cancelled
-                      ? NgStatus.neutral
+              status: struck
+                  ? NgStatus.neutral
+                  : done && !awaiting
+                      ? NgStatus.green
                       : NgStatus.amber,
               size: 32,
               iconSize: 17),
@@ -369,19 +659,13 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
                   style: NgFonts.geist(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: cancelled ? ng.mute : ng.text,
-                    // A cancelled row stays visible as a record of what
-                    // was discussed, struck through so it cannot be
-                    // misread as outstanding work.
-                    decoration: cancelled ? TextDecoration.lineThrough : null,
+                    color: struck ? ng.mute : ng.text,
+                    decoration: struck ? TextDecoration.lineThrough : null,
                   ),
                 ),
-                Text(
-                  done && r['completed_at'] != null
-                      ? '$chipLabel · ${'${r['completed_at']}'.split('T').first}'
-                      : chipLabel,
-                  style: NgFonts.geist(fontSize: 12, color: chipColor),
-                ),
+                Text(sub,
+                    style: NgFonts.geist(
+                        fontSize: 12, height: 1.35, color: chipColor)),
               ],
             ),
           ),
@@ -391,35 +675,53 @@ class OrderAddonsSectionState extends State<OrderAddonsSection> {
             style: NgFonts.mono(
               fontSize: 13.5,
               fontWeight: FontWeight.w600,
-              color: cancelled ? ng.mute : ng.text,
-              decoration: cancelled ? TextDecoration.lineThrough : null,
+              color: struck || awaiting ? ng.mute : ng.text,
+              decoration: struck ? TextDecoration.lineThrough : null,
             ),
           ),
           if (!widget.readOnly)
             PopupMenuButton<String>(
               icon: Icon(Icons.more_vert, size: 18, color: ng.mute),
               onSelected: (v) {
-                if (v == 'edit') {
-                  _addOrEdit(existing: r);
-                } else {
-                  _setStatus(r, v);
+                switch (v) {
+                  case 'edit':
+                    _addOrEdit(existing: r);
+                  case 'send':
+                    _sendForApproval();
+                  case 'verbal':
+                    _recordVerbalYes(r);
+                  case 'ask_again':
+                    _setApproval(r, 'awaiting');
+                  default:
+                    _setStatus(r, v);
                 }
               },
               itemBuilder: (_) => [
-                if (!done)
+                if (awaiting)
                   const PopupMenuItem(
-                      value: 'completed', child: Text('Mark done')),
+                      value: 'send', child: Text('Send approval link')),
+                if (awaiting && office)
+                  const PopupMenuItem(
+                      value: 'verbal',
+                      child: Text('Customer agreed on call')),
+                if (rejected)
+                  const PopupMenuItem(
+                      value: 'ask_again',
+                      child: Text('Ask the customer again')),
+                if (!done && !cancelled && !rejected)
+                  const PopupMenuItem(
+                      value: 'completed', child: Text('Mark work done')),
                 if (done)
                   const PopupMenuItem(
                       value: 'pending', child: Text('Reopen as pending')),
-                const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                if (!cancelled)
+                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
                 if (!cancelled)
                   const PopupMenuItem(
-                      value: 'cancelled',
-                      child: Text('Cancel (drops from balance)')),
+                      value: 'cancelled', child: Text('Cancel this charge')),
                 if (cancelled)
                   const PopupMenuItem(
-                      value: 'pending', child: Text('Restore as pending')),
+                      value: 'pending', child: Text('Restore')),
               ],
             ),
         ],

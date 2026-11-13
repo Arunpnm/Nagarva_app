@@ -26,6 +26,21 @@ import '/components/survey_response_section.dart';
 class QuoteDocument {
   QuoteDocument._();
 
+  /// What a quotation is called everywhere a person reads it: its own
+  /// number, with the revision beside it once it has been revised.
+  ///
+  /// 13 Nov 2026, report 3.1: the customer's page and the PDF showed the
+  /// row's internal id. The number is the same through every revision;
+  /// only the V changes.
+  static String quoteRef(QuotationsRow q) {
+    final no = (q.quoteNo ?? '').trim();
+    final v = q.version ?? 1;
+    final base = no.isNotEmpty
+        ? no
+        : (q.id.length >= 8 ? q.id.substring(0, 8).toUpperCase() : 'QUOTE');
+    return v > 1 ? '$base (V$v)' : base;
+  }
+
   /// Returns the PDF bytes and its file name. Keeps the customer's copy
   /// (best effort) exactly as the lead screen did.
   ///
@@ -123,10 +138,7 @@ class QuoteDocument {
       } catch (_) {}
     }
 
-    final refSource = (leadId ?? '').isNotEmpty ? leadId! : quotation.id;
-    final ref = refSource.length >= 8
-        ? refSource.substring(0, 8).toUpperCase()
-        : (refSource.isEmpty ? 'QUOTE' : refSource.toUpperCase());
+    final ref = quoteRef(quotation);
 
     final design = await QuoteDesign.load();
     final signed = sig?.isSigned ?? false;
@@ -171,7 +183,8 @@ class QuoteDocument {
       surveyLines: lines,
       amountInWords: amountInWords,
     );
-    final file = QuotePdf.filename(ref, DateTime.now())
+    final file = QuotePdf.filename(
+            signed ? '$ref-SIGNED' : ref, DateTime.now())
         .replaceAll(RegExp(r'[\\/:*?"<>|]'), '-');
 
     // Keep the customer's copy (Arun, 7 Sept 2026). Best effort: a
@@ -183,6 +196,16 @@ class QuoteDocument {
           fileName: file,
           bytes: bytes,
         );
+        // The signed copy is kept separately as the final accepted
+        // version (report 4.1 / 4.2).
+        if (signed && sig?.signatureBytes != null) {
+          await IssuedDocuments.storeForQuotation(
+            quotationId: quotation.id,
+            fileName: file,
+            bytes: bytes,
+            signed: true,
+          );
+        }
       } catch (_) {}
     }
     return (bytes, file);

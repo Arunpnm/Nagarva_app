@@ -1996,75 +1996,162 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
           _basisRow(ng, 'transport'),
           const SizedBox(height: 10),
           _amountField(ng, 'advanceOnQuote', 'Advance requested'),
-          const SizedBox(height: 14),
-          // Arun, 3 Sept 2026: "add price separately packing achrag,
-          // loading , unloading". The prices existed from that day; what
-          // was missing was any sign they did. Every line defaults to
-          // "Incl. in Freight", which hides its price box, so the feature
-          // was invisible unless you already knew to go looking for it -
-          // and the only label saying otherwise was 11.5px grey text.
-          Text('Packing & Labour',
-              style: NgFonts.geist(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: ng.text)),
-          const SizedBox(height: 2),
-          Text(
-            'Each line is bundled into the freight price unless you switch '
-            'it to "Bill separately", which opens its own price field.',
-            style: NgFonts.geist(
-                fontSize: 11.5, color: ng.mute, height: 1.35),
-          ),
           const SizedBox(height: 10),
-          for (final f in billable) _billableRow(ng, f),
-          if (_separatelyBilledCount > 0) ...[
-            const SizedBox(height: 2),
-            Text(
-              '$_separatelyBilledCount of ${billable.length} billed '
-              'separately${_separatelyBilledUnpriced > 0 ? ' · '
-                  '$_separatelyBilledUnpriced still to price' : ''}',
-              style: NgFonts.geist(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: _separatelyBilledUnpriced > 0
-                      ? ng.amber
-                      : ng.mute),
-            ),
-          ],
-          const SizedBox(height: 14),
-          Text('Other Charges',
-              style: NgFonts.geist(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: ng.mute)),
-          const SizedBox(height: 8),
-          for (final f in other.where((f) =>
-              ['storage', 'carTransport', 'misc', 'stCharge', 'otherCharges']
-                  .contains(f.key)))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _amountField(ng, f.key, f.label),
-            ),
-          const SizedBox(height: 6),
-          Text('Add-on Services',
-              style: NgFonts.geist(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: ng.mute)),
-          const SizedBox(height: 8),
-          for (final f in other.where((f) => ![
-                'storage',
-                'carTransport',
-                'misc',
-                'stCharge',
-                'otherCharges'
-              ].contains(f.key)))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _amountField(ng, f.key, f.label),
-            ),
-          const SizedBox(height: 6),
           _amountField(ng, 'discount', 'Discount'),
+          const SizedBox(height: 8),
+          // 13 Nov 2026, Arun's report 2.1: the charges ran as one long
+          // list of twenty boxes. Freight, advance and discount (used on
+          // every quote) stay open above; the rest fold away, and a group
+          // with a figure in it opens itself so nothing priced is hidden.
+          _chargeGroup(
+            ng,
+            id: 'labour',
+            title: 'Packing & labour',
+            keys: [for (final f in billable) f.key],
+            extraSummary: _separatelyBilledCount > 0
+                ? '$_separatelyBilledCount billed separately'
+                : 'Included in freight',
+            forceOpen: _separatelyBilledCount > 0,
+            children: [
+              Text(
+                'Each line is bundled into the freight price unless you '
+                'switch it to "Bill separately", which opens its own price '
+                'field.',
+                style: NgFonts.geist(
+                    fontSize: 11.5, color: ng.mute, height: 1.35),
+              ),
+              const SizedBox(height: 10),
+              for (final f in billable) _billableRow(ng, f),
+              if (_separatelyBilledCount > 0)
+                Text(
+                  '$_separatelyBilledCount of ${billable.length} billed '
+                  'separately${_separatelyBilledUnpriced > 0 ? ' · '
+                      '$_separatelyBilledUnpriced still to price' : ''}',
+                  style: NgFonts.geist(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _separatelyBilledUnpriced > 0
+                          ? ng.amber
+                          : ng.mute),
+                ),
+            ],
+          ),
+          _chargeGroup(
+            ng,
+            id: 'addons',
+            title: 'Add-on services',
+            keys: [
+              for (final f in other)
+                if (!_kOtherChargeKeys.contains(f.key)) f.key
+            ],
+            children: [
+              for (final f
+                  in other.where((f) => !_kOtherChargeKeys.contains(f.key)))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _amountField(ng, f.key, f.label),
+                ),
+            ],
+          ),
+          _chargeGroup(
+            ng,
+            id: 'other',
+            title: 'Other charges',
+            keys: _kOtherChargeKeys,
+            children: [
+              for (final f
+                  in other.where((f) => _kOtherChargeKeys.contains(f.key)))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _amountField(ng, f.key, f.label),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const _kOtherChargeKeys = [
+    'storage',
+    'carTransport',
+    'misc',
+    'stCharge',
+    'otherCharges',
+  ];
+
+  /// Which charge groups the vendor has opened or closed by hand. A
+  /// group never touched follows its content: open when it holds a figure.
+  final Map<String, bool> _chargeGroupOpen = {};
+
+  Widget _chargeGroup(
+    NgPalette ng, {
+    required String id,
+    required String title,
+    required List<String> keys,
+    required List<Widget> children,
+    String? extraSummary,
+    bool forceOpen = false,
+  }) {
+    final filled = keys.where((k) => _chargeAmount(k) > 0).toList();
+    final sum = filled.fold<double>(0, (s, k) => s + _chargeAmount(k));
+    final open = _chargeGroupOpen[id] ?? (filled.isNotEmpty || forceOpen);
+    final summary = filled.isNotEmpty
+        ? '${filled.length} added · \u20B9${sum.toStringAsFixed(0)}'
+        : (extraSummary ?? 'None added');
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: ng.inset,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => setState(() => _chargeGroupOpen[id] = !open),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: NgFonts.geist(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: ng.text)),
+                        const SizedBox(height: 2),
+                        Text(summary,
+                            style: NgFonts.geist(
+                                fontSize: 11.5,
+                                fontWeight: filled.isNotEmpty
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: filled.isNotEmpty ? ng.acc : ng.mute)),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                      open
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      color: ng.mute),
+                ],
+              ),
+            ),
+          ),
+          if (open)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: children,
+              ),
+            ),
         ],
       ),
     );

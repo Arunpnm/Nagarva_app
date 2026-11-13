@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import '/app_session.dart';
+import '/backend/signature_service.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/supervisor_job_page/supervisor_job_page_model.dart'
@@ -57,9 +57,7 @@ class PodPdf {
     Uint8List? signatureBytes;
     final sig = r['signature_data'] as String?;
     if (sig != null && sig.isNotEmpty) {
-      try {
-        signatureBytes = base64Decode(sig);
-      } catch (_) {}
+      signatureBytes = decodeSignatureImage(sig);
     }
 
     final method = r['completion_method'] as String?;

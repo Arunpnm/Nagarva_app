@@ -25,6 +25,7 @@ import '/components/signature_pad.dart';
 import '/components/pod_pdf.dart';
 import '/components/simple_document_pdf.dart';
 import '/config/app_config.dart';
+import '/nav_items.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/backend/vendor_identity.dart';
@@ -1372,6 +1373,100 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
   //
   // The undertaking signed before packing: nothing prohibited or
   // high-value in the consignment, and the goods are the customer's own.
+  /// The customer's ORDER CONFIRMATION, carrying their arrival code.
+  ///
+  /// 13 Nov 2026, Arun's phone test (report 6.1): the supervisor's screen
+  /// asked for "the 4-digit arrival code from their booking confirmation"
+  /// and no booking confirmation existed, so the customer had nothing to
+  /// read from and the job could not start. This is that document: order
+  /// id, quotation number, the move, the amount, and the code with one
+  /// plain instruction.
+  ///
+  /// Office only. The code proves the crew reached the customer, so it
+  /// must reach the supervisor from the customer's mouth and from nowhere
+  /// else (see ArrivalCodeCard).
+  Future<void> _genOrderConfirmation() => _run(() async {
+        final o = _order;
+        if (o == null) return;
+        final (profile, logoBytes) = await _loadBranding();
+        String? quoteNo;
+        final qid = (o.quotationId ?? '').trim();
+        if (qid.isNotEmpty) {
+          try {
+            final rows = await OrgScope.read(SupaFlow.client
+                    .from('quotations')
+                    .select('quote_no,version'))
+                .eq('id', qid)
+                .limit(1);
+            if (rows.isNotEmpty) {
+              final no = '${rows.first['quote_no'] ?? ''}'.trim();
+              final v = (rows.first['version'] as num?)?.toInt() ?? 1;
+              if (no.isNotEmpty) quoteNo = v > 1 ? '$no (V$v)' : no;
+            }
+          } catch (_) {}
+        }
+        final money = await OrderMoney.load(o);
+        final code = (o.arrivalCode ?? '').trim();
+        await _showDocDialog(
+            'Order Confirmation',
+            'OrderConfirmation_${o.id}.pdf',
+            docType: 'order_confirmation',
+            () => SimpleDocumentPdf.generate(
+                  terms: _standardTerms,
+                  docLabel: 'ORDER CONFIRMATION',
+                  docNo: o.id!,
+                  orgName: VendorIdentity.forDocument,
+                  profile: profile,
+                  logoBytes: logoBytes,
+                  metaLeft: [
+                    MapEntry('Customer', o.customer),
+                    if ((o.phone ?? '').isNotEmpty) MapEntry('Phone', o.phone!),
+                    MapEntry(
+                        'From',
+                        (o.fromAddress ?? '').trim().isNotEmpty
+                            ? o.fromAddress!
+                            : (o.fromCity ?? '—')),
+                    MapEntry(
+                        'To',
+                        (o.toAddress ?? '').trim().isNotEmpty
+                            ? o.toAddress!
+                            : (o.toCity ?? '—')),
+                  ],
+                  metaRight: [
+                    MapEntry('Order ID', o.id!),
+                    if (quoteNo != null) MapEntry('Quotation No', quoteNo),
+                    MapEntry('Shifting date', PdfBranding.fmtDate(o.moveDate)),
+                    MapEntry('Confirmed on',
+                        PdfBranding.fmtDate(o.createdAt ?? DateTime.now())),
+                  ],
+                  tableHeaders: const ['Particulars', 'Amount'],
+                  tableRows: [
+                    [
+                      (o.service ?? '').trim().isEmpty
+                          ? 'Packing and moving as per quotation'
+                          : '${o.service} as per quotation',
+                      PdfBranding.rupees(money.base),
+                    ],
+                    if (money.gst > 0) ['GST', PdfBranding.rupees(money.gst)],
+                  ],
+                  totalLabel: 'Order value',
+                  totalValue: PdfBranding.rupees(money.base + money.gst),
+                  notesBlock: code.isEmpty
+                      ? 'Your order is confirmed. Thank you for choosing us.'
+                      : 'YOUR ARRIVAL CODE:   ${code.split('').join('  ')}\n\n'
+                          'Your order is confirmed. On shifting day, when our '
+                          'team reaches your pickup address, our supervisor '
+                          'will ask you for this 4-digit code.\n\n'
+                          'Give the code only after the team has reached '
+                          'you, and only in person. Please do not share it '
+                          'with anyone before that.\n\n'
+                          'Any extra work or material on the day will be '
+                          'sent to you for approval first. Only what you '
+                          'approve is added to your bill.',
+                  signatureLabel: 'Authorised Signatory',
+                ));
+      });
+
   Future<void> _genCustomerDeclaration() => _run(() async {
         final o = _order;
         if (o == null) return;
@@ -1694,6 +1789,12 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
     final paid = o?.paymentStatus == 'paid';
 
     final docs = <(String, IconData, VoidCallback)>[
+      if (isOwnerOrManagerSession)
+        (
+          'Order Confirmation',
+          Icons.verified_outlined,
+          _genOrderConfirmation
+        ),
       ('Tax Invoice', Icons.receipt_long_outlined, widget.onGenerateInvoice),
       ('Money Receipt', Icons.receipt_outlined, _genMoneyReceipt),
       ('Proforma', Icons.description_outlined, _genProforma),

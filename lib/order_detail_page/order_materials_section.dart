@@ -178,8 +178,9 @@ class OrderMaterialsSectionState extends State<OrderMaterialsSection> {
           else if (_used.isEmpty)
             Text(
               'Cartons, tape, bubble wrap used on this job. Recorded here '
-              'it counts as a cost on this order — and if the customer is '
-              'buying them, it is charged to them too.',
+              'it comes off your stock and counts as your cost on this '
+              'order. What the customer pays for them is a separate amount '
+              'you type, and they approve it first.',
               style: NgFonts.geist(fontSize: 13, height: 1.4, color: ng.mute),
             )
           else ...[
@@ -258,36 +259,11 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
   final _chargeCtrl = TextEditingController();
   bool _bill = false;
 
-  /// True once the vendor types in the charge box.
-  ///
-  /// After that the suggested figure stops overwriting it. Changing the
-  /// quantity must not silently undo a negotiated price - the same rule
-  /// Add Labour got after the staff dropdown was found clobbering a
-  /// typed amount.
-  bool _chargeTouched = false;
+  // No suggested figure (13 Nov 2026, Arun's report 8.1). What the
+  // customer pays for materials is whatever was agreed on the day - 20
+  // cartons for Rs1,000 - and never selling price x quantity filled in
+  // by the app. The box starts empty and only the vendor fills it.
   String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _chargeCtrl.addListener(() {
-      if (!_chargeTouched) _chargeTouched = true;
-    });
-  }
-
-  /// Refreshes the suggested charge from the vendor's own selling price,
-  /// unless they have already typed their own figure.
-  void _suggestCharge() {
-    if (_chargeTouched) return;
-    final qty = double.tryParse(_qtyCtrl.text.trim()) ?? 0;
-    final price = _selected.sellingPrice ?? 0;
-    final v = price * qty;
-    final text = v <= 0 ? '' : v.toStringAsFixed(0);
-    if (_chargeCtrl.text != text) {
-      _chargeCtrl.value = TextEditingValue(text: text);
-      _chargeTouched = false;
-    }
-  }
 
   @override
   void dispose() {
@@ -298,7 +274,6 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final price = _selected.sellingPrice ?? 0;
     final onHand = _selected.quantity ?? 0;
     return AlertDialog(
       backgroundColor: NgPalette.of(context).s1,
@@ -323,7 +298,6 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
             onChanged: (v) => setState(() {
               _selected = widget.materials
                   .firstWhere((m) => m.id == v, orElse: () => _selected);
-              _suggestCharge();
             }),
           ),
           const SizedBox(height: 10),
@@ -334,7 +308,6 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
             decoration: InputDecoration(
                 labelText: 'Quantity used',
                 helperText: '${onHand.toStringAsFixed(0)} in stock'),
-            onChanged: (_) => setState(_suggestCharge),
           ),
           const SizedBox(height: 6),
           // OFF by default: materials used on a job are the normal case.
@@ -342,19 +315,13 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
           // agreed to.
           CheckboxListTile(
             value: _bill,
-            onChanged: (v) => setState(() {
-              _bill = v ?? false;
-              if (_bill) _suggestCharge();
-            }),
+            onChanged: (v) => setState(() => _bill = v ?? false),
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
             dense: true,
             title: const Text('Customer is paying for these'),
-            subtitle: Text(price > 0
-                ? 'Suggested ₹${price.toStringAsFixed(0)} each - edit below '
-                    'if you agreed a different price.'
-                : 'No selling price set on this material. Type what you '
-                    'agreed below.'),
+            subtitle: const Text('Type the amount you agreed. The customer '
+                'approves it before it is added to the bill.'),
           ),
           if (_bill)
             TextField(
@@ -362,7 +329,7 @@ class _AddMaterialDialogState extends State<_AddMaterialDialog> {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
-                labelText: 'Charge to customer',
+                labelText: 'Amount agreed with customer',
                 helperText: 'Total for this line, not per unit',
               ),
             ),
