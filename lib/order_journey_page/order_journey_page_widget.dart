@@ -686,6 +686,12 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
       Map<JourneyStage, JourneyState> states) {
     final c = NgPalette.of(context);
     final l = AppLocalizations.of(context);
+    // 13 Nov 2026, Arun: "How to share packing list and lr then other
+    // missing documents? Where it is located". The four tiles were
+    // locked until their stage, and nothing led to the rest (packing
+    // list, order confirmation, declarations...). Once an order exists
+    // every tile opens, and All documents lists the full set.
+    final hasOrder = d.order?.id != null;
     final docs = <(IconData, String, bool, String, VoidCallback?)>[
       (
         Icons.request_quote_rounded,
@@ -741,7 +747,7 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    onTap: ready ? onTap : null,
+                    onTap: ready || (hasOrder && onTap != null) ? onTap : null,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Row(
@@ -761,7 +767,11 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
                                         fontWeight: FontWeight.w600,
                                         color: ready ? c.text : c.mute)),
                                 Text(
-                                    ready ? l.jrDocReady : l.jrDocAfter(after),
+                                    ready
+                                        ? l.jrDocReady
+                                        : hasOrder
+                                            ? 'Tap to open'
+                                            : l.jrDocAfter(after),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: NgFonts.geist(
@@ -777,6 +787,23 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
                 ),
             ],
           ),
+          if (hasOrder) ...[
+            const SizedBox(height: 8),
+            NgSecondaryButton(
+              label: 'All documents',
+              icon: Icons.folder_open_rounded,
+              height: 44,
+              onPressed: () => _orderDocsSheet(d),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(2, 6, 2, 0),
+              child: Text(
+                'Order confirmation, packing list, lorry receipt, invoice, '
+                'receipts and declarations: view, download or share.',
+                style: NgFonts.geist(fontSize: 11.5, color: c.mute),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -886,13 +913,17 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
         return (
           d.order == null
               ? '—'
-              : '${l.jrPaid} ${_money.format(d.paid)} · ${l.jrBalance} ${_money.format(d.balance)}',
+              // Collected more than the bill: say so in words, never as a
+              // minus balance (Arun, 13 Nov 2026).
+              : d.balance < 0
+                  ? '${l.jrPaid} ${_money.format(d.paid)} · Extra received ${_money.format(-d.balance)}'
+                  : '${l.jrPaid} ${_money.format(d.paid)} · ${l.jrBalance} ${_money.format(d.balance)}',
           [
             for (final p in d.payments)
               (
                 Icons.payments_rounded,
                 l.jrPaymentLine(_money.format(p.amount), p.mode),
-                date(p.receivedAt),
+                date(p.createdAt ?? p.receivedAt),
               ),
             for (final t in d.tickets)
               (
@@ -1142,7 +1173,6 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
         // Generated and signed here, through the same InvoiceGenerator
         // Order Details uses: numbering, GST rules and the PDF are one copy.
         final orderId = d.order?.id;
-        final hasInvoice = (d.order?.invoiceNo ?? '').isNotEmpty;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1168,7 +1198,9 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
               label: l.jrSendForSignature,
               icon: Icons.draw_rounded,
               height: 46,
-              onPressed: orderId == null || !hasInvoice || _invoiceBusy
+              // Stays tappable with no invoice yet: the tap then says why
+              // ("Generate the invoice first") instead of a dead grey button.
+              onPressed: orderId == null || _invoiceBusy
                   ? null
                   : () async {
                       await InvoiceGenerator(context, orderId: orderId)
@@ -1465,8 +1497,10 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
             const SizedBox(width: 6),
             tile(l.jrPaid, _money.format(d.paid), c.green),
             const SizedBox(width: 6),
-            tile(l.jrBalance, _money.format(d.balance),
-                d.balance > 0 ? c.amber : c.text),
+            d.balance < 0
+                ? tile('Extra received', _money.format(-d.balance), c.green)
+                : tile(l.jrBalance, _money.format(d.balance),
+                    d.balance > 0 ? c.amber : c.text),
           ],
         ),
         const SizedBox(height: 10),

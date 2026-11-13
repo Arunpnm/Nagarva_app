@@ -103,9 +103,21 @@ class PaymentHistorySectionState extends State<PaymentHistorySection> {
 
   Widget _row(BuildContext context, PaymentEntriesRow e) {
     final c = NgPalette.of(context);
-    final when = e.receivedAt ?? e.createdAt;
+    // received_at holds the day only, so its time always read 12:00 AM.
+    // The time comes from when the entry was saved, if that was the same
+    // day; a back-dated payment shows its date alone.
+    final r = e.receivedAt?.toLocal();
+    final cr = e.createdAt?.toLocal();
+    final sameDay = r != null &&
+        cr != null &&
+        r.year == cr.year &&
+        r.month == cr.month &&
+        r.day == cr.day;
+    final when = (r == null || sameDay) ? (cr ?? r) : r;
+    final dateOnly = r != null && !sameDay;
     final sub = [
-      if (when != null) DateFormat('d MMM yyyy, h:mm a').format(when.toLocal()),
+      if (when != null)
+        DateFormat(dateOnly ? 'd MMM yyyy' : 'd MMM yyyy, h:mm a').format(when),
       if ((e.note ?? '').trim().isNotEmpty) e.note!.trim(),
     ].join(' · ');
     return Padding(
