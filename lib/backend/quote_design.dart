@@ -68,12 +68,24 @@ class QuoteDesign {
 
 const kQuoteThemes = ['1a', '1b', '1c', '1d', '1e', '1f'];
 
-/// The design's six brand colours (qtColors).
+/// Brand colours offered in Settings. The first six are the design's
+/// originals (qtColors); six more were added 13 Nov 2026 so that vendors
+/// in the same town are less likely to land on the same look. All are
+/// dark enough for white text on a band.
 const kQuoteColors = [
-  '#1F3A5F',
-  '#D9480F',
-  '#1F5C3D',
-  '#0E6E6A',
-  '#7A1E2C',
-  '#1A1A1A',
+  '#1F3A5F', // navy
+  '#D9480F', // orange
+  '#1F5C3D', // green
+  '#0E6E6A', // teal
+  '#7A1E2C', // maroon
+  '#1A1A1A', // black
+  '#3B2A7A', // indigo
+  '#8A1C5B', // magenta
+  '#6B4A12', // bronze
+  '#0B5D8C', // ocean blue
+  '#B3261E', // red
+  '#3F4A56', // slate
 ];
+
+/// The same list under the name the other documents use.
+const kDocumentColors = kQuoteColors;

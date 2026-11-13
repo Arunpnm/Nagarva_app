@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '/app_session.dart';
 import '/backend/supabase/org_scope.dart';
 import '/backend/supabase/supabase.dart';
+import '/components/credit_note_document.dart';
 import '/components/record_module_page.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/backend/crew_checkin.dart';
@@ -188,7 +189,8 @@ class CreditNotesPage extends StatelessWidget {
             amount: '− ${rmMoney(r['total_amount'])}',
             status: _refund(r) ? 'Refunded' : 'Adjusted',
             statusTone: _refund(r) ? NgStatus.red : NgStatus.amber,
-            onTap: () => _openOrder(context, r['order_id']),
+            // The printable credit note, or the order (13 Nov 2026).
+            onTap: () => CreditNoteDocument.showActions(context, r),
           ),
           emptyText: 'No credit notes issued.',
         ),

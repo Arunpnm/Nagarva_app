@@ -129,7 +129,7 @@ class LrPdf {
                   style: pw.TextStyle(
                       font: fonts.bold,
                       fontSize: 8.5,
-                      color: PdfBranding.navy)),
+                      color: PdfBranding.primary)),
               pw.SizedBox(height: 2),
               pw.Text((name ?? '').isEmpty ? '—' : name!,
                   style: pw.TextStyle(font: fonts.bold, fontSize: 9.5)),
@@ -154,7 +154,7 @@ class LrPdf {
           padding: const pw.EdgeInsets.symmetric(vertical: 8),
           decoration: pw.BoxDecoration(
             border: pw.Border.all(color: PdfColors.grey400, width: .5),
-            color: active ? PdfBranding.lightRow : null,
+            color: active ? PdfBranding.tint : null,
           ),
           child: pw.Column(
             children: [
@@ -162,7 +162,7 @@ class LrPdf {
                   style: pw.TextStyle(
                       font: fonts.bold,
                       fontSize: 8,
-                      color: active ? PdfBranding.navy : PdfBranding.grey)),
+                      color: active ? PdfBranding.primary : PdfBranding.grey)),
               pw.SizedBox(height: 3),
               pw.Text(active ? PdfBranding.rupees(freightAmount) : '--',
                   style: pw.TextStyle(
@@ -270,7 +270,7 @@ class LrPdf {
                                 style: pw.TextStyle(
                                     font: fonts.bold,
                                     fontSize: 8,
-                                    color: PdfBranding.navy)),
+                                    color: PdfBranding.primary)),
                             pw.SizedBox(height: 2),
                             pw.Text(boilerplate.lrNoticeText,
                                 style: pw.TextStyle(
@@ -298,7 +298,7 @@ class LrPdf {
                                 style: pw.TextStyle(
                                     font: fonts.bold,
                                     fontSize: 8,
-                                    color: PdfBranding.navy)),
+                                    color: PdfBranding.primary)),
                             pw.SizedBox(height: 2),
                             kv('Material Insured',
                                 materialInsured ? 'Yes' : 'No'),
@@ -356,7 +356,7 @@ class LrPdf {
                                   const pw.EdgeInsets.symmetric(vertical: 4),
                               alignment: pw.Alignment.center,
                               decoration: pw.BoxDecoration(
-                                color: PdfBranding.navy,
+                                color: PdfBranding.primary,
                                 borderRadius: pw.BorderRadius.circular(3),
                               ),
                               child: pw.Text('${copyType.toUpperCase()} COPY',
@@ -446,7 +446,7 @@ class LrPdf {
                           padding: const pw.EdgeInsets.symmetric(
                               horizontal: 8, vertical: 6),
                           decoration: pw.BoxDecoration(
-                            color: PdfBranding.navy,
+                            color: PdfBranding.primary,
                             borderRadius: pw.BorderRadius.circular(4),
                           ),
                           child: pw.Row(
@@ -462,7 +462,7 @@ class LrPdf {
                                   style: pw.TextStyle(
                                       font: fonts.bold,
                                       fontSize: 10,
-                                      color: PdfBranding.gold)),
+                                      color: PdfBranding.accent)),
                             ],
                           ),
                         ),

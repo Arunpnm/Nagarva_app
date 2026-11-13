@@ -1,3 +1,5 @@
+import '/backend/quote_design.dart';
+import '/backend/supabase/org_scope.dart';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -324,10 +326,91 @@ class PdfBranding {
 
   /// Noto Sans via PdfGoogleFonts (fetched once, cached) — the built-in
   /// Helvetica has no ₹ glyph. Same choice as InvoicePdf.
-  static Future<PdfFonts> loadFonts() async => PdfFonts(
-        regular: await PdfGoogleFonts.notoSansRegular(),
-        bold: await PdfGoogleFonts.notoSansBold(),
-      );
+  static Future<PdfFonts> loadFonts() async {
+    await refreshDesign();
+    return PdfFonts(
+      regular: await PdfGoogleFonts.notoSansRegular(),
+      bold: await PdfGoogleFonts.notoSansBold(),
+    );
+  }
+
+  // ---- Document design (13 Nov 2026) ----------------------------------
+  //
+  // Arun: "if all vendors share the same design of document they might
+  // feel the same vendor is sharing in a different name, so we need
+  // multiple designs and layouts."
+  //
+  // The quotation already had six layouts and a brand colour (Settings >
+  // Quote design). Every OTHER document - invoice, LR, money receipt,
+  // proforma, packing list, the declarations, credit note, survey -
+  // printed one fixed navy band. They now follow the same saved choice:
+  // six header layouts, each in the vendor's colour, and the tables,
+  // totals and headings take that colour too.
+  //
+  // A company that never chose keeps the navy band exactly as before.
+  //
+  // Read once per document by [loadFonts], which every generator already
+  // awaits first, so no generator had to learn a new step.
+
+  /// The design the documents being generated right now use.
+  static QuoteDesign design = QuoteDesign.standard;
+
+  /// Set in tests and by the Settings preview to try a design without
+  /// saving it; while set, nothing is read from the database.
+  static QuoteDesign? designOverride;
+
+  static String? _designOrg;
+  static DateTime? _designAt;
+
+  static Future<void> refreshDesign() async {
+    final o = designOverride;
+    if (o != null) {
+      design = o;
+      return;
+    }
+    try {
+      final org = OrgScope.currentOrgId;
+      if (org == null) {
+        design = QuoteDesign.standard;
+        return;
+      }
+      final fresh = _designOrg == org &&
+          _designAt != null &&
+          DateTime.now().difference(_designAt!) < const Duration(seconds: 30);
+      if (fresh) return;
+      design = await QuoteDesign.load();
+      _designOrg = org;
+      _designAt = DateTime.now();
+    } catch (_) {
+      // No session (tests) or no network: print the standard design.
+      design = QuoteDesign.standard;
+    }
+  }
+
+  /// Call after the design is saved so the next document reads it afresh.
+  static void forgetDesign() {
+    _designOrg = null;
+    _designAt = null;
+  }
+
+  static bool get _standard =>
+      design.theme == QuoteDesign.standard.theme &&
+      design.color == QuoteDesign.standard.color;
+
+  /// The vendor's colour: headings, table headers, total boxes.
+  static PdfColor get primary =>
+      _standard ? navy : PdfColor.fromInt(design.colorValue);
+
+  /// Text on a [primary] block. Gold belongs to the navy band only.
+  static PdfColor get accent => _standard ? gold : PdfColors.white;
+
+  /// A pale wash of [primary] for alternate rows and panels.
+  static PdfColor get tint {
+    if (_standard) return lightRow;
+    final c = primary;
+    double mix(double v) => v + (1 - v) * 0.93;
+    return PdfColor(mix(c.red), mix(c.green), mix(c.blue));
+  }
 
   static Future<Uint8List?> fetchBytes(String? url) async {
     if (url == null || url.isEmpty) return null;
@@ -356,80 +439,233 @@ class PdfBranding {
     Map<String, dynamic> profile = const {},
     Uint8List? logoBytes,
   }) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(14),
-      decoration: pw.BoxDecoration(
-        color: navy,
-        borderRadius: pw.BorderRadius.circular(6),
-      ),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.center,
-        children: [
-          if (logoBytes != null) ...[
-            pw.Container(
-              width: 52,
-              height: 52,
-              decoration: pw.BoxDecoration(
-                color: PdfColors.white,
-                borderRadius: pw.BorderRadius.circular(6),
-              ),
-              padding: const pw.EdgeInsets.all(4),
-              child:
-                  pw.Image(pw.MemoryImage(logoBytes), fit: pw.BoxFit.contain),
-            ),
-            pw.SizedBox(width: 12),
-          ],
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(orgName.toUpperCase(),
-                    style: pw.TextStyle(
-                        font: fonts.bold,
-                        fontSize: 16,
-                        color: PdfColors.white)),
-                if (p(profile, 'tagline').isNotEmpty)
-                  pw.Text(p(profile, 'tagline'),
-                      style: pw.TextStyle(
-                          font: fonts.regular, fontSize: 9, color: gold)),
-                if (p(profile, 'address').isNotEmpty)
-                  pw.Text(p(profile, 'address'),
-                      style: pw.TextStyle(
-                          font: fonts.regular,
-                          fontSize: 8,
-                          color: PdfColors.grey300)),
-                pw.Text(
-                  [
-                    if (p(profile, 'phone1').isNotEmpty)
-                      'Ph: ${p(profile, 'phone1')}',
-                    if (p(profile, 'phone2').isNotEmpty) p(profile, 'phone2'),
-                    if (p(profile, 'email').isNotEmpty) p(profile, 'email'),
-                  ].join('  |  '),
-                  style: pw.TextStyle(
-                      font: fonts.regular,
-                      fontSize: 8,
-                      color: PdfColors.grey300),
-                ),
-              ],
-            ),
-          ),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Text(docLabel,
-                  style: pw.TextStyle(
-                      font: fonts.bold, fontSize: 13, color: gold)),
-              if (p(profile, 'gstin').isNotEmpty)
-                pw.Text('GSTIN: ${p(profile, 'gstin')}',
-                    style: pw.TextStyle(
-                        font: fonts.regular,
-                        fontSize: 8.5,
-                        color: PdfColors.white)),
-            ],
-          ),
-        ],
-      ),
+    return _header(
+      fonts: fonts,
+      logoBytes: logoBytes,
+      name: orgName,
+      tagline: p(profile, 'tagline'),
+      address: p(profile, 'address'),
+      contact: [
+        if (p(profile, 'phone1').isNotEmpty) 'Ph: ${p(profile, 'phone1')}',
+        if (p(profile, 'phone2').isNotEmpty) p(profile, 'phone2'),
+        if (p(profile, 'email').isNotEmpty) p(profile, 'email'),
+      ].join('  |  '),
+      docLabel: docLabel,
+      ids: [
+        if (p(profile, 'gstin').isNotEmpty) 'GSTIN: ${p(profile, 'gstin')}',
+      ],
     );
+  }
+
+  /// One header, six layouts (the quotation's theme ids, so one choice in
+  /// Settings dresses every document):
+  ///   1a Classic     name in colour on white, rule under
+  ///   1b Bold band   full colour band (the original)
+  ///   1c Sidebar     thick colour bar down the left, pale panel
+  ///   1d Minimal     black on white, hairline
+  ///   1e Corporate   colour strip on top, label in a colour box
+  ///   1f Letterhead  centred name, label centred between rules
+  static pw.Widget _header({
+    required PdfFonts fonts,
+    required Uint8List? logoBytes,
+    required String name,
+    required String tagline,
+    required String address,
+    required String contact,
+    required String docLabel,
+    required List<String> ids,
+    PdfColor? bandColor,
+  }) {
+    final theme = bandColor != null ? '1b' : design.theme;
+    final col = bandColor ?? primary;
+    final onBand = theme == '1b';
+    final hi = bandColor != null
+        ? (bandColor == navy ? gold : PdfColors.white)
+        : accent;
+    const dark = PdfColor.fromInt(0xFF1A1A1A);
+    final nameColor = onBand ? PdfColors.white : (theme == '1e' ? dark : col);
+    final subColor = onBand ? PdfColors.grey300 : grey;
+
+    pw.Widget? logo({double size = 52}) => logoBytes == null
+        ? null
+        : pw.Container(
+            width: size,
+            height: size,
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Image(pw.MemoryImage(logoBytes), fit: pw.BoxFit.contain),
+          );
+
+    List<pw.Widget> identity(pw.TextAlign align) => [
+          pw.Text(name.toUpperCase(),
+              textAlign: align,
+              style: pw.TextStyle(
+                  font: fonts.bold,
+                  fontSize: theme == '1f' ? 18 : 16,
+                  color: nameColor)),
+          if (tagline.isNotEmpty)
+            pw.Text(tagline,
+                textAlign: align,
+                style: pw.TextStyle(
+                    font: fonts.regular,
+                    fontSize: 9,
+                    color: onBand ? hi : grey)),
+          if (address.isNotEmpty)
+            pw.Text(address,
+                textAlign: align,
+                style: pw.TextStyle(
+                    font: fonts.regular, fontSize: 8, color: subColor)),
+          if (contact.isNotEmpty)
+            pw.Text(contact,
+                textAlign: align,
+                style: pw.TextStyle(
+                    font: fonts.regular, fontSize: 8, color: subColor)),
+        ];
+
+    List<pw.Widget> idLines(PdfColor c) => [
+          for (final t in ids)
+            pw.Text(t,
+                style: pw.TextStyle(
+                    font: fonts.regular, fontSize: 8.5, color: c)),
+        ];
+
+    // The row every side-by-side layout shares: logo, identity, label.
+    pw.Widget row(pw.Widget label) => pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            if (logoBytes != null) ...[logo()!, pw.SizedBox(width: 12)],
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: identity(pw.TextAlign.left),
+              ),
+            ),
+            pw.SizedBox(width: 10),
+            label,
+          ],
+        );
+
+    pw.Widget plainLabel(PdfColor c, PdfColor idc) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: [
+            pw.Text(docLabel,
+                style: pw.TextStyle(font: fonts.bold, fontSize: 13, color: c)),
+            ...idLines(idc),
+          ],
+        );
+
+    switch (theme) {
+      case '1a': // Classic
+        return pw.Container(
+          padding: const pw.EdgeInsets.only(bottom: 10),
+          decoration: pw.BoxDecoration(
+            border: pw.Border(bottom: pw.BorderSide(color: col, width: 2)),
+          ),
+          child: row(plainLabel(col, dark)),
+        );
+      case '1c': // Sidebar
+        return pw.Container(
+          padding: const pw.EdgeInsets.fromLTRB(14, 12, 12, 12),
+          decoration: pw.BoxDecoration(
+            color: tint,
+            border: pw.Border(left: pw.BorderSide(color: col, width: 8)),
+          ),
+          child: row(plainLabel(col, dark)),
+        );
+      case '1d': // Minimal
+        return pw.Container(
+          padding: const pw.EdgeInsets.only(bottom: 8),
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(
+                bottom: pw.BorderSide(color: PdfColors.grey600, width: .6)),
+          ),
+          child: row(plainLabel(dark, dark)),
+        );
+      case '1e': // Corporate
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            pw.Container(height: 6, color: col),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              color: const PdfColor.fromInt(0xFFF4F5F7),
+              child: row(pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: pw.BoxDecoration(
+                      color: col,
+                      borderRadius: pw.BorderRadius.circular(3),
+                    ),
+                    child: pw.Text(docLabel,
+                        style: pw.TextStyle(
+                            font: fonts.bold,
+                            fontSize: 11.5,
+                            color: PdfColors.white)),
+                  ),
+                  pw.SizedBox(height: 4),
+                  ...idLines(dark),
+                ],
+              )),
+            ),
+          ],
+        );
+      case '1f': // Letterhead
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            if (logoBytes != null) ...[
+              pw.Center(child: logo(size: 46)),
+              pw.SizedBox(height: 6),
+            ],
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: identity(pw.TextAlign.center),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Container(height: 1.5, color: col),
+            pw.Padding(
+              padding: const pw.EdgeInsets.symmetric(vertical: 5),
+              child: pw.Row(
+                children: [
+                  pw.Expanded(
+                    child: pw.Text(ids.isEmpty ? '' : ids.first,
+                        style: pw.TextStyle(
+                            font: fonts.regular, fontSize: 8.5, color: dark)),
+                  ),
+                  pw.Text(docLabel,
+                      style: pw.TextStyle(
+                          font: fonts.bold,
+                          fontSize: 13,
+                          letterSpacing: 1.2,
+                          color: col)),
+                  pw.Expanded(
+                    child: pw.Text(ids.length > 1 ? ids[1] : '',
+                        textAlign: pw.TextAlign.right,
+                        style: pw.TextStyle(
+                            font: fonts.regular, fontSize: 8.5, color: dark)),
+                  ),
+                ],
+              ),
+            ),
+            pw.Container(height: .6, color: col),
+          ],
+        );
+      default: // 1b Bold band
+        return pw.Container(
+          padding: const pw.EdgeInsets.all(14),
+          decoration: pw.BoxDecoration(
+            color: col,
+            borderRadius: pw.BorderRadius.circular(6),
+          ),
+          child: row(plainLabel(hi, PdfColors.white)),
+        );
+    }
   }
 
   /// Full statutory header per the Session 3 field spec (§1): an optional
@@ -447,11 +683,11 @@ class PdfBranding {
     required PdfFonts fonts,
     Uint8List? logoBytes,
     bool showBranchList = false,
-    PdfColor color = navy,
+    /// Only the quotation passes this: it draws its own theme and
+    /// wants the plain band in its colour. Everything else leaves it
+    /// null and gets the company's document design.
+    PdfColor? color,
   }) {
-    // Gold reads on the navy band only; on a vendor's own brand colour
-    // (Settings › Quote design) the label and tagline go white.
-    final highlight = color == navy ? gold : PdfColors.white;
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
@@ -472,87 +708,24 @@ class PdfBranding {
               ],
             ),
           ),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(14),
-          decoration: pw.BoxDecoration(
-            color: color,
-            borderRadius: pw.BorderRadius.circular(6),
-          ),
-          child: pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
-            children: [
-              if (logoBytes != null) ...[
-                pw.Container(
-                  width: 52,
-                  height: 52,
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.white,
-                    borderRadius: pw.BorderRadius.circular(6),
-                  ),
-                  padding: const pw.EdgeInsets.all(4),
-                  child: pw.Image(pw.MemoryImage(logoBytes),
-                      fit: pw.BoxFit.contain),
-                ),
-                pw.SizedBox(width: 12),
-              ],
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(org.name.toUpperCase(),
-                        style: pw.TextStyle(
-                            font: fonts.bold,
-                            fontSize: 16,
-                            color: PdfColors.white)),
-                    if ((org.tagline ?? '').isNotEmpty)
-                      pw.Text(org.tagline!,
-                          style: pw.TextStyle(
-                              font: fonts.regular, fontSize: 9, color: highlight)),
-                    if ((org.address ?? '').isNotEmpty)
-                      pw.Text(org.address!,
-                          style: pw.TextStyle(
-                              font: fonts.regular,
-                              fontSize: 8,
-                              color: PdfColors.grey300)),
-                    pw.Text(
-                      [
-                        if (org.phones.isNotEmpty)
-                          'Ph: ${org.phones.join(', ')}',
-                        if ((org.landline ?? '').isNotEmpty)
-                          'Landline: ${org.landline}',
-                        if ((org.website ?? '').isNotEmpty) org.website!,
-                        if ((org.email ?? '').isNotEmpty) org.email!,
-                      ].join('  |  '),
-                      style: pw.TextStyle(
-                          font: fonts.regular,
-                          fontSize: 8,
-                          color: PdfColors.grey300),
-                    ),
-                  ],
-                ),
-              ),
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.end,
-                children: [
-                  pw.Text(docLabel,
-                      style: pw.TextStyle(
-                          font: fonts.bold, fontSize: 13, color: highlight)),
-                  if ((org.gstin ?? '').isNotEmpty)
-                    pw.Text('GSTIN: ${org.gstin}',
-                        style: pw.TextStyle(
-                            font: fonts.regular,
-                            fontSize: 8.5,
-                            color: PdfColors.white)),
-                  if ((org.pan ?? '').isNotEmpty)
-                    pw.Text('PAN: ${org.pan}',
-                        style: pw.TextStyle(
-                            font: fonts.regular,
-                            fontSize: 8.5,
-                            color: PdfColors.white)),
-                ],
-              ),
-            ],
-          ),
+        _header(
+          fonts: fonts,
+          logoBytes: logoBytes,
+          name: org.name,
+          tagline: org.tagline ?? '',
+          address: org.address ?? '',
+          contact: [
+            if (org.phones.isNotEmpty) 'Ph: ${org.phones.join(', ')}',
+            if ((org.landline ?? '').isNotEmpty) 'Landline: ${org.landline}',
+            if ((org.website ?? '').isNotEmpty) org.website!,
+            if ((org.email ?? '').isNotEmpty) org.email!,
+          ].join('  |  '),
+          docLabel: docLabel,
+          ids: [
+            if ((org.gstin ?? '').isNotEmpty) 'GSTIN: ${org.gstin}',
+            if ((org.pan ?? '').isNotEmpty) 'PAN: ${org.pan}',
+          ],
+          bandColor: color,
         ),
         if (showBranchList && (org.branchListText ?? '').isNotEmpty)
           pw.Padding(

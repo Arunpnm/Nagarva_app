@@ -20,13 +20,12 @@ import '/backend/tracking_service.dart';
 import '/components/share_link_sheet.dart';
 import '/components/survey_response_section.dart';
 import '/backend/pricing_defaults.dart';
-import '/backend/quote_design.dart';
+import '/backend/quote_document.dart';
+import '/components/pdf_actions_sheet.dart';
 import '/components/pdf_branding.dart';
 import '/components/survey_pdf.dart';
-import '/components/quote_pdf.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
-import '/backend/issued_documents.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/l10n/gen/app_localizations.dart';
@@ -36,7 +35,6 @@ import '/backend/live_refresh.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'lead_detail_page_model.dart';
 import '/backend/vendor_identity.dart';
@@ -1967,9 +1965,13 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
         cftRanges: config.cftRanges,
         packages: config.packages,
       );
-      await Printing.sharePdf(
-        bytes: bytes,
+      if (!mounted) return;
+      // View, share or print (13 Nov 2026) - was share only.
+      await PdfActionsSheet.show(
+        context,
+        title: 'Survey',
         filename: SurveyPdf.filename(_leadRef, DateTime.now()),
+        bytes: bytes,
       );
     } catch (e) {
       if (!mounted) return;
@@ -1986,137 +1988,24 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     if (quotation == null || _downloadingQuotePdf) return;
     setState(() => _downloadingQuotePdf = true);
     try {
-      final (profile, logoBytes) = await _loadProfileAndLogo();
-      final charges = quotation.charges is Map
-          ? Map<String, dynamic>.from(quotation.charges as Map)
-          : <String, dynamic>{};
-      final gstType = charges['_gstType'] as String?;
-      final interstate = gstType == 'inter'
-          ? true
-          : gstType == 'intra'
-              ? false
-              : isInterState(
-                  quotation.fromAddress ?? widget.leadFromCity ?? '',
-                  quotation.toAddress ?? widget.leadToCity ?? '',
-                );
-      // Re-read rather than trusting the cached _quoteSignature, same
-      // reasoning as the invoice's signature fetch: a signature captured
-      // moments ago on the customer's own phone must show up here without
-      // needing the page reopened.
-      SignatureRequest? sig = _quoteSignature;
-      try {
-        sig = await SignatureService.find(
-              documentType: 'quote',
-              documentId: quotation.id,
-            ) ??
-            sig;
-      } catch (_) {}
-
-      // Dual-source branding (Session 3, task #41) + document boilerplate.
-      String? signatureUrl;
-      try {
-        final rows = await SettingsTable().queryRows(
-          queryFn: (q) => OrgScope.read(q).eq('key', 'signature_url'),
-        );
-        if (rows.isNotEmpty) signatureUrl = rows.first.value;
-      } catch (_) {}
-      OrganizationsRow? orgRow;
-      try {
-        final orgId = OrgScope.currentOrgId;
-        if (orgId != null) {
-          final rows = await OrganizationsTable()
-              .queryRows(queryFn: (q) => q.eq('id', orgId));
-          if (rows.isNotEmpty) orgRow = rows.first;
-        }
-      } catch (_) {}
-      final org = OrgProfile.resolve(orgRow,
-          businessProfile: profile, legacyESignUrl: signatureUrl);
-
-      DocumentBoilerplate boilerplate = const DocumentBoilerplate();
-      try {
-        final docRows = await AppSettingsTable().queryRows(
-          queryFn: (q) => OrgScope.read(q).eq('category', 'documents'),
-        );
-        boilerplate = DocumentBoilerplate.resolve(docRows);
-      } catch (_) {}
-
-      String? amountInWords;
-      try {
-        amountInWords = await SupaFlow.client.rpc('amount_in_words',
-            params: {'amt': quotation.total ?? 0}) as String?;
-      } catch (_) {}
-
-      // Moving Items table (field spec §3, page 2) — the survey linked to
-      // this lead, same rooms data _downloadSurveyPdf already renders.
-      final surveyLines =
-          _survey != null ? parseSurveyRooms(_survey!.rooms) : <SurveyLine>[];
-
-      final design = await QuoteDesign.load();
-      final bytes = await QuotePdf.generate(
-        design: design,
-        leadRef: _leadRef,
-        org: org,
-        boilerplate: boilerplate,
-        customerName: quotation.customer ?? _leadCustomer ?? 'Customer',
-        customerPhone: quotation.phone ?? _leadPhone,
-        // No email column exists anywhere in the survey/quotation/lead
-        // schema today — omitted rather than guessed; the PDF already
-        // renders cleanly without it (see the isNotEmpty guard on this
-        // field in QuotePdf.generate).
-        fromAddress: quotation.fromAddress,
-        toAddress: quotation.toAddress,
+      // One copy of the build, shared with Survey & Quote's own PDF
+      // button (QuoteDocument, 13 Nov 2026).
+      final (bytes, quoteFile) = await QuoteDocument.build(
+        quotation,
+        leadId: widget.leadId,
         fromCity: widget.leadFromCity,
         toCity: widget.leadToCity,
-        charges: charges,
-        subtotal: quotation.subtotal ?? 0,
-        gstPct: quotation.gstPct ?? kGstDefaultPct.toDouble(),
-        gstAmount: quotation.gstAmount ?? 0,
-        total: quotation.total ?? 0,
-        interstate: interstate,
-        logoBytes: logoBytes,
-        customerSignatureBytes:
-            (sig?.isSigned ?? false) ? sig!.signatureBytes : null,
-        customerSignedByName: (sig?.isSigned ?? false) ? sig!.customerName : null,
-        customerSignedAt: (sig?.isSigned ?? false) ? sig!.signedAt : null,
+        fallbackName: _leadCustomer,
+        fallbackPhone: _leadPhone,
+        surveyLines:
+            _survey != null ? parseSurveyRooms(_survey!.rooms) : <SurveyLine>[],
+        knownSignature: _quoteSignature,
         detailed: detailed,
-        loadType: quotation.loadType,
-        vehicleType: quotation.vehicleType,
-        transportMode: quotation.transportMode,
-        packingDate: quotation.packingDate,
-        deliveryDate: quotation.deliveryDate,
-        movingDate: quotation.movingDate,
-        fromFloor: quotation.fromFloor,
-        fromHasLift: quotation.fromHasLift,
-        toFloor: quotation.toFloor,
-        toHasLift: quotation.toHasLift,
-        declaredValue: quotation.declaredValue,
-        fovPct: quotation.fovPct,
-        fovAmount: quotation.fovAmount,
-        easyAccess: quotation.easyAccess,
-        accessRestrictions: quotation.accessRestrictions,
-        accessNotes: quotation.accessNotes,
-        surveyLines: surveyLines,
-        amountInWords: amountInWords,
       );
-      final quoteFile = QuotePdf.filename(_leadRef, DateTime.now())
-          .replaceAll(RegExp(r'[\\/:*?"<>|]'), '-');
-
-      // Keep the customer's copy. Arun, 7 Sept 2026: "also add quote".
-      // Stored against the QUOTATION, since no order exists yet — it
-      // reaches the customer's tracking link through the order's
-      // quotation_id once the lead converts.
-      //
-      // Best-effort, like every other document: a storage failure must
-      // never stop a quote going out.
-      if ((quotation.id ?? '').isNotEmpty) {
-        await IssuedDocuments.storeForQuotation(
-          quotationId: quotation.id!,
-          fileName: quoteFile,
-          bytes: bytes,
-        );
-      }
-
-      await Printing.sharePdf(bytes: bytes, filename: quoteFile);
+      if (!mounted) return;
+      // View, share or print (13 Nov 2026) - was share only.
+      await PdfActionsSheet.show(context,
+          title: 'Quotation', filename: quoteFile, bytes: bytes);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

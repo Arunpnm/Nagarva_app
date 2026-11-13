@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '/backend/quote_document.dart';
 import '/backend/soft_delete.dart';
+import '/components/pdf_actions_sheet.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/supabase/org_scope.dart';
 import '/components/delete_action.dart';
@@ -242,6 +244,18 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
           Text(functions.inrFull(q.total ?? 0),
               style: NgFonts.geist(
                   fontSize: 15, fontWeight: FontWeight.w600, color: c.text)),
+          // The quotation itself: view, share or print (13 Nov 2026).
+          // Before this a walk-in quote had no PDF anywhere.
+          IconButton(
+            tooltip: 'Quotation PDF',
+            icon: _pdfBusy == q.id
+                ? const SizedBox(
+                    width: 17,
+                    height: 17,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : Icon(Icons.picture_as_pdf_outlined, size: 19, color: c.acc),
+            onPressed: _pdfBusy != null ? null : () => _quotePdf(q),
+          ),
           if (q.leadId != null)
             IconButton(
               tooltip: 'Open lead',
@@ -272,6 +286,25 @@ class _SurveyQuoteHubPageWidgetState extends State<SurveyQuoteHubPageWidget>
         ],
       ),
     );
+  }
+
+  String? _pdfBusy;
+
+  Future<void> _quotePdf(QuotationsRow q) async {
+    setState(() => _pdfBusy = q.id);
+    try {
+      final (bytes, file) = await QuoteDocument.build(q, leadId: q.leadId);
+      if (!mounted) return;
+      await PdfActionsSheet.show(context,
+          title: 'Quotation', filename: file, bytes: bytes);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              'Could not make the quotation PDF: ${friendlyError(e)}')));
+    } finally {
+      if (mounted) setState(() => _pdfBusy = null);
+    }
   }
 
   // Item 11 sweep (16 Aug 2026): canDeleteQuote already existed in

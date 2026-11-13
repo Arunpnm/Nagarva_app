@@ -56,7 +56,7 @@ class MoneyReceiptPdf {
             pw.Center(
               child: pw.Text('MONEY RECEIPT',
                   style: pw.TextStyle(
-                      font: fonts.bold, fontSize: 15, color: PdfBranding.navy)),
+                      font: fonts.bold, fontSize: 15, color: PdfBranding.primary)),
             ),
             pw.SizedBox(height: 12),
             pw.Row(
@@ -127,7 +127,7 @@ class MoneyReceiptPdf {
                 width: double.infinity,
                 padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: pw.BoxDecoration(
-                  color: PdfBranding.lightRow,
+                  color: PdfBranding.tint,
                   borderRadius: pw.BorderRadius.circular(4),
                 ),
                 child: pw.RichText(
@@ -135,7 +135,7 @@ class MoneyReceiptPdf {
                     pw.TextSpan(
                         text: 'Amount in Words: ',
                         style: pw.TextStyle(
-                            font: fonts.bold, fontSize: 9, color: PdfBranding.navy)),
+                            font: fonts.bold, fontSize: 9, color: PdfBranding.primary)),
                     pw.TextSpan(
                         text: amountInWords,
                         style: pw.TextStyle(font: fonts.regular, fontSize: 9)),
@@ -146,7 +146,7 @@ class MoneyReceiptPdf {
             pw.Center(
               child: pw.Text('Rs. ${amount.toStringAsFixed(2)}/-',
                   style: pw.TextStyle(
-                      font: fonts.bold, fontSize: 22, color: PdfBranding.navy)),
+                      font: fonts.bold, fontSize: 22, color: PdfBranding.primary)),
             ),
             pw.SizedBox(height: 24),
             pw.Row(
