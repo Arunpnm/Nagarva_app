@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '/app_session.dart';
 import '/backend/approval_queue.dart';
@@ -34,31 +36,50 @@ import 'more_sheet.dart';
 ///    from a pushed screen pops back to that shell and switches tab
 ///    there; hiding or showing never touches navigation at all.
 
-/// Remembered visible/hidden state. Default visible.
+/// Visible/hidden state. Always starts visible.
+///
+/// 13 Nov 2026 (Arun): the bar now moves on its own, the way current
+/// phone apps do. It slides away when the page is scrolled down or
+/// nothing has been touched for [idleHide], so the page gets the whole
+/// screen, and comes back when the page is scrolled up, or the small
+/// grabber at the bottom is tapped. This replaces the 4 Nov rule that
+/// it only moved by hand. Hiding never touches navigation.
 class BottomBarVisibility {
-  BottomBarVisibility._() {
-    SharedPreferences.getInstance().then((p) {
-      try {
-        final saved = p.getBool(_key);
-        if (saved != null) visible.value = saved;
-      } catch (_) {}
-    }).catchError((_) {});
-  }
+  BottomBarVisibility._();
   static final instance = BottomBarVisibility._();
-  static const _key = '__bottom_bar_visible__';
+
+  /// No touch for this long hides the bar. One number to tune.
+  static const idleHide = Duration(seconds: 5);
 
   final visible = ValueNotifier<bool>(true);
+  Timer? _idle;
 
   void set(bool v) {
+    if (v) touched();
     if (visible.value == v) return;
     visible.value = v;
-    SharedPreferences.getInstance()
-        .then((p) => p.setBool(_key, v))
-        .catchError((_) => false);
   }
 
   void hide() => set(false);
   void show() => set(true);
+
+  /// Any touch on the screen: restart the idle countdown.
+  void touched() {
+    _idle?.cancel();
+    _idle = Timer(idleHide, () => visible.value = false);
+  }
+
+  /// A vertical scroll by the user. Down the page hides, up shows.
+  bool onScroll(UserScrollNotification n) {
+    if (n.metrics.axis != Axis.vertical) return false;
+    if (n.direction == ScrollDirection.reverse &&
+        n.metrics.maxScrollExtent > 0) {
+      hide();
+    } else if (n.direction == ScrollDirection.forward) {
+      show();
+    }
+    return false;
+  }
 }
 
 /// What the global bar needs from an app shell (`NavBarPage`).
@@ -191,11 +212,21 @@ class GlobalBottomBarHost extends StatelessWidget {
         child: page!,
       ),
     );
-    return Column(
-      children: [
-        Expanded(child: page),
-        _BarArea(router: router, navigatorKey: navigatorKey),
-      ],
+    final vis = BottomBarVisibility.instance;
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => vis.touched(),
+      child: Column(
+        children: [
+          Expanded(
+            child: NotificationListener<UserScrollNotification>(
+              onNotification: vis.onScroll,
+              child: page,
+            ),
+          ),
+          _BarArea(router: router, navigatorKey: navigatorKey),
+        ],
+      ),
     );
   }
 }
@@ -240,8 +271,14 @@ class _BarAreaState extends State<_BarArea>
   final _vis = BottomBarVisibility.instance;
   late final AnimationController _anim = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 220),
+    duration: const Duration(milliseconds: 320),
+    reverseDuration: const Duration(milliseconds: 240),
     value: _vis.visible.value ? 1 : 0,
+  );
+  late final Animation<double> _ease = CurvedAnimation(
+    parent: _anim,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
   );
   _BarModel? _model;
   bool _checkScheduled = false;
@@ -254,6 +291,7 @@ class _BarAreaState extends State<_BarArea>
     ShellTabBridge.instance.addListener(_scheduleCheck);
     AppSession.instance.addListener(_scheduleCheck);
     _scheduleCheck();
+    _vis.touched();
   }
 
   @override
@@ -377,9 +415,11 @@ class _BarAreaState extends State<_BarArea>
     final items = m.items;
     final idx = items.indexWhere((e) => e.name == m.current);
     final bar = SizeTransition(
-      sizeFactor: _anim,
+      sizeFactor: _ease,
       axisAlignment: -1,
-      child: Material(
+      child: FadeTransition(
+        opacity: _ease,
+        child: Material(
         type: MaterialType.transparency,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -408,6 +448,7 @@ class _BarAreaState extends State<_BarArea>
             ),
           ],
         ),
+      ),
       ),
     );
     // Hidden: a thin strip of its own below the page instead of a handle
@@ -441,15 +482,21 @@ class _HideHandle extends StatelessWidget {
           if ((d.primaryVelocity ?? 0) > 0) onHide();
         },
         child: Container(
-          height: 18,
+          height: 12,
           width: double.infinity,
           decoration: BoxDecoration(
             color: c.nav,
             border: Border(top: BorderSide(color: c.w06)),
           ),
-          alignment: Alignment.center,
-          child: Icon(Icons.keyboard_arrow_down_rounded,
-              size: 18, color: c.mute),
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            width: 34,
+            height: 4,
+            decoration: BoxDecoration(
+              color: c.hairline(0.18),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
         ),
       ),
     );
@@ -483,10 +530,16 @@ class _ShowStrip extends StatelessWidget {
           child: SafeArea(
             top: false,
             child: SizedBox(
-              height: 20,
+              height: 14,
               child: Center(
-                child: Icon(Icons.keyboard_arrow_up_rounded,
-                    size: 20, color: c.acc),
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: c.acc.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
             ),
           ),
