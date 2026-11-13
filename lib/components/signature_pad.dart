@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -90,32 +91,76 @@ class SignaturePadState extends State<SignaturePad> {
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      key: _boundaryKey,
-      child: Container(
-        height: widget.height,
-        width: double.infinity,
-        color: widget.backgroundColor,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            _size = Size(constraints.maxWidth, constraints.maxHeight);
-            return GestureDetector(
-              // onPanX gives us local coordinates already relative to
-              // this box, so no global-to-local conversion is needed.
-              onPanStart: (d) => _start(d.localPosition),
-              onPanUpdate: (d) => _extend(d.localPosition),
-              onPanEnd: (_) => _end(),
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: _SignaturePainter(
-                  strokes: _strokes,
-                  color: widget.penColor,
-                  strokeWidth: widget.strokeWidth,
+    // 13 Nov 2026, Arun on his phone: "customer sign at delivery
+    // confirmation i can't able to update". The pad sat inside a
+    // scrolling page and listened with onPan, so the page's own scroll
+    // won every downward stroke and nothing was drawn. Two changes:
+    //  * an eager recognizer claims the touch the moment it lands, so
+    //    the page cannot scroll from inside the pad;
+    //  * the strokes are read from raw pointer events, which arrive
+    //    whatever the gesture arena decides.
+    // And the pad now has a border and a "Sign here" line: white on an
+    // off-white card, it could not be seen at all.
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFB8BEC9), width: 1.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          RepaintBoundary(
+            key: _boundaryKey,
+            child: Container(
+              height: widget.height,
+              width: double.infinity,
+              color: widget.backgroundColor,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  _size = Size(constraints.maxWidth, constraints.maxHeight);
+                  return RawGestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    gestures: <Type, GestureRecognizerFactory>{
+                      EagerGestureRecognizer:
+                          GestureRecognizerFactoryWithHandlers<
+                              EagerGestureRecognizer>(
+                        () => EagerGestureRecognizer(),
+                        (_) {},
+                      ),
+                    },
+                    child: Listener(
+                      behavior: HitTestBehavior.opaque,
+                      onPointerDown: (e) => _start(e.localPosition),
+                      onPointerMove: (e) => _extend(e.localPosition),
+                      onPointerUp: (_) => _end(),
+                      onPointerCancel: (_) => _end(),
+                      child: CustomPaint(
+                        size: Size.infinite,
+                        painter: _SignaturePainter(
+                          strokes: _strokes,
+                          color: widget.penColor,
+                          strokeWidth: widget.strokeWidth,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          // Outside the captured area's paint: a guide only, never part
+          // of the saved signature.
+          if (_strokes.isEmpty)
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: Center(
+                  child: Text('Sign here',
+                      style: TextStyle(
+                          fontSize: 16, color: Color(0xFF9AA1AD))),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+        ],
       ),
     );
   }
