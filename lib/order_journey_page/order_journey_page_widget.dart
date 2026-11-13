@@ -15,6 +15,7 @@ import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
 import '/l10n/gen/app_localizations.dart';
 import '/order_detail_page/invoice_generator.dart';
+import '/order_detail_page/arrival_code_card.dart';
 import '/order_detail_page/order_addons_section.dart';
 import '/order_detail_page/order_crew_section.dart';
 import '/order_detail_page/order_documents_section.dart';
@@ -1081,11 +1082,21 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
             onPressed: null,
           );
         }
-        return OrderCrewSection(
-          key: ValueKey('crew-${d.order!.id}'),
-          orderId: d.order!.id!,
-          showClose: false,
-          onCrewChanged: _load,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // The customer's arrival code, with Send to customer. Office
+            // only (the card hides itself from a supervisor).
+            ArrivalCodeCard(
+                key: ValueKey('arr-${d.order!.id}'), orderId: d.order!.id!),
+            const SizedBox(height: 10),
+            OrderCrewSection(
+              key: ValueKey('crew-${d.order!.id}'),
+              orderId: d.order!.id!,
+              showClose: false,
+              onCrewChanged: _load,
+            ),
+          ],
         );
       case JourneyStage.moveDay:
         // Start/finish, crew, odometer and the delivery code stay in the
@@ -1109,6 +1120,10 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
             ),
             if (d.order?.id != null) ...[
               const SizedBox(height: 12),
+              ArrivalCodeCard(
+                  key: ValueKey('arr2-${d.order!.id}'),
+                  orderId: d.order!.id!),
+              const SizedBox(height: 10),
               OrderMaterialsSection(
                 key: ValueKey('mat-${d.order!.id}'),
                 orderId: d.order!.id!,

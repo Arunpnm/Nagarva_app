@@ -68,11 +68,16 @@ class IssuedDocuments {
     required String quotationId,
     required String fileName,
     required Uint8List bytes,
+    // The copy carrying the customer's signature is kept under its own
+    // type (13 Nov 2026), so it is never overwritten by a later unsigned
+    // print and the customer's signing page can offer exactly this file
+    // as "Download signed quotation".
+    bool signed = false,
   }) =>
       _store(
           entityType: 'quotation',
           entityId: quotationId,
-          docType: 'quote',
+          docType: signed ? 'quote_signed' : 'quote',
           fileName: fileName,
           bytes: bytes);
 

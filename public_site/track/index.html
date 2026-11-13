@@ -9,6 +9,31 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Inter+Tight:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/nagarva.css">
+<style>
+  /* Extra charges the customer approves, and their arrival code
+     (13 Nov 2026). */
+  .codebox {
+    border: 1px dashed var(--gold); border-radius: 12px;
+    padding: 14px 16px; margin: 0 0 22px; background: var(--gold-soft);
+  }
+  .codebox .lbl { font-size: 12.5px; opacity: .8; letter-spacing: .04em; text-transform: uppercase; }
+  .codebox .code {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 34px; font-weight: 800; letter-spacing: .32em; margin: 4px 0 6px;
+  }
+  .codebox p { font-size: 13px; margin: 0; opacity: .85; line-height: 1.45; }
+  .xc {
+    border: 1px solid rgba(255,255,255,.16); border-radius: 12px;
+    padding: 14px 16px; margin: 0 0 10px; background: rgba(255,255,255,.04);
+  }
+  .xc.wait { border-color: var(--gold); background: var(--gold-soft); }
+  .xc-top { display: flex; justify-content: space-between; gap: 14px; font-weight: 700; font-size: 15px; }
+  .xc-sub { font-size: 12.5px; opacity: .75; margin-top: 4px; }
+  .xc-act { display: flex; gap: 10px; margin-top: 12px; }
+  .xc-act .btn { flex: 1; }
+  .xc .ok { color: #6FD39A; } .xc .no { color: #F08A8A; }
+  .xc.no-bill .xc-top { text-decoration: line-through; opacity: .6; }
+</style>
 </head>
 <body>
 
@@ -56,6 +81,19 @@
         <span>Driver</span><span id="m-driver"></span>
       </div>
     </div>
+
+    <div id="code-box" class="codebox" hidden>
+      <div class="lbl">Your arrival code</div>
+      <div class="code" id="arrival-code"></div>
+      <p>On shifting day, give this code to the supervisor only after the team reaches your pickup address.</p>
+    </div>
+
+    <section id="xc-block" hidden>
+      <h2 class="sechead">Extra charges</h2>
+      <p class="lede small" id="xc-lede"></p>
+      <div id="xc-list"></div>
+      <div class="errline" id="xc-error" hidden></div>
+    </section>
 
     <h2 class="sechead" id="docs-head" hidden>Your documents</h2>
     <div id="docs"></div>
@@ -414,6 +452,7 @@
 
     setupReview(res);
     setupComplaint(res);
+    loadExtras(res.vendor_name);
 
     show("view-main");
   }).catch(function () {
@@ -433,6 +472,100 @@
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     });
+  }
+
+  function inr(n) {
+    var v = Number(n);
+    if (!isFinite(v)) return "";
+    return "\u20B9" + v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  }
+
+  // Extra charges, each needing the customer's own yes.
+  //
+  // Arun's phone test, 13 Nov 2026 (report 7.1): the vendor could add a
+  // charge on move day and it went straight onto the balance. Now the
+  // charge waits here. Approve adds it to the bill; Reject keeps it off.
+  // Best effort by design: if this read fails the rest of the page (the
+  // documents, the timeline) is unaffected.
+  function loadExtras(vendor) {
+    rpc("public_get_order_addons", { p_token: token }).then(function (r) {
+      if (!r || !r.ok) return;
+      var code = (r.arrival_code || "").trim();
+      if (code) {
+        document.getElementById("arrival-code").textContent = code;
+        document.getElementById("code-box").hidden = false;
+      }
+      renderExtras(r, vendor);
+    }).catch(function () {});
+  }
+
+  function renderExtras(r, vendor) {
+    var items = Array.isArray(r.items) ? r.items : [];
+    var block = document.getElementById("xc-block");
+    var list = document.getElementById("xc-list");
+    if (!items.length) { block.hidden = true; return; }
+    var waiting = items.filter(function (i) { return i.approval === "awaiting"; }).length;
+    var gst = Number(r.gst_pct) || 0;
+    document.getElementById("xc-lede").textContent = waiting
+      ? (vendor || "Your moving company") + " has asked for " +
+        (waiting === 1 ? "an extra charge" : waiting + " extra charges") +
+        ". Nothing is added to your bill unless you approve it." +
+        (gst ? " GST of " + gst + "% applies on top." : "")
+      : "Extra work or material on top of your quotation." +
+        (gst ? " GST of " + gst + "% applies on top." : "");
+    list.innerHTML = "";
+    items.forEach(function (it) {
+      var d = document.createElement("div");
+      var st = it.approval;
+      d.className = "xc" + (st === "awaiting" ? " wait" : st === "rejected" ? " no-bill" : "");
+      var sub = st === "awaiting"
+        ? "Requested " + fmtDateTime(it.requested_at)
+        : st === "approved"
+          ? "<span class='ok'>Approved" +
+            (it.approval_by === "customer" ? " by you" : "") + "</span> " +
+            esc(fmtDateTime(it.approval_at)) + " \u00B7 added to your bill"
+          : "<span class='no'>Rejected by you</span> " +
+            esc(fmtDateTime(it.approval_at)) + " \u00B7 not billed";
+      d.innerHTML =
+        "<div class='xc-top'><span>" + esc(it.description || "Extra charge") +
+        "</span><span>" + esc(inr(it.amount)) + "</span></div>" +
+        "<div class='xc-sub'>" + (st === "awaiting" ? esc(sub) : sub) + "</div>";
+      if (st === "awaiting") {
+        var act = document.createElement("div");
+        act.className = "xc-act";
+        var no = document.createElement("button");
+        no.type = "button"; no.className = "btn btn-ghost"; no.textContent = "Reject";
+        var yes = document.createElement("button");
+        yes.type = "button"; yes.className = "btn btn-primary";
+        yes.textContent = "Approve " + inr(it.amount);
+        function decide(decision) {
+          var err = document.getElementById("xc-error");
+          err.hidden = true;
+          yes.disabled = true; no.disabled = true;
+          rpc("public_decide_addon", {
+            p_token: token, p_addon_id: it.id, p_decision: decision, p_note: null
+          }).then(function (res) {
+            if (res && !res.ok && res.reason !== "already_decided") {
+              err.textContent = "That could not be saved. Please call your moving company.";
+              err.hidden = false;
+              yes.disabled = false; no.disabled = false;
+              return;
+            }
+            loadExtras(vendor);
+          }).catch(function () {
+            err.textContent = "That did not send. Check your connection and try again.";
+            err.hidden = false;
+            yes.disabled = false; no.disabled = false;
+          });
+        }
+        yes.addEventListener("click", function () { decide("approved"); });
+        no.addEventListener("click", function () { decide("rejected"); });
+        act.appendChild(no); act.appendChild(yes);
+        d.appendChild(act);
+      }
+      list.appendChild(d);
+    });
+    block.hidden = false;
   }
 
   // A refusal is the SERVER answering, so it never says "check your

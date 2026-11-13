@@ -164,7 +164,8 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
       orderId: result.orderId,
     );
     if (result.billToCustomer && (result.orderId ?? '').isNotEmpty) {
-      await _billMaterialToCustomer(m, result.quantity, result.orderId!);
+      await _billMaterialToCustomer(
+          m, result.quantity, result.orderId!, result.chargeAmount ?? 0);
     }
   }
 
@@ -192,17 +193,13 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
   /// tomorrow, the goods have already changed hands. It is money owed,
   /// not work outstanding.
   Future<void> _billMaterialToCustomer(
-      MaterialsRow m, double qty, String orderId) async {
-    final unit = m.sellingPrice ?? 0;
-    if (unit <= 0) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('${m.name} has no selling price set, so it was '
-                'recorded as used but not charged. Set one on the material '
-                'to bill it.')));
-      }
-      return;
-    }
+      MaterialsRow m, double qty, String orderId, double charge) async {
+    // 13 Nov 2026, Arun's report 8.1: the customer pays what was AGREED
+    // (20 cartons, Rs1,000), never selling price x quantity worked out by
+    // the app. The stock and its cost are already recorded above at
+    // cost; this is only the customer's figure, typed by the vendor, and
+    // it waits for the customer's approval like every extra charge.
+    if (charge <= 0) return;
     try {
       await SupaFlow.client.from('addons').insert({
         ...OrgScope.stamp(),
@@ -210,13 +207,13 @@ class _MaterialDetailSheetState extends State<_MaterialDetailSheet> {
         'description':
             '${qty.toStringAsFixed(qty == qty.roundToDouble() ? 0 : 2)} x '
             '${m.name}',
-        'amount': unit * qty,
+        'amount': charge,
         'status': 'completed',
         'completed_at': DateTime.now().toUtc().toIso8601String(),
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Charged to the order: '
+            content: Text('Sent for the customer\'s approval: '
                 '${qty.toStringAsFixed(0)} x ${m.name}')));
       }
     } catch (e) {
@@ -506,7 +503,11 @@ class _MovementInput {
       this.rate = 0,
       this.note,
       this.orderId,
+      this.chargeAmount,
       this.billToCustomer = false});
+
+  /// The amount agreed with the customer, typed by the vendor.
+  final double? chargeAmount;
   final double quantity;
   final double rate;
   final String? note;
@@ -609,11 +610,13 @@ class _StockOutDialogState extends State<_StockOutDialog> {
   final _qtyCtrl = TextEditingController();
   final _orderCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  final _chargeCtrl = TextEditingController();
   bool _billToCustomer = false;
   String? _error;
 
   @override
   void dispose() {
+    _chargeCtrl.dispose();
     _qtyCtrl.dispose();
     _orderCtrl.dispose();
     _noteCtrl.dispose();
@@ -660,13 +663,19 @@ class _StockOutDialogState extends State<_StockOutDialog> {
             controlAffinity: ListTileControlAffinity.leading,
             dense: true,
             title: const Text('Customer is paying for these'),
-            subtitle: Text(widget.sellingPrice > 0
-                ? 'Adds a charge to the order at '
-                    'Rs${widget.sellingPrice.toStringAsFixed(0)} each. '
-                    'Needs an Order ID above.'
-                : 'This material has no selling price set, so nothing can '
-                    'be charged yet.'),
+            subtitle: const Text('Type the amount you agreed with the '
+                'customer. Needs an Order ID above.'),
           ),
+          if (_billToCustomer)
+            TextField(
+              controller: _chargeCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Amount agreed with customer',
+                helperText: 'Total for this line, not per unit',
+              ),
+            ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -696,8 +705,15 @@ class _StockOutDialogState extends State<_StockOutDialog> {
                   'Enter the Order ID to charge the customer for these.');
               return;
             }
+            final charge = double.tryParse(_chargeCtrl.text.trim());
+            if (_billToCustomer && (charge == null || charge <= 0)) {
+              setState(() =>
+                  _error = 'Enter the amount agreed with the customer.');
+              return;
+            }
             Navigator.of(context).pop(_MovementInput(
               quantity: qty,
+              chargeAmount: _billToCustomer ? charge : null,
               orderId:
                   _orderCtrl.text.trim().isEmpty ? null : _orderCtrl.text.trim(),
               note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),

@@ -92,16 +92,17 @@ class MaterialUsage {
 
     if (!billToCustomer) return null;
 
-    final price = material.sellingPrice ?? 0;
-    // An explicit amount wins, INCLUDING when the material has no selling
-    // price - a vendor who types a figure has priced it, and refusing
-    // because the catalogue is blank would lose a real charge.
-    final charge = chargeAmount ?? (price * qty);
+    // 13 Nov 2026, Arun's report 8.1 ("Do not automatically charge the
+    // customer the full material cost or standard selling price"): the
+    // customer's figure is ONLY what the vendor typed as agreed. Twenty
+    // cartons used and Rs1,000 agreed means stock -20 at cost above, and
+    // Rs1,000 here - never selling price x quantity.
+    final charge = chargeAmount ?? 0;
     if (charge <= 0) {
       // Reported, never silent. The stock has already left; the vendor
-      // has to know the charge did not land so they can add it by hand.
-      return '${material.name} has no price set and no amount was '
-          'entered, so it was recorded as used but not charged.';
+      // has to know no charge was raised.
+      return '${material.name} was recorded as used. No amount was '
+          'entered, so nothing was charged.';
     }
 
     await SupaFlow.client.from('addons').insert({
@@ -116,8 +117,8 @@ class MaterialUsage {
       'completed_at': DateTime.now().toUtc().toIso8601String(),
     });
 
-    return 'Charged to the order: ${_qtyLabel(qty)} x ${material.name} '
-        '- ₹${charge.toStringAsFixed(0)}.';
+    return '${_qtyLabel(qty)} x ${material.name} - '
+        '₹${charge.toStringAsFixed(0)} sent for the customer\'s approval.';
   }
 
   static String _qtyLabel(double q) =>

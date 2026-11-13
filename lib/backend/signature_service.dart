@@ -12,6 +12,28 @@ import '/config/app_config.dart';
 /// authenticated staff session). Only the *customer-facing* read/write
 /// goes through the `sign-document` Edge Function, since that runs with
 /// no session at all.
+/// Bytes of a stored signature image, or null when it cannot be read.
+///
+/// 13 Nov 2026 (Arun's phone test, report 4.2: "signature is not
+/// appearing in the generated quotation document"). The signing page
+/// saves the canvas as a DATA URL, and this used to hand that whole
+/// string to base64Decode, which rejects the `data:image/png;base64,`
+/// prefix. The decode threw, the catch returned null, and every signed
+/// quote printed with an empty signature box.
+Uint8List? decodeSignatureImage(String? raw) {
+  if (raw == null) return null;
+  var s = raw.trim();
+  if (s.isEmpty) return null;
+  final comma = s.indexOf(',');
+  if (s.startsWith('data:') && comma > 0) s = s.substring(comma + 1);
+  try {
+    final bytes = base64Decode(base64.normalize(s.replaceAll(RegExp(r'\s'), '')));
+    return bytes.isEmpty ? null : bytes;
+  } catch (_) {
+    return null;
+  }
+}
+
 class SignatureRequest {
   const SignatureRequest({
     required this.id,
@@ -28,7 +50,9 @@ class SignatureRequest {
   final String? customerName;
   final DateTime? signedAt;
 
-  /// base64 PNG, present once signed.
+  /// The drawn signature, present once signed. The customer's page
+  /// stores it as a data URL (`data:image/png;base64,...`); older rows
+  /// hold bare base64. Read it through [signatureBytes].
   final String? signatureData;
 
   bool get isSigned => status == 'signed';
@@ -38,11 +62,7 @@ class SignatureRequest {
   Uint8List? get signatureBytes {
     final raw = signatureData;
     if (raw == null || raw.isEmpty) return null;
-    try {
-      return base64Decode(raw);
-    } catch (_) {
-      return null;
-    }
+    return decodeSignatureImage(raw);
   }
 
   /// Public link to hand to the customer. Built from [kPublicBaseUrl] —

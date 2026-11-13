@@ -114,6 +114,11 @@ class QuotationsRow extends SupabaseDataRow {
   DateTime? get acceptedAt => getField<DateTime>('accepted_at');
   set acceptedAt(DateTime? value) => setField<DateTime>('accepted_at', value);
 
+  /// The quotation number the customer sees (ARU-Q/2026/0001), given by
+  /// the database when the quote is first saved and kept through every
+  /// revision. Null only on an org with no quotation series.
+  String? get quoteNo => getField<String>('quote_no');
+
   String? get acceptedByName => getField<String>('accepted_by_name');
   set acceptedByName(String? value) =>
       setField<String>('accepted_by_name', value);
