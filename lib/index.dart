@@ -1,5 +1,6 @@
 // Export pages
 export '/login_page/login_page_widget.dart' show LoginPageWidget;
+export '/login_page/welcome_page_widget.dart' show WelcomePageWidget;
 export '/login_page/pin_login_page_widget.dart' show PinLoginPageWidget;
 export '/login_page/org_binding_page_widget.dart' show OrgBindingPageWidget;
 export '/home_page/home_page_widget.dart' show HomePageWidget;

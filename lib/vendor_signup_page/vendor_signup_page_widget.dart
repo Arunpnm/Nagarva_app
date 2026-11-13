@@ -11,6 +11,8 @@ import '/backend/owner_pin.dart';
 import '/backend/supabase/supabase.dart';
 import '/backend/vendor_org_resolver.dart';
 import '/components/ng_widgets.dart';
+import '/components/auth_shell.dart';
+import '/backend/login_memory.dart';
 import '/components/org_switcher_sheet.dart';
 import '/config/app_config.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -91,6 +93,13 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget>
       }
     });
     _resume();
+    // Number typed on the Log in screen: fill it in and send the code.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final p = LoginMemory.takePendingPhone();
+      if (p == null || !mounted) return;
+      _phone.text = p;
+      if (_step == _Step.phone && !_busy) _sendOtp();
+    });
   }
 
   @override
@@ -456,6 +465,7 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget>
       }
       return;
     }
+    await LoginMemory.rememberOwnerDevice();
     if (mounted) {
       context.go(firstRun
           ? OrgSetupPageWidget.routePath
@@ -481,7 +491,7 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget>
         }
         context.go(LoginPageWidget.routePath);
       default:
-        context.go(LoginPageWidget.routePath);
+        context.go(_loginMode ? LoginPageWidget.routePath : '/');
     }
   }
 
@@ -495,7 +505,9 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget>
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _back();
       },
-      child: Scaffold(
+      child: _authStep
+          ? _authScreen(c)
+          : Scaffold(
         backgroundColor: c.bg,
         body: SafeArea(
           child: _step == _Step.loading
@@ -520,6 +532,239 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget>
                 ),
         ),
       ),
+    );
+  }
+
+  // ---- Login redesign (12 Nov 2026): the mobile and OTP steps use the
+  // shared blue sign-in layout. Later steps keep their own layout.
+
+  bool get _authStep => _step == _Step.phone || _step == _Step.otp;
+
+  Widget _authScreen(NgPalette c) {
+    final link = authLinkColor(context);
+    if (_step == _Step.phone) {
+      return NgAuthShell(
+        title: _loginMode ? _l.lpLogIn : _l.suCreate,
+        subtitle: _loginMode ? _l.auSmsHint : _l.suPhS,
+        showLogo: true,
+        onBack: _busy ? null : _back,
+        headerExtra: _loginMode
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(top: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${_l.suStep('1')} · ${_l.suS1}',
+                        style: NgFonts.geist(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: kAuthOnBlueSoft)),
+                    const SizedBox(height: 7),
+                    Row(children: [
+                      for (var k = 0; k < 4; k++) ...[
+                        if (k > 0) const SizedBox(width: 5),
+                        Expanded(
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: k == 0
+                                  ? kAuthOrangeOnBlue
+                                  : Colors.white.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ]),
+                  ],
+                ),
+              ),
+        card: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            NgAuthLabel(_l.suPh),
+            TextField(
+              controller: _phone,
+              keyboardType: TextInputType.phone,
+              maxLength: 10,
+              // BUG-002: digits only — letters/symbols used to eat the
+              // 10-character limit.
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              autofocus: true,
+              onSubmitted: (_) => _sendOtp(),
+              cursorColor: c.acc,
+              style: NgFonts.mono(
+                  fontSize: 16, fontWeight: FontWeight.w500, color: c.text),
+              decoration: authInputDecoration(
+                context,
+                hint: '98400 11223',
+                prefix: Padding(
+                  padding: const EdgeInsets.only(left: 14, right: 10),
+                  child: Text('+91',
+                      style: NgFonts.mono(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: c.soft)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            NgPrimaryButton(
+              label: _l.suSend,
+              height: 52,
+              onPressed: _busy ? null : _sendOtp,
+            ),
+          ],
+        ),
+        below: [
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('${_l.suHave} ',
+                  style: NgFonts.geist(fontSize: 14, color: c.soft)),
+              GestureDetector(
+                onTap: () => context.go(LoginPageWidget.routePath),
+                child: Text(_l.suLogin,
+                    style: NgFonts.geist(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: link)),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    final digits = _phone.text.replaceAll(RegExp(r'\D'), '');
+    final code = _code.text;
+    return NgAuthShell(
+      title: _l.suOtpT,
+      icon: Icons.sms_outlined,
+      onBack: _busy ? null : _back,
+      subtitleWidget: Wrap(
+        spacing: 10,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(_l.suOtpS(_fmtPhone(digits)),
+              style: NgFonts.geist(fontSize: 14, color: kAuthOnBlueSoft)),
+          GestureDetector(
+            onTap: _back,
+            child: Text(_l.suChange,
+                style: NgFonts.geist(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: kAuthOrangeOnBlue)),
+          ),
+        ],
+      ),
+      card: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Six boxes drawn over ONE real text field, so the keyboard,
+          // paste and the phone's SMS autofill all keep working.
+          SizedBox(
+            height: 58,
+            child: Stack(
+              children: [
+                Row(
+                  children: [
+                    for (var i = 0; i < 6; i++) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: i < code.length || i == code.length
+                                ? c.s1
+                                : c.bg,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: i == code.length
+                                  ? c.accBtn
+                                  : i < code.length
+                                      ? link
+                                      : c.w15,
+                              width: i <= code.length ? 1.6 : 1,
+                            ),
+                          ),
+                          child: Text(i < code.length ? code[i] : '',
+                              style: NgFonts.mono(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                  color: link)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                Positioned.fill(
+                  child: TextField(
+                    controller: _code,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    autofocus: true,
+                    autofillHints: const [AutofillHints.oneTimeCode],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    showCursor: false,
+                    enableInteractiveSelection: false,
+                    style: const TextStyle(
+                        color: Colors.transparent, fontSize: 1),
+                    decoration: const InputDecoration(
+                      counterText: '',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      filled: false,
+                      contentPadding: EdgeInsets.symmetric(vertical: 24),
+                    ),
+                    onChanged: (v) {
+                      setState(() {});
+                      if (v.length == 6) _verifyOtp();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(_l.suEnter,
+                    style: NgFonts.geist(fontSize: 13, color: c.mute)),
+              ),
+              GestureDetector(
+                onTap: _resendIn > 0 || _busy
+                    ? null
+                    : () async {
+                        await _sendOtp();
+                        if (_step == _Step.otp) _flash(_l.suResent);
+                      },
+                child: Text(
+                    _resendIn > 0 ? _l.suResendIn('$_resendIn') : _l.suResend,
+                    style: NgFonts.geist(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _resendIn > 0 ? c.mute : link)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          NgPrimaryButton(
+            label: _loginMode ? _l.auVerify : _l.suVerify,
+            height: 52,
+            onPressed: _busy ? null : _verifyOtp,
+          ),
+        ],
+      ),
+      below: [
+        const SizedBox(height: 14),
+        NgAuthNote(_l.auOtpNote),
+      ],
     );
   }
 

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '/l10n/gen/app_localizations.dart';
 
+import 'package:flutter/services.dart';
+import '/components/auth_shell.dart';
+import '/components/vendor_logo.dart';
 import '/app_session.dart';
 import '/backend/biometric_unlock.dart';
 import '/backend/device_org_binding.dart';
@@ -13,8 +16,6 @@ import '/backend/vendor_org_resolver.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/language_quick_button.dart';
-import '/components/ng_top_bar.dart';
-import '/components/theme_quick_button.dart';
 import '/index.dart';
 import '/permissions.dart';
 
@@ -301,27 +302,31 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
     final next = !filled && _focusedBox == i;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      width: 16,
-      height: 16,
+      width: 18,
+      height: 18,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: filled ? c.accBtn : Colors.transparent,
         border: Border.all(
-          color: filled || next ? c.accBtn : c.hairline(0.25),
-          width: 1.5,
+          color: filled
+              ? c.accBtn
+              : next
+                  ? authLinkColor(context)
+                  : c.hairline(0.25),
+          width: 2,
         ),
       ),
     );
   }
 
   Widget _numKey(String label,
-      {VoidCallback? onTap, Widget? icon, double width = 72}) {
+      {VoidCallback? onTap, Widget? icon, double width = 72, Color? color}) {
     final c = NgPalette.of(context);
     return SizedBox(
       width: width,
-      height: 66,
+      height: 64,
       child: Material(
-        color: c.s1,
+        color: color ?? c.s1,
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
@@ -330,7 +335,7 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
             child: icon ??
                 Text(label,
                     style: NgFonts.geist(
-                        fontSize: 28,
+                        fontSize: 26,
                         fontWeight: FontWeight.w500,
                         color: c.text)),
           ),
@@ -339,230 +344,280 @@ class _PinLoginPageWidgetState extends State<PinLoginPageWidget>
     );
   }
 
+  // Login redesign (12 Nov 2026): blue header with the VENDOR's name and
+  // initials (never the platform's logo: this phone belongs to their
+  // company now), the PIN dots on a card over it, then the keypad.
   @override
   Widget build(BuildContext context) {
     final c = NgPalette.of(context);
-    // The org this device is bound to — never the platform. A person
-    // signing in should see who they are signing in to.
+    final l = AppLocalizations.of(context);
+    final link = authLinkColor(context);
+    final pad = MediaQuery.paddingOf(context);
     final orgName = (DeviceOrgBinding.boundOrgName ?? '').trim();
-    return Scaffold(
-      backgroundColor: c.bg,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 26),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Redesign top row: the device-binding state on the left
-                // (this screen only ever shows on a bound device), theme
-                // and language on the right — both reachable before
-                // signing in, as in the handoff.
-                Row(
-                  children: [
-                    Icon(Icons.verified_user_rounded,
-                        size: 16, color: c.green),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(AppLocalizations.of(context).ngLinkedDevice,
-                          style: NgFonts.geist(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                              color: c.green)),
-                    ),
-                    NgHeaderButton(
-                        child: ThemeQuickButton(iconColor: c.soft)),
-                    const SizedBox(width: 8),
-                    NgHeaderButton(
-                        child: LanguageQuickButton(iconColor: c.soft)),
-                  ],
-                ),
-                const SizedBox(height: 44),
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: c.w04, width: 6,
-                        strokeAlign: BorderSide.strokeAlignOutside),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.asset('assets/images/nagarva_logo.png',
-                      fit: BoxFit.cover),
-                ),
-                const SizedBox(height: 14),
-                Text(orgName,
-                    textAlign: TextAlign.center,
-                    style: NgFonts.geist(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.21,
-                        color: c.text)),
-                const SizedBox(height: 6),
-                Text(AppLocalizations.of(context).ngEnterPin,
-                    style: NgFonts.geist(fontSize: 14, color: c.mute)),
-                const SizedBox(height: 24),
-                AnimatedBuilder(
-                  animation: _shakeCtrl,
-                  builder: (context, child) {
-                    final t = _shakeCtrl.value;
-                    final dx = (t == 0 || t == 1)
-                        ? 0.0
-                        : 10 *
-                            (t < 0.5 ? 1 : -1) *
-                            (1 - (t - 0.5).abs() * 2);
-                    return Transform.translate(
-                        offset: Offset(dx, 0), child: child);
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+    final staffName = (DeviceOrgBinding.boundStaffName ?? '').trim();
+    final isStaffPhone = DeviceOrgBinding.isStaffDevice;
+    final initials = VendorLogo.initials(orgName);
+
+    Widget framed(Widget child, {double h = 24}) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: h),
+              child: child,
+            ),
+          ),
+        );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: c.bg,
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                color: kAuthBlue,
+                padding: EdgeInsets.only(top: pad.top + 8, bottom: 58),
+                child: framed(
+                  Column(
                     children: [
-                      for (var i = 0; i < 4; i++) ...[
-                        _pinDot(i),
-                        if (i < 3) const SizedBox(width: 18),
-                      ],
+                      Row(
+                        children: [
+                          const Icon(Icons.verified_user_rounded,
+                              size: 16, color: kAuthOnBlueSoft),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(l.ngLinkedDevice,
+                                style: NgFonts.geist(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: kAuthOnBlueSoft)),
+                          ),
+                          const LanguageQuickButton(iconColor: Colors.white),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        width: 64,
+                        height: 64,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: initials.isEmpty
+                            ? const Icon(Icons.local_shipping_rounded,
+                                size: 30, color: kAuthBlue)
+                            : Text(initials,
+                                style: NgFonts.geist(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: kAuthBlue)),
+                      ),
+                      const SizedBox(height: 12),
+                      if (isStaffPhone && staffName.isNotEmpty) ...[
+                        Text(orgName,
+                            textAlign: TextAlign.center,
+                            style: NgFonts.geist(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: kAuthOnBlueSoft)),
+                        const SizedBox(height: 6),
+                        Text(l.auWelcomeBack(staffName),
+                            textAlign: TextAlign.center,
+                            style: NgFonts.geist(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.48,
+                                color: Colors.white)),
+                      ] else
+                        Text(orgName,
+                            textAlign: TextAlign.center,
+                            style: NgFonts.geist(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.48,
+                                color: Colors.white)),
+                      const SizedBox(height: 6),
+                      Text(_bioName != null ? l.auUnlockHint : l.ngEnterPin,
+                          textAlign: TextAlign.center,
+                          style: NgFonts.geist(
+                              fontSize: 14, color: kAuthOnBlueSoft)),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  height: 20,
-                  // Was a bare default-colour CircularProgressIndicator —
-                  // read as generic rather than branded. Same gold as the
-                  // truck icon/active PIN boxes, plus a label, so a wait
-                  // longer than a beat still reads as "verifying your
-                  // PIN" rather than an unexplained spinner.
-                  child: _busy
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: c.acc,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(AppLocalizations.of(context).ngVerifying,
-                                style: TextStyle(
-                                    color: c.mute,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500)),
-                          ],
-                        )
-                      : (_error != null
-                          ? Text(_error!,
-                              style: TextStyle(
-                                  color: c.red,
-                                  fontWeight: FontWeight.w600))
-                          : null),
-                ),
-                const SizedBox(height: 20),
-                // Fixed 3-wide grid (phone dialpad / ATM / calculator
-                // convention), not a width-dependent Wrap — the previous
-                // Wrap happened to fit 4 keys per row on some screen
-                // widths (1 2 3 4 / 5 6 7 8 / 9 _ 0 <-), which fights
-                // muscle memory for staff dialling a PIN many times a day.
-                // 0 centred in the bottom row, backspace bottom-right.
-                //
-                // Key width is computed from available space (72px cap,
-                // 48px floor — Material's minimum touch target) rather
-                // than hardcoded, so 3 columns stays provably true on any
-                // screen instead of relying on 72px happening to fit the
-                // narrowest phone we'd expect. The old Wrap's bug was a
-                // device-dependent layout; a hardcoded key width in its
-                // replacement would just be the same class of assumption
-                // with a different number.
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Redesign: keys fill the width (3 equal columns,
-                    // 12px gaps), 66 tall, radius 20.
-                    const gap = 12.0;
-                    final keyWidth = ((constraints.maxWidth - 2 * gap) / 3)
-                        .clamp(48.0, 120.0);
-                    return Column(
-                      children: [
-                        for (final row in [
-                          ['1', '2', '3'],
-                          ['4', '5', '6'],
-                          ['7', '8', '9'],
-                        ]) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (final d in row) ...[
-                                _numKey(d,
-                                    width: keyWidth, onTap: () => _tapDigit(d)),
-                                if (d != row.last) const SizedBox(width: gap),
+              ),
+              Transform.translate(
+                offset: const Offset(0, -30),
+                child: framed(
+                  Column(
+                    children: [
+                      AnimatedBuilder(
+                        animation: _shakeCtrl,
+                        builder: (context, child) {
+                          final t = _shakeCtrl.value;
+                          final dx = (t == 0 || t == 1)
+                              ? 0.0
+                              : 10 *
+                                  (t < 0.5 ? 1 : -1) *
+                                  (1 - (t - 0.5).abs() * 2);
+                          return Transform.translate(
+                              offset: Offset(dx, 0), child: child);
+                        },
+                        child: Semantics(
+                          label: l.ngEnterPin,
+                          child: NgAuthCard(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 30, vertical: 20),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                for (var i = 0; i < 4; i++) ...[
+                                  _pinDot(i),
+                                  if (i < 3) const SizedBox(width: 20),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                          const SizedBox(height: gap),
-                        ],
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Bottom-left: fingerprint / face when saved
-                            // on this phone, else empty as before.
-                            _bioName != null
-                                ? _numKey('',
-                                    width: keyWidth,
-                                    icon: Icon(Icons.fingerprint_rounded,
-                                        size: 30, color: c.acc),
-                                    onTap: _bioLogin)
-                                : SizedBox(width: keyWidth, height: 66),
-                            const SizedBox(width: gap),
-                            _numKey('0',
-                                width: keyWidth, onTap: () => _tapDigit('0')),
-                            const SizedBox(width: gap),
-                            _numKey('',
-                                width: keyWidth,
-                                icon: Icon(Icons.backspace_outlined,
-                                    size: 24, color: c.text),
-                                onTap: _tapBackspace),
-                          ],
                         ),
-                      ],
-                    );
-                  },
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 22,
+                        child: _busy
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2.5, color: c.acc),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(l.ngVerifying,
+                                      style: NgFonts.geist(
+                                          color: c.mute,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500)),
+                                ],
+                              )
+                            : (_error != null
+                                ? Text(_error!,
+                                    textAlign: TextAlign.center,
+                                    style: NgFonts.geist(
+                                        fontSize: 13.5,
+                                        color: c.red,
+                                        fontWeight: FontWeight.w600))
+                                : null),
+                      ),
+                      const SizedBox(height: 14),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          const gap = 12.0;
+                          final keyWidth =
+                              ((constraints.maxWidth - 2 * gap) / 3)
+                                  .clamp(48.0, 120.0);
+                          return Column(
+                            children: [
+                              for (final row in [
+                                ['1', '2', '3'],
+                                ['4', '5', '6'],
+                                ['7', '8', '9'],
+                              ]) ...[
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    for (final d in row) ...[
+                                      _numKey(d,
+                                          width: keyWidth,
+                                          onTap: () => _tapDigit(d)),
+                                      if (d != row.last)
+                                        const SizedBox(width: gap),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: gap),
+                              ],
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Bottom-left: fingerprint / face when
+                                  // saved on this phone, else empty.
+                                  _bioName != null
+                                      ? Semantics(
+                                          button: true,
+                                          label: l.bioSetting,
+                                          child: _numKey('',
+                                              width: keyWidth,
+                                              color: kAuthBlue,
+                                              icon: const Icon(
+                                                  Icons.fingerprint_rounded,
+                                                  size: 30,
+                                                  color: Colors.white),
+                                              onTap: _bioLogin),
+                                        )
+                                      : SizedBox(width: keyWidth, height: 64),
+                                  const SizedBox(width: gap),
+                                  _numKey('0',
+                                      width: keyWidth,
+                                      onTap: () => _tapDigit('0')),
+                                  const SizedBox(width: gap),
+                                  _numKey('',
+                                      width: keyWidth,
+                                      color: Colors.transparent,
+                                      icon: Icon(Icons.backspace_outlined,
+                                          size: 24, color: c.text),
+                                      onTap: _tapBackspace),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 18),
+                      // Forgot the PIN: log in the long way (OTP or email)
+                      // and set a new one in Settings.
+                      TextButton(
+                        onPressed: () =>
+                            context.go(LoginPageWidget.routePath),
+                        child: Text(l.auForgotPin,
+                            textAlign: TextAlign.center,
+                            style: NgFonts.geist(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: link)),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          await DeviceOrgBinding.unbind();
+                          if (!context.mounted) return;
+                          context.go('/');
+                        },
+                        child: Text(l.auOtherAccount,
+                            textAlign: TextAlign.center,
+                            style: NgFonts.geist(
+                                fontSize: 13.5, color: c.mute)),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.lock_rounded, size: 14, color: c.mute),
+                          const SizedBox(width: 5),
+                          Text(l.ngSecuredBy,
+                              style: NgFonts.geist(
+                                  fontSize: 12, color: c.mute)),
+                        ],
+                      ),
+                      SizedBox(height: pad.bottom),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () => context.pushNamed(LoginPageWidget.routeName),
-                  child: Text(AppLocalizations.of(context).ngUseEmail,
-                      textAlign: TextAlign.center,
-                      style: NgFonts.geist(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: c.acc)),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    await DeviceOrgBinding.unbind();
-                    if (mounted) {
-                      context.pushNamed(OrgBindingPageWidget.routeName);
-                    }
-                  },
-                  child: Text(AppLocalizations.of(context).ngSwitchDevice,
-                      textAlign: TextAlign.center,
-                      style: NgFonts.geist(fontSize: 13, color: c.mute)),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.lock_rounded, size: 14, color: c.faint),
-                    const SizedBox(width: 5),
-                    Text(AppLocalizations.of(context).ngSecuredBy,
-                        style: NgFonts.geist(fontSize: 12, color: c.faint)),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

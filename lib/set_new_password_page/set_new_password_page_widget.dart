@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import '/components/auth_shell.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 import '/backend/pending_password_reset.dart';
 import '/backend/supabase/supabase.dart';
-import '/flutter_flow/flutter_flow_theme.dart' show kBrandAccent;
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 
@@ -84,175 +84,89 @@ class _SetNewPasswordPageWidgetState extends State<SetNewPasswordPageWidget> {
     }
   }
 
-  InputDecoration _inputDecoration({
-    required String label,
-    required String hint,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      labelStyle: NgFonts.geist(color: NgPalette.of(context).mute),
-      hintStyle: NgFonts.geist(color: NgPalette.of(context).faint),
-      prefixIcon: Icon(icon, color: NgPalette.of(context).faint, size: 20),
-      filled: true,
-      fillColor: NgPalette.of(context).s1,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: NgPalette.of(context).w08),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: NgPalette.of(context).acc, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: NgPalette.of(context).red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: NgPalette.of(context).red),
-      ),
-      errorStyle: NgFonts.geist(color: NgPalette.of(context).red, fontSize: 12),
-    );
-  }
+  Widget _eye(bool visible, VoidCallback onTap) => IconButton(
+        icon: Icon(visible ? Icons.visibility_off : Icons.visibility,
+            color: NgPalette.of(context).faint, size: 20),
+        onPressed: onTap,
+      );
 
+  // Login redesign (13 Nov 2026): same blue header + white card as the
+  // other sign-in screens.
   @override
   Widget build(BuildContext context) {
+    final c = NgPalette.of(context);
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-      child: Scaffold(
-        backgroundColor: NgPalette.of(context).bg,
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Column(
-                        children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: NgPalette.of(context).status(NgStatus.accent).bg,
-                              borderRadius: BorderRadius.circular(40),
-                            ),
-                            child: const Icon(Icons.lock_reset,
-                                color: kBrandAccent, size: 36),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Set a new password',
-                            textAlign: TextAlign.center,
-                            style: NgFonts.geist(
-                              color: NgPalette.of(context).text,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Choose a new password to finish resetting your account.',
-                            textAlign: TextAlign.center,
-                            style: NgFonts.geist(
-                              color: NgPalette.of(context).mute,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      TextFormField(
-                        controller: _passwordController,
-                        focusNode: _passwordFocusNode,
-                        obscureText: !_passwordVisible,
-                        style: NgFonts.geist(color: NgPalette.of(context).text),
-                        // Same rule as SignupPageWidget's own password field.
-                        validator: (v) => (v == null || v.length < 8)
-                            ? 'Password must be at least 8 characters'
-                            : null,
-                        decoration: _inputDecoration(
-                          label: 'New Password',
-                          hint: 'Min. 8 characters',
-                          icon: Icons.lock_outline,
-                        ).copyWith(
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _passwordVisible
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: NgPalette.of(context).faint,
-                              size: 20,
-                            ),
-                            onPressed: () => safeSetState(
-                                () => _passwordVisible = !_passwordVisible),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _confirmController,
-                        focusNode: _confirmFocusNode,
-                        obscureText: !_confirmVisible,
-                        style: NgFonts.geist(color: NgPalette.of(context).text),
-                        // Same rule as SignupPageWidget's confirm-password
-                        // field — validated client-side, no round trip.
-                        validator: (v) => (v != _passwordController.text)
-                            ? 'Passwords do not match'
-                            : null,
-                        decoration: _inputDecoration(
-                          label: 'Confirm New Password',
-                          hint: 'Re-enter your new password',
-                          icon: Icons.lock_outline,
-                        ).copyWith(
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _confirmVisible
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: NgPalette.of(context).faint,
-                              size: 20,
-                            ),
-                            onPressed: () => safeSetState(
-                                () => _confirmVisible = !_confirmVisible),
-                          ),
-                        ),
-                      ),
-                      if (_errorMessage != null) ...[
-                        const SizedBox(height: 14),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: NgPalette.of(context).redBg,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Text(
-                            _errorMessage!,
-                            style: NgFonts.geist(
-                                color: NgPalette.of(context).red, fontSize: 13),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 22),
-                      NgPrimaryButton(
-  label: _isLoading ? 'Please wait…' : 'Update password',
-  height: 54,
-  onPressed: _isLoading ? null : _handleSubmit,
-),
-                    ],
-                  ),
+      child: NgAuthShell(
+        title: 'Set a new password',
+        subtitle: 'Choose a new password to finish resetting your account.',
+        icon: Icons.lock_reset,
+        card: NgAuthCard(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const NgAuthLabel('New password'),
+                TextFormField(
+                  controller: _passwordController,
+                  focusNode: _passwordFocusNode,
+                  obscureText: !_passwordVisible,
+                  autofillHints: const [AutofillHints.newPassword],
+                  style: NgFonts.geist(color: c.text, fontSize: 15),
+                  // Same rule as SignupPageWidget's own password field.
+                  validator: (v) => (v == null || v.length < 8)
+                      ? 'Password must be at least 8 characters'
+                      : null,
+                  decoration: authInputDecoration(context,
+                      hint: 'At least 8 characters',
+                      suffix: _eye(_passwordVisible,
+                          () => safeSetState(() => _passwordVisible = !_passwordVisible))),
                 ),
-              ),
+                const SizedBox(height: 16),
+                const NgAuthLabel('Type it again'),
+                TextFormField(
+                  controller: _confirmController,
+                  focusNode: _confirmFocusNode,
+                  obscureText: !_confirmVisible,
+                  autofillHints: const [AutofillHints.newPassword],
+                  style: NgFonts.geist(color: c.text, fontSize: 15),
+                  validator: (v) => (v != _passwordController.text)
+                      ? 'Passwords do not match'
+                      : null,
+                  decoration: authInputDecoration(context,
+                      hint: 'Re-enter the new password',
+                      suffix: _eye(_confirmVisible,
+                          () => safeSetState(() => _confirmVisible = !_confirmVisible))),
+                ),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: c.redBg,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(_errorMessage!,
+                        style: NgFonts.geist(color: c.red, fontSize: 13)),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                NgPrimaryButton(
+                  label: _isLoading ? 'Please wait…' : 'Save & log in',
+                  height: 50,
+                  onPressed: _isLoading ? null : _handleSubmit,
+                ),
+              ],
             ),
           ),
         ),
+        below: [
+          const SizedBox(height: 16),
+          Text('Other phones logged in with the old password are logged out.',
+              textAlign: TextAlign.center,
+              style: NgFonts.geist(fontSize: 13, color: c.mute)),
+        ],
       ),
     );
   }

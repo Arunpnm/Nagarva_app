@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
+import '/app_session.dart';
 import '/backend/device_org_binding.dart';
+import '/backend/edge_function_errors.dart';
+import '/backend/supabase/supabase.dart';
 
 /// Fingerprint / face unlock on the PIN screen (Arun, 12 Nov 2026).
 ///
@@ -113,6 +116,62 @@ class BiometricUnlock {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Turn on from Settings, for someone who logged in another way
+  /// (mobile OTP, email): checks [pin] with the server exactly as the PIN
+  /// screen would, ties this phone's PIN screen to the logged-in person,
+  /// then asks for a fingerprint and saves. Returns null on success, or
+  /// one plain line saying what went wrong (Arun, 12 Nov 2026: "if I
+  /// login through phone OTP I can't enable biometric").
+  static Future<String?> enableWithPin(String pin,
+      {required String reason, required String noPinMessage}) async {
+    if (!_platformOk) return null;
+    if (!RegExp(r'^\d{4}$').hasMatch(pin)) return noPinMessage;
+    final s = AppSession.instance;
+    final orgId = s.currentOrgId;
+    if (orgId == null) return 'Please log in again.';
+    final staffId = s.currentStaffId;
+    try {
+      // Only checks the PIN: the answer's login tokens are not used, so
+      // the current login stays as it is.
+      final res = staffId != null
+          ? await SupaFlow.client.functions.invoke('staff-login',
+              body: {'staff_id': staffId, 'pin': pin})
+          : await SupaFlow.client.functions.invoke('pin-login',
+              body: {'org_id': orgId, 'pin': pin});
+      final data = res.data;
+      if (data is! Map || data['access_token'] == null) {
+        return 'Wrong PIN. Try again.';
+      }
+      // pin-login also accepts a staff PIN from the shared pool; this must
+      // be the owner's own PIN when the owner is turning it on.
+      if (staffId == null && data['kind'] == 'staff') {
+        return 'Wrong PIN. Try again.';
+      }
+    } catch (e) {
+      return extractFunctionErrorMessage(e, fallback: friendlyError(e));
+    }
+    // From now on this phone opens on the PIN screen for this person,
+    // which is where the fingerprint prompt lives.
+    final slug = s.currentOrgSlug ?? '';
+    final name = s.currentOrgName ?? '';
+    if (staffId != null) {
+      await DeviceOrgBinding.bindStaff(
+        orgId: orgId,
+        orgName: name,
+        orgSlug: slug,
+        staffId: staffId,
+        staffName: s.currentStaffName ?? '',
+        staffRole: s.currentStaffRole,
+      );
+    } else if (DeviceOrgBinding.boundOrgId != orgId ||
+        DeviceOrgBinding.boundStaffId != null) {
+      await DeviceOrgBinding.bind(orgId: orgId, orgName: name, orgSlug: slug);
+    }
+    if (!await confirm(reason)) return '';
+    final ok = await save(pin: pin, name: s.currentStaffName ?? name);
+    return ok ? null : 'Could not save. Please try again.';
   }
 
   static Future<void> turnOff() async {

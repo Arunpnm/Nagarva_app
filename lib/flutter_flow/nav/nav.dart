@@ -84,6 +84,7 @@ class AppStateNotifier extends ChangeNotifier {
 //             their Flutter pages remain the only implementations.
 const _kPublicRoutePrefixes = [
   '/login',
+  '/welcome',
   '/signup',
   // The vendor's own mobile/OTP signup (and mobile login) — public by
   // design, and named here explicitly now that matching is by whole
@@ -282,9 +283,17 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           // override where a cold start lands.
           builder: (context, _) => PendingPasswordReset.active
               ? const SetNewPasswordPageWidget()
+              // Login redesign (12 Nov 2026): a phone not tied to a
+              // company opens on the welcome screen (Log in / Create
+              // account / staff join), not straight on the email form.
               : (DeviceOrgBinding.isBound
                   ? const PinLoginPageWidget()
-                  : const LoginPageWidget()),
+                  : const WelcomePageWidget()),
+        ),
+        FFRoute(
+          name: WelcomePageWidget.routeName,
+          path: WelcomePageWidget.routePath,
+          builder: (context, params) => const WelcomePageWidget(),
         ),
         FFRoute(
           name: LoginPageWidget.routeName,
