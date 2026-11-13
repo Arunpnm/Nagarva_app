@@ -96,6 +96,43 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
 
   bool get _isOwner => AppSession.instance.currentStaffId == null;
 
+  /// Settings -> Fingerprint / face login -> on. Asks for the PIN once.
+  Future<void> _turnOnBiometric() async {
+    final l = AppLocalizations.of(context);
+    final ctrl = TextEditingController();
+    final pin = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.fingerprint_rounded, size: 36),
+        title: Text(l.bioSetting),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          obscureText: true,
+          keyboardType: TextInputType.number,
+          maxLength: 4,
+          decoration: InputDecoration(labelText: l.bioEnterPin),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: Text(l.bioYes)),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (pin == null || !mounted) return;
+    final err = await BiometricUnlock.enableWithPin(pin,
+        reason: l.bioReason, noPinMessage: l.bioEnterPin);
+    if (!mounted || err == '') return; // '' = fingerprint cancelled
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err ?? l.bioOn)));
+  }
+
   /// A settings sub-page: shared top bar, module header, then [children].
   void _openSub(String title, List<Widget> Function(BuildContext) children) {
     Navigator.of(context).push(MaterialPageRoute(
@@ -361,10 +398,10 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
             },
           ),
         ),
-        // Fingerprint / face login (12 Nov 2026). Turned ON from the PIN
-        // screen after a PIN login (it needs the PIN once); here it can
-        // only be turned off. Hidden where the phone has no fingerprint
-        // or face set up, and on web.
+        // Fingerprint / face login (12 Nov 2026). Turning it on here asks
+        // for the PIN once (checked by the server), so it works however
+        // the person logged in - PIN, mobile OTP or email. Hidden where
+        // the phone has no fingerprint or face set up, and on web.
         FutureBuilder<List<bool>>(
           future: Future.wait(
               [BiometricUnlock.available(), BiometricUnlock.isOn()]),
@@ -378,12 +415,14 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               sub: l.bioSettingSub,
               trailing: Switch(
                 value: on,
-                onChanged: on
-                    ? (_) async {
-                        await BiometricUnlock.turnOff();
-                        safeSetState(() {});
-                      }
-                    : null,
+                onChanged: (_) async {
+                  if (on) {
+                    await BiometricUnlock.turnOff();
+                  } else {
+                    await _turnOnBiometric();
+                  }
+                  safeSetState(() {});
+                },
               ),
             );
           },

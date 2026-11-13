@@ -222,6 +222,11 @@ const String kNagarvaTagline =
     'Industry ERP for packers & movers — jobs, fleet, staff and GST '
     'billing in one place.';
 
+/// The brand line on the welcome screen (Arun, 12 Nov 2026). Two halves
+/// so they can be coloured separately; never translated.
+const String kNagarvaTaglineA = 'Every Move.';
+const String kNagarvaTaglineB = 'A Step Forward.';
+
 /// Nagarva's own support line — the PLATFORM's number, not a tenant's.
 ///
 /// **Currently empty on purpose.** Arun is setting up a dedicated

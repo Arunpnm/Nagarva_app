@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '/app_session.dart';
+import '/backend/login_memory.dart';
 import '/backend/owner_pin.dart';
 import '/flutter_flow/ng_tokens.dart';
 import '/index.dart';
@@ -95,6 +96,10 @@ class _SetOwnerPinPageWidgetState extends State<SetOwnerPinPageWidget> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('PIN set. You can now sign in with it.')),
       );
+      // "Keep me logged in": now that a PIN exists, this phone can open
+      // on the quick unlock next time.
+      await LoginMemory.rememberOwnerDevice();
+      if (!mounted) return;
       _continue();
       return;
     }

@@ -13,12 +13,11 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/app_session.dart';
 import '/index.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show TextInput;
+import 'package:flutter/services.dart';
 import '/components/language_quick_button.dart';
-import '/components/theme_quick_button.dart';
-import '/components/ng_top_bar.dart';
 import '/components/ng_widgets.dart';
-import '/flutter_flow/flutter_flow_theme.dart' show kBrandAccent;
+import '/components/auth_shell.dart';
+import '/backend/login_memory.dart';
 import 'login_page_model.dart';
 export 'login_page_model.dart';
 
@@ -81,6 +80,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
 
   @override
   void dispose() {
+    _mobile.dispose();
     _model.dispose();
     super.dispose();
   }
@@ -100,6 +100,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       _model.errorMessage = null;
     });
 
+    await LoginMemory.set(remember: _remember);
     try {
       final authResponse = await SupaFlow.client.auth.signInWithPassword(
         email: email,
@@ -168,6 +169,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
         return;
       }
 
+      await LoginMemory.rememberOwnerDevice();
       if (mounted) context.go(HomePageWidget.routePath);
     } catch (e) {
       safeSetState(() {
@@ -274,19 +276,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       // comment has the full story (16 Aug 2026 redirect-issue report).
       await SupaFlow.client.auth
           .resetPasswordForEmail(email, redirectTo: kAuthRedirectUrl);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Password reset link sent to $email. Check your inbox '
-              '(and spam folder).',
-              style: NgFonts.geist(),
-            ),
-            backgroundColor: const Color(0xFF5CCB89),
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+      safeSetState(() => _resetSentTo = email);
     } catch (e) {
       safeSetState(() => _model.errorMessage = _friendlyAuthError(e));
     } finally {
@@ -294,297 +284,338 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
     }
   }
 
+  // ---- Login redesign (12 Nov 2026) ------------------------------------
+  // One screen, two ways: Mobile number (OTP) or Email (password), with
+  // "keep me logged in", and a Forgot-password view of the same screen.
+
+  bool _mobileTab = true;
+  bool _remember = true;
+  bool _forgot = false;
+  String? _resetSentTo;
+  final _mobile = TextEditingController();
+
+  Future<void> _sendLoginOtp() async {
+    final l = AppLocalizations.of(context);
+    final digits = _mobile.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.length != 10) {
+      safeSetState(() => _model.errorMessage = l.suPhBad);
+      return;
+    }
+    await LoginMemory.set(remember: _remember);
+    LoginMemory.setPendingPhone(digits);
+    if (mounted) {
+      context.go('${VendorSignupPageWidget.routePath}?mode=login');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = NgPalette.of(context);
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: c.bg,
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: CustomScrollView(
-                slivers: [
-                  // SliverToBoxAdapter, not SliverFillRemaining: the
-                  // latter sizes from an intrinsic-height estimate that
-                  // came out ~2px short with Tamil glyphs (BOTTOM
-                  // OVERFLOWED stripe). Natural height always fits.
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              NgHeaderButton(
-                                  child: ThemeQuickButton(iconColor: c.soft)),
-                              const SizedBox(width: 8),
-                              NgHeaderButton(
-                                  child:
-                                      LanguageQuickButton(iconColor: c.soft)),
-                            ],
-                          ),
-                          const SizedBox(height: 36),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              // Nagarva platform logo; the truck icon is the
-                              // fallback so the screen never breaks.
-                              child: Image.asset(
-                                'assets/images/nagarva_logo.png',
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  width: 60,
-                                  height: 60,
-                                  color: c.status(NgStatus.accent).bg,
-                                  child: const Icon(Icons.local_shipping,
-                                      color: kBrandAccent, size: 32),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                          // Shared multi-tenant gateway: no org is known yet,
-                          // so this shows the platform, never a tenant brand
-                          // (CLAUDE.md known bug #5).
-                          Text(AppLocalizations.of(context).lpWelcome,
-                              style: NgFonts.geist(
-                                  fontSize: 30,
-                                  height: 1.15,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: -0.6,
-                                  color: c.text)),
-                          const SizedBox(height: 8),
-                          Text(AppLocalizations.of(context).lpSubtitle,
-                              style: NgFonts.geist(fontSize: 15, color: c.mute)),
-                          const SizedBox(height: 28),
-                          _buildVendorForm(),
-                          // A Spacer here sized itself from an intrinsic-
-                          // height estimate that was short for Tamil text
-                          // (fallback font), so an error box overflowed the
-                          // page. A fixed gap always scrolls cleanly.
-                          const SizedBox(height: 32),
-                          // Bound vs. unbound device get different footer
-                          // links, never both. A BOUND device only reaches
-                          // this page via PinLoginPage's "Use email login
-                          // instead"; for that visitor "Joining a team?"
-                          // would unbind an already-correct device. An
-                          // UNBOUND device lands here by default, and the
-                          // org/invite-code path is the one a staff member
-                          // who installed the app manually needs.
-                          DeviceOrgBinding.isBound
-                              ? _bottomLink(
-                                  prefix: '',
-                                  action: AppLocalizations.of(context)
-                                      .lpBackToPin,
-                                  onTap: () =>
-                                      context.go(PinLoginPageWidget.routePath),
-                                )
-                              : _bottomLink(
-                                  prefix: AppLocalizations.of(context)
-                                      .lpJoiningTeam,
-                                  action:
-                                      AppLocalizations.of(context).lpUseCode,
-                                  onTap: () async {
-                                    await DeviceOrgBinding.unbind();
-                                    if (mounted) {
-                                      context.pushNamed(
-                                          OrgBindingPageWidget.routeName);
-                                    }
-                                  },
-                                ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.lock_rounded, color: c.faint, size: 14),
-                              const SizedBox(width: 5),
-                              Text(AppLocalizations.of(context).lpSecured,
-                                  style: NgFonts.geist(
-                                      color: c.faint, fontSize: 12)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+    final l = AppLocalizations.of(context);
+    final link = authLinkColor(context);
 
-  /// Shared shape for the page's single footer link — two mutually
-  /// exclusive variants render depending on `DeviceOrgBinding.isBound`.
-  Widget _bottomLink({
-    required String prefix,
-    required String action,
-    required VoidCallback onTap,
-  }) {
-    final c = NgPalette.of(context);
-    return Center(
-      child: GestureDetector(
-        onTap: onTap,
-        child: RichText(
-          text: TextSpan(
-            style: NgFonts.geist(color: c.mute, fontSize: 13.5),
-            children: [
-              if (prefix.isNotEmpty) TextSpan(text: prefix),
-              TextSpan(
-                text: action,
-                style: NgFonts.geist(
-                    color: c.acc, fontSize: 13.5, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVendorForm() {
-    final c = NgPalette.of(context);
-    return AutofillGroup(
-        child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(AppLocalizations.of(context).lpEmail,
-            style: NgFonts.geist(
-                fontSize: 13, fontWeight: FontWeight.w500, color: c.mute)),
-        const SizedBox(height: 6),
-        _textField(
-          controller: _model.vendorEmailController!,
-          focusNode: _model.vendorEmailFocusNode!,
-          hint: 'owner@company.com',
-          icon: Icons.mail_outline_rounded,
-          keyboardType: TextInputType.emailAddress,
-          autofillHints: const [AutofillHints.email, AutofillHints.username],
-        ),
-        const SizedBox(height: 14),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
+    if (_forgot) {
+      return NgAuthShell(
+        title: l.auResetT,
+        subtitle: l.auResetS,
+        icon: Icons.lock_reset_rounded,
+        onBack: () => safeSetState(() {
+          _forgot = false;
+          _resetSentTo = null;
+          _model.errorMessage = null;
+        }),
+        card: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Text(AppLocalizations.of(context).lpPassword,
-                  style: NgFonts.geist(
-                      fontSize: 13, fontWeight: FontWeight.w500, color: c.mute)),
+            NgAuthLabel(l.lpEmail),
+            TextField(
+              controller: _model.vendorEmailController,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
+              cursorColor: c.acc,
+              style: NgFonts.geist(color: c.text, fontSize: 15),
+              decoration:
+                  authInputDecoration(context, hint: 'owner@company.com'),
+              onSubmitted: (_) => _handleForgotPassword(),
             ),
-            GestureDetector(
-              onTap: _model.isLoading ? null : _handleForgotPassword,
-              child: Text(AppLocalizations.of(context).lpForgot,
-                  style: NgFonts.geist(
-                      color: c.acc, fontSize: 13, fontWeight: FontWeight.w600)),
+            if (_model.errorMessage != null) ...[
+              const SizedBox(height: 12),
+              NgAuthNote(_model.errorMessage!, error: true),
+            ],
+            const SizedBox(height: 16),
+            NgPrimaryButton(
+              label: l.auResetBtn,
+              height: 52,
+              onPressed: _model.isLoading ? null : _handleForgotPassword,
+            ),
+            if (_resetSentTo != null) ...[
+              const SizedBox(height: 14),
+              NgAuthNote(l.auResetSent(_resetSentTo!), success: true),
+            ],
+          ],
+        ),
+        below: [
+          const SizedBox(height: 14),
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => safeSetState(() {
+              _forgot = false;
+              _mobileTab = true;
+              _model.errorMessage = null;
+            }),
+            child: NgAuthNote(l.auNoPassword, icon: Icons.sms_outlined),
+          ),
+        ],
+      );
+    }
+
+    Widget tab(String label, bool mobile) {
+      final on = _mobileTab == mobile;
+      return Expanded(
+        child: Semantics(
+          button: true,
+          selected: on,
+          child: Material(
+            color: on ? kAuthBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => safeSetState(() {
+                _mobileTab = mobile;
+                _model.errorMessage = null;
+              }),
+              child: SizedBox(
+                height: 40,
+                child: Center(
+                  child: Text(label,
+                      style: NgFonts.geist(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: on ? Colors.white : c.mute)),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final rememberRow = InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => safeSetState(() => _remember = !_remember),
+      child: SizedBox(
+        height: 46,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Checkbox(
+                value: _remember,
+                activeColor: kAuthBlue,
+                checkColor: Colors.white,
+                onChanged: (v) => safeSetState(() => _remember = v ?? true),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(l.auKeep,
+                  style: NgFonts.geist(fontSize: 14, color: c.text)),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        _textField(
-          controller: _model.vendorPasswordController!,
-          focusNode: _model.vendorPasswordFocusNode!,
-          hint: AppLocalizations.of(context).lpPasswordHint,
-          icon: Icons.lock_outline_rounded,
-          obscureText: !_model.vendorPasswordVisible,
-          autofillHints: const [AutofillHints.password],
-          suffixIcon: IconButton(
+      ),
+    );
+
+    final mobileForm = <Widget>[
+      NgAuthLabel(l.suPh),
+      TextField(
+        controller: _mobile,
+        keyboardType: TextInputType.phone,
+        maxLength: 10,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        autofillHints: const [AutofillHints.telephoneNumberNational],
+        cursorColor: c.acc,
+        onSubmitted: (_) => _sendLoginOtp(),
+        style: NgFonts.mono(
+            fontSize: 16, fontWeight: FontWeight.w500, color: c.text),
+        decoration: authInputDecoration(
+          context,
+          hint: '98400 11223',
+          prefix: Padding(
+            padding: const EdgeInsets.only(left: 14, right: 10),
+            child: Text('+91',
+                style: NgFonts.mono(
+                    fontSize: 15, fontWeight: FontWeight.w500, color: c.soft)),
+          ),
+        ),
+      ),
+      const SizedBox(height: 6),
+      Text(l.auSmsHint, style: NgFonts.geist(fontSize: 12.5, color: c.mute)),
+    ];
+
+    final emailForm = <Widget>[
+      NgAuthLabel(l.lpEmail),
+      TextFormField(
+        controller: _model.vendorEmailController,
+        focusNode: _model.vendorEmailFocusNode,
+        keyboardType: TextInputType.emailAddress,
+        autofillHints: const [AutofillHints.email, AutofillHints.username],
+        cursorColor: c.acc,
+        style: NgFonts.geist(color: c.text, fontSize: 15),
+        decoration: authInputDecoration(context, hint: 'owner@company.com'),
+      ),
+      const SizedBox(height: 14),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Expanded(child: NgAuthLabel(l.lpPassword)),
+          GestureDetector(
+            onTap: _model.isLoading
+                ? null
+                : () => safeSetState(() {
+                      _forgot = true;
+                      _model.errorMessage = null;
+                    }),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(l.lpForgot,
+                  style: NgFonts.geist(
+                      color: link, fontSize: 13, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      ),
+      TextFormField(
+        controller: _model.vendorPasswordController,
+        focusNode: _model.vendorPasswordFocusNode,
+        obscureText: !_model.vendorPasswordVisible,
+        autofillHints: const [AutofillHints.password],
+        cursorColor: c.acc,
+        onFieldSubmitted: (_) => _handleVendorLogin(),
+        style: NgFonts.geist(color: c.text, fontSize: 15),
+        decoration: authInputDecoration(
+          context,
+          hint: l.lpPasswordHint,
+          suffix: IconButton(
+            tooltip: l.lpPassword,
             icon: Icon(
               _model.vendorPasswordVisible
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
-              color: c.faint,
+              color: c.mute,
               size: 20,
             ),
-            onPressed: () => safeSetState(
-              () =>
-                  _model.vendorPasswordVisible = !_model.vendorPasswordVisible,
-            ),
+            onPressed: () => safeSetState(() =>
+                _model.vendorPasswordVisible = !_model.vendorPasswordVisible),
           ),
         ),
-        if (_model.errorMessage != null) ...[
-          const SizedBox(height: 14),
-          _errorBox(_model.errorMessage!),
-        ],
-        const SizedBox(height: 20),
-        Material(
-          color: c.accBtn,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: _model.isLoading ? null : _handleVendorLogin,
-            child: SizedBox(
-              height: 54,
-              child: Center(
-                child: _model.isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2.4, color: NgPalette.onAcc))
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(AppLocalizations.of(context).lpLogIn,
-                              style: NgFonts.geist(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: NgPalette.onAcc)),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.arrow_forward_rounded,
-                              size: 20, color: NgPalette.onAcc),
-                        ],
-                      ),
+      ),
+    ];
+
+    Widget linkRow(String prefix, String action, VoidCallback onTap,
+            {bool last = false}) =>
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 52),
+            decoration: BoxDecoration(
+              border: last ? null : Border(bottom: BorderSide(color: c.w06)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(children: [
+                      if (prefix.isNotEmpty) TextSpan(text: '$prefix '),
+                      TextSpan(
+                          text: action,
+                          style: NgFonts.geist(
+                              color: link, fontWeight: FontWeight.w600)),
+                    ]),
+                    style: NgFonts.geist(fontSize: 14, color: c.text),
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, size: 20, color: c.mute),
+              ],
+            ),
+          ),
+        );
+
+    return NgAuthShell(
+      title: l.lpLogIn,
+      subtitle: l.auChoose,
+      showLogo: true,
+      onBack: () => context.go('/'),
+      trailing: LanguageQuickButton(iconColor: Colors.white),
+      card: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: c.bg,
+                borderRadius: BorderRadius.circular(14),
               ),
+              child: Row(children: [
+                tab(l.suPh, true),
+                const SizedBox(width: 4),
+                tab(l.lpEmail, false),
+              ]),
             ),
-          ),
+            const SizedBox(height: 18),
+            ...(_mobileTab ? mobileForm : emailForm),
+            const SizedBox(height: 8),
+            rememberRow,
+            if (_model.errorMessage != null) ...[
+              const SizedBox(height: 6),
+              NgAuthNote(_model.errorMessage!, error: true),
+            ],
+            const SizedBox(height: 10),
+            NgPrimaryButton(
+              label: _model.isLoading
+                  ? '…'
+                  : (_mobileTab ? l.suSend : l.lpLogIn),
+              height: 52,
+              onPressed: _model.isLoading
+                  ? null
+                  : (_mobileTab ? _sendLoginOtp : _handleVendorLogin),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        // Owners who signed up by mobile number have no password — the
-        // signup screen doubles as their OTP login (vendor signup, 21 Oct
-        // 2026).
-        Center(
-          child: NgLinkButton(
-            AppLocalizations.of(context).suMobileLogin,
-            icon: Icons.sms_outlined,
-            // mode=login: reads as a login, not "Create your business
-            // account" (BUG-006).
-            onTap: _model.isLoading
-                ? null
-                : () => context
-                    .go('${VendorSignupPageWidget.routePath}?mode=login'),
-          ),
-        ),
+      ),
+      below: [
         if (_signupStatus != null) ...[
           const SizedBox(height: 12),
           _signupBanner(_signupStatus!),
         ],
         const SizedBox(height: 14),
-        // Approval-first signup by mobile number replaced the email
-        // SignupPage as the way in (21 Oct 2026).
-        _bottomLink(
-          prefix: AppLocalizations.of(context).lpNewHere,
-          action: AppLocalizations.of(context).lpCreateAccount,
-          onTap: () => context.go(VendorSignupPageWidget.routePath),
+        NgAuthCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          child: Column(
+            children: [
+              linkRow(l.auNew, l.lpCreateAccount,
+                  () => context.go(VendorSignupPageWidget.routePath)),
+              // A phone already tied to a company keeps its PIN screen one
+              // tap away; any other phone offers the staff door.
+              DeviceOrgBinding.isBound
+                  ? linkRow('', l.lpBackToPin,
+                      () => context.go(PinLoginPageWidget.routePath),
+                      last: true)
+                  : linkRow(l.auStaffQ, l.auStaffJoin, () async {
+                      await DeviceOrgBinding.unbind();
+                      if (!context.mounted) return;
+                      context.go(OrgBindingPageWidget.routePath);
+                    }, last: true),
+            ],
+          ),
         ),
       ],
-    ));
+    );
   }
 
-  /// A mobile-signup application still on this device's session: show
-  /// where it stands, the handoff's "Login A shows status banner".
   String? _signupStatus;
 
   Future<void> _loadSignupStatus() async {
