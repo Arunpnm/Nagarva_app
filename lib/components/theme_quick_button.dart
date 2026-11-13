@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '/components/ng_quick_menu.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/main.dart' show MyApp;
 
 /// Always-visible theme switcher for the app bar.
@@ -49,30 +51,29 @@ class ThemeQuickButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = FlutterFlowTheme.effectiveVariant(context);
+    final c = NgPalette.of(context);
     return PopupMenuButton<String>(
       tooltip: 'Theme',
+      // Compact shared menu (13 Nov 2026) - see NgQuickMenu.
+      color: c.s1,
+      elevation: 6,
+      shape: NgQuickMenu.shape(context),
+      constraints: NgQuickMenu.constraints,
+      position: PopupMenuPosition.under,
+      offset: const Offset(0, 6),
+      menuPadding: const EdgeInsets.symmetric(vertical: 6),
+      popUpAnimationStyle: NgQuickMenu.animation,
       icon: Icon(_iconFor(current),
           color: iconColor ?? IconTheme.of(context).color),
       onSelected: (value) => MyApp.of(context).setThemeVariant(value),
       itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          enabled: false,
-          height: 28,
-          child:
-              Text('THEME', style: TextStyle(fontSize: 11, letterSpacing: 1)),
-        ),
+        NgQuickMenu.header<String>(context, 'Theme'),
         for (final (value, label, icon) in _variants)
-          CheckedPopupMenuItem<String>(
-            value: value,
-            checked: current == value,
-            child: Row(
-              children: [
-                Icon(icon, size: 18),
-                const SizedBox(width: 10),
-                Text(label),
-              ],
-            ),
-          ),
+          NgQuickMenu.item<String>(context,
+              value: value,
+              label: label,
+              icon: icon,
+              selected: current == value),
       ],
     );
   }

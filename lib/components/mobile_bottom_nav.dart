@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 
 import '/l10n/gen/app_localizations.dart';
 import '/nav_items.dart';
@@ -194,26 +195,43 @@ class _NavSlot extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = NgPalette.of(context);
     final color = selected ? c.acc : c.navOff;
+    // 13 Nov 2026 polish: the pill grows in behind the icon and the icon
+    // lifts slightly when its tab becomes current, instead of snapping.
+    const d = Duration(milliseconds: 260);
     Widget pill(int count) => NgCountBadge(
           count: count,
-          child: Container(
-            width: 52,
+          child: AnimatedContainer(
+            duration: d,
+            curve: Curves.easeOutCubic,
+            width: selected ? 56 : 40,
             height: 30,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: selected
                   ? c.accBtn.withValues(alpha: 0.16)
-                  : Colors.transparent,
+                  : c.accBtn.withValues(alpha: 0),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(icon, size: 23, color: color),
+            child: AnimatedScale(
+              duration: d,
+              curve: Curves.easeOutBack,
+              scale: selected ? 1.08 : 1,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: Icon(icon,
+                    key: ValueKey(icon.codePoint), size: 23, color: color),
+              ),
+            ),
           ),
         );
     return SizedBox(
       width: width,
       height: MobileBottomNav.barHeight,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -225,15 +243,15 @@ class _NavSlot extends StatelessWidget {
                     builder: (context, n, _) => pill(n),
                   ),
             const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            AnimatedDefaultTextStyle(
+              duration: d,
               style: NgFonts.geist(
                 fontSize: 11,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 color: color,
               ),
+              child: Text(label,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
           ],
         ),

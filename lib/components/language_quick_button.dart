@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '/components/ng_quick_menu.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/ng_tokens.dart';
 import '/flutter_flow/internationalization.dart';
 import '/main.dart' show MyApp;
 
@@ -78,8 +80,18 @@ class LanguageQuickButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = FlutterFlowTheme.of(context);
     final current = FFLocalizations.of(context).languageCode;
+    final c = NgPalette.of(context);
     return PopupMenuButton<String>(
       tooltip: 'Language',
+      // Compact shared menu (13 Nov 2026) - see NgQuickMenu.
+      color: c.s1,
+      elevation: 6,
+      shape: NgQuickMenu.shape(context),
+      constraints: NgQuickMenu.constraints,
+      position: PopupMenuPosition.under,
+      offset: const Offset(0, 6),
+      menuPadding: const EdgeInsets.symmetric(vertical: 6),
+      popUpAnimationStyle: NgQuickMenu.animation,
       // The handoff's header shows the active language as its short code
       // ("EN", "TA") rather than a globe, so the current choice is
       // readable without opening the menu.
@@ -100,42 +112,15 @@ class LanguageQuickButton extends StatelessWidget {
       ),
       onSelected: (code) => MyApp.of(context).setLocale(code),
       itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          enabled: false,
-          height: 28,
-          child: Text('LANGUAGE',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.1,
-                color: theme.secondaryText,
-              )),
-        ),
+        NgQuickMenu.header<String>(context, 'Language'),
         for (final (code, name) in _languages)
-          PopupMenuItem<String>(
-            value: code,
-            child: Row(
-              children: [
-                Icon(
-                  code == current
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  size: 18,
-                  color: code == current ? theme.primary : theme.secondaryText,
-                ),
-                const SizedBox(width: 10),
-                Text(name,
-                    style: TextStyle(
-                      fontWeight:
-                          code == current ? FontWeight.w700 : FontWeight.w500,
-                      color:
-                          code == current ? theme.primary : theme.primaryText,
-                    )),
-                if (betaLanguages.contains(code))
-                  betaTag(theme.secondaryText),
-              ],
-            ),
-          ),
+          NgQuickMenu.item<String>(context,
+              value: code,
+              label: name,
+              selected: code == current,
+              trailingTag: betaLanguages.contains(code)
+                  ? betaTag(c.mute)
+                  : null),
         if (_untranslated.isNotEmpty)
           PopupMenuItem<String>(
             enabled: false,
