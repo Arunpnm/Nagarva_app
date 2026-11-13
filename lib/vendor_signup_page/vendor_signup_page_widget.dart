@@ -257,8 +257,12 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget>
       setState(() => _step = _Step.otp);
     } on AuthException catch (e) {
       final m = e.message.toLowerCase();
-      _flash(m.contains('provider') || m.contains('disabled') ||
-              m.contains('not enabled') || m.contains('unsupported')
+      // Only "phone sign-in is off" says not-switched-on. A send failure
+      // from the SMS company ("Error sending ... to provider") is a
+      // normal send failure, not a switched-off feature (13 Nov 2026).
+      _flash(m.contains('unsupported phone provider') ||
+              m.contains('phone_provider_disabled') ||
+              m.contains('phone logins are disabled')
           ? _l.suOtpUnavailable
           : _l.suSendFailed);
     } catch (_) {
