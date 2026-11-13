@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '/app_session.dart';
+import 'getting_started_page.dart';
 import 'support_tickets_page.dart';
 
 import '/components/ng_top_bar.dart';
@@ -125,6 +126,24 @@ class HelpAboutPage extends StatelessWidget {
                 title: 'Call support',
                 subtitle: kNagarvaSupportPhone,
                 onTap: () => _open(context, 'tel:$kNagarvaSupportPhone'),
+              ),
+            ]),
+            const SizedBox(height: 22),
+          ],
+
+          // ---- Getting started (13 Nov 2026) ---------------------------
+          // The tester guide inside the app: the main jobs of a normal
+          // day as a checklist. Only for a signed-in company.
+          if (AppSession.instance.currentOrgId != null) ...[
+            _sectionLabel(ng, 'New here?'),
+            _card(ng, [
+              _row(
+                ng,
+                icon: Icons.checklist_rounded,
+                title: 'Getting started',
+                subtitle: 'Try the main jobs, step by step',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const GettingStartedPage())),
               ),
             ]),
             const SizedBox(height: 22),
