@@ -51,6 +51,10 @@ enum _Step { loading, phone, otp, biz, docs, review, status }
 class _VendorSignupPageState extends State<VendorSignupPageWidget>
     with WidgetsBindingObserver {
   _Step _step = _Step.loading;
+
+  /// True while a number handed over from the Log in screen is being
+  /// sent its code; the spinner stays up so the number is not asked twice.
+  bool _autoSending = false;
   bool _busy = false;
 
   final _phone = TextEditingController();
@@ -92,13 +96,22 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget>
         _refreshStatus(quiet: true);
       }
     });
-    _resume();
-    // Number typed on the Log in screen: fill it in and send the code.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final p = LoginMemory.takePendingPhone();
-      if (p == null || !mounted) return;
-      _phone.text = p;
-      if (_step == _Step.phone && !_busy) _sendOtp();
+    // Number typed on the Log in screen: fill it in and send the code,
+    // so the owner is not asked for the same number twice. This has to
+    // wait for _resume(): until it finishes the screen is still on its
+    // loading step, and the first version checked too early, found
+    // "not on the phone step yet" and never sent (Arun, 13 Nov 2026).
+    final pending = LoginMemory.takePendingPhone();
+    _autoSending = pending != null;
+    _resume().whenComplete(() async {
+      if (pending == null || !mounted) return;
+      if (_step == _Step.phone && !_busy) {
+        _phone.text = pending;
+        await _sendOtp();
+      }
+      // Sent: the OTP step shows. Failed: the number stays filled in on
+      // the phone step with the reason, ready to try again.
+      if (mounted) setState(() => _autoSending = false);
     });
   }
 
@@ -509,12 +522,12 @@ class _VendorSignupPageState extends State<VendorSignupPageWidget>
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _back();
       },
-      child: _authStep
+      child: _authStep && !_autoSending
           ? _authScreen(c)
           : Scaffold(
         backgroundColor: c.bg,
         body: SafeArea(
-          child: _step == _Step.loading
+          child: _step == _Step.loading || _autoSending
               ? const Center(child: CircularProgressIndicator())
               : Column(
                   children: [
