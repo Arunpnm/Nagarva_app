@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '/app_session.dart';
+import '/plan_page/plan_page_widget.dart';
 import '/backend/business_modules.dart';
 import '/components/ng_widgets.dart';
 import '/flutter_flow/ng_tokens.dart';
@@ -63,6 +66,75 @@ class _ModulesPageState extends State<ModulesPage> {
     }
   }
 
+  Widget _billingCard(NgPalette c) {
+    final allowed = _m.billingAllowed;
+    final on = _m.billingActive;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.s1,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: on ? c.accBtn.withValues(alpha: 0.5) : c.w08),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 10, 8, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long_rounded,
+                  size: 20, color: on ? c.acc : c.mute),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('Billing only',
+                    style: NgFonts.geist(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: c.text)),
+              ),
+              Switch(
+                value: on,
+                onChanged: _busy || !allowed
+                    ? null
+                    : (v) => _run(
+                        () => _m.setBillingOnly(v),
+                        v
+                            ? 'Billing only is on. The menu now shows billing.'
+                            : 'Billing only is off. The full menu is back.'),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Text(
+                !allowed
+                    ? 'Use the app just for paperwork: quotes, invoices, money '
+                        'receipts, LR and packing lists, with everything else '
+                        'hidden from the menu. This is part of the Growth plan.'
+                    : on
+                    ? 'The menu shows only quotes, orders and their documents '
+                        '(invoice, money receipt, LR, packing list), customers, '
+                        'payments and GST. Nothing is deleted. Turn this off to '
+                        'get leads, staff, jobs, fleet and expenses back.'
+                    : 'Use the app just for paperwork: quotes, invoices, money '
+                        'receipts, LR and packing lists. Leads, staff, field '
+                        'jobs, fleet and expenses are hidden from the menu. '
+                        'Nothing is deleted.',
+                style:
+                    NgFonts.geist(fontSize: 13, height: 1.45, color: c.soft)),
+          ),
+          if (!allowed) ...[
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: () => context.pushNamed(PlanPageWidget.routeName),
+              child: const Text('See plans'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   void _toast(String s) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -86,6 +158,11 @@ class _ModulesPageState extends State<ModulesPage> {
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 children: [
+                  // Billing only (13 Nov 2026): one switch above
+                  // everything else, because it overrides it all.
+                  _billingCard(c),
+                  const SizedBox(height: 18),
+                  if (!_m.billingActive) ...[
                   NgSectionHeader(l.mdType),
                   const SizedBox(height: 8),
                   BusinessTypeChoices(
@@ -118,6 +195,7 @@ class _ModulesPageState extends State<ModulesPage> {
                             l.mdResetDone(
                                 bizTypeLabel(context, _m.effectiveType))),
                   ),
+                  ],
                 ],
               ),
       ),

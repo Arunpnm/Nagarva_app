@@ -78,6 +78,7 @@ class _PlanEditSheetState extends State<PlanEditSheet> {
     'multi_branch': 'Multi-Branch',
     // 10 Nov 2026: read by the survey-ai Edge Function. Pro and Trial.
     'ai_survey': 'AI Photo Survey',
+    'billing_mode': 'Billing only mode',
   };
 
   late final TextEditingController _code;

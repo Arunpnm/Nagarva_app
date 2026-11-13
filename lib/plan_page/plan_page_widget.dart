@@ -870,6 +870,7 @@ class _PlanPageWidgetState extends State<PlanPageWidget>
       'salary': 'Salary & PF',
       'multi_branch': 'Multiple branches',
       'ai_survey': 'AI photo survey',
+      'billing_mode': 'Billing only mode',
     };
     return labels[key] ??
         (key.isEmpty ? key : key[0].toUpperCase() + key.substring(1).replaceAll('_', ' '));

@@ -33,8 +33,27 @@ class BusinessModules extends ChangeNotifier {
   bool loaded = false;
   String? _loadedFor;
 
+  /// Billing only (Arun, 13 Nov 2026: "use this app only for billing ...
+  /// just quote, invoice, LR, money receipt, packing list"). When on, the
+  /// menu shows [kBillingModules] and nothing else, whatever the business
+  /// type and per-module switches say. Like every switch here it only
+  /// hides menu entries: routes, data and the other settings are
+  /// untouched, so turning it off brings everything back as it was.
+  /// One `app_settings` row (category `modules`, key `billing_only`),
+  /// owner-only by the same policy as the overrides.
+  bool billingOnly = false;
+
+  /// Billing only is part of the Growth plan and above (Arun, 13 Nov
+  /// 2026): the plan feature `billing_mode`. A company that turned it on
+  /// and later moved to a plan without it simply gets the full menu
+  /// back; its saved choice is kept for when the plan allows it again.
+  static const billingFeature = 'billing_mode';
+  bool get billingAllowed => AppSession.instance.hasFeature(billingFeature);
+  bool get billingActive => billingOnly && billingAllowed;
+
   static const _category = 'modules';
   static const _key = 'modules_on';
+  static const _billingKey = 'billing_only';
 
   /// The type the menu follows. A company that never chose sees
   /// everything, exactly as before this existed.
@@ -45,6 +64,7 @@ class BusinessModules extends ChangeNotifier {
 
   /// Whether [pageName] belongs in the menu.
   bool isOn(String pageName) {
+    if (billingActive) return kBillingModules.contains(pageName);
     final kind = moduleKind(pageName);
     if (kind == ModuleKind.core) return true;
     final o = overrides[pageName];
@@ -66,11 +86,20 @@ class BusinessModules extends ChangeNotifier {
           .select('business_type')
           .eq('id', orgId)
           .maybeSingle();
-      final row = await OrgScope.read(
-              SupaFlow.client.from('app_settings').select('value'))
+      final rows = await OrgScope.read(
+              SupaFlow.client.from('app_settings').select('key, value'))
           .eq('category', _category)
-          .eq('key', _key)
-          .maybeSingle();
+          .inFilter('key', [_key, _billingKey]);
+      Map<String, dynamic>? row;
+      var billing = false;
+      for (final r in (rows as List)) {
+        if (r['key'] == _key) row = Map<String, dynamic>.from(r as Map);
+        if (r['key'] == _billingKey) {
+          final v = r['value'];
+          billing = v is Map && v['on'] == true;
+        }
+      }
+      billingOnly = billing;
       final t = org?['business_type'] as String?;
       businessType = kBizTypes.contains(t) ? t : null;
       final v = row?['value'];
@@ -109,6 +138,17 @@ class BusinessModules extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setBillingOnly(bool on) async {
+    await SupaFlow.client.from('app_settings').upsert({
+      ...OrgScope.stamp(),
+      'category': _category,
+      'key': _billingKey,
+      'value': {'on': on},
+    }, onConflict: 'org_id,category,key');
+    billingOnly = on;
+    notifyListeners();
+  }
+
   Future<void> resetModules() async {
     await _saveOverrides({});
     notifyListeners();
@@ -127,6 +167,7 @@ class BusinessModules extends ChangeNotifier {
   void clear() {
     businessType = null;
     overrides = {};
+    billingOnly = false;
     loaded = false;
     _loadedFor = null;
     notifyListeners();
@@ -137,6 +178,24 @@ const kBizPackers = 'packers_movers';
 const kBizTransport = 'transport';
 const kBizBoth = 'both';
 const kBizTypes = {kBizPackers, kBizTransport, kBizBoth};
+
+/// The whole menu in Billing only mode: make a quote, turn it into an
+/// order, print its documents (tax invoice, proforma, money receipt,
+/// LR / bilty, packing list ... all on the order), take the payment, and
+/// the registers an accountant asks for. No leads, staff, field jobs,
+/// fleet, trips, expenses or salary.
+const kBillingModules = <String>{
+  'HomePage',
+  'SurveyQuoteHubPage', // quotes
+  'OrdersPage', // every document is printed from an order
+  'CustomersPage',
+  'PaymentsPage',
+  'LrRegisterPage',
+  'EwayBillsPage',
+  'GstPage',
+  'CreditNotesPage',
+  'SettingsPage',
+};
 
 enum ModuleKind { core, packers, transport, advanced }
 
