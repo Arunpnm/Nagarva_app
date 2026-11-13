@@ -18,6 +18,7 @@
 /// and a later stage has evidence, the stage reads as skipped.
 library;
 
+import '/backend/business_modules.dart';
 import '/backend/lead_status.dart';
 import '/backend/order_money.dart';
 import '/backend/order_stages.dart';
@@ -213,6 +214,7 @@ class JourneyData {
   /// evidence that is not skipped; a stage with no evidence BEFORE a stage
   /// that has evidence is skipped (it was passed by, not done).
   Map<JourneyStage, JourneyState> get states {
+    final billingOnly = BusinessModules.instance.billingActive;
     final ev = {for (final s in JourneyStage.values) s: _evidence(s)};
     if (isDirect) {
       ev[JourneyStage.lead] = false;
@@ -236,6 +238,15 @@ class JourneyData {
       } else if (isDirect && s.index <= JourneyStage.survey.index) {
         out[s] = JourneyState.skipped;
       } else if (s.index < lastEvidence.index) {
+        out[s] = JourneyState.skipped;
+      } else if (billingOnly &&
+          hasLiveOrder &&
+          (s == JourneyStage.supervisor || s == JourneyStage.moveDay)) {
+        // Billing only (13 Nov 2026): the company uses the app for its
+        // paperwork and runs no field job here, so a confirmed order goes
+        // straight to Invoice. Found by test: the invoice stayed "Later"
+        // behind a Move day nobody was ever going to run. A stage that
+        // HAS a record still reads done; only the empty ones are passed.
         out[s] = JourneyState.skipped;
       } else if (!currentSet && !isLost) {
         out[s] = JourneyState.current;
