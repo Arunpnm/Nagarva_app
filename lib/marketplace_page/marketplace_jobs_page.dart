@@ -547,7 +547,9 @@ class _MarketplaceJobsPageState extends State<MarketplaceJobsPage> {
           subtitle: [
             if (phone.isNotEmpty && name.isNotEmpty) phone,
             if ((j['pickup_address'] ?? '').toString().isNotEmpty)
-              '${j['pickup_address']}',
+              'From: ${j['pickup_address']}',
+            if ((j['drop_address'] ?? '').toString().isNotEmpty)
+              'To: ${j['drop_address']}',
           ].join('\n'),
           trailing: phone.isEmpty
               ? null
@@ -555,6 +557,23 @@ class _MarketplaceJobsPageState extends State<MarketplaceJobsPage> {
                   icon: Icon(Icons.call_rounded, color: c.green),
                   onPressed: () => launchURL('tel:$phone'),
                 ),
+        ),
+      // What to move (14 Nov 2026): the item list the admin or customer
+      // entered, so the crew and vehicle are planned from it.
+      if (j['items'] is List && (j['items'] as List).isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            [
+              for (final it in (j['items'] as List))
+                if (it is Map)
+                  '${it['name'] ?? it['key'] ?? ''}'
+                  '${(it['variant'] ?? '').toString().isEmpty ? '' : ' (${it['variant']})'}'
+                  ' × ${it['qty'] ?? 1}'
+                  '${it['services'] is List && (it['services'] as List).isNotEmpty ? ' + ${(it['services'] as List).join(', ')}' : ''}',
+            ].join('\n'),
+            style: NgFonts.geist(fontSize: 12.5, color: c.mute, height: 1.4),
+          ),
         ),
     ];
     if (status == 'delivered') {
