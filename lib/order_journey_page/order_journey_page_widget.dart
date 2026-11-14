@@ -1518,6 +1518,34 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
             orderId: d.order!.id!,
             onSaved: _load,
           ),
+        // Credit customers pay later: their invoice can be made now.
+        if (d.order?.id != null &&
+            (d.order?.invoiceNo ?? '').isEmpty &&
+            d.balance > 0 &&
+            StaffPermissions.canActive('orders', 'edit') &&
+            d.current == JourneyStage.payment) ...[
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _invoiceBusy
+                  ? null
+                  : () async {
+                      await InvoiceGenerator(
+                        context,
+                        orderId: d.order!.id!,
+                        signature: d.invoiceSignature,
+                        onBusy: (b) {
+                          if (mounted) setState(() => _invoiceBusy = b);
+                        },
+                      ).generate();
+                      await _load();
+                    },
+              icon: const Icon(Icons.receipt_long_outlined, size: 18),
+              label: const Text('Credit customer? Make invoice now'),
+            ),
+          ),
+        ],
         if (d.order?.id != null && d.payments.isNotEmpty) ...[
           const SizedBox(height: 10),
           PaymentHistorySection(
@@ -1594,12 +1622,26 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
                       CloseBlocker.openTicket => l.jrBlockTicket,
                       CloseBlocker.balanceDue =>
                         l.jrBlockBalance(_money.format(d.balance)),
-                      CloseBlocker.noSignature => l.jrNotSigned,
+                      // The handover signature, not the quote's (Arun's
+                      // test, 13 Nov 2026: a signed quote still showed
+                      // "Customer signature missing" here).
+                      CloseBlocker.noSignature => 'Delivery signature missing',
                       CloseBlocker.noInvoice => l.jrNoInvoice,
                     },
                     style: NgFonts.geist(fontSize: 12.5, color: c.red),
                   ),
                 ),
+                if (b == CloseBlocker.noSignature &&
+                    (d.order?.invoiceNo ?? '').isNotEmpty)
+                  TextButton(
+                    onPressed: () async {
+                      await InvoiceGenerator(context, orderId: d.order!.id!)
+                          .sendForSignature(
+                              customer: d.customer, phone: d.phone);
+                      await _load();
+                    },
+                    child: const Text('Send link'),
+                  ),
               ],
             ),
           ),

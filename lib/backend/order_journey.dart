@@ -38,8 +38,11 @@ enum JourneyStage {
   quote,
   supervisor,
   moveDay,
-  invoice,
+  // Payment before invoice (Arun, 13 Nov 2026: "First cash collection
+  // then invoice"). The invoice is made once the money is in; a credit
+  // customer's invoice can still be made early from the Payment stage.
   payment,
+  invoice,
   closed,
 }
 
@@ -237,7 +240,10 @@ class JourneyData {
         out[s] = JourneyState.done;
       } else if (isDirect && s.index <= JourneyStage.survey.index) {
         out[s] = JourneyState.skipped;
-      } else if (s.index < lastEvidence.index) {
+      } else if (s.index < lastEvidence.index &&
+          !(s == JourneyStage.payment && hasLiveOrder && !isLost)) {
+        // Money still owed is never "skipped": an invoice made early (a
+        // credit customer) must not hide an unpaid balance.
         out[s] = JourneyState.skipped;
       } else if (billingOnly &&
           hasLiveOrder &&
