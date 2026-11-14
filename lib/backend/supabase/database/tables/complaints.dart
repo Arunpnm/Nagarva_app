@@ -42,4 +42,11 @@ class ComplaintsRow extends SupabaseDataRow {
 
   String? get claimId => getField<String>('claim_id');
   set claimId(String? value) => setField<String>('claim_id', value);
+
+  /// Photos the customer attached from their tracking link (14 Nov 2026):
+  /// small JPEG data URLs, at most three.
+  List<String> get photos {
+    final v = data['photos'];
+    return v is List ? v.whereType<String>().toList() : const [];
+  }
 }

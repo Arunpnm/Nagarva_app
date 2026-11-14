@@ -22,6 +22,11 @@ import '/order_detail_page/order_documents_section.dart';
 import '/order_detail_page/order_materials_section.dart';
 import '/order_detail_page/payment_history_section.dart';
 import '/order_detail_page/quick_payment_section.dart';
+import '/backend/tracking_service.dart';
+import '/backend/signature_service.dart' show decodeSignatureImage;
+import '/backend/vendor_identity.dart';
+import '/components/share_link_sheet.dart';
+import '/config/app_config.dart';
 import '/permissions.dart';
 
 import '/backend/edge_function_errors.dart';
@@ -479,6 +484,93 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
     ));
   }
 
+  /// Ready-made WhatsApp messages for each step (list item 30, 14 Nov
+  /// 2026). Each carries the customer's tracking link; the vendor picks
+  /// the step, checks the words and sends from their own WhatsApp. The
+  /// step the journey is on comes first.
+  Future<void> _messageCustomer(JourneyData d) async {
+    final orderId = d.order?.id;
+    if (orderId == null) return;
+    final token = await TrackingService.tokenForOrder(orderId);
+    if (!mounted) return;
+    if (token == null) {
+      _toast('This order has no tracking link yet.');
+      return;
+    }
+    final link = buildTokenLink('/track', token);
+    final vendor = VendorIdentity.forSentence;
+    final hi = d.customer.trim().isEmpty ? 'Hello' : 'Hello ${d.customer.trim()}';
+    final date = d.order == null
+        ? ''
+        : ' for ${DateFormat('d MMM').format(d.order!.moveDate)}';
+    final due = d.balance > 0 ? _money.format(d.balance) : null;
+    final sup = (d.supervisorName ?? '').trim();
+    final templates = <(String, String)>[
+      ('Order confirmed',
+          '$hi, your move$date is confirmed with $vendor. Order $orderId. '
+              'Your arrival code and documents are here:'),
+      ('Supervisor assigned',
+          '$hi, ${sup.isEmpty ? 'our supervisor' : sup} will lead your move$date. '
+              'Please keep your arrival code ready. Details:'),
+      ('On the way',
+          '$hi, our team is on the way with your goods. Track your move here:'),
+      ('Delivered',
+          '$hi, your goods have been delivered. Thank you for choosing $vendor. '
+              'Your documents, and a place to rate us:'),
+      if (due != null)
+        ('Payment reminder',
+            '$hi, a balance of $due is due for your move (order $orderId). '
+                'You can pay by UPI here:'),
+      if ((d.order?.invoiceNo ?? '').isNotEmpty)
+        ('Invoice ready',
+            '$hi, your invoice ${d.order!.invoiceNo} is ready. Download it here:'),
+    ];
+    final first = switch (d.current) {
+      JourneyStage.supervisor => 0,
+      JourneyStage.moveDay => 2,
+      JourneyStage.payment => due != null ? 4 : 3,
+      JourneyStage.invoice || JourneyStage.closed => 3,
+      _ => 0,
+    };
+    final ordered = [
+      if (first < templates.length) templates[first],
+      for (var i = 0; i < templates.length; i++)
+        if (i != first) templates[i],
+    ];
+    final picked = await showModalBottomSheet<(String, String)>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+                child: Text('Which message?',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
+              for (final t in ordered)
+                ListTile(
+                  title: Text(t.$1),
+                  subtitle: Text(t.$2, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  onTap: () => Navigator.pop(ctx, t),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    await ShareLinkSheet.show(
+      context,
+      title: picked.$1,
+      link: link,
+      phone: d.phone,
+      message: picked.$2,
+    );
+  }
+
   // ---- Build -------------------------------------------------------------
 
   @override
@@ -648,6 +740,15 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
       ],
       const SizedBox(height: 12),
       _documents(context, d, states),
+      if (d.order?.id != null) ...[
+        const SizedBox(height: 8),
+        NgSecondaryButton(
+          label: 'Message customer',
+          icon: Icons.chat_rounded,
+          height: 46,
+          onPressed: () => _messageCustomer(d),
+        ),
+      ],
       const SizedBox(height: 12),
       for (final s in JourneyStage.values) ...[
         _stageCard(context, d, s, states[s]!),
@@ -1569,8 +1670,43 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
                       size: 18, color: c.amber),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(t.description ?? '',
-                        style: NgFonts.geist(fontSize: 13, color: c.text)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                            [
+                              if ((t.type ?? '').isNotEmpty) t.type!,
+                              t.description ?? '',
+                            ].join(' · '),
+                            style: NgFonts.geist(fontSize: 13, color: c.text)),
+                        // The customer's photos, from their tracking link.
+                        if (t.photos.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            children: [
+                              for (final p in t.photos)
+                                if (decodeSignatureImage(p) case final bytes?)
+                                  GestureDetector(
+                                    onTap: () => showDialog(
+                                      context: context,
+                                      builder: (_) => Dialog(
+                                        child: InteractiveViewer(
+                                            child: Image.memory(bytes)),
+                                      ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.memory(bytes,
+                                          width: 56, height: 56,
+                                          fit: BoxFit.cover),
+                                    ),
+                                  ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                   TextButton(
                     onPressed: () => _resolveTicket(t),

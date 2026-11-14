@@ -489,3 +489,30 @@ textarea:focus, input:focus, button:focus-visible, .cat-head:focus-visible {
    by the OS, so they need an explicit colour or they render dark-on-dark
    on some Android browsers. */
 #complaint-type option { background: #0F2740; color: #fff; }
+
+/* Language picker (14 Nov 2026): every customer page, top right. */
+.langpick {
+  margin-left: auto; background: transparent; color: var(--text);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 10px; font: inherit; font-size: 12.5px; cursor: pointer;
+}
+.langpick option { background: #0F2740; color: #fff; }
+.brandline, .masthead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+@media print { .langpick { display: none !important; } }
+
+/* Move progress on the tracking page (14 Nov 2026). */
+.steps { display: flex; gap: 4px; margin: 4px 0 18px; }
+.steps .st { flex: 1; text-align: center; font-size: 11px; color: var(--muted); }
+.steps .st .bar { height: 5px; border-radius: 3px; background: var(--line); margin-bottom: 6px; }
+.steps .st.done .bar { background: var(--gold); }
+.steps .st.now { color: var(--text); font-weight: 700; }
+.steps .st.now .bar { background: linear-gradient(90deg, var(--gold), var(--teal)); }
+.paybox { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 0 0 22px; }
+.paybox .row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+.paybox .due { font-weight: 800; font-size: 17px; }
+.paybox .btnrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.paybox .btnrow .btn { flex: 1 1 150px; }
+.paybox input { width: 100%; margin-top: 10px; }
+.cphotos { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.cphotos img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.paybox a.btn { text-decoration: none; display: flex; align-items: center; justify-content: center; text-align: center; }

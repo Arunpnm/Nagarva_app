@@ -100,8 +100,8 @@
       <div id="sent-body"></div>
     </div>
     <div class="sent-actions">
-      <button type="button" class="btn btn-ghost" id="sent-dl">Download a copy</button>
-      <button type="button" class="btn btn-primary" id="sent-edit" hidden>Change my list</button>
+      <button type="button" class="btn btn-ghost" id="sent-dl" data-t="Download a copy">Download a copy</button>
+      <button type="button" class="btn btn-primary" id="sent-edit" hidden data-t="Change my list">Change my list</button>
     </div>
     <p class="lede small" id="sent-note" style="margin-top:10px;text-align:center"></p>
   </div>
@@ -112,10 +112,11 @@
   <div class="masthead">
     <span class="logo" id="vendor">&nbsp;</span>
     <span class="tag">Moving survey</span>
+    <span id="langhost" style="margin-left:auto"></span>
   </div>
 
-  <h1 id="greeting">Tell us what you're moving</h1>
-  <p class="lede">Add the items you're taking with you. Rough counts are fine — this helps your movers send an accurate quote and the right size vehicle.</p>
+  <h1 id="greeting" data-t="Tell us what you're moving">Tell us what you're moving</h1>
+  <p class="lede" data-t="Add the items you're taking with you. Rough counts are fine — this helps your movers send an accurate quote and the right size vehicle.">Add the items you're taking with you. Rough counts are fine — this helps your movers send an accurate quote and the right size vehicle.</p>
 
   <div class="trip">
     <div class="trip-route">
@@ -127,7 +128,7 @@
   </div>
 
   <section id="ai-card" class="ai-card" hidden>
-    <h2>Quicker: take photos of each room</h2>
+    <h2 data-t="Quicker: take photos of each room">Quicker: take photos of each room</h2>
     <p>Pick a room, take or choose up to 4 photos of it, and we'll suggest the items. Don't forget the loft, cupboards, balcony and terrace.</p>
     <p class="ai-note">These are suggestions from your photos. Check the counts below before sending — your moving company will also check the list.</p>
     <div class="ai-rooms" id="ai-rooms"></div>
@@ -141,8 +142,8 @@
     <input type="file" id="ai-cam" accept="image/*" capture="environment" hidden>
     <input type="file" id="ai-file" accept="image/*" multiple hidden>
     <div class="ai-actions">
-      <button type="button" class="btn btn-ghost" id="ai-shoot">Take photo</button>
-      <button type="button" class="btn btn-ghost" id="ai-add">From gallery</button>
+      <button type="button" class="btn btn-ghost" id="ai-shoot" data-t="Take photo">Take photo</button>
+      <button type="button" class="btn btn-ghost" id="ai-add" data-t="From gallery">From gallery</button>
       <button type="button" class="btn btn-primary" id="ai-go" disabled>Find items</button>
     </div>
     <div class="ai-msg" id="ai-msg" hidden></div>
@@ -150,7 +151,7 @@
   <div id="cats"></div>
 
   <div class="field">
-    <label for="notes">Anything else they should know? <span class="hint">(optional)</span></label>
+    <label for="notes"><span data-t="Anything else they should know?">Anything else they should know?</span> <span class="hint">(optional)</span></label>
     <textarea id="notes" rows="3" maxlength="2000" placeholder="Fragile items, narrow staircase, lift not working, preferred timing…"></textarea>
   </div>
 
@@ -173,19 +174,25 @@
   <div class="totalbar-inner">
     <div class="meter">
       <div class="meter-row">
-        <span class="meter-label">Your load</span>
+        <span class="meter-label" data-t="Your load">Your load</span>
         <span class="meter-value"><span id="total-cft">0</span><small>cft</small></span>
       </div>
       <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
     </div>
-    <button id="submit" class="btn btn-primary" disabled>Send list</button>
+    <button id="submit" class="btn btn-primary" disabled data-t="Send list">Send list</button>
   </div>
 </div>
 
 <script src="/config.js"></script>
+<script src="/i18n.js"></script>
 <script>
 (function () {
   "use strict";
+  var I18N = window.NG_I18N || { T: function (s, v) {
+    if (!v) return s; Object.keys(v).forEach(function (k) { s = s.split("{" + k + "}").join(v[k]); }); return s;
+  }, picker: function () {} };
+  var T = I18N.T;
+  I18N.picker(document.getElementById("langhost"));
 
   var CFG = window.NAGARVA_CONFIG || {};
   var token = new URLSearchParams(location.search).get("token") || "";
@@ -532,7 +539,7 @@
     var go = document.getElementById("ai-go");
     go.disabled = aiBusy || aiPhotos.length === 0;
     go.textContent = aiBusy ? "Looking at your photos…"
-      : (aiFound[aiRoom] ? "Check this room again" : "Find items");
+      : T(aiFound[aiRoom] ? "Check this room again" : "Find items");
 
     // What the photos found in THIS room, each one moving or staying.
     var box = document.getElementById("ai-found");
@@ -742,7 +749,7 @@
     err.textContent = message;
     err.hidden = false;
     btn.disabled = false;
-    btn.textContent = "Send list";
+    btn.textContent = T("Send list");
     err.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
@@ -851,29 +858,29 @@
         h += '<div class="sent-row"><span>' + esc(name) + "<small>" + esc(l.cft) + " cft each</small></span><span>× " + esc(l.qty) + "</span></div>";
       });
     });
-    h += '<div class="sent-row" style="font-weight:800;border-bottom:0"><span>Total load</span><span>' + Math.round(total) + " cft</span></div>";
+    h += '<div class="sent-row" style="font-weight:800;border-bottom:0"><span>' + esc(T("Total load")) + '</span><span>' + Math.round(total) + " cft</span></div>";
     var note = (info.notes != null ? info.notes : (document.getElementById("notes").value || "")).trim();
-    if (note) h += '<div class="sent-sec">Your note</div><div class="sent-row" style="display:block;white-space:pre-wrap">' + esc(note) + "</div>";
+    if (note) h += '<div class="sent-sec">' + esc(T("Your note")) + '</div><div class="sent-row" style="display:block;white-space:pre-wrap">' + esc(note) + "</div>";
     var trip = [document.getElementById("from-addr").textContent, document.getElementById("to-addr").textContent]
       .filter(function (x) { return x && x !== "—"; }).join(" → ");
-    if (trip) h = '<div class="sent-row"><span>Move</span><span style="text-align:right">' + esc(trip) + "</span></div>" + h;
+    if (trip) h = '<div class="sent-row"><span>' + esc(T("Move")) + '</span><span style="text-align:right">' + esc(trip) + "</span></div>" + h;
 
     document.getElementById("sent-body").innerHTML = h;
-    document.getElementById("sent-vendor").textContent = VENDOR.name ? "Sent to " + VENDOR.name : "Your moving list";
+    document.getElementById("sent-vendor").textContent = VENDOR.name ? T("Sent to {vendor}", { vendor: VENDOR.name }) : "Your moving list";
     var when = info.submitted_at ? new Date(info.submitted_at) : null;
     document.getElementById("sent-when").textContent = when && !isNaN(when) ?
       when.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }) : "";
     document.getElementById("sent-card").hidden = !lines.length;
 
-    document.getElementById("done-title").textContent = info.updated ? "List updated" : "List received";
-    document.getElementById("done-lede").textContent = info.updated
+    document.getElementById("done-title").textContent = T(info.updated ? "List updated" : "List received");
+    document.getElementById("done-lede").textContent = T(info.updated
       ? "Thanks — your moving company has your changed list."
-      : "Thanks — your moving company has your item list and will get back to you with a quote.";
+      : "Thanks — your moving company has your item list and will get back to you with a quote.");
     var edit = document.getElementById("sent-edit");
     var noteEl = document.getElementById("sent-note");
     edit.hidden = !info.editable;
     noteEl.textContent = info.editable
-      ? "Missed something? You can change the list until your quote is ready."
+      ? T("Missed something? You can change the list until your quote is ready.")
       : "Your quote is being prepared, so the list is locked. To change it, call " +
         (VENDOR.name || "your moving company") + (VENDOR.phone ? " on " + VENDOR.phone : "") + ".";
     show("view-done");
@@ -883,7 +890,7 @@
   document.getElementById("sent-dl").addEventListener("click", function () { window.print(); });
   document.getElementById("sent-edit").addEventListener("click", function () {
     var btn = document.getElementById("submit");
-    btn.textContent = "Send changes";
+    btn.textContent = T("Send changes");
     show("view-form");
     recalc();
     window.scrollTo(0, 0);
@@ -918,12 +925,12 @@
     res.customer_name = (res.customer_name || "").trim();
     if (res.customer_name) {
       document.getElementById("greeting").textContent =
-        "Hi " + res.customer_name + ", what are you moving?";
+        T("Hi {name}, what are you moving?", { name: res.customer_name });
     }
     document.getElementById("from-addr").textContent = res.from_address || "Pickup";
     document.getElementById("to-addr").textContent = res.to_address || "Drop";
     var d = fmtDate(res.move_date);
-    document.getElementById("move-date").textContent = d ? "Planned move: " + d : "";
+    document.getElementById("move-date").textContent = d ? T("Planned move: {date}", { date: d }) : "";
     if (res.special_instructions) {
       document.getElementById("notes").value = res.special_instructions;
     }
