@@ -725,6 +725,12 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       LiveWatch('customer_surveys', 'lead_id', id),
       LiveWatch('quotations', 'lead_id', id),
       LiveWatch('orders', 'lead_id', id),
+      // The customer signs on their own phone (14 Nov 2026, Arun: "even
+      // after customer sign ... only after we came out from that page it
+      // reflects"). A signature row carries no lead id, so this listens
+      // to the company's signatures and the reload sorts out whose it is.
+      if ((OrgScope.currentOrgId ?? '').isNotEmpty)
+        LiveWatch('document_signatures', 'org_id', OrgScope.currentOrgId!),
     ], () {
       if (!mounted) return;
       _loadLinked();
@@ -1789,26 +1795,79 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
               ],
             )
           else if (quotation.status == 'accepted')
+            // 14 Nov 2026 (Arun): "Customer sign coz he agreed then again
+            // y we need follow-up?" An accepted quote is a decision, so
+            // it shows as one: who accepted, when, the order it became,
+            // and a single way back in if the customer asks for changes.
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.check_circle, size: 18, color: ng.green),
-                    const SizedBox(width: 6),
-                    Expanded(
-                        child: Text(
-                            'Quote accepted by ${quotation.acceptedByName ?? 'customer'}')),
-                  ],
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: ng.green.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.verified_rounded, size: 20, color: ng.green),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Accepted by ${_quoteSignature?.customerName ?? quotation.acceptedByName ?? 'customer'}',
+                              style: NgFonts.geist(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: ng.text),
+                            ),
+                            Builder(builder: (_) {
+                              final at = _quoteSignature?.signedAt ??
+                                  quotation.acceptedAt;
+                              final bits = [
+                                if (_quoteSignature?.isSigned ?? false)
+                                  'Signed',
+                                if (at != null)
+                                  DateFormat('d MMM yyyy, h:mm a')
+                                      .format(at.toLocal()),
+                                if (_hasOrder) 'Order booked',
+                              ];
+                              return Text(bits.join(' · '),
+                                  style: NgFonts.geist(
+                                      fontSize: 12, color: ng.mute));
+                            }),
+                          ],
+                        ),
+                      ),
+                      if (_quoteSignature?.signatureBytes != null)
+                        TextButton(
+                          onPressed: () => _showSignature(_quoteSignature!),
+                          child: const Text('Signature'),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 8),
-                if (_actions.canConvertQuote)
-                FilledButton.icon(
-                  onPressed: _convertingQuote ? null : _convertQuoteToOrder,
-                  icon: const Icon(Icons.assignment_turned_in, size: 18),
-                  label: Text(_convertingQuote
-                      ? 'Converting…'
-                      : 'Convert Quote to Order'),
+                if (_actions.canConvertQuote && !_hasOrder)
+                  FilledButton.icon(
+                    onPressed: _convertingQuote ? null : _convertQuoteToOrder,
+                    icon: const Icon(Icons.assignment_turned_in, size: 18),
+                    label: Text(_convertingQuote
+                        ? 'Converting…'
+                        : 'Convert Quote to Order'),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: _reopeningQuote
+                      ? null
+                      : () => _customerWantsChanges(quotation),
+                  icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+                  label: Text(_reopeningQuote
+                      ? 'Opening…'
+                      : 'Customer wants changes'),
                 ),
               ],
             )
@@ -1865,7 +1924,9 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
           // signing it are different things — the customer can read the
           // quote without committing.
           const SizedBox(height: 8),
-          if (_quoteSignature?.isSigned ?? false)
+          if (quotation?.status == 'accepted')
+            const SizedBox.shrink()
+          else if (_quoteSignature?.isSigned ?? false)
             Row(
               children: [
                 Icon(Icons.verified, size: 17, color: ng.blue),
@@ -1900,7 +1961,9 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
             // Was offered with no quote at all, and `quotation!` then
             // crashed on tap. Now only when there is a quote to sign and
             // the lead is still open.
-            else if (quotation != null && _actions.canSendForSignature)
+            else if (quotation != null &&
+                quotation.status != 'accepted' &&
+                (_actions.canSendForSignature || _hasOrder))
             OutlinedButton.icon(
               onPressed: _sendingQuoteSignature
                   ? null
@@ -1917,6 +1980,129 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
     );
   }
 
+  bool _reopeningQuote = false;
+
+  /// "Customer wants changes" (list item 17, 14 Nov 2026). The one way
+  /// back into an accepted quote: says what changed, logs it on the
+  /// quote's follow-up history as a negotiation, takes the acceptance
+  /// off, sets the old signature aside (kept, under the version it
+  /// signed) and opens Revise. The customer then signs the new version,
+  /// and the order takes its figures while no invoice exists.
+  Future<void> _customerWantsChanges(QuotationsRow quotation) async {
+    final picked = <String>{};
+    final note = TextEditingController();
+    const kinds = ['Price', 'Move date', 'Items', 'Services', 'Other'];
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: EdgeInsets.fromLTRB(
+              20, 18, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('What does the customer want to change?',
+                  style: NgFonts.geist(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text(
+                  'The quote opens for revision. The customer signs the new '
+                  'version.',
+                  style: NgFonts.geist(
+                      fontSize: 12.5, color: NgPalette.of(ctx).mute)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final k in kinds)
+                    FilterChip(
+                      label: Text(k),
+                      selected: picked.contains(k),
+                      onSelected: (v) => setS(
+                          () => v ? picked.add(k) : picked.remove(k)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: note,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                    hintText: 'What did the customer say?'),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: picked.isEmpty
+                      ? null
+                      : () => Navigator.pop(ctx, true),
+                  child: const Text('Open quote for changes'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _reopeningQuote = true);
+    try {
+      // An invoiced order is not re-priced through the quote.
+      final invoiced = await OrdersTable().queryRows(
+        queryFn: (q) => OrgScope.read(q)
+            .eq('lead_id', widget.leadId!)
+            .not('invoice_no', 'is', null)
+            .limit(1),
+      );
+      if (invoiced.isNotEmpty && (invoiced.first.invoiceNo ?? '').isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('The invoice is already made. Add the change as '
+                  'an extra charge on the order.')));
+        }
+        return;
+      }
+      final text = note.text.trim();
+      await RemindersService.logFollowUp(
+        entityType: kEntityLead,
+        entityId: widget.leadId!,
+        channel: 'call',
+        outcome: 'negotiation',
+        notes: 'Customer wants changes: ${picked.join(', ')}'
+            '${text.isEmpty ? '' : ' — $text'}',
+      );
+      await QuotationsTable().update(
+        data: {'status': 'draft', 'accepted_at': null, 'accepted_by_name': null},
+        matchingRows: (q) => OrgScope.write(q).eq('id', quotation.id),
+      );
+      // The signed V1 stays on record under its own version; the next
+      // "Send for signature" makes a fresh link for the new version.
+      await SupaFlow.client
+          .from('document_signatures')
+          .update({'document_id': '${quotation.id}#v${quotation.version ?? 1}'})
+          .eq('document_type', 'quote')
+          .eq('document_id', quotation.id);
+      if (!mounted) return;
+      setState(() => _quoteSignature = null);
+      await _loadLinked();
+      if (!mounted) return;
+      final fresh = _quotation ?? quotation;
+      await _reviseQuote(fresh);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not open the quote: ${friendlyError(e)}')));
+      }
+    } finally {
+      if (mounted) setState(() => _reopeningQuote = false);
+    }
+  }
+
   /// Item 3: creates (or reuses) the quote's signature request and opens
   /// the WhatsApp-first share sheet.
   Future<void> _sendQuoteForSignature(QuotationsRow quotation) async {
@@ -1929,6 +2115,17 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
       );
       if (!mounted) return;
       setState(() => _quoteSignature = sig);
+      // The customer's page offers "Download quotation": that is this
+      // vendor's own quote PDF, filed now so it is there when they open
+      // the link (14 Nov 2026). Best effort; the link works without it.
+      unawaited(QuoteDocument.build(
+        quotation,
+        leadId: widget.leadId,
+        fromCity: _lead?.fromCity ?? widget.leadFromCity,
+        toCity: _lead?.toCity ?? widget.leadToCity,
+        fallbackName: _leadCustomer,
+        fallbackPhone: _leadPhone,
+      ).then((_) {}, onError: (_) {}));
       final org = VendorIdentity.forSentence;
       await ShareLinkSheet.show(
         context,
@@ -2267,7 +2464,8 @@ class _LeadDetailPageWidgetState extends State<LeadDetailPageWidget>
                   : const Icon(Icons.visibility_outlined, size: 18),
               label: Text(_downloadingQuotePdf ? 'Opening…' : 'View'),
             ),
-            if (_actions.canReviseQuote) ...[
+            if (quotation.status != 'accepted' &&
+                (_actions.canReviseQuote || _hasOrder)) ...[
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton.icon(

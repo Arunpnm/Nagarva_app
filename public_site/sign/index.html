@@ -28,15 +28,62 @@
     font-size: 34px; font-weight: 800; letter-spacing: .32em; margin: 4px 0 6px;
   }
   .codebox p { font-size: 13px; margin: 0; opacity: .85; line-height: 1.45; }
+  /* 14 Nov 2026 (Arun): the breakup on screen, and a real document on
+     paper. "There is no price breakup" and "the doc is so bad, look
+     wise ... i need proper document style same like Invoice or quote". */
+  .bk-sec { font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+            color: var(--muted); margin: 14px 0 4px; }
+  .bk-row { display: flex; justify-content: space-between; gap: 12px;
+            padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .bk-row small { display: block; color: var(--muted); font-size: 12px; }
+  .bk-row .v { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .bk-note { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; line-height: 1.45; }
+  .bk-total { font-weight: 800; font-size: 16px; border-bottom: 0; }
+  .bk-pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px;
+             background: var(--gold-soft); color: var(--gold); margin-left: 6px; }
+  .btnrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .btnrow .btn { flex: 1 1 140px; }
+
+  /* The printed document. Never shown on screen; it is the page the
+     browser saves as PDF. A4, black on white, letterhead, tables. */
+  #print-doc { display: none; }
+  @page { size: A4; margin: 12mm 12mm 14mm; }
   @media print {
-    #sign-fields, #dl-signed, #dl-note { display: none !important; }
-    .wrap, .wrap * { color: #000 !important; }
-    .codebox { border-color: #999; background: #fff; }
-    .sigbox { border: 1px solid #999; }
+    html, body { background: #fff !important; }
+    body > *:not(#print-doc) { display: none !important; }
+    #print-doc { display: block !important; color: #111; font: 10.5pt/1.4 Inter, Arial, sans-serif; }
+    #print-doc * { color: #111; }
+    .pd-head { display: flex; justify-content: space-between; align-items: flex-start;
+               gap: 16px; border-bottom: 2.5px solid var(--pd-accent, #16324F); padding-bottom: 10px; }
+    .pd-head img { max-height: 54px; max-width: 160px; object-fit: contain; }
+    .pd-co { font-size: 17pt; font-weight: 800; color: var(--pd-accent, #16324F) !important; line-height: 1.1; }
+    .pd-small { font-size: 8.8pt; color: #444 !important; }
+    .pd-title { text-align: right; }
+    .pd-title h1 { font-size: 15pt; margin: 0; letter-spacing: .08em; color: var(--pd-accent, #16324F) !important; }
+    .pd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+    .pd-box { border: 1px solid #cfd6de; border-radius: 6px; padding: 8px 10px; }
+    .pd-box h3 { font-size: 8.5pt; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 4px; color: #555 !important; }
+    .pd-kv { display: flex; justify-content: space-between; gap: 8px; font-size: 9.5pt; }
+    table.pd-t { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 9.5pt; }
+    table.pd-t th { background: #eef2f6; text-align: left; padding: 5px 7px; font-size: 8.5pt;
+                    text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #cfd6de; }
+    table.pd-t td { padding: 5px 7px; border-bottom: 1px solid #e3e8ee; vertical-align: top; }
+    table.pd-t td.r, table.pd-t th.r { text-align: right; white-space: nowrap; }
+    table.pd-t tr.tot td { font-weight: 800; border-top: 1.5px solid #333; border-bottom: 0; font-size: 10.5pt; }
+    .pd-h2 { font-size: 10pt; font-weight: 700; margin: 12px 0 2px; color: var(--pd-accent, #16324F) !important; }
+    .pd-terms { font-size: 8.6pt; margin: 4px 0 0 16px; padding: 0; }
+    .pd-terms li { margin: 0 0 2px; }
+    .pd-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 18px; break-inside: avoid; align-items: end; }
+    .pd-sign .slot { border-top: 1px solid #333; padding-top: 4px; font-size: 9pt; min-height: 20px; }
+    .pd-sign img { max-height: 70px; max-width: 220px; display: block; margin-bottom: 4px; }
+    .pd-stamp { border: 1.5px solid #1a7f37; color: #1a7f37 !important; display: inline-block;
+                padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 9pt; letter-spacing: .06em; }
+    .pd-foot { margin-top: 14px; font-size: 8pt; color: #666 !important; text-align: center; }
   }
 </style>
 </head>
 <body>
+<div id="print-doc"></div>
 
 <div id="view-loading" class="state">
   <div class="spinner"></div>
@@ -95,23 +142,10 @@
       <span id="doc-title">Document</span>
       <span id="doc-no"></span>
     </div>
-    <div class="docrow" id="doc-route-row" hidden>
-      <span>Move</span><span id="doc-route"></span>
+    <div id="doc-body"></div>
+    <div class="btnrow">
+      <button type="button" class="btn btn-ghost" id="save-doc">Download quotation</button>
     </div>
-    <div class="docrow" id="doc-date-row" hidden>
-      <span>Planned move</span><span id="doc-date"></span>
-    </div>
-    <table id="doc-items" hidden></table>
-    <div class="docrow" id="doc-sub-row" hidden>
-      <span>Subtotal</span><span id="doc-sub"></span>
-    </div>
-    <div class="docrow" id="doc-gst-row" hidden>
-      <span id="doc-gst-label">GST</span><span id="doc-gst"></span>
-    </div>
-    <div class="docrow docrow-total" id="doc-total-row" hidden>
-      <span>Total</span><span id="doc-total"></span>
-    </div>
-    <button type="button" class="btn btn-ghost" id="save-doc">Save a copy</button>
   </div>
 
   <div id="sign-fields">
@@ -215,65 +249,261 @@
     row.hidden = false;
   }
 
-  // Renders what the customer is agreeing to. Every field is optional:
-  // the card shows what the server actually returned and hides the rest,
-  // so a signature row that resolves to no document simply does not
-  // render a card rather than rendering an empty one.
+  // ---- the quotation, line by line (14 Nov 2026) --------------------
+  // Same rules as the vendor's own quote PDF (lib/components/quote_pdf.dart):
+  // each charge key is a number or {amount, basis, qty, rate}; packing,
+  // unpacking, loading, unloading and material are "in freight" unless
+  // the vendor billed them separately; discount and advance are not lines.
+  // MUST MATCH kDefaultChargeFields (lib/backend/pricing_defaults.dart).
+  var CHARGE_FIELDS = [
+    ["transport", "Freight / Transport"],
+    ["packing", "Packing", true], ["unpacking", "Unpacking", true],
+    ["loading", "Loading", true], ["unloading", "Unloading", true],
+    ["materials", "Packing material", true],
+    ["storage", "Storage"], ["carTransport", "Car transport"],
+    ["bikeTransport", "Bike transport"],
+    ["acUninstall", "AC uninstall"], ["acInstall", "AC install"],
+    ["tvUninstall", "TV uninstall"], ["tvInstall", "TV install"],
+    ["wardrobe", "Wardrobe dismantle / assemble"],
+    ["carpenter", "Carpenter"], ["electrician", "Electrician"],
+    ["stCharge", "S.T. charge"], ["misc", "Miscellaneous"],
+    ["otherCharges", "Other charges"]
+  ];
+  var BASIS_UNIT = { per_cft: "CFT", per_floor: "floor(s)", per_trip: "trip(s)", per_km: "km" };
+
+  function chargeAmt(c, k) {
+    var v = c ? c[k] : null;
+    if (v && typeof v === "object") v = v.amount;
+    var n = Number(v);
+    return isFinite(n) ? n : 0;
+  }
+  function chargeBasis(c, k) {
+    var v = c ? c[k] : null;
+    if (!v || typeof v !== "object") return "";
+    var b = v.basis || "lumpsum";
+    if (BASIS_UNIT[b]) return v.qty + " " + BASIS_UNIT[b] + " × " + money(v.rate);
+    if (b === "percent_of_declared_value") return money(v.declaredValue) + " × " + v.rate + "%";
+    if (b === "at_actuals") return "At actuals";
+    return "";
+  }
+
+  function breakup(res) {
+    var c = res.charges || {};
+    var mode = (c._billingMode && typeof c._billingMode === "object") ? c._billingMode : {};
+    var lines = [], included = [];
+    CHARGE_FIELDS.forEach(function (f) {
+      var amt = chargeAmt(c, f[0]);
+      var inFreight = f[2] && (mode[f[0]] || "included") === "included";
+      if (inFreight && amt === 0) { included.push(f[1]); return; }
+      if (amt !== 0) lines.push({ label: f[1], amount: amt, basis: chargeBasis(c, f[0]) });
+    });
+    return {
+      lines: lines, included: included,
+      discount: chargeAmt(c, "discount"),
+      advance: chargeAmt(c, "advanceOnQuote")
+    };
+  }
+
+  function floorText(fl, lift) {
+    if (fl === null || fl === undefined || fl === "") return "";
+    var n = Number(fl);
+    var f = n === 0 ? "Ground floor" : ("Floor " + n);
+    if (lift === true) f += ", lift";
+    else if (lift === false && n > 0) f += ", no lift";
+    return f;
+  }
+
+  function itemLabel(it) {
+    var name = String(it.item || it.name || it.description || "").trim();
+    var sub = String(it.sub || "").trim();
+    return sub && sub !== name ? name + " — " + sub : name;
+  }
+
+  function row(label, value, sub, cls) {
+    return '<div class="bk-row' + (cls ? " " + cls : "") + '"><span>' + esc(label) +
+      (sub ? "<small>" + esc(sub) + "</small>" : "") +
+      '</span><span class="v">' + esc(value) + "</span></div>";
+  }
+
+  // On screen: what the customer is agreeing to, in full.
   function renderDocument(type, docNo, res) {
     var card = document.getElementById("doc-card");
     if (!card) return;
-
     var total = res.total;
-    var hasAnything =
-      docNo || (total !== null && total !== undefined && total !== "");
-    if (!hasAnything) { card.hidden = true; return; }
-
+    if (!docNo && (total === null || total === undefined || total === "")) {
+      card.hidden = true; return;
+    }
     document.getElementById("doc-title").textContent =
-      type.charAt(0).toUpperCase() + type.slice(1);
-    document.getElementById("doc-no").textContent = docNo || "";
+      res.document_type === "quote" ? "Quotation" : type.charAt(0).toUpperCase() + type.slice(1);
+    document.getElementById("doc-no").textContent =
+      (docNo || "") + (res.version > 1 ? "  ·  V" + res.version : "");
 
-    var from = (res.from_city || "").trim();
-    var to = (res.to_city || "").trim();
-    setRow("doc-route-row", "doc-route",
-      (from && to) ? (from + " \u2192 " + to) : "");
+    var h = "";
+    var from = (res.from_city || "").trim(), to = (res.to_city || "").trim();
+    h += '<div class="bk-sec">Your move</div>';
+    if (from || to) h += row("Route", (from || "—") + " → " + (to || "—"));
+    if (res.from_address) h += row("Pickup", "", res.from_address + (floorText(res.from_floor, res.from_has_lift) ? " · " + floorText(res.from_floor, res.from_has_lift) : ""));
+    if (res.to_address) h += row("Drop", "", res.to_address + (floorText(res.to_floor, res.to_has_lift) ? " · " + floorText(res.to_floor, res.to_has_lift) : ""));
+    if (res.packing_date) h += row("Packing", fmtDate(res.packing_date));
+    if (res.move_date) h += row("Moving", fmtDate(res.move_date));
+    if (res.delivery_date) h += row("Delivery", fmtDate(res.delivery_date));
+    var svc = [res.package, res.vehicle, res.crew ? res.crew + " crew" : ""].filter(Boolean).join(" · ");
+    if (svc) h += row("Service", svc);
 
-    setRow("doc-date-row", "doc-date", fmtDate(res.move_date));
-
-    // Line items, when the document has them.
-    var items = Array.isArray(res.items) ? res.items : [];
-    var table = document.getElementById("doc-items");
+    var items = Array.isArray(res.items) ? res.items.filter(function (it) { return it && typeof it === "object" && itemLabel(it); }) : [];
     if (items.length) {
-      var html = "";
+      var cft = Number(res.total_cft) || items.reduce(function (s, it) { return s + (Number(it.totalCftItem) || (Number(it.cft) || 0) * (Number(it.qty) || 1)); }, 0);
+      h += '<div class="bk-sec">Items' + (cft ? ' <span class="bk-pill">' + Math.round(cft) + " CFT</span>" : "") + "</div>";
       items.forEach(function (it) {
-        if (!it || typeof it !== "object") return;
-        var label = esc(String(it.name || it.description || it.item || ""));
-        if (!label) return;
-        var qty = it.qty || it.quantity;
-        if (qty) label += " \u00D7 " + esc(String(qty));
-        var amt = money(it.amount != null ? it.amount : it.total);
-        html += "<tr><td>" + label + "</td><td>" + esc(amt) + "</td></tr>";
+        h += row(itemLabel(it), "× " + (it.qty || it.quantity || 1), it.cat || "");
       });
-      table.innerHTML = html;
-      table.hidden = !html;
+    }
+
+    if (res.charges && typeof res.charges === "object" && Object.keys(res.charges).length) {
+      var b = breakup(res);
+      h += '<div class="bk-sec">Price breakup</div>';
+      b.lines.forEach(function (l) { h += row(l.label, money(l.amount), l.basis); });
+      if (b.discount) h += row("Discount", "− " + money(Math.abs(b.discount)));
+      if (b.included.length) {
+        h += '<p class="bk-note">Included in freight: ' + esc(b.included.join(", ")) + ".</p>";
+      }
+      h += row("Subtotal", money(res.subtotal));
+      if (Number(res.gst_amount) > 0) {
+        if (res.interstate === true) {
+          h += row("IGST (" + res.gst_pct + "%)", money(res.gst_amount));
+        } else {
+          var half = Number(res.gst_amount) / 2;
+          h += row("CGST (" + (res.gst_pct / 2) + "%)", money(half));
+          h += row("SGST (" + (res.gst_pct / 2) + "%)", money(half));
+        }
+      }
+      h += row("Total", money(total), "", "bk-total");
+      if (b.advance > 0) {
+        h += row("Advance to confirm", money(b.advance));
+        h += row("Balance on moving day", money(Number(total) - b.advance));
+      }
     } else {
-      table.hidden = true;
+      if (res.subtotal != null) h += row("Subtotal", money(res.subtotal));
+      if (Number(res.gst_amount) > 0) h += row("GST (" + res.gst_pct + "%)", money(res.gst_amount));
+      h += row("Total", money(total), "", "bk-total");
+    }
+    if (res.valid_until) h += '<p class="bk-note">Valid until ' + esc(fmtDate(res.valid_until)) + ".</p>";
+    var terms = Array.isArray(res.terms) ? res.terms : [];
+    if (terms.length) {
+      h += '<details style="margin-top:12px"><summary class="bk-sec" style="cursor:pointer">Terms &amp; conditions</summary><ol class="bk-note" style="padding-left:18px">';
+      terms.forEach(function (t) { h += "<li>" + esc(t) + "</li>"; });
+      h += "</ol></details>";
     }
 
-    setRow("doc-sub-row", "doc-sub", money(res.subtotal));
-    var gstLabel = document.getElementById("doc-gst-label");
-    if (gstLabel && res.gst_pct) {
-      gstLabel.textContent = "GST (" + res.gst_pct + "%)";
-    }
-    setRow("doc-gst-row", "doc-gst", money(res.gst_amount));
-    setRow("doc-total-row", "doc-total", money(total));
-
+    document.getElementById("doc-body").innerHTML = h;
     card.hidden = false;
+    buildPrint(res);
 
     var save = document.getElementById("save-doc");
     if (save && !save.dataset.bound) {
       save.dataset.bound = "1";
-      save.addEventListener("click", function () { window.print(); });
+      save.textContent = res.document_type === "quote" ? "Download quotation" : "Save a copy";
+      save.addEventListener("click", function () {
+        if (res.quote_pdf_url && !res.signed) window.open(res.quote_pdf_url, "_blank");
+        else window.print();
+      });
     }
+  }
+
+  // On paper: the same quotation as a proper A4 document, letterhead on
+  // top, signature at the bottom where a signed document carries it.
+  function buildPrint(res) {
+    var host = document.getElementById("print-doc");
+    if (!host) return;
+    var v = res.vendor || { name: res.vendor_name, phones: res.vendor_phone ? [res.vendor_phone] : [] };
+    var isQuote = res.document_type === "quote";
+    if (v.color && /^#?[0-9a-f]{6}$/i.test(v.color)) {
+      host.style.setProperty("--pd-accent", v.color.charAt(0) === "#" ? v.color : "#" + v.color);
+    }
+    var addr = [v.address, [v.city, v.state].filter(Boolean).join(", "), v.pincode].filter(Boolean).join(", ");
+    var contact = [(v.phones || []).join(" / "), v.email, v.website].filter(Boolean).join("  ·  ");
+    var h = '<div class="pd-head"><div>';
+    if (v.logo_url) h += '<img src="' + esc(v.logo_url) + '" alt=""><br>';
+    h += '<div class="pd-co">' + esc(v.name || "") + "</div>";
+    if (v.tagline) h += '<div class="pd-small">' + esc(v.tagline) + "</div>";
+    if (addr) h += '<div class="pd-small">' + esc(addr) + "</div>";
+    if (contact) h += '<div class="pd-small">' + esc(contact) + "</div>";
+    if (v.gstin) h += '<div class="pd-small"><b>GSTIN:</b> ' + esc(v.gstin) + "</div>";
+    h += '</div><div class="pd-title"><h1>' + (isQuote ? "QUOTATION" : esc(String(res.document_type || "DOCUMENT").toUpperCase())) + "</h1>";
+    h += '<div class="pd-small"><b>No.</b> ' + esc(res.document_no || "") + (res.version > 1 ? "  (V" + res.version + ")" : "") + "</div>";
+    if (res.quote_date) h += '<div class="pd-small"><b>Date</b> ' + esc(fmtDate(res.quote_date)) + "</div>";
+    if (res.valid_until) h += '<div class="pd-small"><b>Valid until</b> ' + esc(fmtDate(res.valid_until)) + "</div>";
+    if (res.signed) h += '<div style="margin-top:6px"><span class="pd-stamp">ACCEPTED</span></div>';
+    h += "</div></div>";
+
+    function kv(k, val) { return val ? '<div class="pd-kv"><span>' + esc(k) + "</span><b>" + esc(val) + "</b></div>" : ""; }
+    h += '<div class="pd-grid">';
+    h += '<div class="pd-box"><h3>Customer</h3>' + kv("Name", res.customer || res.customer_name) + kv("Phone", res.customer_phone) + "</div>";
+    h += '<div class="pd-box"><h3>Move</h3>' + kv("Route", [res.from_city, res.to_city].filter(Boolean).join(" → ")) +
+         kv("Packing", fmtDate(res.packing_date)) + kv("Moving", fmtDate(res.move_date)) + kv("Delivery", fmtDate(res.delivery_date)) +
+         kv("Service", [res.package, res.vehicle, res.crew ? res.crew + " crew" : ""].filter(Boolean).join(" · ")) + "</div>";
+    h += '<div class="pd-box"><h3>Pickup</h3><div class="pd-small">' + esc(res.from_address || res.from_city || "—") + "</div>" +
+         kv("Floor", floorText(res.from_floor, res.from_has_lift)) + "</div>";
+    h += '<div class="pd-box"><h3>Drop</h3><div class="pd-small">' + esc(res.to_address || res.to_city || "—") + "</div>" +
+         kv("Floor", floorText(res.to_floor, res.to_has_lift)) + "</div>";
+    h += "</div>";
+
+    var b = breakup(res);
+    h += '<div class="pd-h2">Charges</div><table class="pd-t"><tr><th>#</th><th>Description</th><th>Basis</th><th class="r">Amount</th></tr>';
+    b.lines.forEach(function (l, i) {
+      h += "<tr><td>" + (i + 1) + "</td><td>" + esc(l.label) + "</td><td>" + esc(l.basis || "Lumpsum") + '</td><td class="r">' + esc(money(l.amount)) + "</td></tr>";
+    });
+    if (b.discount) h += '<tr><td></td><td>Discount</td><td></td><td class="r">− ' + esc(money(Math.abs(b.discount))) + "</td></tr>";
+    h += '<tr><td></td><td colspan="2"><b>Subtotal</b></td><td class="r"><b>' + esc(money(res.subtotal)) + "</b></td></tr>";
+    if (Number(res.gst_amount) > 0) {
+      if (res.interstate === true) {
+        h += '<tr><td></td><td colspan="2">IGST @ ' + res.gst_pct + '%</td><td class="r">' + esc(money(res.gst_amount)) + "</td></tr>";
+      } else {
+        var half = Number(res.gst_amount) / 2;
+        h += '<tr><td></td><td colspan="2">CGST @ ' + (res.gst_pct / 2) + '%</td><td class="r">' + esc(money(half)) + "</td></tr>";
+        h += '<tr><td></td><td colspan="2">SGST @ ' + (res.gst_pct / 2) + '%</td><td class="r">' + esc(money(half)) + "</td></tr>";
+      }
+    }
+    h += '<tr class="tot"><td></td><td colspan="2">Total</td><td class="r">' + esc(money(res.total)) + "</td></tr>";
+    if (b.advance > 0) {
+      h += '<tr><td></td><td colspan="2">Advance to confirm</td><td class="r">' + esc(money(b.advance)) + "</td></tr>";
+      h += '<tr><td></td><td colspan="2">Balance on moving day</td><td class="r">' + esc(money(Number(res.total) - b.advance)) + "</td></tr>";
+    }
+    h += "</table>";
+    if (b.included.length) h += '<div class="pd-small">Included in freight: ' + esc(b.included.join(", ")) + ".</div>";
+
+    var items = Array.isArray(res.items) ? res.items.filter(function (it) { return it && typeof it === "object" && itemLabel(it); }) : [];
+    if (items.length) {
+      h += '<div class="pd-h2">Items to move' + (res.total_cft ? " (" + Math.round(res.total_cft) + " CFT)" : "") + '</div><table class="pd-t"><tr><th>#</th><th>Room</th><th>Item</th><th class="r">Qty</th><th class="r">CFT</th></tr>';
+      items.forEach(function (it, i) {
+        var cft = Number(it.totalCftItem) || (Number(it.cft) || 0) * (Number(it.qty) || 1);
+        h += "<tr><td>" + (i + 1) + "</td><td>" + esc(it.cat || "") + "</td><td>" + esc(itemLabel(it)) + '</td><td class="r">' + esc(it.qty || 1) + '</td><td class="r">' + (cft ? Math.round(cft) : "") + "</td></tr>";
+      });
+      h += "</table>";
+    }
+
+    var terms = Array.isArray(res.terms) ? res.terms : [];
+    if (terms.length) {
+      h += '<div class="pd-h2">Terms &amp; conditions</div><ol class="pd-terms">';
+      terms.forEach(function (t) { h += "<li>" + esc(t) + "</li>"; });
+      h += "</ol>";
+    }
+
+    // Signatures last, as on any signed document.
+    var sig = res.signature_data || "";
+    if (sig && sig.indexOf("data:") !== 0) sig = "data:image/png;base64," + sig;
+    h += '<div class="pd-sign"><div>';
+    if (res.signed && sig) h += '<img src="' + esc(sig) + '" alt="">';
+    h += '<div class="slot"><b>Customer</b>' +
+         (res.signed ? "<br>" + esc(res.signed_by || res.customer_name || "") + "<br>Signed on " + esc(fmtDateTime(res.signed_at)) : "<br>Name, signature and date") +
+         "</div></div>";
+    h += '<div><div class="slot"><b>For ' + esc(v.name || "") + "</b><br>Authorised signatory</div></div></div>";
+    if (res.signed && res.order_id) {
+      h += '<div class="pd-small" style="margin-top:8px"><b>Order ID:</b> ' + esc(res.order_id) + "</div>";
+    }
+    h += '<div class="pd-foot">' + (res.signed ? "Signed electronically on " + esc(fmtDateTime(res.signed_at)) + ". " : "") +
+         "This is a computer-generated document.</div>";
+    host.innerHTML = h;
   }
 
   function fmtDateTime(d) {
@@ -328,7 +558,7 @@
     dl.textContent = "Download signed " + (isQuote ? "quotation" : type);
     dl.onclick = function () {
       if (res.signed_pdf_url) { window.open(res.signed_pdf_url, "_blank"); }
-      else { window.print(); }
+      else { buildPrint(res); window.print(); }
     };
     note.textContent = res.signed_pdf_url ? "" :
       "Choose \u201CSave as PDF\u201D to keep a copy on your phone.";
@@ -537,7 +767,7 @@
     // see on the invoice itself.
     var docNo = (res.document_no || "").trim();
     document.getElementById("doc-lede").textContent =
-      "You're signing " + type + (docNo ? " " + docNo : "") +
+      "You're signing " + (res.document_type === "quote" ? "quotation" : type) + (docNo ? " " + docNo : "") +
       ". Check the details below, then draw your signature.";
 
     renderDocument(type, docNo, res);

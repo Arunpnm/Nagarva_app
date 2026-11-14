@@ -1087,10 +1087,16 @@ class _OrderJourneyPageWidgetState extends State<OrderJourneyPageWidget>
         // Follow-up happens INSIDE each of these stages, with its own call
         // history and a fresh entry form, until there is an order or the
         // lead is cancelled. Logging a call never moves the journey.
+        // 14 Nov 2026 (Arun): no follow-up once the customer has accepted
+        // (signed) - it comes back only when "Customer wants changes"
+        // reopens the quote, even if the order already exists.
+        final quoteAccepted =
+            d.quotes.isNotEmpty && d.quotes.first.status == 'accepted';
+        final reopened = d.hasLiveOrder && d.quotes.isNotEmpty && !quoteAccepted;
         final open = d.lead != null &&
-            !d.hasLiveOrder &&
+            (!d.hasLiveOrder || reopened) &&
             canonicalLeadStatus(d.lead!.status) != kLeadStatusLost;
-        if (!open) return panel;
+        if (!open || (quoteAccepted && s != JourneyStage.lead)) return panel;
         if (s == JourneyStage.lead) {
           // The form's own "Open survey & quote" button reveals the panel.
           return _followUpCard(context, d, s);
