@@ -1981,8 +1981,15 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
 
   Widget _chargesCard(NgPalette ng) {
     final billable = kDefaultChargeFields.where((f) => f.billable).toList();
+    // Freight has its own line at the top; counting it here made "Add-on
+    // services" read "1 added · ₹3000" on a quote with no add-on at all
+    // (Arun's screenshot, 13 Nov 2026).
     final other = kDefaultChargeFields
-        .where((f) => !f.billable && f.key != 'discount' && f.key != 'advanceOnQuote')
+        .where((f) =>
+            !f.billable &&
+            f.key != 'transport' &&
+            f.key != 'discount' &&
+            f.key != 'advanceOnQuote')
         .toList();
     return _card(
       ng,
@@ -1990,15 +1997,13 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Freight / Transport',
-              style: NgFonts.geist(fontSize: 13, color: ng.text)),
-          const SizedBox(height: 6),
-          _basisRow(ng, 'transport'),
-          const SizedBox(height: 10),
-          _amountField(ng, 'advanceOnQuote', 'Advance requested'),
-          const SizedBox(height: 10),
-          _amountField(ng, 'discount', 'Discount'),
-          const SizedBox(height: 8),
+          // 14 Nov 2026 (Arun): "the price where we input it's little
+          // confusing". Every charge is now one line: its name, how it is
+          // priced underneath (tap to change), and one ₹ box on the right.
+          _chargeLine(ng, 'transport', 'Freight / Transport', basisAware: true),
+          _chargeLine(ng, 'discount', 'Discount'),
+          _chargeLine(ng, 'advanceOnQuote', 'Advance requested',
+              caption: 'Asked from the customer to confirm'),
           // 13 Nov 2026, Arun's report 2.1: the charges ran as one long
           // list of twenty boxes. Freight, advance and discount (used on
           // every quote) stay open above; the rest fold away, and a group
@@ -2014,14 +2019,14 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             forceOpen: _separatelyBilledCount > 0,
             children: [
               Text(
-                'Each line is bundled into the freight price unless you '
-                'switch it to "Bill separately", which opens its own price '
-                'field.',
+                'Included in freight unless you tap "Price separately".',
                 style: NgFonts.geist(
                     fontSize: 11.5, color: ng.mute, height: 1.35),
               ),
-              const SizedBox(height: 10),
-              for (final f in billable) _billableRow(ng, f),
+              const SizedBox(height: 8),
+              for (final f in billable)
+                _chargeLine(ng, f.key, f.label,
+                    billable: true, basisAware: true),
               if (_separatelyBilledCount > 0)
                 Text(
                   '$_separatelyBilledCount of ${billable.length} billed '
@@ -2047,10 +2052,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             children: [
               for (final f
                   in other.where((f) => !_kOtherChargeKeys.contains(f.key)))
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _amountField(ng, f.key, f.label),
-                ),
+                _chargeLine(ng, f.key, f.label),
             ],
           ),
           _chargeGroup(
@@ -2061,10 +2063,7 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
             children: [
               for (final f
                   in other.where((f) => _kOtherChargeKeys.contains(f.key)))
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _amountField(ng, f.key, f.label),
-                ),
+                _chargeLine(ng, f.key, f.label),
             ],
           ),
         ],
@@ -2182,103 +2181,131 @@ class _SurveyQuotePageWidgetState extends State<SurveyQuotePageWidget> {
       .where((e) => e.value == 'additional' && _chargeAmount(e.key) <= 0)
       .length;
 
-  Widget _billableRow(NgPalette ng, ChargeField f) {
-    final included = (_billingMode[f.key] ?? 'included') == 'included';
+  /// One charge, one line (14 Nov 2026). Name on the left with how it is
+  /// priced underneath; a single ₹ box on the right. A packing / labour
+  /// line starts "Included in freight" with a "Price separately" button;
+  /// pricing it by CFT, floor, trip, km or declared value opens those
+  /// fields under the line. Nothing is ever pre-filled.
+  Widget _chargeLine(NgPalette ng, String key, String label,
+      {bool billable = false, bool basisAware = false, String? caption}) {
+    final inFreight =
+        billable && (_billingMode[key] ?? 'included') == 'included';
+    final basis = basisAware ? (_basis[key] ?? 'lumpsum') : 'lumpsum';
+    final simple = basis == 'lumpsum' || basis == 'at_actuals';
+    final sub = inFreight
+        ? 'Included in freight'
+        : basisAware
+            ? '${kChargeBasisLabels[basis] ?? 'Lumpsum'}  ▾'
+            : (caption ?? '');
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(f.label,
-                        style: NgFonts.geist(
-                            fontSize: 14, color: ng.text)),
-                    // The figure, on the row, once there is one. Without
-                    // it a priced line looks exactly like an unpriced one
-                    // until you scroll into its expanded fields.
-                    if (!included)
-                      Text(
-                        _chargeAmountLabel(f.key),
-                        style: NgFonts.geist(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: _chargeAmount(f.key) > 0
-                              ? ng.acc
-                              : ng.amber,
-                        ),
-                      ),
-                  ],
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: basisAware && !inFreight
+                      ? () => _pickBasis(key, label)
+                      : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(label,
+                            style: NgFonts.geist(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: ng.text)),
+                        if (sub.isNotEmpty)
+                          Text(sub,
+                              style: NgFonts.geist(
+                                  fontSize: 11.5,
+                                  color: basisAware && !inFreight
+                                      ? ng.acc
+                                      : ng.mute)),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              Expanded(
-                flex: 3,
-                // "Bill separately" names the action, and the action is
-                // what opens the price box.
-                child: NgSegmented(
-                  labels: const ['In freight', 'Separately'],
-                  selected: included ? 0 : 1,
-                  onSelect: (i) => setState(() =>
-                      _billingMode[f.key] = i == 0 ? 'included' : 'additional'),
+              if (inFreight)
+                TextButton(
+                  onPressed: () =>
+                      setState(() => _billingMode[key] = 'additional'),
+                  child: const Text('Price separately'),
+                )
+              else if (simple)
+                SizedBox(
+                  width: 128,
+                  child: TextField(
+                    controller: _amountCtrl[key],
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.right,
+                    decoration: const InputDecoration(
+                        prefixText: '₹ ', hintText: '0', isDense: true),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                )
+              else
+                Text(_chargeAmountLabel(key),
+                    style: NgFonts.mono(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ng.text)),
+              if (billable && !inFreight)
+                IconButton(
+                  tooltip: 'Back to included in freight',
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(Icons.close_rounded, size: 18, color: ng.mute),
+                  onPressed: () => setState(() {
+                    _billingMode[key] = 'included';
+                    _amountCtrl[key]?.clear();
+                  }),
                 ),
-              ),
             ],
           ),
-          // Basis + amount only matter once this line is actually charged
-          // separately — a line bundled into freight has nothing to price
-          // on its own (Part 8 Rev B item 4).
-          if (!included) ...[
+          if (!inFreight && !simple) ...[
             const SizedBox(height: 6),
-            _basisRow(ng, f.key),
+            _basisValueFields(ng, key, basis),
           ],
         ],
       ),
     );
   }
 
-  /// Basis dropdown + whatever value fields that basis needs (Part 8 Rev
-  /// B item 4). Shared between the 5 billable rows above and the
-  /// transport row below — transport has no included/additional toggle
-  /// (it's never bundled into itself) but still gets a basis.
-  Widget _basisRow(NgPalette ng, String key) {
-    final basis = _basis[key] ?? 'lumpsum';
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          flex: 2,
-          // isExpanded (12 Nov 2026): without it the dropdown sizes to its
-          // longest label, which is wider than this column on a phone, and
-          // Flutter painted an "OVERFLOWED BY .. PIXELS" stripe over it.
-          child: DropdownButtonFormField<String>(
-            initialValue: basis,
-            isDense: true,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Basis', isDense: true),
-            items: [
-              for (final b in kChargeBasisOptions)
-                DropdownMenuItem(
-                  value: b,
-                  child: Text(kChargeBasisLabels[b]!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12)),
-                ),
-            ],
-            onChanged: (v) => setState(() => _basis[key] = v ?? 'lumpsum'),
-          ),
+  Future<void> _pickBasis(String key, String label) async {
+    final ng = NgPalette.of(context);
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+              child: Text('How is $label priced?',
+                  style: NgFonts.geist(
+                      fontSize: 15.5, fontWeight: FontWeight.w600)),
+            ),
+            for (final b in kChargeBasisOptions)
+              ListTile(
+                title: Text(kChargeBasisLabels[b]!),
+                trailing: (_basis[key] ?? 'lumpsum') == b
+                    ? Icon(Icons.check_rounded, color: ng.acc)
+                    : null,
+                onTap: () => Navigator.pop(ctx, b),
+              ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(flex: 3, child: _basisValueFields(ng, key, basis)),
-      ],
+      ),
     );
+    if (picked != null) setState(() => _basis[key] = picked);
   }
 
   Widget _basisValueFields(NgPalette ng, String key, String basis) {

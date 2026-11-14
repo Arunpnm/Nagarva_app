@@ -41,12 +41,13 @@
 
   <div class="brandline">
     <span class="logo" id="vendor">&nbsp;</span>
-    <span class="tag">YOUR MOVE</span>
+    <span class="tag" data-t="YOUR MOVE">YOUR MOVE</span>
+    <span id="langhost" style="margin-left:auto"></span>
   </div>
 
   <!-- Loading -->
   <section id="view-loading">
-    <p class="lede">Loading your move…</p>
+    <p class="lede" data-t="Loading your move…">Loading your move…</p>
   </section>
 
   <!-- Dead or expired link -->
@@ -61,57 +62,82 @@
     <h1 id="headline">Your move</h1>
     <p class="lede" id="subline"></p>
 
+    <!-- Where the move is (14 Nov 2026, list item 28). -->
+    <div class="steps" id="steps" hidden></div>
+
     <div class="doccard">
       <div class="docrow docrow-head">
         <span id="m-ref-label">Booking</span><span id="m-ref"></span>
       </div>
       <div class="docrow" id="m-route-row" hidden>
-        <span>Route</span><span id="m-route"></span>
+        <span data-t="Route">Route</span><span id="m-route"></span>
       </div>
       <div class="docrow" id="m-date-row" hidden>
-        <span>Planned move</span><span id="m-date"></span>
+        <span data-t="Planned move">Planned move</span><span id="m-date"></span>
       </div>
       <div class="docrow" id="m-status-row" hidden>
-        <span>Status</span><span id="m-status"></span>
+        <span data-t="Status">Status</span><span id="m-status"></span>
       </div>
       <div class="docrow" id="m-vehicle-row" hidden>
-        <span>Vehicle</span><span id="m-vehicle"></span>
+        <span data-t="Vehicle">Vehicle</span><span id="m-vehicle"></span>
       </div>
       <div class="docrow" id="m-driver-row" hidden>
-        <span>Driver</span><span id="m-driver"></span>
+        <span data-t="Driver">Driver</span><span id="m-driver"></span>
+      </div>
+      <div class="docrow" id="m-sup-row" hidden>
+        <span data-t="Supervisor">Supervisor</span><span id="m-sup"></span>
+      </div>
+      <div class="docrow" id="m-crew-row" hidden>
+        <span data-t="Crew">Crew</span><span id="m-crew"></span>
       </div>
     </div>
 
     <div id="code-box" class="codebox" hidden>
-      <div class="lbl">Your arrival code</div>
+      <div class="lbl" data-t="Your arrival code">Your arrival code</div>
       <div class="code" id="arrival-code"></div>
-      <p>On shifting day, give this code to the supervisor only after the team reaches your pickup address.</p>
+      <p data-t="On shifting day, give this code to the supervisor only after the team reaches your pickup address.">On shifting day, give this code to the supervisor only after the team reaches your pickup address.</p>
     </div>
 
+    <!-- Pay from the link (list item 29). The payment counts only when
+         the vendor confirms it in the app. -->
+    <section id="pay-block" hidden>
+      <h2 class="sechead" data-t="Payment">Payment</h2>
+      <div class="paybox">
+        <div class="row"><span data-t="Paid so far">Paid so far</span><span id="pay-paid"></span></div>
+        <div class="row due"><span data-t="Amount due">Amount due</span><span id="pay-due"></span></div>
+        <div class="btnrow" id="pay-actions">
+          <a class="btn btn-primary" id="pay-upi" href="#" hidden></a>
+          <button type="button" class="btn btn-ghost" id="pay-told" hidden data-t="I have paid">I have paid</button>
+        </div>
+        <div id="pay-ref-wrap" hidden>
+          <input type="text" id="pay-ref" maxlength="40" data-t-ph="UPI reference number (optional)" placeholder="UPI reference number (optional)">
+          <button type="button" class="btn btn-primary btn-block" id="pay-send" style="margin-top:10px" data-t="Send">Send</button>
+        </div>
+        <p class="lede small" id="pay-note" style="margin:10px 0 0"></p>
+      </div>
+    </section>
+
     <section id="xc-block" hidden>
-      <h2 class="sechead">Extra charges</h2>
+      <h2 class="sechead" data-t="Extra charges">Extra charges</h2>
       <p class="lede small" id="xc-lede"></p>
       <div id="xc-list"></div>
       <div class="errline" id="xc-error" hidden></div>
     </section>
 
-    <h2 class="sechead" id="docs-head" hidden>Your documents</h2>
+    <h2 class="sechead" id="docs-head" hidden data-t="Your documents">Your documents</h2>
     <div id="docs"></div>
-    <p class="lede small" id="docs-empty" hidden>
-      No documents yet. They appear here as your moving company issues
-      them.
-    </p>
+    <p class="lede small" id="docs-empty" hidden data-t="No documents yet. They appear here as your moving company issues them.">No documents yet. They appear here as your moving company issues them.</p>
 
-    <h2 class="sechead" id="hist-head" hidden>Progress</h2>
+    <h2 class="sechead" id="hist-head" hidden data-t="Progress">Progress</h2>
     <ol class="timeline" id="hist"></ol>
 
     <!-- Rate the move. Only offered once it has actually happened —
          can_review comes from the server, so the form is never shown for
          a write that would be refused. -->
     <section id="review-block" hidden>
-      <h2 class="sechead">How did it go?</h2>
+      <h2 class="sechead" data-t="How did it go?">How did it go?</h2>
       <div id="review-done" hidden>
-        <p class="lede small">
+        <p class="lede small" id="my-rating-line">
           You rated this move <b><span id="my-rating"></span>/5</b>. Thank
           you.
         </p>
@@ -128,40 +154,39 @@
           <button type="button" class="star" data-v="5" aria-label="5 stars">★</button>
         </div>
         <textarea id="review-comment" rows="3" maxlength="2000"
+          data-t-ph="Anything you'd like them to know? (optional)"
           placeholder="Anything you'd like them to know? (optional)"></textarea>
         <div class="errline" id="review-error" hidden></div>
-        <button type="button" class="btn btn-primary" id="review-send" disabled>
-          Send rating
-        </button>
+        <button type="button" class="btn btn-primary" id="review-send" disabled data-t="Send rating">Send rating</button>
       </div>
     </section>
 
     <!-- Raise a problem. Available at ANY stage, deliberately: the moment
          something is wrong is when it can still be fixed. -->
     <section id="complaint-block" hidden>
-      <h2 class="sechead">Something wrong?</h2>
+      <h2 class="sechead" data-t="Something wrong?">Something wrong?</h2>
       <div id="complaint-done" hidden>
-        <p class="lede small">
-          Sent. <span id="complaint-who"></span> can see it and will be in
-          touch.
-        </p>
+        <p class="lede small" id="complaint-done-text"></p>
       </div>
       <div id="complaint-form">
         <select id="complaint-type">
-          <option value="">What's the problem?</option>
-          <option value="Damage">Something was damaged</option>
-          <option value="Missing">Something is missing</option>
-          <option value="Delay">Delay</option>
-          <option value="Billing">Billing</option>
-          <option value="Staff conduct">Staff conduct</option>
-          <option value="Other">Something else</option>
+          <option value="" data-t="What's the problem?">What's the problem?</option>
+          <option value="Damage" data-t="Something was damaged">Something was damaged</option>
+          <option value="Missing" data-t="Something is missing">Something is missing</option>
+          <option value="Delay" data-t="Delay">Delay</option>
+          <option value="Billing" data-t="Billing">Billing</option>
+          <option value="Staff conduct" data-t="Staff conduct">Staff conduct</option>
+          <option value="Other" data-t="Something else">Something else</option>
         </select>
         <textarea id="complaint-text" rows="3" maxlength="4000"
+          data-t-ph="Tell them what happened."
           placeholder="Tell them what happened."></textarea>
+        <!-- Up to 3 photos, shrunk on the phone (list item 31). -->
+        <input type="file" id="complaint-file" accept="image/*" multiple hidden>
+        <div class="cphotos" id="complaint-photos"></div>
+        <button type="button" class="btn btn-ghost" id="complaint-add" data-t="Add photos">Add photos</button>
         <div class="errline" id="complaint-error" hidden></div>
-        <button type="button" class="btn btn-ghost" id="complaint-send">
-          Send
-        </button>
+        <button type="button" class="btn btn-ghost" id="complaint-send" data-t="Send">Send</button>
       </div>
     </section>
 
@@ -171,11 +196,19 @@
 </main>
 
 <script src="/config.js"></script>
+<script src="/i18n.js"></script>
 <script>
 (function () {
   "use strict";
   var CFG = window.NAGARVA_CONFIG || {};
   var token = new URLSearchParams(location.search).get("token") || "";
+  // The customer's language (list item 25). English when i18n.js is
+  // missing, so the page never breaks over a translation.
+  var I18N = window.NG_I18N || { T: function (s, v) {
+    if (!v) return s; Object.keys(v).forEach(function (k) { s = s.split("{" + k + "}").join(v[k]); }); return s;
+  }, picker: function () {} };
+  var T = I18N.T;
+  I18N.picker(document.getElementById("langhost"));
 
   var BLOCKED = {
     unavailable: ["🔗", "This link isn't available",
@@ -185,7 +218,9 @@
     invalid:   ["🔗", "This link isn't working",
       "Ask your moving company to send it again."],
     network:   ["📡", "Couldn't load your move",
-      "Check your connection and reload the page."]
+      "Check your connection and reload the page."],
+    expired:   ["⌛", "This link has expired",
+      "Links stay open for 90 days after the move is completed. Ask your moving company if you need a document."]
   };
 
   function show(id) {
@@ -197,8 +232,8 @@
   function blocked(reason) {
     var m = BLOCKED[reason] || BLOCKED.not_found;
     document.getElementById("blocked-mark").textContent = m[0];
-    document.getElementById("blocked-title").textContent = m[1];
-    document.getElementById("blocked-body").textContent = m[2];
+    document.getElementById("blocked-title").textContent = T(m[1]);
+    document.getElementById("blocked-body").textContent = T(m[2]);
     show("view-blocked");
   }
 
@@ -274,14 +309,18 @@
   };
   function statusLabel(s) {
     if (!s) return "";
-    return STATUS[s] || String(s).replace(/_/g, " ");
+    return T(STATUS[s] || String(s).replace(/_/g, " "));
   }
 
   // Document types, named the way a customer would.
   var DOCNAME = {
     invoice: "Tax invoice",
     quote: "Quotation",
+    quote_signed: "Signed quotation",
     quotation: "Quotation",
+    order_confirmation: "Order confirmation",
+    risk_declaration: "Risk declaration",
+    customer_declaration: "Customer declaration",
     receipt: "Money receipt",
     proforma: "Proforma invoice",
     lr: "Consignment note (LR)",
@@ -329,10 +368,10 @@
       a.innerHTML =
         '<span class="docdl-main">' +
           '<span class="docdl-name">' +
-            esc(DOCNAME[d.doc_type] || d.doc_type || "Document") +
+            esc(T(DOCNAME[d.doc_type] || String(d.doc_type || "Document").replace(/_/g, " "))) +
           "</span>" +
           (meta ? '<span class="docdl-meta">' + esc(meta) + "</span>" : "") +
-        "</span><span class=\"docdl-cta\">Download</span>";
+        "</span><span class=\"docdl-cta\">" + esc(T("Download")) + "</span>";
       host.appendChild(a);
     });
   }
@@ -357,6 +396,97 @@
     });
   }
 
+  // ---- Moving-day details, payment (14 Nov 2026) --------------------
+  var STEPS = ["Confirmed", "Crew assigned", "Packing", "On the way", "Delivered"];
+  function renderSteps(res) {
+    var host = document.getElementById("steps");
+    var step = Number(res.step) || 0;
+    if (!step || /cancel/i.test(res.status || "")) { host.hidden = true; return; }
+    host.innerHTML = "";
+    STEPS.forEach(function (name, i) {
+      var d = document.createElement("div");
+      d.className = "st" + (i + 1 < step ? " done" : i + 1 === step ? " now" : "");
+      if (i + 1 === step && step === STEPS.length) d.className = "st done now";
+      d.innerHTML = '<div class="bar"></div>' + esc(T(name));
+      host.appendChild(d);
+    });
+    host.hidden = false;
+  }
+
+  function telHref(phone) {
+    var digits = String(phone || "").replace(/\D/g, "");
+    if (digits.length === 10) return "tel:+91" + digits;
+    if (digits.length === 12 && digits.indexOf("91") === 0) return "tel:+" + digits;
+    return "tel:" + digits;
+  }
+
+  function renderSupervisor(res) {
+    var name = (res.supervisor_name || "").trim();
+    var row = document.getElementById("m-sup-row");
+    if (!name) { row.hidden = true; return; }
+    var el = document.getElementById("m-sup");
+    el.textContent = name + " ";
+    if (res.supervisor_phone) {
+      var a = document.createElement("a");
+      a.href = telHref(res.supervisor_phone);
+      a.textContent = "☎ " + T("Call");
+      a.style.color = "inherit"; a.style.fontWeight = "700";
+      el.appendChild(a);
+    }
+    row.hidden = false;
+  }
+
+  function renderPay(res) {
+    var due = Number(res.amount_due) || 0;
+    var block = document.getElementById("pay-block");
+    if (due <= 0 && !(Number(res.paid_total) > 0)) { block.hidden = true; return; }
+    document.getElementById("pay-paid").textContent = inr(res.paid_total || 0);
+    document.getElementById("pay-due").textContent = inr(due);
+    var vendor = res.vendor_name || "your moving company";
+    var upi = (res.upi_id || "").trim();
+    var btn = document.getElementById("pay-upi");
+    var told = document.getElementById("pay-told");
+    var note = document.getElementById("pay-note");
+    if (due > 0 && upi) {
+      var q = "pa=" + encodeURIComponent(upi) +
+        "&pn=" + encodeURIComponent(res.upi_name || vendor) +
+        "&am=" + encodeURIComponent(due.toFixed(2)) + "&cu=INR" +
+        "&tn=" + encodeURIComponent(res.order_ref || "Move");
+      btn.href = "upi://pay?" + q;
+      btn.textContent = T("Pay {amount} by UPI", { amount: inr(due) });
+      btn.hidden = false;
+      told.hidden = false;
+      note.textContent = T("Opens your UPI app. The payment counts once {vendor} confirms it.", { vendor: vendor });
+    } else {
+      btn.hidden = true; told.hidden = due <= 0;
+      note.textContent = "";
+    }
+    told.onclick = function () {
+      document.getElementById("pay-ref-wrap").hidden = false;
+      told.hidden = true;
+    };
+    document.getElementById("pay-send").onclick = function () {
+      var send = document.getElementById("pay-send");
+      send.disabled = true;
+      rpc("public_report_payment", {
+        p_token: token, p_amount: due,
+        p_ref: document.getElementById("pay-ref").value || null
+      }).then(function (r) {
+        if (r && r.ok) {
+          document.getElementById("pay-ref-wrap").hidden = true;
+          note.textContent = T("Thanks. {vendor} will check and confirm your payment.", { vendor: vendor });
+          return;
+        }
+        send.disabled = false;
+        note.textContent = T("That didn't send. Please try again.");
+      }).catch(function () {
+        send.disabled = false;
+        note.textContent = T("That didn't send. Check your connection and try again.");
+      });
+    };
+    block.hidden = false;
+  }
+
   if (!token) { blocked("invalid"); return; }
 
   fetch(CFG.SUPABASE_URL + "/rest/v1/rpc/public_get_order_documents", {
@@ -378,21 +508,25 @@
     return r.json();
   }).then(function (res) {
     if (res === null) return;          // already handled above
-    if (!res || !res.ok) { blocked(res && res.reason); return; }
+    if (!res || !res.ok) {
+      if (res && res.vendor_name) setVendor(res.vendor_name);
+      blocked(res && res.reason);
+      return;
+    }
 
     setVendor(res.vendor_name);
 
     var who = (res.customer_name || "").trim();
     document.getElementById("headline").textContent =
-      who ? "Hi " + who + ", here's your move" : "Your move";
+      who ? T("Hi {name}, here's your move", { name: who }) : T("Your move");
     document.getElementById("subline").textContent =
-      "Everything your moving company has issued for this job, in one "
-      + "place. Nothing here expires.";
+      T("Everything about your move in one place: progress, documents and payments.");
+    renderSteps(res);
 
     // Say what the number is (5 Nov 2026): the row read "Move" over the
     // INVOICE number, which looks like a move number to a customer.
     document.getElementById("m-ref-label").textContent =
-      res.invoice_no ? "Invoice" : "Booking";
+      T(res.invoice_no ? "Invoice" : "Booking");
     document.getElementById("m-ref").textContent =
       res.invoice_no || res.order_ref || "";
 
@@ -418,6 +552,10 @@
       statusLabel(res.status || res.tracking_status));
     setRow("m-vehicle-row", "m-vehicle", res.vehicle_no);
     setRow("m-driver-row", "m-driver", res.driver_name);
+    setRow("m-crew-row", "m-crew",
+      res.crew_count ? T("{n} people", { n: res.crew_count }) : "");
+    renderSupervisor(res);
+    renderPay(res);
 
     renderDocs(res.documents);
     renderHistory(res.history);
@@ -438,8 +576,8 @@
       var dial = local.length === 10 ? "+91" + local
         : (phone.charAt(0) === "+" ? "+" + digits : digits);
       var cv = document.getElementById("callvendor");
-      cv.textContent = "Questions about this move? Call " +
-        (res.vendor_name || "your moving company") + " on ";
+      cv.textContent = T("Questions about this move? Call {vendor} on",
+        { vendor: res.vendor_name || "your moving company" }) + " ";
       var a = document.createElement("a");
       a.href = "tel:" + dial;
       a.textContent = shown;
@@ -507,25 +645,23 @@
     var waiting = items.filter(function (i) { return i.approval === "awaiting"; }).length;
     var gst = Number(r.gst_pct) || 0;
     document.getElementById("xc-lede").textContent = waiting
-      ? (vendor || "Your moving company") + " has asked for " +
-        (waiting === 1 ? "an extra charge" : waiting + " extra charges") +
-        ". Nothing is added to your bill unless you approve it." +
-        (gst ? " GST of " + gst + "% applies on top." : "")
-      : "Extra work or material on top of your quotation." +
-        (gst ? " GST of " + gst + "% applies on top." : "");
+      ? T("{vendor} has asked for extra charges.", { vendor: vendor || "Your moving company" }) +
+        " " + T("Nothing is added to your bill unless you approve it.") +
+        (gst ? " " + T("GST of {pct}% applies on top.", { pct: gst }) : "")
+      : T("Extra work or material on top of your quotation.") +
+        (gst ? " " + T("GST of {pct}% applies on top.", { pct: gst }) : "");
     list.innerHTML = "";
     items.forEach(function (it) {
       var d = document.createElement("div");
       var st = it.approval;
       d.className = "xc" + (st === "awaiting" ? " wait" : st === "rejected" ? " no-bill" : "");
       var sub = st === "awaiting"
-        ? "Requested " + fmtDateTime(it.requested_at)
+        ? T("Requested {when}", { when: fmtDateTime(it.requested_at) })
         : st === "approved"
-          ? "<span class='ok'>Approved" +
-            (it.approval_by === "customer" ? " by you" : "") + "</span> " +
-            esc(fmtDateTime(it.approval_at)) + " \u00B7 added to your bill"
-          : "<span class='no'>Rejected by you</span> " +
-            esc(fmtDateTime(it.approval_at)) + " \u00B7 not billed";
+          ? "<span class='ok'>" + esc(T(it.approval_by === "customer" ? "Approved by you" : "Approved")) +
+            "</span> " + esc(fmtDateTime(it.approval_at)) + " \u00B7 " + esc(T("added to your bill"))
+          : "<span class='no'>" + esc(T("Rejected by you")) + "</span> " +
+            esc(fmtDateTime(it.approval_at)) + " \u00B7 " + esc(T("not billed"));
       d.innerHTML =
         "<div class='xc-top'><span>" + esc(it.description || "Extra charge") +
         "</span><span>" + esc(inr(it.amount)) + "</span></div>" +
@@ -534,10 +670,10 @@
         var act = document.createElement("div");
         act.className = "xc-act";
         var no = document.createElement("button");
-        no.type = "button"; no.className = "btn btn-ghost"; no.textContent = "Reject";
+        no.type = "button"; no.className = "btn btn-ghost"; no.textContent = T("Reject");
         var yes = document.createElement("button");
         yes.type = "button"; yes.className = "btn btn-primary";
-        yes.textContent = "Approve " + inr(it.amount);
+        yes.textContent = T("Approve {amount}", { amount: inr(it.amount) });
         function decide(decision) {
           var err = document.getElementById("xc-error");
           err.hidden = true;
@@ -553,7 +689,7 @@
             }
             loadExtras(vendor);
           }).catch(function () {
-            err.textContent = "That did not send. Check your connection and try again.";
+            err.textContent = T("That didn't send. Check your connection and try again.");
             err.hidden = false;
             yes.disabled = false; no.disabled = false;
           });
@@ -594,7 +730,8 @@
     // Already rated: show it back rather than inviting a second one the
     // server would refuse.
     if (res.my_rating) {
-      document.getElementById("my-rating").textContent = res.my_rating;
+      document.getElementById("my-rating-line").textContent =
+        T("You rated this move {n}/5. Thank you.", { n: res.my_rating });
       var c = (res.my_comment || "").trim();
       if (c) {
         document.getElementById("my-comment").textContent = c;
@@ -632,29 +769,29 @@
       var err = document.getElementById("review-error");
       err.hidden = true;
       send.disabled = true;
-      send.textContent = "Sending…";
+      send.textContent = T("Sending…");
       rpc("public_submit_review", {
         p_token: token,
         p_rating: chosen,
         p_comment: document.getElementById("review-comment").value || null
       }).then(function (r) {
         if (r && r.ok) {
-          document.getElementById("my-rating").textContent = chosen;
+          document.getElementById("my-rating-line").textContent =
+            T("You rated this move {n}/5. Thank you.", { n: chosen });
           form.hidden = true;
           done.hidden = false;
           return;
         }
-        err.textContent = REVIEW_ERR[r && r.reason]
-          || "That didn't send. Please try again.";
+        err.textContent = T(REVIEW_ERR[r && r.reason]
+          || "That didn't send. Please try again.");
         err.hidden = false;
         send.disabled = false;
-        send.textContent = "Send rating";
+        send.textContent = T("Send rating");
       }).catch(function () {
-        err.textContent = "That didn't send. Check your connection and "
-          + "try again.";
+        err.textContent = T("That didn't send. Check your connection and try again.");
         err.hidden = false;
         send.disabled = false;
-        send.textContent = "Send rating";
+        send.textContent = T("Send rating");
       });
     });
   }
@@ -664,8 +801,51 @@
     var form = document.getElementById("complaint-form");
     var done = document.getElementById("complaint-done");
     block.hidden = false;
-    document.getElementById("complaint-who").textContent =
-      res.vendor_name || "Your moving company";
+    document.getElementById("complaint-done-text").textContent =
+      T("Sent. {vendor} can see it and will be in touch.",
+        { vendor: res.vendor_name || "Your moving company" });
+
+    // Photos: up to 3, shrunk to ~1024 px JPEG on the phone.
+    var photos = [];
+    var file = document.getElementById("complaint-file");
+    var add = document.getElementById("complaint-add");
+    var strip = document.getElementById("complaint-photos");
+    function paintPhotos() {
+      strip.innerHTML = "";
+      photos.forEach(function (u, i) {
+        var img = document.createElement("img");
+        img.src = u; img.alt = "";
+        img.title = "\u2715";
+        img.addEventListener("click", function () { photos.splice(i, 1); paintPhotos(); });
+        strip.appendChild(img);
+      });
+      add.hidden = photos.length >= 3;
+    }
+    function shrink(f) {
+      return new Promise(function (resolve) {
+        var url = URL.createObjectURL(f), img = new Image();
+        img.onload = function () {
+          var k = Math.min(1, 1024 / Math.max(img.naturalWidth, img.naturalHeight));
+          var c = document.createElement("canvas");
+          c.width = Math.max(1, Math.round(img.naturalWidth * k));
+          c.height = Math.max(1, Math.round(img.naturalHeight * k));
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          resolve(c.toDataURL("image/jpeg", 0.7));
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); resolve(null); };
+        img.src = url;
+      });
+    }
+    add.addEventListener("click", function () { file.click(); });
+    file.addEventListener("change", function () {
+      var list = Array.prototype.slice.call(file.files || []).slice(0, 3 - photos.length);
+      Promise.all(list.map(shrink)).then(function (urls) {
+        urls.forEach(function (u) { if (u && photos.length < 3) photos.push(u); });
+        file.value = "";
+        paintPhotos();
+      });
+    });
 
     var send = document.getElementById("complaint-send");
     send.addEventListener("click", function () {
@@ -676,29 +856,29 @@
       // Checked here so the customer is told before the round trip, with
       // the same rule the server enforces.
       if (text.trim().length < 5) {
-        err.textContent = COMPLAINT_ERR.too_short;
+        err.textContent = T(COMPLAINT_ERR.too_short);
         err.hidden = false;
         return;
       }
       send.disabled = true;
-      send.textContent = "Sending…";
+      send.textContent = T("Sending…");
       rpc("public_submit_complaint", {
         p_token: token,
         p_type: document.getElementById("complaint-type").value || null,
-        p_description: text
+        p_description: text,
+        p_photos: photos
       }).then(function (r) {
         if (r && r.ok) { form.hidden = true; done.hidden = false; return; }
-        err.textContent = COMPLAINT_ERR[r && r.reason]
-          || "That didn't send. Please try again.";
+        err.textContent = T(COMPLAINT_ERR[r && r.reason]
+          || "That didn't send. Please try again.");
         err.hidden = false;
         send.disabled = false;
-        send.textContent = "Send";
+        send.textContent = T("Send");
       }).catch(function () {
-        err.textContent = "That didn't send. Check your connection and "
-          + "try again.";
+        err.textContent = T("That didn't send. Check your connection and try again.");
         err.hidden = false;
         send.disabled = false;
-        send.textContent = "Send";
+        send.textContent = T("Send");
       });
     });
   }

@@ -9,6 +9,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/ng_tokens.dart';
 
 import '/backend/edge_function_errors.dart';
+import 'nagarva_job_form.dart';
 /// Super Admin › Marketplace (Claude Design handoff, Nagarva Admin.dc.html
 /// "Marketplace"): live dispatch, money, vendors and city rules for the
 /// Nagarva marketplace (`supabase/20261030_marketplace_vendor.sql`).
@@ -390,120 +391,18 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
     }, 'Assigned to ${_orgNames[picked] ?? 'vendor'}');
   }
 
-  Future<void> _newJob() async {
-    final f = {
-      for (final k in [
-        'pickup_city', 'drop_city', 'slot', 'cft', 'total', 'name', 'phone',
-        'pickup_address', 'drop_address'
-      ])
-        k: TextEditingController(),
-    };
-    String pkg = 'standard';
-    DateTime date = DateTime.now().add(const Duration(days: 2));
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) {
-          Widget tf(String k, String label,
-                  {TextInputType? kb, bool digits = false}) =>
-              TextField(
-                controller: f[k],
-                keyboardType: kb,
-                inputFormatters:
-                    digits ? [FilteringTextInputFormatter.digitsOnly] : null,
-                decoration: InputDecoration(labelText: label),
-              );
-          return AlertDialog(
-            title: const Text('New Nagarva job'),
-            content: SizedBox(
-              width: 420,
-              child: SingleChildScrollView(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  tf('pickup_city', 'Pickup city'),
-                  tf('drop_city', 'Drop city'),
-                  DropdownButtonFormField<String>(
-                    initialValue: pkg,
-                    decoration: const InputDecoration(labelText: 'Package'),
-                    items: const [
-                      DropdownMenuItem(value: 'economy', child: Text('Economy')),
-                      DropdownMenuItem(value: 'standard', child: Text('Standard')),
-                      DropdownMenuItem(value: 'premium', child: Text('Premium')),
-                    ],
-                    onChanged: (v) => setD(() => pkg = v ?? pkg),
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Move date'),
-                    subtitle: Text(DateFormat('EEE d MMM yyyy').format(date)),
-                    onTap: () async {
-                      final p = await showDatePicker(
-                        context: ctx,
-                        initialDate: date,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 180)),
-                      );
-                      if (p != null) setD(() => date = p);
-                    },
-                  ),
-                  tf('slot', 'Time slot (e.g. 8–10 AM)'),
-                  tf('cft', 'CFT', kb: TextInputType.number, digits: true),
-                  tf('total', 'Total incl. 18% GST (₹)',
-                      kb: TextInputType.number, digits: true),
-                  tf('name', 'Customer name'),
-                  tf('phone', 'Customer phone', kb: TextInputType.phone),
-                  tf('pickup_address', 'Pickup address'),
-                  tf('drop_address', 'Drop address'),
-                ]),
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel')),
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Broadcast')),
-            ],
-          );
-        },
+  /// The full job form (14 Nov 2026): same details as the customer app,
+  /// priced by the same rates, then broadcast or assigned.
+  Future<void> _newJob({bool tryOnly = false}) async {
+    final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => NagarvaJobForm(
+        rules: _rules,
+        vendors: _vendors,
+        orgNames: _orgNames,
+        tryOnly: tryOnly,
       ),
-    );
-    String t(String k) => f[k]!.text.trim();
-    final total = double.tryParse(t('total'));
-    if (ok != true) return;
-    if (t('pickup_city').isEmpty || t('drop_city').isEmpty || total == null || total <= 0) {
-      return _toast('Pickup city, drop city and the total are needed.');
-    }
-    final r = _rulesFor(t('pickup_city'));
-    final gst = double.parse((total * 18 / 118).toStringAsFixed(2));
-    final advPct = ((r['advance_pct'] as num?) ?? 0).toDouble();
-    final advMin = ((r['advance_min'] as num?) ?? 0).toDouble();
-    final advance = min(total, max(advMin, (total * advPct / 100).roundToDouble()));
-    final rnd = Random.secure();
-    final otp = List.generate(4, (_) => rnd.nextInt(10)).join();
-    final jobNo =
-        'NG-${DateFormat('yyMMdd').format(DateTime.now())}-${rnd.nextInt(9000) + 1000}';
-    await _run(() async {
-      final row = await _db.from('mkt_jobs').insert({
-        'job_no': jobNo,
-        'pickup_city': t('pickup_city'),
-        'drop_city': t('drop_city'),
-        'package': pkg,
-        'move_date': date.toIso8601String().split('T').first,
-        if (t('slot').isNotEmpty) 'slot': t('slot'),
-        if (t('cft').isNotEmpty) 'cft': double.parse(t('cft')),
-        'total_inr': total,
-        'gst_inr': gst,
-        'advance_inr': advance,
-        'commission_pct': (r['commission_pct'] as num?) ?? 0,
-        if (t('name').isNotEmpty) 'customer_name': t('name'),
-        if (t('phone').isNotEmpty) 'customer_phone': t('phone'),
-        if (t('pickup_address').isNotEmpty) 'pickup_address': t('pickup_address'),
-        if (t('drop_address').isNotEmpty) 'drop_address': t('drop_address'),
-        'delivery_otp': otp,
-      }).select('id').single();
-      await _event(row['id'], 'broadcast');
-    }, '$jobNo broadcast. Delivery code $otp: give it to the customer.');
+    ));
+    if (saved == true) await _load();
   }
 
   // ---- Money -------------------------------------------------------------
@@ -752,6 +651,13 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
     final cp = _cityPrices.where((p) => p['city'] == city).firstOrNull;
     String v(dynamic x) => x == null ? 'Not set' : _money.format(x);
     return [
+      NgSecondaryButton(
+        label: 'Try a price',
+        icon: Icons.calculate_outlined,
+        onPressed: () => _newJob(tryOnly: true),
+      ),
+      const SizedBox(height: 12),
+
       Text(
           'What customers pay Nagarva. A city shows prices in the customer app only once its rates are here; anything left unset makes the quote say so instead of guessing.',
           style: NgFonts.geist(fontSize: 12.5, height: 1.4, color: c.mute)),
@@ -1081,7 +987,29 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
 
   List<Widget> _rulesView(NgPalette c) {
     final total = _weights.fold<int>(0, (s, w) => s + (w['weight'] as int));
+    final def = _rulesFor('*');
     return [
+      // The default applies to every city without its own rules (14 Nov
+      // 2026, Arun: "there is no settings to change the commission").
+      NgCard(
+        padding: const EdgeInsets.all(14),
+        child: Row(children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Default commission',
+                  style: NgFonts.geist(fontSize: 13, color: c.mute)),
+              Text('${def['commission_pct'] ?? '—'}%',
+                  style: NgFonts.geist(
+                      fontSize: 22, fontWeight: FontWeight.w700, color: c.text)),
+              Text('Every city without its own rule. A single job can differ.',
+                  style: NgFonts.geist(fontSize: 12, color: c.mute)),
+            ]),
+          ),
+          if (def.isNotEmpty)
+            TextButton(onPressed: () => _editRules(def), child: const Text('Change')),
+        ]),
+      ),
+      const SizedBox(height: 14),
       Row(children: [
         const Expanded(child: NgSectionHeader('City rules')),
         TextButton.icon(
@@ -1169,6 +1097,10 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
           ),
         ),
         actions: [
+          if (r['city'] != '*')
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Use default')),
           TextButton(
               onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
@@ -1177,6 +1109,13 @@ class _MarketplaceTabState extends State<MarketplaceTab> {
         ],
       ),
     );
+    if (ok == false && r['city'] != '*') {
+      // The city's own row goes; mkt_rules_for() then falls back to '*'.
+      await _run(
+          () => _db.from('mkt_city_rules').delete().eq('city', r['city']),
+          '${r['city']} now follows the default rules');
+      return;
+    }
     if (ok != true) return;
     final data = <String, dynamic>{};
     for (final (k, _) in _ruleFields) {

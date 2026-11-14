@@ -1155,7 +1155,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                     for (var i = 0; i < items.length; i++)
                       ['${i + 1}', items[i]],
                   ],
-                ));
+                ),
+            docType: 'packing_list');
       });
 
   Future<void> _genLoadingSlip() => _run(() async {
@@ -1366,7 +1367,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                   ],
                   notesBlock: text,
                   signatureBytes: _heldSignature,
-                ));
+                ),
+            docType: 'risk_declaration');
       });
 
   // ---- Customer declaration (13 Nov 2026) -----------------------------
@@ -1503,7 +1505,8 @@ class _OrderDocumentsSectionState extends State<OrderDocumentsSection> {
                       'consignment, or for any loss, penalty or delay that '
                       'results from it.',
                   signatureBytes: _heldSignature,
-                ));
+                ),
+            docType: 'customer_declaration');
       });
 
   Future<void> _genVoucher() => _run(() async {
