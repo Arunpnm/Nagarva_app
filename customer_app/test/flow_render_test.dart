@@ -75,7 +75,7 @@ void main() {
     await _render(t, const ReviewScreen(), _booking());
     expect(find.text('₹5,898'), findsOneWidget);
     expect(find.text('₹999'), findsOneWidget);
-    expect(find.text('Online payment opens soon'), findsOneWidget);
+    expect(find.text('Continue to pay ₹999'), findsOneWidget);
   });
   testWidgets('review shows a refusal in words', (t) async {
     Api.quote = (_) async =>

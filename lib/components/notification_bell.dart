@@ -300,6 +300,14 @@ class _NotificationBellState extends State<NotificationBell> {
                                   'quote_accepted' => Icons.thumb_up_alt_outlined,
                                   'quote_changes' => Icons.edit_note_rounded,
                                   'quote_advance_paid' => Icons.currency_rupee_rounded,
+                                  // Customer links (14 Nov 2026).
+                                  'quote_signed' || 'document_signed' =>
+                                    Icons.draw_outlined,
+                                  'survey_received' || 'survey_updated' =>
+                                    Icons.checklist_rounded,
+                                  'order_payment_reported' =>
+                                    Icons.currency_rupee_rounded,
+                                  'order_complaint' => Icons.report_problem_outlined,
                                   _ => Icons.person_add_alt_1,
                                 },
                                 color: n.read

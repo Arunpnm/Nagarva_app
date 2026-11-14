@@ -14,7 +14,8 @@
 //     Events: subscription.authenticated, subscription.activated,
 //             subscription.charged, subscription.pending,
 //             subscription.halted, subscription.cancelled,
-//             subscription.completed, subscription.paused
+//             subscription.completed, subscription.paused,
+//             payment_link.paid   (customer app bookings, 14 Nov 2026)
 //
 // No Supabase login: Razorpay cannot send one. The signature on the raw
 // body is what proves the call is Razorpay's.
@@ -57,6 +58,21 @@ const rpc: BillingRpc = {
   },
 };
 
+// Customer app booking: the advance was paid on a payment link made by
+// mkt-book. mkt_booking_paid() checks the amount and creates the job.
+async function bookingPaid(evt: any): Promise<string> {
+  const link = evt?.payload?.payment_link?.entity;
+  const pay = evt?.payload?.payment?.entity;
+  if (!link?.id) return "no_link";
+  const { data, error } = await admin.rpc("mkt_booking_paid", {
+    p_link_id: String(link.id),
+    p_payment_id: pay?.id ? String(pay.id) : null,
+    p_amount_paise: Number(pay?.amount ?? link.amount_paid ?? 0),
+  });
+  if (error) throw new Error(`mkt_booking_paid: ${error.message}`);
+  return String(data);
+}
+
 const reply = (status: number, text: string) =>
   new Response(text, { status, headers: { "Content-Type": "text/plain" } });
 
@@ -80,7 +96,7 @@ Deno.serve(async (req: Request) => {
     return reply(400, "bad body");
   }
   const eventId = req.headers.get("x-razorpay-event-id") ??
-    `${evt?.event ?? "?"}:${evt?.created_at ?? ""}:${evt?.payload?.subscription?.entity?.id ?? ""}`;
+    `${evt?.event ?? "?"}:${evt?.created_at ?? ""}:${evt?.payload?.subscription?.entity?.id ?? evt?.payload?.payment_link?.entity?.id ?? ""}`;
 
   // Once only: a retry of an event already applied is acknowledged.
   const claim = await admin
@@ -93,7 +109,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const outcome = await applyWebhookEvent(evt, rpc);
+    const outcome = evt?.event === "payment_link.paid"
+      ? await bookingPaid(evt)
+      : await applyWebhookEvent(evt, rpc);
     await admin.from("razorpay_webhook_events").update({ outcome }).eq("event_id", eventId);
     return reply(200, outcome);
   } catch (e) {

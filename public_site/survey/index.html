@@ -817,8 +817,14 @@
       p_instructions: instructions(missed)
     }).then(function (res) {
       if (res && res.ok) {
-        renderSent({ submitted_at: new Date().toISOString(), editable: true,
-                     updated: !!res.updated, notes: instructions(missed) });
+        var sent = { submitted_at: new Date().toISOString(), editable: false,
+                     updated: !!res.updated, notes: instructions(missed) };
+        // Ask the server whether the list can still be changed: once the
+        // mover has a quote on this enquiry it is locked, even straight
+        // after the first send.
+        rpc("public_get_survey", { p_token: token }).then(function (g) {
+          sent.editable = !!(g && g.editable);
+        }).catch(function () {}).then(function () { renderSent(sent); });
         return;
       }
       if (res && res.reason === "locked") {
@@ -936,7 +942,7 @@
     }
 
     VENDOR.name = (res.vendor_name || "").trim();
-    VENDOR.phone = (res.vendor_phone || "").trim();
+    VENDOR.phone = (window.ngPhone || String)((res.vendor_phone || "").trim());
     buildCatalogue(res.survey_cats || {});
     recalc();
     document.getElementById("submit").addEventListener("click", submit);

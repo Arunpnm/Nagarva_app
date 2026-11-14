@@ -1,0 +1,165 @@
+lib/backend/fy_numbering.dart:130: fallback: 'Could not start $fy numbering: ${friendlyError(startError)}'));
+lib/backend/owner_pin.dart:163: return OwnerPinResult.failed('Could not update PIN: ${friendlyError(e)}');
+lib/backend/soft_delete.dart:132: reason: 'Could not verify whether this order can be deleted: ${friendlyError(e)}',
+lib/backend/soft_delete.dart:154: allowed: false, reason: 'Could not verify this lead: ${friendlyError(e)}');
+lib/backend/soft_delete.dart:185: allowed: false, reason: 'Could not verify this payment: ${friendlyError(e)}');
+lib/backend/soft_delete.dart:255: return DeleteCheck(allowed: false, reason: 'Could not verify this trip: ${friendlyError(e)}');
+lib/backend/soft_delete.dart:290: allowed: false, reason: 'Could not verify this quote: ${friendlyError(e)}');
+lib/calendar_page/calendar_page_widget.dart:168: SnackBar(content: Text('Could not save reminder: ${friendlyError(e)}')),
+lib/components/delete_action.dart:52: SnackBar(content: Text('Could not delete: ${friendlyError(e)}')),
+lib/components/logo_upload_card.dart:60: .showSnackBar(SnackBar(content: Text('Logo upload failed: ${friendlyError(e)}')));
+lib/components/notification_bell.dart:177: content: Text('Could not mark notifications as read: ${friendlyError(e)}')));
+lib/components/record_module_page.dart:210: _errors[i] = '${friendlyError(e)}';
+lib/components/record_module_page.dart:549: _error = extractDbErrorMessage(e, fallback: 'Could not save: ${friendlyError(e)}');
+lib/components/reminders_section.dart:435: SnackBar(content: Text('Could not save: ${friendlyError(e)}')),
+lib/components/reminders_section.dart:614: SnackBar(content: Text('Could not log follow-up: ${friendlyError(e)}')),
+lib/components/share_link_sheet.dart:200: .showSnackBar(SnackBar(content: Text('${friendlyError(e)}')));
+lib/crew_sheet_page/crew_sheet_page_widget.dart:228: _loadError = 'Could not load the crew sheet. ${friendlyError(e)}';
+lib/crew_sheet_page/crew_sheet_page_widget.dart:404: if (mounted) _toast('Could not add $name: ${friendlyError(e)}');
+lib/crew_sheet_page/crew_sheet_page_widget.dart:559: if (mounted) _toast('Could not save the crew sheet: ${friendlyError(e)}');
+lib/crew_sheet_page/crew_sheet_page_widget.dart:575: if (mounted) _toast('Could not remove $name: ${friendlyError(e)}');
+lib/customers_page/customers_page_widget.dart:59: .showSnackBar(SnackBar(content: Text('Could not load customers: ${friendlyError(e)}')));
+lib/customers_page/customers_page_widget.dart:134: .showSnackBar(SnackBar(content: Text('Could not create customer: ${friendlyError(e)}')));
+lib/customers_page/customer_detail_page_widget.dart:75: .showSnackBar(SnackBar(content: Text('Could not load customer: ${friendlyError(e)}')));
+lib/customers_page/customer_detail_page_widget.dart:216: .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
+lib/customers_page/customer_detail_page_widget.dart:338: .showSnackBar(SnackBar(content: Text('Could not add address: ${friendlyError(e)}')));
+lib/customers_page/customer_detail_page_widget.dart:351: .showSnackBar(SnackBar(content: Text('Could not delete: ${friendlyError(e)}')));
+lib/customers_page/customer_detail_page_widget.dart:413: .showSnackBar(SnackBar(content: Text('Could not add contact: ${friendlyError(e)}')));
+lib/customers_page/customer_detail_page_widget.dart:426: .showSnackBar(SnackBar(content: Text('Could not delete: ${friendlyError(e)}')));
+lib/driver_app_page/driver_app_page_widget.dart:153: _toast('${friendlyError(e)}');
+lib/fleet_page/fleet_page_widget.dart:65: _loadError = 'Could not load vehicles: ${friendlyError(e)}';
+lib/fleet_page/vehicle_detail_sheet.dart:144: if (mounted) setState(() => _error = 'Could not save: ${friendlyError(e)}');
+lib/flutter_flow/flutter_flow_util.dart:210: throw 'Could not launch $uri: ${friendlyError(e)}';
+lib/home_page/home_page_widget.dart:1074: SnackBar(content: Text('Could not save target: ${friendlyError(e)}')));
+lib/insurance_claims_page/insurance_claims_page_widget.dart:62: .showSnackBar(SnackBar(content: Text('Could not load: ${friendlyError(e)}')));
+lib/insurance_claims_page/insurance_claims_page_widget.dart:202: .showSnackBar(SnackBar(content: Text('Could not create policy: ${friendlyError(e)}')));
+lib/insurance_claims_page/insurance_claims_page_widget.dart:307: .showSnackBar(SnackBar(content: Text('Could not create claim: ${friendlyError(e)}')));
+lib/insurance_claims_page/insurance_claims_page_widget.dart:492: .showSnackBar(SnackBar(content: Text('Could not add item: ${friendlyError(e)}')));
+lib/insurance_claims_page/insurance_claims_page_widget.dart:629: .showSnackBar(SnackBar(content: Text('Could not update claim: ${friendlyError(e)}')));
+lib/lead_detail_page/lead_detail_page_widget.dart:242: SnackBar(content: Text('Could not update status: ${friendlyError(e)}')),
+lib/lead_detail_page/lead_detail_page_widget.dart:453: SnackBar(content: Text('$errorPrefix: ${friendlyError(e)}')),
+lib/lead_detail_page/lead_detail_page_widget.dart:966: SnackBar(content: Text('Could not create survey link: ${friendlyError(e)}')),
+lib/lead_detail_page/lead_detail_page_widget.dart:1698: SnackBar(content: Text('Could not create signature link: ${friendlyError(e)}')),
+lib/lead_detail_page/lead_detail_page_widget.dart:1761: SnackBar(content: Text('Could not generate survey PDF: ${friendlyError(e)}')),
+lib/lead_detail_page/lead_detail_page_widget.dart:1907: SnackBar(content: Text('Could not generate quote PDF: ${friendlyError(e)}')),
+lib/lr_register_page/lr_register_page_widget.dart:57: .showSnackBar(SnackBar(content: Text('Could not load LR register: ${friendlyError(e)}')));
+lib/materials_page/materials_page_widget.dart:74: _loadError = 'Could not load materials: ${friendlyError(e)}';
+lib/materials_page/materials_page_widget.dart:135: .showSnackBar(SnackBar(content: Text('Could not add material: ${friendlyError(e)}')));
+lib/materials_page/material_detail_sheet.dart:124: .showSnackBar(SnackBar(content: Text('Could not record: ${friendlyError(e)}')));
+lib/materials_page/material_detail_sheet.dart:228: 'added to the order: ${friendlyError(e)}')));
+lib/new_lead_page/new_lead_page_widget.dart:85: _model.branchLoadError = 'Could not load branches: ${friendlyError(e)}';
+lib/new_order_page/new_order_page_widget.dart:300: _model.branchLoadError = 'Could not load branches: ${friendlyError(e)}';
+lib/operations_standalone_page/operations_standalone_page_widget.dart:73: .showSnackBar(SnackBar(content: Text('Could not load: ${friendlyError(e)}')));
+lib/operations_standalone_page/operations_standalone_page_widget.dart:145: .showSnackBar(SnackBar(content: Text('Could not log: ${friendlyError(e)}')));
+lib/operations_standalone_page/operations_standalone_page_widget.dart:195: .showSnackBar(SnackBar(content: Text('Could not log: ${friendlyError(e)}')));
+lib/operations_standalone_page/operations_standalone_page_widget.dart:238: .showSnackBar(SnackBar(content: Text('Could not update: ${friendlyError(e)}')));
+lib/order_detail_page/invoice_generator.dart:351: SnackBar(content: Text('Could not generate invoice: ${friendlyError(e)}')),
+lib/order_detail_page/invoice_generator.dart:795: SnackBar(content: Text('Could not create signature link: ${friendlyError(e)}')),
+lib/order_detail_page/order_addons_section.dart:106: _error = 'Could not load add-ons: ${friendlyError(e)}';
+lib/order_detail_page/order_addons_section.dart:217: if (mounted) setState(() => _error = 'Could not save add-on: ${friendlyError(e)}');
+lib/order_detail_page/order_addons_section.dart:237: if (mounted) setState(() => _error = 'Could not update: ${friendlyError(e)}');
+lib/order_detail_page/order_crew_section.dart:151: .showSnackBar(SnackBar(content: Text('Could not assign: ${friendlyError(e)}')));
+lib/order_detail_page/order_crew_section.dart:254: .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
+lib/order_detail_page/order_crew_section.dart:272: .showSnackBar(SnackBar(content: Text('Could not remove: ${friendlyError(e)}')));
+lib/order_detail_page/order_crew_section.dart:329: .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
+lib/order_detail_page/order_crew_section.dart:774: .showSnackBar(SnackBar(content: Text('Could not close order: ${friendlyError(e)}')));
+lib/order_detail_page/order_detail_page_widget.dart:176: SnackBar(content: Text('Could not cancel: ${friendlyError(e)}')),
+lib/order_detail_page/order_detail_page_widget.dart:332: .showSnackBar(SnackBar(content: Text('Could not duplicate: ${friendlyError(e)}')));
+lib/order_detail_page/order_detail_page_widget.dart:465: SnackBar(content: Text('Could not create tracking link: ${friendlyError(e)}')),
+lib/order_detail_page/order_detail_page_widget.dart:573: SnackBar(content: Text('Could not check the signature: ${friendlyError(e)}')));
+lib/order_detail_page/order_documents_section.dart:537: .showSnackBar(SnackBar(content: Text('Could not generate: ${friendlyError(e)}')));
+lib/order_detail_page/order_documents_section.dart:1272: .showSnackBar(SnackBar(content: Text('Could not copy UPI: ${friendlyError(e)}')));
+lib/order_detail_page/order_documents_section.dart:1355: .showSnackBar(SnackBar(content: Text('Could not copy link: ${friendlyError(e)}')));
+lib/order_detail_page/order_materials_section.dart:100: _error = 'Could not load materials: ${friendlyError(e)}';
+lib/order_detail_page/order_materials_section.dart:115: if (mounted) setState(() => _error = 'Could not load materials: ${friendlyError(e)}');
+lib/order_detail_page/order_materials_section.dart:151: if (mounted) setState(() => _error = 'Could not record usage: ${friendlyError(e)}');
+lib/order_detail_page/order_overview_section.dart:161: .showSnackBar(SnackBar(content: Text('${friendlyError(e)}')));
+lib/order_detail_page/order_overview_section.dart:200: ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${friendlyError(e)}')));
+lib/order_detail_page/order_storage_section.dart:215: SnackBar(content: Text('Could not release: ${friendlyError(e)}')));
+lib/order_detail_page/order_storage_section.dart:416: _error = '${friendlyError(e)}';
+lib/order_detail_page/order_storage_section.dart:536: _error = '${friendlyError(e)}';
+lib/order_detail_page/quick_payment_section.dart:319: .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
+lib/order_detail_page/quick_payment_section.dart:358: error = '${friendlyError(e)}';
+lib/order_journey_page/order_journey_page_widget.dart:168: if (mounted) _toast(l.jrCouldNotSave('${friendlyError(e)}'));
+lib/order_journey_page/order_journey_page_widget.dart:191: if (mounted) _toast(l.jrCouldNotSave('${friendlyError(e)}'));
+lib/order_journey_page/order_journey_page_widget.dart:208: if (mounted) _toast(l.jrCouldNotSave('${friendlyError(e)}'));
+lib/payments_page/payments_page_widget.dart:138: ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${friendlyError(e)}')));
+lib/quotation_page/survey_quote_page_widget.dart:805: ? 'Could not save the revision: ${friendlyError(e)}'
+lib/quotation_page/survey_quote_page_widget.dart:806: : 'Could not save quotation: ${friendlyError(e)}')),
+lib/rate_cards_page/rate_cards_page_widget.dart:56: .showSnackBar(SnackBar(content: Text('Could not load rate cards: ${friendlyError(e)}')));
+lib/rate_cards_page/rate_cards_page_widget.dart:111: .showSnackBar(SnackBar(content: Text('Could not create: ${friendlyError(e)}')));
+lib/rate_cards_page/rate_card_detail_page_widget.dart:71: .showSnackBar(SnackBar(content: Text('Could not load: ${friendlyError(e)}')));
+lib/rate_cards_page/rate_card_detail_page_widget.dart:125: .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
+lib/rate_cards_page/rate_card_detail_page_widget.dart:147: .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
+lib/rate_cards_page/rate_card_detail_page_widget.dart:210: .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
+lib/rate_cards_page/rate_card_detail_page_widget.dart:232: .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
+lib/rate_cards_page/rate_card_detail_page_widget.dart:294: .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
+lib/rate_cards_page/rate_card_detail_page_widget.dart:345: .showSnackBar(SnackBar(content: Text('Could not add: ${friendlyError(e)}')));
+lib/record_payment_page/record_payment_page_widget.dart:179: content: Text('Could not save: ${friendlyError(e)}. '
+lib/reviews_page/reviews_page_widget.dart:92: .showSnackBar(SnackBar(content: Text('Could not load reviews: ${friendlyError(e)}')));
+lib/reviews_page/reviews_page_widget.dart:148: .showSnackBar(SnackBar(content: Text('Could not request review: ${friendlyError(e)}')));
+lib/salary_page/staff_ledger_sheet.dart:165: content: Text('Failed: ${friendlyError(e)}. '
+lib/settings_page/branches_page.dart:105: _loadError = 'Could not load branches: ${friendlyError(e)}';
+lib/settings_page/branches_page.dart:142: _toast('Could not add branch: ${friendlyError(e)}', isError: true);
+lib/settings_page/branches_page.dart:170: _toast('Could not update branch: ${friendlyError(e)}', isError: true);
+lib/settings_page/branches_page.dart:249: _toast('Could not update branch: ${friendlyError(e)}', isError: true);
+lib/settings_page/business_settings_section.dart:278: .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
+lib/settings_page/business_settings_section.dart:322: .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
+lib/settings_page/business_settings_section.dart:372: content: Text('Logo upload failed: ${friendlyError(e)}. '
+lib/settings_page/business_settings_section.dart:414: SnackBar(content: Text('Could not save signature: ${friendlyError(e)}')));
+lib/settings_page/fy_numbering_card.dart:49: fallback: 'Could not read numbering: ${friendlyError(e)}');
+lib/settings_page/fy_numbering_card.dart:88: fallback: 'Could not start numbering: ${friendlyError(e)}'))));
+lib/settings_page/login_security_section.dart:237: _toast('${friendlyError(e)}');
+lib/settings_page/login_security_section.dart:269: _toast('${friendlyError(e)}');
+lib/settings_page/login_security_section.dart:400: if (mounted) setState(() => _err = '${friendlyError(e)}');
+lib/settings_page/login_security_section.dart:497: if (mounted) setState(() => _err = '${friendlyError(e)}');
+lib/settings_page/quote_design_page.dart:103: _toast('${friendlyError(e)}');
+lib/settings_page/recycle_bin_page.dart:294: SnackBar(content: Text('Could not restore: ${friendlyError(e)}')),
+lib/settings_page/survey_pricing_page.dart:104: _loadError = 'Could not load pricing settings: ${friendlyError(e)}';
+lib/settings_page/survey_pricing_page.dart:168: SnackBar(content: Text('Could not save slabs: ${friendlyError(e)}')));
+lib/settings_page/survey_pricing_page.dart:289: SnackBar(content: Text('Could not save catalogue: ${friendlyError(e)}')));
+lib/settings_page/survey_pricing_page.dart:564: if (mounted) setState(() => _rateError = 'Could not save: ${friendlyError(e)}');
+lib/supervisor_entry_page/supervisor_entry_page_widget.dart:115: .showSnackBar(SnackBar(content: Text('Could not create order: ${friendlyError(e)}')));
+lib/supervisor_team_page/supervisor_team_page_widget.dart:91: .showSnackBar(SnackBar(content: Text('Could not mark: ${friendlyError(e)}')));
+lib/super_admin_page/admin_common.dart:49: error = '${friendlyError(e)}';
+lib/super_admin_page/admin_common.dart:74: toast('Could not save: ${friendlyError(e)}');
+lib/super_admin_page/audit_tab.dart:42: toast('Could not check: ${friendlyError(e)}');
+lib/super_admin_page/marketplace_tab.dart:96: _toast('Could not load the marketplace: ${friendlyError(e)}');
+lib/super_admin_page/marketplace_tab.dart:112: _toast('Could not save: ${friendlyError(e)}');
+lib/super_admin_page/plans_tab.dart:37: .showSnackBar(SnackBar(content: Text('Could not load plans: ${friendlyError(e)}')));
+lib/super_admin_page/signups_tab.dart:101: _snack(extractDbErrorMessage(e, fallback: 'Could not save: ${friendlyError(e)}'));
+lib/super_admin_page/signups_tab.dart:114: _snack('Could not open the document: ${friendlyError(e)}');
+lib/super_admin_page/super_admin_page_widget.dart:171: SnackBar(content: Text('Could not load tenants: ${friendlyError(e)}')));
+lib/survey_quote_hub_page/survey_quote_hub_page_widget.dart:73: .showSnackBar(SnackBar(content: Text('Could not load quotes: ${friendlyError(e)}')));
+lib/tasks_page/tasks_page_widget.dart:73: .showSnackBar(SnackBar(content: Text('Could not load: ${friendlyError(e)}')));
+lib/tasks_page/tasks_page_widget.dart:249: .showSnackBar(SnackBar(content: Text('Could not create task: ${friendlyError(e)}')));
+lib/tasks_page/tasks_page_widget.dart:293: .showSnackBar(SnackBar(content: Text('Could not complete task: ${friendlyError(e)}')));
+lib/tasks_page/tasks_page_widget.dart:309: .showSnackBar(SnackBar(content: Text('Could not cancel task: ${friendlyError(e)}')));
+lib/tasks_page/tasks_page_widget.dart:444: .showSnackBar(SnackBar(content: Text('Could not log activity: ${friendlyError(e)}')));
+lib/trips_page/trips_page_widget.dart:53: .showSnackBar(SnackBar(content: Text('Could not load trips: ${friendlyError(e)}')));
+lib/trips_page/trips_page_widget.dart:208: .showSnackBar(SnackBar(content: Text('Could not create trip: ${friendlyError(e)}')));
+lib/trips_page/trip_detail_page_widget.dart:64: .showSnackBar(SnackBar(content: Text('Could not load trip: ${friendlyError(e)}')));
+lib/trips_page/trip_detail_page_widget.dart:247: .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
+lib/trips_page/trip_detail_page_widget.dart:310: .showSnackBar(SnackBar(content: Text('Could not add order: ${friendlyError(e)}')));
+lib/trips_page/trip_detail_page_widget.dart:323: .showSnackBar(SnackBar(content: Text('Could not remove: ${friendlyError(e)}')));
+lib/trips_page/trip_detail_page_widget.dart:429: .showSnackBar(SnackBar(content: Text('Could not add expense: ${friendlyError(e)}')));
+lib/trips_page/trip_detail_page_widget.dart:442: .showSnackBar(SnackBar(content: Text('Could not remove: ${friendlyError(err)}')));
+lib/users_page/users_page_widget.dart:75: _loadError = 'Could not load staff: ${friendlyError(e)}';
+lib/vendors_page/vendors_page_widget.dart:58: .showSnackBar(SnackBar(content: Text('Could not load vendors: ${friendlyError(e)}')));
+lib/vendors_page/vendors_page_widget.dart:158: .showSnackBar(SnackBar(content: Text('Could not create vendor: ${friendlyError(e)}')));
+lib/vendors_page/vendor_detail_page_widget.dart:55: .showSnackBar(SnackBar(content: Text('Could not load vendor: ${friendlyError(e)}')));
+lib/vendors_page/vendor_detail_page_widget.dart:232: .showSnackBar(SnackBar(content: Text('Could not save: ${friendlyError(e)}')));
+lib/vendors_page/vendor_detail_page_widget.dart:350: .showSnackBar(SnackBar(content: Text('Could not add bill: ${friendlyError(e)}')));
+lib/vendors_page/vendor_detail_page_widget.dart:648: .showSnackBar(SnackBar(content: Text('Could not record payment: ${friendlyError(e)}')));
+lib/warehouses_page/warehouses_page_widget.dart:85: _error = '${friendlyError(e)}';
+lib/warehouses_page/warehouses_page_widget.dart:392: : '${friendlyError(e)}';
+lib/wa_inbox_page/wa_inbox_page_widget.dart:78: .showSnackBar(SnackBar(content: Text('Could not load inbox: ${friendlyError(e)}')));
+lib/wa_inbox_page/wa_inbox_page_widget.dart:109: .showSnackBar(SnackBar(content: Text('Could not load thread: ${friendlyError(e)}')));
+lib/wa_inbox_page/wa_inbox_page_widget.dart:147: .showSnackBar(SnackBar(content: Text('Could not send: ${friendlyError(e)}')));
+lib/wa_inbox_page/wa_inbox_page_widget.dart:162: .showSnackBar(SnackBar(content: Text('Could not update: ${friendlyError(e)}')));
+lib/whatsapp/whatsapp_page.dart:77: if (mounted) setState(() => _error = '${friendlyError(e)}');
+lib/whatsapp/whatsapp_page.dart:90: if (mounted) _flash('${friendlyError(e)}');
+lib/whatsapp/whatsapp_page.dart:575: if (mounted) setState(() => _error = '${friendlyError(e)}');
+lib/whatsapp/whatsapp_page.dart:588: .showSnackBar(SnackBar(content: Text('Could not change it: ${friendlyError(e)}')));
+
+Files changed: 68, lines: 163

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../booking.dart';
 import '../config.dart';
 import '../theme.dart';
+import 'account.dart';
 import 'common.dart';
 
 /// The booking flow from the design (Nagarva Customer.dc.html): move type,
@@ -40,6 +41,16 @@ class TypeScreen extends StatelessWidget {
       step: 0,
       title: 'What are you moving?',
       content: [
+        if (kBookingLive)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              key: const Key('my-moves'),
+              onPressed: () => openMyMoves(context),
+              icon: const Icon(Icons.local_shipping_outlined, size: 18),
+              label: const Text('My moves'),
+            ),
+          ),
         Row(children: [
           for (final e in _scopes.entries) ...[
             Expanded(
@@ -699,8 +710,18 @@ class _ReviewScreenState extends State<ReviewScreen> {
         ],
       ],
       action: CButton(
-        label: kBookingLive ? 'Pay ${ok ? money(q['advance'] as num) : ''}' : 'Online payment opens soon',
-        onPressed: null,
+        label: kBookingLive
+            ? (ok ? 'Continue to pay ${money(q['advance'] as num)}' : 'Pay')
+            : 'Online payment opens soon',
+        onPressed: kBookingLive && ok
+            ? () async {
+                if (!await ensureSignedIn(context)) return;
+                if (!context.mounted) return;
+                await Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => CheckoutScreen(
+                        booking: b, advance: q['advance'] as num)));
+              }
+            : null,
       ),
     );
   }

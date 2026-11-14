@@ -426,7 +426,7 @@
       host.style.setProperty("--pd-accent", v.color.charAt(0) === "#" ? v.color : "#" + v.color);
     }
     var addr = [v.address, [v.city, v.state].filter(Boolean).join(", "), v.pincode].filter(Boolean).join(", ");
-    var contact = [(v.phones || []).join(" / "), v.email, v.website].filter(Boolean).join("  ·  ");
+    var contact = [(v.phones || []).map(window.ngPhone || String).join(" / "), v.email, v.website].filter(Boolean).join("  ·  ");
     var h = '<div class="pd-head"><div>';
     if (v.logo_url) h += '<img src="' + esc(v.logo_url) + '" alt=""><br>';
     h += '<div class="pd-co">' + esc(v.name || "") + "</div>";

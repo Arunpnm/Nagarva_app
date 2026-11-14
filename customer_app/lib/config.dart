@@ -6,8 +6,8 @@ const kSupabaseUrl = 'https://hqqcapifefsaqvotqvlt.supabase.co';
 const kSupabaseAnonKey =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhxcWNhcGlmZWZzYXF2b3Rxdmx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MjMwNjksImV4cCI6MjA5NTA5OTA2OX0.Z_nkIvupu-zMnxOWT2n_8wUwTH4Kb3K8nOnvs1wkCbY';
 
-/// Booking stays off until online payment is chosen (Arun, 30 Oct 2026:
-/// "wait for the gateway"; CLAUDE.md Item 31). The whole flow and the
-/// price work; the last button says payments open soon instead of taking
-/// money or creating a job.
-const kBookingLive = false;
+/// Booking with online payment (Razorpay payment links through the
+/// mkt-book function; Arun, 14 Nov 2026). Test keys in Supabase give test
+/// payments. Set false to go back to quote-only: the last button then says
+/// payments open soon.
+const kBookingLive = true;

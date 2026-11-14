@@ -247,3 +247,12 @@
     document.addEventListener("DOMContentLoaded", function () { apply(); });
   } else { apply(); }
 })();
+
+// A phone number for reading: "+91 99999 00001". Other shapes are shown
+// as they are.
+window.ngPhone = function (p) {
+  var d = String(p || "").replace(/\D/g, "");
+  if (d.length === 12 && d.indexOf("91") === 0) d = d.slice(2);
+  if (d.length === 10) return "+91 " + d.slice(0, 5) + " " + d.slice(5);
+  return String(p || "").trim();
+};
